@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -78,9 +79,12 @@ export default async function OwnerMaintenancePage() {
                       className="rounded-lg bg-muted px-4 py-3"
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
-                        <p className="text-sm font-medium text-foreground">
+                        <Link
+                          href={`/owner/maintenance/${wo.id}`}
+                          className="text-sm font-medium text-foreground hover:text-primary-600 transition-colors"
+                        >
                           {wo.title}
-                        </p>
+                        </Link>
                         <div className="flex items-center gap-2 shrink-0">
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priorityStyle[wo.priority]}`}
@@ -127,9 +131,12 @@ export default async function OwnerMaintenancePage() {
                     className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium text-foreground">
+                      <Link
+                        href={`/owner/maintenance/${wo.id}`}
+                        className="text-sm font-medium text-foreground hover:text-primary-600 transition-colors"
+                      >
                         {wo.title}
-                      </p>
+                      </Link>
                       <p className="text-xs text-muted-foreground">
                         {schemeNames.get(wo.schemeId) ?? ""}
                       </p>

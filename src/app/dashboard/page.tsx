@@ -23,7 +23,7 @@ export default async function DashboardRouter() {
   const { data: profile } = await supabase
     .from("profiles")
     .select("portal_role")
-    .eq("id", user.id)
+    .eq("auth_id", user.id)
     .single();
 
   const role = profile?.portal_role?.toLowerCase() ?? "owner";

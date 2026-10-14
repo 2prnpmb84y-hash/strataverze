@@ -1,10 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const protectedRoutes = [
+  "/owner",
+  "/committee",
+  "/adviser",
+  "/dashboard",
+  "/settings",
+];
+
+const authRoutes = ["/login", "/forgot-password", "/reset-password"];
+
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,9 +26,7 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -29,28 +35,25 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Refresh the auth token
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect all app routes except public pages
-  const isPublicRoute =
-    request.nextUrl.pathname === "/" ||
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/auth");
+  const { pathname } = request.nextUrl;
 
-  if (!user && !isPublicRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  // Redirect unauthenticated users away from protected routes
+  if (
+    !user &&
+    protectedRoutes.some((route) => pathname.startsWith(route))
+  ) {
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // If user is logged in and visits /login, redirect to dashboard
-  if (user && request.nextUrl.pathname.startsWith("/login")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+  // Redirect authenticated users away from auth routes
+  if (user && authRoutes.some((route) => pathname === route)) {
+    const dashboardUrl = new URL("/dashboard", request.url);
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return supabaseResponse;
@@ -58,13 +61,13 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for:
-     * - _next/static (static files)
-     * - _next/image (image optimisation files)
-     * - favicon.ico (favicon file)
-     * - public folder assets
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/owner/:path*",
+    "/committee/:path*",
+    "/adviser/:path*",
+    "/dashboard/:path*",
+    "/settings/:path*",
+    "/login",
+    "/forgot-password",
+    "/reset-password",
   ],
 };
