@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForAdviser } from "@/lib/queries/schemes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SchemeList } from "@/components/scheme-list";
 
 export default async function AdviserSchemesPage() {
   const profile = await getCurrentProfile();
@@ -42,32 +42,7 @@ export default async function AdviserSchemesPage() {
           actionHref="/adviser/schemes/new"
         />
       ) : (
-        <div className="flex flex-col gap-3">
-          {schemes.map((scheme) => (
-            <Link
-              key={scheme.id}
-              href={`/adviser/schemes/${scheme.id}`}
-              className="block rounded-xl bg-card border border-border p-5 hover:border-primary-300 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-heading font-semibold text-card-foreground">
-                    {scheme.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {scheme.planNumber} &middot; {scheme.suburb},{" "}
-                    {scheme.state} {scheme.postcode}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className="text-xs text-muted-foreground">
-                    {scheme.totalLots} lot{scheme.totalLots === 1 ? "" : "s"}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <SchemeList schemes={schemes} />
       )}
     </div>
   );
