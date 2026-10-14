@@ -1,32 +1,22 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile, getAvailablePortals } from "@/lib/queries/profiles";
 
 export const instant = false;
 
 /**
- * Dashboard router — reads the user's portal role from the profiles table
- * and redirects to the appropriate portal. Falls back to /owner if no
- * profile exists yet (new users get set up during onboarding).
+ * Dashboard router — reads the user's active memberships and redirects
+ * to their first available portal. Falls back to /owner if no memberships
+ * exist yet (new users get set up during onboarding).
  */
 export default async function DashboardRouter() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const profile = await getCurrentProfile();
+  if (!profile) {
     redirect("/login");
   }
 
-  // Look up the user's role from the profiles table
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("portal_role")
-    .eq("auth_id", user.id)
-    .single();
+  const portals = await getAvailablePortals(profile.id);
 
-  const role = profile?.portal_role?.toLowerCase() ?? "owner";
-
-  redirect(`/${role}`);
+  // Redirect to the first available portal, defaulting to owner
+  const target = portals[0] ?? "owner";
+  redirect(`/${target}`);
 }

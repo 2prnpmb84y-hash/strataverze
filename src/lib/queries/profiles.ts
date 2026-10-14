@@ -120,3 +120,16 @@ export async function getProfileWithMemberships(profileId: string) {
     })),
   };
 }
+
+/**
+ * Get the distinct portal roles available to a profile.
+ * Returns an array of lowercase role keys (e.g. ["owner", "committee"]).
+ */
+export async function getAvailablePortals(profileId: string) {
+  const memberships = await db.orm.public.SchemeMembership
+    .where((m) => and(m.profileId.eq(profileId), m.isActive.eq(true)))
+    .all();
+
+  const roles = [...new Set(memberships.map((m) => m.role))];
+  return roles.map((r) => r.toLowerCase());
+}

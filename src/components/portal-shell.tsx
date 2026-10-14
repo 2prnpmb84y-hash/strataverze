@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 const portalConfig = {
   owner: {
     label: "Owner Portal",
+    shortLabel: "Owner",
     colour: "bg-owner",
     textColour: "text-owner",
     nav: [
@@ -22,6 +23,7 @@ const portalConfig = {
   },
   committee: {
     label: "Committee Portal",
+    shortLabel: "Committee",
     colour: "bg-committee",
     textColour: "text-committee",
     nav: [
@@ -35,6 +37,7 @@ const portalConfig = {
   },
   adviser: {
     label: "Adviser Portal",
+    shortLabel: "Adviser",
     colour: "bg-adviser",
     textColour: "text-adviser",
     nav: [
@@ -50,9 +53,11 @@ type PortalKey = keyof typeof portalConfig;
 
 export function PortalShell({
   user,
+  availablePortals = [],
   children,
 }: {
   user: User;
+  availablePortals?: string[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -61,6 +66,9 @@ export function PortalShell({
   // Determine which portal we're in from the URL
   const segment = pathname.split("/")[1] as PortalKey;
   const portal = portalConfig[segment] ?? portalConfig.owner;
+
+  // Other portals this user can switch to
+  const otherPortals = availablePortals.filter((p) => p !== segment);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -107,6 +115,33 @@ export function PortalShell({
             );
           })}
         </nav>
+
+        {/* Portal switcher */}
+        {otherPortals.length > 0 && (
+          <div className="px-3 pb-2">
+            <p className="px-3 mb-1.5 text-[10px] uppercase tracking-widest text-white/50 font-medium">
+              Switch portal
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {otherPortals.map((key) => {
+                const config = portalConfig[key as PortalKey];
+                if (!config) return null;
+                return (
+                  <Link
+                    key={key}
+                    href={`/${key}`}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-white/70 hover:bg-white/15 hover:text-white transition-colors"
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${config.colour}`}
+                    />
+                    {config.shortLabel}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Settings & user info */}
         <div className="mt-auto">
@@ -185,6 +220,22 @@ export function PortalShell({
                 }`}
               >
                 {item.label}
+              </Link>
+            );
+          })}
+          {otherPortals.map((key) => {
+            const config = portalConfig[key as PortalKey];
+            if (!config) return null;
+            return (
+              <Link
+                key={key}
+                href={`/${key}`}
+                className="shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${config.colour}`}
+                />
+                {config.shortLabel}
               </Link>
             );
           })}

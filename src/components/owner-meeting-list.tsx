@@ -1,0 +1,341 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { SearchInput } from "@/components/ui/search-input";
+import { FilterSelect } from "@/components/ui/filter-select";
+import { ListToolbar } from "@/components/ui/list-toolbar";
+import { Card, CardHeader } from "@/components/ui/card";
+import { VoteButtons } from "@/app/(portal)/owner/meetings/vote-buttons";
+
+const meetingTypeLabels: Record<string, string> = {
+  AGM: "AGM",
+  SGM: "SGM",
+  COMMITTEE: "Committee",
+};
+
+const statusStyle: Record<string, string> = {
+  SCHEDULED: "bg-blue-100 text-blue-700",
+  COMPLETED: "bg-green-100 text-green-700",
+  CANCELLED: "bg-gray-100 text-gray-700",
+};
+
+const motionStatusStyle: Record<string, string> = {
+  DRAFT: "bg-gray-100 text-gray-700",
+  PROPOSED: "bg-yellow-100 text-yellow-700",
+  PASSED: "bg-green-100 text-green-700",
+  DEFEATED: "bg-red-100 text-red-700",
+  WITHDRAWN: "bg-gray-100 text-gray-500",
+};
+
+const statusOptions = [
+  { value: "", label: "All statuses" },
+  { value: "SCHEDULED", label: "Scheduled" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+const typeOptions = [
+  { value: "", label: "All types" },
+  { value: "AGM", label: "AGM" },
+  { value: "SGM", label: "SGM" },
+  { value: "COMMITTEE", label: "Committee" },
+];
+
+type MotionItem = {
+  id: string;
+  title: string;
+  status: string;
+  description: string | null;
+  votes: { profileId: string; voteValue: string }[];
+};
+
+type MeetingItem = {
+  id: string;
+  title: string;
+  status: string;
+  meetingType: string;
+  schemeId: string;
+  scheduledAt: unknown;
+  location: string | null;
+  motions: MotionItem[];
+};
+
+function getVoteTally(votes: { voteValue: string }[]) {
+  const tally = { FOR: 0, AGAINST: 0, ABSTAIN: 0 };
+  for (const v of votes) {
+    if (v.voteValue in tally) {
+      tally[v.voteValue as keyof typeof tally]++;
+    }
+  }
+  return tally;
+}
+
+export function OwnerMeetingList({
+  meetings,
+  schemeNames,
+  profileId,
+}: {
+  meetings: MeetingItem[];
+  schemeNames: Record<string, string>;
+  profileId: string;
+}) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return meetings.filter((m) => {
+      if (statusFilter && m.status !== statusFilter) return false;
+      if (typeFilter && m.meetingType !== typeFilter) return false;
+      if (q) {
+        const scheme = (schemeNames[m.schemeId] ?? "").toLowerCase();
+        if (
+          !m.title.toLowerCase().includes(q) &&
+          !scheme.includes(q) &&
+          !(m.location ?? "").toLowerCase().includes(q)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [meetings, search, statusFilter, typeFilter, schemeNames]);
+
+  const now = new Date();
+  const upcoming = filtered.filter(
+    (m) => new Date(String(m.scheduledAt)) >= now && m.status === "SCHEDULED",
+  );
+  const past = filtered.filter(
+    (m) => new Date(String(m.scheduledAt)) < now || m.status !== "SCHEDULED",
+  );
+
+  function getUserVote(votes: { profileId: string; voteValue: string }[]) {
+    const vote = votes.find((v) => v.profileId === profileId);
+    return vote?.voteValue ?? null;
+  }
+
+  return (
+    <>
+      <ListToolbar>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search meetings..."
+          className="flex-1"
+        />
+        <FilterSelect
+          label="Status"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={statusOptions}
+          className="sm:w-40"
+        />
+        <FilterSelect
+          label="Type"
+          value={typeFilter}
+          onChange={setTypeFilter}
+          options={typeOptions}
+          className="sm:w-40"
+        />
+      </ListToolbar>
+
+      {filtered.length === 0 ? (
+        <Card>
+          <div className="p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {meetings.length === 0
+                ? "No meetings have been scheduled for your schemes yet."
+                : "No meetings match your search."}
+            </p>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {upcoming.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader
+                title="Upcoming"
+                description={`${upcoming.length} meeting${upcoming.length === 1 ? "" : "s"} scheduled.`}
+              />
+              <div className="flex flex-col gap-2">
+                {upcoming.map((meeting) => {
+                  const scheduledDate = new Date(String(meeting.scheduledAt));
+
+                  return (
+                    <div
+                      key={meeting.id}
+                      className="rounded-lg bg-muted px-4 py-3"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="text-sm font-medium text-foreground">
+                          {meeting.title}
+                        </p>
+                        <span
+                          className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
+                        >
+                          {meeting.status.charAt(0) +
+                            meeting.status.slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {schemeNames[meeting.schemeId] ?? ""}
+                        {" · "}
+                        {meetingTypeLabels[meeting.meetingType] ??
+                          meeting.meetingType}
+                        {" · "}
+                        {scheduledDate.toLocaleDateString("en-AU", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                        {" at "}
+                        {scheduledDate.toLocaleTimeString("en-AU", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      {meeting.location && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          📍 {meeting.location}
+                        </p>
+                      )}
+
+                      {meeting.motions.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Motions
+                          </p>
+                          {meeting.motions.map((motion) => {
+                            const tally = getVoteTally(motion.votes);
+                            const userVote = getUserVote(motion.votes);
+                            const isProposed = motion.status === "PROPOSED";
+
+                            return (
+                              <div
+                                key={motion.id}
+                                className="rounded-md bg-background border border-border p-3"
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <p className="text-sm font-medium text-foreground">
+                                    {motion.title}
+                                  </p>
+                                  <span
+                                    className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${motionStatusStyle[motion.status] ?? "bg-gray-100 text-gray-700"}`}
+                                  >
+                                    {motion.status.charAt(0) +
+                                      motion.status.slice(1).toLowerCase()}
+                                  </span>
+                                </div>
+                                {motion.description && (
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    {motion.description}
+                                  </p>
+                                )}
+                                {motion.votes.length > 0 && (
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    {tally.FOR} For · {tally.AGAINST} Against ·{" "}
+                                    {tally.ABSTAIN} Abstain
+                                  </p>
+                                )}
+                                {isProposed && (
+                                  <VoteButtons
+                                    motionId={motion.id}
+                                    currentVote={userVote}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
+          {past.length > 0 && (
+            <Card>
+              <CardHeader
+                title="Past Meetings"
+                description={`${past.length} previous meeting${past.length === 1 ? "" : "s"}.`}
+              />
+              <div className="flex flex-col gap-2">
+                {past.map((meeting) => {
+                  const scheduledDate = new Date(String(meeting.scheduledAt));
+
+                  return (
+                    <div
+                      key={meeting.id}
+                      className="rounded-lg bg-muted px-4 py-3"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium text-foreground">
+                          {meeting.title}
+                        </p>
+                        <span
+                          className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
+                        >
+                          {meeting.status.charAt(0) +
+                            meeting.status.slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {schemeNames[meeting.schemeId] ?? ""}
+                        {" · "}
+                        {scheduledDate.toLocaleDateString("en-AU", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+
+                      {meeting.motions.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Motions
+                          </p>
+                          {meeting.motions.map((motion) => {
+                            const tally = getVoteTally(motion.votes);
+
+                            return (
+                              <div
+                                key={motion.id}
+                                className="rounded-md bg-background border border-border p-3"
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <p className="text-sm font-medium text-foreground">
+                                    {motion.title}
+                                  </p>
+                                  <span
+                                    className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${motionStatusStyle[motion.status] ?? "bg-gray-100 text-gray-700"}`}
+                                  >
+                                    {motion.status.charAt(0) +
+                                      motion.status.slice(1).toLowerCase()}
+                                  </span>
+                                </div>
+                                {motion.votes.length > 0 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {tally.FOR} For · {tally.AGAINST} Against ·{" "}
+                                    {tally.ABSTAIN} Abstain
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+        </>
+      )}
+    </>
+  );
+}

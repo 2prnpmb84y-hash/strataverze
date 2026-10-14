@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile, getAvailablePortals } from "@/lib/queries/profiles";
 import { PortalShell } from "@/components/portal-shell";
 
 // Auth-protected layout reads cookies at request time, so it cannot be
@@ -22,5 +23,14 @@ export default async function PortalLayout({
     redirect("/login");
   }
 
-  return <PortalShell user={user}>{children}</PortalShell>;
+  const profile = await getCurrentProfile();
+  const availablePortals = profile
+    ? await getAvailablePortals(profile.id)
+    : [];
+
+  return (
+    <PortalShell user={user} availablePortals={availablePortals}>
+      {children}
+    </PortalShell>
+  );
 }
