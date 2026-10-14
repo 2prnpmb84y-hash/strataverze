@@ -5,6 +5,7 @@ import { getLotsForScheme } from "@/lib/queries/lots";
 import { getLeviesForScheme } from "@/lib/queries/levies";
 import { getMeetingsForScheme } from "@/lib/queries/meetings";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
+import { getWorkOrdersForScheme } from "@/lib/queries/work-orders";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export default async function SchemeDetailPage({
   const levies = await getLeviesForScheme(id);
   const meetings = await getMeetingsForScheme(id);
   const documents = await getDocumentsForScheme(id);
+  const workOrders = await getWorkOrdersForScheme(id);
 
   // Check the current user is an adviser on this scheme
   const isAdviser = scheme.memberships.some(
@@ -375,6 +377,71 @@ export default async function SchemeDetailPage({
         ) : (
           <p className="text-sm text-muted-foreground">
             Upload documents to keep records for this scheme.
+          </p>
+        )}
+      </Card>
+
+      {/* Work Orders */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Work Orders"
+          description={
+            workOrders.length === 0
+              ? "No work orders raised yet."
+              : `${workOrders.length} work order${workOrders.length === 1 ? "" : "s"} on record.`
+          }
+          action={
+            <Button href={`/adviser/schemes/${id}/work-orders/new`} variant="secondary">
+              New Work Order
+            </Button>
+          }
+        />
+        {workOrders.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {workOrders.map((wo) => {
+              const priorityStyle: Record<string, string> = {
+                LOW: "bg-gray-100 text-gray-700",
+                MEDIUM: "bg-blue-100 text-blue-700",
+                HIGH: "bg-orange-100 text-orange-700",
+                URGENT: "bg-red-100 text-red-700",
+              };
+
+              const woStatusStyle: Record<string, string> = {
+                OPEN: "bg-blue-100 text-blue-700",
+                IN_PROGRESS: "bg-yellow-100 text-yellow-700",
+                COMPLETED: "bg-green-100 text-green-700",
+                CANCELLED: "bg-gray-100 text-gray-700",
+              };
+
+              return (
+                <Link
+                  key={wo.id}
+                  href={`/adviser/schemes/${id}/work-orders/${wo.id}`}
+                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {wo.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {wo.priority}
+                      {wo.assignedTo && ` · ${wo.assignedTo}`}
+                      {wo.comments.length > 0 &&
+                        ` · ${wo.comments.length} comment${wo.comments.length === 1 ? "" : "s"}`}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${woStatusStyle[wo.status] ?? "bg-gray-100 text-gray-700"}`}
+                  >
+                    {wo.status.replace("_", " ")}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Create a work order to track maintenance for this scheme.
           </p>
         )}
       </Card>
