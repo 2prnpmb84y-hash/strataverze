@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getDocumentsForSchemes } from "@/lib/queries/documents";
 import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import { DocumentList } from "@/components/document-list";
 
 export default async function CommitteeDocumentsPage() {
@@ -24,6 +25,11 @@ export default async function CommitteeDocumentsPage() {
       <PageHeader
         title="Documents"
         description="Scheme documents and records."
+        action={
+          <Button href="/committee/documents/upload">
+            Upload Document
+          </Button>
+        }
       />
 
       <DocumentList documents={documents} schemeNames={schemeNames} />
