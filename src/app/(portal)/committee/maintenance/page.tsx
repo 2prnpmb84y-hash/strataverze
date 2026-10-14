@@ -4,6 +4,7 @@ import { getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const priorityStyle: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-700",
@@ -45,6 +46,7 @@ export default async function CommitteeMaintenancePage() {
       <PageHeader
         title="Maintenance"
         description="Work orders and maintenance requests for your schemes."
+        action={<Button href="/committee/maintenance/new">Raise Work Order</Button>}
       />
 
       {workOrders.length === 0 ? (

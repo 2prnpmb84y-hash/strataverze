@@ -1,6 +1,7 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getLeviesForSchemes } from "@/lib/queries/levies";
+import { getFundsForSchemes } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -18,9 +19,10 @@ export default async function CommitteeFinancePage() {
 
   const schemes = await getSchemesForCommittee(profile.id);
   const schemeIds = schemes.map((s) => s.id);
-  const levies = schemeIds.length > 0
-    ? await getLeviesForSchemes(schemeIds)
-    : [];
+  const [levies, funds] = await Promise.all([
+    schemeIds.length > 0 ? getLeviesForSchemes(schemeIds) : [],
+    schemeIds.length > 0 ? getFundsForSchemes(schemeIds) : [],
+  ]);
 
   const schemeNames = new Map(schemes.map((s) => [s.id, s.name]));
 
@@ -64,6 +66,41 @@ export default async function CommitteeFinancePage() {
           accent="bg-red-500"
         />
       </div>
+
+      {/* Fund Balances */}
+      {funds.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader
+            title="Fund Balances"
+            description="Current balances across your scheme funds."
+          />
+          <div className="flex flex-col gap-2">
+            {funds.map((fund) => {
+              const balance = Number(fund.balance);
+              return (
+                <div
+                  key={fund.id}
+                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {fund.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {schemeNames.get(fund.schemeId) ?? ""}
+                      {" · "}
+                      {fund.fundType.replace("_", " ")}
+                    </p>
+                  </div>
+                  <span className={`text-sm font-semibold ${balance >= 0 ? "text-green-700" : "text-red-700"}`}>
+                    ${balance.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {levies.length === 0 ? (
         <Card>

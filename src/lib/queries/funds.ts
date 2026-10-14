@@ -58,6 +58,17 @@ export async function updateFund(
 }
 
 /**
+ * Fetch funds across multiple schemes (for owner/committee views).
+ */
+export async function getFundsForSchemes(schemeIds: string[]) {
+  if (schemeIds.length === 0) return [];
+  return db.orm.public.Fund
+    .where((f) => f.schemeId.in(schemeIds))
+    .orderBy((f) => f.createdAt.asc())
+    .all();
+}
+
+/**
  * Delete a fund.
  */
 export async function deleteFund(fundId: string) {

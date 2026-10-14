@@ -78,6 +78,15 @@ export default async function LoginPage({
               />
             </div>
 
+            <div className="flex justify-end">
+              <a
+                href="/forgot-password"
+                className="text-sm text-primary-400 hover:text-primary-500 transition-colors"
+              >
+                Forgot password?
+              </a>
+            </div>
+
             <div className="flex flex-col gap-2 mt-2">
               <button
                 formAction={login}

@@ -4,6 +4,7 @@ import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
+import { Button } from "@/components/ui/button";
 
 const statusStyle: Record<string, string> = {
   SCHEDULED: "bg-blue-100 text-blue-700",
@@ -54,6 +55,7 @@ export default async function CommitteeGovernancePage() {
       <PageHeader
         title="Governance"
         description="Meetings, motions, and voting for your schemes."
+        action={<Button href="/committee/governance/new">Schedule Meeting</Button>}
       />
 
       {/* Stats */}

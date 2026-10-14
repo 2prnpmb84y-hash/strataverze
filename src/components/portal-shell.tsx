@@ -16,6 +16,7 @@ const portalConfig = {
       { label: "My Scheme", href: "/owner/scheme" },
       { label: "Levies", href: "/owner/levies" },
       { label: "Meetings", href: "/owner/meetings" },
+      { label: "Maintenance", href: "/owner/maintenance" },
       { label: "Documents", href: "/owner/documents" },
     ],
   },
@@ -28,6 +29,8 @@ const portalConfig = {
       { label: "Finance", href: "/committee/finance" },
       { label: "Governance", href: "/committee/governance" },
       { label: "Maintenance", href: "/committee/maintenance" },
+      { label: "Documents", href: "/committee/documents" },
+      { label: "Compliance", href: "/committee/compliance" },
     ],
   },
   adviser: {
