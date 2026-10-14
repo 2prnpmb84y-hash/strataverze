@@ -4,20 +4,24 @@ export function FormField({
   type = "text",
   required,
   defaultValue,
+  value,
   placeholder,
   error,
   helpText,
   className = "",
+  onChange,
 }: {
   label: string;
   name: string;
   type?: "text" | "email" | "number" | "tel" | "date";
   required?: boolean;
   defaultValue?: string | number;
+  value?: string | number;
   placeholder?: string;
   error?: string;
   helpText?: string;
   className?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <div className={className}>
@@ -33,8 +37,10 @@ export function FormField({
         name={name}
         type={type}
         required={required}
-        defaultValue={defaultValue}
+        defaultValue={value !== undefined ? undefined : defaultValue}
+        value={value}
         placeholder={placeholder}
+        onChange={onChange}
         className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
       />
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
@@ -50,17 +56,21 @@ export function SelectField({
   name,
   required,
   defaultValue,
+  value,
   options,
   error,
   className = "",
+  onChange,
 }: {
   label: string;
   name: string;
   required?: boolean;
   defaultValue?: string;
+  value?: string;
   options: { value: string; label: string }[];
   error?: string;
   className?: string;
+  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }) {
   return (
     <div className={className}>
@@ -75,7 +85,9 @@ export function SelectField({
         id={name}
         name={name}
         required={required}
-        defaultValue={defaultValue}
+        defaultValue={value !== undefined ? undefined : defaultValue}
+        value={value}
+        onChange={onChange}
         className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
       >
         {options.map((opt) => (

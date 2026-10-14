@@ -218,9 +218,14 @@ export default async function SchemeDetailPage({
               : `${levies.length} lev${levies.length === 1 ? "y" : "ies"} created.`
           }
           action={
-            <Button href={`/adviser/schemes/${id}/levies/new`} variant="secondary">
-              Create Levy
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button href={`/adviser/schemes/${id}/levies/generate`} variant="secondary">
+                Generate Levies
+              </Button>
+              <Button href={`/adviser/schemes/${id}/levies/new`} variant="secondary">
+                Create Levy
+              </Button>
+            </div>
           }
         />
         {levies.length > 0 ? (
