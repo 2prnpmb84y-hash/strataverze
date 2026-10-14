@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { getLotsForScheme } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,8 @@ export default async function SchemeDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+
+  const lots = await getLotsForScheme(id);
 
   // Check the current user is an adviser on this scheme
   const isAdviser = scheme.memberships.some(
@@ -92,6 +96,71 @@ export default async function SchemeDetailPage({
           </div>
         </Card>
       )}
+
+      {/* Lots */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Lots"
+          description={`${lots.length} of ${scheme.totalLots} lots registered.`}
+          action={
+            <Button href={`/adviser/schemes/${id}/lots/new`} variant="secondary">
+              Add Lot
+            </Button>
+          }
+        />
+        {lots.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left">
+                  <th className="pb-2 font-medium text-muted-foreground">Lot</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Unit</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Type</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">Entitlement</th>
+                  <th className="pb-2 font-medium text-muted-foreground">Owner</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lots.map((lot) => {
+                  const owner = lot.memberships.find(
+                    (m) => m.role === "OWNER",
+                  );
+                  return (
+                    <tr key={lot.id} className="border-b border-border last:border-0">
+                      <td className="py-3">
+                        <Link
+                          href={`/adviser/schemes/${id}/lots/${lot.id}`}
+                          className="font-medium text-foreground hover:text-primary-500 transition-colors"
+                        >
+                          {lot.lotNumber}
+                        </Link>
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {lot.unitNumber ?? "—"}
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {lot.lotType.charAt(0) + lot.lotType.slice(1).toLowerCase()}
+                      </td>
+                      <td className="py-3 text-right font-variant-numeric tabular-nums">
+                        {lot.entitlement}
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {owner
+                          ? `${owner.profile.firstName} ${owner.profile.lastName}`.trim() || owner.profile.email
+                          : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No lots registered yet. Add lots to start assigning owners.
+          </p>
+        )}
+      </Card>
 
       {/* Edit form */}
       <div className="mb-6">
