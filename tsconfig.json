@@ -33,5 +33,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "src/prisma/db.ts"]
+  "exclude": ["node_modules"]
 }

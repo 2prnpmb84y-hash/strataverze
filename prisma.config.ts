@@ -7,7 +7,7 @@ export default definePrismaConfig({
     contract: prisma7Schema("./prisma/schema.prisma"),
     output: "src/prisma",
     db: {
-      connection: process.env['DATABASE_URL']!,
+      connection: process.env['DIRECT_URL'] ?? process.env['DATABASE_URL']!,
     },
   }),
   skills: {
