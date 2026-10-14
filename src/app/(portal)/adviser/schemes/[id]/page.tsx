@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getLotsForScheme } from "@/lib/queries/lots";
 import { getLeviesForScheme } from "@/lib/queries/levies";
 import { getMeetingsForScheme } from "@/lib/queries/meetings";
+import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ export default async function SchemeDetailPage({
   const lots = await getLotsForScheme(id);
   const levies = await getLeviesForScheme(id);
   const meetings = await getMeetingsForScheme(id);
+  const documents = await getDocumentsForScheme(id);
 
   // Check the current user is an adviser on this scheme
   const isAdviser = scheme.memberships.some(
@@ -310,6 +312,69 @@ export default async function SchemeDetailPage({
         ) : (
           <p className="text-sm text-muted-foreground">
             Schedule a meeting to manage governance for this scheme.
+          </p>
+        )}
+      </Card>
+
+      {/* Documents */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Documents"
+          description={
+            documents.length === 0
+              ? "No documents uploaded yet."
+              : `${documents.length} document${documents.length === 1 ? "" : "s"} uploaded.`
+          }
+          action={
+            <Button href={`/adviser/schemes/${id}/documents/new`} variant="secondary">
+              Upload Document
+            </Button>
+          }
+        />
+        {documents.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {documents.map((doc) => {
+              const uploadDate = new Date(String(doc.createdAt));
+
+              const categoryLabels: Record<string, string> = {
+                MINUTES: "Minutes",
+                INSURANCE: "Insurance",
+                BYLAW: "By-laws",
+                FINANCIAL: "Financial",
+                COMPLIANCE: "Compliance",
+                OTHER: "Other",
+              };
+
+              return (
+                <Link
+                  key={doc.id}
+                  href={`/adviser/schemes/${id}/documents/${doc.id}`}
+                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {doc.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {categoryLabels[doc.category] ?? doc.category}
+                      {" · "}
+                      {uploadDate.toLocaleDateString("en-AU", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                    {doc.fileName.split(".").pop()?.toUpperCase() ?? "FILE"}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Upload documents to keep records for this scheme.
           </p>
         )}
       </Card>
