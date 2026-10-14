@@ -11,7 +11,7 @@ export function FormField({
 }: {
   label: string;
   name: string;
-  type?: "text" | "email" | "number" | "tel";
+  type?: "text" | "email" | "number" | "tel" | "date";
   required?: boolean;
   defaultValue?: string | number;
   placeholder?: string;

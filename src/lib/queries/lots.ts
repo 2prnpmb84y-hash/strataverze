@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /**
  * Fetch all lots for a given scheme, ordered by lot number.
@@ -93,6 +94,6 @@ export async function removeOwnerFromLot(membershipId: string) {
     .where({ id: membershipId })
     .update({
       isActive: false,
-      endDate: new Date().toISOString() as unknown as import("@prisma/orm-postgres/target/codec-types").TimestampString<3>,
+      endDate: new Date().toISOString() as unknown as TimestampString,
     });
 }
