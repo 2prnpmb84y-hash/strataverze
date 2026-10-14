@@ -6,6 +6,7 @@ import {
 } from "@/lib/email-templates/work-order";
 import { levyIssuedEmail } from "@/lib/email-templates/levy";
 import { meetingScheduledEmail } from "@/lib/email-templates/meeting";
+import { announcementPublishedEmail } from "@/lib/email-templates/announcement";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://strataverze.com.au";
 
@@ -114,6 +115,30 @@ export async function notifyMeetingScheduled(params: {
     scheduledAt: params.scheduledAt,
     location: params.location,
     detailUrl: `${APP_URL}/committee/governance/${params.meetingId}`,
+  });
+  await sendEmail(email);
+}
+
+// ─── Announcements ─────────────────────────────────────────────
+
+export async function notifyAnnouncementPublished(params: {
+  recipientEmails: string[];
+  schemeName: string;
+  title: string;
+  body: string;
+  priority: string;
+  authorName: string;
+  portalPath: string;
+  announcementId: string;
+}) {
+  const email = announcementPublishedEmail({
+    recipientEmails: params.recipientEmails,
+    schemeName: params.schemeName,
+    title: params.title,
+    body: params.body,
+    priority: params.priority,
+    authorName: params.authorName,
+    detailUrl: `${APP_URL}${params.portalPath}/${params.announcementId}`,
   });
   await sendEmail(email);
 }

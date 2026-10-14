@@ -38,6 +38,7 @@ model Profile {
   workOrders     WorkOrder[]        @relation("RaisedBy")
   invitations    Invitation[]       @relation("InvitedBy")
   activityLogs   ActivityLog[]
+  announcements  Announcement[]
 
   @@map("profiles")
 }
@@ -59,17 +60,18 @@ model Scheme {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  lots          Lot[]
-  memberships   SchemeMembership[]
-  levies        Levy[]
-  motions       Motion[]
-  meetings      Meeting[]
-  documents     Document[]
-  workOrders    WorkOrder[]
-  funds         Fund[]
-  compliance    ComplianceItem[]
-  invitations   Invitation[]
-  activityLogs  ActivityLog[]
+  lots           Lot[]
+  memberships    SchemeMembership[]
+  levies         Levy[]
+  motions        Motion[]
+  meetings       Meeting[]
+  documents      Document[]
+  workOrders     WorkOrder[]
+  funds          Fund[]
+  compliance     ComplianceItem[]
+  invitations    Invitation[]
+  activityLogs   ActivityLog[]
+  announcements  Announcement[]
 
   @@map("schemes")
 }
@@ -252,6 +254,28 @@ model Comment {
   author    Profile   @relation(fields: [authorId], references: [id])
 
   @@map("comments")
+}
+
+// ─── Announcements / Notices ─────────────────────────────────────
+
+model Announcement {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId    String    @map("scheme_id") @db.Uuid
+  authorId    String    @map("author_id") @db.Uuid
+  title       String
+  body        String
+  priority    String    @default("NORMAL") // NORMAL, IMPORTANT, URGENT
+  isPinned    Boolean   @default(false) @map("is_pinned")
+  publishedAt DateTime  @default(now()) @map("published_at")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  scheme Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  author Profile @relation(fields: [authorId], references: [id])
+
+  @@index([schemeId, publishedAt])
+  @@map("announcements")
 }
 
 // ─── Document Management ─────────────────────────────────────────
