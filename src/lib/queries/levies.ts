@@ -141,6 +141,20 @@ export async function markLevyItemPaid(itemId: string, amount: number) {
 }
 
 /**
+ * Get levies across multiple schemes.
+ */
+export async function getLeviesForSchemes(schemeIds: string[]) {
+  if (schemeIds.length === 0) return [];
+
+  return db.orm.public.Levy
+    .where((l) => l.schemeId.in(schemeIds))
+    .include("items")
+    .include("scheme")
+    .orderBy((l) => l.dueDate.desc())
+    .all();
+}
+
+/**
  * Get levy items for a specific lot (owner view).
  */
 export async function getLevyItemsForLot(lotId: string) {

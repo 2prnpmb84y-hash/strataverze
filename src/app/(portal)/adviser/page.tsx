@@ -1,6 +1,32 @@
+import Link from "next/link";
+import { getCurrentProfile } from "@/lib/queries/profiles";
+import { getSchemesForAdviser } from "@/lib/queries/schemes";
+import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
+import { getComplianceForSchemes } from "@/lib/queries/compliance";
 import { StatCard } from "@/components/ui/stat-card";
+import { Card, CardHeader } from "@/components/ui/card";
 
-export default function AdviserDashboard() {
+export default async function AdviserDashboard() {
+  const profile = await getCurrentProfile();
+  if (!profile) return null;
+
+  const schemes = await getSchemesForAdviser(profile.id);
+  const schemeIds = schemes.map((s) => s.id);
+
+  const [workOrders, complianceItems] = schemeIds.length > 0
+    ? await Promise.all([
+        getWorkOrdersForSchemes(schemeIds),
+        getComplianceForSchemes(schemeIds),
+      ])
+    : [[], []];
+
+  const activeWorkOrders = workOrders.filter(
+    (wo) => wo.status === "OPEN" || wo.status === "IN_PROGRESS",
+  );
+  const nonCompliant = complianceItems.filter(
+    (c) => c.status === "NON_COMPLIANT" || c.status === "EXPIRED",
+  );
+
   return (
     <div className="max-w-4xl">
       <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
@@ -13,31 +39,75 @@ export default function AdviserDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Managed Schemes"
-          value="0"
+          value={schemes.length}
           accent="bg-adviser"
         />
         <StatCard
-          label="Overdue Actions"
-          value="0"
+          label="Active Work Orders"
+          value={activeWorkOrders.length}
           accent="bg-adviser"
         />
         <StatCard
-          label="Reports Due"
-          value="0"
-          accent="bg-adviser"
+          label="Compliance Alerts"
+          value={nonCompliant.length}
+          accent={nonCompliant.length > 0 ? "bg-red-500" : "bg-adviser"}
         />
       </div>
 
-      <div className="mt-8 rounded-xl bg-card border border-border p-6">
-        <h2 className="font-heading font-semibold text-foreground mb-2">
-          Getting Started
-        </h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Welcome to the Adviser Portal. Once schemes are assigned to your
-          account, you will manage operations, generate reports, and monitor
-          compliance deadlines across your portfolio from here.
-        </p>
-      </div>
+      {schemes.length === 0 ? (
+        <div className="mt-8 rounded-xl bg-card border border-border p-6">
+          <h2 className="font-heading font-semibold text-foreground mb-2">
+            Getting Started
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Welcome to the Adviser Portal. Create your first scheme from the{" "}
+            <Link
+              href="/adviser/schemes"
+              className="text-primary-500 hover:underline"
+            >
+              Schemes
+            </Link>{" "}
+            page to begin managing owners corporations.
+          </p>
+        </div>
+      ) : (
+        <Card className="mt-8">
+          <CardHeader title="Your Schemes" />
+          <div className="flex flex-col gap-2">
+            {schemes.map((scheme) => {
+              const schemeWo = activeWorkOrders.filter(
+                (wo) => wo.schemeId === scheme.id,
+              ).length;
+              const schemeAlerts = nonCompliant.filter(
+                (c) => c.schemeId === scheme.id,
+              ).length;
+
+              return (
+                <Link
+                  key={scheme.id}
+                  href={`/adviser/schemes/${scheme.id}`}
+                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {scheme.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {scheme.suburb}, {scheme.state}
+                      {schemeWo > 0 && ` · ${schemeWo} active work order${schemeWo === 1 ? "" : "s"}`}
+                    </p>
+                  </div>
+                  {schemeAlerts > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                      {schemeAlerts} alert{schemeAlerts === 1 ? "" : "s"}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
