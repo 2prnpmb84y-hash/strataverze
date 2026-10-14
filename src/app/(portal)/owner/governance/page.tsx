@@ -1,5 +1,4 @@
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
@@ -8,16 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { CommitteeMeetingList } from "@/components/committee-meeting-list";
 
-export default async function CommitteeGovernancePage({
+export default async function OwnerGovernancePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  const access = await requireCommitteeAccess();
+  if (!access) {
+    return (
+      <div className="max-w-2xl">
+        <PageHeader title="Governance" description="You do not have committee access to view this page." />
+      </div>
+    );
+  }
 
-  const schemes = await getSchemesForCommittee(profile.id);
-  const schemeIds = schemes.map((s) => s.id);
+  const { schemes, schemeIds } = access;
   const meetings =
     schemeIds.length > 0 ? await getUpcomingMeetingsForOwner(schemeIds) : [];
 
@@ -46,7 +50,7 @@ export default async function CommitteeGovernancePage({
         title="Governance"
         description="Meetings, motions, and voting for your schemes."
         action={
-          <Button href="/committee/governance/new">Schedule Meeting</Button>
+          <Button href="/owner/governance/new">Schedule Meeting</Button>
         }
       />
 
@@ -54,12 +58,12 @@ export default async function CommitteeGovernancePage({
         <StatCard
           label="Upcoming Meetings"
           value={scheduled.length}
-          accent="bg-committee"
+          accent="bg-owner"
         />
         <StatCard
           label="Total Motions"
           value={totalMotions}
-          accent="bg-committee"
+          accent="bg-owner"
         />
         <StatCard
           label="Pending Votes"
@@ -73,7 +77,7 @@ export default async function CommitteeGovernancePage({
       <Pagination
         currentPage={meta.currentPage}
         totalPages={meta.totalPages}
-        basePath="/committee/governance"
+        basePath="/owner/governance"
       />
     </div>
   );

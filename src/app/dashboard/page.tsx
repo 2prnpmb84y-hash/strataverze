@@ -16,7 +16,9 @@ export default async function DashboardRouter() {
 
   const portals = await getAvailablePortals(profile.id);
 
-  // Redirect to the first available portal, defaulting to owner
-  const target = portals[0] ?? "owner";
+  // Redirect to the first available portal, defaulting to owner.
+  // Committee members use the owner portal with extra nav items.
+  let target = portals[0] ?? "owner";
+  if (target === "committee") target = "owner";
   redirect(`/${target}`);
 }

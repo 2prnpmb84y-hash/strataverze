@@ -65,8 +65,8 @@ export async function createCommitteeMeetingAction(
       meetingId: meeting.id,
     }).catch(() => {});
 
-    revalidatePath("/committee/governance");
-    redirect("/committee/governance");
+    revalidatePath("/owner/governance");
+    redirect("/owner/governance");
   } catch (err) {
     if (
       err &&

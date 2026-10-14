@@ -1,5 +1,4 @@
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { getComplianceForSchemes } from "@/lib/queries/compliance";
 import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,16 +6,21 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Pagination } from "@/components/ui/pagination";
 import { ComplianceList } from "@/components/compliance-list";
 
-export default async function CommitteeCompliancePage({
+export default async function OwnerCompliancePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  const access = await requireCommitteeAccess();
+  if (!access) {
+    return (
+      <div className="max-w-2xl">
+        <PageHeader title="Compliance" description="You do not have committee access to view this page." />
+      </div>
+    );
+  }
 
-  const schemes = await getSchemesForCommittee(profile.id);
-  const schemeIds = schemes.map((s) => s.id);
+  const { schemes, schemeIds } = access;
   const items =
     schemeIds.length > 0 ? await getComplianceForSchemes(schemeIds) : [];
 
@@ -62,7 +66,7 @@ export default async function CommitteeCompliancePage({
       <Pagination
         currentPage={meta.currentPage}
         totalPages={meta.totalPages}
-        basePath="/committee/compliance"
+        basePath="/owner/compliance"
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile, getAvailablePortals } from "@/lib/queries/profiles";
+import { getCurrentProfile, getAvailablePortals, hasCommitteeRole } from "@/lib/queries/profiles";
 import { getPendingInvitationsForEmail } from "@/lib/queries/invitations";
 import { PortalShell } from "@/components/portal-shell";
 
@@ -25,18 +25,20 @@ export default async function PortalLayout({
   }
 
   const profile = await getCurrentProfile();
-  const availablePortals = profile
-    ? await getAvailablePortals(profile.id)
-    : [];
-
-  const pendingInvitations = profile
-    ? await getPendingInvitationsForEmail(profile.email)
-    : [];
+  const [availablePortals, isCommitteeMember, pendingInvitations] =
+    await Promise.all([
+      profile ? getAvailablePortals(profile.id) : Promise.resolve([]),
+      profile ? hasCommitteeRole(profile.id) : Promise.resolve(false),
+      profile
+        ? getPendingInvitationsForEmail(profile.email)
+        : Promise.resolve([]),
+    ]);
 
   return (
     <PortalShell
       user={user}
       availablePortals={availablePortals}
+      isCommitteeMember={isCommitteeMember}
       pendingInvitationCount={pendingInvitations.length}
     >
       {children}

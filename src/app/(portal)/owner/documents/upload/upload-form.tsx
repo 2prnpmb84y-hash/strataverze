@@ -14,7 +14,7 @@ const categoryOptions = [
   { value: "OTHER", label: "Other" },
 ];
 
-export function CommitteeDocumentUploadForm({
+export function DocumentUploadForm({
   schemes,
 }: {
   schemes: { id: string; name: string }[];

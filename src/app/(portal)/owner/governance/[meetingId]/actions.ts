@@ -61,7 +61,7 @@ export async function createCommitteeMotionAction(
       description,
       motionType: "ORDINARY",
     });
-    revalidatePath(`/committee/governance/${meetingId}`);
+    revalidatePath(`/owner/governance/${meetingId}`);
     return {};
   } catch (err) {
     if (
@@ -93,7 +93,7 @@ export async function castCommitteeVoteAction(
       profileId: profile.id,
       voteValue: voteType,
     });
-    revalidatePath(`/committee/governance/${meetingId}`);
+    revalidatePath(`/owner/governance/${meetingId}`);
     return {};
   } catch (err) {
     if (

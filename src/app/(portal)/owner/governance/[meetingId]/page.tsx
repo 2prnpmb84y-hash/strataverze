@@ -1,23 +1,22 @@
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { getMeetingById } from "@/lib/queries/meetings";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { MotionSection } from "./motion-section";
 
-export default async function CommitteeMeetingDetailPage({
+export default async function OwnerMeetingDetailPage({
   params,
 }: {
   params: Promise<{ meetingId: string }>;
 }) {
   const { meetingId } = await params;
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  const access = await requireCommitteeAccess();
+  if (!access) return null;
 
-  // Verify the user is a committee member for the meeting's scheme
-  const schemes = await getSchemesForCommittee(profile.id);
+  const { profile, schemes } = access;
+
   const meeting = await getMeetingById(meetingId);
   if (!meeting) notFound();
 
@@ -48,7 +47,7 @@ export default async function CommitteeMeetingDetailPage({
       <PageHeader
         title={meeting.title}
         description={`${meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType} · ${scheduledDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} at ${scheduledDate.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })}`}
-        backHref="/committee/governance"
+        backHref="/owner/governance"
         backLabel="Governance"
       />
 
@@ -68,8 +67,8 @@ export default async function CommitteeMeetingDetailPage({
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-        <StatCard label="Motions" value={motionCount} accent="bg-committee" />
-        <StatCard label="Voted" value={votedMotions} accent="bg-committee" />
+        <StatCard label="Motions" value={motionCount} accent="bg-owner" />
+        <StatCard label="Voted" value={votedMotions} accent="bg-owner" />
         <StatCard
           label="Status"
           value={meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}

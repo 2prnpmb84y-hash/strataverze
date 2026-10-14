@@ -6,40 +6,42 @@ import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
+/** Base owner nav items shown to all owner-portal users. */
+const ownerBaseNav = [
+  { label: "Overview", href: "/owner" },
+  { label: "My Scheme", href: "/owner/scheme" },
+  { label: "Levies", href: "/owner/levies" },
+  { label: "Meetings", href: "/owner/meetings" },
+  { label: "Maintenance", href: "/owner/maintenance" },
+  { label: "Documents", href: "/owner/documents" },
+  { label: "By-laws", href: "/owner/bylaws" },
+  { label: "Insurance", href: "/owner/insurance" },
+  { label: "Contacts", href: "/owner/contacts" },
+];
+
+/** Extra nav items unlocked for committee members inside the owner portal. */
+const committeeExtraNav = [
+  { label: "Finance", href: "/owner/finance" },
+  { label: "Governance", href: "/owner/governance" },
+  { label: "Compliance", href: "/owner/compliance" },
+];
+
+function buildOwnerNav(isCommitteeMember: boolean) {
+  if (!isCommitteeMember) return ownerBaseNav;
+
+  // Insert committee items after "Levies" (index 3) so the order reads:
+  // Overview, My Scheme, Levies, Finance, Governance, Compliance, Meetings, …
+  const nav = [...ownerBaseNav];
+  nav.splice(3, 0, ...committeeExtraNav);
+  return nav;
+}
+
 const portalConfig = {
   owner: {
     label: "Owner Portal",
     shortLabel: "Owner",
     colour: "bg-owner",
     textColour: "text-owner",
-    nav: [
-      { label: "Overview", href: "/owner" },
-      { label: "My Scheme", href: "/owner/scheme" },
-      { label: "Levies", href: "/owner/levies" },
-      { label: "Meetings", href: "/owner/meetings" },
-      { label: "Maintenance", href: "/owner/maintenance" },
-      { label: "Documents", href: "/owner/documents" },
-      { label: "By-laws", href: "/owner/bylaws" },
-      { label: "Insurance", href: "/owner/insurance" },
-      { label: "Contacts", href: "/owner/contacts" },
-    ],
-  },
-  committee: {
-    label: "Committee Portal",
-    shortLabel: "Committee",
-    colour: "bg-committee",
-    textColour: "text-committee",
-    nav: [
-      { label: "Overview", href: "/committee" },
-      { label: "Finance", href: "/committee/finance" },
-      { label: "Governance", href: "/committee/governance" },
-      { label: "Maintenance", href: "/committee/maintenance" },
-      { label: "Documents", href: "/committee/documents" },
-      { label: "Compliance", href: "/committee/compliance" },
-      { label: "By-laws", href: "/committee/bylaws" },
-      { label: "Insurance", href: "/committee/insurance" },
-      { label: "Contacts", href: "/committee/contacts" },
-    ],
   },
   adviser: {
     label: "Adviser Portal",
@@ -60,11 +62,13 @@ type PortalKey = keyof typeof portalConfig;
 export function PortalShell({
   user,
   availablePortals = [],
+  isCommitteeMember = false,
   pendingInvitationCount = 0,
   children,
 }: {
   user: User;
   availablePortals?: string[];
+  isCommitteeMember?: boolean;
   pendingInvitationCount?: number;
   children: React.ReactNode;
 }) {
@@ -73,7 +77,15 @@ export function PortalShell({
 
   // Determine which portal we're in from the URL
   const segment = pathname.split("/")[1] as PortalKey;
-  const portal = portalConfig[segment] ?? portalConfig.owner;
+  const portalMeta = portalConfig[segment] ?? portalConfig.owner;
+
+  // Build the nav — owner portal gets committee items when the user has that role
+  const nav =
+    segment === "owner" || !(segment in portalConfig)
+      ? buildOwnerNav(isCommitteeMember)
+      : portalConfig[segment as "adviser"].nav;
+
+  const portal = { ...portalMeta, nav };
 
   // Other portals this user can switch to
   const otherPortals = availablePortals.filter((p) => p !== segment);

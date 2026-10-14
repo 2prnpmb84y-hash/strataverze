@@ -1,14 +1,13 @@
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { CommitteeMeetingForm } from "../committee-meeting-form";
 
 export default async function NewCommitteeMeetingPage() {
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  const access = await requireCommitteeAccess();
+  if (!access) return null;
 
-  const schemes = await getSchemesForCommittee(profile.id);
+  const { schemes } = access;
   if (schemes.length === 0) return null;
 
   return (
@@ -16,7 +15,7 @@ export default async function NewCommitteeMeetingPage() {
       <PageHeader
         title="Schedule Meeting"
         description="Create a new meeting for your scheme."
-        backHref="/committee/governance"
+        backHref="/owner/governance"
         backLabel="Governance"
       />
       <Card>

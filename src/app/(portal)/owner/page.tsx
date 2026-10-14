@@ -1,5 +1,5 @@
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForOwner } from "@/lib/queries/schemes";
+import { getCurrentProfile, hasCommitteeRole } from "@/lib/queries/profiles";
+import { getSchemesForOwner, getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { getLeviesForSchemes } from "@/lib/queries/levies";
@@ -25,8 +25,24 @@ export default async function OwnerDashboard() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const schemes = await getSchemesForOwner(profile.id);
-  const schemeIds = schemes.map((s) => s.id);
+  const [ownerSchemes, isCommittee] = await Promise.all([
+    getSchemesForOwner(profile.id),
+    hasCommitteeRole(profile.id),
+  ]);
+
+  // Use owner schemes as the primary source (they include lot on memberships)
+  const schemes = ownerSchemes;
+
+  // Build combined scheme IDs for data fetches
+  const schemeMap = new Map(ownerSchemes.map((s) => [s.id, s.name]));
+  if (isCommittee) {
+    const committeeSchemes = await getSchemesForCommittee(profile.id);
+    for (const cs of committeeSchemes) {
+      if (!schemeMap.has(cs.id)) schemeMap.set(cs.id, cs.name);
+    }
+  }
+
+  const schemeIds = [...schemeMap.keys()];
 
   // Fetch all owner lots across schemes
   const ownerLotIds = new Set(
@@ -63,16 +79,22 @@ export default async function OwnerDashboard() {
     }
   }
 
+  const activeWorkOrders = workOrders.filter(
+    (wo) => wo.status === "OPEN" || wo.status === "IN_PROGRESS",
+  );
+
   // Recent work orders (last 5)
   const recentWorkOrders = workOrders.slice(0, 5);
 
   return (
     <div className="max-w-4xl">
       <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
-        Owner Dashboard
+        {isCommittee ? "Dashboard" : "Owner Dashboard"}
       </h1>
       <p className="text-sm text-muted-foreground mb-8">
-        View your levies, vote on motions, and track maintenance requests.
+        {isCommittee
+          ? "Manage your scheme, finances, compliance, and governance."
+          : "View your levies, vote on motions, and track maintenance requests."}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -82,8 +104,12 @@ export default async function OwnerDashboard() {
           accent="bg-owner"
         />
         <StatCard
-          label="Outstanding Levies"
-          value={`$${outstandingBalance.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`}
+          label={isCommittee ? "Active Work Orders" : "Outstanding Levies"}
+          value={
+            isCommittee
+              ? activeWorkOrders.length
+              : `$${outstandingBalance.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`
+          }
           accent="bg-owner"
         />
         <StatCard
@@ -114,8 +140,13 @@ export default async function OwnerDashboard() {
           {/* Quick Actions */}
           <div className="mt-8 flex flex-wrap gap-3">
             <Button variant="primary" href="/owner/maintenance/new">
-              Lodge Maintenance Request
+              {isCommittee ? "Raise Work Order" : "Lodge Maintenance Request"}
             </Button>
+            {isCommittee && (
+              <Button variant="secondary" href="/owner/governance/new">
+                Schedule Meeting
+              </Button>
+            )}
             <Button variant="secondary" href="/owner/levies">
               View Levies
             </Button>
@@ -125,6 +156,19 @@ export default async function OwnerDashboard() {
             <Button variant="secondary" href="/owner/meetings">
               View Meetings
             </Button>
+            {isCommittee && (
+              <>
+                <Button variant="secondary" href="/owner/finance">
+                  Finance
+                </Button>
+                <Button variant="secondary" href="/owner/governance">
+                  Governance
+                </Button>
+                <Button variant="secondary" href="/owner/compliance">
+                  Compliance
+                </Button>
+              </>
+            )}
             <Button variant="secondary" href="/owner/announcements">
               Announcements
             </Button>
@@ -153,9 +197,7 @@ export default async function OwnerDashboard() {
               <div className="flex flex-col gap-2">
                 {upcomingMeetings.slice(0, 3).map((meeting) => {
                   const scheduledDate = new Date(String(meeting.scheduledAt));
-                  const schemeName = schemes.find(
-                    (s) => s.id === meeting.schemeId,
-                  )?.name;
+                  const schemeName = schemeMap.get(meeting.schemeId);
                   const pendingCount = meeting.motions.filter(
                     (mo) => mo.status === "PROPOSED",
                   ).length;
@@ -205,9 +247,7 @@ export default async function OwnerDashboard() {
               />
               <div className="flex flex-col gap-2">
                 {recentWorkOrders.map((wo) => {
-                  const schemeName = schemes.find(
-                    (s) => s.id === wo.schemeId,
-                  )?.name;
+                  const schemeName = schemeMap.get(wo.schemeId);
                   const createdDate = new Date(String(wo.createdAt));
 
                   return (

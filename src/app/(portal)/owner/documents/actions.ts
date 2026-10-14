@@ -75,8 +75,8 @@ export async function uploadDocumentAction(
       uploadedBy: profile.id,
     });
 
-    revalidatePath("/committee/documents");
-    redirect("/committee/documents");
+    revalidatePath("/owner/documents");
+    redirect("/owner/documents");
   } catch (err) {
     if (
       err &&

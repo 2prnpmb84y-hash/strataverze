@@ -1,5 +1,4 @@
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { getLeviesForSchemes } from "@/lib/queries/levies";
 import { getFundsForSchemes } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
@@ -13,12 +12,17 @@ const statusStyle: Record<string, string> = {
   OVERDUE: "bg-red-100 text-red-700",
 };
 
-export default async function CommitteeFinancePage() {
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+export default async function OwnerFinancePage() {
+  const access = await requireCommitteeAccess();
+  if (!access) {
+    return (
+      <div className="max-w-2xl">
+        <PageHeader title="Finance" description="You do not have committee access to view this page." />
+      </div>
+    );
+  }
 
-  const schemes = await getSchemesForCommittee(profile.id);
-  const schemeIds = schemes.map((s) => s.id);
+  const { schemes, schemeIds } = access;
   const [levies, funds] = await Promise.all([
     schemeIds.length > 0 ? getLeviesForSchemes(schemeIds) : [],
     schemeIds.length > 0 ? getFundsForSchemes(schemeIds) : [],
@@ -53,7 +57,7 @@ export default async function CommitteeFinancePage() {
         <StatCard
           label="Total Levied"
           value={`$${totalLevied.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`}
-          accent="bg-committee"
+          accent="bg-owner"
         />
         <StatCard
           label="Collected"

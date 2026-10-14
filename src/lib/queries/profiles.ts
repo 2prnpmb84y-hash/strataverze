@@ -122,8 +122,26 @@ export async function getProfileWithMemberships(profileId: string) {
 }
 
 /**
- * Get the distinct portal roles available to a profile.
- * Returns an array of lowercase role keys (e.g. ["owner", "committee"]).
+ * Check whether a profile has at least one active COMMITTEE membership.
+ */
+export async function hasCommitteeRole(profileId: string): Promise<boolean> {
+  const membership = await db.orm.public.SchemeMembership
+    .where((m) =>
+      and(
+        m.profileId.eq(profileId),
+        m.role.eq("COMMITTEE"),
+        m.isActive.eq(true),
+      ),
+    )
+    .first();
+
+  return membership !== null;
+}
+
+/**
+ * Get the distinct portal keys available to a profile.
+ * Committee members are folded into the owner portal (they see extra nav
+ * items there), so this returns at most ["owner"] and/or ["adviser"].
  */
 export async function getAvailablePortals(profileId: string) {
   const memberships = await db.orm.public.SchemeMembership
@@ -131,5 +149,17 @@ export async function getAvailablePortals(profileId: string) {
     .all();
 
   const roles = [...new Set(memberships.map((m) => m.role))];
-  return roles.map((r) => r.toLowerCase());
+  const portals: string[] = [];
+
+  for (const role of roles) {
+    const key = role.toLowerCase();
+    // COMMITTEE members use the owner portal with extra features
+    if (key === "committee" || key === "owner") {
+      if (!portals.includes("owner")) portals.push("owner");
+    } else {
+      if (!portals.includes(key)) portals.push(key);
+    }
+  }
+
+  return portals;
 }

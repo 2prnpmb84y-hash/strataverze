@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { getCurrentProfile, hasCommitteeRole } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
+import { getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getWorkOrderById } from "@/lib/queries/work-orders";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { CommentThread } from "./comment-thread";
 import { CommentForm } from "./comment-form";
+import { WorkOrderStatusButton } from "./work-order-status-button";
 
 const priorityStyle: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-700",
@@ -44,10 +46,21 @@ export default async function OwnerWorkOrderDetailPage({
   const workOrder = await getWorkOrderById(workOrderId);
   if (!workOrder) notFound();
 
-  // Verify the user is an owner of the scheme this work order belongs to
-  const schemes = await getSchemesForOwner(profile.id);
-  const isOwner = schemes.some((s) => s.id === workOrder.schemeId);
-  if (!isOwner) notFound();
+  // Check owner access OR committee access
+  const [ownerSchemes, isCommittee] = await Promise.all([
+    getSchemesForOwner(profile.id),
+    hasCommitteeRole(profile.id),
+  ]);
+
+  let hasAccess = ownerSchemes.some((s) => s.id === workOrder.schemeId);
+
+  // If not an owner, check committee access
+  if (!hasAccess && isCommittee) {
+    const committeeSchemes = await getSchemesForCommittee(profile.id);
+    hasAccess = committeeSchemes.some((s) => s.id === workOrder.schemeId);
+  }
+
+  if (!hasAccess) notFound();
 
   const raisedByName =
     `${workOrder.raisedBy.firstName} ${workOrder.raisedBy.lastName}`.trim() ||
@@ -96,6 +109,20 @@ export default async function OwnerWorkOrderDetailPage({
           accent="bg-owner"
         />
       </div>
+
+      {/* Committee: Update Status */}
+      {isCommittee && workOrder.status !== "COMPLETED" && workOrder.status !== "CANCELLED" && (
+        <Card className="mb-6">
+          <CardHeader
+            title="Update Status"
+            description="Manage the status of this work order."
+          />
+          <WorkOrderStatusButton
+            workOrderId={workOrderId}
+            currentStatus={workOrder.status}
+          />
+        </Card>
+      )}
 
       {/* Details */}
       <Card className="mb-6">
