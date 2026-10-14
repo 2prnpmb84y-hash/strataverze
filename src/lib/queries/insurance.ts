@@ -1,0 +1,157 @@
+import { db } from "@/prisma/db";
+import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
+
+/** Cast an ISO string to the Prisma 8 TimestampString branded type. */
+function toTimestamp(value: string): TimestampString<3> {
+  return value as unknown as TimestampString<3>;
+}
+
+/** Cast a number or string to the Prisma 8 Numeric branded type. */
+function toNumeric(value: number | string): Numeric<12, 2> {
+  return String(value) as unknown as Numeric<12, 2>;
+}
+
+/**
+ * Fetch all insurance policies for a scheme, ordered by end date descending.
+ */
+export async function getInsuranceForScheme(schemeId: string) {
+  return db.orm.public.InsurancePolicy
+    .where((p) => p.schemeId.eq(schemeId))
+    .orderBy((p) => p.endDate.desc())
+    .all();
+}
+
+/**
+ * Fetch active insurance policies for a scheme (excludes expired and cancelled).
+ */
+export async function getActiveInsuranceForScheme(schemeId: string) {
+  const all = await db.orm.public.InsurancePolicy
+    .where((p) => p.schemeId.eq(schemeId))
+    .orderBy((p) => p.endDate.desc())
+    .all();
+  return all.filter(
+    (p) => p.status !== "EXPIRED" && p.status !== "CANCELLED",
+  );
+}
+
+/**
+ * Fetch insurance policies across multiple schemes.
+ */
+export async function getInsuranceForSchemes(
+  schemeIds: string[],
+  options?: { includeExpired?: boolean },
+) {
+  if (schemeIds.length === 0) return [];
+
+  const all = await db.orm.public.InsurancePolicy
+    .where((p) => p.schemeId.in(schemeIds))
+    .include("scheme")
+    .orderBy((p) => p.endDate.desc())
+    .all();
+
+  if (options?.includeExpired) return all;
+  return all.filter(
+    (p) => p.status !== "EXPIRED" && p.status !== "CANCELLED",
+  );
+}
+
+/**
+ * Fetch a single insurance policy by ID.
+ */
+export async function getInsurancePolicyById(policyId: string) {
+  return db.orm.public.InsurancePolicy
+    .include("scheme")
+    .first({ id: policyId });
+}
+
+/**
+ * Create a new insurance policy.
+ */
+export async function createInsurancePolicy(data: {
+  schemeId: string;
+  policyNumber: string;
+  policyType: string;
+  insurer: string;
+  broker?: string;
+  brokerContact?: string;
+  coverageAmount: number;
+  premium: number;
+  excessAmount?: number;
+  startDate: string;
+  endDate: string;
+  renewalDate?: string;
+  notes?: string;
+}) {
+  return db.orm.public.InsurancePolicy.create({
+    schemeId: data.schemeId,
+    policyNumber: data.policyNumber,
+    policyType: data.policyType,
+    insurer: data.insurer,
+    broker: data.broker ?? null,
+    brokerContact: data.brokerContact ?? null,
+    coverageAmount: toNumeric(data.coverageAmount),
+    premium: toNumeric(data.premium),
+    excessAmount: data.excessAmount !== undefined
+      ? toNumeric(data.excessAmount)
+      : null,
+    startDate: toTimestamp(data.startDate),
+    endDate: toTimestamp(data.endDate),
+    renewalDate: data.renewalDate ? toTimestamp(data.renewalDate) : null,
+    notes: data.notes ?? null,
+  });
+}
+
+/**
+ * Update an existing insurance policy.
+ */
+export async function updateInsurancePolicy(
+  policyId: string,
+  data: Partial<{
+    policyNumber: string;
+    policyType: string;
+    insurer: string;
+    broker: string | null;
+    brokerContact: string | null;
+    coverageAmount: number;
+    premium: number;
+    excessAmount: number | null;
+    startDate: string;
+    endDate: string;
+    status: string;
+    renewalDate: string | null;
+    notes: string | null;
+  }>,
+) {
+  const update: Record<string, unknown> = {};
+  if (data.policyNumber !== undefined) update.policyNumber = data.policyNumber;
+  if (data.policyType !== undefined) update.policyType = data.policyType;
+  if (data.insurer !== undefined) update.insurer = data.insurer;
+  if (data.broker !== undefined) update.broker = data.broker;
+  if (data.brokerContact !== undefined)
+    update.brokerContact = data.brokerContact;
+  if (data.coverageAmount !== undefined)
+    update.coverageAmount = toNumeric(data.coverageAmount);
+  if (data.premium !== undefined) update.premium = toNumeric(data.premium);
+  if (data.excessAmount !== undefined)
+    update.excessAmount =
+      data.excessAmount !== null ? toNumeric(data.excessAmount) : null;
+  if (data.startDate !== undefined)
+    update.startDate = toTimestamp(data.startDate);
+  if (data.endDate !== undefined) update.endDate = toTimestamp(data.endDate);
+  if (data.status !== undefined) update.status = data.status;
+  if (data.renewalDate !== undefined)
+    update.renewalDate = data.renewalDate
+      ? toTimestamp(data.renewalDate)
+      : null;
+  if (data.notes !== undefined) update.notes = data.notes;
+
+  return db.orm.public.InsurancePolicy.where({ id: policyId }).update(update);
+}
+
+/**
+ * Delete an insurance policy.
+ */
+export async function deleteInsurancePolicy(policyId: string) {
+  return db.orm.public.InsurancePolicy.where({ id: policyId }).delete();
+}

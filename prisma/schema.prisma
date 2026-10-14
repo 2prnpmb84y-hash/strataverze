@@ -73,6 +73,7 @@ model Scheme {
   activityLogs   ActivityLog[]
   announcements  Announcement[]
   bylaws         ByLaw[]
+  insurancePolicies InsurancePolicy[]
 
   @@map("schemes")
 }
@@ -277,6 +278,35 @@ model Announcement {
 
   @@index([schemeId, publishedAt])
   @@map("announcements")
+}
+
+// ─── Insurance Tracking ─────────────────────────────────────────
+
+model InsurancePolicy {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId        String    @map("scheme_id") @db.Uuid
+  policyNumber    String    @map("policy_number")
+  policyType      String    @map("policy_type") // BUILDING, PUBLIC_LIABILITY, WORKERS_COMP, OFFICE_BEARERS, FIDELITY_GUARANTEE, MACHINERY, VOLUNTARY_WORKERS, OTHER
+  insurer         String
+  broker          String?
+  brokerContact   String?   @map("broker_contact")
+  coverageAmount  Decimal   @map("coverage_amount") @db.Decimal(12, 2)
+  premium         Decimal   @db.Decimal(12, 2)
+  excessAmount    Decimal?  @map("excess_amount") @db.Decimal(12, 2)
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime  @map("end_date")
+  status          String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED, PENDING_RENEWAL
+  renewalDate     DateTime? @map("renewal_date")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, policyNumber])
+  @@index([schemeId, status])
+  @@index([schemeId, endDate])
+  @@map("insurance_policies")
 }
 
 // ─── By-Laws Register ───────────────────────────────────────────

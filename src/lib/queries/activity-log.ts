@@ -21,7 +21,9 @@ export type ActivityAction =
   | "LEVY_PAYMENT_RECORDED"
   | "ANNOUNCEMENT_PUBLISHED"
   | "BYLAW_CREATED"
-  | "BYLAW_UPDATED";
+  | "BYLAW_UPDATED"
+  | "INSURANCE_CREATED"
+  | "INSURANCE_UPDATED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -36,7 +38,8 @@ export type ActivityEntityType =
   | "Lot"
   | "LevyItem"
   | "Announcement"
-  | "ByLaw";
+  | "ByLaw"
+  | "InsurancePolicy";
 
 /**
  * Log an activity event for a scheme.

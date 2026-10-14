@@ -1,0 +1,39 @@
+import { notFound } from "next/navigation";
+import { getSchemeById } from "@/lib/queries/schemes";
+import { getCurrentProfile } from "@/lib/queries/profiles";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader } from "@/components/ui/card";
+import { InsurancePolicyForm } from "../insurance-form";
+
+export default async function NewInsurancePolicyPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const profile = await getCurrentProfile();
+  if (!profile) return null;
+
+  const scheme = await getSchemeById(id);
+  if (!scheme) notFound();
+
+  const isAdviser = scheme.memberships.some(
+    (m) => m.profileId === profile.id && m.role === "ADVISER",
+  );
+  if (!isAdviser) notFound();
+
+  return (
+    <div className="max-w-2xl">
+      <PageHeader
+        title="New Insurance Policy"
+        description={scheme.name}
+        backHref={`/adviser/schemes/${id}`}
+        backLabel="Scheme"
+      />
+      <Card>
+        <CardHeader title="Policy Details" />
+        <InsurancePolicyForm schemeId={id} />
+      </Card>
+    </div>
+  );
+}

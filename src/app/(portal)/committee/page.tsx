@@ -112,6 +112,9 @@ export default async function CommitteeDashboard() {
             <Button variant="secondary" href="/committee/bylaws">
               By-laws
             </Button>
+            <Button variant="secondary" href="/committee/insurance">
+              Insurance
+            </Button>
           </div>
 
           {/* Upcoming Meetings */}
