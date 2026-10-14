@@ -19,7 +19,9 @@ export type ActivityAction =
   | "FUND_CREATED"
   | "LOT_CREATED"
   | "LEVY_PAYMENT_RECORDED"
-  | "ANNOUNCEMENT_PUBLISHED";
+  | "ANNOUNCEMENT_PUBLISHED"
+  | "BYLAW_CREATED"
+  | "BYLAW_UPDATED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -33,7 +35,8 @@ export type ActivityEntityType =
   | "Fund"
   | "Lot"
   | "LevyItem"
-  | "Announcement";
+  | "Announcement"
+  | "ByLaw";
 
 /**
  * Log an activity event for a scheme.

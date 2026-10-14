@@ -72,6 +72,7 @@ model Scheme {
   invitations    Invitation[]
   activityLogs   ActivityLog[]
   announcements  Announcement[]
+  bylaws         ByLaw[]
 
   @@map("schemes")
 }
@@ -276,6 +277,31 @@ model Announcement {
 
   @@index([schemeId, publishedAt])
   @@map("announcements")
+}
+
+// ─── By-Laws Register ───────────────────────────────────────────
+
+model ByLaw {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId      String    @map("scheme_id") @db.Uuid
+  bylawNumber   Int       @map("bylaw_number")
+  title         String
+  body          String
+  category      String    @default("GENERAL") // GENERAL, SAFETY, PARKING, PETS, NOISE, APPEARANCE, BEHAVIOUR, OTHER
+  status        String    @default("ACTIVE") // ACTIVE, AMENDED, REPEALED
+  effectiveDate DateTime  @map("effective_date")
+  amendedDate   DateTime? @map("amended_date")
+  repealedDate  DateTime? @map("repealed_date")
+  motionRef     String?   @map("motion_ref") // reference to the resolution/motion that enacted this
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, bylawNumber])
+  @@index([schemeId, status])
+  @@map("bylaws")
 }
 
 // ─── Document Management ─────────────────────────────────────────

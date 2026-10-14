@@ -8,6 +8,7 @@ import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { getWorkOrdersForScheme } from "@/lib/queries/work-orders";
 import { getComplianceForScheme } from "@/lib/queries/compliance";
 import { getAnnouncementsForScheme } from "@/lib/queries/announcements";
+import { getBylawsForScheme } from "@/lib/queries/bylaws";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getActivityForScheme } from "@/lib/queries/activity-log";
 import { PageHeader } from "@/components/ui/page-header";
@@ -37,6 +38,7 @@ export default async function SchemeDetailPage({
   const workOrders = await getWorkOrdersForScheme(id);
   const complianceItems = await getComplianceForScheme(id);
   const announcements = await getAnnouncementsForScheme(id, { includeExpired: true });
+  const bylaws = await getBylawsForScheme(id);
   const activities = await getActivityForScheme(id, 20);
 
   // Check the current user is an adviser on this scheme
@@ -618,6 +620,82 @@ export default async function SchemeDetailPage({
         ) : (
           <p className="text-sm text-muted-foreground">
             Track insurance, fire safety, OH&S and other compliance obligations.
+          </p>
+        )}
+      </Card>
+
+      {/* By-laws */}
+      <Card className="mb-6">
+        <CardHeader
+          title="By-laws Register"
+          description={
+            bylaws.length === 0
+              ? "No by-laws registered yet."
+              : `${bylaws.length} by-law${bylaws.length === 1 ? "" : "s"} registered.`
+          }
+          action={
+            <Button href={`/adviser/schemes/${id}/bylaws/new`} variant="secondary">
+              New By-law
+            </Button>
+          }
+        />
+        {bylaws.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {bylaws.map((bylaw) => {
+              const bylawStatusStyle: Record<string, string> = {
+                ACTIVE: "bg-green-100 text-green-700",
+                AMENDED: "bg-amber-100 text-amber-700",
+                REPEALED: "bg-red-100 text-red-700",
+              };
+
+              const bylawStatusLabel: Record<string, string> = {
+                ACTIVE: "Active",
+                AMENDED: "Amended",
+                REPEALED: "Repealed",
+              };
+
+              const bylawCategoryLabels: Record<string, string> = {
+                GENERAL: "General",
+                SAFETY: "Safety",
+                PARKING: "Parking",
+                PETS: "Pets",
+                NOISE: "Noise",
+                APPEARANCE: "Appearance",
+                BEHAVIOUR: "Behaviour",
+                OTHER: "Other",
+              };
+
+              return (
+                <Link
+                  key={bylaw.id}
+                  href={`/adviser/schemes/${id}/bylaws/${bylaw.id}`}
+                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {bylaw.bylawNumber}. {bylaw.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {bylawCategoryLabels[bylaw.category] ?? bylaw.category}
+                      {" · Effective "}
+                      {new Date(String(bylaw.effectiveDate)).toLocaleDateString(
+                        "en-AU",
+                        { day: "numeric", month: "short", year: "numeric" },
+                      )}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${bylawStatusStyle[bylaw.status] ?? "bg-gray-100 text-gray-700"}`}
+                  >
+                    {bylawStatusLabel[bylaw.status] ?? bylaw.status}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Register by-laws to track the rules governing this scheme.
           </p>
         )}
       </Card>

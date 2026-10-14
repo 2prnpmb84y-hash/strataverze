@@ -22,9 +22,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d1baf6157edd4c9e0944ea98d4f6ca359b30c9b8855626d873cf1b3f71abed78'>;
+  StorageHashBase<'6e5e0cb83d53c90d135a1164b845abd21bc8087faa7f4b8ead63a5b4258b7979'>;
 export type ExecutionHash =
-  ExecutionHashBase<'182efcf4d56c31b42a2cb6f77a6c131270a67a45ce8ab9958844696076149c66'>;
+  ExecutionHashBase<'72df91b184cf1e06c9851c45b09ff32521d27ea721478b847d28891dfd7f804e'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -261,6 +261,22 @@ export type FieldOutputTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: TimestampString<3>;
     };
+    readonly ByLaw: {
+      readonly amendedDate: TimestampString<3> | null;
+      readonly body: CodecTypes['pg/text@1']['output'];
+      readonly bylawNumber: CodecTypes['pg/int4@1']['output'];
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: TimestampString<3>;
+      readonly effectiveDate: TimestampString<3>;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly motionRef: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly repealedDate: TimestampString<3> | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: TimestampString<3>;
+    };
     readonly Comment: {
       readonly authorId: CodecTypes['pg/uuid@1']['output'];
       readonly content: CodecTypes['pg/text@1']['output'];
@@ -454,6 +470,22 @@ export type FieldInputTypes = {
       readonly priority: CodecTypes['pg/text@1']['input'];
       readonly publishedAt: CodecTypes['pg/timestamp-string@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamp-string@1']['input'];
+    };
+    readonly ByLaw: {
+      readonly amendedDate: CodecTypes['pg/timestamp-string@1']['input'] | null;
+      readonly body: CodecTypes['pg/text@1']['input'];
+      readonly bylawNumber: CodecTypes['pg/int4@1']['input'];
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly effectiveDate: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly motionRef: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly repealedDate: CodecTypes['pg/timestamp-string@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamp-string@1']['input'];
     };
@@ -653,6 +685,22 @@ export type StorageColumnTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: TimestampString<3>;
     };
+    readonly bylaws: {
+      readonly amended_date: TimestampString<3> | null;
+      readonly body: CodecTypes['pg/text@1']['output'];
+      readonly bylaw_number: CodecTypes['pg/int4@1']['output'];
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly created_at: TimestampString<3>;
+      readonly effective_date: TimestampString<3>;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly motion_ref: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly repealed_date: TimestampString<3> | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: TimestampString<3>;
+    };
     readonly comments: {
       readonly author_id: CodecTypes['pg/uuid@1']['output'];
       readonly content: CodecTypes['pg/text@1']['output'];
@@ -846,6 +894,22 @@ export type StorageColumnInputTypes = {
       readonly priority: CodecTypes['pg/text@1']['input'];
       readonly published_at: CodecTypes['pg/timestamp-string@1']['input'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamp-string@1']['input'];
+    };
+    readonly bylaws: {
+      readonly amended_date: CodecTypes['pg/timestamp-string@1']['input'] | null;
+      readonly body: CodecTypes['pg/text@1']['input'];
+      readonly bylaw_number: CodecTypes['pg/int4@1']['input'];
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly effective_date: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly motion_ref: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly repealed_date: CodecTypes['pg/timestamp-string@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamp-string@1']['input'];
     };
@@ -1051,6 +1115,24 @@ export namespace Models {
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'author' | 'scheme';
   };
+  export type public_ByLaw = {
+    amendedDate: TimestampString<3> | null;
+    body: CodecTypes['pg/text@1']['output'];
+    bylawNumber: CodecTypes['pg/int4@1']['output'];
+    category: CodecTypes['pg/text@1']['output'];
+    createdAt: TimestampString<3>;
+    effectiveDate: TimestampString<3>;
+    id: CodecTypes['pg/uuid@1']['output'];
+    motionRef: CodecTypes['pg/text@1']['output'] | null;
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    repealedDate: TimestampString<3> | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    title: CodecTypes['pg/text@1']['output'];
+    updatedAt: TimestampString<3>;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'scheme';
+  };
   export type public_Comment = {
     authorId: CodecTypes['pg/uuid@1']['output'];
     content: CodecTypes['pg/text@1']['output'];
@@ -1236,6 +1318,7 @@ export namespace Models {
     updatedAt: TimestampString<3>;
     activityLogs: public_ActivityLog[];
     announcements: public_Announcement[];
+    bylaws: public_ByLaw[];
     compliance: public_ComplianceItem[];
     documents: public_Document[];
     funds: public_Fund[];
@@ -1249,6 +1332,7 @@ export namespace Models {
     readonly [RelationKeys]?:
       | 'activityLogs'
       | 'announcements'
+      | 'bylaws'
       | 'compliance'
       | 'documents'
       | 'funds'
@@ -1311,6 +1395,7 @@ export declare const models: {
   public: {
     ActivityLog: Models.public_ActivityLog;
     Announcement: Models.public_Announcement;
+    ByLaw: Models.public_ByLaw;
     Comment: Models.public_Comment;
     ComplianceItem: Models.public_ComplianceItem;
     Document: Models.public_Document;
@@ -1558,6 +1643,140 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly bylaws: {
+              columns: {
+                readonly amended_date: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly body: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly bylaw_number: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'GENERAL'>;
+                  };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly effective_date: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly motion_ref: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly repealed_date: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'ACTIVE'>;
+                  };
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'bylaws_scheme_id_bylaw_number_key';
+                  readonly columns: readonly ['scheme_id', 'bylaw_number'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'bylaws_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'bylaws';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -3060,6 +3279,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Announcement';
     };
+    readonly bylaws: { readonly namespace: 'public' & NamespaceId; readonly model: 'ByLaw' };
     readonly comments: { readonly namespace: 'public' & NamespaceId; readonly model: 'Comment' };
     readonly compliance_items: {
       readonly namespace: 'public' & NamespaceId;
@@ -3274,6 +3494,120 @@ type ContractBase = Omit<
                 readonly priority: { readonly column: 'priority' };
                 readonly publishedAt: { readonly column: 'published_at' };
                 readonly schemeId: { readonly column: 'scheme_id' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly ByLaw: {
+            readonly fields: {
+              readonly amendedDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly body: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly bylawNumber: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly effectiveDate: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly motionRef: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly repealedDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'bylaws';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amendedDate: { readonly column: 'amended_date' };
+                readonly body: { readonly column: 'body' };
+                readonly bylawNumber: { readonly column: 'bylaw_number' };
+                readonly category: { readonly column: 'category' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly effectiveDate: { readonly column: 'effective_date' };
+                readonly id: { readonly column: 'id' };
+                readonly motionRef: { readonly column: 'motion_ref' };
+                readonly notes: { readonly column: 'notes' };
+                readonly repealedDate: { readonly column: 'repealed_date' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly status: { readonly column: 'status' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
@@ -4418,6 +4752,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly bylaws: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ByLaw';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly compliance: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -4889,6 +5234,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'announcements';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'bylaws';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };

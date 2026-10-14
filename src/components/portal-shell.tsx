@@ -19,6 +19,7 @@ const portalConfig = {
       { label: "Meetings", href: "/owner/meetings" },
       { label: "Maintenance", href: "/owner/maintenance" },
       { label: "Documents", href: "/owner/documents" },
+      { label: "By-laws", href: "/owner/bylaws" },
     ],
   },
   committee: {
@@ -33,6 +34,7 @@ const portalConfig = {
       { label: "Maintenance", href: "/committee/maintenance" },
       { label: "Documents", href: "/committee/documents" },
       { label: "Compliance", href: "/committee/compliance" },
+      { label: "By-laws", href: "/committee/bylaws" },
     ],
   },
   adviser: {
