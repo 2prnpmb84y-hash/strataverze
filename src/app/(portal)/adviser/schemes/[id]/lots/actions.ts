@@ -2,8 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { createLot, updateLot, deleteLot } from "@/lib/queries/lots";
+import { getCurrentProfile, searchProfiles } from "@/lib/queries/profiles";
+import {
+  createLot,
+  updateLot,
+  deleteLot,
+  assignOwnerToLot,
+  removeOwnerFromLot,
+} from "@/lib/queries/lots";
 
 export type LotFormState = {
   error?: string;
@@ -110,5 +116,57 @@ export async function deleteLotAction(schemeId: string, lotId: string) {
       throw err;
     }
     return { error: "Failed to delete lot." };
+  }
+}
+
+/**
+ * Search for profiles to assign as owners.
+ */
+export async function searchProfilesAction(query: string, schemeId: string) {
+  const profile = await getCurrentProfile();
+  if (!profile) return [];
+
+  return searchProfiles(query, schemeId);
+}
+
+/**
+ * Assign an owner to a lot.
+ */
+export async function assignOwnerAction(
+  schemeId: string,
+  lotId: string,
+  profileId: string,
+) {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "You must be signed in." };
+
+  try {
+    await assignOwnerToLot({ schemeId, lotId, profileId });
+    revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return {};
+  } catch {
+    return { error: "Failed to assign owner. They may already be assigned to this scheme." };
+  }
+}
+
+/**
+ * Remove an owner from a lot.
+ */
+export async function removeOwnerAction(
+  schemeId: string,
+  lotId: string,
+  membershipId: string,
+) {
+  const profile = await getCurrentProfile();
+  if (!profile) return { error: "You must be signed in." };
+
+  try {
+    await removeOwnerFromLot(membershipId);
+    revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return {};
+  } catch {
+    return { error: "Failed to remove owner." };
   }
 }

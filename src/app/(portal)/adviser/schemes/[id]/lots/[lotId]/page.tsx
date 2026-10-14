@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { LotForm } from "../lot-form";
 import { DeleteLotButton } from "./delete-lot-button";
+import { OwnerAssignment } from "./owner-assignment";
 
 export default async function LotDetailPage({
   params,
@@ -38,38 +39,25 @@ export default async function LotDetailPage({
         backLabel={scheme.name}
       />
 
-      {/* Current owners */}
+      {/* Owners */}
       <Card className="mb-6">
         <CardHeader
           title="Owners"
-          description={
-            owners.length === 0
-              ? "No owners assigned to this lot."
-              : `${owners.length} owner${owners.length === 1 ? "" : "s"} assigned.`
-          }
+          description="Manage lot ownership by searching for registered profiles."
         />
-        {owners.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {owners.map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {m.profile.firstName} {m.profile.lastName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {m.profile.email}
-                  </p>
-                </div>
-                <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-500">
-                  Owner
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <OwnerAssignment
+          schemeId={id}
+          lotId={lotId}
+          owners={owners.map((m) => ({
+            id: m.id,
+            profile: {
+              id: m.profile.id,
+              firstName: m.profile.firstName,
+              lastName: m.profile.lastName,
+              email: m.profile.email,
+            },
+          }))}
+        />
       </Card>
 
       {/* Edit form */}

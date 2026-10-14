@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -36,6 +37,43 @@ export async function getCurrentProfile() {
  */
 export async function getProfileById(profileId: string) {
   return db.orm.public.Profile.first({ id: profileId });
+}
+
+/**
+ * Search profiles by email or name (for owner assignment).
+ * Excludes profiles already assigned as OWNER on the given scheme.
+ */
+export async function searchProfiles(query: string, schemeId: string) {
+  const trimmed = query.trim().toLowerCase();
+  if (trimmed.length < 2) return [];
+
+  // Fetch all profiles matching the search term
+  const profiles = await db.orm.public.Profile
+    .where((p) =>
+      or(
+        p.email.ilike(`%${trimmed}%`),
+        p.firstName.ilike(`%${trimmed}%`),
+        p.lastName.ilike(`%${trimmed}%`),
+      ),
+    )
+    .limit(10)
+    .all();
+
+  // Fetch existing active owner memberships for this scheme
+  const existingOwners = await db.orm.public.SchemeMembership
+    .where((m) =>
+      and(
+        m.schemeId.eq(schemeId),
+        m.role.eq("OWNER"),
+        m.isActive.eq(true),
+      ),
+    )
+    .all();
+
+  const ownerProfileIds = new Set(existingOwners.map((m) => m.profileId));
+
+  // Filter out profiles already assigned as owners
+  return profiles.filter((p) => !ownerProfileIds.has(p.id));
 }
 
 /**
