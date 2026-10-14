@@ -19,6 +19,13 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
+
+  // Use portal hint from the login form to redirect directly
+  const portal = formData.get("portal");
+  if (portal === "adviser") {
+    redirect("/adviser");
+  }
+
   redirect("/dashboard");
 }
 
