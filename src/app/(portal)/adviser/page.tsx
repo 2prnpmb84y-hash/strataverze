@@ -1,3 +1,5 @@
+import { StatCard } from "@/components/ui/stat-card";
+
 export default function AdviserDashboard() {
   return (
     <div className="max-w-4xl">
@@ -36,28 +38,6 @@ export default function AdviserDashboard() {
           compliance deadlines across your portfolio from here.
         </p>
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent: string;
-}) {
-  return (
-    <div className="rounded-xl bg-card border border-border p-5">
-      <div className={`w-2.5 h-2.5 rounded-full ${accent} mb-3`} />
-      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">
-        {label}
-      </p>
-      <p className="text-2xl font-bold font-heading text-card-foreground">
-        {value}
-      </p>
     </div>
   );
 }

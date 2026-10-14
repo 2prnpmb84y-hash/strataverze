@@ -13,6 +13,7 @@ const portalConfig = {
     textColour: "text-owner",
     nav: [
       { label: "Overview", href: "/owner" },
+      { label: "My Scheme", href: "/owner/scheme" },
       { label: "Levies", href: "/owner/levies" },
       { label: "Meetings", href: "/owner/meetings" },
       { label: "Documents", href: "/owner/documents" },
