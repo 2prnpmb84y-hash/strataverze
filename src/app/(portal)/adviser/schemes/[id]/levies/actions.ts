@@ -9,8 +9,11 @@ import {
   deleteLevy,
   issueLevy,
   markLevyItemPaid,
+  getLevyById,
 } from "@/lib/queries/levies";
 import { logActivity } from "@/lib/queries/activity-log";
+import { getSchemeNameById } from "@/lib/queries/schemes";
+import { notifyLevyIssued } from "@/lib/notifications";
 
 export type LevyFormState = {
   error?: string;
@@ -140,6 +143,42 @@ export async function issueLevyAction(schemeId: string, levyId: string) {
       entityType: "Levy",
       entityId: levyId,
     });
+
+    // Send email notifications to lot owners (non-blocking)
+    const levy = await getLevyById(levyId);
+    if (levy) {
+      const schemeName = await getSchemeNameById(schemeId);
+
+      // Fetch lot owners for each levy item
+      const { db } = await import("@/prisma/db");
+      for (const item of levy.items) {
+        const memberships = await db.orm.public.SchemeMembership
+          .where((m) => m.lotId.eq(item.lotId))
+          .where((m) => m.role.eq("OWNER"))
+          .where((m) => m.isActive.eq(true))
+          .include("profile")
+          .all();
+
+        for (const membership of memberships) {
+          if (membership.profile.email) {
+            const ownerName = [membership.profile.firstName, membership.profile.lastName]
+              .filter(Boolean)
+              .join(" ") || "Owner";
+
+            notifyLevyIssued({
+              recipientEmail: membership.profile.email,
+              ownerName,
+              schemeName,
+              levyTitle: levy.title,
+              amount: String(item.amount),
+              dueDate: new Date(String(levy.dueDate)),
+              levyId,
+            }).catch(() => {});
+          }
+        }
+      }
+    }
+
     revalidatePath(`/adviser/schemes/${schemeId}/levies/${levyId}`);
     return {};
   } catch {

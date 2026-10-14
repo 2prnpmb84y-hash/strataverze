@@ -148,3 +148,37 @@ export async function updateScheme(
 export async function deleteScheme(schemeId: string) {
   return db.orm.public.Scheme.where({ id: schemeId }).delete();
 }
+
+/**
+ * Fetch the name of a scheme by ID.
+ */
+export async function getSchemeNameById(schemeId: string) {
+  const scheme = await db.orm.public.Scheme.first({ id: schemeId });
+  return scheme?.name ?? "Unknown Scheme";
+}
+
+/**
+ * Fetch email addresses for all active members of a scheme,
+ * optionally filtered by role (e.g. "OWNER", "COMMITTEE", "ADVISER").
+ */
+export async function getMemberEmailsForScheme(
+  schemeId: string,
+  role?: "OWNER" | "COMMITTEE" | "ADVISER",
+) {
+  const memberships = role
+    ? await db.orm.public.SchemeMembership
+        .where((m) => m.schemeId.eq(schemeId))
+        .where((m) => m.role.eq(role))
+        .where((m) => m.isActive.eq(true))
+        .include("profile")
+        .all()
+    : await db.orm.public.SchemeMembership
+        .where((m) => m.schemeId.eq(schemeId))
+        .where((m) => m.isActive.eq(true))
+        .include("profile")
+        .all();
+
+  return memberships
+    .map((m) => m.profile.email)
+    .filter((email) => email.length > 0);
+}

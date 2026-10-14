@@ -15,6 +15,8 @@ import {
   castVote,
 } from "@/lib/queries/motions";
 import { logActivity } from "@/lib/queries/activity-log";
+import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
+import { notifyMeetingScheduled } from "@/lib/notifications";
 
 export type MeetingFormState = {
   error?: string;
@@ -71,6 +73,20 @@ export async function createMeetingAction(
       entityId: meeting.id,
       metadata: { title: data.title, meetingType: data.meetingType },
     });
+
+    // Send email notification to all scheme members (non-blocking)
+    const schemeName = await getSchemeNameById(schemeId);
+    const memberEmails = await getMemberEmailsForScheme(schemeId);
+
+    notifyMeetingScheduled({
+      recipientEmails: memberEmails,
+      schemeName,
+      meetingTitle: data.title,
+      meetingType: data.meetingType,
+      scheduledAt: new Date(data.scheduledAt),
+      location: data.location,
+      meetingId: meeting.id,
+    }).catch(() => {});
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/meetings/${meeting.id}`);

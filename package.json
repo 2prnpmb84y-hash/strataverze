@@ -20,7 +20,8 @@
     "next": "16.4.0",
     "prisma": "^8.0.0-rc.22",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "resend": "^6.33.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

@@ -7,6 +7,8 @@ import {
   revokeInvitation,
 } from "@/lib/queries/invitations";
 import { logActivity } from "@/lib/queries/activity-log";
+import { getSchemeNameById } from "@/lib/queries/schemes";
+import { notifyInvitation } from "@/lib/notifications";
 
 export type InvitationFormState = {
   error?: string;
@@ -58,6 +60,21 @@ export async function sendInvitationAction(
       entityId: invitation.id,
       metadata: { email, role },
     });
+
+    // Send email notification (non-blocking)
+    const schemeName = await getSchemeNameById(schemeId);
+    const inviterName = [profile.firstName, profile.lastName]
+      .filter(Boolean)
+      .join(" ") || "A scheme manager";
+
+    notifyInvitation({
+      recipientEmail: email,
+      schemeName,
+      role,
+      inviterName,
+      expiresAt: expiresAt,
+      invitationToken: invitation.id,
+    }).catch(() => {});
 
     revalidatePath(`/adviser/schemes/${schemeId}/members`);
     return { success: `Invitation sent to ${email}.` };

@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForOwner } from "@/lib/queries/schemes";
+import { getSchemesForOwner, getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
 import { createWorkOrder } from "@/lib/queries/work-orders";
+import { notifyWorkOrderCreated } from "@/lib/notifications";
 
 export type FormState = {
   error?: string;
@@ -40,13 +41,34 @@ export async function createOwnerWorkOrderAction(
   if (!ownsScheme) return { error: "You do not belong to that scheme." };
 
   try {
-    await createWorkOrder({
+    const wo = await createWorkOrder({
       schemeId,
       raisedById: profile.id,
       title,
       description,
       priority,
     });
+
+    // Send email notification to committee and adviser members (non-blocking)
+    const schemeName = await getSchemeNameById(schemeId);
+    const committeeEmails = await getMemberEmailsForScheme(schemeId, "COMMITTEE");
+    const adviserEmails = await getMemberEmailsForScheme(schemeId, "ADVISER");
+    const recipientEmails = [...committeeEmails, ...adviserEmails];
+    const raisedByName = [profile.firstName, profile.lastName]
+      .filter(Boolean)
+      .join(" ") || "An owner";
+
+    if (recipientEmails.length > 0) {
+      notifyWorkOrderCreated({
+        recipientEmails,
+        workOrderId: wo.id,
+        workOrderTitle: title,
+        schemeName,
+        raisedByName,
+        priority,
+        portalPath: "/owner/maintenance",
+      }).catch(() => {});
+    }
 
     revalidatePath("/owner/maintenance");
     redirect("/owner/maintenance");

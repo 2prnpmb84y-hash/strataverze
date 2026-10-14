@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { getSchemesForCommittee, getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
 import { createWorkOrder } from "@/lib/queries/work-orders";
+import { notifyWorkOrderCreated } from "@/lib/notifications";
 
 export type CommitteeWorkOrderFormState = {
   error?: string;
@@ -43,7 +44,7 @@ export async function createCommitteeWorkOrderAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    await createWorkOrder({
+    const wo = await createWorkOrder({
       schemeId: schemeId!,
       raisedById: profile.id,
       title,
@@ -51,6 +52,23 @@ export async function createCommitteeWorkOrderAction(
       priority,
       category: category || undefined,
     });
+
+    // Send email notification to all scheme members (non-blocking)
+    const schemeName = await getSchemeNameById(schemeId!);
+    const memberEmails = await getMemberEmailsForScheme(schemeId!);
+    const raisedByName = [profile.firstName, profile.lastName]
+      .filter(Boolean)
+      .join(" ") || "A committee member";
+
+    notifyWorkOrderCreated({
+      recipientEmails: memberEmails,
+      workOrderId: wo.id,
+      workOrderTitle: title,
+      schemeName,
+      raisedByName,
+      priority,
+      portalPath: "/committee/maintenance",
+    }).catch(() => {});
 
     revalidatePath("/committee/maintenance");
     redirect("/committee/maintenance");

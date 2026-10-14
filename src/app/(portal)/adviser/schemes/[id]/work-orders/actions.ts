@@ -8,8 +8,14 @@ import {
   updateWorkOrder,
   deleteWorkOrder,
   addComment,
+  getWorkOrderById,
 } from "@/lib/queries/work-orders";
 import { logActivity } from "@/lib/queries/activity-log";
+import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
+import {
+  notifyWorkOrderCreated,
+  notifyWorkOrderStatusChange,
+} from "@/lib/notifications";
 
 export type WorkOrderFormState = {
   error?: string;
@@ -66,6 +72,23 @@ export async function createWorkOrderAction(
       entityId: wo.id,
       metadata: { title, priority },
     });
+
+    // Send email notification to all scheme members (non-blocking)
+    const schemeName = await getSchemeNameById(schemeId);
+    const memberEmails = await getMemberEmailsForScheme(schemeId);
+    const raisedByName = [profile.firstName, profile.lastName]
+      .filter(Boolean)
+      .join(" ") || "A scheme member";
+
+    notifyWorkOrderCreated({
+      recipientEmails: memberEmails,
+      workOrderId: wo.id,
+      workOrderTitle: title,
+      schemeName,
+      raisedByName,
+      priority,
+      portalPath: `/adviser/schemes/${schemeId}/work-orders`,
+    }).catch(() => {});
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/work-orders/${wo.id}`);
@@ -149,6 +172,25 @@ export async function updateWorkOrderStatusAction(
         entityId: workOrderId,
         metadata: { actualCost },
       });
+    }
+
+    // Notify the person who raised the work order about the status change
+    const wo = await getWorkOrderById(workOrderId);
+    if (wo?.raisedBy) {
+      const schemeName = await getSchemeNameById(schemeId);
+      const updatedByName = [profile.firstName, profile.lastName]
+        .filter(Boolean)
+        .join(" ") || "A scheme manager";
+
+      notifyWorkOrderStatusChange({
+        recipientEmail: wo.raisedBy.email,
+        workOrderId,
+        workOrderTitle: wo.title,
+        schemeName,
+        status,
+        updatedByName,
+        portalPath: `/adviser/schemes/${schemeId}/work-orders`,
+      }).catch(() => {});
     }
 
     revalidatePath(`/adviser/schemes/${schemeId}/work-orders/${workOrderId}`);

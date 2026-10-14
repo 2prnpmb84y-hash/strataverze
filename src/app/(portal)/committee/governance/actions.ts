@@ -3,8 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { getSchemesForCommittee, getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
 import { createMeeting } from "@/lib/queries/meetings";
+import { notifyMeetingScheduled } from "@/lib/notifications";
 
 export type CommitteeMeetingFormState = {
   error?: string;
@@ -41,7 +42,7 @@ export async function createCommitteeMeetingAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    await createMeeting({
+    const meeting = await createMeeting({
       schemeId: schemeId!,
       title,
       meetingType: meetingType!,
@@ -49,6 +50,20 @@ export async function createCommitteeMeetingAction(
       location,
       agenda,
     });
+
+    // Send email notification to all scheme members (non-blocking)
+    const schemeName = await getSchemeNameById(schemeId!);
+    const memberEmails = await getMemberEmailsForScheme(schemeId!);
+
+    notifyMeetingScheduled({
+      recipientEmails: memberEmails,
+      schemeName,
+      meetingTitle: title,
+      meetingType: meetingType!,
+      scheduledAt: new Date(scheduledAt!),
+      location,
+      meetingId: meeting.id,
+    }).catch(() => {});
 
     revalidatePath("/committee/governance");
     redirect("/committee/governance");
