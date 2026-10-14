@@ -94,6 +94,6 @@ export async function removeOwnerFromLot(membershipId: string) {
     .where({ id: membershipId })
     .update({
       isActive: false,
-      endDate: new Date().toISOString() as unknown as TimestampString,
+      endDate: new Date().toISOString() as unknown as TimestampString<3>,
     });
 }
