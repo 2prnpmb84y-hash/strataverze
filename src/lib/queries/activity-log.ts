@@ -23,7 +23,9 @@ export type ActivityAction =
   | "BYLAW_CREATED"
   | "BYLAW_UPDATED"
   | "INSURANCE_CREATED"
-  | "INSURANCE_UPDATED";
+  | "INSURANCE_UPDATED"
+  | "CONTACT_CREATED"
+  | "CONTACT_UPDATED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -39,7 +41,8 @@ export type ActivityEntityType =
   | "LevyItem"
   | "Announcement"
   | "ByLaw"
-  | "InsurancePolicy";
+  | "InsurancePolicy"
+  | "Contact";
 
 /**
  * Log an activity event for a scheme.

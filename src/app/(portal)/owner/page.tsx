@@ -134,6 +134,9 @@ export default async function OwnerDashboard() {
             <Button variant="secondary" href="/owner/insurance">
               Insurance
             </Button>
+            <Button variant="secondary" href="/owner/contacts">
+              Contacts
+            </Button>
           </div>
 
           {/* Upcoming Meetings */}

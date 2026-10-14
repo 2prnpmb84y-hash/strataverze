@@ -22,9 +22,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'9ce4d8f35fe3445b322bba196e2639263c764f2cd2813b28a467def275aedb43'>;
+  StorageHashBase<'35c03eb325252299a272c30ea93aa3d8d9830bc109ff7d7d69fc02c705911ded'>;
 export type ExecutionHash =
-  ExecutionHashBase<'fd8b7d416c4604dd08e41c6e309be1cee6dd42fc0cc468b4ec73db224e3ec56e'>;
+  ExecutionHashBase<'de4263e3f6f402f737f9f7a2d49dcdbce7931f9cbd974375cc998bceaee3dabb'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -297,6 +297,20 @@ export type FieldOutputTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: TimestampString<3>;
     };
+    readonly Contact: {
+      readonly address: CodecTypes['pg/text@1']['output'] | null;
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly company: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: TimestampString<3>;
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isPreferred: CodecTypes['pg/bool@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly updatedAt: TimestampString<3>;
+    };
     readonly Document: {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly createdAt: TimestampString<3>;
@@ -526,6 +540,20 @@ export type FieldInputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamp-string@1']['input'];
+    };
+    readonly Contact: {
+      readonly address: CodecTypes['pg/text@1']['input'] | null;
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly company: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isPreferred: CodecTypes['pg/bool@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamp-string@1']['input'];
     };
     readonly Document: {
@@ -759,6 +787,20 @@ export type StorageColumnTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: TimestampString<3>;
     };
+    readonly contacts: {
+      readonly address: CodecTypes['pg/text@1']['output'] | null;
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly company: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: TimestampString<3>;
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_preferred: CodecTypes['pg/bool@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly updated_at: TimestampString<3>;
+    };
     readonly documents: {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly created_at: TimestampString<3>;
@@ -988,6 +1030,20 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamp-string@1']['input'];
+    };
+    readonly contacts: {
+      readonly address: CodecTypes['pg/text@1']['input'] | null;
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly company: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_preferred: CodecTypes['pg/bool@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamp-string@1']['input'];
     };
     readonly documents: {
@@ -1234,6 +1290,22 @@ export namespace Models {
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'scheme';
   };
+  export type public_Contact = {
+    address: CodecTypes['pg/text@1']['output'] | null;
+    category: CodecTypes['pg/text@1']['output'];
+    company: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: TimestampString<3>;
+    email: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    isPreferred: CodecTypes['pg/bool@1']['output'];
+    name: CodecTypes['pg/text@1']['output'];
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    phone: CodecTypes['pg/text@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    updatedAt: TimestampString<3>;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'scheme';
+  };
   export type public_Document = {
     category: CodecTypes['pg/text@1']['output'];
     createdAt: TimestampString<3>;
@@ -1417,6 +1489,7 @@ export namespace Models {
     announcements: public_Announcement[];
     bylaws: public_ByLaw[];
     compliance: public_ComplianceItem[];
+    contacts: public_Contact[];
     documents: public_Document[];
     funds: public_Fund[];
     insurancePolicies: public_InsurancePolicy[];
@@ -1432,6 +1505,7 @@ export namespace Models {
       | 'announcements'
       | 'bylaws'
       | 'compliance'
+      | 'contacts'
       | 'documents'
       | 'funds'
       | 'insurancePolicies'
@@ -1497,6 +1571,7 @@ export declare const models: {
     ByLaw: Models.public_ByLaw;
     Comment: Models.public_Comment;
     ComplianceItem: Models.public_ComplianceItem;
+    Contact: Models.public_Contact;
     Document: Models.public_Document;
     Fund: Models.public_Fund;
     InsurancePolicy: Models.public_InsurancePolicy;
@@ -2041,6 +2116,116 @@ type ContractBase = Omit<
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'compliance_items';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly contacts: {
+              columns: {
+                readonly address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly company: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_preferred: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'contacts_scheme_id_category_idx';
+                  readonly columns: readonly ['scheme_id', 'category'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'contacts';
                     readonly columns: readonly ['scheme_id'];
                   };
                   readonly target: {
@@ -3541,6 +3726,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ComplianceItem';
     };
+    readonly contacts: { readonly namespace: 'public' & NamespaceId; readonly model: 'Contact' };
     readonly documents: { readonly namespace: 'public' & NamespaceId; readonly model: 'Document' };
     readonly funds: { readonly namespace: 'public' & NamespaceId; readonly model: 'Fund' };
     readonly insurance_policies: {
@@ -4029,6 +4215,98 @@ type ContractBase = Omit<
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly Contact: {
+            readonly fields: {
+              readonly address: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly company: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly email: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isPreferred: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly phone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'contacts';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly address: { readonly column: 'address' };
+                readonly category: { readonly column: 'category' };
+                readonly company: { readonly column: 'company' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly email: { readonly column: 'email' };
+                readonly id: { readonly column: 'id' };
+                readonly isPreferred: { readonly column: 'is_preferred' };
+                readonly name: { readonly column: 'name' };
+                readonly notes: { readonly column: 'notes' };
+                readonly phone: { readonly column: 'phone' };
+                readonly schemeId: { readonly column: 'scheme_id' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
@@ -5175,6 +5453,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly contacts: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Contact';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly documents: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -5664,6 +5953,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'compliance_items';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'contacts';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };

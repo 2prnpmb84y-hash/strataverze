@@ -74,6 +74,7 @@ model Scheme {
   announcements  Announcement[]
   bylaws         ByLaw[]
   insurancePolicies InsurancePolicy[]
+  contacts       Contact[]
 
   @@map("schemes")
 }
@@ -307,6 +308,28 @@ model InsurancePolicy {
   @@index([schemeId, status])
   @@index([schemeId, endDate])
   @@map("insurance_policies")
+}
+
+// ─── Contacts / Contractor Directory ───────────────────────────
+
+model Contact {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId      String   @map("scheme_id") @db.Uuid
+  name          String
+  company       String?
+  category      String   // PLUMBER, ELECTRICIAN, BUILDER, GARDENER, CLEANER, LOCKSMITH, PEST_CONTROL, FIRE_SAFETY, LIFT, POOL, BODY_CORPORATE, LEGAL, ACCOUNTING, INSURANCE_BROKER, OTHER
+  phone         String?
+  email         String?
+  address       String?
+  notes         String?
+  isPreferred   Boolean  @default(false) @map("is_preferred")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@index([schemeId, category])
+  @@map("contacts")
 }
 
 // ─── By-Laws Register ───────────────────────────────────────────
