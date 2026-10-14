@@ -54,10 +54,12 @@ type PortalKey = keyof typeof portalConfig;
 export function PortalShell({
   user,
   availablePortals = [],
+  pendingInvitationCount = 0,
   children,
 }: {
   user: User;
   availablePortals?: string[];
+  pendingInvitationCount?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -145,6 +147,23 @@ export function PortalShell({
 
         {/* Settings & user info */}
         <div className="mt-auto">
+          {pendingInvitationCount > 0 && (
+            <div className="px-3 pb-2">
+              <Link
+                href="/invitations"
+                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  pathname === "/invitations"
+                    ? "bg-white/25 text-white"
+                    : "text-white/80 hover:bg-white/15 hover:text-white"
+                }`}
+              >
+                Invitations
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/30 text-[10px] font-bold text-white">
+                  {pendingInvitationCount}
+                </span>
+              </Link>
+            </div>
+          )}
           <div className="px-3 pb-2 border-t border-white/20 pt-3">
             <Link
               href="/settings"
@@ -239,6 +258,21 @@ export function PortalShell({
               </Link>
             );
           })}
+          {pendingInvitationCount > 0 && (
+            <Link
+              href="/invitations"
+              className={`shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                pathname === "/invitations"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Invitations
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary-400 text-[9px] font-bold text-white">
+                {pendingInvitationCount}
+              </span>
+            </Link>
+          )}
           <Link
             href="/settings"
             className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${

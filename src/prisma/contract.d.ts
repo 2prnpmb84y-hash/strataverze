@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1394bced8410f5a0ee12fcfd829cbe001cd66018469131db17beb1ecb302fa8f'>;
+  StorageHashBase<'575f026798cc075a6d02df0ed91b228707820e05e530dbd7a90675e73a5f554a'>;
 export type ExecutionHash =
   ExecutionHashBase<'e519fcb1650eee0f43fb353f4725eb79fc1a591083437fc70585e4cac759af57'>;
 export type ProfileHash =
@@ -279,6 +279,19 @@ export type FieldOutputTypes = {
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
     };
+    readonly Invitation: {
+      readonly acceptedAt: TimestampString<3> | null;
+      readonly createdAt: TimestampString<3>;
+      readonly email: CodecTypes['pg/text@1']['output'];
+      readonly expiresAt: TimestampString<3>;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly invitedById: CodecTypes['pg/uuid@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly role: 'OWNER' | 'COMMITTEE' | 'ADVISER';
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly token: CodecTypes['pg/text@1']['output'];
+    };
     readonly Levy: {
       readonly createdAt: TimestampString<3>;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
@@ -438,6 +451,19 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly Invitation: {
+      readonly acceptedAt: CodecTypes['pg/timestamp-string@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'];
+      readonly expiresAt: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly invitedById: CodecTypes['pg/uuid@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly role: 'OWNER' | 'COMMITTEE' | 'ADVISER';
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly token: CodecTypes['pg/text@1']['input'];
     };
     readonly Levy: {
       readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
@@ -599,6 +625,19 @@ export type StorageColumnTypes = {
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
     };
+    readonly invitations: {
+      readonly accepted_at: TimestampString<3> | null;
+      readonly created_at: TimestampString<3>;
+      readonly email: CodecTypes['pg/text@1']['output'];
+      readonly expires_at: TimestampString<3>;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly invited_by_id: CodecTypes['pg/uuid@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly role: 'OWNER' | 'COMMITTEE' | 'ADVISER';
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly token: CodecTypes['pg/text@1']['output'];
+    };
     readonly levies: {
       readonly created_at: TimestampString<3>;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
@@ -758,6 +797,19 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly invitations: {
+      readonly accepted_at: CodecTypes['pg/timestamp-string@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'];
+      readonly expires_at: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly invited_by_id: CodecTypes['pg/uuid@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly role: 'OWNER' | 'COMMITTEE' | 'ADVISER';
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly token: CodecTypes['pg/text@1']['input'];
     };
     readonly levies: {
       readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
@@ -928,6 +980,23 @@ export namespace Models {
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'scheme';
   };
+  export type public_Invitation = {
+    acceptedAt: TimestampString<3> | null;
+    createdAt: TimestampString<3>;
+    email: CodecTypes['pg/text@1']['output'];
+    expiresAt: TimestampString<3>;
+    id: CodecTypes['pg/uuid@1']['output'];
+    invitedById: CodecTypes['pg/uuid@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'] | null;
+    role: 'OWNER' | 'COMMITTEE' | 'ADVISER';
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    token: CodecTypes['pg/text@1']['output'];
+    invitedBy: public_Profile;
+    lot: public_Lot | null;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'invitedBy' | 'lot' | 'scheme';
+  };
   export type public_Levy = {
     createdAt: TimestampString<3>;
     description: CodecTypes['pg/text@1']['output'] | null;
@@ -963,10 +1032,11 @@ export namespace Models {
     lotType: CodecTypes['pg/text@1']['output'];
     schemeId: CodecTypes['pg/uuid@1']['output'];
     unitNumber: CodecTypes['pg/text@1']['output'] | null;
+    invitations: public_Invitation[];
     levyItems: public_LevyItem[];
     memberships: public_SchemeMembership[];
     scheme: public_Scheme;
-    readonly [RelationKeys]?: 'levyItems' | 'memberships' | 'scheme';
+    readonly [RelationKeys]?: 'invitations' | 'levyItems' | 'memberships' | 'scheme';
   };
   export type public_Meeting = {
     agenda: CodecTypes['pg/text@1']['output'] | null;
@@ -1012,11 +1082,13 @@ export namespace Models {
     phone: CodecTypes['pg/text@1']['output'] | null;
     updatedAt: TimestampString<3>;
     comments: public_Comment[];
+    invitations: public_Invitation[];
     memberships: public_SchemeMembership[];
     motions: public_Motion[];
     votes: public_Vote[];
     workOrders: public_WorkOrder[];
-    readonly [RelationKeys]?: 'comments' | 'memberships' | 'motions' | 'votes' | 'workOrders';
+    readonly [RelationKeys]?:
+      'comments' | 'invitations' | 'memberships' | 'motions' | 'votes' | 'workOrders';
   };
   export type public_Scheme = {
     abnNumber: CodecTypes['pg/text@1']['output'] | null;
@@ -1035,6 +1107,7 @@ export namespace Models {
     compliance: public_ComplianceItem[];
     documents: public_Document[];
     funds: public_Fund[];
+    invitations: public_Invitation[];
     levies: public_Levy[];
     lots: public_Lot[];
     meetings: public_Meeting[];
@@ -1045,6 +1118,7 @@ export namespace Models {
       | 'compliance'
       | 'documents'
       | 'funds'
+      | 'invitations'
       | 'levies'
       | 'lots'
       | 'meetings'
@@ -1105,6 +1179,7 @@ export declare const models: {
     ComplianceItem: Models.public_ComplianceItem;
     Document: Models.public_Document;
     Fund: Models.public_Fund;
+    Invitation: Models.public_Invitation;
     Levy: Models.public_Levy;
     LevyItem: Models.public_LevyItem;
     Lot: Models.public_Lot;
@@ -1467,6 +1542,145 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly invitations: {
+              columns: {
+                readonly accepted_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly expires_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly invited_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly role: {
+                  readonly dataType: 'pg/enum';
+                  readonly codecId: 'pg/enum@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly typeName: 'PortalRole' };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING'>;
+                  };
+                  readonly many: false;
+                };
+                readonly token: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'invitations_scheme_id_email_role_key';
+                  readonly columns: readonly ['scheme_id', 'email', 'role'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'invitations_token_key';
+                  readonly columns: readonly ['token'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'invitations';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'invitations';
+                    readonly columns: readonly ['invited_by_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'invitations';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -2493,6 +2707,10 @@ type ContractBase = Omit<
     };
     readonly documents: { readonly namespace: 'public' & NamespaceId; readonly model: 'Document' };
     readonly funds: { readonly namespace: 'public' & NamespaceId; readonly model: 'Fund' };
+    readonly invitations: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'Invitation';
+    };
     readonly levies: { readonly namespace: 'public' & NamespaceId; readonly model: 'Levy' };
     readonly levy_items: { readonly namespace: 'public' & NamespaceId; readonly model: 'LevyItem' };
     readonly lots: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
@@ -2819,6 +3037,122 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Invitation: {
+            readonly fields: {
+              readonly acceptedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly email: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly expiresAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly invitedById: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly role: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/enum@1';
+                  readonly typeParams: { readonly typeName: 'PortalRole' };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly token: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly invitedBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['invitedById'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'invitations';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly acceptedAt: { readonly column: 'accepted_at' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly email: { readonly column: 'email' };
+                readonly expiresAt: { readonly column: 'expires_at' };
+                readonly id: { readonly column: 'id' };
+                readonly invitedById: { readonly column: 'invited_by_id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly role: { readonly column: 'role' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly status: { readonly column: 'status' };
+                readonly token: { readonly column: 'token' };
+              };
+            };
+          };
           readonly Levy: {
             readonly fields: {
               readonly createdAt: {
@@ -3029,6 +3363,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly invitations: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Invitation';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
               readonly levyItems: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -3349,6 +3694,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['authorId'];
                 };
               };
+              readonly invitations: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Invitation';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['invitedById'];
+                };
+              };
               readonly memberships: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -3495,6 +3851,17 @@ type ContractBase = Omit<
               };
               readonly funds: {
                 readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Fund' };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly invitations: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Invitation';
+                };
                 readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];

@@ -58,7 +58,7 @@ export default async function SchemeDetailPage({
       />
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <StatCard
           label="Lots"
           value={scheme.totalLots}
@@ -79,6 +79,12 @@ export default async function SchemeDetailPage({
           value={committeeCount}
           accent="bg-committee"
         />
+      </div>
+
+      <div className="mb-8">
+        <Button href={`/adviser/schemes/${id}/members`} variant="secondary">
+          Manage Members &amp; Invitations
+        </Button>
       </div>
 
       {/* Funds */}
