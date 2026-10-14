@@ -6,6 +6,7 @@ import { getLeviesForScheme } from "@/lib/queries/levies";
 import { getMeetingsForScheme } from "@/lib/queries/meetings";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { getWorkOrdersForScheme } from "@/lib/queries/work-orders";
+import { getComplianceForScheme } from "@/lib/queries/compliance";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export default async function SchemeDetailPage({
   const meetings = await getMeetingsForScheme(id);
   const documents = await getDocumentsForScheme(id);
   const workOrders = await getWorkOrdersForScheme(id);
+  const complianceItems = await getComplianceForScheme(id);
 
   // Check the current user is an adviser on this scheme
   const isAdviser = scheme.memberships.some(
@@ -442,6 +444,71 @@ export default async function SchemeDetailPage({
         ) : (
           <p className="text-sm text-muted-foreground">
             Create a work order to track maintenance for this scheme.
+          </p>
+        )}
+      </Card>
+
+      {/* Compliance */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Compliance"
+          description={
+            complianceItems.length === 0
+              ? "No compliance items tracked yet."
+              : `${complianceItems.length} compliance item${complianceItems.length === 1 ? "" : "s"} tracked.`
+          }
+          action={
+            <Button href={`/adviser/schemes/${id}/compliance/new`} variant="secondary">
+              Add Item
+            </Button>
+          }
+        />
+        {complianceItems.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {complianceItems.map((item) => {
+              const compStatusStyle: Record<string, string> = {
+                PENDING: "bg-yellow-100 text-yellow-700",
+                COMPLIANT: "bg-green-100 text-green-700",
+                NON_COMPLIANT: "bg-red-100 text-red-700",
+                EXPIRED: "bg-gray-100 text-gray-700",
+              };
+
+              const compCategoryLabels: Record<string, string> = {
+                INSURANCE: "Insurance",
+                FIRE_SAFETY: "Fire Safety",
+                OHS: "OH&S",
+                BUILDING: "Building",
+                OTHER: "Other",
+              };
+
+              return (
+                <Link
+                  key={item.id}
+                  href={`/adviser/schemes/${id}/compliance/${item.id}`}
+                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {item.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {compCategoryLabels[item.category] ?? item.category}
+                      {item.dueDate &&
+                        ` · Due ${new Date(String(item.dueDate)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${compStatusStyle[item.status] ?? "bg-gray-100 text-gray-700"}`}
+                  >
+                    {item.status.replace("_", " ")}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Track insurance, fire safety, OH&S and other compliance obligations.
           </p>
         )}
       </Card>
