@@ -121,6 +121,17 @@ export async function addComment(data: {
 }
 
 /**
+ * Fetch all comments for a work order with author profiles, ordered by createdAt ascending.
+ */
+export async function getCommentsForWorkOrder(workOrderId: string) {
+  return db.orm.public.Comment
+    .where((c) => c.workOrderId.eq(workOrderId))
+    .include("author")
+    .orderBy((c) => c.createdAt.asc())
+    .all();
+}
+
+/**
  * Delete a comment.
  */
 export async function deleteComment(commentId: string) {

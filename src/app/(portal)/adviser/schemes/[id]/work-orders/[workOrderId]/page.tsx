@@ -8,7 +8,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { WorkOrderEditForm } from "../work-order-form";
 import { DeleteWorkOrderButton } from "./delete-work-order-button";
 import { WorkOrderStatusButton } from "./work-order-status-button";
-import { CommentSection } from "./comment-section";
+import { CommentThread } from "./comment-thread";
+import { CommentForm } from "./comment-form";
 
 const priorityStyle: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-700",
@@ -183,18 +184,10 @@ export default async function WorkOrderDetailPage({
               : `${workOrder.comments.length} comment${workOrder.comments.length === 1 ? "" : "s"}`
           }
         />
-        <CommentSection
-          schemeId={id}
-          workOrderId={workOrderId}
-          comments={workOrder.comments.map((c) => ({
-            id: c.id,
-            content: c.content,
-            createdAt: String(c.createdAt),
-            authorName:
-              `${c.author.firstName} ${c.author.lastName}`.trim() ||
-              c.author.email,
-          }))}
-        />
+        <div className="flex flex-col gap-4">
+          <CommentThread schemeId={id} workOrderId={workOrderId} />
+          <CommentForm schemeId={id} workOrderId={workOrderId} />
+        </div>
       </Card>
 
       {/* Edit form */}

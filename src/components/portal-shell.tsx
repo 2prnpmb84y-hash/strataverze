@@ -105,17 +105,47 @@ export function PortalShell({
           })}
         </nav>
 
-        {/* User info */}
-        <div className="px-4 py-4 mt-auto border-t border-white/20">
-          <p className="text-xs text-white/70 truncate mb-2">
-            {user.email}
-          </p>
-          <button
-            onClick={handleSignOut}
-            className="text-xs text-white/60 hover:text-white transition-colors"
-          >
-            Sign out
-          </button>
+        {/* Settings & user info */}
+        <div className="mt-auto">
+          <div className="px-3 pb-2 border-t border-white/20 pt-3">
+            <Link
+              href="/settings"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                pathname === "/settings"
+                  ? "bg-white/25 text-white"
+                  : "text-white/80 hover:bg-white/15 hover:text-white"
+              }`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="shrink-0"
+              >
+                <path
+                  d="M6.86 2.572a1.25 1.25 0 0 1 2.28 0l.384.838a1.25 1.25 0 0 0 1.142.744l.921.017a1.25 1.25 0 0 1 1.14 1.971l-.538.75a1.25 1.25 0 0 0-.143 1.35l.43.816a1.25 1.25 0 0 1-.73 1.788l-.876.298a1.25 1.25 0 0 0-.847.984l-.143.912a1.25 1.25 0 0 1-2.121.678l-.658-.66a1.25 1.25 0 0 0-1.354-.276l-.84.387a1.25 1.25 0 0 1-1.788-.73l-.298-.876a1.25 1.25 0 0 0-.984-.847l-.912-.143A1.25 1.25 0 0 1 1.39 7.46l.66-.658a1.25 1.25 0 0 0 .276-1.354l-.387-.84a1.25 1.25 0 0 1 .73-1.788l.876-.298a1.25 1.25 0 0 0 .847-.984l.143-.912a.104.104 0 0 1 .004-.02L6.86 2.572Z"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+              Settings
+            </Link>
+          </div>
+          <div className="px-4 py-4 border-t border-white/20">
+            <p className="text-xs text-white/70 truncate mb-2">
+              {user.email}
+            </p>
+            <button
+              onClick={handleSignOut}
+              className="text-xs text-white/60 hover:text-white transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -155,6 +185,16 @@ export function PortalShell({
               </Link>
             );
           })}
+          <Link
+            href="/settings"
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              pathname === "/settings"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Settings
+          </Link>
         </nav>
 
         {/* Main content */}

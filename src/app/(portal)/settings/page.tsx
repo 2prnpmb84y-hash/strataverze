@@ -1,0 +1,82 @@
+import { redirect } from "next/navigation";
+import { getCurrentProfile, getProfileWithMemberships } from "@/lib/queries/profiles";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader } from "@/components/ui/card";
+import { ProfileForm } from "./profile-form";
+import { SignOutButton } from "./sign-out-button";
+
+export default async function SettingsPage() {
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
+
+  const profileWithMemberships = await getProfileWithMemberships(profile.id);
+  if (!profileWithMemberships) redirect("/login");
+
+  const { memberships } = profileWithMemberships;
+
+  const roleLabels: Record<string, string> = {
+    OWNER: "Owner",
+    COMMITTEE: "Committee",
+    ADVISER: "Adviser",
+  };
+
+  return (
+    <>
+      <PageHeader
+        title="Settings"
+        description="Manage your profile and account preferences."
+      />
+
+      <div className="space-y-6 max-w-2xl">
+        <Card>
+          <CardHeader
+            title="Profile"
+            description="Your personal details."
+          />
+          <ProfileForm
+            profile={{
+              firstName: profileWithMemberships.firstName,
+              lastName: profileWithMemberships.lastName,
+              email: profileWithMemberships.email,
+              phone: profileWithMemberships.phone,
+            }}
+          />
+        </Card>
+
+        {memberships.length > 0 && (
+          <Card>
+            <CardHeader
+              title="Scheme Memberships"
+              description="Schemes you are currently a member of."
+            />
+            <div className="divide-y divide-border -mx-6">
+              {memberships.map((m) => (
+                <div key={m.id} className="flex items-center justify-between px-6 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-card-foreground">
+                      {m.schemeName}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Since {new Date(m.startDate).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <span className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                    {roleLabels[m.role] ?? m.role}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader
+            title="Account"
+            description="Sign out of your StrataVerze account."
+          />
+          <SignOutButton />
+        </Card>
+      </div>
+    </>
+  );
+}

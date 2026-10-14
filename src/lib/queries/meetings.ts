@@ -88,14 +88,18 @@ export async function deleteMeeting(meetingId: string) {
 }
 
 /**
- * Get upcoming meetings for an owner's schemes.
+ * Get upcoming meetings for an owner's schemes, including motions with votes.
  */
 export async function getUpcomingMeetingsForOwner(schemeIds: string[]) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Meeting
     .where((m) => m.schemeId.in(schemeIds))
-    .include("motions")
+    .include("motions", (mot) =>
+      mot
+        .include("votes")
+        .orderBy((m) => m.createdAt.asc()),
+    )
     .orderBy((m) => m.scheduledAt.asc())
     .all();
 }

@@ -90,3 +90,33 @@ export async function updateProfile(
 ) {
   return db.orm.public.Profile.where({ id: profileId }).update(data);
 }
+
+/**
+ * Get a profile with its scheme memberships (including scheme name).
+ */
+export async function getProfileWithMemberships(profileId: string) {
+  const profile = await db.orm.public.Profile.first({ id: profileId });
+  if (!profile) return null;
+
+  const memberships = await db.orm.public.SchemeMembership
+    .where((m) => and(m.profileId.eq(profileId), m.isActive.eq(true)))
+    .all();
+
+  // Fetch scheme names for each membership
+  const schemeIds = [...new Set(memberships.map((m) => m.schemeId))];
+  const schemes = schemeIds.length > 0
+    ? await db.orm.public.Scheme
+        .where((s) => or(...schemeIds.map((id) => s.id.eq(id))))
+        .all()
+    : [];
+
+  const schemeMap = new Map(schemes.map((s) => [s.id, s.name]));
+
+  return {
+    ...profile,
+    memberships: memberships.map((m) => ({
+      ...m,
+      schemeName: schemeMap.get(m.schemeId) ?? "Unknown Scheme",
+    })),
+  };
+}

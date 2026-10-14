@@ -81,31 +81,61 @@ export default async function SchemeDetailPage({
         />
       </div>
 
-      {/* Funds summary */}
-      {scheme.funds.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader title="Funds" />
+      {/* Funds */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Funds"
+          description={
+            scheme.funds.length === 0
+              ? "No funds set up yet."
+              : `${scheme.funds.length} fund${scheme.funds.length === 1 ? "" : "s"} configured.`
+          }
+          action={
+            <Button href={`/adviser/schemes/${id}/funds/new`} variant="secondary">
+              Manage Funds
+            </Button>
+          }
+        />
+        {scheme.funds.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {scheme.funds.map((fund) => (
-              <div
-                key={fund.id}
-                className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
-              >
-                <span className="text-sm font-medium text-foreground">
-                  {fund.name}
-                </span>
-                <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                  {fund.fundType === "ADMIN"
-                    ? "Administrative"
-                    : fund.fundType === "SINKING"
-                      ? "Capital Works"
-                      : fund.fundType}
-                </span>
-              </div>
-            ))}
+            {scheme.funds.map((fund) => {
+              const balance = Number(fund.balance);
+              const fundTypeLabel: Record<string, string> = {
+                ADMIN: "Administrative",
+                SINKING: "Capital Works",
+                RESERVE: "Reserve",
+              };
+
+              return (
+                <Link
+                  key={fund.id}
+                  href={`/adviser/schemes/${id}/funds/${fund.id}`}
+                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {fund.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {fundTypeLabel[fund.fundType] ?? fund.fundType}
+                    </p>
+                  </div>
+                  <span className="text-sm font-medium text-foreground font-variant-numeric tabular-nums">
+                    {balance.toLocaleString("en-AU", {
+                      style: "currency",
+                      currency: "AUD",
+                    })}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
-        </Card>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Set up administrative and capital works funds for this scheme.
+          </p>
+        )}
+      </Card>
 
       {/* Lots */}
       <Card className="mb-6">
