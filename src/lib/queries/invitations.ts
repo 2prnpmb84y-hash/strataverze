@@ -63,6 +63,13 @@ export async function createInvitation(data: {
 }
 
 /**
+ * Get a single invitation by ID.
+ */
+export async function getInvitationById(invitationId: string) {
+  return db.orm.public.Invitation.first({ id: invitationId });
+}
+
+/**
  * Accept an invitation: mark it accepted and create a SchemeMembership.
  */
 export async function acceptInvitation(

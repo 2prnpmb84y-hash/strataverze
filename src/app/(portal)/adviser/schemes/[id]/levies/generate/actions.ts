@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { createLevy } from "@/lib/queries/levies";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type GenerateFormState = {
   error?: string;
@@ -50,8 +51,9 @@ export async function generateLeviesAction(
   const periods = buildPeriods(frequency!, startDate, budget, prefix);
 
   try {
+    const createdIds: string[] = [];
     for (const period of periods) {
-      await createLevy({
+      const levy = await createLevy({
         schemeId,
         title: period.title,
         description: `Auto-generated ${frequency!.toLowerCase().replace("_", "-")} levy`,
@@ -59,7 +61,21 @@ export async function generateLeviesAction(
         dueDate: period.dueDate,
         levyType: type,
       });
+      createdIds.push(levy.id);
     }
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LEVIES_GENERATED",
+      entityType: "Levy",
+      metadata: {
+        count: periods.length,
+        frequency: frequency!,
+        annualBudget: budget,
+        levyIds: createdIds,
+      },
+    });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);

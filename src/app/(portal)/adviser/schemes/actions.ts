@@ -8,6 +8,7 @@ import {
   updateScheme,
   deleteScheme,
 } from "@/lib/queries/schemes";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type SchemeFormState = {
   error?: string;
@@ -102,6 +103,15 @@ export async function updateSchemeAction(
 
   try {
     await updateScheme(schemeId, data);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "SCHEME_UPDATED",
+      entityType: "Scheme",
+      entityId: schemeId,
+    });
+
     revalidatePath(`/adviser/schemes/${schemeId}`);
     revalidatePath("/adviser/schemes");
     return {};

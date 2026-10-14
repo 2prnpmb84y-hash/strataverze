@@ -10,6 +10,7 @@ import {
   assignOwnerToLot,
   removeOwnerFromLot,
 } from "@/lib/queries/lots";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type LotFormState = {
   error?: string;
@@ -59,7 +60,17 @@ export async function createLotAction(
   if (!isValid) return { fieldErrors: errors };
 
   try {
-    await createLot({ ...data, schemeId });
+    const lot = await createLot({ ...data, schemeId });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LOT_CREATED",
+      entityType: "Lot",
+      entityId: lot.id,
+      metadata: { lotNumber: data.lotNumber, lotType: data.lotType },
+    });
+
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {

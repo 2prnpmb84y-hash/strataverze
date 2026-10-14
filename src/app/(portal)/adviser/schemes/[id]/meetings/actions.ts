@@ -14,6 +14,7 @@ import {
   deleteMotion,
   castVote,
 } from "@/lib/queries/motions";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type MeetingFormState = {
   error?: string;
@@ -61,6 +62,16 @@ export async function createMeetingAction(
 
   try {
     const meeting = await createMeeting({ ...data, schemeId });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "MEETING_SCHEDULED",
+      entityType: "Meeting",
+      entityId: meeting.id,
+      metadata: { title: data.title, meetingType: data.meetingType },
+    });
+
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/meetings/${meeting.id}`);
   } catch (err) {

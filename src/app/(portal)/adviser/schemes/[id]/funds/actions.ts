@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { createFund, updateFund, deleteFund } from "@/lib/queries/funds";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type FundFormState = {
   error?: string;
@@ -49,6 +50,16 @@ export async function createFundAction(
 
   try {
     const fund = await createFund({ ...data, schemeId });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "FUND_CREATED",
+      entityType: "Fund",
+      entityId: fund.id,
+      metadata: { name: data.name, fundType: data.fundType },
+    });
+
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/funds/${fund.id}`);
   } catch (err) {

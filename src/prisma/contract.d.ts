@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'575f026798cc075a6d02df0ed91b228707820e05e530dbd7a90675e73a5f554a'>;
+  StorageHashBase<'ffdba8e91a295ce3bcb2d59dd5c5bd4ab7370ad06571cc63643970b7e7ceef82'>;
 export type ExecutionHash =
   ExecutionHashBase<'e519fcb1650eee0f43fb353f4725eb79fc1a591083437fc70585e4cac759af57'>;
 export type ProfileHash =
@@ -238,6 +238,16 @@ type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyo
 
 export type FieldOutputTypes = {
   readonly public: {
+    readonly ActivityLog: {
+      readonly action: CodecTypes['pg/text@1']['output'];
+      readonly actorId: CodecTypes['pg/uuid@1']['output'];
+      readonly createdAt: TimestampString<3>;
+      readonly entityId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly entityType: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly metadata: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+    };
     readonly Comment: {
       readonly authorId: CodecTypes['pg/uuid@1']['output'];
       readonly content: CodecTypes['pg/text@1']['output'];
@@ -411,6 +421,16 @@ export type FieldOutputTypes = {
 };
 export type FieldInputTypes = {
   readonly public: {
+    readonly ActivityLog: {
+      readonly action: CodecTypes['pg/text@1']['input'];
+      readonly actorId: CodecTypes['pg/uuid@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly entityId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly entityType: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly metadata: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+    };
     readonly Comment: {
       readonly authorId: CodecTypes['pg/uuid@1']['input'];
       readonly content: CodecTypes['pg/text@1']['input'];
@@ -584,6 +604,16 @@ export type FieldInputTypes = {
 };
 export type StorageColumnTypes = {
   readonly public: {
+    readonly activity_logs: {
+      readonly action: CodecTypes['pg/text@1']['output'];
+      readonly actor_id: CodecTypes['pg/uuid@1']['output'];
+      readonly created_at: TimestampString<3>;
+      readonly entity_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly entity_type: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly metadata: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+    };
     readonly comments: {
       readonly author_id: CodecTypes['pg/uuid@1']['output'];
       readonly content: CodecTypes['pg/text@1']['output'];
@@ -757,6 +787,16 @@ export type StorageColumnTypes = {
 };
 export type StorageColumnInputTypes = {
   readonly public: {
+    readonly activity_logs: {
+      readonly action: CodecTypes['pg/text@1']['input'];
+      readonly actor_id: CodecTypes['pg/uuid@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly entity_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly entity_type: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly metadata: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+    };
     readonly comments: {
       readonly author_id: CodecTypes['pg/uuid@1']['input'];
       readonly content: CodecTypes['pg/text@1']['input'];
@@ -930,6 +970,19 @@ export type StorageColumnInputTypes = {
 };
 
 export namespace Models {
+  export type public_ActivityLog = {
+    action: CodecTypes['pg/text@1']['output'];
+    actorId: CodecTypes['pg/uuid@1']['output'];
+    createdAt: TimestampString<3>;
+    entityId: CodecTypes['pg/uuid@1']['output'] | null;
+    entityType: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    metadata: CodecTypes['pg/jsonb@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    actor: public_Profile;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'actor' | 'scheme';
+  };
   export type public_Comment = {
     authorId: CodecTypes['pg/uuid@1']['output'];
     content: CodecTypes['pg/text@1']['output'];
@@ -1081,6 +1134,7 @@ export namespace Models {
     lastName: CodecTypes['pg/text@1']['output'];
     phone: CodecTypes['pg/text@1']['output'] | null;
     updatedAt: TimestampString<3>;
+    activityLogs: public_ActivityLog[];
     comments: public_Comment[];
     invitations: public_Invitation[];
     memberships: public_SchemeMembership[];
@@ -1088,7 +1142,13 @@ export namespace Models {
     votes: public_Vote[];
     workOrders: public_WorkOrder[];
     readonly [RelationKeys]?:
-      'comments' | 'invitations' | 'memberships' | 'motions' | 'votes' | 'workOrders';
+      | 'activityLogs'
+      | 'comments'
+      | 'invitations'
+      | 'memberships'
+      | 'motions'
+      | 'votes'
+      | 'workOrders';
   };
   export type public_Scheme = {
     abnNumber: CodecTypes['pg/text@1']['output'] | null;
@@ -1104,6 +1164,7 @@ export namespace Models {
     totalEntitlement: CodecTypes['pg/int4@1']['output'];
     totalLots: CodecTypes['pg/int4@1']['output'];
     updatedAt: TimestampString<3>;
+    activityLogs: public_ActivityLog[];
     compliance: public_ComplianceItem[];
     documents: public_Document[];
     funds: public_Fund[];
@@ -1115,6 +1176,7 @@ export namespace Models {
     motions: public_Motion[];
     workOrders: public_WorkOrder[];
     readonly [RelationKeys]?:
+      | 'activityLogs'
       | 'compliance'
       | 'documents'
       | 'funds'
@@ -1175,6 +1237,7 @@ export namespace Models {
 
 export declare const models: {
   public: {
+    ActivityLog: Models.public_ActivityLog;
     Comment: Models.public_Comment;
     ComplianceItem: Models.public_ComplianceItem;
     Document: Models.public_Document;
@@ -1211,6 +1274,99 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly activity_logs: {
+              columns: {
+                readonly action: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly actor_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly entity_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly entity_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly metadata: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'activity_logs_scheme_id_created_at_idx';
+                  readonly columns: readonly ['scheme_id', 'created_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'activity_logs';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'activity_logs';
+                    readonly columns: readonly ['actor_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly comments: {
               columns: {
                 readonly author_id: {
@@ -2700,6 +2856,10 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly activity_logs: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ActivityLog';
+    };
     readonly comments: { readonly namespace: 'public' & NamespaceId; readonly model: 'Comment' };
     readonly compliance_items: {
       readonly namespace: 'public' & NamespaceId;
@@ -2732,6 +2892,86 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly ActivityLog: {
+            readonly fields: {
+              readonly action: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly actorId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly entityId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly entityType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly metadata: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly actor: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['actorId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'activity_logs';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly action: { readonly column: 'action' };
+                readonly actorId: { readonly column: 'actor_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly entityId: { readonly column: 'entity_id' };
+                readonly entityType: { readonly column: 'entity_type' };
+                readonly id: { readonly column: 'id' };
+                readonly metadata: { readonly column: 'metadata' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+              };
+            };
+          };
           readonly Comment: {
             readonly fields: {
               readonly authorId: {
@@ -3683,6 +3923,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly activityLogs: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ActivityLog';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['actorId'];
+                };
+              };
               readonly comments: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -3827,6 +4078,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly activityLogs: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ActivityLog';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly compliance: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;

@@ -31,12 +31,13 @@ model Profile {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships SchemeMembership[]
-  motions     Motion[]
-  votes       Vote[]
-  comments    Comment[]
-  workOrders  WorkOrder[]        @relation("RaisedBy")
-  invitations Invitation[]       @relation("InvitedBy")
+  memberships    SchemeMembership[]
+  motions        Motion[]
+  votes          Vote[]
+  comments       Comment[]
+  workOrders     WorkOrder[]        @relation("RaisedBy")
+  invitations    Invitation[]       @relation("InvitedBy")
+  activityLogs   ActivityLog[]
 
   @@map("profiles")
 }
@@ -58,16 +59,17 @@ model Scheme {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  lots        Lot[]
-  memberships SchemeMembership[]
-  levies      Levy[]
-  motions     Motion[]
-  meetings    Meeting[]
-  documents   Document[]
-  workOrders  WorkOrder[]
-  funds       Fund[]
-  compliance  ComplianceItem[]
-  invitations Invitation[]
+  lots          Lot[]
+  memberships   SchemeMembership[]
+  levies        Levy[]
+  motions       Motion[]
+  meetings      Meeting[]
+  documents     Document[]
+  workOrders    WorkOrder[]
+  funds         Fund[]
+  compliance    ComplianceItem[]
+  invitations   Invitation[]
+  activityLogs  ActivityLog[]
 
   @@map("schemes")
 }
@@ -313,4 +315,23 @@ model Invitation {
 
   @@unique([schemeId, email, role])
   @@map("invitations")
+}
+
+// ─── Activity Log / Audit Trail ─────────────────────────────────
+
+model ActivityLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId   String   @map("scheme_id") @db.Uuid
+  actorId    String   @map("actor_id") @db.Uuid
+  action     String   // LEVY_CREATED, LEVY_ISSUED, INVITATION_SENT, MEMBER_JOINED, DOCUMENT_UPLOADED, WORK_ORDER_CREATED, MEETING_SCHEDULED, COMPLIANCE_UPDATED, SCHEME_UPDATED, MEMBER_REMOVED
+  entityType String   @map("entity_type") // Levy, Invitation, SchemeMembership, Document, WorkOrder, Meeting, ComplianceItem, Scheme
+  entityId   String?  @map("entity_id") @db.Uuid
+  metadata   Json?    // Additional context (e.g. { levyTitle: "Q1 FY26", amount: 10000 })
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  scheme Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  actor  Profile @relation(fields: [actorId], references: [id])
+
+  @@index([schemeId, createdAt])
+  @@map("activity_logs")
 }

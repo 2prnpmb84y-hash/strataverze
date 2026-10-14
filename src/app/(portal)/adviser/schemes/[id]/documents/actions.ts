@@ -9,6 +9,7 @@ import {
   deleteDocument,
 } from "@/lib/queries/documents";
 import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type DocumentFormState = {
   error?: string;
@@ -79,6 +80,15 @@ export async function uploadDocumentAction(
       fileSize: file!.size,
       mimeType: file!.type || undefined,
       uploadedBy: profile.id,
+    });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "DOCUMENT_UPLOADED",
+      entityType: "Document",
+      entityId: doc.id,
+      metadata: { title, category, fileName: file!.name },
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);

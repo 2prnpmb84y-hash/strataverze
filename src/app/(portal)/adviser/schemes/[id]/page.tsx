@@ -8,10 +8,12 @@ import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { getWorkOrdersForScheme } from "@/lib/queries/work-orders";
 import { getComplianceForScheme } from "@/lib/queries/compliance";
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { getActivityForScheme } from "@/lib/queries/activity-log";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import { SchemeForm } from "../scheme-form";
 import { DeleteSchemeButton } from "./delete-button";
 
@@ -33,6 +35,7 @@ export default async function SchemeDetailPage({
   const documents = await getDocumentsForScheme(id);
   const workOrders = await getWorkOrdersForScheme(id);
   const complianceItems = await getComplianceForScheme(id);
+  const activities = await getActivityForScheme(id, 20);
 
   // Check the current user is an adviser on this scheme
   const isAdviser = scheme.memberships.some(
@@ -552,6 +555,15 @@ export default async function SchemeDetailPage({
             Track insurance, fire safety, OH&S and other compliance obligations.
           </p>
         )}
+      </Card>
+
+      {/* Activity */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Recent Activity"
+          description="Actions taken on this scheme."
+        />
+        <ActivityTimeline activities={activities} />
       </Card>
 
       {/* Edit form */}

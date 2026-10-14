@@ -6,6 +6,7 @@ import {
   createInvitation,
   revokeInvitation,
 } from "@/lib/queries/invitations";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type InvitationFormState = {
   error?: string;
@@ -41,12 +42,21 @@ export async function sendInvitationAction(
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
-    await createInvitation({
+    const invitation = await createInvitation({
       schemeId,
       email,
       role: role as "OWNER" | "COMMITTEE",
       invitedById: profile.id,
       expiresAt: expiresAt.toISOString(),
+    });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "INVITATION_SENT",
+      entityType: "Invitation",
+      entityId: invitation.id,
+      metadata: { email, role },
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}/members`);
@@ -68,6 +78,15 @@ export async function revokeInvitationAction(
 
   try {
     await revokeInvitation(invitationId);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "INVITATION_REVOKED",
+      entityType: "Invitation",
+      entityId: invitationId,
+    });
+
     revalidatePath(`/adviser/schemes/${schemeId}/members`);
     return {};
   } catch {

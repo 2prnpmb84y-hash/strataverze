@@ -9,6 +9,7 @@ import {
   deleteWorkOrder,
   addComment,
 } from "@/lib/queries/work-orders";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type WorkOrderFormState = {
   error?: string;
@@ -55,6 +56,15 @@ export async function createWorkOrderAction(
       category: category || undefined,
       estimatedCost: estimatedCost ? Number(estimatedCost) : undefined,
       assignedTo: assignedTo || undefined,
+    });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "WORK_ORDER_CREATED",
+      entityType: "WorkOrder",
+      entityId: wo.id,
+      metadata: { title, priority },
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
@@ -129,6 +139,18 @@ export async function updateWorkOrderStatusAction(
       if (actualCost != null) data.actualCost = actualCost;
     }
     await updateWorkOrder(workOrderId, data);
+
+    if (status === "COMPLETED") {
+      await logActivity({
+        schemeId,
+        actorId: profile.id,
+        action: "WORK_ORDER_COMPLETED",
+        entityType: "WorkOrder",
+        entityId: workOrderId,
+        metadata: { actualCost },
+      });
+    }
+
     revalidatePath(`/adviser/schemes/${schemeId}/work-orders/${workOrderId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};

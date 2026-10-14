@@ -10,6 +10,7 @@ import {
   issueLevy,
   markLevyItemPaid,
 } from "@/lib/queries/levies";
+import { logActivity } from "@/lib/queries/activity-log";
 
 export type LevyFormState = {
   error?: string;
@@ -59,6 +60,14 @@ export async function createLevyAction(
 
   try {
     const levy = await createLevy({ ...data, schemeId });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LEVY_CREATED",
+      entityType: "Levy",
+      entityId: levy.id,
+      metadata: { title: data.title, totalAmount: data.totalAmount },
+    });
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/levies/${levy.id}`);
   } catch (err) {
@@ -124,6 +133,13 @@ export async function issueLevyAction(schemeId: string, levyId: string) {
 
   try {
     await issueLevy(levyId);
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LEVY_ISSUED",
+      entityType: "Levy",
+      entityId: levyId,
+    });
     revalidatePath(`/adviser/schemes/${schemeId}/levies/${levyId}`);
     return {};
   } catch {
@@ -142,6 +158,14 @@ export async function markItemPaidAction(
 
   try {
     await markLevyItemPaid(itemId, amount);
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LEVY_PAYMENT_RECORDED",
+      entityType: "LevyItem",
+      entityId: itemId,
+      metadata: { levyId, amount },
+    });
     revalidatePath(`/adviser/schemes/${schemeId}/levies/${levyId}`);
     return {};
   } catch {
