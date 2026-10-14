@@ -2,11 +2,17 @@ import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
+import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { WorkOrderList } from "@/components/work-order-list";
 
-export default async function OwnerMaintenancePage() {
+export default async function OwnerMaintenancePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -20,6 +26,10 @@ export default async function OwnerMaintenancePage() {
     schemes.map((s) => [s.id, s.name]),
   );
 
+  const sp = await searchParams;
+  const { page } = parsePage(sp);
+  const { data: paginatedOrders, meta } = paginateArray(workOrders, page);
+
   return (
     <div className="max-w-2xl">
       <PageHeader
@@ -29,8 +39,14 @@ export default async function OwnerMaintenancePage() {
       />
 
       <WorkOrderList
-        workOrders={workOrders}
+        workOrders={paginatedOrders}
         schemeNames={schemeNames}
+        basePath="/owner/maintenance"
+      />
+
+      <Pagination
+        currentPage={meta.currentPage}
+        totalPages={meta.totalPages}
         basePath="/owner/maintenance"
       />
     </div>

@@ -1,11 +1,17 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForAdviser } from "@/lib/queries/schemes";
 import { getComplianceForSchemes } from "@/lib/queries/compliance";
+import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { Pagination } from "@/components/ui/pagination";
 import { ComplianceList } from "@/components/compliance-list";
 
-export default async function AdviserCompliancePage() {
+export default async function AdviserCompliancePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -25,6 +31,10 @@ export default async function AdviserCompliancePage() {
     (i) => i.status === "PENDING_REVIEW" || i.status === "PENDING",
   ).length;
 
+  const sp = await searchParams;
+  const { page } = parsePage(sp);
+  const { data: paginatedItems, meta } = paginateArray(items, page);
+
   return (
     <div className="max-w-2xl">
       <PageHeader
@@ -43,7 +53,13 @@ export default async function AdviserCompliancePage() {
         <StatCard label="Pending" value={pending} accent="bg-yellow-500" />
       </div>
 
-      <ComplianceList items={items} schemeNames={schemeNames} />
+      <ComplianceList items={paginatedItems} schemeNames={schemeNames} />
+
+      <Pagination
+        currentPage={meta.currentPage}
+        totalPages={meta.totalPages}
+        basePath="/adviser/compliance"
+      />
     </div>
   );
 }

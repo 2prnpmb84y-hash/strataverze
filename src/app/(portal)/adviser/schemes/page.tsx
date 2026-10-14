@@ -1,15 +1,25 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForAdviser } from "@/lib/queries/schemes";
+import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 import { SchemeList } from "@/components/scheme-list";
 
-export default async function AdviserSchemesPage() {
+export default async function AdviserSchemesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
   const schemes = await getSchemesForAdviser(profile.id);
+
+  const sp = await searchParams;
+  const { page } = parsePage(sp);
+  const { data: paginatedSchemes, meta } = paginateArray(schemes, page);
 
   return (
     <div className="max-w-4xl">
@@ -42,7 +52,15 @@ export default async function AdviserSchemesPage() {
           actionHref="/adviser/schemes/new"
         />
       ) : (
-        <SchemeList schemes={schemes} />
+        <>
+          <SchemeList schemes={paginatedSchemes} />
+
+          <Pagination
+            currentPage={meta.currentPage}
+            totalPages={meta.totalPages}
+            basePath="/adviser/schemes"
+          />
+        </>
       )}
     </div>
   );

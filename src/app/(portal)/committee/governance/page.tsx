@@ -1,12 +1,18 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
+import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { CommitteeMeetingList } from "@/components/committee-meeting-list";
 
-export default async function CommitteeGovernancePage() {
+export default async function CommitteeGovernancePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -29,6 +35,10 @@ export default async function CommitteeGovernancePage() {
       sum + m.motions.filter((mo) => mo.status === "PROPOSED").length,
     0,
   );
+
+  const sp = await searchParams;
+  const { page } = parsePage(sp);
+  const { data: paginatedMeetings, meta } = paginateArray(meetings, page);
 
   return (
     <div className="max-w-2xl">
@@ -58,7 +68,13 @@ export default async function CommitteeGovernancePage() {
         />
       </div>
 
-      <CommitteeMeetingList meetings={meetings} schemeNames={schemeNames} />
+      <CommitteeMeetingList meetings={paginatedMeetings} schemeNames={schemeNames} />
+
+      <Pagination
+        currentPage={meta.currentPage}
+        totalPages={meta.totalPages}
+        basePath="/committee/governance"
+      />
     </div>
   );
 }

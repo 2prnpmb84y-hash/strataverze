@@ -2,10 +2,16 @@ import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getDocumentsForSchemes } from "@/lib/queries/documents";
+import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
 import { DocumentList } from "@/components/document-list";
 
-export default async function OwnerDocumentsPage() {
+export default async function OwnerDocumentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -19,6 +25,10 @@ export default async function OwnerDocumentsPage() {
     schemes.map((s) => [s.id, s.name]),
   );
 
+  const sp = await searchParams;
+  const { page } = parsePage(sp);
+  const { data: paginatedDocs, meta } = paginateArray(documents, page);
+
   return (
     <div className="max-w-2xl">
       <PageHeader
@@ -26,7 +36,13 @@ export default async function OwnerDocumentsPage() {
         description="Documents and records for your schemes."
       />
 
-      <DocumentList documents={documents} schemeNames={schemeNames} />
+      <DocumentList documents={paginatedDocs} schemeNames={schemeNames} />
+
+      <Pagination
+        currentPage={meta.currentPage}
+        totalPages={meta.totalPages}
+        basePath="/owner/documents"
+      />
     </div>
   );
 }

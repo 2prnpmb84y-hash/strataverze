@@ -1,11 +1,17 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getComplianceForSchemes } from "@/lib/queries/compliance";
+import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { Pagination } from "@/components/ui/pagination";
 import { ComplianceList } from "@/components/compliance-list";
 
-export default async function CommitteeCompliancePage() {
+export default async function CommitteeCompliancePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -24,6 +30,10 @@ export default async function CommitteeCompliancePage() {
   const pendingReview = items.filter(
     (i) => i.status === "PENDING_REVIEW",
   ).length;
+
+  const sp = await searchParams;
+  const { page } = parsePage(sp);
+  const { data: paginatedItems, meta } = paginateArray(items, page);
 
   return (
     <div className="max-w-2xl">
@@ -47,7 +57,13 @@ export default async function CommitteeCompliancePage() {
         />
       </div>
 
-      <ComplianceList items={items} schemeNames={schemeNames} />
+      <ComplianceList items={paginatedItems} schemeNames={schemeNames} />
+
+      <Pagination
+        currentPage={meta.currentPage}
+        totalPages={meta.totalPages}
+        basePath="/committee/compliance"
+      />
     </div>
   );
 }
