@@ -1,6 +1,6 @@
 import { resetPassword } from "./actions";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function ForgotPasswordPage({
   searchParams,
