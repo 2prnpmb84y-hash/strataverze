@@ -68,6 +68,10 @@
       "model": "Profile",
       "namespace": "public"
     },
+    "scheme_images": {
+      "model": "SchemeImage",
+      "namespace": "public"
+    },
     "scheme_memberships": {
       "model": "SchemeMembership",
       "namespace": "public"
@@ -2617,6 +2621,20 @@
                   "kind": "scalar"
                 }
               },
+              "buildingClass": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "buildingType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -2807,6 +2825,21 @@
                   "namespace": "public"
                 }
               },
+              "images": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "SchemeImage",
+                  "namespace": "public"
+                }
+              },
               "insurancePolicies": {
                 "cardinality": "1:N",
                 "on": {
@@ -2936,6 +2969,12 @@
                 "address": {
                   "column": "address"
                 },
+                "buildingClass": {
+                  "column": "building_class"
+                },
+                "buildingType": {
+                  "column": "building_type"
+                },
                 "createdAt": {
                   "column": "created_at"
                 },
@@ -2972,6 +3011,97 @@
               },
               "namespaceId": "public",
               "table": "schemes"
+            }
+          },
+          "SchemeImage": {
+            "fields": {
+              "caption": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamp-string@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sortOrder": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "url": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "caption": {
+                  "column": "caption"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "sortOrder": {
+                  "column": "sort_order"
+                },
+                "url": {
+                  "column": "url"
+                }
+              },
+              "namespaceId": "public",
+              "table": "scheme_images"
             }
           },
           "SchemeMembership": {
@@ -5381,6 +5511,94 @@
               },
               "uniques": []
             },
+            "scheme_images": {
+              "columns": {
+                "caption": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "created_at": {
+                  "codecId": "pg/timestamp-string@1",
+                  "dataType": "pg/timestamp",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "sort_order": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "scheme_images_scheme_id_sort_order_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "scheme_images"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "sort_order"
+                  ],
+                  "name": "scheme_images_scheme_id_sort_order_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "scheme_memberships": {
               "columns": {
                 "created_at": {
@@ -5551,6 +5769,16 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "building_class": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "building_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "created_at": {
                   "codecId": "pg/timestamp-string@1",
@@ -5912,7 +6140,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "35c03eb325252299a272c30ea93aa3d8d9830bc109ff7d7d69fc02c705911ded"
+    "storageHash": "769eb8ce816d210852204fd02e6ac124e67b728241aa593477089d720eab11e3"
   },
   "execution": {
     "executionHash": "de4263e3f6f402f737f9f7a2d49dcdbce7931f9cbd974375cc998bceaee3dabb",

@@ -57,11 +57,14 @@ model Scheme {
   totalEntitlement Int     @map("total_entitlement")
   financialYearEnd String  @default("06-30") @map("financial_year_end")
   abnNumber       String?  @map("abn_number")
+  buildingClass   String?  @map("building_class")   // e.g. "1", "2", "3"
+  buildingType    String?  @map("building_type")    // STRATA, COMMUNITY, COMPANY_TITLE, STRATUM
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   lots           Lot[]
   memberships    SchemeMembership[]
+  images         SchemeImage[]
   levies         Levy[]
   motions        Motion[]
   meetings       Meeting[]
@@ -77,6 +80,20 @@ model Scheme {
   contacts       Contact[]
 
   @@map("schemes")
+}
+
+model SchemeImage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId  String   @map("scheme_id") @db.Uuid
+  url       String
+  caption   String?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@index([schemeId, sortOrder])
+  @@map("scheme_images")
 }
 
 model Lot {

@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'35c03eb325252299a272c30ea93aa3d8d9830bc109ff7d7d69fc02c705911ded'>;
+  StorageHashBase<'769eb8ce816d210852204fd02e6ac124e67b728241aa593477089d720eab11e3'>;
 export type ExecutionHash =
   ExecutionHashBase<'de4263e3f6f402f737f9f7a2d49dcdbce7931f9cbd974375cc998bceaee3dabb'>;
 export type ProfileHash =
@@ -433,6 +433,8 @@ export type FieldOutputTypes = {
     readonly Scheme: {
       readonly abnNumber: CodecTypes['pg/text@1']['output'] | null;
       readonly address: CodecTypes['pg/text@1']['output'];
+      readonly buildingClass: CodecTypes['pg/text@1']['output'] | null;
+      readonly buildingType: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: TimestampString<3>;
       readonly financialYearEnd: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -444,6 +446,14 @@ export type FieldOutputTypes = {
       readonly totalEntitlement: CodecTypes['pg/int4@1']['output'];
       readonly totalLots: CodecTypes['pg/int4@1']['output'];
       readonly updatedAt: TimestampString<3>;
+    };
+    readonly SchemeImage: {
+      readonly caption: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: TimestampString<3>;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly sortOrder: CodecTypes['pg/int4@1']['output'];
+      readonly url: CodecTypes['pg/text@1']['output'];
     };
     readonly SchemeMembership: {
       readonly createdAt: TimestampString<3>;
@@ -678,6 +688,8 @@ export type FieldInputTypes = {
     readonly Scheme: {
       readonly abnNumber: CodecTypes['pg/text@1']['input'] | null;
       readonly address: CodecTypes['pg/text@1']['input'];
+      readonly buildingClass: CodecTypes['pg/text@1']['input'] | null;
+      readonly buildingType: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
       readonly financialYearEnd: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -689,6 +701,14 @@ export type FieldInputTypes = {
       readonly totalEntitlement: CodecTypes['pg/int4@1']['input'];
       readonly totalLots: CodecTypes['pg/int4@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamp-string@1']['input'];
+    };
+    readonly SchemeImage: {
+      readonly caption: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly sortOrder: CodecTypes['pg/int4@1']['input'];
+      readonly url: CodecTypes['pg/text@1']['input'];
     };
     readonly SchemeMembership: {
       readonly createdAt: CodecTypes['pg/timestamp-string@1']['input'];
@@ -920,6 +940,14 @@ export type StorageColumnTypes = {
       readonly phone: CodecTypes['pg/text@1']['output'] | null;
       readonly updated_at: TimestampString<3>;
     };
+    readonly scheme_images: {
+      readonly caption: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: TimestampString<3>;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly sort_order: CodecTypes['pg/int4@1']['output'];
+      readonly url: CodecTypes['pg/text@1']['output'];
+    };
     readonly scheme_memberships: {
       readonly created_at: TimestampString<3>;
       readonly end_date: TimestampString<3> | null;
@@ -934,6 +962,8 @@ export type StorageColumnTypes = {
     readonly schemes: {
       readonly abn_number: CodecTypes['pg/text@1']['output'] | null;
       readonly address: CodecTypes['pg/text@1']['output'];
+      readonly building_class: CodecTypes['pg/text@1']['output'] | null;
+      readonly building_type: CodecTypes['pg/text@1']['output'] | null;
       readonly created_at: TimestampString<3>;
       readonly financial_year_end: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -1165,6 +1195,14 @@ export type StorageColumnInputTypes = {
       readonly phone: CodecTypes['pg/text@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamp-string@1']['input'];
     };
+    readonly scheme_images: {
+      readonly caption: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly sort_order: CodecTypes['pg/int4@1']['input'];
+      readonly url: CodecTypes['pg/text@1']['input'];
+    };
     readonly scheme_memberships: {
       readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
       readonly end_date: CodecTypes['pg/timestamp-string@1']['input'] | null;
@@ -1179,6 +1217,8 @@ export type StorageColumnInputTypes = {
     readonly schemes: {
       readonly abn_number: CodecTypes['pg/text@1']['input'] | null;
       readonly address: CodecTypes['pg/text@1']['input'];
+      readonly building_class: CodecTypes['pg/text@1']['input'] | null;
+      readonly building_type: CodecTypes['pg/text@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamp-string@1']['input'];
       readonly financial_year_end: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -1474,6 +1514,8 @@ export namespace Models {
   export type public_Scheme = {
     abnNumber: CodecTypes['pg/text@1']['output'] | null;
     address: CodecTypes['pg/text@1']['output'];
+    buildingClass: CodecTypes['pg/text@1']['output'] | null;
+    buildingType: CodecTypes['pg/text@1']['output'] | null;
     createdAt: TimestampString<3>;
     financialYearEnd: CodecTypes['pg/text@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
@@ -1492,6 +1534,7 @@ export namespace Models {
     contacts: public_Contact[];
     documents: public_Document[];
     funds: public_Fund[];
+    images: public_SchemeImage[];
     insurancePolicies: public_InsurancePolicy[];
     invitations: public_Invitation[];
     levies: public_Levy[];
@@ -1508,6 +1551,7 @@ export namespace Models {
       | 'contacts'
       | 'documents'
       | 'funds'
+      | 'images'
       | 'insurancePolicies'
       | 'invitations'
       | 'levies'
@@ -1516,6 +1560,16 @@ export namespace Models {
       | 'memberships'
       | 'motions'
       | 'workOrders';
+  };
+  export type public_SchemeImage = {
+    caption: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: TimestampString<3>;
+    id: CodecTypes['pg/uuid@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    sortOrder: CodecTypes['pg/int4@1']['output'];
+    url: CodecTypes['pg/text@1']['output'];
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'scheme';
   };
   export type public_SchemeMembership = {
     createdAt: TimestampString<3>;
@@ -1583,6 +1637,7 @@ export declare const models: {
     Motion: Models.public_Motion;
     Profile: Models.public_Profile;
     Scheme: Models.public_Scheme;
+    SchemeImage: Models.public_SchemeImage;
     SchemeMembership: Models.public_SchemeMembership;
     Vote: Models.public_Vote;
     WorkOrder: Models.public_WorkOrder;
@@ -3259,6 +3314,79 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
+            readonly scheme_images: {
+              columns: {
+                readonly caption: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamp';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly sort_order: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+                readonly url: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'scheme_images_scheme_id_sort_order_idx';
+                  readonly columns: readonly ['scheme_id', 'sort_order'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'scheme_images';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly scheme_memberships: {
               columns: {
                 readonly created_at: {
@@ -3390,6 +3518,18 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly building_class: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly building_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly created_at: {
@@ -3743,6 +3883,10 @@ type ContractBase = Omit<
     readonly meetings: { readonly namespace: 'public' & NamespaceId; readonly model: 'Meeting' };
     readonly motions: { readonly namespace: 'public' & NamespaceId; readonly model: 'Motion' };
     readonly profiles: { readonly namespace: 'public' & NamespaceId; readonly model: 'Profile' };
+    readonly scheme_images: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SchemeImage';
+    };
     readonly scheme_memberships: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SchemeMembership';
@@ -5355,6 +5499,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly buildingClass: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly buildingType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -5483,6 +5635,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly images: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SchemeImage';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly insurancePolicies: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -5572,6 +5735,8 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly abnNumber: { readonly column: 'abn_number' };
                 readonly address: { readonly column: 'address' };
+                readonly buildingClass: { readonly column: 'building_class' };
+                readonly buildingType: { readonly column: 'building_type' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly financialYearEnd: { readonly column: 'financial_year_end' };
                 readonly id: { readonly column: 'id' };
@@ -5583,6 +5748,64 @@ type ContractBase = Omit<
                 readonly totalEntitlement: { readonly column: 'total_entitlement' };
                 readonly totalLots: { readonly column: 'total_lots' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly SchemeImage: {
+            readonly fields: {
+              readonly caption: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamp-string@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sortOrder: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly url: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'scheme_images';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly caption: { readonly column: 'caption' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly id: { readonly column: 'id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly sortOrder: { readonly column: 'sort_order' };
+                readonly url: { readonly column: 'url' };
               };
             };
           };
