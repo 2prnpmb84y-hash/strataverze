@@ -1,10 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col flex-1 items-center justify-center bg-muted px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-lg sidebar-gradient" />
+            <span className="text-2xl font-bold font-heading text-foreground tracking-tight">
+              StrataVerze
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const [password, setPassword] = useState("");
