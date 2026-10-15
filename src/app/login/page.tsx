@@ -1,5 +1,6 @@
 import { LoginForm } from "./login-form";
 
+export const dynamic = "force-dynamic";
 export const instant = false;
 
 export default async function LoginPage({
