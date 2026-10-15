@@ -9,7 +9,8 @@ import { Logo } from "@/components/logo";
 
 /** Base owner nav items shown to all owner-portal users. */
 const ownerBaseNav = [
-  { label: "Overview", href: "/owner" },
+  { label: "Properties", href: "/owner" },
+  { label: "Dashboard", href: "/owner/dashboard" },
   { label: "My Scheme", href: "/owner/scheme" },
   { label: "Levies", href: "/owner/levies" },
   { label: "Meetings", href: "/owner/meetings" },

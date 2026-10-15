@@ -158,6 +158,63 @@ export async function getSchemeNameById(schemeId: string) {
 }
 
 /**
+ * Get notification summary counts per scheme for the selection grid.
+ * Returns a map of schemeId -> { pendingLevies, activeWorkOrders, upcomingMeetings }.
+ */
+export async function getSchemeNotificationCounts(
+  schemeIds: string[],
+  ownerLotIds: Set<string>,
+) {
+  if (schemeIds.length === 0) return new Map<string, { pendingLevies: number; activeWorkOrders: number; upcomingMeetings: number }>();
+
+  const [levies, workOrders, meetings] = await Promise.all([
+    db.orm.public.Levy
+      .where((l) => l.schemeId.in(schemeIds))
+      .where((l) => l.status.eq("ISSUED"))
+      .include("items")
+      .all(),
+    db.orm.public.WorkOrder
+      .where((wo) => wo.schemeId.in(schemeIds))
+      .where((wo) => wo.status.in(["OPEN", "IN_PROGRESS"]))
+      .all(),
+    db.orm.public.Meeting
+      .where((m) => m.schemeId.in(schemeIds))
+      .where((m) => m.status.eq("SCHEDULED"))
+      .all(),
+  ]);
+
+  const counts = new Map<string, { pendingLevies: number; activeWorkOrders: number; upcomingMeetings: number }>();
+
+  for (const id of schemeIds) {
+    counts.set(id, { pendingLevies: 0, activeWorkOrders: 0, upcomingMeetings: 0 });
+  }
+
+  // Count levies with unpaid items belonging to the owner's lots
+  for (const levy of levies) {
+    const entry = counts.get(levy.schemeId);
+    if (!entry) continue;
+    const hasUnpaid = levy.items.some(
+      (item) => ownerLotIds.has(item.lotId) && item.status !== "PAID",
+    );
+    if (hasUnpaid) entry.pendingLevies++;
+  }
+
+  // Count active work orders per scheme
+  for (const wo of workOrders) {
+    const entry = counts.get(wo.schemeId);
+    if (entry) entry.activeWorkOrders++;
+  }
+
+  // Count upcoming meetings per scheme
+  for (const meeting of meetings) {
+    const entry = counts.get(meeting.schemeId);
+    if (entry) entry.upcomingMeetings++;
+  }
+
+  return counts;
+}
+
+/**
  * Fetch email addresses for all active members of a scheme,
  * optionally filtered by role (e.g. "OWNER", "COMMITTEE", "ADVISER").
  */
