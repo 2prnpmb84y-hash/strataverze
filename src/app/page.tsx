@@ -191,7 +191,7 @@ export default function LandingPage() {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} StrataVerze. Built in Australia
+            &copy; 2026 StrataVerze. Built in Australia
             for Australian strata.
           </p>
         </div>
