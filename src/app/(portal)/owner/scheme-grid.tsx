@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
+import { Button } from "@/components/ui/button";
 import { selectScheme } from "@/lib/actions/scheme-selection";
 
 type SchemeCard = {
@@ -77,6 +78,16 @@ export function SchemeGrid({
       <p className="text-sm text-muted-foreground mb-6">
         Select a property to manage.
       </p>
+
+      {/* Add Property button */}
+      <div className="mb-6">
+        <Button href="/owner/add-property">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          Add Property
+        </Button>
+      </div>
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

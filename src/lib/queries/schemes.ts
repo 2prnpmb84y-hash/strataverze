@@ -82,6 +82,12 @@ export async function createScheme(
     totalEntitlement: number;
     financialYearEnd?: string;
     abnNumber?: string;
+    buildingSubType?: string;
+    folio?: string;
+    isActive?: boolean;
+    allInclusiveFees?: boolean;
+    paymentPlan?: string;
+    debtCollection?: boolean;
   },
   adviserProfileId: string,
 ) {
@@ -97,6 +103,12 @@ export async function createScheme(
       totalEntitlement: data.totalEntitlement,
       financialYearEnd: data.financialYearEnd ?? "06-30",
       abnNumber: data.abnNumber ?? null,
+      buildingSubType: data.buildingSubType ?? null,
+      folio: data.folio ?? null,
+      isActive: data.isActive ?? true,
+      allInclusiveFees: data.allInclusiveFees ?? false,
+      paymentPlan: data.paymentPlan ?? null,
+      debtCollection: data.debtCollection ?? false,
     });
 
     // Link the creator as the adviser
@@ -138,6 +150,12 @@ export async function updateScheme(
     totalEntitlement: number;
     financialYearEnd: string;
     abnNumber: string | null;
+    buildingSubType: string | null;
+    folio: string | null;
+    isActive: boolean;
+    allInclusiveFees: boolean;
+    paymentPlan: string | null;
+    debtCollection: boolean;
   }>,
 ) {
   return db.orm.public.Scheme.where({ id: schemeId }).update(data);

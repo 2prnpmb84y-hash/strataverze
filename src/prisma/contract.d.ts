@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b105756b54074d664ab66edef6db42d034a5efa65810b6a0172bb5d82d9be3e2'>;
+  StorageHashBase<'d06e6de2841df7512adc87987a0f1179f3d17dd91c8c3cffcdfe3fa4b8dce1c3'>;
 export type ExecutionHash =
   ExecutionHashBase<'de4263e3f6f402f737f9f7a2d49dcdbce7931f9cbd974375cc998bceaee3dabb'>;
 export type ProfileHash =
@@ -429,12 +429,18 @@ export type FieldOutputTypes = {
     readonly Scheme: {
       readonly abnNumber: CodecTypes['pg/text@1']['output'] | null;
       readonly address: CodecTypes['pg/text@1']['output'];
+      readonly allInclusiveFees: CodecTypes['pg/bool@1']['output'];
       readonly buildingClass: CodecTypes['pg/text@1']['output'] | null;
+      readonly buildingSubType: CodecTypes['pg/text@1']['output'] | null;
       readonly buildingType: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly debtCollection: CodecTypes['pg/bool@1']['output'];
       readonly financialYearEnd: CodecTypes['pg/text@1']['output'];
+      readonly folio: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isActive: CodecTypes['pg/bool@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
+      readonly paymentPlan: CodecTypes['pg/text@1']['output'] | null;
       readonly planNumber: CodecTypes['pg/text@1']['output'];
       readonly postcode: CodecTypes['pg/text@1']['output'];
       readonly state: CodecTypes['pg/text@1']['output'];
@@ -684,12 +690,18 @@ export type FieldInputTypes = {
     readonly Scheme: {
       readonly abnNumber: CodecTypes['pg/text@1']['input'] | null;
       readonly address: CodecTypes['pg/text@1']['input'];
+      readonly allInclusiveFees: CodecTypes['pg/bool@1']['input'];
       readonly buildingClass: CodecTypes['pg/text@1']['input'] | null;
+      readonly buildingSubType: CodecTypes['pg/text@1']['input'] | null;
       readonly buildingType: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly debtCollection: CodecTypes['pg/bool@1']['input'];
       readonly financialYearEnd: CodecTypes['pg/text@1']['input'];
+      readonly folio: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isActive: CodecTypes['pg/bool@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
+      readonly paymentPlan: CodecTypes['pg/text@1']['input'] | null;
       readonly planNumber: CodecTypes['pg/text@1']['input'];
       readonly postcode: CodecTypes['pg/text@1']['input'];
       readonly state: CodecTypes['pg/text@1']['input'];
@@ -958,12 +970,18 @@ export type StorageColumnTypes = {
     readonly schemes: {
       readonly abn_number: CodecTypes['pg/text@1']['output'] | null;
       readonly address: CodecTypes['pg/text@1']['output'];
+      readonly all_inclusive_fees: CodecTypes['pg/bool@1']['output'];
       readonly building_class: CodecTypes['pg/text@1']['output'] | null;
+      readonly building_sub_type: CodecTypes['pg/text@1']['output'] | null;
       readonly building_type: CodecTypes['pg/text@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly debt_collection: CodecTypes['pg/bool@1']['output'];
       readonly financial_year_end: CodecTypes['pg/text@1']['output'];
+      readonly folio: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_active: CodecTypes['pg/bool@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
+      readonly payment_plan: CodecTypes['pg/text@1']['output'] | null;
       readonly plan_number: CodecTypes['pg/text@1']['output'];
       readonly postcode: CodecTypes['pg/text@1']['output'];
       readonly state: CodecTypes['pg/text@1']['output'];
@@ -1213,12 +1231,18 @@ export type StorageColumnInputTypes = {
     readonly schemes: {
       readonly abn_number: CodecTypes['pg/text@1']['input'] | null;
       readonly address: CodecTypes['pg/text@1']['input'];
+      readonly all_inclusive_fees: CodecTypes['pg/bool@1']['input'];
       readonly building_class: CodecTypes['pg/text@1']['input'] | null;
+      readonly building_sub_type: CodecTypes['pg/text@1']['input'] | null;
       readonly building_type: CodecTypes['pg/text@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly debt_collection: CodecTypes['pg/bool@1']['input'];
       readonly financial_year_end: CodecTypes['pg/text@1']['input'];
+      readonly folio: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_active: CodecTypes['pg/bool@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
+      readonly payment_plan: CodecTypes['pg/text@1']['input'] | null;
       readonly plan_number: CodecTypes['pg/text@1']['input'];
       readonly postcode: CodecTypes['pg/text@1']['input'];
       readonly state: CodecTypes['pg/text@1']['input'];
@@ -1510,12 +1534,18 @@ export namespace Models {
   export type public_Scheme = {
     abnNumber: CodecTypes['pg/text@1']['output'] | null;
     address: CodecTypes['pg/text@1']['output'];
+    allInclusiveFees: CodecTypes['pg/bool@1']['output'];
     buildingClass: CodecTypes['pg/text@1']['output'] | null;
+    buildingSubType: CodecTypes['pg/text@1']['output'] | null;
     buildingType: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    debtCollection: CodecTypes['pg/bool@1']['output'];
     financialYearEnd: CodecTypes['pg/text@1']['output'];
+    folio: CodecTypes['pg/text@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
+    isActive: CodecTypes['pg/bool@1']['output'];
     name: CodecTypes['pg/text@1']['output'];
+    paymentPlan: CodecTypes['pg/text@1']['output'] | null;
     planNumber: CodecTypes['pg/text@1']['output'];
     postcode: CodecTypes['pg/text@1']['output'];
     state: CodecTypes['pg/text@1']['output'];
@@ -3475,7 +3505,23 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly all_inclusive_fees: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
                 readonly building_class: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly building_sub_type: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -3494,6 +3540,16 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly debt_collection: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
                 readonly financial_year_end: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -3502,6 +3558,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/text@1', '06-30'>;
                   };
+                  readonly many: false;
+                };
+                readonly folio: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly id: {
@@ -3514,10 +3576,26 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly is_active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
                 readonly name: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly payment_plan: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly plan_number: {
@@ -5411,7 +5489,15 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly allInclusiveFees: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly buildingClass: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly buildingSubType: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -5426,16 +5512,32 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly debtCollection: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly financialYearEnd: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly folio: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly name: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paymentPlan: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly planNumber: {
@@ -5645,12 +5747,18 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly abnNumber: { readonly column: 'abn_number' };
                 readonly address: { readonly column: 'address' };
+                readonly allInclusiveFees: { readonly column: 'all_inclusive_fees' };
                 readonly buildingClass: { readonly column: 'building_class' };
+                readonly buildingSubType: { readonly column: 'building_sub_type' };
                 readonly buildingType: { readonly column: 'building_type' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly debtCollection: { readonly column: 'debt_collection' };
                 readonly financialYearEnd: { readonly column: 'financial_year_end' };
+                readonly folio: { readonly column: 'folio' };
                 readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'is_active' };
                 readonly name: { readonly column: 'name' };
+                readonly paymentPlan: { readonly column: 'payment_plan' };
                 readonly planNumber: { readonly column: 'plan_number' };
                 readonly postcode: { readonly column: 'postcode' };
                 readonly state: { readonly column: 'state' };

@@ -59,6 +59,12 @@ model Scheme {
   abnNumber       String?  @map("abn_number")
   buildingClass   String?  @map("building_class")   // e.g. "1", "2", "3"
   buildingType    String?  @map("building_type")    // STRATA, COMMUNITY, COMPANY_TITLE, STRATUM
+  buildingSubType String?  @map("building_sub_type") // e.g. "Residential", "Commercial", "Mixed Use"
+  folio           String?                            // land title folio reference
+  isActive        Boolean  @default(true) @map("is_active")
+  allInclusiveFees Boolean @default(false) @map("all_inclusive_fees")
+  paymentPlan     String?  @map("payment_plan")     // e.g. "QUARTERLY", "MONTHLY", "ANNUALLY"
+  debtCollection  Boolean  @default(false) @map("debt_collection")
   createdAt       DateTime @default(now()) @db.Timestamptz @map("created_at")
   updatedAt       DateTime @updatedAt @db.Timestamptz @map("updated_at")
 

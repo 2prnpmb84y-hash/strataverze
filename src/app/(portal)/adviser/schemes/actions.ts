@@ -56,6 +56,12 @@ function validateSchemeForm(formData: FormData) {
       totalEntitlement: Number(totalEntitlement),
       financialYearEnd: (formData.get("financialYearEnd") as string) || "06-30",
       abnNumber: (formData.get("abnNumber") as string)?.trim() || undefined,
+      buildingSubType: (formData.get("buildingSubType") as string)?.trim() || undefined,
+      folio: (formData.get("folio") as string)?.trim() || undefined,
+      isActive: formData.get("isActive") !== "false",
+      allInclusiveFees: formData.get("allInclusiveFees") === "true",
+      paymentPlan: (formData.get("paymentPlan") as string)?.trim() || undefined,
+      debtCollection: formData.get("debtCollection") === "true",
     },
   };
 }

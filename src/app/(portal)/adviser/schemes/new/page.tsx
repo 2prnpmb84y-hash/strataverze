@@ -1,17 +1,17 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { SchemeForm } from "../scheme-form";
+import { AddPropertyWizard } from "../add-property-wizard";
 
 export default function NewSchemePage() {
   return (
     <div className="max-w-2xl">
       <PageHeader
-        title="Add Scheme"
+        title="Add Property"
         description="Register a new Owners Corporation."
         backHref="/adviser/schemes"
         backLabel="Schemes"
       />
 
-      <SchemeForm mode="create" />
+      <AddPropertyWizard />
     </div>
   );
 }

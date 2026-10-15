@@ -2510,7 +2510,21 @@
                   "kind": "scalar"
                 }
               },
+              "allInclusiveFees": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "buildingClass": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "buildingSubType": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -2531,8 +2545,22 @@
                   "kind": "scalar"
                 }
               },
+              "debtCollection": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "financialYearEnd": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "folio": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -2545,8 +2573,22 @@
                   "kind": "scalar"
                 }
               },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "paymentPlan": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -2852,8 +2894,14 @@
                 "address": {
                   "column": "address"
                 },
+                "allInclusiveFees": {
+                  "column": "all_inclusive_fees"
+                },
                 "buildingClass": {
                   "column": "building_class"
+                },
+                "buildingSubType": {
+                  "column": "building_sub_type"
                 },
                 "buildingType": {
                   "column": "building_type"
@@ -2861,14 +2909,26 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "debtCollection": {
+                  "column": "debt_collection"
+                },
                 "financialYearEnd": {
                   "column": "financial_year_end"
+                },
+                "folio": {
+                  "column": "folio"
                 },
                 "id": {
                   "column": "id"
                 },
+                "isActive": {
+                  "column": "is_active"
+                },
                 "name": {
                   "column": "name"
+                },
+                "paymentPlan": {
+                  "column": "payment_plan"
                 },
                 "planNumber": {
                   "column": "plan_number"
@@ -5506,7 +5566,21 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "all_inclusive_fees": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "building_class": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "building_sub_type": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -5525,6 +5599,15 @@
                   },
                   "nullable": false
                 },
+                "debt_collection": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "financial_year_end": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5533,6 +5616,11 @@
                     "value": "06-30"
                   },
                   "nullable": false
+                },
+                "folio": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "id": {
                   "codecId": "pg/uuid@1",
@@ -5543,10 +5631,24 @@
                   },
                   "nullable": false
                 },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "payment_plan": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "plan_number": {
                   "codecId": "pg/text@1",
@@ -5858,7 +5960,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b105756b54074d664ab66edef6db42d034a5efa65810b6a0172bb5d82d9be3e2"
+    "storageHash": "d06e6de2841df7512adc87987a0f1179f3d17dd91c8c3cffcdfe3fa4b8dce1c3"
   },
   "execution": {
     "executionHash": "de4263e3f6f402f737f9f7a2d49dcdbce7931f9cbd974375cc998bceaee3dabb",
