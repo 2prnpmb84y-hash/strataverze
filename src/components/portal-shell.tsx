@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { Logo } from "@/components/logo";
 
 /** Base owner nav items shown to all owner-portal users. */
 const ownerBaseNav = [
@@ -100,11 +101,8 @@ export function PortalShell({
     <div className="flex min-h-full">
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 flex-col sidebar-gradient">
-        <div className="flex items-center gap-3 px-6 pt-8 pb-6">
-          <div className="w-8 h-8 rounded-lg bg-white/30" />
-          <span className="text-lg font-bold font-heading text-white tracking-tight">
-            StrataVerze
-          </span>
+        <div className="px-6 pt-8 pb-6">
+          <Logo size="md" variant="white" />
         </div>
 
         <div className="px-4 mb-4">
@@ -227,12 +225,7 @@ export function PortalShell({
       {/* Mobile header */}
       <div className="flex flex-col flex-1">
         <header className="md:hidden flex items-center justify-between sidebar-gradient px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-white/30" />
-            <span className="text-base font-bold font-heading text-white">
-              StrataVerze
-            </span>
-          </div>
+          <Logo size="sm" variant="white" />
           <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white">
             {portal.label}
           </span>

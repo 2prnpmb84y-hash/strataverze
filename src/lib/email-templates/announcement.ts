@@ -36,22 +36,22 @@ export function announcementPublishedEmail(params: AnnouncementPublishedParams) 
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       ${priorityLabel}
     </h1>
-    <p style="margin:0 0 20px;font-size:15px;color:#4a4a5a;line-height:1.6;">
+    <p style="margin:0 0 20px;font-size:15px;color:#1A202C;line-height:1.6;">
       A new announcement has been posted for
       <strong>${params.schemeName}</strong>.
     </p>
     ${urgentBanner}
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
       <tr>
-        <td style="padding:4px 0;font-size:13px;color:#8c8c9a;width:100px;">Title</td>
-        <td style="padding:4px 8px;font-size:13px;color:#4a4a5a;font-weight:600;">${params.title}</td>
+        <td style="padding:4px 0;font-size:13px;color:#64748B;width:100px;">Title</td>
+        <td style="padding:4px 8px;font-size:13px;color:#1A202C;font-weight:600;">${params.title}</td>
       </tr>
       <tr>
-        <td style="padding:4px 0;font-size:13px;color:#8c8c9a;">Posted by</td>
-        <td style="padding:4px 8px;font-size:13px;color:#4a4a5a;">${params.authorName}</td>
+        <td style="padding:4px 0;font-size:13px;color:#64748B;">Posted by</td>
+        <td style="padding:4px 8px;font-size:13px;color:#1A202C;">${params.authorName}</td>
       </tr>
     </table>
-    <div style="background:#f8f8fc;border-radius:8px;padding:16px;margin:0 0 20px;font-size:14px;color:#4a4a5a;line-height:1.6;white-space:pre-wrap;">
+    <div style="background:#F8FAFB;border-radius:8px;padding:16px;margin:0 0 20px;font-size:14px;color:#1A202C;line-height:1.6;white-space:pre-wrap;">
 ${preview}
     </div>
     ${emailButton("View Announcement", params.detailUrl)}

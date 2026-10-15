@@ -1,16 +1,12 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg sidebar-gradient" />
-          <span className="text-xl font-bold font-heading text-foreground tracking-tight">
-            StrataVerze
-          </span>
-        </div>
+        <Logo size="md" variant="gradient" />
         <Link
           href="/login"
           className="inline-flex h-10 items-center justify-center rounded-lg bg-primary-400 px-6 text-sm text-white font-semibold transition-colors hover:bg-primary-500"
@@ -184,12 +180,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="px-6 py-8 border-t border-border">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded sidebar-gradient" />
-            <span className="text-sm font-semibold font-heading text-foreground">
-              StrataVerze
-            </span>
-          </div>
+          <Logo size="sm" variant="gradient" />
           <p className="text-xs text-muted-foreground">
             &copy; 2026 StrataVerze. Built in Australia
             for Australian strata.

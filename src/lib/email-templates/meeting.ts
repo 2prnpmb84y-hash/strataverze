@@ -33,8 +33,8 @@ export function meetingScheduledEmail(params: MeetingScheduledParams) {
 
   const locationRow = params.location
     ? `<tr>
-        <td style="padding:4px 0;font-size:13px;color:#8c8c9a;width:100px;">Location</td>
-        <td style="padding:4px 8px;font-size:13px;color:#4a4a5a;">${params.location}</td>
+        <td style="padding:4px 0;font-size:13px;color:#64748B;width:100px;">Location</td>
+        <td style="padding:4px 8px;font-size:13px;color:#1A202C;">${params.location}</td>
       </tr>`
     : "";
 
@@ -42,26 +42,26 @@ export function meetingScheduledEmail(params: MeetingScheduledParams) {
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       Meeting Scheduled
     </h1>
-    <p style="margin:0 0 20px;font-size:15px;color:#4a4a5a;line-height:1.6;">
+    <p style="margin:0 0 20px;font-size:15px;color:#1A202C;line-height:1.6;">
       A ${typeLabel.toLowerCase()} has been scheduled for
       <strong>${params.schemeName}</strong>.
     </p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
       <tr>
-        <td style="padding:4px 0;font-size:13px;color:#8c8c9a;width:100px;">Meeting</td>
-        <td style="padding:4px 8px;font-size:13px;color:#4a4a5a;font-weight:600;">${params.meetingTitle}</td>
+        <td style="padding:4px 0;font-size:13px;color:#64748B;width:100px;">Meeting</td>
+        <td style="padding:4px 8px;font-size:13px;color:#1A202C;font-weight:600;">${params.meetingTitle}</td>
       </tr>
       <tr>
-        <td style="padding:4px 0;font-size:13px;color:#8c8c9a;">Type</td>
-        <td style="padding:4px 8px;font-size:13px;color:#4a4a5a;">${typeLabel}</td>
+        <td style="padding:4px 0;font-size:13px;color:#64748B;">Type</td>
+        <td style="padding:4px 8px;font-size:13px;color:#1A202C;">${typeLabel}</td>
       </tr>
       <tr>
-        <td style="padding:4px 0;font-size:13px;color:#8c8c9a;">Date</td>
-        <td style="padding:4px 8px;font-size:13px;color:#4a4a5a;">${dateFormatted}</td>
+        <td style="padding:4px 0;font-size:13px;color:#64748B;">Date</td>
+        <td style="padding:4px 8px;font-size:13px;color:#1A202C;">${dateFormatted}</td>
       </tr>
       <tr>
-        <td style="padding:4px 0;font-size:13px;color:#8c8c9a;">Time</td>
-        <td style="padding:4px 8px;font-size:13px;color:#4a4a5a;">${timeFormatted}</td>
+        <td style="padding:4px 0;font-size:13px;color:#64748B;">Time</td>
+        <td style="padding:4px 8px;font-size:13px;color:#1A202C;">${timeFormatted}</td>
       </tr>
       ${locationRow}
     </table>

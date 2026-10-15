@@ -13,8 +13,8 @@
   --color-purple-100: #D5D0F3;
   --color-purple-200: #BDB5ED;
   --color-purple-300: #ACB6E5;
-  --color-purple-400: #9B8FE8;
-  --color-purple-500: #A6B4FF;
+  --color-purple-400: #A6B4FF;
+  --color-purple-500: #8B9AFF;
 
   --color-gold-50: #FFF5E0;
   --color-gold-100: #FFE4B5;
@@ -24,18 +24,24 @@
   --color-gold-500: #D49540;
 
   /* Portal identity colours */
-  --color-owner: #3ECDB8;
-  --color-committee: #9B8FE8;
-  --color-adviser: #E8A84B;
+  --color-owner: #00D4BF;
+  --color-committee: #A6B4FF;
+  --color-adviser: #FEBB56;
 
   /* ─── Neutrals ─── */
   --color-background: #ffffff;
-  --color-foreground: #1A1A2E;
-  --color-muted: #F4F4F8;
-  --color-muted-foreground: #6B7280;
-  --color-border: #E5E7EB;
+  --color-foreground: #1A202C;
+  --color-muted: #F8FAFB;
+  --color-muted-foreground: #64748B;
+  --color-border: #E2E8F0;
   --color-card: #ffffff;
-  --color-card-foreground: #1A1A2E;
+  --color-card-foreground: #1A202C;
+  --color-dark-bg: #1A2028;
+
+  /* ─── Status Colours ─── */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
 
   /* ─── Typography ─── */
   --font-heading: var(--font-poppins);
@@ -50,7 +56,7 @@
 
 /* ─── Sidebar gradient ─── */
 .sidebar-gradient {
-  background: linear-gradient(180deg, #76E1CE 0%, #ACB6E5 100%);
+  background: linear-gradient(180deg, #00D4BF 0%, #A6B4FF 100%);
 }
 
 /* ─── Portal accent utilities ─── */

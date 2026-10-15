@@ -27,6 +27,8 @@ const inter = localFont({
 export const metadata: Metadata = {
   title: "StrataVerze",
   description: "Owner-first strata management platform for Australian Owners Corporations",
+  manifest: "/manifest.json",
+  themeColor: "#00D4BF",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

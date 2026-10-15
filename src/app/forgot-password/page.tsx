@@ -1,4 +1,5 @@
 import { resetPassword } from "./actions";
+import { Logo } from "@/components/logo";
 
 export const instant = false;
 
@@ -13,11 +14,8 @@ export default async function ForgotPasswordPage({
     <div className="flex flex-col flex-1 items-center justify-center bg-muted px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-lg sidebar-gradient" />
-          <span className="text-2xl font-bold font-heading text-foreground tracking-tight">
-            StrataVerze
-          </span>
+        <div className="flex justify-center mb-8">
+          <Logo size="lg" variant="gradient" />
         </div>
 
         {/* Card */}
