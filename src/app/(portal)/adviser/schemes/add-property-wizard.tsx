@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   FormField,
@@ -9,8 +9,11 @@ import {
 } from "@/components/ui/form-field";
 import { Card } from "@/components/ui/card";
 import { createSchemeAction, type SchemeFormState } from "./actions";
+import { StrataRollUpload } from "./strata-roll-upload";
+import type { ParsedStrataRoll } from "@/lib/parse-strata-roll";
 
 const STEPS = [
+  { id: "upload", label: "Upload Strata Roll" },
   { id: "details", label: "Property Details" },
   { id: "address", label: "Address & Settings" },
   { id: "review", label: "Review & Create" },
@@ -66,8 +69,25 @@ const PAYMENT_PLANS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
+type Defaults = {
+  name?: string;
+  planNumber?: string;
+  address?: string;
+  suburb?: string;
+  state?: string;
+  postcode?: string;
+  abnNumber?: string;
+  totalLots?: string;
+  totalEntitlement?: string;
+  financialYearEnd?: string;
+  buildingType?: string;
+};
+
 export function AddPropertyWizard({ simplified = false }: { simplified?: boolean }) {
-  const [currentStep, setCurrentStep] = useState<StepId>("details");
+  const [currentStep, setCurrentStep] = useState<StepId>("upload");
+  const [defaults, setDefaults] = useState<Defaults>({});
+  const [parsedLots, setParsedLots] = useState<ParsedStrataRoll["lots"]>([]);
+  const [formKey, setFormKey] = useState(0);
   const [state, formAction, isPending] = useActionState<
     SchemeFormState,
     FormData
@@ -88,6 +108,31 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
     const prev = STEPS[currentIndex - 1];
     if (prev) setCurrentStep(prev.id);
   }
+
+  const handleParsed = useCallback((data: ParsedStrataRoll) => {
+    const s = data.scheme;
+    setDefaults({
+      name: s.name ?? undefined,
+      planNumber: s.planNumber ?? undefined,
+      address: s.address ?? undefined,
+      suburb: s.suburb ?? undefined,
+      state: s.state ?? undefined,
+      postcode: s.postcode ?? undefined,
+      abnNumber: s.abnNumber ?? undefined,
+      totalLots: s.totalLots != null ? String(s.totalLots) : undefined,
+      totalEntitlement:
+        s.totalEntitlement != null ? String(s.totalEntitlement) : undefined,
+      financialYearEnd: s.financialYearEnd ?? undefined,
+      buildingType: s.buildingType ?? undefined,
+    });
+    setParsedLots(data.lots);
+    setFormKey((k) => k + 1);
+    setCurrentStep("details");
+  }, []);
+
+  const handleSkip = useCallback(() => {
+    setCurrentStep("details");
+  }, []);
 
   return (
     <div>
@@ -148,15 +193,20 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
         </ol>
       </nav>
 
-      {/* Form wraps all steps so hidden fields persist across steps */}
-      <form action={formAction}>
-        {state.error && (
+      {/* Step 1: Upload Strata Roll (outside the form since it has its own upload logic) */}
+      <div className={currentStep === "upload" ? "" : "hidden"}>
+        <StrataRollUpload onParsed={handleParsed} onSkip={handleSkip} />
+      </div>
+
+      {/* Form wraps steps 2-4 so hidden fields persist across steps */}
+      <form key={formKey} action={formAction}>
+        {state.error && currentStep !== "upload" && (
           <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {state.error}
           </div>
         )}
 
-        {/* Step 1: Property Details */}
+        {/* Step 2: Property Details */}
         <div className={currentStep === "details" ? "" : "hidden"}>
           <Card>
             <h2 className="font-heading font-semibold text-foreground mb-1">
@@ -164,6 +214,11 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
             </h2>
             <p className="text-sm text-muted-foreground mb-6">
               Enter the core details of the Owners Corporation.
+              {parsedLots.length > 0 && (
+                <span className="block mt-1 text-primary-500 font-medium">
+                  Fields have been pre-filled from the strata roll ({parsedLots.length} lots parsed).
+                </span>
+              )}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
@@ -172,6 +227,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 name="name"
                 required
                 placeholder="e.g. Harbour View Towers OC"
+                defaultValue={defaults.name}
                 error={state.fieldErrors?.name}
                 className="sm:col-span-2"
               />
@@ -181,6 +237,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 name="planNumber"
                 required
                 placeholder="e.g. PS 123456"
+                defaultValue={defaults.planNumber}
                 error={state.fieldErrors?.planNumber}
               />
 
@@ -196,12 +253,14 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 name="abnNumber"
                 placeholder="e.g. 12 345 678 901"
                 helpText="Optional"
+                defaultValue={defaults.abnNumber}
               />
 
               <SelectField
                 label="Building Type"
                 name="buildingType"
                 options={BUILDING_TYPES}
+                defaultValue={defaults.buildingType}
               />
 
               <SelectField
@@ -222,6 +281,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 type="number"
                 required
                 placeholder="e.g. 24"
+                defaultValue={defaults.totalLots}
                 error={state.fieldErrors?.totalLots}
               />
 
@@ -232,11 +292,18 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 required
                 placeholder="e.g. 1000"
                 helpText="Sum of all lot entitlements"
+                defaultValue={defaults.totalEntitlement}
                 error={state.fieldErrors?.totalEntitlement}
               />
             </div>
 
-            <div className="flex justify-end mt-8 pt-6 border-t border-border">
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
+              <Button type="button" variant="secondary" onClick={handleBack}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Back
+              </Button>
               <Button type="button" onClick={handleNext}>
                 Next: Address &amp; Settings
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -247,7 +314,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
           </Card>
         </div>
 
-        {/* Step 2: Address & Settings */}
+        {/* Step 3: Address & Settings */}
         <div className={currentStep === "address" ? "" : "hidden"}>
           <Card>
             <h2 className="font-heading font-semibold text-foreground mb-1">
@@ -263,6 +330,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 name="address"
                 required
                 placeholder="e.g. 42 Collins Street"
+                defaultValue={defaults.address}
                 error={state.fieldErrors?.address}
                 className="sm:col-span-2"
               />
@@ -272,6 +340,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 name="suburb"
                 required
                 placeholder="e.g. Melbourne"
+                defaultValue={defaults.suburb}
                 error={state.fieldErrors?.suburb}
               />
 
@@ -280,7 +349,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                   label="State"
                   name="state"
                   required
-                  defaultValue="VIC"
+                  defaultValue={defaults.state || "VIC"}
                   options={STATES}
                   error={state.fieldErrors?.state}
                 />
@@ -289,6 +358,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                   name="postcode"
                   required
                   placeholder="3000"
+                  defaultValue={defaults.postcode}
                   error={state.fieldErrors?.postcode}
                 />
               </div>
@@ -296,7 +366,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
               <FormField
                 label="Financial Year End"
                 name="financialYearEnd"
-                defaultValue="06-30"
+                defaultValue={defaults.financialYearEnd || "06-30"}
                 placeholder="MM-DD"
                 helpText="Month-day format, e.g. 06-30 for 30 June"
               />
@@ -353,7 +423,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
           </Card>
         </div>
 
-        {/* Step 3: Review & Create */}
+        {/* Step 4: Review & Create */}
         <div className={currentStep === "review" ? "" : "hidden"}>
           <Card>
             <h2 className="font-heading font-semibold text-foreground mb-1">
@@ -363,7 +433,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
               Check the details below, then create the property.
             </p>
 
-            <ReviewSummary simplified={simplified} />
+            <ReviewSummary simplified={simplified} parsedLots={parsedLots} />
 
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
               <Button type="button" variant="secondary" onClick={handleBack}>
@@ -387,7 +457,13 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
  * ReviewSummary reads sibling form fields via closest <form> to display
  * a live summary of the data entered across wizard steps.
  */
-function ReviewSummary({ simplified }: { simplified?: boolean }) {
+function ReviewSummary({
+  simplified,
+  parsedLots,
+}: {
+  simplified?: boolean;
+  parsedLots: ParsedStrataRoll["lots"];
+}) {
   const [, setTick] = useState(0);
 
   // Force a re-render when this step becomes visible so we pick up the latest values
@@ -482,6 +558,42 @@ function ReviewSummary({ simplified }: { simplified?: boolean }) {
           </dl>
         </div>
       ))}
+
+      {/* Parsed lots summary */}
+      {parsedLots.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-foreground mb-3">
+            Parsed Lots ({parsedLots.length})
+          </h3>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">Lot</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">Unit</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">Owner</th>
+                  <th className="text-right px-3 py-2 font-medium text-muted-foreground">Entitlement</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parsedLots.slice(0, 10).map((lot) => (
+                  <tr key={lot.lotNumber} className="border-t border-border/50">
+                    <td className="px-3 py-2 text-foreground">{lot.lotNumber}</td>
+                    <td className="px-3 py-2 text-foreground">{lot.unitNumber ?? "—"}</td>
+                    <td className="px-3 py-2 text-foreground">{lot.ownerName ?? "—"}</td>
+                    <td className="px-3 py-2 text-foreground text-right tabular-nums">{lot.entitlement}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {parsedLots.length > 10 && (
+              <div className="px-3 py-2 bg-muted/30 text-xs text-muted-foreground border-t border-border/50">
+                Showing 10 of {parsedLots.length} lots. All lots will be available after creation.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

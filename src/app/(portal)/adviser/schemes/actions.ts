@@ -9,10 +9,20 @@ import {
   deleteScheme,
 } from "@/lib/queries/schemes";
 import { logActivity } from "@/lib/queries/activity-log";
+import {
+  parseStrataRollPDF,
+  type ParsedStrataRoll,
+} from "@/lib/parse-strata-roll";
 
 export type SchemeFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
+};
+
+export type StrataRollParseResult = {
+  success: boolean;
+  error?: string;
+  data?: ParsedStrataRoll;
 };
 
 const AUSTRALIAN_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"];
@@ -149,5 +159,60 @@ export async function deleteSchemeAction(schemeId: string) {
       throw err;
     }
     return { error: "Failed to delete scheme." };
+  }
+}
+
+/**
+ * Parse an uploaded strata roll PDF and extract scheme + lot data.
+ */
+export async function parseStrataRollAction(
+  formData: FormData,
+): Promise<StrataRollParseResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) return { success: false, error: "You must be signed in." };
+
+  const file = formData.get("strataRoll") as File | null;
+  if (!file || file.size === 0) {
+    return { success: false, error: "Please select a file to upload." };
+  }
+
+  // Validate file type
+  const allowedTypes = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (!allowedTypes.includes(file.type) && ext !== "pdf" && ext !== "docx") {
+    return {
+      success: false,
+      error: "Only .pdf and .docx files are supported.",
+    };
+  }
+
+  // Validate file size (30MB max)
+  if (file.size > 30 * 1024 * 1024) {
+    return { success: false, error: "File must be smaller than 30 MB." };
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    if (ext === "docx" || file.type.includes("wordprocessingml")) {
+      return {
+        success: false,
+        error:
+          "DOCX parsing is not yet supported. Please convert to PDF and try again.",
+      };
+    }
+
+    const data = await parseStrataRollPDF(buffer);
+    return { success: true, data };
+  } catch (err) {
+    console.error("parseStrataRollAction error:", err);
+    return {
+      success: false,
+      error: "Failed to parse the strata roll. Please check the file and try again.",
+    };
   }
 }
