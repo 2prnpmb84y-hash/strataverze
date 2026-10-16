@@ -523,28 +523,20 @@ export function parseStrataRollText(text: string): ParsedStrataRoll {
 export async function parseStrataRollPDF(
   buffer: Buffer,
 ): Promise<ParsedStrataRoll> {
-  // Use pdfjs-dist legacy build directly (pure JS, works on Vercel serverless).
-  // The main build requires DOMMatrix which is unavailable in Node.js,
-  // and the previous pdf-parse library depended on @napi-rs/canvas (native
-  // addon) which fails on Vercel's serverless runtime.
-  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  // Use unpdf for serverless-safe PDF text extraction. It bundles pdfjs-dist
+  // internally with proper worker handling, avoiding native addon issues
+  // (pdf-parse depended on @napi-rs/canvas) and worker resolution issues
+  // (pdfjs-dist directly needs its worker file at a resolvable path).
+  const { extractText } = await import("unpdf");
 
   const data = new Uint8Array(buffer);
-  const doc = await pdfjsLib.getDocument({ data, useSystemFonts: true }).promise;
+  const result = await extractText(data);
 
-  const pageTexts: string[] = [];
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i);
-    const content = await page.getTextContent();
-    // TextContent.items contains TextItem (with .str) and TextMarkedContent
-    // (without .str). Extract text from items that have a str property.
-    const pageText = content.items
-      .map((item) => ("str" in item ? (item as { str: string }).str : ""))
-      .filter(Boolean)
-      .join(" ");
-    pageTexts.push(pageText);
-  }
+  // extractText returns { text: string[], totalPages: number }
+  // where text is an array of strings, one per page.
+  const fullText = Array.isArray(result.text)
+    ? result.text.join("\n")
+    : String(result.text ?? "");
 
-  const fullText = pageTexts.join("\n");
   return parseStrataRollText(fullText);
 }
