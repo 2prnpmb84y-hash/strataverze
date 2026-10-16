@@ -207,6 +207,36 @@ export async function parseStrataRollAction(
     }
 
     const data = await parseStrataRollPDF(buffer);
+
+    // Check how many scheme fields were actually extracted
+    const s = data.scheme;
+    const fieldsFound = [
+      s.name,
+      s.planNumber,
+      s.address,
+      s.suburb,
+      s.state,
+      s.postcode,
+      s.abnNumber,
+      s.totalLots,
+      s.totalEntitlement,
+    ].filter((v) => v != null).length;
+
+    if (fieldsFound === 0 && data.lots.length === 0) {
+      // Nothing could be extracted — return debug info
+      console.warn(
+        "parseStrataRollAction: no fields extracted. Raw text preview:",
+        data.rawTextPreview?.slice(0, 500),
+      );
+      return {
+        success: false,
+        error:
+          "The document was read but no scheme data could be extracted. " +
+          "Please check that the file is a strata roll (not a levy notice or meeting minutes) " +
+          "and try again, or skip to enter details manually.",
+      };
+    }
+
     return { success: true, data };
   } catch (err) {
     console.error("parseStrataRollAction error:", err);

@@ -97,8 +97,33 @@ export function StrataRollUpload({
         await parseStrataRollAction(formData);
 
       if (result.success && result.data) {
-        setUploadState("success");
-        onParsed(result.data);
+        // Check if meaningful data was extracted
+        const s = result.data.scheme;
+        const fieldsFound = [
+          s.name,
+          s.planNumber,
+          s.address,
+          s.suburb,
+          s.state,
+          s.postcode,
+          s.abnNumber,
+          s.totalLots,
+          s.totalEntitlement,
+        ].filter((v) => v != null).length;
+
+        if (fieldsFound < 2 && result.data.lots.length === 0) {
+          // Very little was extracted — warn but still allow proceeding
+          setError(
+            `Only ${fieldsFound} field(s) could be extracted from this document. ` +
+            "You may need to fill in the remaining details manually.",
+          );
+          setUploadState("error");
+          // Still pass the data through so any extracted fields populate
+          onParsed(result.data);
+        } else {
+          setUploadState("success");
+          onParsed(result.data);
+        }
       } else {
         setError(result.error ?? "Failed to parse the strata roll.");
         setUploadState("error");
