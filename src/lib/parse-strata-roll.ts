@@ -523,9 +523,28 @@ export function parseStrataRollText(text: string): ParsedStrataRoll {
 export async function parseStrataRollPDF(
   buffer: Buffer,
 ): Promise<ParsedStrataRoll> {
-  // Dynamic import to avoid bundling pdf-parse on the client
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: buffer });
-  const result = await parser.getText();
-  return parseStrataRollText(result.text);
+  // Use pdfjs-dist legacy build directly (pure JS, works on Vercel serverless).
+  // The main build requires DOMMatrix which is unavailable in Node.js,
+  // and the previous pdf-parse library depended on @napi-rs/canvas (native
+  // addon) which fails on Vercel's serverless runtime.
+  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+
+  const data = new Uint8Array(buffer);
+  const doc = await pdfjsLib.getDocument({ data, useSystemFonts: true }).promise;
+
+  const pageTexts: string[] = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    // TextContent.items contains TextItem (with .str) and TextMarkedContent
+    // (without .str). Extract text from items that have a str property.
+    const pageText = content.items
+      .map((item) => ("str" in item ? (item as { str: string }).str : ""))
+      .filter(Boolean)
+      .join(" ");
+    pageTexts.push(pageText);
+  }
+
+  const fullText = pageTexts.join("\n");
+  return parseStrataRollText(fullText);
 }
