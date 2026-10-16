@@ -43,6 +43,8 @@
   --color-warning: #F59E0B;
   --color-danger: #EF4444;
 
+  --color-coral: #FF6B54;
+
   /* ─── Typography ─── */
   --font-heading: var(--font-poppins);
   --font-body: var(--font-inter);

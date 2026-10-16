@@ -1,253 +1,729 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
+
+/* ─── Permission row type ─── */
+interface Permission {
+  label: string;
+  enabled: boolean;
+}
 
 export default function LandingPage() {
+  const [permissions, setPermissions] = useState<Permission[]>([
+    { label: "View Financials", enabled: true },
+    { label: "Upload Documents", enabled: true },
+    { label: "Process Payments", enabled: false },
+    { label: "Contact Owners", enabled: false },
+    { label: "Maintenance Orders", enabled: true },
+    { label: "Modify Bylaws", enabled: false },
+  ]);
+
+  const togglePermission = (index: number) => {
+    setPermissions((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, enabled: !p.enabled } : p))
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
-        <Logo size="md" variant="gradient" />
-        <Link
-          href="/login"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-primary-400 px-6 text-sm text-white font-semibold transition-colors hover:bg-primary-500"
-        >
-          Sign in
-        </Link>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* ═══════ Navbar ═══════ */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
+          {/* Logo + wordmark */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="14" r="13" stroke="url(#navGrad)" strokeWidth="2" fill="none" />
+              <circle cx="14" cy="14" r="8" stroke="url(#navGrad)" strokeWidth="1.5" fill="none" />
+              <circle cx="14" cy="14" r="3" fill="url(#navGrad)" />
+              <defs>
+                <linearGradient id="navGrad" x1="0" y1="0" x2="28" y2="28">
+                  <stop stopColor="#00D4BF" />
+                  <stop offset="1" stopColor="#ACB6E5" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span className="font-heading font-bold text-lg text-foreground tracking-tight">
+              StrataVerze
+            </span>
+          </Link>
+
+          {/* Nav links — hidden below sm */}
+          <div className="hidden sm:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <a href="#platform" className="hover:text-foreground transition-colors">
+              Platform
+            </a>
+            <a href="#financials" className="hover:text-foreground transition-colors">
+              Financials
+            </a>
+            <a href="#advisor" className="hover:text-foreground transition-colors">
+              Advisor Access
+            </a>
+            <a href="#vault" className="hover:text-foreground transition-colors">
+              Asset Vault
+            </a>
+          </div>
+
+          {/* Login button */}
+          <Link
+            href="/login"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-coral px-5 text-sm text-white font-semibold transition-colors hover:opacity-90"
+          >
+            Login
+          </Link>
+        </div>
       </nav>
 
-      {/* Hero */}
-      <section className="px-6 pt-16 pb-20 max-w-6xl mx-auto text-center">
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-foreground tracking-tight leading-tight max-w-3xl mx-auto">
-          Strata management built for the people who{" "}
-          <span className="bg-gradient-to-r from-primary-300 to-purple-400 bg-clip-text text-transparent">
-            live there
+      {/* ═══════ Hero ═══════ */}
+      <section className="px-6 pt-20 pb-24 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto">
+          {/* Badge */}
+          <span className="inline-block rounded-full bg-primary-50 text-primary-500 text-xs font-semibold tracking-wider uppercase px-4 py-1.5 mb-6">
+            Data Sovereignty for Strata
           </span>
-        </h1>
-        <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-          Transparent levy tracking, streamlined governance, and real-time
-          maintenance updates. One platform for owners, committees, and
-          strata managers across Australia.
-        </p>
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            href="/login"
-            className="inline-flex h-12 items-center justify-center rounded-lg bg-primary-400 px-8 text-white font-semibold text-base transition-colors hover:bg-primary-500"
-          >
-            Get started
-          </Link>
-          <a
-            href="#features"
-            className="inline-flex h-12 items-center justify-center rounded-lg border border-border px-8 text-foreground font-semibold text-base transition-colors hover:bg-muted"
-          >
-            See how it works
-          </a>
-        </div>
-      </section>
 
-      {/* Three portals */}
-      <section className="px-6 py-16 bg-muted" id="portals">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold font-heading text-foreground text-center mb-3">
-            Three portals, one platform
-          </h2>
-          <p className="text-muted-foreground text-center max-w-lg mx-auto mb-12">
-            Everyone in the scheme sees exactly what they need. No clutter,
-            no confusion.
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-foreground tracking-tight leading-tight">
+            When owners know everything,{" "}
+            <span className="text-primary-400">everyone wins.</span>
+          </h1>
+
+          <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            StrataVerze puts lot owners in the driver&apos;s seat. Full financial
+            transparency, real-time governance, and total data sovereignty &mdash;
+            built for Australian owners corporations.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <PortalCard
-              title="Owner Portal"
-              accent="bg-owner"
-              items={[
-                "View and pay levy statements",
-                "Vote on motions online",
-                "Track maintenance requests",
-                "Access scheme documents",
-              ]}
-            />
-            <PortalCard
-              title="Committee Portal"
-              accent="bg-committee"
-              items={[
-                "Oversee fund balances",
-                "Manage meeting governance",
-                "Review work orders",
-                "Monitor levy collection",
-              ]}
-            />
-            <PortalCard
-              title="Adviser Portal"
-              accent="bg-adviser"
-              items={[
-                "Manage multiple schemes",
-                "Portfolio-wide reporting",
-                "Track compliance obligations",
-                "Schedule meetings and AGMs",
-              ]}
-            />
+
+          {/* CTAs */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="#early-access"
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-primary-400 px-8 text-white font-semibold text-base transition-colors hover:bg-primary-500"
+            >
+              Get Early Access &rarr;
+            </a>
+            <a
+              href="#platform"
+              className="inline-flex h-12 items-center justify-center rounded-lg border border-border px-8 text-foreground font-semibold text-base transition-colors hover:bg-muted"
+            >
+              See How It Works
+            </a>
+          </div>
+        </div>
+
+        {/* Hero image placeholder */}
+        <div className="relative mt-16 max-w-4xl mx-auto">
+          <div
+            className="w-full rounded-2xl aspect-video"
+            style={{
+              background: "linear-gradient(135deg, #00D4BF 0%, #A6B4FF 50%, #8B9AFF 100%)",
+            }}
+          />
+
+          {/* Stat pills */}
+          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-3">
+            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-foreground border border-border whitespace-nowrap">
+              <span className="text-primary-400 font-bold">100%</span> Owner-held data
+            </div>
+            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-foreground border border-border whitespace-nowrap">
+              <span className="text-primary-400 font-bold">0</span> Hidden fees
+            </div>
+            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-foreground border border-border whitespace-nowrap">
+              <span className="text-primary-400 font-bold">24/7</span> Live visibility
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features grid */}
-      <section className="px-6 py-16" id="features">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold font-heading text-foreground text-center mb-3">
-            Everything your scheme needs
+      {/* ═══════ The Platform ═══════ */}
+      <section id="platform" className="px-6 py-24 max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+            The Platform
+          </span>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
+            Built for owners. <span className="text-primary-400">Not managers.</span>
           </h2>
-          <p className="text-muted-foreground text-center max-w-lg mx-auto mb-12">
-            Purpose-built for Australian owners corporations, covering every
-            aspect of strata administration.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FeatureCard
-              icon={
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-              }
-              title="Levy Management"
-              description="Issue ordinary and special levies, track payments per lot, and see collection rates at a glance."
-            />
-            <FeatureCard
-              icon={
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
-                </svg>
-              }
-              title="Meeting Governance"
-              description="Schedule AGMs, SGMs, and committee meetings. Raise motions, collect votes, and record outcomes."
-            />
-            <FeatureCard
-              icon={
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
-                </svg>
-              }
-              title="Work Orders"
-              description="Raise, assign, and track maintenance work orders with priority levels, comments, and cost tracking."
-            />
-            <FeatureCard
-              icon={
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                </svg>
-              }
-              title="Compliance Tracking"
-              description="Monitor insurance, fire safety, OH&S, and building compliance. Get alerts before items expire."
-            />
-            <FeatureCard
-              icon={
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                </svg>
-              }
-              title="Document Vault"
-              description="Store minutes, insurance certificates, by-laws, and financial reports. Organised by category and scheme."
-            />
-            <FeatureCard
-              icon={
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-                </svg>
-              }
-              title="Portfolio Reporting"
-              description="Cross-scheme dashboards showing collection rates, outstanding balances, work orders, and compliance status."
-            />
+        </div>
+
+        <div className="flex flex-col gap-10">
+          {/* Feature 1 — Financial Transparency (photo left) */}
+          <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
+            <div
+              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
+              style={{
+                background: "linear-gradient(135deg, #E8FAF6 0%, #B9F3E9 100%)",
+              }}
+            >
+              📊
+            </div>
+            <div className="md:w-1/2 p-8 flex flex-col justify-center">
+              <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
+                Financial Transparency
+              </span>
+              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+                See everything. Always.
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Every levy dollar tracked in real time. No hidden accounts, no buried
+                receipts. Owners see every transaction the moment it happens &mdash;
+                because it&apos;s their money.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 2 — Owner Control (REVERSED — content left, photo right) */}
+          <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
+            <div
+              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
+              style={{
+                background: "linear-gradient(135deg, #E8FAF6 0%, #B9F3E9 100%)",
+              }}
+            >
+              🔒
+            </div>
+            <div className="md:w-1/2 p-8 flex flex-col justify-center">
+              <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
+                Owner Control
+              </span>
+              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+                It&apos;s your building. Own your data.
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Data sovereignty means the owners corporation retains full control of
+                every record, document, and financial entry. Switch managers without
+                losing a single byte.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 3 — Compliance Ready (amber border, photo left) */}
+          <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-gold-400">
+            <div
+              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
+              style={{
+                background: "linear-gradient(135deg, #FFF5E0 0%, #FFE4B5 100%)",
+              }}
+            >
+              ⚖️
+            </div>
+            <div className="md:w-1/2 p-8 flex flex-col justify-center">
+              <span className="inline-block self-start rounded-full bg-gold-50 text-gold-500 text-xs font-semibold px-3 py-1 mb-3">
+                Compliance Ready
+              </span>
+              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+                Governance made simple.
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Meeting minutes, AGM notices, by-law registers, and compliance
+                certificates &mdash; all organised, all auditable, all in one place.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 4 — Advisor Framework (REVERSED) */}
+          <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
+            <div
+              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
+              style={{
+                background: "linear-gradient(135deg, #E8FAF6 0%, #B9F3E9 100%)",
+              }}
+            >
+              👤
+            </div>
+            <div className="md:w-1/2 p-8 flex flex-col justify-center">
+              <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
+                Advisor Framework
+              </span>
+              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+                Your manager works for you.
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Strata managers become advisors with scoped, revocable permissions.
+                Owners grant access, set boundaries, and revoke privileges &mdash;
+                all from a single dashboard.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-6 py-20 bg-muted">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold font-heading text-foreground mb-4">
-            Ready to modernise your strata?
-          </h2>
-          <p className="text-muted-foreground mb-8 leading-relaxed">
-            Join the growing number of Australian owners corporations switching
-            to transparent, collaborative strata management.
-          </p>
-          <Link
-            href="/login"
-            className="inline-flex h-12 items-center justify-center rounded-lg bg-primary-400 px-8 text-white font-semibold text-base transition-colors hover:bg-primary-500"
-          >
-            Get started for free
-          </Link>
+      {/* ═══════ The Sovereign Ledger ═══════ */}
+      <section id="financials" className="px-6 py-24 bg-muted">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+              The Sovereign Ledger
+            </span>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
+              Every dollar. Accounted for.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Fund cards */}
+            <div className="flex flex-col gap-4">
+              <FundCard
+                name="Admin Fund"
+                balance="$48,290"
+                change="+12%"
+                changePositive
+                color="bg-primary-400"
+              />
+              <FundCard
+                name="Sinking Fund"
+                balance="$124,500"
+                change="+8%"
+                changePositive
+                color="bg-purple-400"
+              />
+              <FundCard
+                name="Contingency Fund"
+                balance="$31,070"
+                change="-2%"
+                changePositive={false}
+                color="bg-gold-400"
+              />
+            </div>
+
+            {/* Transaction table */}
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              <div className="px-6 py-4 border-b border-border">
+                <h3 className="font-heading font-semibold text-foreground">
+                  Recent Transactions
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground border-b border-border">
+                      <th className="px-6 py-3 font-medium">Date</th>
+                      <th className="px-6 py-3 font-medium">Description</th>
+                      <th className="px-6 py-3 font-medium text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-foreground">
+                    <tr className="border-b border-border">
+                      <td className="px-6 py-3 whitespace-nowrap">12 Oct 2026</td>
+                      <td className="px-6 py-3">Quarterly levy &mdash; Lot 4</td>
+                      <td className="px-6 py-3 text-right text-success font-medium">+$1,240</td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-6 py-3 whitespace-nowrap">10 Oct 2026</td>
+                      <td className="px-6 py-3">Lift maintenance &mdash; Schindler</td>
+                      <td className="px-6 py-3 text-right text-danger font-medium">-$3,850</td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-6 py-3 whitespace-nowrap">08 Oct 2026</td>
+                      <td className="px-6 py-3">Insurance premium &mdash; CHU</td>
+                      <td className="px-6 py-3 text-right text-danger font-medium">-$12,400</td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-6 py-3 whitespace-nowrap">05 Oct 2026</td>
+                      <td className="px-6 py-3">Quarterly levy &mdash; Lot 7</td>
+                      <td className="px-6 py-3 text-right text-success font-medium">+$1,240</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-3 whitespace-nowrap">01 Oct 2026</td>
+                      <td className="px-6 py-3">Garden maintenance &mdash; GreenCo</td>
+                      <td className="px-6 py-3 text-right text-danger font-medium">-$680</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-6 py-4 bg-primary-50 border-t border-primary-100">
+                <p className="text-sm font-semibold text-primary-500">
+                  Your funds. Your oversight.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="px-6 py-8 border-t border-border">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Logo size="sm" variant="gradient" />
-          <p className="text-xs text-muted-foreground">
-            &copy; 2026 StrataVerze. Built in Australia
-            for Australian strata.
+      {/* ═══════ The Advisor Gateway ═══════ */}
+      <section id="advisor" className="px-6 py-24 max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+            The Advisor Gateway
+          </span>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
+            You set the rules. They follow them.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Owner Master Controls */}
+          <div className="rounded-2xl border-2 border-primary-400 bg-card overflow-hidden">
+            <div className="px-6 py-4 bg-primary-50 border-b border-primary-100">
+              <h3 className="font-heading font-semibold text-foreground">
+                Owner Master Controls
+              </h3>
+            </div>
+            <div className="divide-y divide-border">
+              {permissions.map((perm, idx) => (
+                <div
+                  key={perm.label}
+                  className="flex items-center justify-between px-6 py-4"
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {perm.label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => togglePermission(idx)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
+                      perm.enabled ? "bg-primary-400" : "bg-gray-300"
+                    }`}
+                    role="switch"
+                    aria-checked={perm.enabled}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-200 mt-0.5 ${
+                        perm.enabled ? "translate-x-5 ml-0.5" : "translate-x-0 ml-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Advisor's View */}
+          <div className="rounded-2xl border-2 border-dashed border-gold-400 bg-card overflow-hidden">
+            <div className="px-6 py-4 bg-gold-50 border-b border-gold-100">
+              <h3 className="font-heading font-semibold text-foreground">
+                Advisor&apos;s View
+              </h3>
+            </div>
+            <div className="divide-y divide-border">
+              {permissions.map((perm) => (
+                <div
+                  key={perm.label}
+                  className="flex items-center justify-between px-6 py-4"
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {perm.label}
+                  </span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                      perm.enabled
+                        ? "bg-success/10 text-success"
+                        : "bg-danger/10 text-danger"
+                    }`}
+                  >
+                    {perm.enabled ? "Granted" : "Revoked"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════ The Asset Vault ═══════ */}
+      <section id="vault" className="px-6 py-24 bg-muted">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+              The Asset Vault
+            </span>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
+              Every document. Digitised and secure.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            {/* Gradient placeholder */}
+            <div
+              className="w-full rounded-2xl aspect-square max-h-[480px] flex items-center justify-center text-8xl"
+              style={{
+                background: "linear-gradient(135deg, #00D4BF 0%, #A6B4FF 50%, #8B9AFF 100%)",
+              }}
+            >
+              🗄️
+            </div>
+
+            {/* Document cards grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <DocumentCard
+                title="Financial Reports"
+                badge="Finance"
+                borderColor="border-t-primary-400"
+                badgeColor="bg-primary-50 text-primary-500"
+              />
+              <DocumentCard
+                title="AGM Minutes"
+                badge="Governance"
+                borderColor="border-t-purple-400"
+                badgeColor="bg-purple-50 text-purple-500"
+              />
+              <DocumentCard
+                title="Building Plans"
+                badge="Assets"
+                borderColor="border-t-gold-400"
+                badgeColor="bg-gold-50 text-gold-500"
+              />
+              <DocumentCard
+                title="Bylaws & Rules"
+                badge="Legal"
+                borderColor="border-t-purple-400"
+                badgeColor="bg-purple-50 text-purple-500"
+              />
+              <DocumentCard
+                title="Maintenance Log"
+                badge="Operations"
+                borderColor="border-t-primary-400"
+                badgeColor="bg-primary-50 text-primary-500"
+              />
+              <DocumentCard
+                title="Insurance Policies"
+                badge="Compliance"
+                borderColor="border-t-gold-400"
+                badgeColor="bg-gold-50 text-gold-500"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════ Early Access CTA ═══════ */}
+      <section
+        id="early-access"
+        className="px-6 py-24 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #00D4BF 0%, #8B9AFF 50%, #7C3AED 100%)",
+        }}
+      >
+        {/* Ghost watermark */}
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+          aria-hidden="true"
+        >
+          <span
+            className="text-white/5 font-heading font-bold whitespace-nowrap"
+            style={{ fontSize: "12rem" }}
+          >
+            StrataVerze
+          </span>
+        </div>
+
+        <div className="relative z-10 max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold font-heading text-white mb-4">
+            Ready to take the wheel?
+          </h2>
+          <p className="text-white/80 text-lg mb-10 leading-relaxed">
+            Join the waitlist and be among the first owners corporations to experience
+            true data sovereignty.
           </p>
+
+          {/* Email form */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto mb-10">
+            <input
+              type="email"
+              placeholder="you@yourbuilding.com.au"
+              className="w-full sm:flex-1 h-12 rounded-lg px-4 text-sm text-foreground bg-white border-none outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              type="button"
+              className="w-full sm:w-auto h-12 rounded-lg bg-coral px-6 text-white font-semibold text-sm transition-colors hover:opacity-90 whitespace-nowrap"
+            >
+              Get Access &rarr;
+            </button>
+          </div>
+
+          {/* Trust points */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-white/70 text-sm">
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              No credit card required
+            </span>
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              Australian-hosted data
+            </span>
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+              Cancel anytime
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════ Footer ═══════ */}
+      <footer className="px-6 py-16 bg-dark-bg text-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 mb-12">
+            {/* Brand column */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-4">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="13" stroke="url(#footGrad)" strokeWidth="2" fill="none" />
+                  <circle cx="14" cy="14" r="8" stroke="url(#footGrad)" strokeWidth="1.5" fill="none" />
+                  <circle cx="14" cy="14" r="3" fill="url(#footGrad)" />
+                  <defs>
+                    <linearGradient id="footGrad" x1="0" y1="0" x2="28" y2="28">
+                      <stop stopColor="#00D4BF" />
+                      <stop offset="1" stopColor="#ACB6E5" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="font-heading font-bold text-lg tracking-tight">
+                  StrataVerze
+                </span>
+              </div>
+              <div className="w-12 h-1 rounded-full bg-primary-400 mb-4" />
+              <p className="text-sm text-white/60 leading-relaxed">
+                Owner-first strata management for Australian owners corporations.
+                Transparent. Sovereign. Simple.
+              </p>
+            </div>
+
+            {/* Platform links */}
+            <div>
+              <h4 className="font-heading font-semibold mb-4 text-sm uppercase tracking-wider text-white/40">
+                Platform
+              </h4>
+              <ul className="flex flex-col gap-2.5 text-sm text-white/60">
+                <li>
+                  <a href="#platform" className="hover:text-white transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#financials" className="hover:text-white transition-colors">
+                    Financial Transparency
+                  </a>
+                </li>
+                <li>
+                  <a href="#advisor" className="hover:text-white transition-colors">
+                    Advisor Gateway
+                  </a>
+                </li>
+                <li>
+                  <a href="#vault" className="hover:text-white transition-colors">
+                    Asset Vault
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company links */}
+            <div>
+              <h4 className="font-heading font-semibold mb-4 text-sm uppercase tracking-wider text-white/40">
+                Company
+              </h4>
+              <ul className="flex flex-col gap-2.5 text-sm text-white/60">
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a href="#early-access" className="hover:text-white transition-colors">
+                    Early Access
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-white/40">
+              &copy; 2026 StrataVerze Pty Ltd. All rights reserved.
+            </p>
+            <div className="flex items-center gap-6 text-xs text-white/40">
+              <a href="#" className="hover:text-white/60 transition-colors">
+                Privacy Policy
+              </a>
+              <a href="#" className="hover:text-white/60 transition-colors">
+                Terms of Service
+              </a>
+              <a href="#" className="hover:text-white/60 transition-colors">
+                Accessibility
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
 
-function PortalCard({
-  title,
-  accent,
-  items,
+/* ─── Sub-components ─── */
+
+function FundCard({
+  name,
+  balance,
+  change,
+  changePositive,
+  color,
 }: {
-  title: string;
-  accent: string;
-  items: string[];
+  name: string;
+  balance: string;
+  change: string;
+  changePositive: boolean;
+  color: string;
 }) {
   return (
-    <div className="flex flex-col rounded-xl bg-card border border-border p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-3 h-3 rounded-full ${accent}`} />
-        <h3 className="font-heading font-semibold text-card-foreground">
-          {title}
-        </h3>
+    <div className="flex items-center gap-4 rounded-2xl bg-card border border-border p-6">
+      <div className={`w-3 h-12 rounded-full ${color}`} />
+      <div className="flex-1">
+        <p className="text-sm text-muted-foreground">{name}</p>
+        <p className="text-2xl font-bold font-heading text-foreground">{balance}</p>
       </div>
-      <ul className="flex flex-col gap-2.5">
-        {items.map((item) => (
-          <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-            <svg
-              className={`w-4 h-4 mt-0.5 shrink-0 ${accent.replace("bg-", "text-")}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-            </svg>
-            {item}
-          </li>
-        ))}
-      </ul>
+      <span
+        className={`text-sm font-semibold ${
+          changePositive ? "text-success" : "text-danger"
+        }`}
+      >
+        {change}
+      </span>
     </div>
   );
 }
 
-function FeatureCard({
-  icon,
+function DocumentCard({
   title,
-  description,
+  badge,
+  borderColor,
+  badgeColor,
 }: {
-  icon: React.ReactNode;
   title: string;
-  description: string;
+  badge: string;
+  borderColor: string;
+  badgeColor: string;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-card border border-border p-6">
-      <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-400 flex items-center justify-center">
-        {icon}
+    <div
+      className={`rounded-xl bg-card border border-border border-t-4 ${borderColor} p-4 flex flex-col gap-3`}
+    >
+      <span className={`inline-block self-start rounded-full text-[10px] font-semibold px-2.5 py-0.5 ${badgeColor}`}>
+        {badge}
+      </span>
+      <p className="text-sm font-semibold text-foreground leading-snug">{title}</p>
+      <div className="flex items-center gap-1 text-muted-foreground">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+        </svg>
+        <span className="text-[11px]">3 files</span>
       </div>
-      <h3 className="font-heading font-semibold text-card-foreground">
-        {title}
-      </h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        {description}
-      </p>
     </div>
   );
 }
