@@ -100,6 +100,90 @@ export async function removeOwnerFromLot(membershipId: string) {
 }
 
 /**
+ * Fetch full lot detail with owners, levy items, and computed financials.
+ */
+export async function getLotDetail(lotId: string) {
+  const lot = await db.orm.public.Lot
+    .include("memberships", (m) =>
+      m.where((sm) => sm.isActive.eq(true)).include("profile"),
+    )
+    .include("levyItems", (li) =>
+      li.include("levy").orderBy((item) => item.levy.dueDate.desc()),
+    )
+    .first({ id: lotId });
+
+  if (!lot) return null;
+
+  const owners = lot.memberships
+    .filter((m) => m.role === "OWNER")
+    .map((m) => ({
+      membershipId: m.id,
+      profileId: m.profile.id,
+      firstName: m.profile.firstName,
+      lastName: m.profile.lastName,
+      email: m.profile.email,
+      phone: m.profile.phone,
+      startDate: m.startDate,
+    }));
+
+  const committeeMembers = lot.memberships
+    .filter((m) => m.role === "COMMITTEE")
+    .map((m) => m.profile.id);
+
+  // Compute financials from levy items
+  let annualTotal = 0;
+  let specialTotal = 0;
+  let paidTotal = 0;
+
+  const levyHistory = lot.levyItems.map((item) => {
+    const amount = Number(item.amount);
+    const paid = Number(item.paidAmount);
+
+    if (item.levy.levyType === "ORDINARY") {
+      annualTotal += amount;
+    } else if (item.levy.levyType === "SPECIAL") {
+      specialTotal += amount;
+    }
+    paidTotal += paid;
+
+    return {
+      id: item.id,
+      levyTitle: item.levy.title,
+      levyType: item.levy.levyType,
+      dueDate: item.levy.dueDate,
+      amount,
+      paidAmount: paid,
+      status: item.status,
+      paidAt: item.paidAt,
+    };
+  });
+
+  const opening = 0;
+  const closing = opening + annualTotal + specialTotal - paidTotal;
+
+  return {
+    id: lot.id,
+    schemeId: lot.schemeId,
+    lotNumber: lot.lotNumber,
+    unitNumber: lot.unitNumber,
+    entitlement: lot.entitlement,
+    floorArea: lot.floorArea,
+    lotType: lot.lotType,
+    owners,
+    isCommitteeMember: owners.some((o) => committeeMembers.includes(o.profileId)),
+    financials: {
+      opening,
+      annual: annualTotal,
+      special: specialTotal,
+      paid: paidTotal,
+      closing,
+      interestPaid: 0,
+    },
+    levyHistory,
+  };
+}
+
+/**
  * Fetch strata roll data for a scheme: lots with owners and levy financials.
  */
 export async function getStrataRollData(schemeId: string) {
