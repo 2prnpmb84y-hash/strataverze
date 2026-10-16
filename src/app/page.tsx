@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 /* ─── Permission row type ─── */
 interface Permission {
@@ -32,21 +33,8 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
           {/* Logo + wordmark */}
-          <Link href="/" className="flex items-center gap-2.5">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <circle cx="14" cy="14" r="13" stroke="url(#navGrad)" strokeWidth="2" fill="none" />
-              <circle cx="14" cy="14" r="8" stroke="url(#navGrad)" strokeWidth="1.5" fill="none" />
-              <circle cx="14" cy="14" r="3" fill="url(#navGrad)" />
-              <defs>
-                <linearGradient id="navGrad" x1="0" y1="0" x2="28" y2="28">
-                  <stop stopColor="#00D4BF" />
-                  <stop offset="1" stopColor="#ACB6E5" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="font-heading font-bold text-lg text-foreground tracking-tight">
-              StrataVerze
-            </span>
+          <Link href="/" className="flex items-center">
+            <Logo size="sm" variant="gradient" />
           </Link>
 
           {/* Nav links — hidden below sm */}
@@ -576,21 +564,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 mb-12">
             {/* Brand column */}
             <div>
-              <div className="flex items-center gap-2.5 mb-4">
-                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                  <circle cx="14" cy="14" r="13" stroke="url(#footGrad)" strokeWidth="2" fill="none" />
-                  <circle cx="14" cy="14" r="8" stroke="url(#footGrad)" strokeWidth="1.5" fill="none" />
-                  <circle cx="14" cy="14" r="3" fill="url(#footGrad)" />
-                  <defs>
-                    <linearGradient id="footGrad" x1="0" y1="0" x2="28" y2="28">
-                      <stop stopColor="#00D4BF" />
-                      <stop offset="1" stopColor="#ACB6E5" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <span className="font-heading font-bold text-lg tracking-tight">
-                  StrataVerze
-                </span>
+              <div className="mb-4">
+                <Logo size="sm" variant="white" />
               </div>
               <div className="w-12 h-1 rounded-full bg-primary-400 mb-4" />
               <p className="text-sm text-white/60 leading-relaxed">
