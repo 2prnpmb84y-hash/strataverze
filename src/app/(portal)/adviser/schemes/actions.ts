@@ -56,6 +56,8 @@ function validateSchemeForm(formData: FormData) {
       totalEntitlement: Number(totalEntitlement),
       financialYearEnd: (formData.get("financialYearEnd") as string) || "06-30",
       abnNumber: (formData.get("abnNumber") as string)?.trim() || undefined,
+      buildingType: (formData.get("buildingType") as string)?.trim() || undefined,
+      buildingClass: (formData.get("buildingClass") as string)?.trim() || undefined,
       buildingSubType: (formData.get("buildingSubType") as string)?.trim() || undefined,
       folio: (formData.get("folio") as string)?.trim() || undefined,
       isActive: formData.get("isActive") !== "false",
@@ -92,6 +94,7 @@ export async function createSchemeAction(
     ) {
       throw err;
     }
+    console.error("createSchemeAction error:", err);
     return { error: "Failed to create scheme. Please try again." };
   }
 }

@@ -82,6 +82,8 @@ export async function createScheme(
     totalEntitlement: number;
     financialYearEnd?: string;
     abnNumber?: string;
+    buildingType?: string;
+    buildingClass?: string;
     buildingSubType?: string;
     folio?: string;
     isActive?: boolean;
@@ -103,6 +105,8 @@ export async function createScheme(
       totalEntitlement: data.totalEntitlement,
       financialYearEnd: data.financialYearEnd ?? "06-30",
       abnNumber: data.abnNumber ?? null,
+      buildingType: data.buildingType ?? null,
+      buildingClass: data.buildingClass ?? null,
       buildingSubType: data.buildingSubType ?? null,
       folio: data.folio ?? null,
       isActive: data.isActive ?? true,
