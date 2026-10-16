@@ -107,9 +107,7 @@ export async function getLotDetail(lotId: string) {
     .include("memberships", (m) =>
       m.where((sm) => sm.isActive.eq(true)).include("profile"),
     )
-    .include("levyItems", (li) =>
-      li.include("levy").orderBy((item) => item.levy.dueDate.desc()),
-    )
+    .include("levyItems", (li) => li.include("levy"))
     .first({ id: lotId });
 
   if (!lot) return null;
@@ -135,7 +133,14 @@ export async function getLotDetail(lotId: string) {
   let specialTotal = 0;
   let paidTotal = 0;
 
-  const levyHistory = lot.levyItems.map((item) => {
+  // Sort levy items by due date descending (newest first)
+  const sortedItems = [...lot.levyItems].sort((a, b) => {
+    const dateA = new Date(a.levy.dueDate).getTime();
+    const dateB = new Date(b.levy.dueDate).getTime();
+    return dateB - dateA;
+  });
+
+  const levyHistory = sortedItems.map((item) => {
     const amount = Number(item.amount);
     const paid = Number(item.paidAmount);
 
