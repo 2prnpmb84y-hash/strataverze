@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 /* ─── Permission row type ─── */
@@ -110,13 +111,15 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Hero image placeholder */}
+        {/* Hero image */}
         <div className="relative mt-16 max-w-4xl mx-auto">
-          <div
-            className="w-full rounded-2xl aspect-video"
-            style={{
-              background: "linear-gradient(135deg, #00D4BF 0%, #A6B4FF 50%, #8B9AFF 100%)",
-            }}
+          <Image
+            src="/images/hero-lobby.webp"
+            alt="Diverse group of apartment owners chatting in a modern strata building lobby"
+            width={1600}
+            height={900}
+            className="w-full rounded-2xl object-cover aspect-video"
+            priority
           />
 
           {/* Stat pills */}
@@ -148,13 +151,13 @@ export default function LandingPage() {
         <div className="flex flex-col gap-10">
           {/* Feature 1 — Financial Transparency (photo left) */}
           <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
-            <div
-              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
-              style={{
-                background: "linear-gradient(135deg, #E8FAF6 0%, #B9F3E9 100%)",
-              }}
-            >
-              📊
+            <div className="md:w-1/2 min-h-[240px] relative">
+              <Image
+                src="/images/feature-financial.webp"
+                alt="Family enjoying the view from their apartment balcony overlooking Sydney Harbour"
+                fill
+                className="object-cover"
+              />
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
               <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
@@ -173,13 +176,13 @@ export default function LandingPage() {
 
           {/* Feature 2 — Owner Control (REVERSED — content left, photo right) */}
           <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
-            <div
-              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
-              style={{
-                background: "linear-gradient(135deg, #E8FAF6 0%, #B9F3E9 100%)",
-              }}
-            >
-              🔒
+            <div className="md:w-1/2 min-h-[240px] relative">
+              <Image
+                src="/images/feature-owner.webp"
+                alt="Owner reviewing strata documents on a tablet at home"
+                fill
+                className="object-cover"
+              />
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
               <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
@@ -198,13 +201,13 @@ export default function LandingPage() {
 
           {/* Feature 3 — Compliance Ready (amber border, photo left) */}
           <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-gold-400">
-            <div
-              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
-              style={{
-                background: "linear-gradient(135deg, #FFF5E0 0%, #FFE4B5 100%)",
-              }}
-            >
-              ⚖️
+            <div className="md:w-1/2 min-h-[240px] relative">
+              <Image
+                src="/images/feature-compliance.webp"
+                alt="Residents chatting outside a modern Australian apartment complex"
+                fill
+                className="object-cover"
+              />
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
               <span className="inline-block self-start rounded-full bg-gold-50 text-gold-500 text-xs font-semibold px-3 py-1 mb-3">
@@ -222,13 +225,13 @@ export default function LandingPage() {
 
           {/* Feature 4 — Advisor Framework (REVERSED) */}
           <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
-            <div
-              className="md:w-1/2 min-h-[240px] flex items-center justify-center text-6xl"
-              style={{
-                background: "linear-gradient(135deg, #E8FAF6 0%, #B9F3E9 100%)",
-              }}
-            >
-              👤
+            <div className="md:w-1/2 min-h-[240px] relative">
+              <Image
+                src="/images/feature-advisor.webp"
+                alt="Strata manager reviewing building plans on a tablet"
+                fill
+                className="object-cover"
+              />
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
               <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
@@ -433,14 +436,14 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-            {/* Gradient placeholder */}
-            <div
-              className="w-full rounded-2xl aspect-square max-h-[480px] flex items-center justify-center text-8xl"
-              style={{
-                background: "linear-gradient(135deg, #00D4BF 0%, #A6B4FF 50%, #8B9AFF 100%)",
-              }}
-            >
-              🗄️
+            {/* Vault photo */}
+            <div className="w-full rounded-2xl aspect-square max-h-[480px] relative overflow-hidden">
+              <Image
+                src="/images/vault-garden.webp"
+                alt="Neighbours chatting along a garden pathway in a strata complex"
+                fill
+                className="object-cover rounded-2xl"
+              />
             </div>
 
             {/* Document cards grid */}
@@ -490,10 +493,22 @@ export default function LandingPage() {
       <section
         id="early-access"
         className="px-6 py-24 relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #00D4BF 0%, #8B9AFF 50%, #7C3AED 100%)",
-        }}
       >
+        {/* Background image with gradient overlay */}
+        <Image
+          src="/images/cta-lobby.webp"
+          alt=""
+          fill
+          className="object-cover"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(135deg, rgba(0,212,191,0.85) 0%, rgba(139,154,255,0.85) 50%, rgba(124,58,237,0.85) 100%)",
+          }}
+        />
+
         {/* Ghost watermark */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
