@@ -1,6 +1,6 @@
 // StrataVerze Data Model
 // Strata management platform for Australian Owners Corporations
-// Three portal roles: Owner, Committee, Adviser
+// Four portal roles: Owner, Committee, Adviser, Supplier
 
 generator client {
   provider = "prisma-client-js"
@@ -18,6 +18,7 @@ enum PortalRole {
   OWNER
   COMMITTEE
   ADVISER
+  SUPPLIER
 }
 
 model Profile {
@@ -36,9 +37,12 @@ model Profile {
   votes          Vote[]
   comments       Comment[]
   workOrders     WorkOrder[]        @relation("RaisedBy")
+  awardedOrders  WorkOrder[]        @relation("AwardedSupplier")
   invitations    Invitation[]       @relation("InvitedBy")
   activityLogs   ActivityLog[]
   announcements  Announcement[]
+  quotes         Quote[]
+  invoices       Invoice[]
 
   @@map("profiles")
 }
@@ -84,6 +88,8 @@ model Scheme {
   bylaws         ByLaw[]
   insurancePolicies InsurancePolicy[]
   contacts       Contact[]
+  quoteRequests  QuoteRequest[]
+  invoices       Invoice[]
 
   @@map("schemes")
 }
@@ -247,24 +253,30 @@ model Vote {
 // ─── Asset Vault (Maintenance & Work Orders) ─────────────────────
 
 model WorkOrder {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId    String    @map("scheme_id") @db.Uuid
-  raisedById  String    @map("raised_by_id") @db.Uuid
-  title       String
-  description String
-  priority    String    @default("MEDIUM")
-  status      String    @default("OPEN")
-  category    String?
-  estimatedCost Decimal? @map("estimated_cost") @db.Decimal(12, 2)
-  actualCost    Decimal? @map("actual_cost") @db.Decimal(12, 2)
-  assignedTo    String?  @map("assigned_to")
-  completedAt   DateTime? @db.Timestamptz @map("completed_at")
-  createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt     DateTime @updatedAt @db.Timestamptz @map("updated_at")
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId        String    @map("scheme_id") @db.Uuid
+  raisedById      String    @map("raised_by_id") @db.Uuid
+  title           String
+  description     String
+  priority        String    @default("MEDIUM")
+  status          String    @default("OPEN") // OPEN, QUOTING, AWARDED, IN_PROGRESS, COMPLETED, CANCELLED
+  category        String?
+  estimatedCost   Decimal?  @map("estimated_cost") @db.Decimal(12, 2)
+  actualCost      Decimal?  @map("actual_cost") @db.Decimal(12, 2)
+  assignedTo      String?   @map("assigned_to")
+  supplierId      String?   @map("supplier_id") @db.Uuid
+  awardedQuoteId  String?   @unique @map("awarded_quote_id") @db.Uuid
+  completedAt     DateTime? @db.Timestamptz @map("completed_at")
+  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
 
-  scheme   Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  raisedBy Profile   @relation("RaisedBy", fields: [raisedById], references: [id])
-  comments Comment[]
+  scheme       Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  raisedBy     Profile   @relation("RaisedBy", fields: [raisedById], references: [id])
+  supplier     Profile?  @relation("AwardedSupplier", fields: [supplierId], references: [id])
+  awardedQuote  Quote?         @relation("AwardedQuote", fields: [awardedQuoteId], references: [id])
+  comments      Comment[]
+  invoices      Invoice[]
+  quoteRequests QuoteRequest[]
 
   @@map("work_orders")
 }
@@ -280,6 +292,78 @@ model Comment {
   author    Profile   @relation(fields: [authorId], references: [id])
 
   @@map("comments")
+}
+
+// ─── Supplier Marketplace (Quote Requests, Quotes & Invoices) ────
+
+model QuoteRequest {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId    String    @map("scheme_id") @db.Uuid
+  workOrderId String    @map("work_order_id") @db.Uuid
+  title       String
+  description String
+  category    String    // PLUMBER, ELECTRICIAN, BUILDER, GARDENER, CLEANER, LOCKSMITH, PEST_CONTROL, FIRE_SAFETY, LIFT, POOL, OTHER
+  urgency     String    @default("STANDARD") // URGENT, STANDARD, FLEXIBLE
+  budget      String?   // e.g. "Under $500", "$500-$2000", "$2000-$5000", "Over $5000"
+  closesAt    DateTime? @db.Timestamptz @map("closes_at")
+  status      String    @default("OPEN") // OPEN, CLOSED, AWARDED, CANCELLED
+  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme    Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  quotes    Quote[]
+
+  @@index([schemeId, status])
+  @@index([category, status])
+  @@map("quote_requests")
+}
+
+model Quote {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteRequestId String    @map("quote_request_id") @db.Uuid
+  supplierId     String    @map("supplier_id") @db.Uuid
+  amount         Decimal   @db.Decimal(12, 2)
+  description    String
+  estimatedDays  Int?      @map("estimated_days")
+  validUntil     DateTime? @db.Timestamptz @map("valid_until")
+  status         String    @default("SUBMITTED") // SUBMITTED, ACCEPTED, DECLINED, WITHDRAWN
+  notes          String?
+  createdAt      DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  supplier     Profile      @relation(fields: [supplierId], references: [id])
+  awardedOrder WorkOrder?   @relation("AwardedQuote")
+
+  @@unique([quoteRequestId, supplierId])
+  @@map("quotes")
+}
+
+model Invoice {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId String    @map("work_order_id") @db.Uuid
+  schemeId    String    @map("scheme_id") @db.Uuid
+  supplierId  String    @map("supplier_id") @db.Uuid
+  invoiceNumber String  @map("invoice_number")
+  amount      Decimal   @db.Decimal(12, 2)
+  gstAmount   Decimal   @default(0) @map("gst_amount") @db.Decimal(12, 2)
+  totalAmount Decimal   @map("total_amount") @db.Decimal(12, 2)
+  description String?
+  status      String    @default("SUBMITTED") // SUBMITTED, APPROVED, PAID, DISPUTED, CANCELLED
+  dueDate     DateTime? @db.Timestamptz @map("due_date")
+  paidAt      DateTime? @db.Timestamptz @map("paid_at")
+  fileUrl     String?   @map("file_url")
+  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  scheme    Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  supplier  Profile   @relation(fields: [supplierId], references: [id])
+
+  @@index([schemeId, status])
+  @@index([supplierId, status])
+  @@map("invoices")
 }
 
 // ─── Announcements / Notices ─────────────────────────────────────

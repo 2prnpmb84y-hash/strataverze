@@ -27,6 +27,7 @@
   --color-owner: #00D4BF;
   --color-committee: #A6B4FF;
   --color-adviser: #FEBB56;
+  --color-supplier: #FF6B54;
 
   /* ─── Neutrals ─── */
   --color-background: #ffffff;
@@ -72,6 +73,10 @@
 
 .portal-adviser {
   --portal-accent: var(--color-adviser);
+}
+
+.portal-supplier {
+  --portal-accent: var(--color-supplier);
 }
 
 body {

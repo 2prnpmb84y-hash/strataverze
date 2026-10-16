@@ -25,6 +25,9 @@ export async function login(formData: FormData) {
   if (portal === "adviser") {
     redirect("/adviser");
   }
+  if (portal === "supplier") {
+    redirect("/supplier");
+  }
 
   redirect("/dashboard");
 }

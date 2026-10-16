@@ -57,6 +57,19 @@ const portalConfig = {
       { label: "Compliance", href: "/adviser/compliance" },
     ],
   },
+  supplier: {
+    label: "Supplier Portal",
+    shortLabel: "Supplier",
+    colour: "bg-supplier",
+    textColour: "text-supplier",
+    nav: [
+      { label: "Dashboard", href: "/supplier" },
+      { label: "Quote Requests", href: "/supplier/quotes" },
+      { label: "My Quotes", href: "/supplier/my-quotes" },
+      { label: "Work Orders", href: "/supplier/work-orders" },
+      { label: "Invoices", href: "/supplier/invoices" },
+    ],
+  },
 } as const;
 
 type PortalKey = keyof typeof portalConfig;
@@ -85,7 +98,7 @@ export function PortalShell({
   const nav =
     segment === "owner" || !(segment in portalConfig)
       ? buildOwnerNav(isCommitteeMember)
-      : portalConfig[segment as "adviser"].nav;
+      : portalConfig[segment as Exclude<PortalKey, "owner">].nav;
 
   const portal = { ...portalMeta, nav };
 

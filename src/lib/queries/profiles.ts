@@ -141,7 +141,7 @@ export async function hasCommitteeRole(profileId: string): Promise<boolean> {
 /**
  * Get the distinct portal keys available to a profile.
  * Committee members are folded into the owner portal (they see extra nav
- * items there), so this returns at most ["owner"] and/or ["adviser"].
+ * items there), so this returns at most ["owner"], ["adviser"] and/or ["supplier"].
  */
 export async function getAvailablePortals(profileId: string) {
   const memberships = await db.orm.public.SchemeMembership
