@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getLotsForScheme } from "@/lib/queries/lots";
+import { getLotsForScheme, getStrataRollData } from "@/lib/queries/lots";
 import { getLeviesForScheme } from "@/lib/queries/levies";
 import { getMeetingsForScheme } from "@/lib/queries/meetings";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
@@ -20,6 +20,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { SchemeForm } from "../scheme-form";
 import { DeleteSchemeButton } from "./delete-button";
+import { SchemeTabs } from "./scheme-tabs";
+import { StrataRollTable } from "./strata-roll-table";
 
 export default async function SchemeDetailPage({
   params,
@@ -34,6 +36,7 @@ export default async function SchemeDetailPage({
   if (!scheme) notFound();
 
   const lots = await getLotsForScheme(id);
+  const strataRollRows = await getStrataRollData(id);
   const levies = await getLeviesForScheme(id);
   const meetings = await getMeetingsForScheme(id);
   const documents = await getDocumentsForScheme(id);
@@ -60,7 +63,7 @@ export default async function SchemeDetailPage({
   ).length;
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <PageHeader
         title={scheme.name}
         description={`${scheme.planNumber} · ${scheme.suburb}, ${scheme.state} ${scheme.postcode}`}
@@ -97,6 +100,29 @@ export default async function SchemeDetailPage({
           Manage Members &amp; Invitations
         </Button>
       </div>
+
+      <SchemeTabs>
+        {{
+          lots: (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-heading font-semibold text-foreground">
+                    Strata Roll
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {lots.length} of {scheme.totalLots} lots registered
+                  </p>
+                </div>
+                <Button href={`/adviser/schemes/${id}/lots/new`} variant="secondary">
+                  Add Lot
+                </Button>
+              </div>
+              <StrataRollTable rows={strataRollRows} schemeId={id} />
+            </div>
+          ),
+          overview: (
+            <>
 
       {/* Announcements */}
       <Card className="mb-6">
@@ -896,6 +922,11 @@ export default async function SchemeDetailPage({
         />
         <DeleteSchemeButton schemeId={scheme.id} schemeName={scheme.name} />
       </Card>
+
+            </>
+          ),
+        }}
+      </SchemeTabs>
     </div>
   );
 }

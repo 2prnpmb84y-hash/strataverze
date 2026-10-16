@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /**
@@ -96,4 +97,66 @@ export async function removeOwnerFromLot(membershipId: string) {
       isActive: false,
       endDate: new Date().toISOString() as unknown as TimestampString<3>,
     });
+}
+
+/**
+ * Fetch strata roll data for a scheme: lots with owners and levy financials.
+ */
+export async function getStrataRollData(schemeId: string) {
+  const lots = await db.orm.public.Lot
+    .where((l) => l.schemeId.eq(schemeId))
+    .include("memberships", (m) =>
+      m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
+        .include("profile"),
+    )
+    .include("levyItems", (li) => li.include("levy"))
+    .orderBy((l) => l.lotNumber.asc())
+    .all();
+
+  return lots.map((lot) => {
+    const owners = lot.memberships.map((m) => {
+      const name =
+        `${m.profile.firstName} ${m.profile.lastName}`.trim() ||
+        m.profile.email;
+      return name;
+    });
+
+    // Compute financials from levy items
+    let annualTotal = 0;
+    let specialTotal = 0;
+    let paidTotal = 0;
+
+    for (const item of lot.levyItems) {
+      const amount = Number(item.amount);
+      const paid = Number(item.paidAmount);
+
+      if (item.levy.levyType === "ORDINARY") {
+        annualTotal += amount;
+      } else if (item.levy.levyType === "SPECIAL") {
+        specialTotal += amount;
+      }
+      paidTotal += paid;
+    }
+
+    // Opening balance: placeholder (no dedicated field yet)
+    const opening = 0;
+    // Closing = Opening + Annual + Special - Paid
+    const closing = opening + annualTotal + specialTotal - paidTotal;
+    // Interest: placeholder (no dedicated field yet)
+    const interestPaid = 0;
+
+    return {
+      id: lot.id,
+      lotNumber: lot.lotNumber,
+      unitNumber: lot.unitNumber,
+      entitlement: lot.entitlement,
+      ownerNames: owners.join(" & "),
+      opening,
+      annual: annualTotal,
+      special: specialTotal,
+      paid: paidTotal,
+      closing,
+      interestPaid,
+    };
+  });
 }
