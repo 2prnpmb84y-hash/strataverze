@@ -52,6 +52,7 @@ export function DocumentsTabContent({
     total: number;
   } | null>(null);
   const [documents, setDocuments] = useState(initialDocuments);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [, startTransition] = useTransition();
 
   const getPublicUrl = useCallback(
@@ -66,8 +67,10 @@ export function DocumentsTabContent({
       setShowUploadModal(false);
       setUploading(true);
       setUploadProgress({ current: 0, total: files.length });
+      setUploadErrors([]);
 
       const newDocIds: string[] = [];
+      const errors: string[] = [];
 
       for (let i = 0; i < files.length; i++) {
         setUploadProgress({ current: i + 1, total: files.length });
@@ -78,11 +81,17 @@ export function DocumentsTabContent({
         const result = await uploadFileAction(schemeId, fd);
         if (result.id) {
           newDocIds.push(result.id);
+        } else if (result.error) {
+          errors.push(`${files[i].name}: ${result.error}`);
         }
       }
 
       setUploading(false);
       setUploadProgress(null);
+
+      if (errors.length > 0) {
+        setUploadErrors(errors);
+      }
 
       // Refresh data
       startTransition(() => {
@@ -207,6 +216,42 @@ export function DocumentsTabContent({
             <p className="text-sm font-medium text-primary-700">
               Uploading file {uploadProgress.current} of {uploadProgress.total}...
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Upload errors */}
+      {uploadErrors.length > 0 && (
+        <div className="mb-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="flex-shrink-0 mt-0.5 text-red-500"
+            >
+              <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M10 6v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="10" cy="14" r="0.75" fill="currentColor" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800 mb-1">
+                {uploadErrors.length === 1 ? "Upload failed" : `${uploadErrors.length} uploads failed`}
+              </p>
+              {uploadErrors.map((err, i) => (
+                <p key={i} className="text-xs text-red-700">{err}</p>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setUploadErrors([])}
+              className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors p-1"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
