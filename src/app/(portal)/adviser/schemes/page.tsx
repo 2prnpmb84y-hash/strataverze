@@ -56,9 +56,8 @@ export default async function AdviserSchemesPage({
           <SchemeList schemes={paginatedSchemes} />
 
           <Pagination
-            currentPage={meta.currentPage}
-            totalPages={meta.totalPages}
-            basePath="/adviser/schemes"
+            page={meta.page}
+            hasMore={meta.hasMore}
           />
         </>
       )}

@@ -252,6 +252,13 @@
                   "kind": "scalar"
                 }
               },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "expiresAt": {
                 "nullable": true,
                 "type": {
@@ -354,6 +361,9 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "deletedAt": {
+                  "column": "deleted_at"
+                },
                 "expiresAt": {
                   "column": "expires_at"
                 },
@@ -415,6 +425,13 @@
               },
               "createdAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deletedAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
@@ -518,6 +535,9 @@
                 },
                 "createdAt": {
                   "column": "created_at"
+                },
+                "deletedAt": {
+                  "column": "deleted_at"
                 },
                 "effectiveDate": {
                   "column": "effective_date"
@@ -661,6 +681,13 @@
                   "kind": "scalar"
                 }
               },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "description": {
                 "nullable": true,
                 "type": {
@@ -751,6 +778,9 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "deletedAt": {
+                  "column": "deleted_at"
+                },
                 "description": {
                   "column": "description"
                 },
@@ -808,6 +838,13 @@
               },
               "createdAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deletedAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
@@ -902,6 +939,9 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "deletedAt": {
+                  "column": "deleted_at"
+                },
                 "email": {
                   "column": "email"
                 },
@@ -942,6 +982,13 @@
               },
               "createdAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deletedAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
@@ -1037,6 +1084,9 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "deletedAt": {
+                  "column": "deleted_at"
+                },
                 "description": {
                   "column": "description"
                 },
@@ -1084,6 +1134,13 @@
               },
               "createdAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deletedAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
@@ -1144,6 +1201,9 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "deletedAt": {
+                  "column": "deleted_at"
+                },
                 "fundType": {
                   "column": "fund_type"
                 },
@@ -1190,6 +1250,13 @@
               },
               "createdAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deletedAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
@@ -1326,6 +1393,9 @@
                 },
                 "createdAt": {
                   "column": "created_at"
+                },
+                "deletedAt": {
+                  "column": "deleted_at"
                 },
                 "endDate": {
                   "column": "end_date"
@@ -1775,6 +1845,13 @@
                   "kind": "scalar"
                 }
               },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "description": {
                 "nullable": true,
                 "type": {
@@ -1881,6 +1958,9 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "deletedAt": {
+                  "column": "deleted_at"
+                },
                 "description": {
                   "column": "description"
                 },
@@ -1924,6 +2004,13 @@
                     "precision": 12,
                     "scale": 2
                   }
+                }
+              },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
                 }
               },
               "id": {
@@ -2011,6 +2098,9 @@
               "fields": {
                 "amount": {
                   "column": "amount"
+                },
+                "deletedAt": {
+                  "column": "deleted_at"
                 },
                 "id": {
                   "column": "id"
@@ -2194,6 +2284,13 @@
                   "kind": "scalar"
                 }
               },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -2291,6 +2388,9 @@
                 },
                 "createdAt": {
                   "column": "created_at"
+                },
+                "deletedAt": {
+                  "column": "deleted_at"
                 },
                 "id": {
                   "column": "id"
@@ -4001,6 +4101,13 @@
                   "kind": "scalar"
                 }
               },
+              "deletedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "description": {
                 "nullable": false,
                 "type": {
@@ -4207,6 +4314,9 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "deletedAt": {
+                  "column": "deleted_at"
+                },
                 "description": {
                   "column": "description"
                 },
@@ -4393,6 +4503,11 @@
                   },
                   "nullable": false
                 },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "expires_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -4542,6 +4657,11 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
                 },
                 "effective_date": {
                   "codecId": "pg/timestamptz-string@1",
@@ -4743,6 +4863,11 @@
                   },
                   "nullable": false
                 },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "description": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -4851,6 +4976,11 @@
                   },
                   "nullable": false
                 },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "email": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -4956,6 +5086,11 @@
                   },
                   "nullable": false
                 },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "description": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5058,6 +5193,11 @@
                   },
                   "nullable": false
                 },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "fund_type": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5152,6 +5292,11 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
                 },
                 "end_date": {
                   "codecId": "pg/timestamptz-string@1",
@@ -5662,6 +5807,11 @@
                   },
                   "nullable": false
                 },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "description": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -5758,6 +5908,11 @@
                     "precision": 12,
                     "scale": 2
                   }
+                },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
                 },
                 "id": {
                   "codecId": "pg/uuid@1",
@@ -5965,6 +6120,11 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
                 },
                 "id": {
                   "codecId": "pg/uuid@1",
@@ -7056,6 +7216,11 @@
                   },
                   "nullable": false
                 },
+                "deleted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "description": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -7233,7 +7398,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "4e81344dbc3df55b0875ee1756f4533f06457992d4589b1e0ac30d9d417592dd"
+    "storageHash": "a7cd8ecc9f6dd77c311d26ca9334719465e1dabbe2ceb52baba79a79c56d28cb"
   },
   "execution": {
     "executionHash": "c40e2371777b2cf8bac49f589868fb7a3461b56b49528e34f46d25cb0e91558f",

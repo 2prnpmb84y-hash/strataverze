@@ -64,9 +64,8 @@ export default async function OwnerCompliancePage({
       <ComplianceList items={paginatedItems} schemeNames={schemeNames} />
 
       <Pagination
-        currentPage={meta.currentPage}
-        totalPages={meta.totalPages}
-        basePath="/owner/compliance"
+        page={meta.page}
+        hasMore={meta.hasMore}
       />
     </div>
   );

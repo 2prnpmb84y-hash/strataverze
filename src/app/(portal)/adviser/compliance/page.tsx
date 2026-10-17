@@ -56,9 +56,8 @@ export default async function AdviserCompliancePage({
       <ComplianceList items={paginatedItems} schemeNames={schemeNames} />
 
       <Pagination
-        currentPage={meta.currentPage}
-        totalPages={meta.totalPages}
-        basePath="/adviser/compliance"
+        page={meta.page}
+        hasMore={meta.hasMore}
       />
     </div>
   );

@@ -34,7 +34,7 @@ export default function PublicLayout({
       <main className="mx-auto max-w-4xl px-6 py-12">{children}</main>
       <footer className="border-t border-gray-200 bg-gray-50">
         <div className="mx-auto max-w-4xl px-6 py-8 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} StrataVerze. All rights reserved.
+          &copy; 2026 StrataVerze. All rights reserved.
         </div>
       </footer>
     </div>

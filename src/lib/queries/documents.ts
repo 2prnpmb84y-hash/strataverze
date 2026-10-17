@@ -10,10 +10,11 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Fetch all documents for a scheme, newest first.
  */
-export async function getDocumentsForScheme(schemeId: string) {
+export async function getDocumentsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Document
     .where((d) => and(d.schemeId.eq(schemeId), d.deletedAt.eq(null)))
     .orderBy((d) => d.createdAt.desc())
+    .limit(limit)
     .all();
 }
 
@@ -79,11 +80,12 @@ export async function deleteDocument(documentId: string) {
 /**
  * Get documents for multiple schemes (owner view).
  */
-export async function getDocumentsForSchemes(schemeIds: string[]) {
+export async function getDocumentsForSchemes(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Document
     .where((d) => and(d.schemeId.in(schemeIds), d.deletedAt.eq(null)))
     .orderBy((d) => d.createdAt.desc())
+    .limit(limit)
     .all();
 }

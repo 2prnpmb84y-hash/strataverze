@@ -10,10 +10,11 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Fetch all compliance items for a scheme, ordered by due date.
  */
-export async function getComplianceForScheme(schemeId: string) {
+export async function getComplianceForScheme(schemeId: string, limit = 200) {
   return db.orm.public.ComplianceItem
     .where((c) => and(c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
     .orderBy((c) => c.dueDate.asc())
+    .limit(limit)
     .all();
 }
 
@@ -90,11 +91,12 @@ export async function deleteComplianceItem(itemId: string) {
 /**
  * Fetch compliance items across multiple schemes.
  */
-export async function getComplianceForSchemes(schemeIds: string[]) {
+export async function getComplianceForSchemes(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
   return db.orm.public.ComplianceItem
     .where((c) => and(c.schemeId.in(schemeIds), c.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((c) => c.dueDate.asc())
+    .limit(limit)
     .all();
 }

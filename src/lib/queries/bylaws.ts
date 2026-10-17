@@ -1,6 +1,7 @@
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import { logActivityTx } from "./activity-log";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -91,6 +92,54 @@ export async function createBylaw(data: {
     effectiveDate: toTimestamp(data.effectiveDate),
     motionRef: data.motionRef ?? null,
     notes: data.notes ?? null,
+  });
+}
+
+/**
+ * Atomically assign the next by-law number, create the by-law, and log
+ * the activity in a single transaction to prevent duplicate numbers
+ * under concurrent requests.
+ */
+export async function createBylawAtomic(data: {
+  schemeId: string;
+  title: string;
+  body: string;
+  category?: string;
+  effectiveDate: string;
+  motionRef?: string;
+  notes?: string;
+  actorId: string;
+}) {
+  return db.transaction(async (tx) => {
+    // Determine next number inside the transaction
+    const existing = await tx.orm.public.ByLaw
+      .where((b) => b.schemeId.eq(data.schemeId))
+      .orderBy((b) => b.bylawNumber.desc())
+      .limit(1)
+      .all();
+    const bylawNumber = existing.length > 0 ? existing[0].bylawNumber + 1 : 1;
+
+    const bylaw = await tx.orm.public.ByLaw.create({
+      schemeId: data.schemeId,
+      bylawNumber,
+      title: data.title,
+      body: data.body,
+      category: data.category ?? "GENERAL",
+      effectiveDate: toTimestamp(data.effectiveDate),
+      motionRef: data.motionRef ?? null,
+      notes: data.notes ?? null,
+    });
+
+    await logActivityTx(tx, {
+      schemeId: data.schemeId,
+      actorId: data.actorId,
+      action: "BYLAW_CREATED",
+      entityType: "ByLaw",
+      entityId: bylaw.id,
+      metadata: { title: data.title, bylawNumber },
+    });
+
+    return bylaw;
   });
 }
 

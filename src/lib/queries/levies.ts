@@ -15,13 +15,14 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Fetch all levies for a scheme, newest first.
  */
-export async function getLeviesForScheme(schemeId: string) {
+export async function getLeviesForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Levy
     .where((l) => and(l.schemeId.eq(schemeId), l.deletedAt.eq(null)))
     .include("items", (i) =>
       i.where((li) => li.deletedAt.eq(null)).include("lot"),
     )
     .orderBy((l) => l.createdAt.desc())
+    .limit(limit)
     .all();
 }
 
@@ -89,6 +90,66 @@ export async function createLevy(data: {
 }
 
 /**
+ * Create multiple levies atomically in a single transaction.
+ * Each levy gets auto-generated line items for every lot.
+ */
+export async function createLeviesBatch(
+  items: Array<{
+    schemeId: string;
+    title: string;
+    description?: string;
+    totalAmount: number;
+    dueDate: string;
+    levyType: string;
+  }>,
+) {
+  if (items.length === 0) return [];
+
+  // All items share the same schemeId
+  const schemeId = items[0].schemeId;
+  const lots = await db.orm.public.Lot
+    .where((l) => l.schemeId.eq(schemeId))
+    .all();
+
+  const totalEntitlement = lots.reduce((sum, lot) => sum + lot.entitlement, 0);
+
+  return db.transaction(async (tx) => {
+    const createdLevies = [];
+
+    for (const data of items) {
+      const levy = await tx.orm.public.Levy.create({
+        schemeId: data.schemeId,
+        title: data.title,
+        description: data.description ?? null,
+        totalAmount: toNumeric(data.totalAmount),
+        dueDate: toTimestamp(data.dueDate),
+        levyType: data.levyType,
+        status: "DRAFT",
+      });
+
+      for (const lot of lots) {
+        const share = totalEntitlement > 0
+          ? (lot.entitlement / totalEntitlement) * data.totalAmount
+          : 0;
+        const amount = Math.round(share * 100) / 100;
+
+        await tx.orm.public.LevyItem.create({
+          levyId: levy.id,
+          lotId: lot.id,
+          amount: toNumeric(amount),
+          paidAmount: toNumeric(0),
+          status: "UNPAID",
+        });
+      }
+
+      createdLevies.push(levy);
+    }
+
+    return createdLevies;
+  });
+}
+
+/**
  * Update levy details (not items).
  */
 export async function updateLevy(
@@ -149,7 +210,7 @@ export async function markLevyItemPaid(itemId: string, amount: number) {
 /**
  * Get levies across multiple schemes.
  */
-export async function getLeviesForSchemes(schemeIds: string[]) {
+export async function getLeviesForSchemes(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Levy
@@ -157,15 +218,17 @@ export async function getLeviesForSchemes(schemeIds: string[]) {
     .include("items", (i) => i.where((li) => li.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((l) => l.dueDate.desc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Get levy items for a specific lot (owner view).
  */
-export async function getLevyItemsForLot(lotId: string) {
+export async function getLevyItemsForLot(lotId: string, limit = 200) {
   return db.orm.public.LevyItem
     .where((li) => and(li.lotId.eq(lotId), li.deletedAt.eq(null)))
     .include("levy")
+    .limit(limit)
     .all();
 }

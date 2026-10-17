@@ -15,10 +15,11 @@ function toNumeric(value: number | string): Numeric<12, 2> {
 /**
  * Fetch all funds for a scheme, ordered by fund type.
  */
-export async function getFundsForScheme(schemeId: string) {
+export async function getFundsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Fund
     .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
     .orderBy((f) => f.createdAt.asc())
+    .limit(limit)
     .all();
 }
 
@@ -68,11 +69,12 @@ export async function updateFund(
 /**
  * Fetch funds across multiple schemes (for owner/committee views).
  */
-export async function getFundsForSchemes(schemeIds: string[]) {
+export async function getFundsForSchemes(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
   return db.orm.public.Fund
     .where((f) => and(f.schemeId.in(schemeIds), f.deletedAt.eq(null)))
     .orderBy((f) => f.createdAt.asc())
+    .limit(limit)
     .all();
 }
 

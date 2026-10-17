@@ -25,7 +25,11 @@ export type ActivityAction =
   | "INSURANCE_CREATED"
   | "INSURANCE_UPDATED"
   | "CONTACT_CREATED"
-  | "CONTACT_UPDATED";
+  | "CONTACT_UPDATED"
+  | "QUOTE_SUBMITTED"
+  | "QUOTE_WITHDRAWN"
+  | "INVOICE_SUBMITTED"
+  | "WORK_ORDER_STATUS_UPDATED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -42,19 +46,23 @@ export type ActivityEntityType =
   | "Announcement"
   | "ByLaw"
   | "InsurancePolicy"
-  | "Contact";
+  | "Contact"
+  | "Quote"
+  | "Invoice";
 
-/**
- * Log an activity event for a scheme.
- */
-export async function logActivity(data: {
+type LogActivityData = {
   schemeId: string;
   actorId: string;
   action: ActivityAction;
   entityType: ActivityEntityType;
   entityId?: string;
   metadata?: Record<string, unknown>;
-}) {
+};
+
+/**
+ * Log an activity event for a scheme.
+ */
+export async function logActivity(data: LogActivityData) {
   return db.orm.public.ActivityLog.create({
     schemeId: data.schemeId,
     actorId: data.actorId,
@@ -62,6 +70,23 @@ export async function logActivity(data: {
     entityType: data.entityType,
     entityId: data.entityId ?? null,
     metadata: (data.metadata ?? null) as Parameters<typeof db.orm.public.ActivityLog.create>[0]["metadata"],
+  });
+}
+
+/**
+ * Log an activity event within an existing transaction.
+ */
+export async function logActivityTx(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  data: LogActivityData,
+) {
+  return tx.orm.public.ActivityLog.create({
+    schemeId: data.schemeId,
+    actorId: data.actorId,
+    action: data.action,
+    entityType: data.entityType,
+    entityId: data.entityId ?? null,
+    metadata: (data.metadata ?? null) as Parameters<typeof tx.orm.public.ActivityLog.create>[0]["metadata"],
   });
 }
 

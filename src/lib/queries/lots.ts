@@ -5,13 +5,14 @@ import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 /**
  * Fetch all lots for a given scheme, ordered by lot number.
  */
-export async function getLotsForScheme(schemeId: string) {
+export async function getLotsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Lot
     .where((l) => l.schemeId.eq(schemeId))
     .include("memberships", (m) =>
       m.where((sm) => sm.isActive.eq(true)).include("profile"),
     )
     .orderBy((l) => l.lotNumber.asc())
+    .limit(limit)
     .all();
 }
 

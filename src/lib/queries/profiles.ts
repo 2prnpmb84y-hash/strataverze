@@ -108,25 +108,17 @@ export async function getProfileWithMemberships(profileId: string) {
   const profile = await db.orm.public.Profile.first({ id: profileId });
   if (!profile) return null;
 
+  // Single query with eager-loaded scheme relation (avoids N+1)
   const memberships = await db.orm.public.SchemeMembership
     .where((m) => and(m.profileId.eq(profileId), m.isActive.eq(true)))
+    .include("scheme")
     .all();
-
-  // Fetch scheme names for each membership
-  const schemeIds = [...new Set(memberships.map((m) => m.schemeId))];
-  const schemes = schemeIds.length > 0
-    ? await db.orm.public.Scheme
-        .where((s) => or(...schemeIds.map((id) => s.id.eq(id))))
-        .all()
-    : [];
-
-  const schemeMap = new Map(schemes.map((s) => [s.id, s.name]));
 
   return {
     ...profile,
     memberships: memberships.map((m) => ({
       ...m,
-      schemeName: schemeMap.get(m.schemeId) ?? "Unknown Scheme",
+      schemeName: m.scheme?.name ?? "Unknown Scheme",
     })),
   };
 }

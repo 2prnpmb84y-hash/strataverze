@@ -75,9 +75,8 @@ export default async function OwnerGovernancePage({
       <CommitteeMeetingList meetings={paginatedMeetings} schemeNames={schemeNames} />
 
       <Pagination
-        currentPage={meta.currentPage}
-        totalPages={meta.totalPages}
-        basePath="/owner/governance"
+        page={meta.page}
+        hasMore={meta.hasMore}
       />
     </div>
   );

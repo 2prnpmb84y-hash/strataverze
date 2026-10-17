@@ -22,6 +22,7 @@ export async function getAnnouncementsForSchemes(
     .include("author")
     .include("scheme")
     .orderBy((a) => a.publishedAt.desc())
+    .limit(200)
     .all();
 
   // Sort pinned first (boolean ordering not supported in Prisma 8 ORM)

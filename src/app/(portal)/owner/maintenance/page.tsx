@@ -60,9 +60,8 @@ export default async function OwnerMaintenancePage({
       />
 
       <Pagination
-        currentPage={meta.currentPage}
-        totalPages={meta.totalPages}
-        basePath="/owner/maintenance"
+        page={meta.page}
+        hasMore={meta.hasMore}
       />
     </div>
   );

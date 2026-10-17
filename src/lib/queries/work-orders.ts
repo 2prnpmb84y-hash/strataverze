@@ -15,12 +15,13 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Fetch all work orders for a scheme, newest first.
  */
-export async function getWorkOrdersForScheme(schemeId: string) {
+export async function getWorkOrdersForScheme(schemeId: string, limit = 200) {
   return db.orm.public.WorkOrder
     .where((wo) => and(wo.schemeId.eq(schemeId), wo.deletedAt.eq(null)))
     .include("raisedBy")
     .include("comments")
     .orderBy((wo) => wo.createdAt.desc())
+    .limit(limit)
     .all();
 }
 
@@ -145,12 +146,13 @@ export async function deleteComment(commentId: string) {
 /**
  * Fetch work orders across multiple schemes (for owner/committee views).
  */
-export async function getWorkOrdersForSchemes(schemeIds: string[]) {
+export async function getWorkOrdersForSchemes(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
   return db.orm.public.WorkOrder
     .where((wo) => and(wo.schemeId.in(schemeIds), wo.deletedAt.eq(null)))
     .include("raisedBy")
     .include("comments")
     .orderBy((wo) => wo.createdAt.desc())
+    .limit(limit)
     .all();
 }

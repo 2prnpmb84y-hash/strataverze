@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'4e81344dbc3df55b0875ee1756f4533f06457992d4589b1e0ac30d9d417592dd'>;
+  StorageHashBase<'a7cd8ecc9f6dd77c311d26ca9334719465e1dabbe2ceb52baba79a79c56d28cb'>;
 export type ExecutionHash =
   ExecutionHashBase<'c40e2371777b2cf8bac49f589868fb7a3461b56b49528e34f46d25cb0e91558f'>;
 export type ProfileHash =
@@ -248,6 +248,7 @@ export type FieldOutputTypes = {
       readonly authorId: CodecTypes['pg/uuid@1']['output'];
       readonly body: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly isPinned: CodecTypes['pg/bool@1']['output'];
@@ -263,6 +264,7 @@ export type FieldOutputTypes = {
       readonly bylawNumber: CodecTypes['pg/int4@1']['output'];
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly effectiveDate: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly motionRef: CodecTypes['pg/text@1']['output'] | null;
@@ -283,6 +285,7 @@ export type FieldOutputTypes = {
     readonly ComplianceItem: {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly dueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -298,6 +301,7 @@ export type FieldOutputTypes = {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly company: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly email: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly isPreferred: CodecTypes['pg/bool@1']['output'];
@@ -310,6 +314,7 @@ export type FieldOutputTypes = {
     readonly Document: {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly fileName: CodecTypes['pg/text@1']['output'];
       readonly fileSize: CodecTypes['pg/int4@1']['output'] | null;
@@ -323,6 +328,7 @@ export type FieldOutputTypes = {
     readonly Fund: {
       readonly balance: Numeric<12, 2>;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly fundType: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
@@ -333,6 +339,7 @@ export type FieldOutputTypes = {
       readonly brokerContact: CodecTypes['pg/text@1']['output'] | null;
       readonly coverageAmount: Numeric<12, 2>;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly endDate: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly excessAmount: Numeric<12, 2> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -379,6 +386,7 @@ export type FieldOutputTypes = {
     };
     readonly Levy: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly dueDate: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -391,6 +399,7 @@ export type FieldOutputTypes = {
     };
     readonly LevyItem: {
       readonly amount: Numeric<12, 2>;
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly levyId: CodecTypes['pg/uuid@1']['output'];
       readonly lotId: CodecTypes['pg/uuid@1']['output'];
@@ -410,6 +419,7 @@ export type FieldOutputTypes = {
     readonly Meeting: {
       readonly agenda: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly location: CodecTypes['pg/text@1']['output'] | null;
       readonly meetingType: CodecTypes['pg/text@1']['output'];
@@ -526,6 +536,7 @@ export type FieldOutputTypes = {
       readonly category: CodecTypes['pg/text@1']['output'] | null;
       readonly completedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'];
       readonly estimatedCost: Numeric<12, 2> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -555,6 +566,7 @@ export type FieldInputTypes = {
       readonly authorId: CodecTypes['pg/uuid@1']['input'];
       readonly body: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly expiresAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly isPinned: CodecTypes['pg/bool@1']['input'];
@@ -570,6 +582,7 @@ export type FieldInputTypes = {
       readonly bylawNumber: CodecTypes['pg/int4@1']['input'];
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly effectiveDate: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly motionRef: CodecTypes['pg/text@1']['input'] | null;
@@ -590,6 +603,7 @@ export type FieldInputTypes = {
     readonly ComplianceItem: {
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly dueDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -605,6 +619,7 @@ export type FieldInputTypes = {
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly company: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly email: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly isPreferred: CodecTypes['pg/bool@1']['input'];
@@ -617,6 +632,7 @@ export type FieldInputTypes = {
     readonly Document: {
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly fileName: CodecTypes['pg/text@1']['input'];
       readonly fileSize: CodecTypes['pg/int4@1']['input'] | null;
@@ -630,6 +646,7 @@ export type FieldInputTypes = {
     readonly Fund: {
       readonly balance: CodecTypes['pg/numeric@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly fundType: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
@@ -640,6 +657,7 @@ export type FieldInputTypes = {
       readonly brokerContact: CodecTypes['pg/text@1']['input'] | null;
       readonly coverageAmount: CodecTypes['pg/numeric@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly endDate: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly excessAmount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -686,6 +704,7 @@ export type FieldInputTypes = {
     };
     readonly Levy: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly dueDate: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -698,6 +717,7 @@ export type FieldInputTypes = {
     };
     readonly LevyItem: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly levyId: CodecTypes['pg/uuid@1']['input'];
       readonly lotId: CodecTypes['pg/uuid@1']['input'];
@@ -717,6 +737,7 @@ export type FieldInputTypes = {
     readonly Meeting: {
       readonly agenda: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly location: CodecTypes['pg/text@1']['input'] | null;
       readonly meetingType: CodecTypes['pg/text@1']['input'];
@@ -833,6 +854,7 @@ export type FieldInputTypes = {
       readonly category: CodecTypes['pg/text@1']['input'] | null;
       readonly completedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'];
       readonly estimatedCost: CodecTypes['pg/numeric@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -862,6 +884,7 @@ export type StorageColumnTypes = {
       readonly author_id: CodecTypes['pg/uuid@1']['output'];
       readonly body: CodecTypes['pg/text@1']['output'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly expires_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly is_pinned: CodecTypes['pg/bool@1']['output'];
@@ -877,6 +900,7 @@ export type StorageColumnTypes = {
       readonly bylaw_number: CodecTypes['pg/int4@1']['output'];
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly effective_date: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly motion_ref: CodecTypes['pg/text@1']['output'] | null;
@@ -897,6 +921,7 @@ export type StorageColumnTypes = {
     readonly compliance_items: {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly due_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -912,6 +937,7 @@ export type StorageColumnTypes = {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly company: CodecTypes['pg/text@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly email: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly is_preferred: CodecTypes['pg/bool@1']['output'];
@@ -924,6 +950,7 @@ export type StorageColumnTypes = {
     readonly documents: {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly file_name: CodecTypes['pg/text@1']['output'];
       readonly file_size: CodecTypes['pg/int4@1']['output'] | null;
@@ -937,6 +964,7 @@ export type StorageColumnTypes = {
     readonly funds: {
       readonly balance: Numeric<12, 2>;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly fund_type: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
@@ -947,6 +975,7 @@ export type StorageColumnTypes = {
       readonly broker_contact: CodecTypes['pg/text@1']['output'] | null;
       readonly coverage_amount: Numeric<12, 2>;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly end_date: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly excess_amount: Numeric<12, 2> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -993,6 +1022,7 @@ export type StorageColumnTypes = {
     };
     readonly levies: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly due_date: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -1005,6 +1035,7 @@ export type StorageColumnTypes = {
     };
     readonly levy_items: {
       readonly amount: Numeric<12, 2>;
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly levy_id: CodecTypes['pg/uuid@1']['output'];
       readonly lot_id: CodecTypes['pg/uuid@1']['output'];
@@ -1024,6 +1055,7 @@ export type StorageColumnTypes = {
     readonly meetings: {
       readonly agenda: CodecTypes['pg/text@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly location: CodecTypes['pg/text@1']['output'] | null;
       readonly meeting_type: CodecTypes['pg/text@1']['output'];
@@ -1140,6 +1172,7 @@ export type StorageColumnTypes = {
       readonly category: CodecTypes['pg/text@1']['output'] | null;
       readonly completed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'];
       readonly estimated_cost: Numeric<12, 2> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -1169,6 +1202,7 @@ export type StorageColumnInputTypes = {
       readonly author_id: CodecTypes['pg/uuid@1']['input'];
       readonly body: CodecTypes['pg/text@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly expires_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly is_pinned: CodecTypes['pg/bool@1']['input'];
@@ -1184,6 +1218,7 @@ export type StorageColumnInputTypes = {
       readonly bylaw_number: CodecTypes['pg/int4@1']['input'];
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly effective_date: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly motion_ref: CodecTypes['pg/text@1']['input'] | null;
@@ -1204,6 +1239,7 @@ export type StorageColumnInputTypes = {
     readonly compliance_items: {
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly due_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -1219,6 +1255,7 @@ export type StorageColumnInputTypes = {
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly company: CodecTypes['pg/text@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly email: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly is_preferred: CodecTypes['pg/bool@1']['input'];
@@ -1231,6 +1268,7 @@ export type StorageColumnInputTypes = {
     readonly documents: {
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly file_name: CodecTypes['pg/text@1']['input'];
       readonly file_size: CodecTypes['pg/int4@1']['input'] | null;
@@ -1244,6 +1282,7 @@ export type StorageColumnInputTypes = {
     readonly funds: {
       readonly balance: CodecTypes['pg/numeric@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly fund_type: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
@@ -1254,6 +1293,7 @@ export type StorageColumnInputTypes = {
       readonly broker_contact: CodecTypes['pg/text@1']['input'] | null;
       readonly coverage_amount: CodecTypes['pg/numeric@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly end_date: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly excess_amount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -1300,6 +1340,7 @@ export type StorageColumnInputTypes = {
     };
     readonly levies: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly due_date: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -1312,6 +1353,7 @@ export type StorageColumnInputTypes = {
     };
     readonly levy_items: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly levy_id: CodecTypes['pg/uuid@1']['input'];
       readonly lot_id: CodecTypes['pg/uuid@1']['input'];
@@ -1331,6 +1373,7 @@ export type StorageColumnInputTypes = {
     readonly meetings: {
       readonly agenda: CodecTypes['pg/text@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly location: CodecTypes['pg/text@1']['input'] | null;
       readonly meeting_type: CodecTypes['pg/text@1']['input'];
@@ -1447,6 +1490,7 @@ export type StorageColumnInputTypes = {
       readonly category: CodecTypes['pg/text@1']['input'] | null;
       readonly completed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'];
       readonly estimated_cost: CodecTypes['pg/numeric@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -1479,6 +1523,7 @@ export namespace Models {
     authorId: CodecTypes['pg/uuid@1']['output'];
     body: CodecTypes['pg/text@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     expiresAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
     isPinned: CodecTypes['pg/bool@1']['output'];
@@ -1497,6 +1542,7 @@ export namespace Models {
     bylawNumber: CodecTypes['pg/int4@1']['output'];
     category: CodecTypes['pg/text@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     effectiveDate: CodecTypes['pg/timestamptz-string@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
     motionRef: CodecTypes['pg/text@1']['output'] | null;
@@ -1522,6 +1568,7 @@ export namespace Models {
   export type public_ComplianceItem = {
     category: CodecTypes['pg/text@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     description: CodecTypes['pg/text@1']['output'] | null;
     dueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
@@ -1539,6 +1586,7 @@ export namespace Models {
     category: CodecTypes['pg/text@1']['output'];
     company: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     email: CodecTypes['pg/text@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
     isPreferred: CodecTypes['pg/bool@1']['output'];
@@ -1553,6 +1601,7 @@ export namespace Models {
   export type public_Document = {
     category: CodecTypes['pg/text@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     description: CodecTypes['pg/text@1']['output'] | null;
     fileName: CodecTypes['pg/text@1']['output'];
     fileSize: CodecTypes['pg/int4@1']['output'] | null;
@@ -1568,6 +1617,7 @@ export namespace Models {
   export type public_Fund = {
     balance: Numeric<12, 2>;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     fundType: CodecTypes['pg/text@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
     name: CodecTypes['pg/text@1']['output'];
@@ -1580,6 +1630,7 @@ export namespace Models {
     brokerContact: CodecTypes['pg/text@1']['output'] | null;
     coverageAmount: Numeric<12, 2>;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     endDate: CodecTypes['pg/timestamptz-string@1']['output'];
     excessAmount: Numeric<12, 2> | null;
     id: CodecTypes['pg/uuid@1']['output'];
@@ -1636,6 +1687,7 @@ export namespace Models {
   };
   export type public_Levy = {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     description: CodecTypes['pg/text@1']['output'] | null;
     dueDate: CodecTypes['pg/timestamptz-string@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
@@ -1651,6 +1703,7 @@ export namespace Models {
   };
   export type public_LevyItem = {
     amount: Numeric<12, 2>;
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
     levyId: CodecTypes['pg/uuid@1']['output'];
     lotId: CodecTypes['pg/uuid@1']['output'];
@@ -1678,6 +1731,7 @@ export namespace Models {
   export type public_Meeting = {
     agenda: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
     location: CodecTypes['pg/text@1']['output'] | null;
     meetingType: CodecTypes['pg/text@1']['output'];
@@ -1879,6 +1933,7 @@ export namespace Models {
     category: CodecTypes['pg/text@1']['output'] | null;
     completedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     description: CodecTypes['pg/text@1']['output'];
     estimatedCost: Numeric<12, 2> | null;
     id: CodecTypes['pg/uuid@1']['output'];
@@ -2067,6 +2122,12 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly expires_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2200,6 +2261,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly effective_date: {
@@ -2377,6 +2444,12 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly description: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2485,6 +2558,12 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly email: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2579,6 +2658,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly description: {
@@ -2678,6 +2763,12 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly fund_type: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -2757,6 +2848,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly end_date: {
@@ -3189,6 +3286,12 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly description: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -3278,6 +3381,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/numeric@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly id: {
@@ -3456,6 +3565,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly id: {
@@ -4442,6 +4557,12 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly description: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -4745,6 +4866,13 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly expiresAt: {
                 readonly nullable: true;
                 readonly type: {
@@ -4820,6 +4948,7 @@ type ContractBase = Omit<
                 readonly authorId: { readonly column: 'author_id' };
                 readonly body: { readonly column: 'body' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly expiresAt: { readonly column: 'expires_at' };
                 readonly id: { readonly column: 'id' };
                 readonly isPinned: { readonly column: 'is_pinned' };
@@ -4854,6 +4983,13 @@ type ContractBase = Omit<
               };
               readonly createdAt: {
                 readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -4928,6 +5064,7 @@ type ContractBase = Omit<
                 readonly bylawNumber: { readonly column: 'bylaw_number' };
                 readonly category: { readonly column: 'category' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly effectiveDate: { readonly column: 'effective_date' };
                 readonly id: { readonly column: 'id' };
                 readonly motionRef: { readonly column: 'motion_ref' };
@@ -5017,6 +5154,13 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly description: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -5083,6 +5227,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly category: { readonly column: 'category' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly description: { readonly column: 'description' };
                 readonly dueDate: { readonly column: 'due_date' };
                 readonly id: { readonly column: 'id' };
@@ -5111,6 +5256,13 @@ type ContractBase = Omit<
               };
               readonly createdAt: {
                 readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -5174,6 +5326,7 @@ type ContractBase = Omit<
                 readonly category: { readonly column: 'category' };
                 readonly company: { readonly column: 'company' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly email: { readonly column: 'email' };
                 readonly id: { readonly column: 'id' };
                 readonly isPreferred: { readonly column: 'is_preferred' };
@@ -5193,6 +5346,13 @@ type ContractBase = Omit<
               };
               readonly createdAt: {
                 readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -5255,6 +5415,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly category: { readonly column: 'category' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly description: { readonly column: 'description' };
                 readonly fileName: { readonly column: 'file_name' };
                 readonly fileSize: { readonly column: 'file_size' };
@@ -5279,6 +5440,13 @@ type ContractBase = Omit<
               };
               readonly createdAt: {
                 readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -5321,6 +5489,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly balance: { readonly column: 'balance' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly fundType: { readonly column: 'fund_type' };
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
@@ -5348,6 +5517,13 @@ type ContractBase = Omit<
               };
               readonly createdAt: {
                 readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -5448,6 +5624,7 @@ type ContractBase = Omit<
                 readonly brokerContact: { readonly column: 'broker_contact' };
                 readonly coverageAmount: { readonly column: 'coverage_amount' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly endDate: { readonly column: 'end_date' };
                 readonly excessAmount: { readonly column: 'excess_amount' };
                 readonly id: { readonly column: 'id' };
@@ -5733,6 +5910,13 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly description: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -5810,6 +5994,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly description: { readonly column: 'description' };
                 readonly dueDate: { readonly column: 'due_date' };
                 readonly id: { readonly column: 'id' };
@@ -5830,6 +6015,13 @@ type ContractBase = Omit<
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/numeric@1';
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
               readonly id: {
@@ -5889,6 +6081,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly amount: { readonly column: 'amount' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly id: { readonly column: 'id' };
                 readonly levyId: { readonly column: 'levy_id' };
                 readonly lotId: { readonly column: 'lot_id' };
@@ -6003,6 +6196,13 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -6070,6 +6270,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly agenda: { readonly column: 'agenda' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly id: { readonly column: 'id' };
                 readonly location: { readonly column: 'location' };
                 readonly meetingType: { readonly column: 'meeting_type' };
@@ -7183,6 +7384,13 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly description: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -7324,6 +7532,7 @@ type ContractBase = Omit<
                 readonly category: { readonly column: 'category' };
                 readonly completedAt: { readonly column: 'completed_at' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly description: { readonly column: 'description' };
                 readonly estimatedCost: { readonly column: 'estimated_cost' };
                 readonly id: { readonly column: 'id' };

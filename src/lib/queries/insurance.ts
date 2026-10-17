@@ -16,17 +16,18 @@ function toNumeric(value: number | string): Numeric<12, 2> {
 /**
  * Fetch all insurance policies for a scheme, ordered by end date descending.
  */
-export async function getInsuranceForScheme(schemeId: string) {
+export async function getInsuranceForScheme(schemeId: string, limit = 200) {
   return db.orm.public.InsurancePolicy
     .where((p) => and(p.schemeId.eq(schemeId), p.deletedAt.eq(null)))
     .orderBy((p) => p.endDate.desc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Fetch active insurance policies for a scheme (excludes expired and cancelled).
  */
-export async function getActiveInsuranceForScheme(schemeId: string) {
+export async function getActiveInsuranceForScheme(schemeId: string, limit = 200) {
   return db.orm.public.InsurancePolicy
     .where((p) =>
       and(
@@ -36,6 +37,7 @@ export async function getActiveInsuranceForScheme(schemeId: string) {
       ),
     )
     .orderBy((p) => p.endDate.desc())
+    .limit(limit)
     .all();
 }
 
@@ -45,6 +47,7 @@ export async function getActiveInsuranceForScheme(schemeId: string) {
 export async function getInsuranceForSchemes(
   schemeIds: string[],
   options?: { includeExpired?: boolean },
+  limit = 200,
 ) {
   if (schemeIds.length === 0) return [];
 
@@ -53,6 +56,7 @@ export async function getInsuranceForSchemes(
       .where((p) => and(p.schemeId.in(schemeIds), p.deletedAt.eq(null)))
       .include("scheme")
       .orderBy((p) => p.endDate.desc())
+      .limit(limit)
       .all();
   }
 
@@ -66,6 +70,7 @@ export async function getInsuranceForSchemes(
     )
     .include("scheme")
     .orderBy((p) => p.endDate.desc())
+    .limit(limit)
     .all();
 }
 

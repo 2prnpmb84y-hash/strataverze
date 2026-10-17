@@ -43,9 +43,8 @@ export default async function OwnerMeetingsPage({
       />
 
       <Pagination
-        currentPage={meta.currentPage}
-        totalPages={meta.totalPages}
-        basePath="/owner/meetings"
+        page={meta.page}
+        hasMore={meta.hasMore}
       />
     </div>
   );

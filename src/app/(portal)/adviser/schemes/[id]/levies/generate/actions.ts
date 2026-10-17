@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
-import { createLevy } from "@/lib/queries/levies";
+import { createLeviesBatch } from "@/lib/queries/levies";
 import { logActivity } from "@/lib/queries/activity-log";
 
 export type GenerateFormState = {
@@ -50,18 +50,17 @@ export async function generateLeviesAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    const createdIds: string[] = [];
-    for (const period of periods) {
-      const levy = await createLevy({
-        schemeId,
-        title: period.title,
-        description: `Auto-generated ${frequency!.toLowerCase().replace("_", "-")} levy`,
-        totalAmount: period.amount,
-        dueDate: period.dueDate,
-        levyType: type,
-      });
-      createdIds.push(levy.id);
-    }
+    const levyData = periods.map((period) => ({
+      schemeId,
+      title: period.title,
+      description: `Auto-generated ${frequency!.toLowerCase().replace("_", "-")} levy`,
+      totalAmount: period.amount,
+      dueDate: period.dueDate,
+      levyType: type,
+    }));
+
+    const createdLevies = await createLeviesBatch(levyData);
+    const createdIds = createdLevies.map((l) => l.id);
 
     await logActivity({
       schemeId,

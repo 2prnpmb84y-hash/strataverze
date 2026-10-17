@@ -13,6 +13,7 @@ import {
 } from "@/lib/queries/levies";
 import { logActivity } from "@/lib/queries/activity-log";
 import { getSchemeNameById } from "@/lib/queries/schemes";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 import { notifyLevyIssued } from "@/lib/notifications";
 
 export type LevyFormState = {
@@ -148,17 +149,33 @@ export async function issueLevyAction(schemeId: string, levyId: string) {
     if (levy) {
       const schemeName = await getSchemeNameById(schemeId);
 
-      // Fetch lot owners for each levy item
+      // Batch-fetch lot owners for all levy items in a single query
       const { db } = await import("@/prisma/db");
-      for (const item of levy.items) {
-        const memberships = await db.orm.public.SchemeMembership
-          .where((m) => m.lotId.eq(item.lotId))
-          .where((m) => m.role.eq("OWNER"))
-          .where((m) => m.isActive.eq(true))
-          .include("profile")
-          .all();
+      const lotIds = levy.items.map((item) => item.lotId);
+      const allMemberships = lotIds.length > 0
+        ? await db.orm.public.SchemeMembership
+            .where((m) =>
+              and(
+                or(...lotIds.map((lid) => m.lotId.eq(lid))),
+                m.role.eq("OWNER"),
+                m.isActive.eq(true),
+              ),
+            )
+            .include("profile")
+            .all()
+        : [];
 
-        for (const membership of memberships) {
+      // Group memberships by lotId for amount lookup
+      const membershipsByLot = new Map<string, typeof allMemberships>();
+      for (const ms of allMemberships) {
+        const lid = ms.lotId as string;
+        if (!membershipsByLot.has(lid)) membershipsByLot.set(lid, []);
+        membershipsByLot.get(lid)!.push(ms);
+      }
+
+      for (const item of levy.items) {
+        const lotMembers = membershipsByLot.get(item.lotId) ?? [];
+        for (const membership of lotMembers) {
           if (membership.profile.email) {
             const ownerName = [membership.profile.firstName, membership.profile.lastName]
               .filter(Boolean)

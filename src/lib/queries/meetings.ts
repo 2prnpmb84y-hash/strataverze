@@ -10,11 +10,12 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Fetch all meetings for a scheme, newest first.
  */
-export async function getMeetingsForScheme(schemeId: string) {
+export async function getMeetingsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Meeting
     .where((m) => and(m.schemeId.eq(schemeId), m.deletedAt.eq(null)))
     .include("motions")
     .orderBy((m) => m.scheduledAt.desc())
+    .limit(limit)
     .all();
 }
 
@@ -94,7 +95,7 @@ export async function deleteMeeting(meetingId: string) {
 /**
  * Get upcoming meetings for an owner's schemes, including motions with votes.
  */
-export async function getUpcomingMeetingsForOwner(schemeIds: string[]) {
+export async function getUpcomingMeetingsForOwner(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Meeting
@@ -105,5 +106,6 @@ export async function getUpcomingMeetingsForOwner(schemeIds: string[]) {
         .orderBy((m) => m.createdAt.asc()),
     )
     .orderBy((m) => m.scheduledAt.asc())
+    .limit(limit)
     .all();
 }

@@ -4,10 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
-  createBylaw,
+  createBylawAtomic,
   updateBylaw,
   deleteBylaw,
-  getNextBylawNumber,
 } from "@/lib/queries/bylaws";
 import { logActivity } from "@/lib/queries/activity-log";
 
@@ -52,26 +51,17 @@ export async function createBylawAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    const bylawNumber = await getNextBylawNumber(schemeId);
-
-    const bylaw = await createBylaw({
+    // Atomic: assigns next number, creates by-law, and logs activity
+    // in a single transaction to prevent duplicate numbers.
+    const bylaw = await createBylawAtomic({
       schemeId,
-      bylawNumber,
       title,
       body,
       category,
       effectiveDate: new Date(effectiveDate).toISOString(),
       motionRef,
       notes,
-    });
-
-    await logActivity({
-      schemeId,
       actorId: profile.id,
-      action: "BYLAW_CREATED",
-      entityType: "ByLaw",
-      entityId: bylaw.id,
-      metadata: { title, bylawNumber },
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);

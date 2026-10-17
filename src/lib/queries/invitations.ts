@@ -10,10 +10,11 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Get pending invitations for a scheme.
  */
-export async function getInvitationsForScheme(schemeId: string) {
+export async function getInvitationsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Invitation
     .where((i) => i.schemeId.eq(schemeId))
     .orderBy((i) => i.createdAt.desc())
+    .limit(limit)
     .all();
 }
 

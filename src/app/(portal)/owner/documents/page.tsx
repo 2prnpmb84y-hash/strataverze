@@ -56,9 +56,8 @@ export default async function OwnerDocumentsPage({
       <DocumentList documents={paginatedDocs} schemeNames={schemeNames} />
 
       <Pagination
-        currentPage={meta.currentPage}
-        totalPages={meta.totalPages}
-        basePath="/owner/documents"
+        page={meta.page}
+        hasMore={meta.hasMore}
       />
     </div>
   );

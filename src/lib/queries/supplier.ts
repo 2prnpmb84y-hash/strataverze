@@ -31,6 +31,7 @@ export async function getOpenQuoteRequests(supplierProfileId: string) {
     .include("workOrder")
     .include("quotes")
     .orderBy((qr) => qr.createdAt.desc())
+    .limit(200)
     .all();
 }
 
@@ -50,35 +51,38 @@ export async function getQuoteRequestById(quoteRequestId: string) {
 /**
  * Get all quotes submitted by a specific supplier, newest first.
  */
-export async function getQuotesBySupplier(supplierId: string) {
+export async function getQuotesBySupplier(supplierId: string, limit = 200) {
   return db.orm.public.Quote
     .where((q) => q.supplierId.eq(supplierId))
     .include("quoteRequest", (qr) => qr.include("scheme"))
     .orderBy((q) => q.createdAt.desc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Get work orders awarded to a specific supplier, newest first.
  */
-export async function getWorkOrdersForSupplier(supplierId: string) {
+export async function getWorkOrdersForSupplier(supplierId: string, limit = 200) {
   return db.orm.public.WorkOrder
     .where((wo) => and(wo.supplierId.eq(supplierId), wo.deletedAt.eq(null)))
     .include("scheme")
     .include("comments")
     .orderBy((wo) => wo.createdAt.desc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Get invoices submitted by a specific supplier, newest first.
  */
-export async function getInvoicesBySupplier(supplierId: string) {
+export async function getInvoicesBySupplier(supplierId: string, limit = 200) {
   return db.orm.public.Invoice
     .where((inv) => inv.supplierId.eq(supplierId))
     .include("scheme")
     .include("workOrder")
     .orderBy((inv) => inv.createdAt.desc())
+    .limit(limit)
     .all();
 }
 

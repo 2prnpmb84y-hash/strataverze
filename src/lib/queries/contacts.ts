@@ -10,23 +10,25 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Fetch all contacts for a scheme, ordered by name.
  */
-export async function getContactsForScheme(schemeId: string) {
+export async function getContactsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Contact
     .where((c) => and(c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
     .orderBy((c) => c.name.asc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Fetch contacts across multiple schemes.
  */
-export async function getContactsForSchemes(schemeIds: string[]) {
+export async function getContactsForSchemes(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Contact
     .where((c) => and(c.schemeId.in(schemeIds), c.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((c) => c.name.asc())
+    .limit(limit)
     .all();
 }
 
