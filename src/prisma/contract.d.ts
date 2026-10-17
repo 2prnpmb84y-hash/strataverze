@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'a7cd8ecc9f6dd77c311d26ca9334719465e1dabbe2ceb52baba79a79c56d28cb'>;
+  StorageHashBase<'88c505005f858c126473d08a0911483546b5d2ba167ee004d2fb8f16d1ddb185'>;
 export type ExecutionHash =
   ExecutionHashBase<'c40e2371777b2cf8bac49f589868fb7a3461b56b49528e34f46d25cb0e91558f'>;
 export type ProfileHash =
@@ -313,15 +313,22 @@ export type FieldOutputTypes = {
     };
     readonly Document: {
       readonly category: CodecTypes['pg/text@1']['output'];
+      readonly comments: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly documentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly documentType: CodecTypes['pg/text@1']['output'] | null;
       readonly fileName: CodecTypes['pg/text@1']['output'];
       readonly fileSize: CodecTypes['pg/int4@1']['output'] | null;
       readonly fileUrl: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lotNumber: CodecTypes['pg/text@1']['output'] | null;
       readonly mimeType: CodecTypes['pg/text@1']['output'] | null;
+      readonly schedule: CodecTypes['pg/text@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly strataPlan: CodecTypes['pg/text@1']['output'] | null;
+      readonly supplier: CodecTypes['pg/text@1']['output'] | null;
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly uploadedBy: CodecTypes['pg/uuid@1']['output'];
     };
@@ -631,15 +638,22 @@ export type FieldInputTypes = {
     };
     readonly Document: {
       readonly category: CodecTypes['pg/text@1']['input'];
+      readonly comments: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly documentDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly documentType: CodecTypes['pg/text@1']['input'] | null;
       readonly fileName: CodecTypes['pg/text@1']['input'];
       readonly fileSize: CodecTypes['pg/int4@1']['input'] | null;
       readonly fileUrl: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lotNumber: CodecTypes['pg/text@1']['input'] | null;
       readonly mimeType: CodecTypes['pg/text@1']['input'] | null;
+      readonly schedule: CodecTypes['pg/text@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly strataPlan: CodecTypes['pg/text@1']['input'] | null;
+      readonly supplier: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly uploadedBy: CodecTypes['pg/uuid@1']['input'];
     };
@@ -949,15 +963,22 @@ export type StorageColumnTypes = {
     };
     readonly documents: {
       readonly category: CodecTypes['pg/text@1']['output'];
+      readonly comments: CodecTypes['pg/text@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly document_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly document_type: CodecTypes['pg/text@1']['output'] | null;
       readonly file_name: CodecTypes['pg/text@1']['output'];
       readonly file_size: CodecTypes['pg/int4@1']['output'] | null;
       readonly file_url: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lot_number: CodecTypes['pg/text@1']['output'] | null;
       readonly mime_type: CodecTypes['pg/text@1']['output'] | null;
+      readonly schedule: CodecTypes['pg/text@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly strata_plan: CodecTypes['pg/text@1']['output'] | null;
+      readonly supplier: CodecTypes['pg/text@1']['output'] | null;
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly uploaded_by: CodecTypes['pg/uuid@1']['output'];
     };
@@ -1267,15 +1288,22 @@ export type StorageColumnInputTypes = {
     };
     readonly documents: {
       readonly category: CodecTypes['pg/text@1']['input'];
+      readonly comments: CodecTypes['pg/text@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly document_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly document_type: CodecTypes['pg/text@1']['input'] | null;
       readonly file_name: CodecTypes['pg/text@1']['input'];
       readonly file_size: CodecTypes['pg/int4@1']['input'] | null;
       readonly file_url: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lot_number: CodecTypes['pg/text@1']['input'] | null;
       readonly mime_type: CodecTypes['pg/text@1']['input'] | null;
+      readonly schedule: CodecTypes['pg/text@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly strata_plan: CodecTypes['pg/text@1']['input'] | null;
+      readonly supplier: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly uploaded_by: CodecTypes['pg/uuid@1']['input'];
     };
@@ -1600,15 +1628,22 @@ export namespace Models {
   };
   export type public_Document = {
     category: CodecTypes['pg/text@1']['output'];
+    comments: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     description: CodecTypes['pg/text@1']['output'] | null;
+    documentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    documentType: CodecTypes['pg/text@1']['output'] | null;
     fileName: CodecTypes['pg/text@1']['output'];
     fileSize: CodecTypes['pg/int4@1']['output'] | null;
     fileUrl: CodecTypes['pg/text@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
+    lotNumber: CodecTypes['pg/text@1']['output'] | null;
     mimeType: CodecTypes['pg/text@1']['output'] | null;
+    schedule: CodecTypes['pg/text@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
+    strataPlan: CodecTypes['pg/text@1']['output'] | null;
+    supplier: CodecTypes['pg/text@1']['output'] | null;
     title: CodecTypes['pg/text@1']['output'];
     uploadedBy: CodecTypes['pg/uuid@1']['output'];
     scheme: public_Scheme;
@@ -2653,6 +2688,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly comments: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly created_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2667,6 +2708,18 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly document_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly document_type: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -2700,7 +2753,19 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly lot_number: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly mime_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly schedule: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -2710,6 +2775,18 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly strata_plan: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly supplier: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly title: {
@@ -5344,6 +5421,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly comments: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -5359,6 +5440,17 @@ type ContractBase = Omit<
                 };
               };
               readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly documentDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly documentType: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -5378,13 +5470,29 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly lotNumber: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly mimeType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schedule: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly strataPlan: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly supplier: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly title: {
                 readonly nullable: false;
@@ -5414,15 +5522,22 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly category: { readonly column: 'category' };
+                readonly comments: { readonly column: 'comments' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly description: { readonly column: 'description' };
+                readonly documentDate: { readonly column: 'document_date' };
+                readonly documentType: { readonly column: 'document_type' };
                 readonly fileName: { readonly column: 'file_name' };
                 readonly fileSize: { readonly column: 'file_size' };
                 readonly fileUrl: { readonly column: 'file_url' };
                 readonly id: { readonly column: 'id' };
+                readonly lotNumber: { readonly column: 'lot_number' };
                 readonly mimeType: { readonly column: 'mime_type' };
+                readonly schedule: { readonly column: 'schedule' };
                 readonly schemeId: { readonly column: 'scheme_id' };
+                readonly strataPlan: { readonly column: 'strata_plan' };
+                readonly supplier: { readonly column: 'supplier' };
                 readonly title: { readonly column: 'title' };
                 readonly uploadedBy: { readonly column: 'uploaded_by' };
               };

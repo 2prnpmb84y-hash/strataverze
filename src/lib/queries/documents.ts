@@ -35,22 +35,36 @@ export async function createDocument(data: {
   title: string;
   description?: string;
   category: string;
+  documentType?: string;
   fileUrl: string;
   fileName: string;
   fileSize?: number;
   mimeType?: string;
   uploadedBy: string;
+  documentDate?: string;
+  strataPlan?: string;
+  schedule?: string;
+  lotNumber?: string;
+  supplier?: string;
+  comments?: string;
 }) {
   return db.orm.public.Document.create({
     schemeId: data.schemeId,
     title: data.title,
     description: data.description ?? null,
     category: data.category,
+    documentType: data.documentType ?? null,
     fileUrl: data.fileUrl,
     fileName: data.fileName,
     fileSize: data.fileSize ?? null,
     mimeType: data.mimeType ?? null,
     uploadedBy: data.uploadedBy,
+    documentDate: data.documentDate ? toTimestamp(data.documentDate) : null,
+    strataPlan: data.strataPlan ?? null,
+    schedule: data.schedule ?? null,
+    lotNumber: data.lotNumber ?? null,
+    supplier: data.supplier ?? null,
+    comments: data.comments ?? null,
   });
 }
 
@@ -63,9 +77,29 @@ export async function updateDocument(
     title: string;
     description: string | null;
     category: string;
+    documentType: string | null;
+    documentDate: string | null;
+    strataPlan: string | null;
+    schedule: string | null;
+    lotNumber: string | null;
+    supplier: string | null;
+    comments: string | null;
   }>,
 ) {
-  return db.orm.public.Document.where({ id: documentId }).update(data);
+  const update: Record<string, unknown> = {};
+  if (data.title !== undefined) update.title = data.title;
+  if (data.description !== undefined) update.description = data.description;
+  if (data.category !== undefined) update.category = data.category;
+  if (data.documentType !== undefined) update.documentType = data.documentType;
+  if (data.documentDate !== undefined)
+    update.documentDate = data.documentDate ? toTimestamp(data.documentDate) : null;
+  if (data.strataPlan !== undefined) update.strataPlan = data.strataPlan;
+  if (data.schedule !== undefined) update.schedule = data.schedule;
+  if (data.lotNumber !== undefined) update.lotNumber = data.lotNumber;
+  if (data.supplier !== undefined) update.supplier = data.supplier;
+  if (data.comments !== undefined) update.comments = data.comments;
+
+  return db.orm.public.Document.where({ id: documentId }).update(update);
 }
 
 /**

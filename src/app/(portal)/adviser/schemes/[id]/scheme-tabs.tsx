@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 const tabs = [
   { key: "overview", label: "Overview" },
   { key: "lots", label: "Lots / Owners" },
+  { key: "documents", label: "Documents" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -38,7 +39,7 @@ export function SchemeTabs({
   return (
     <div>
       {/* Tab navigation */}
-      <div className="flex gap-1 mb-6 border-b border-border">
+      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}

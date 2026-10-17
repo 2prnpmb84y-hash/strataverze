@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { ActivityTimeline } from "@/components/activity-timeline";
+import { DocumentsTabContent } from "@/components/documents/documents-tab-content";
 import { SchemeForm } from "../scheme-form";
 import { DeleteSchemeButton } from "./delete-button";
 import { SchemeTabs } from "./scheme-tabs";
@@ -120,6 +121,31 @@ export default async function SchemeDetailPage({
               </div>
               <StrataRollTable rows={strataRollRows} schemeId={id} />
             </div>
+          ),
+          documents: (
+            <DocumentsTabContent
+              schemeId={id}
+              schemePlanNumber={scheme.planNumber}
+              documents={documents.map((d) => ({
+                id: d.id,
+                title: d.title,
+                fileName: d.fileName,
+                fileUrl: d.fileUrl,
+                fileSize: d.fileSize,
+                mimeType: d.mimeType,
+                category: d.category,
+                documentType: d.documentType ?? null,
+                documentDate: d.documentDate ? String(d.documentDate) : null,
+                strataPlan: d.strataPlan ?? null,
+                schedule: d.schedule ?? null,
+                lotNumber: d.lotNumber ?? null,
+                supplier: d.supplier ?? null,
+                comments: d.comments ?? null,
+                description: d.description ?? null,
+                createdAt: String(d.createdAt),
+              }))}
+              supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+            />
           ),
           overview: (
             <>

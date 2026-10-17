@@ -980,6 +980,13 @@
                   "kind": "scalar"
                 }
               },
+              "comments": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -995,6 +1002,20 @@
                 }
               },
               "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "documentDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "documentType": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -1029,7 +1050,21 @@
                   "kind": "scalar"
                 }
               },
+              "lotNumber": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "mimeType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "schedule": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -1040,6 +1075,20 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "strataPlan": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "supplier": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -1081,6 +1130,9 @@
                 "category": {
                   "column": "category"
                 },
+                "comments": {
+                  "column": "comments"
+                },
                 "createdAt": {
                   "column": "created_at"
                 },
@@ -1089,6 +1141,12 @@
                 },
                 "description": {
                   "column": "description"
+                },
+                "documentDate": {
+                  "column": "document_date"
+                },
+                "documentType": {
+                  "column": "document_type"
                 },
                 "fileName": {
                   "column": "file_name"
@@ -1102,11 +1160,23 @@
                 "id": {
                   "column": "id"
                 },
+                "lotNumber": {
+                  "column": "lot_number"
+                },
                 "mimeType": {
                   "column": "mime_type"
                 },
+                "schedule": {
+                  "column": "schedule"
+                },
                 "schemeId": {
                   "column": "scheme_id"
+                },
+                "strataPlan": {
+                  "column": "strata_plan"
+                },
+                "supplier": {
+                  "column": "supplier"
                 },
                 "title": {
                   "column": "title"
@@ -5077,6 +5147,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "comments": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -5092,6 +5167,16 @@
                   "nullable": true
                 },
                 "description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "document_date": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "document_type": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -5120,7 +5205,17 @@
                   },
                   "nullable": false
                 },
+                "lot_number": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "mime_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "schedule": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -5129,6 +5224,16 @@
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
                   "nullable": false
+                },
+                "strata_plan": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "supplier": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "title": {
                   "codecId": "pg/text@1",
@@ -7398,7 +7503,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "a7cd8ecc9f6dd77c311d26ca9334719465e1dabbe2ceb52baba79a79c56d28cb"
+    "storageHash": "88c505005f858c126473d08a0911483546b5d2ba167ee004d2fb8f16d1ddb185"
   },
   "execution": {
     "executionHash": "c40e2371777b2cf8bac49f589868fb7a3461b56b49528e34f46d25cb0e91558f",

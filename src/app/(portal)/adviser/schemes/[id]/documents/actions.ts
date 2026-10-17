@@ -48,8 +48,8 @@ export async function uploadDocumentAction(
     } else {
       const mimeError = validateFileUpload(file);
       if (mimeError) errors.file = mimeError;
-      else if (file.size > 10 * 1024 * 1024)
-        errors.file = "File must be smaller than 10 MB.";
+      else if (file.size > 30 * 1024 * 1024)
+        errors.file = "File must be smaller than 30 MB.";
     }
 
     if (Object.keys(errors).length > 0) return { fieldErrors: errors };
@@ -105,6 +105,123 @@ export async function uploadDocumentAction(
     }
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to upload document. Please try again." };
+  }
+}
+
+/**
+ * Upload a single file to Supabase Storage and create a document record.
+ * Used by the multi-file upload flow from the Documents tab.
+ */
+export async function uploadFileAction(
+  schemeId: string,
+  formData: FormData,
+): Promise<{ id: string; error?: string }> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const file = formData.get("file") as File | null;
+    if (!file || file.size === 0) {
+      return { id: "", error: "No file provided." };
+    }
+
+    const mimeError = validateFileUpload(file);
+    if (mimeError) return { id: "", error: mimeError };
+
+    if (file.size > 30 * 1024 * 1024) {
+      return { id: "", error: "File must be smaller than 30 MB." };
+    }
+
+    const supabase = await createClient();
+    const ext = file.name.split(".").pop() ?? "bin";
+    const storagePath = `schemes/${schemeId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(storagePath, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      return { id: "", error: `Upload failed: ${uploadError.message}` };
+    }
+
+    const doc = await createDocument({
+      schemeId,
+      title: file.name.replace(/\.[^.]+$/, ""),
+      category: "OTHER",
+      fileUrl: storagePath,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type || undefined,
+      uploadedBy: profile.id,
+    });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "DOCUMENT_UPLOADED",
+      entityType: "Document",
+      entityId: doc.id,
+      metadata: { title: file.name, category: "OTHER", fileName: file.name },
+    });
+
+    return { id: doc.id };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { id: "", error: err.message };
+    return { id: "", error: "Failed to upload file. Please try again." };
+  }
+}
+
+/**
+ * Update document metadata from the document viewer form.
+ */
+export async function updateDocumentMetadataAction(
+  schemeId: string,
+  documentId: string,
+  data: Record<string, string>,
+): Promise<{ error?: string }> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    if (!data.title?.trim()) {
+      return { error: "Name is required." };
+    }
+
+    await updateDocument(documentId, {
+      title: data.title.trim(),
+      documentType: data.documentType || null,
+      documentDate: data.documentDate || null,
+      strataPlan: data.strataPlan || null,
+      schedule: data.schedule || null,
+      lotNumber: data.lotNumber || null,
+      supplier: data.supplier || null,
+      comments: data.comments || null,
+    });
+
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return {};
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to update document. Please try again." };
+  }
+}
+
+/**
+ * Remove a document (soft delete) from the document viewer.
+ */
+export async function removeDocumentAction(
+  schemeId: string,
+  documentId: string,
+): Promise<{ error?: string }> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await deleteDocument(documentId);
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return {};
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to remove document." };
   }
 }
 

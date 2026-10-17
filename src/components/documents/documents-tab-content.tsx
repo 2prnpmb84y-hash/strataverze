@@ -1,0 +1,315 @@
+"use client";
+
+import { useState, useCallback, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { DocumentUploadModal } from "./document-upload-modal";
+import { DocumentViewer } from "./document-viewer";
+import {
+  uploadFileAction,
+  updateDocumentMetadataAction,
+  removeDocumentAction,
+} from "@/app/(portal)/adviser/schemes/[id]/documents/actions";
+
+type DocumentRecord = {
+  id: string;
+  title: string;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number | null;
+  mimeType: string | null;
+  category: string;
+  documentType: string | null;
+  documentDate: string | null;
+  strataPlan: string | null;
+  schedule: string | null;
+  lotNumber: string | null;
+  supplier: string | null;
+  comments: string | null;
+  description: string | null;
+  createdAt: string;
+};
+
+type Props = {
+  schemeId: string;
+  schemePlanNumber: string;
+  documents: DocumentRecord[];
+  supabaseUrl: string;
+};
+
+export function DocumentsTabContent({
+  schemeId,
+  schemePlanNumber,
+  documents: initialDocuments,
+  supabaseUrl,
+}: Props) {
+  const router = useRouter();
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+  const [documents, setDocuments] = useState(initialDocuments);
+  const [, startTransition] = useTransition();
+
+  const getPublicUrl = useCallback(
+    (storagePath: string) => {
+      return `${supabaseUrl}/storage/v1/object/public/documents/${storagePath}`;
+    },
+    [supabaseUrl],
+  );
+
+  const handleFilesReady = useCallback(
+    async (files: File[]) => {
+      setShowUploadModal(false);
+      setUploading(true);
+      setUploadProgress({ current: 0, total: files.length });
+
+      const newDocIds: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress({ current: i + 1, total: files.length });
+
+        const fd = new FormData();
+        fd.append("file", files[i]);
+
+        const result = await uploadFileAction(schemeId, fd);
+        if (result.id) {
+          newDocIds.push(result.id);
+        }
+      }
+
+      setUploading(false);
+      setUploadProgress(null);
+
+      // Refresh data
+      startTransition(() => {
+        router.refresh();
+      });
+
+      // Select the first uploaded doc for review
+      if (newDocIds.length > 0) {
+        setSelectedDocId(newDocIds[0]);
+      }
+    },
+    [schemeId, router],
+  );
+
+  const handleUpdate = useCallback(
+    async (data: Record<string, string>) => {
+      if (!selectedDocId) return;
+      const result = await updateDocumentMetadataAction(
+        schemeId,
+        selectedDocId,
+        data,
+      );
+      if (result.error) {
+        // Could add toast here
+        console.error(result.error);
+        return;
+      }
+      // Update local state
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === selectedDocId
+            ? {
+                ...d,
+                title: data.title || d.title,
+                documentType: data.documentType || null,
+                documentDate: data.documentDate || null,
+                strataPlan: data.strataPlan || null,
+                schedule: data.schedule || null,
+                lotNumber: data.lotNumber || null,
+                supplier: data.supplier || null,
+                comments: data.comments || null,
+              }
+            : d,
+        ),
+      );
+    },
+    [schemeId, selectedDocId],
+  );
+
+  const handleRemove = useCallback(
+    async (docId: string) => {
+      const result = await removeDocumentAction(schemeId, docId);
+      if (result.error) {
+        console.error(result.error);
+        return;
+      }
+      setDocuments((prev) => prev.filter((d) => d.id !== docId));
+      if (selectedDocId === docId) {
+        setSelectedDocId(null);
+      }
+      startTransition(() => {
+        router.refresh();
+      });
+    },
+    [schemeId, selectedDocId, router],
+  );
+
+  const selectedDoc = documents.find((d) => d.id === selectedDocId);
+
+  const categoryLabels: Record<string, string> = {
+    MINUTES: "Minutes",
+    INSURANCE: "Insurance",
+    BYLAW: "By-laws",
+    FINANCIAL: "Financial",
+    COMPLIANCE: "Compliance",
+    OTHER: "Other",
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-AU", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatSize = (bytes: number | null) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="font-heading font-semibold text-foreground">
+            Documents
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {documents.length === 0
+              ? "No documents uploaded yet."
+              : `${documents.length} document${documents.length === 1 ? "" : "s"} on file.`}
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          onClick={() => setShowUploadModal(true)}
+          disabled={uploading}
+        >
+          Upload Documents
+        </Button>
+      </div>
+
+      {/* Upload progress */}
+      {uploading && uploadProgress && (
+        <div className="mb-5 rounded-lg bg-primary-50 border border-primary-200 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400 border-t-transparent" />
+            <p className="text-sm font-medium text-primary-700">
+              Uploading file {uploadProgress.current} of {uploadProgress.total}...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Document viewer (when a doc is selected) */}
+      {selectedDoc && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              type="button"
+              onClick={() => setSelectedDocId(null)}
+              className="text-sm text-primary-500 hover:text-primary-600 font-medium transition-colors"
+            >
+              &larr; Back to list
+            </button>
+          </div>
+          <DocumentViewer
+            document={selectedDoc}
+            filePublicUrl={getPublicUrl(selectedDoc.fileUrl)}
+            schemePlanNumber={schemePlanNumber}
+            onUpdate={handleUpdate}
+            onRemove={handleRemove}
+          />
+        </div>
+      )}
+
+      {/* Document list (when no doc is selected) */}
+      {!selectedDoc && documents.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {documents.map((doc) => (
+            <button
+              key={doc.id}
+              type="button"
+              onClick={() => setSelectedDocId(doc.id)}
+              className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors text-left w-full"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {doc.title}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {categoryLabels[doc.category] ?? doc.category}
+                  {doc.documentType && ` · ${doc.documentType.replace(/_/g, " ")}`}
+                  {" · "}
+                  {formatDate(doc.createdAt)}
+                  {doc.fileSize ? ` · ${formatSize(doc.fileSize)}` : ""}
+                </p>
+              </div>
+              <span className="flex-shrink-0 ml-3 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                {doc.fileName.split(".").pop()?.toUpperCase() ?? "FILE"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!selectedDoc && documents.length === 0 && !uploading && (
+        <div className="text-center py-12 rounded-xl border border-dashed border-border">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 48 48"
+            fill="none"
+            className="mx-auto mb-3 text-muted-foreground"
+          >
+            <rect
+              x="8"
+              y="4"
+              width="32"
+              height="40"
+              rx="4"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M16 16h16M16 24h16M16 32h8"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+          <p className="text-sm font-medium text-foreground mb-1">
+            No documents yet
+          </p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Upload documents to keep records for this scheme.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => setShowUploadModal(true)}
+          >
+            Upload Documents
+          </Button>
+        </div>
+      )}
+
+      {/* Upload modal */}
+      <DocumentUploadModal
+        open={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onFilesReady={handleFilesReady}
+      />
+    </div>
+  );
+}

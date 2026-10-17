@@ -476,18 +476,25 @@ model ByLaw {
 // ─── Document Management ─────────────────────────────────────────
 
 model Document {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId    String   @map("scheme_id") @db.Uuid
-  title       String
-  description String?
-  category    String   // MINUTES, INSURANCE, BYLAW, FINANCIAL, COMPLIANCE, OTHER
-  fileUrl     String   @map("file_url")
-  fileName    String   @map("file_name")
-  fileSize    Int?     @map("file_size")
-  mimeType    String?  @map("mime_type")
-  uploadedBy  String   @map("uploaded_by") @db.Uuid
-  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
-  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId      String   @map("scheme_id") @db.Uuid
+  title         String
+  description   String?
+  category      String   // MINUTES, INSURANCE, BYLAW, FINANCIAL, COMPLIANCE, OTHER
+  documentType  String?  @map("document_type") // More granular: STRATA_PLAN, BY_LAW, SCHEDULE, NOTICE, CERTIFICATE, CORRESPONDENCE, REPORT, CONTRACT, OTHER
+  fileUrl       String   @map("file_url")
+  fileName      String   @map("file_name")
+  fileSize      Int?     @map("file_size")
+  mimeType      String?  @map("mime_type")
+  uploadedBy    String   @map("uploaded_by") @db.Uuid
+  documentDate  DateTime? @db.Timestamptz @map("document_date")
+  strataPlan    String?  @map("strata_plan")
+  schedule      String?
+  lotNumber     String?  @map("lot_number")
+  supplier      String?
+  comments      String?
+  createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt     DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
