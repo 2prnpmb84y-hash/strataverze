@@ -73,7 +73,7 @@ export default async function SchemeDetailPage({
 
   const navButtons = [
     { label: "Lots / Owners", href: `/adviser/schemes/${id}?tab=lots` },
-    { label: "Financials", href: `/adviser/schemes/${id}/levies/new` },
+    { label: "Financials", href: `/adviser/schemes/${id}/finance` },
     { label: "Compliance", href: `/adviser/schemes/${id}/compliance/new` },
     { label: "Insurance", href: `/adviser/schemes/${id}/insurance/new` },
     { label: "Conversations", href: `/adviser/schemes/${id}/announcements/new` },
