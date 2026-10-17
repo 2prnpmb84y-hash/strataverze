@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { createLevy } from "@/lib/queries/levies";
 import { logActivity } from "@/lib/queries/activity-log";
 
@@ -20,9 +20,6 @@ export async function generateLeviesAction(
   _prev: GenerateFormState,
   formData: FormData,
 ): Promise<GenerateFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const errors: Record<string, string> = {};
 
   const annualBudget = formData.get("annualBudget") as string | null;
@@ -51,6 +48,8 @@ export async function generateLeviesAction(
   const periods = buildPeriods(frequency!, startDate, budget, prefix);
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const createdIds: string[] = [];
     for (const period of periods) {
       const levy = await createLevy({
@@ -80,6 +79,7 @@ export async function generateLeviesAction(
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&

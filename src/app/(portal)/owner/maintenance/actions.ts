@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForOwner, getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
 import { createWorkOrder } from "@/lib/queries/work-orders";
 import { notifyWorkOrderCreated } from "@/lib/notifications";
 
@@ -18,9 +18,6 @@ export async function createOwnerWorkOrderAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const priority = formData.get("priority") as string;
@@ -35,10 +32,13 @@ export async function createOwnerWorkOrderAction(
 
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
-  // Verify the owner belongs to this scheme
-  const schemes = await getSchemesForOwner(profile.id);
-  const ownsScheme = schemes.some((s) => s.id === schemeId);
-  if (!ownsScheme) return { error: "You do not belong to that scheme." };
+  let profile;
+  try {
+    ({ profile } = await requireSchemeMembership(schemeId, ["OWNER", "COMMITTEE"]));
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   try {
     const wo = await createWorkOrder({

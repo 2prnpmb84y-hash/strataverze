@@ -71,20 +71,14 @@ export async function getInvitationById(invitationId: string) {
 
 /**
  * Accept an invitation: mark it accepted and create a SchemeMembership.
+ * Wrapped in a transaction so the invitation status and membership
+ * creation are atomic.
  */
 export async function acceptInvitation(
   invitationId: string,
   profileId: string,
 ) {
-  // Mark invitation as accepted
-  await db.orm.public.Invitation
-    .where({ id: invitationId })
-    .update({
-      status: "ACCEPTED",
-      acceptedAt: toTimestamp(new Date().toISOString()),
-    });
-
-  // Get the invitation details to create membership
+  // Get the invitation details first (outside transaction is fine)
   const invitation = await db.orm.public.Invitation.first({ id: invitationId });
   if (!invitation) return { error: "Invitation not found." };
 
@@ -103,13 +97,22 @@ export async function acceptInvitation(
     return { error: "You already have this role on this scheme." };
   }
 
-  // Create the membership
-  await db.orm.public.SchemeMembership.create({
-    schemeId: invitation.schemeId,
-    profileId,
-    role: invitation.role,
-    lotId: invitation.lotId ?? null,
-    isActive: true,
+  // Wrap the status update and membership creation in a transaction
+  await db.transaction(async (tx) => {
+    await tx.orm.public.Invitation
+      .where({ id: invitationId })
+      .update({
+        status: "ACCEPTED",
+        acceptedAt: toTimestamp(new Date().toISOString()),
+      });
+
+    await tx.orm.public.SchemeMembership.create({
+      schemeId: invitation.schemeId,
+      profileId,
+      role: invitation.role,
+      lotId: invitation.lotId ?? null,
+      isActive: true,
+    });
   });
 
   return { success: true };

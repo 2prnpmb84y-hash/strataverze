@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile, updateProfile } from "@/lib/queries/profiles";
+import { updateProfile } from "@/lib/queries/profiles";
+import { requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
 
 export type ProfileFormState = {
   error?: string;
@@ -13,8 +14,13 @@ export async function updateProfileAction(
   _prev: ProfileFormState,
   formData: FormData,
 ): Promise<ProfileFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
+  let profile;
+  try {
+    profile = await requireAuth();
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   const firstName = (formData.get("firstName") as string | null)?.trim() ?? "";
   const lastName = (formData.get("lastName") as string | null)?.trim() ?? "";

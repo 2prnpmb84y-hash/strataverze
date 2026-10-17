@@ -7,7 +7,7 @@ export default async function QuoteRequestsPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const quoteRequests = await getOpenQuoteRequests();
+  const quoteRequests = await getOpenQuoteRequests(profile.id);
 
   const urgencyOrder: Record<string, number> = {
     URGENT: 0,

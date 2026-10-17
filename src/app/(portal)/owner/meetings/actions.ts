@@ -1,12 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
 import { castVote } from "@/lib/queries/motions";
 
 export async function castVoteAction(motionId: string, voteValue: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
+  let profile;
+  try {
+    profile = await requireAuth();
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   const allowed = ["FOR", "AGAINST", "ABSTAIN"];
   if (!allowed.includes(voteValue)) {

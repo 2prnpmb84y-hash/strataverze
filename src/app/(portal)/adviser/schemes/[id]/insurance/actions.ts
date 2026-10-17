@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createInsurancePolicy,
   updateInsurancePolicy,
@@ -33,9 +33,6 @@ export async function createInsuranceAction(
   _prev: InsuranceFormState,
   formData: FormData,
 ): Promise<InsuranceFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const policyNumber = (formData.get("policyNumber") as string)?.trim();
   const policyType = formData.get("policyType") as string;
   const insurer = (formData.get("insurer") as string)?.trim();
@@ -69,6 +66,8 @@ export async function createInsuranceAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const policy = await createInsurancePolicy({
       schemeId,
       policyNumber,
@@ -108,6 +107,7 @@ export async function createInsuranceAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to create insurance policy. Please try again." };
   }
 }
@@ -118,9 +118,6 @@ export async function updateInsuranceAction(
   _prev: InsuranceFormState,
   formData: FormData,
 ): Promise<InsuranceFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const policyNumber = (formData.get("policyNumber") as string)?.trim();
   const policyType = formData.get("policyType") as string;
   const insurer = (formData.get("insurer") as string)?.trim();
@@ -157,6 +154,8 @@ export async function updateInsuranceAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateInsurancePolicy(policyId, {
       policyNumber,
       policyType,
@@ -184,7 +183,8 @@ export async function updateInsuranceAction(
 
     revalidatePath(`/adviser/schemes/${schemeId}/insurance/${policyId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update insurance policy. Please try again." };
   }
 }
@@ -193,10 +193,9 @@ export async function deleteInsuranceAction(
   schemeId: string,
   policyId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteInsurancePolicy(policyId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
@@ -210,6 +209,7 @@ export async function deleteInsuranceAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to delete insurance policy." };
   }
 }

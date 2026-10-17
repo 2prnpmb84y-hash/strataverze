@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   acceptInvitation,
   declineInvitation,
@@ -10,8 +10,13 @@ import {
 import { logActivity } from "@/lib/queries/activity-log";
 
 export async function acceptInvitationAction(invitationId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
+  let profile;
+  try {
+    profile = await requireAuth();
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   try {
     const invitation = await getInvitationById(invitationId);
@@ -37,8 +42,13 @@ export async function acceptInvitationAction(invitationId: string) {
 }
 
 export async function declineInvitationAction(invitationId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
+  let profile;
+  try {
+    profile = await requireAuth();
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   try {
     const invitation = await getInvitationById(invitationId);

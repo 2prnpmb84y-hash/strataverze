@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createLevy,
   updateLevy,
@@ -55,13 +55,12 @@ export async function createLevyAction(
   _prev: LevyFormState,
   formData: FormData,
 ): Promise<LevyFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const { errors, isValid, data } = validateLevyForm(formData);
   if (!isValid) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const levy = await createLevy({ ...data, schemeId });
     await logActivity({
       schemeId,
@@ -83,6 +82,7 @@ export async function createLevyAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to create levy. Please try again." };
   }
 }
@@ -93,26 +93,25 @@ export async function updateLevyAction(
   _prev: LevyFormState,
   formData: FormData,
 ): Promise<LevyFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const { errors, isValid, data } = validateLevyForm(formData);
   if (!isValid) return { fieldErrors: errors };
 
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateLevy(levyId, data);
     revalidatePath(`/adviser/schemes/${schemeId}/levies/${levyId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update levy. Please try again." };
   }
 }
 
 export async function deleteLevyAction(schemeId: string, levyId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteLevy(levyId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
@@ -126,15 +125,15 @@ export async function deleteLevyAction(schemeId: string, levyId: string) {
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to delete levy." };
   }
 }
 
 export async function issueLevyAction(schemeId: string, levyId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await issueLevy(levyId);
     await logActivity({
       schemeId,
@@ -181,7 +180,8 @@ export async function issueLevyAction(schemeId: string, levyId: string) {
 
     revalidatePath(`/adviser/schemes/${schemeId}/levies/${levyId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to issue levy." };
   }
 }
@@ -192,10 +192,9 @@ export async function markItemPaidAction(
   itemId: string,
   amount: number,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await markLevyItemPaid(itemId, amount);
     await logActivity({
       schemeId,
@@ -207,7 +206,8 @@ export async function markItemPaidAction(
     });
     revalidatePath(`/adviser/schemes/${schemeId}/levies/${levyId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to record payment." };
   }
 }

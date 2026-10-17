@@ -5,8 +5,10 @@ const protectedRoutes = [
   "/owner",
   "/committee",
   "/adviser",
+  "/supplier",
   "/dashboard",
   "/settings",
+  "/invitations",
 ];
 
 const authRoutes = ["/login", "/forgot-password", "/reset-password"];
@@ -64,8 +66,10 @@ export const config = {
     "/owner/:path*",
     "/committee/:path*",
     "/adviser/:path*",
+    "/supplier/:path*",
     "/dashboard/:path*",
     "/settings/:path*",
+    "/invitations/:path*",
     "/login",
     "/forgot-password",
     "/reset-password",

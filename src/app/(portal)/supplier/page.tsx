@@ -14,7 +14,7 @@ export default async function SupplierDashboard() {
   if (!profile) return null;
 
   const [openRequests, myQuotes, workOrders, invoices] = await Promise.all([
-    getOpenQuoteRequests(),
+    getOpenQuoteRequests(profile.id),
     getQuotesBySupplier(profile.id),
     getWorkOrdersForSupplier(profile.id),
     getInvoicesBySupplier(profile.id),

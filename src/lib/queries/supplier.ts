@@ -1,12 +1,32 @@
 import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 
 /**
- * Get all OPEN quote requests visible to suppliers, newest first.
+ * Get OPEN quote requests visible to a specific supplier, scoped to
+ * schemes where the supplier has an active membership. Newest first.
  */
-export async function getOpenQuoteRequests() {
+export async function getOpenQuoteRequests(supplierProfileId: string) {
+  // Find schemes this supplier is a member of
+  const memberships = await db.orm.public.SchemeMembership
+    .where((m) =>
+      and(
+        m.profileId.eq(supplierProfileId),
+        m.role.eq("SUPPLIER"),
+        m.isActive.eq(true),
+      ),
+    )
+    .all();
+
+  const schemeIds = memberships.map((m) => m.schemeId);
+  if (schemeIds.length === 0) return [];
+
   return db.orm.public.QuoteRequest
-    .where((qr) => qr.status.eq("OPEN"))
+    .where((qr) =>
+      and(
+        qr.status.eq("OPEN"),
+        or(...schemeIds.map((id) => qr.schemeId.eq(id))),
+      ),
+    )
     .include("scheme")
     .include("workOrder")
     .include("quotes")

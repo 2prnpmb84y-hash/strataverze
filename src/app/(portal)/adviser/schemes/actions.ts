@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createScheme,
   updateScheme,
@@ -82,16 +82,16 @@ export async function createSchemeAction(
   _prev: SchemeFormState,
   formData: FormData,
 ): Promise<SchemeFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const { errors, isValid, data } = validateSchemeForm(formData);
   if (!isValid) return { fieldErrors: errors };
 
   try {
+    const profile = await requireAuth();
+
     const scheme = await createScheme(data, profile.id);
     redirect(`/adviser/schemes/${scheme.id}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     // redirect() throws a NEXT_REDIRECT error — rethrow it
     if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
     // Also check for the Next.js redirect digest
@@ -114,13 +114,12 @@ export async function updateSchemeAction(
   _prev: SchemeFormState,
   formData: FormData,
 ): Promise<SchemeFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const { errors, isValid, data } = validateSchemeForm(formData);
   if (!isValid) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateScheme(schemeId, data);
 
     await logActivity({
@@ -134,20 +133,21 @@ export async function updateSchemeAction(
     revalidatePath(`/adviser/schemes/${schemeId}`);
     revalidatePath("/adviser/schemes");
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update scheme. Please try again." };
   }
 }
 
 export async function deleteSchemeAction(schemeId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteScheme(schemeId);
     revalidatePath("/adviser/schemes");
     redirect("/adviser/schemes");
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
     if (
       err &&
@@ -168,8 +168,13 @@ export async function deleteSchemeAction(schemeId: string) {
 export async function parseStrataRollAction(
   formData: FormData,
 ): Promise<StrataRollParseResult> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { success: false, error: "You must be signed in." };
+
+  try {
+    await requireAuth();
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { success: false, error: err.message };
+    throw err;
+  }
 
   const file = formData.get("strataRoll") as File | null;
   if (!file || file.size === 0) {

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { createFund, updateFund, deleteFund } from "@/lib/queries/funds";
 import { logActivity } from "@/lib/queries/activity-log";
 
@@ -42,13 +42,12 @@ export async function createFundAction(
   _prev: FundFormState,
   formData: FormData,
 ): Promise<FundFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const { errors, isValid, data } = validateFundForm(formData);
-  if (!isValid) return { fieldErrors: errors };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const { errors, isValid, data } = validateFundForm(formData);
+    if (!isValid) return { fieldErrors: errors };
+
     const fund = await createFund({ ...data, schemeId });
 
     await logActivity({
@@ -63,6 +62,7 @@ export async function createFundAction(
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/funds/${fund.id}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -82,30 +82,30 @@ export async function updateFundAction(
   _prev: FundFormState,
   formData: FormData,
 ): Promise<FundFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const { errors, isValid, data } = validateFundForm(formData);
-  if (!isValid) return { fieldErrors: errors };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const { errors, isValid, data } = validateFundForm(formData);
+    if (!isValid) return { fieldErrors: errors };
+
     await updateFund(fundId, { name: data.name, balance: data.balance });
     revalidatePath(`/adviser/schemes/${schemeId}/funds/${fundId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update fund. Please try again." };
   }
 }
 
 export async function deleteFundAction(schemeId: string, fundId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteFund(fundId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&

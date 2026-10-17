@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createWorkOrder,
   updateWorkOrder,
@@ -30,9 +30,6 @@ export async function createWorkOrderAction(
   _prev: WorkOrderFormState,
   formData: FormData,
 ): Promise<WorkOrderFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const priority = formData.get("priority") as string;
@@ -53,6 +50,8 @@ export async function createWorkOrderAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const wo = await createWorkOrder({
       schemeId,
       raisedById: profile.id,
@@ -93,6 +92,7 @@ export async function createWorkOrderAction(
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/work-orders/${wo.id}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -112,9 +112,6 @@ export async function updateWorkOrderAction(
   _prev: WorkOrderFormState,
   formData: FormData,
 ): Promise<WorkOrderFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const priority = formData.get("priority") as string;
@@ -131,6 +128,8 @@ export async function updateWorkOrderAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateWorkOrder(workOrderId, {
       title,
       description,
@@ -141,7 +140,8 @@ export async function updateWorkOrderAction(
     });
     revalidatePath(`/adviser/schemes/${schemeId}/work-orders/${workOrderId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update work order. Please try again." };
   }
 }
@@ -152,10 +152,9 @@ export async function updateWorkOrderStatusAction(
   status: string,
   actualCost?: number,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const data: Parameters<typeof updateWorkOrder>[1] = { status };
     if (status === "COMPLETED") {
       data.completedAt = new Date().toISOString();
@@ -196,7 +195,8 @@ export async function updateWorkOrderStatusAction(
     revalidatePath(`/adviser/schemes/${schemeId}/work-orders/${workOrderId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update status." };
   }
 }
@@ -205,14 +205,14 @@ export async function deleteWorkOrderAction(
   schemeId: string,
   workOrderId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteWorkOrder(workOrderId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -232,13 +232,12 @@ export async function addCommentAction(
   _prev: { error?: string },
   formData: FormData,
 ): Promise<{ error?: string }> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const content = (formData.get("content") as string)?.trim();
   if (!content) return { error: "Comment cannot be empty." };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await addComment({
       workOrderId,
       authorId: profile.id,
@@ -246,7 +245,8 @@ export async function addCommentAction(
     });
     revalidatePath(`/adviser/schemes/${schemeId}/work-orders/${workOrderId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to add comment." };
   }
 }

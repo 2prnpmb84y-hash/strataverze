@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createInvitation,
   revokeInvitation,
@@ -23,23 +23,22 @@ export async function sendInvitationAction(
   _prev: InvitationFormState,
   formData: FormData,
 ): Promise<InvitationFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const email = (formData.get("email") as string)?.trim().toLowerCase();
-  const role = formData.get("role") as string;
-
-  const errors: Record<string, string> = {};
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = "Enter a valid email address.";
-  }
-  if (!role || !VALID_ROLES.includes(role)) {
-    errors.role = "Select a valid role.";
-  }
-
-  if (Object.keys(errors).length > 0) return { fieldErrors: errors };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const email = (formData.get("email") as string)?.trim().toLowerCase();
+    const role = formData.get("role") as string;
+
+    const errors: Record<string, string> = {};
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Enter a valid email address.";
+    }
+    if (!role || !VALID_ROLES.includes(role)) {
+      errors.role = "Select a valid role.";
+    }
+
+    if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
     // Set expiry to 30 days from now
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -78,7 +77,8 @@ export async function sendInvitationAction(
 
     revalidatePath(`/adviser/schemes/${schemeId}/members`);
     return { success: `Invitation sent to ${email}.` };
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return {
       error:
         "Failed to send invitation. This person may already have a pending invitation for this role.",
@@ -90,10 +90,9 @@ export async function revokeInvitationAction(
   schemeId: string,
   invitationId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await revokeInvitation(invitationId);
 
     await logActivity({
@@ -106,7 +105,8 @@ export async function revokeInvitationAction(
 
     revalidatePath(`/adviser/schemes/${schemeId}/members`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to revoke invitation." };
   }
 }

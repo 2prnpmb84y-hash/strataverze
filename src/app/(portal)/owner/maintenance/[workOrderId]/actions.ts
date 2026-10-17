@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile, hasCommitteeRole } from "@/lib/queries/profiles";
-import { getSchemesForOwner, getSchemesForCommittee } from "@/lib/queries/schemes";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   getWorkOrderById,
   addComment,
@@ -11,29 +10,14 @@ import {
 } from "@/lib/queries/work-orders";
 
 /**
- * Check whether the current user has access to the work order's scheme,
- * either as an owner or as a committee member. Returns the profile and
- * access flags, or null if no access.
+ * Verify the current user has OWNER or COMMITTEE membership on the work order's scheme.
+ * Returns the profile and role-based access flags, or throws AuthorisationError.
  */
 async function verifyAccess(workOrderSchemeId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  const { profile, membership } = await requireSchemeMembership(workOrderSchemeId, ["OWNER", "COMMITTEE"]);
 
-  const ownerSchemes = await getSchemesForOwner(profile.id);
-  const isOwner = ownerSchemes.some((s) => s.id === workOrderSchemeId);
-
-  let isCommittee = false;
-  if (!isOwner) {
-    isCommittee = await hasCommitteeRole(profile.id);
-    if (isCommittee) {
-      const committeeSchemes = await getSchemesForCommittee(profile.id);
-      isCommittee = committeeSchemes.some((s) => s.id === workOrderSchemeId);
-    }
-  } else {
-    isCommittee = await hasCommitteeRole(profile.id);
-  }
-
-  if (!isOwner && !isCommittee) return null;
+  const isOwner = membership.role === "OWNER";
+  const isCommittee = membership.role === "COMMITTEE";
 
   return { profile, isOwner, isCommittee };
 }
@@ -46,8 +30,13 @@ export async function addCommentAction(
   const workOrder = await getWorkOrderById(workOrderId);
   if (!workOrder) return { error: "Work order not found." };
 
-  const access = await verifyAccess(workOrder.schemeId);
-  if (!access) return { error: "You do not have access to this work order." };
+  let access;
+  try {
+    access = await verifyAccess(workOrder.schemeId);
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   const content = (formData.get("content") as string)?.trim();
   if (!content) return { error: "Comment cannot be empty." };
@@ -72,8 +61,13 @@ export async function deleteCommentAction(
   const workOrder = await getWorkOrderById(workOrderId);
   if (!workOrder) return { error: "Work order not found." };
 
-  const access = await verifyAccess(workOrder.schemeId);
-  if (!access) return { error: "You do not have access to this work order." };
+  let access;
+  try {
+    access = await verifyAccess(workOrder.schemeId);
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   // Only committee members can delete comments
   if (!access.isCommittee) {
@@ -96,8 +90,13 @@ export async function updateWorkOrderStatusAction(
   const workOrder = await getWorkOrderById(workOrderId);
   if (!workOrder) return { error: "Work order not found." };
 
-  const access = await verifyAccess(workOrder.schemeId);
-  if (!access) return { error: "You do not have access to this work order." };
+  let access;
+  try {
+    access = await verifyAccess(workOrder.schemeId);
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   // Only committee members can update status
   if (!access.isCommittee) {

@@ -2,13 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createDocument,
   updateDocument,
   deleteDocument,
 } from "@/lib/queries/documents";
 import { createClient } from "@/lib/supabase/server";
+import { validateFileUpload } from "@/lib/upload/validate-mime";
 import { logActivity } from "@/lib/queries/activity-log";
 
 export type DocumentFormState = {
@@ -30,25 +31,29 @@ export async function uploadDocumentAction(
   _prev: DocumentFormState,
   formData: FormData,
 ): Promise<DocumentFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
-  const category = formData.get("category") as string;
-  const file = formData.get("file") as File | null;
-
-  const errors: Record<string, string> = {};
-  if (!title) errors.title = "Title is required.";
-  if (!category || !CATEGORIES.includes(category))
-    errors.category = "Select a valid category.";
-  if (!file || file.size === 0) errors.file = "Please select a file to upload.";
-  if (file && file.size > 10 * 1024 * 1024)
-    errors.file = "File must be smaller than 10 MB.";
-
-  if (Object.keys(errors).length > 0) return { fieldErrors: errors };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const title = (formData.get("title") as string)?.trim();
+    const description = (formData.get("description") as string)?.trim();
+    const category = formData.get("category") as string;
+    const file = formData.get("file") as File | null;
+
+    const errors: Record<string, string> = {};
+    if (!title) errors.title = "Title is required.";
+    if (!category || !CATEGORIES.includes(category))
+      errors.category = "Select a valid category.";
+    if (!file || file.size === 0) {
+      errors.file = "Please select a file to upload.";
+    } else {
+      const mimeError = validateFileUpload(file);
+      if (mimeError) errors.file = mimeError;
+      else if (file.size > 10 * 1024 * 1024)
+        errors.file = "File must be smaller than 10 MB.";
+    }
+
+    if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
     // Upload to Supabase Storage
     const supabase = await createClient();
     const ext = file!.name.split(".").pop() ?? "bin";
@@ -65,17 +70,12 @@ export async function uploadDocumentAction(
       return { error: `Upload failed: ${uploadError.message}` };
     }
 
-    // Get the public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("documents").getPublicUrl(storagePath);
-
     const doc = await createDocument({
       schemeId,
       title,
       description: description || undefined,
       category,
-      fileUrl: publicUrl,
+      fileUrl: storagePath,
       fileName: file!.name,
       fileSize: file!.size,
       mimeType: file!.type || undefined,
@@ -103,6 +103,7 @@ export async function uploadDocumentAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to upload document. Please try again." };
   }
 }
@@ -113,21 +114,20 @@ export async function updateDocumentAction(
   _prev: DocumentFormState,
   formData: FormData,
 ): Promise<DocumentFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
-  const category = formData.get("category") as string;
-
-  const errors: Record<string, string> = {};
-  if (!title) errors.title = "Title is required.";
-  if (!category || !CATEGORIES.includes(category))
-    errors.category = "Select a valid category.";
-
-  if (Object.keys(errors).length > 0) return { fieldErrors: errors };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const title = (formData.get("title") as string)?.trim();
+    const description = (formData.get("description") as string)?.trim();
+    const category = formData.get("category") as string;
+
+    const errors: Record<string, string> = {};
+    if (!title) errors.title = "Title is required.";
+    if (!category || !CATEGORIES.includes(category))
+      errors.category = "Select a valid category.";
+
+    if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
     await updateDocument(documentId, {
       title,
       description: description || null,
@@ -135,7 +135,8 @@ export async function updateDocumentAction(
     });
     revalidatePath(`/adviser/schemes/${schemeId}/documents/${documentId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update document. Please try again." };
   }
 }
@@ -144,14 +145,14 @@ export async function deleteDocumentAction(
   schemeId: string,
   documentId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteDocument(documentId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&

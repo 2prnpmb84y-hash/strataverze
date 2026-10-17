@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile, searchProfiles } from "@/lib/queries/profiles";
+import { searchProfiles } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createLot,
   updateLot,
@@ -53,13 +54,12 @@ export async function createLotAction(
   _prev: LotFormState,
   formData: FormData,
 ): Promise<LotFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const { errors, isValid, data } = validateLotForm(formData);
-  if (!isValid) return { fieldErrors: errors };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const { errors, isValid, data } = validateLotForm(formData);
+    if (!isValid) return { fieldErrors: errors };
+
     const lot = await createLot({ ...data, schemeId });
 
     await logActivity({
@@ -74,6 +74,7 @@ export async function createLotAction(
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -93,30 +94,30 @@ export async function updateLotAction(
   _prev: LotFormState,
   formData: FormData,
 ): Promise<LotFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const { errors, isValid, data } = validateLotForm(formData);
-  if (!isValid) return { fieldErrors: errors };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const { errors, isValid, data } = validateLotForm(formData);
+    if (!isValid) return { fieldErrors: errors };
+
     await updateLot(lotId, data);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update lot. Please try again." };
   }
 }
 
 export async function deleteLotAction(schemeId: string, lotId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteLot(lotId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -134,10 +135,12 @@ export async function deleteLotAction(schemeId: string, lotId: string) {
  * Search for profiles to assign as owners.
  */
 export async function searchProfilesAction(query: string, schemeId: string) {
-  const profile = await getCurrentProfile();
-  if (!profile) return [];
-
-  return searchProfiles(query, schemeId);
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    return searchProfiles(query, schemeId);
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -148,15 +151,15 @@ export async function assignOwnerAction(
   lotId: string,
   profileId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await assignOwnerToLot({ schemeId, lotId, profileId });
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to assign owner. They may already be assigned to this scheme." };
   }
 }
@@ -169,15 +172,15 @@ export async function removeOwnerAction(
   lotId: string,
   membershipId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await removeOwnerFromLot(membershipId);
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to remove owner." };
   }
 }

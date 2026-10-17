@@ -45,8 +45,8 @@ export default function LandingPage() {
             <a href="#financials" className="hover:text-foreground transition-colors">
               Financials
             </a>
-            <a href="#advisor" className="hover:text-foreground transition-colors">
-              Advisor Access
+            <a href="#adviser" className="hover:text-foreground transition-colors">
+              Adviser Access
             </a>
             <a href="#vault" className="hover:text-foreground transition-colors">
               Asset Vault
@@ -211,11 +211,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Feature 4 — Advisor Framework (REVERSED) */}
+          {/* Feature 4 — Adviser Framework (REVERSED) */}
           <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
             <div className="md:w-1/2 min-h-[240px] relative">
               <Image
-                src="/images/feature-advisor.webp"
+                src="/images/feature-adviser.webp"
                 alt="Strata manager reviewing building plans on a tablet"
                 fill
                 className="object-cover"
@@ -223,13 +223,13 @@ export default function LandingPage() {
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
               <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
-                Advisor Framework
+                Adviser Framework
               </span>
               <h3 className="text-xl font-bold font-heading text-foreground mb-2">
                 Your manager works for you.
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Strata managers become advisors with scoped, revocable permissions.
+                Strata managers become advisers with scoped, revocable permissions.
                 Owners grant access, set boundaries, and revoke privileges &mdash;
                 all from a single dashboard.
               </p>
@@ -331,11 +331,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════ The Advisor Gateway ═══════ */}
-      <section id="advisor" className="px-6 py-24 max-w-7xl mx-auto">
+      {/* ═══════ The Adviser Gateway ═══════ */}
+      <section id="adviser" className="px-6 py-24 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
-            The Advisor Gateway
+            The Adviser Gateway
           </span>
           <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
             You set the rules. They follow them.
@@ -379,11 +379,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Advisor's View */}
+          {/* Adviser's View */}
           <div className="rounded-2xl border-2 border-dashed border-gold-400 bg-card overflow-hidden">
             <div className="px-6 py-4 bg-gold-50 border-b border-gold-100">
               <h3 className="font-heading font-semibold text-foreground">
-                Advisor&apos;s View
+                Adviser&apos;s View
               </h3>
             </div>
             <div className="divide-y divide-border">
@@ -519,19 +519,14 @@ export default function LandingPage() {
             true data sovereignty.
           </p>
 
-          {/* Email form */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto mb-10">
-            <input
-              type="email"
-              placeholder="you@yourbuilding.com.au"
-              className="w-full sm:flex-1 h-12 rounded-lg px-4 text-sm text-foreground bg-white border-none outline-none placeholder:text-muted-foreground"
-            />
-            <button
-              type="button"
-              className="w-full sm:w-auto h-12 rounded-lg bg-coral px-6 text-white font-semibold text-sm transition-colors hover:opacity-90 whitespace-nowrap"
+          {/* CTA link */}
+          <div className="flex items-center justify-center gap-3 max-w-md mx-auto mb-10">
+            <a
+              href="/login"
+              className="h-12 rounded-lg bg-coral px-8 text-white font-semibold text-sm transition-colors hover:opacity-90 whitespace-nowrap inline-flex items-center"
             >
-              Get Access &rarr;
-            </button>
+              Get Started &rarr;
+            </a>
           </div>
 
           {/* Trust points */}
@@ -591,8 +586,8 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <a href="#advisor" className="hover:text-white transition-colors">
-                    Advisor Gateway
+                  <a href="#adviser" className="hover:text-white transition-colors">
+                    Adviser Gateway
                   </a>
                 </li>
                 <li>

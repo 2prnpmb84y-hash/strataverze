@@ -3,6 +3,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getLotDetail } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
+import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { LotForm } from "../lot-form";
@@ -223,15 +224,17 @@ export default async function LotDetailPage({
           /* ── Documents tab ──────────────────────────────── */
           documents: (
             <LotDocuments
-              documents={documents.map((d) => ({
-                id: d.id,
-                title: d.title,
-                category: d.category,
-                fileName: d.fileName,
-                fileSize: d.fileSize,
-                createdAt: String(d.createdAt),
-                fileUrl: d.fileUrl,
-              }))}
+              documents={await Promise.all(
+                documents.map(async (d) => ({
+                  id: d.id,
+                  title: d.title,
+                  category: d.category,
+                  fileName: d.fileName,
+                  fileSize: d.fileSize,
+                  createdAt: String(d.createdAt),
+                  fileUrl: await resolveDocumentUrl(d.fileUrl),
+                })),
+              )}
             />
           ),
 

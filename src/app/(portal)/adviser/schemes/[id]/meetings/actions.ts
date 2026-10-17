@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createMeeting,
   updateMeeting,
@@ -56,13 +56,12 @@ export async function createMeetingAction(
   _prev: MeetingFormState,
   formData: FormData,
 ): Promise<MeetingFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const { errors, isValid, data } = validateMeetingForm(formData);
-  if (!isValid) return { fieldErrors: errors };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const { errors, isValid, data } = validateMeetingForm(formData);
+    if (!isValid) return { fieldErrors: errors };
+
     const meeting = await createMeeting({ ...data, schemeId });
 
     await logActivity({
@@ -91,6 +90,7 @@ export async function createMeetingAction(
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/meetings/${meeting.id}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -110,17 +110,17 @@ export async function updateMeetingAction(
   _prev: MeetingFormState,
   formData: FormData,
 ): Promise<MeetingFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const { errors, isValid, data } = validateMeetingForm(formData);
-  if (!isValid) return { fieldErrors: errors };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const { errors, isValid, data } = validateMeetingForm(formData);
+    if (!isValid) return { fieldErrors: errors };
+
     await updateMeeting(meetingId, data);
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update meeting. Please try again." };
   }
 }
@@ -129,14 +129,14 @@ export async function deleteMeetingAction(
   schemeId: string,
   meetingId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteMeeting(meetingId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -154,14 +154,14 @@ export async function completeMeetingAction(
   schemeId: string,
   meetingId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateMeeting(meetingId, { status: "COMPLETED" });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to complete meeting." };
   }
 }
@@ -170,14 +170,14 @@ export async function cancelMeetingAction(
   schemeId: string,
   meetingId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateMeeting(meetingId, { status: "CANCELLED" });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to cancel meeting." };
   }
 }
@@ -195,22 +195,21 @@ export async function createMotionAction(
   _prev: MotionFormState,
   formData: FormData,
 ): Promise<MotionFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
-  const motionType = formData.get("motionType") as string;
-
-  const errors: Record<string, string> = {};
-  if (!title) errors.title = "Title is required.";
-  if (!description) errors.description = "Description is required.";
-  if (!motionType || !MOTION_TYPES.includes(motionType))
-    errors.motionType = "Select a valid motion type.";
-
-  if (Object.keys(errors).length > 0) return { fieldErrors: errors };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const title = (formData.get("title") as string)?.trim();
+    const description = (formData.get("description") as string)?.trim();
+    const motionType = formData.get("motionType") as string;
+
+    const errors: Record<string, string> = {};
+    if (!title) errors.title = "Title is required.";
+    if (!description) errors.description = "Description is required.";
+    if (!motionType || !MOTION_TYPES.includes(motionType))
+      errors.motionType = "Select a valid motion type.";
+
+    if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
     await createMotion({
       schemeId,
       meetingId,
@@ -221,7 +220,8 @@ export async function createMotionAction(
     });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to create motion. Please try again." };
   }
 }
@@ -233,14 +233,14 @@ export async function updateMotionStatusAction(
   status: string,
   outcome?: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateMotion(motionId, { status, outcome: outcome ?? null });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update motion." };
   }
 }
@@ -250,14 +250,14 @@ export async function deleteMotionAction(
   meetingId: string,
   motionId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteMotion(motionId);
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to delete motion." };
   }
 }
@@ -268,10 +268,9 @@ export async function castVoteAction(
   motionId: string,
   voteValue: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await castVote({
       motionId,
       profileId: profile.id,
@@ -279,7 +278,8 @@ export async function castVoteAction(
     });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to cast vote. You may have already voted." };
   }
 }

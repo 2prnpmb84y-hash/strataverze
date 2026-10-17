@@ -40,6 +40,14 @@ export async function getProfileById(profileId: string) {
 }
 
 /**
+ * Escape LIKE/ILIKE pattern metacharacters so user input is treated
+ * as a literal string rather than a pattern.
+ */
+function escapeLikePattern(raw: string): string {
+  return raw.replace(/[%_\\]/g, (ch) => `\\${ch}`);
+}
+
+/**
  * Search profiles by email or name (for owner assignment).
  * Excludes profiles already assigned as OWNER on the given scheme.
  */
@@ -47,13 +55,15 @@ export async function searchProfiles(query: string, schemeId: string) {
   const trimmed = query.trim().toLowerCase();
   if (trimmed.length < 2) return [];
 
+  const safe = escapeLikePattern(trimmed);
+
   // Fetch all profiles matching the search term
   const profiles = await db.orm.public.Profile
     .where((p) =>
       or(
-        p.email.ilike(`%${trimmed}%`),
-        p.firstName.ilike(`%${trimmed}%`),
-        p.lastName.ilike(`%${trimmed}%`),
+        p.email.ilike(`%${safe}%`),
+        p.firstName.ilike(`%${safe}%`),
+        p.lastName.ilike(`%${safe}%`),
       ),
     )
     .limit(10)

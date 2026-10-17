@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createContact,
   updateContact,
@@ -38,9 +38,6 @@ export async function createContactAction(
   _prev: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const name = (formData.get("name") as string)?.trim();
   const company = (formData.get("company") as string)?.trim() || undefined;
   const category = formData.get("category") as string;
@@ -60,6 +57,8 @@ export async function createContactAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const contact = await createContact({
       schemeId,
       name,
@@ -93,6 +92,7 @@ export async function createContactAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to create contact. Please try again." };
   }
 }
@@ -103,9 +103,6 @@ export async function updateContactAction(
   _prev: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const name = (formData.get("name") as string)?.trim();
   const company = (formData.get("company") as string)?.trim() || undefined;
   const category = formData.get("category") as string;
@@ -125,6 +122,8 @@ export async function updateContactAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateContact(contactId, {
       name,
       company: company ?? null,
@@ -147,7 +146,8 @@ export async function updateContactAction(
 
     revalidatePath(`/adviser/schemes/${schemeId}/contacts/${contactId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update contact. Please try again." };
   }
 }
@@ -156,10 +156,9 @@ export async function deleteContactAction(
   schemeId: string,
   contactId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteContact(contactId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
@@ -173,6 +172,7 @@ export async function deleteContactAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to delete contact." };
   }
 }

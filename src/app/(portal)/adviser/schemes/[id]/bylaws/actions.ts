@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createBylaw,
   updateBylaw,
@@ -33,9 +33,6 @@ export async function createBylawAction(
   _prev: BylawFormState,
   formData: FormData,
 ): Promise<BylawFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const title = (formData.get("title") as string)?.trim();
   const body = (formData.get("body") as string)?.trim();
   const category = formData.get("category") as string;
@@ -53,6 +50,8 @@ export async function createBylawAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const bylawNumber = await getNextBylawNumber(schemeId);
 
     const bylaw = await createBylaw({
@@ -87,6 +86,7 @@ export async function createBylawAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to create by-law. Please try again." };
   }
 }
@@ -97,9 +97,6 @@ export async function updateBylawAction(
   _prev: BylawFormState,
   formData: FormData,
 ): Promise<BylawFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const title = (formData.get("title") as string)?.trim();
   const body = (formData.get("body") as string)?.trim();
   const category = formData.get("category") as string;
@@ -124,6 +121,8 @@ export async function updateBylawAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateBylaw(bylawId, {
       title,
       body,
@@ -153,7 +152,8 @@ export async function updateBylawAction(
       `/adviser/schemes/${schemeId}/bylaws/${bylawId}`,
     );
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update by-law. Please try again." };
   }
 }
@@ -162,10 +162,9 @@ export async function deleteBylawAction(
   schemeId: string,
   bylawId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteBylaw(bylawId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
@@ -179,6 +178,7 @@ export async function deleteBylawAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to delete by-law." };
   }
 }

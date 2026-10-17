@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForCommittee, getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
 import { createMeeting } from "@/lib/queries/meetings";
 import { notifyMeetingScheduled } from "@/lib/notifications";
 
@@ -18,12 +18,6 @@ export async function createCommitteeMeetingAction(
   _prev: CommitteeMeetingFormState,
   formData: FormData,
 ): Promise<CommitteeMeetingFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const schemes = await getSchemesForCommittee(profile.id);
-  if (schemes.length === 0) return { error: "You are not on any scheme committees." };
-
   const title = (formData.get("title") as string)?.trim();
   const meetingType = formData.get("meetingType") as string | null;
   const scheduledAt = formData.get("scheduledAt") as string | null;
@@ -36,10 +30,16 @@ export async function createCommitteeMeetingAction(
   if (!meetingType || !MEETING_TYPES.includes(meetingType))
     errors.meetingType = "Select a valid meeting type.";
   if (!scheduledAt) errors.scheduledAt = "Date and time is required.";
-  if (!schemeId || !schemes.some((s) => s.id === schemeId))
-    errors.schemeId = "Select a valid scheme.";
+  if (!schemeId) errors.schemeId = "Select a valid scheme.";
 
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
+  try {
+    await requireSchemeMembership(schemeId!, ["OWNER", "COMMITTEE"]);
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   try {
     const meeting = await createMeeting({

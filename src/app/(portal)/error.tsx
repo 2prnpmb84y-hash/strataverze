@@ -18,7 +18,8 @@ export default function PortalError({
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-center">
         <h2 className="text-lg font-semibold">Something went wrong</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {error.message || 'An unexpected error occurred.'}
+          An unexpected error occurred. Please try again or contact support if the
+          problem persists.
         </p>
         <button
           onClick={() => retry()}

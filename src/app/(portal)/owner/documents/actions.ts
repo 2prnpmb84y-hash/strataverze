@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { createDocument } from "@/lib/queries/documents";
 import { createClient } from "@/lib/supabase/server";
+import { validateFileUpload } from "@/lib/upload/validate-mime";
 
 export type DocumentFormState = {
   error?: string;
@@ -25,8 +26,13 @@ export async function uploadDocumentAction(
   _prev: DocumentFormState,
   formData: FormData,
 ): Promise<DocumentFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
+  let profile;
+  try {
+    ({ profile } = await requireSchemeMembership(schemeId, ["OWNER", "COMMITTEE"]));
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
 
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -37,9 +43,14 @@ export async function uploadDocumentAction(
   if (!title) errors.title = "Title is required.";
   if (!category || !CATEGORIES.includes(category))
     errors.category = "Select a valid category.";
-  if (!file || file.size === 0) errors.file = "Please select a file to upload.";
-  if (file && file.size > 10 * 1024 * 1024)
-    errors.file = "File must be smaller than 10 MB.";
+  if (!file || file.size === 0) {
+    errors.file = "Please select a file to upload.";
+  } else {
+    const mimeError = validateFileUpload(file);
+    if (mimeError) errors.file = mimeError;
+    else if (file.size > 10 * 1024 * 1024)
+      errors.file = "File must be smaller than 10 MB.";
+  }
 
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
@@ -59,16 +70,12 @@ export async function uploadDocumentAction(
       return { error: `Upload failed: ${uploadError.message}` };
     }
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("documents").getPublicUrl(storagePath);
-
     await createDocument({
       schemeId,
       title,
       description: description || undefined,
       category,
-      fileUrl: publicUrl,
+      fileUrl: storagePath,
       fileName: file!.name,
       fileSize: file!.size,
       mimeType: file!.type || undefined,

@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 
@@ -26,13 +27,15 @@ export async function getInsuranceForScheme(schemeId: string) {
  * Fetch active insurance policies for a scheme (excludes expired and cancelled).
  */
 export async function getActiveInsuranceForScheme(schemeId: string) {
-  const all = await db.orm.public.InsurancePolicy
-    .where((p) => p.schemeId.eq(schemeId))
+  return db.orm.public.InsurancePolicy
+    .where((p) =>
+      and(
+        p.schemeId.eq(schemeId),
+        p.status.notIn(["EXPIRED", "CANCELLED"]),
+      ),
+    )
     .orderBy((p) => p.endDate.desc())
     .all();
-  return all.filter(
-    (p) => p.status !== "EXPIRED" && p.status !== "CANCELLED",
-  );
 }
 
 /**
@@ -44,16 +47,24 @@ export async function getInsuranceForSchemes(
 ) {
   if (schemeIds.length === 0) return [];
 
-  const all = await db.orm.public.InsurancePolicy
-    .where((p) => p.schemeId.in(schemeIds))
+  if (options?.includeExpired) {
+    return db.orm.public.InsurancePolicy
+      .where((p) => p.schemeId.in(schemeIds))
+      .include("scheme")
+      .orderBy((p) => p.endDate.desc())
+      .all();
+  }
+
+  return db.orm.public.InsurancePolicy
+    .where((p) =>
+      and(
+        p.schemeId.in(schemeIds),
+        p.status.notIn(["EXPIRED", "CANCELLED"]),
+      ),
+    )
     .include("scheme")
     .orderBy((p) => p.endDate.desc())
     .all();
-
-  if (options?.includeExpired) return all;
-  return all.filter(
-    (p) => p.status !== "EXPIRED" && p.status !== "CANCELLED",
-  );
 }
 
 /**

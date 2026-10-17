@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createComplianceItem,
   updateComplianceItem,
@@ -22,23 +22,22 @@ export async function createComplianceAction(
   _prev: ComplianceFormState,
   formData: FormData,
 ): Promise<ComplianceFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
-  const category = formData.get("category") as string;
-  const dueDate = (formData.get("dueDate") as string)?.trim();
-  const notes = (formData.get("notes") as string)?.trim();
-
-  const errors: Record<string, string> = {};
-  if (!title) errors.title = "Title is required.";
-  if (!category || !CATEGORIES.includes(category))
-    errors.category = "Select a valid category.";
-
-  if (Object.keys(errors).length > 0) return { fieldErrors: errors };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const title = (formData.get("title") as string)?.trim();
+    const description = (formData.get("description") as string)?.trim();
+    const category = formData.get("category") as string;
+    const dueDate = (formData.get("dueDate") as string)?.trim();
+    const notes = (formData.get("notes") as string)?.trim();
+
+    const errors: Record<string, string> = {};
+    if (!title) errors.title = "Title is required.";
+    if (!category || !CATEGORIES.includes(category))
+      errors.category = "Select a valid category.";
+
+    if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
     const item = await createComplianceItem({
       schemeId,
       title,
@@ -70,6 +69,7 @@ export async function createComplianceAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to create compliance item. Please try again." };
   }
 }
@@ -80,23 +80,22 @@ export async function updateComplianceAction(
   _prev: ComplianceFormState,
   formData: FormData,
 ): Promise<ComplianceFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
-  const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim();
-  const category = formData.get("category") as string;
-  const dueDate = (formData.get("dueDate") as string)?.trim();
-  const notes = (formData.get("notes") as string)?.trim();
-
-  const errors: Record<string, string> = {};
-  if (!title) errors.title = "Title is required.";
-  if (!category || !CATEGORIES.includes(category))
-    errors.category = "Select a valid category.";
-
-  if (Object.keys(errors).length > 0) return { fieldErrors: errors };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const title = (formData.get("title") as string)?.trim();
+    const description = (formData.get("description") as string)?.trim();
+    const category = formData.get("category") as string;
+    const dueDate = (formData.get("dueDate") as string)?.trim();
+    const notes = (formData.get("notes") as string)?.trim();
+
+    const errors: Record<string, string> = {};
+    if (!title) errors.title = "Title is required.";
+    if (!category || !CATEGORIES.includes(category))
+      errors.category = "Select a valid category.";
+
+    if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
     await updateComplianceItem(itemId, {
       title,
       description: description || null,
@@ -107,7 +106,8 @@ export async function updateComplianceAction(
     revalidatePath(`/adviser/schemes/${schemeId}/compliance/${itemId}`);
     revalidatePath("/adviser/compliance");
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update compliance item. Please try again." };
   }
 }
@@ -117,10 +117,9 @@ export async function updateComplianceStatusAction(
   itemId: string,
   status: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const data: { status: string; lastChecked?: string } = { status };
     if (status === "COMPLIANT") {
       data.lastChecked = new Date().toISOString();
@@ -140,7 +139,8 @@ export async function updateComplianceStatusAction(
     revalidatePath(`/adviser/schemes/${schemeId}`);
     revalidatePath("/adviser/compliance");
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update status." };
   }
 }
@@ -149,15 +149,15 @@ export async function deleteComplianceAction(
   schemeId: string,
   itemId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteComplianceItem(itemId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     revalidatePath("/adviser/compliance");
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&

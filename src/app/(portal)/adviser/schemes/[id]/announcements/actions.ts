@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { createAnnouncement, updateAnnouncement, deleteAnnouncement } from "@/lib/queries/announcements";
 import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
 import { notifyAnnouncementPublished } from "@/lib/notifications";
@@ -20,9 +20,6 @@ export async function createAnnouncementAction(
   _prev: AnnouncementFormState,
   formData: FormData,
 ): Promise<AnnouncementFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const title = (formData.get("title") as string)?.trim();
   const body = (formData.get("body") as string)?.trim();
   const priority = formData.get("priority") as string;
@@ -38,6 +35,8 @@ export async function createAnnouncementAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     const announcement = await createAnnouncement({
       schemeId,
       authorId: profile.id,
@@ -89,6 +88,7 @@ export async function createAnnouncementAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to create announcement. Please try again." };
   }
 }
@@ -99,9 +99,6 @@ export async function updateAnnouncementAction(
   _prev: AnnouncementFormState,
   formData: FormData,
 ): Promise<AnnouncementFormState> {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   const title = (formData.get("title") as string)?.trim();
   const body = (formData.get("body") as string)?.trim();
   const priority = formData.get("priority") as string;
@@ -117,6 +114,8 @@ export async function updateAnnouncementAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await updateAnnouncement(announcementId, {
       title,
       body,
@@ -126,7 +125,8 @@ export async function updateAnnouncementAction(
     });
     revalidatePath(`/adviser/schemes/${schemeId}/announcements/${announcementId}`);
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update announcement. Please try again." };
   }
 }
@@ -135,10 +135,9 @@ export async function deleteAnnouncementAction(
   schemeId: string,
   announcementId: string,
 ) {
-  const profile = await getCurrentProfile();
-  if (!profile) return { error: "You must be signed in." };
-
   try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
     await deleteAnnouncement(announcementId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
@@ -152,6 +151,7 @@ export async function deleteAnnouncementAction(
     ) {
       throw err;
     }
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to delete announcement." };
   }
 }

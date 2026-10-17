@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getDocumentById } from "@/lib/queries/documents";
+import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -43,6 +44,7 @@ export default async function DocumentDetailPage({
   const document = await getDocumentById(docId);
   if (!document || document.schemeId !== id) notFound();
 
+  const downloadUrl = await resolveDocumentUrl(document.fileUrl);
   const uploadDate = new Date(String(document.createdAt));
 
   return (
@@ -69,7 +71,7 @@ export default async function DocumentDetailPage({
               </p>
             </div>
             <a
-              href={document.fileUrl}
+              href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors"
