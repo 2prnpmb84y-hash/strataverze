@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
@@ -17,7 +18,7 @@ export async function getAnnouncementsForSchemes(
   if (schemeIds.length === 0) return [];
 
   const all = await db.orm.public.Announcement
-    .where((a) => a.schemeId.in(schemeIds))
+    .where((a) => and(a.schemeId.in(schemeIds), a.deletedAt.eq(null)))
     .include("author")
     .include("scheme")
     .orderBy((a) => a.publishedAt.desc())
@@ -53,9 +54,10 @@ export async function getAnnouncementsForScheme(
  */
 export async function getAnnouncementById(announcementId: string) {
   return db.orm.public.Announcement
+    .where((a) => and(a.id.eq(announcementId), a.deletedAt.eq(null)))
     .include("author")
     .include("scheme")
-    .first({ id: announcementId });
+    .first();
 }
 
 /**
@@ -108,10 +110,10 @@ export async function updateAnnouncement(
 }
 
 /**
- * Delete an announcement.
+ * Soft-delete an announcement.
  */
 export async function deleteAnnouncement(announcementId: string) {
   return db.orm.public.Announcement
     .where({ id: announcementId })
-    .delete();
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

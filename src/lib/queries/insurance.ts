@@ -18,7 +18,7 @@ function toNumeric(value: number | string): Numeric<12, 2> {
  */
 export async function getInsuranceForScheme(schemeId: string) {
   return db.orm.public.InsurancePolicy
-    .where((p) => p.schemeId.eq(schemeId))
+    .where((p) => and(p.schemeId.eq(schemeId), p.deletedAt.eq(null)))
     .orderBy((p) => p.endDate.desc())
     .all();
 }
@@ -32,6 +32,7 @@ export async function getActiveInsuranceForScheme(schemeId: string) {
       and(
         p.schemeId.eq(schemeId),
         p.status.notIn(["EXPIRED", "CANCELLED"]),
+        p.deletedAt.eq(null),
       ),
     )
     .orderBy((p) => p.endDate.desc())
@@ -49,7 +50,7 @@ export async function getInsuranceForSchemes(
 
   if (options?.includeExpired) {
     return db.orm.public.InsurancePolicy
-      .where((p) => p.schemeId.in(schemeIds))
+      .where((p) => and(p.schemeId.in(schemeIds), p.deletedAt.eq(null)))
       .include("scheme")
       .orderBy((p) => p.endDate.desc())
       .all();
@@ -60,6 +61,7 @@ export async function getInsuranceForSchemes(
       and(
         p.schemeId.in(schemeIds),
         p.status.notIn(["EXPIRED", "CANCELLED"]),
+        p.deletedAt.eq(null),
       ),
     )
     .include("scheme")
@@ -72,8 +74,9 @@ export async function getInsuranceForSchemes(
  */
 export async function getInsurancePolicyById(policyId: string) {
   return db.orm.public.InsurancePolicy
+    .where((p) => and(p.id.eq(policyId), p.deletedAt.eq(null)))
     .include("scheme")
-    .first({ id: policyId });
+    .first();
 }
 
 /**
@@ -161,8 +164,10 @@ export async function updateInsurancePolicy(
 }
 
 /**
- * Delete an insurance policy.
+ * Soft-delete an insurance policy.
  */
 export async function deleteInsurancePolicy(policyId: string) {
-  return db.orm.public.InsurancePolicy.where({ id: policyId }).delete();
+  return db.orm.public.InsurancePolicy
+    .where({ id: policyId })
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

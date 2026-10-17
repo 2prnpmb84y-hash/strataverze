@@ -63,7 +63,7 @@ export async function getQuotesBySupplier(supplierId: string) {
  */
 export async function getWorkOrdersForSupplier(supplierId: string) {
   return db.orm.public.WorkOrder
-    .where((wo) => wo.supplierId.eq(supplierId))
+    .where((wo) => and(wo.supplierId.eq(supplierId), wo.deletedAt.eq(null)))
     .include("scheme")
     .include("comments")
     .orderBy((wo) => wo.createdAt.desc())
