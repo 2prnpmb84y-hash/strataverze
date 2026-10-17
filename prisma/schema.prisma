@@ -1,19 +1,17 @@
 // StrataVerze Data Model
 // Strata management platform for Australian Owners Corporations
 // Four portal roles: Owner, Committee, Adviser, Supplier
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 // ─── Identity & Access ───────────────────────────────────────────
-
 enum PortalRole {
   OWNER
   COMMITTEE
@@ -22,74 +20,88 @@ enum PortalRole {
 }
 
 model Profile {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  authId    String   @unique @map("auth_id") @db.Uuid
-  email     String   @unique
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
-  phone     String?
-  avatarUrl String?  @map("avatar_url")
-  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt DateTime @updatedAt @db.Timestamptz @map("updated_at")
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authId        String             @unique @map("auth_id") @db.Uuid
+  email         String             @unique
+  firstName     String             @map("first_name")
+  lastName      String             @map("last_name")
+  phone         String?
+  avatarUrl     String?            @map("avatar_url")
+  createdAt     DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime           @updatedAt @db.Timestamptz @map("updated_at")
 
-  memberships    SchemeMembership[]
-  motions        Motion[]
-  votes          Vote[]
-  comments       Comment[]
-  workOrders     WorkOrder[]        @relation("RaisedBy")
-  awardedOrders  WorkOrder[]        @relation("AwardedSupplier")
-  invitations    Invitation[]       @relation("InvitedBy")
-  activityLogs   ActivityLog[]
-  announcements  Announcement[]
-  quotes         Quote[]
-  invoices       Invoice[]
+  memberships   SchemeMembership[]
+  motions       Motion[]
+  votes         Vote[]
+  comments      Comment[]
+  workOrders    WorkOrder[]        @relation("RaisedBy")
+  awardedOrders WorkOrder[]        @relation("AwardedSupplier")
+  invitations   Invitation[]       @relation("InvitedBy")
+  activityLogs  ActivityLog[]
+  announcements Announcement[]
+  quotes        Quote[]
+  invoices      Invoice[]
 
   @@map("profiles")
 }
 
 // ─── Schemes (Owners Corporations / Strata Plans) ────────────────
-
 model Scheme {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  planNumber      String   @unique @map("plan_number")
-  address         String
-  suburb          String
-  state           String   @default("VIC")
-  postcode        String
-  totalLots       Int      @map("total_lots")
-  totalEntitlement Int     @map("total_entitlement")
-  financialYearEnd String  @default("06-30") @map("financial_year_end")
-  abnNumber       String?  @map("abn_number")
-  buildingClass   String?  @map("building_class")   // e.g. "1", "2", "3"
-  buildingType    String?  @map("building_type")    // STRATA, COMMUNITY, COMPANY_TITLE, STRATUM
-  buildingSubType String?  @map("building_sub_type") // e.g. "Residential", "Commercial", "Mixed Use"
-  folio           String?                            // land title folio reference
-  isActive        Boolean  @default(true) @map("is_active")
-  allInclusiveFees Boolean @default(false) @map("all_inclusive_fees")
-  paymentPlan     String?  @map("payment_plan")     // e.g. "QUARTERLY", "MONTHLY", "ANNUALLY"
-  debtCollection  Boolean  @default(false) @map("debt_collection")
-  createdAt       DateTime @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt       DateTime @updatedAt @db.Timestamptz @map("updated_at")
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String
+  planNumber          String              @unique @map("plan_number")
+  address             String
+  suburb              String
+  state               String              @default("VIC")
+  postcode            String
+  totalLots           Int                 @map("total_lots")
+  totalEntitlement    Int                 @map("total_entitlement")
+  financialYearEnd    String              @default("06-30") @map("financial_year_end")
+  abnNumber           String?             @map("abn_number")
+  buildingClass       String?             @map("building_class") // e.g. "1", "2", "3"
+  buildingType        String?             @map("building_type") // STRATA, COMMUNITY, COMPANY_TITLE, STRATUM
+  buildingSubType     String?             @map("building_sub_type") // e.g. "Residential", "Commercial", "Mixed Use"
+  folio               String? // land title folio reference
+  isActive            Boolean             @default(true) @map("is_active")
+  allInclusiveFees    Boolean             @default(false) @map("all_inclusive_fees")
+  paymentPlan         String?             @map("payment_plan") // e.g. "QUARTERLY", "MONTHLY", "ANNUALLY"
+  debtCollection      Boolean             @default(false) @map("debt_collection")
+  // Financial management fields
+  gstRegistered       Boolean             @default(false) @map("gst_registered")
+  interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // % p.a. for overdue levies
+  defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
+  createdAt           DateTime            @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt           DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 
-  lots           Lot[]
-  memberships    SchemeMembership[]
-  images         SchemeImage[]
-  levies         Levy[]
-  motions        Motion[]
-  meetings       Meeting[]
-  documents      Document[]
-  workOrders     WorkOrder[]
-  funds          Fund[]
-  compliance     ComplianceItem[]
-  invitations    Invitation[]
-  activityLogs   ActivityLog[]
-  announcements  Announcement[]
-  bylaws         ByLaw[]
-  insurancePolicies InsurancePolicy[]
-  contacts       Contact[]
-  quoteRequests  QuoteRequest[]
-  invoices       Invoice[]
+  lots                Lot[]
+  memberships         SchemeMembership[]
+  images              SchemeImage[]
+  levies              Levy[]
+  motions             Motion[]
+  meetings            Meeting[]
+  documents           Document[]
+  workOrders          WorkOrder[]
+  funds               Fund[]
+  compliance          ComplianceItem[]
+  invitations         Invitation[]
+  activityLogs        ActivityLog[]
+  announcements       Announcement[]
+  bylaws              ByLaw[]
+  insurancePolicies   InsurancePolicy[]
+  contacts            Contact[]
+  quoteRequests       QuoteRequest[]
+  invoices            Invoice[]
+  // Financial management relations
+  accountCodes        AccountCode[]
+  bankAccounts        SchemeBankAccount[]
+  bankTransactions    BankTransaction[]
+  financialPeriods    FinancialPeriod[]
+  journalEntries      JournalEntry[]
+  levySchedules       LevySchedule[]
+  levyNotices         LevyNotice[]
+  financialDocuments  FinancialDocument[]
+  suppliers           Supplier[]
+  supplierInvoices    SupplierInvoice[]
 
   @@map("schemes")
 }
@@ -102,25 +114,28 @@ model SchemeImage {
   sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
 
-  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  scheme    Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
   @@index([schemeId, sortOrder])
   @@map("scheme_images")
 }
 
 model Lot {
-  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId    String  @map("scheme_id") @db.Uuid
-  lotNumber   String  @map("lot_number")
-  unitNumber  String? @map("unit_number")
-  entitlement Int
-  floorArea   Float?  @map("floor_area")
-  lotType     String  @default("RESIDENTIAL") @map("lot_type")
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String              @map("scheme_id") @db.Uuid
+  lotNumber          String              @map("lot_number")
+  unitNumber         String?             @map("unit_number")
+  entitlement        Int
+  floorArea          Float?              @map("floor_area")
+  lotType            String              @default("RESIDENTIAL") @map("lot_type")
 
-  scheme      Scheme             @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  memberships SchemeMembership[]
-  levyItems   LevyItem[]
-  invitations Invitation[]
+  scheme             Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  memberships        SchemeMembership[]
+  levyItems          LevyItem[]
+  invitations        Invitation[]
+  levyNotices        LevyNotice[]
+  journalLines       JournalLine[]
+  financialDocuments FinancialDocument[]
 
   @@unique([schemeId, lotNumber])
   @@map("lots")
@@ -137,69 +152,80 @@ model SchemeMembership {
   endDate   DateTime?  @db.Timestamptz @map("end_date")
   createdAt DateTime   @default(now()) @db.Timestamptz @map("created_at")
 
-  scheme  Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  lot     Lot?    @relation(fields: [lotId], references: [id])
+  scheme    Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  profile   Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  lot       Lot?       @relation(fields: [lotId], references: [id])
 
   @@unique([schemeId, profileId, role])
   @@map("scheme_memberships")
 }
 
 // ─── Sovereign Ledger (Financial) ────────────────────────────────
-
 model Fund {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId  String   @map("scheme_id") @db.Uuid
-  name      String
-  fundType  String   @map("fund_type") // ADMIN, SINKING, RESERVE
-  balance   Decimal  @default(0) @db.Decimal(12, 2)
-  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
-  deletedAt DateTime? @db.Timestamptz @map("deleted_at")
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String             @map("scheme_id") @db.Uuid
+  name               String
+  fundType           String             @map("fund_type") // ADMINISTRATIVE, CAPITAL_WORKS, SPECIAL
+  balance            Decimal            @default(0) @db.Decimal(12, 2)
+  bankAccountId      String?            @map("bank_account_id") @db.Uuid
+  openingBalance     Decimal?           @db.Decimal(12, 2) @map("opening_balance")
+  openingBalanceDate DateTime?          @db.Date @map("opening_balance_date")
+  isActive           Boolean            @default(true) @map("is_active")
+  createdAt          DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt          DateTime?          @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  scheme             Scheme             @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  bankAccount        SchemeBankAccount? @relation(fields: [bankAccountId], references: [id])
+  accountCodes       AccountCode[]
+  levySchedules      LevySchedule[]
+  levyNotices        LevyNotice[]
+  journalLines       JournalLine[]
+  supplierInvoices   SupplierInvoice[]
+  budgetLines        BudgetLine[]
 
-  @@unique([schemeId, fundType])
+  @@index([schemeId, fundType])
   @@map("funds")
 }
 
+// Legacy levy model — retained for backward compatibility during migration
 model Levy {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId    String   @map("scheme_id") @db.Uuid
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId    String     @map("scheme_id") @db.Uuid
   title       String
   description String?
-  totalAmount Decimal  @map("total_amount") @db.Decimal(12, 2)
-  dueDate     DateTime @db.Timestamptz @map("due_date")
-  levyType    String   @map("levy_type") // ORDINARY, SPECIAL
-  status      String   @default("DRAFT")
-  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt   DateTime @updatedAt @db.Timestamptz @map("updated_at")
-  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
+  totalAmount Decimal    @map("total_amount") @db.Decimal(12, 2)
+  dueDate     DateTime   @db.Timestamptz @map("due_date")
+  levyType    String     @map("levy_type") // ORDINARY, SPECIAL
+  status      String     @default("DRAFT")
+  createdAt   DateTime   @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime   @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt   DateTime?  @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  items  LevyItem[]
+  scheme      Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  items       LevyItem[]
 
   @@map("levies")
 }
 
 model LevyItem {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  levyId     String   @map("levy_id") @db.Uuid
-  lotId      String   @map("lot_id") @db.Uuid
-  amount     Decimal  @db.Decimal(12, 2)
-  paidAmount Decimal  @default(0) @map("paid_amount") @db.Decimal(12, 2)
-  status     String   @default("UNPAID")
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  levyId     String    @map("levy_id") @db.Uuid
+  lotId      String    @map("lot_id") @db.Uuid
+  amount     Decimal   @db.Decimal(12, 2)
+  paidAmount Decimal   @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  status     String    @default("UNPAID")
   paidAt     DateTime? @db.Timestamptz @map("paid_at")
   deletedAt  DateTime? @db.Timestamptz @map("deleted_at")
 
-  levy Levy @relation(fields: [levyId], references: [id], onDelete: Cascade)
-  lot  Lot  @relation(fields: [lotId], references: [id])
+  levy       Levy      @relation(fields: [levyId], references: [id], onDelete: Cascade)
+  lot        Lot       @relation(fields: [lotId], references: [id])
 
   @@unique([levyId, lotId])
   @@map("levy_items")
 }
 
 // ─── Governance Engine ───────────────────────────────────────────
-
 model Meeting {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId    String    @map("scheme_id") @db.Uuid
@@ -213,8 +239,8 @@ model Meeting {
   createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
   deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme  Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  motions Motion[]
+  scheme      Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  motions     Motion[]
 
   @@map("meetings")
 }
@@ -232,10 +258,10 @@ model Motion {
   createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime @updatedAt @db.Timestamptz @map("updated_at")
 
-  scheme   Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  meeting  Meeting? @relation(fields: [meetingId], references: [id])
-  raisedBy Profile @relation(fields: [raisedById], references: [id])
-  votes    Vote[]
+  scheme      Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  meeting     Meeting? @relation(fields: [meetingId], references: [id])
+  raisedBy    Profile  @relation(fields: [raisedById], references: [id])
+  votes       Vote[]
 
   @@map("motions")
 }
@@ -247,77 +273,75 @@ model Vote {
   voteValue String   @map("vote_value") // FOR, AGAINST, ABSTAIN
   votedAt   DateTime @default(now()) @db.Timestamptz @map("voted_at")
 
-  motion  Motion  @relation(fields: [motionId], references: [id], onDelete: Cascade)
-  profile Profile @relation(fields: [profileId], references: [id])
+  motion    Motion   @relation(fields: [motionId], references: [id], onDelete: Cascade)
+  profile   Profile  @relation(fields: [profileId], references: [id])
 
   @@unique([motionId, profileId])
   @@map("votes")
 }
 
 // ─── Asset Vault (Maintenance & Work Orders) ─────────────────────
-
 model WorkOrder {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId        String    @map("scheme_id") @db.Uuid
-  raisedById      String    @map("raised_by_id") @db.Uuid
-  title           String
-  description     String
-  priority        String    @default("MEDIUM")
-  status          String    @default("OPEN") // OPEN, QUOTING, AWARDED, IN_PROGRESS, COMPLETED, CANCELLED
-  category        String?
-  estimatedCost   Decimal?  @map("estimated_cost") @db.Decimal(12, 2)
-  actualCost      Decimal?  @map("actual_cost") @db.Decimal(12, 2)
-  assignedTo      String?   @map("assigned_to")
-  supplierId      String?   @map("supplier_id") @db.Uuid
-  awardedQuoteId  String?   @unique @map("awarded_quote_id") @db.Uuid
-  completedAt     DateTime? @db.Timestamptz @map("completed_at")
-  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
-  deletedAt       DateTime? @db.Timestamptz @map("deleted_at")
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId       String         @map("scheme_id") @db.Uuid
+  raisedById     String         @map("raised_by_id") @db.Uuid
+  title          String
+  description    String
+  priority       String         @default("MEDIUM")
+  status         String         @default("OPEN") // OPEN, QUOTING, AWARDED, IN_PROGRESS, COMPLETED, CANCELLED
+  category       String?
+  estimatedCost  Decimal?       @map("estimated_cost") @db.Decimal(12, 2)
+  actualCost     Decimal?       @map("actual_cost") @db.Decimal(12, 2)
+  assignedTo     String?        @map("assigned_to")
+  supplierId     String?        @map("supplier_id") @db.Uuid
+  awardedQuoteId String?        @unique @map("awarded_quote_id") @db.Uuid
+  completedAt    DateTime?      @db.Timestamptz @map("completed_at")
+  createdAt      DateTime       @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime       @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt      DateTime?      @db.Timestamptz @map("deleted_at")
 
-  scheme       Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  raisedBy     Profile   @relation("RaisedBy", fields: [raisedById], references: [id])
-  supplier     Profile?  @relation("AwardedSupplier", fields: [supplierId], references: [id])
-  awardedQuote  Quote?         @relation("AwardedQuote", fields: [awardedQuoteId], references: [id])
-  comments      Comment[]
-  invoices      Invoice[]
-  quoteRequests QuoteRequest[]
+  scheme         Scheme         @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  raisedBy       Profile        @relation("RaisedBy", fields: [raisedById], references: [id])
+  supplier       Profile?       @relation("AwardedSupplier", fields: [supplierId], references: [id])
+  awardedQuote   Quote?         @relation("AwardedQuote", fields: [awardedQuoteId], references: [id])
+  comments       Comment[]
+  invoices       Invoice[]
+  quoteRequests  QuoteRequest[]
 
   @@map("work_orders")
 }
 
 model Comment {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workOrderId String   @map("work_order_id") @db.Uuid
-  authorId    String   @map("author_id") @db.Uuid
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId String    @map("work_order_id") @db.Uuid
+  authorId    String    @map("author_id") @db.Uuid
   content     String
-  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
+  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
 
-  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  author    Profile   @relation(fields: [authorId], references: [id])
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  author      Profile   @relation(fields: [authorId], references: [id])
 
   @@map("comments")
 }
 
 // ─── Supplier Marketplace (Quote Requests, Quotes & Invoices) ────
-
 model QuoteRequest {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId    String    @map("scheme_id") @db.Uuid
   workOrderId String    @map("work_order_id") @db.Uuid
   title       String
   description String
-  category    String    // PLUMBER, ELECTRICIAN, BUILDER, GARDENER, CLEANER, LOCKSMITH, PEST_CONTROL, FIRE_SAFETY, LIFT, POOL, OTHER
+  category    String // PLUMBER, ELECTRICIAN, BUILDER, GARDENER, CLEANER, LOCKSMITH, PEST_CONTROL, FIRE_SAFETY, LIFT, POOL, OTHER
   urgency     String    @default("STANDARD") // URGENT, STANDARD, FLEXIBLE
-  budget      String?   // e.g. "Under $500", "$500-$2000", "$2000-$5000", "Over $5000"
+  budget      String? // e.g. "Under $500", "$500-$2000", "$2000-$5000", "Over $5000"
   closesAt    DateTime? @db.Timestamptz @map("closes_at")
   status      String    @default("OPEN") // OPEN, CLOSED, AWARDED, CANCELLED
   createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
 
-  scheme    Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  quotes    Quote[]
+  scheme      Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  quotes      Quote[]
 
   @@index([schemeId, status])
   @@index([category, status])
@@ -325,46 +349,46 @@ model QuoteRequest {
 }
 
 model Quote {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  quoteRequestId String    @map("quote_request_id") @db.Uuid
-  supplierId     String    @map("supplier_id") @db.Uuid
-  amount         Decimal   @db.Decimal(12, 2)
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteRequestId String       @map("quote_request_id") @db.Uuid
+  supplierId     String       @map("supplier_id") @db.Uuid
+  amount         Decimal      @db.Decimal(12, 2)
   description    String
-  estimatedDays  Int?      @map("estimated_days")
-  validUntil     DateTime? @db.Timestamptz @map("valid_until")
-  status         String    @default("SUBMITTED") // SUBMITTED, ACCEPTED, DECLINED, WITHDRAWN
+  estimatedDays  Int?         @map("estimated_days")
+  validUntil     DateTime?    @db.Timestamptz @map("valid_until")
+  status         String       @default("SUBMITTED") // SUBMITTED, ACCEPTED, DECLINED, WITHDRAWN
   notes          String?
-  createdAt      DateTime  @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt      DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  createdAt      DateTime     @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime     @updatedAt @db.Timestamptz @map("updated_at")
 
-  quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
-  supplier     Profile      @relation(fields: [supplierId], references: [id])
-  awardedOrder WorkOrder?   @relation("AwardedQuote")
+  quoteRequest   QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  supplier       Profile      @relation(fields: [supplierId], references: [id])
+  awardedOrder   WorkOrder?   @relation("AwardedQuote")
 
   @@unique([quoteRequestId, supplierId])
   @@map("quotes")
 }
 
 model Invoice {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workOrderId String    @map("work_order_id") @db.Uuid
-  schemeId    String    @map("scheme_id") @db.Uuid
-  supplierId  String    @map("supplier_id") @db.Uuid
-  invoiceNumber String  @map("invoice_number")
-  amount      Decimal   @db.Decimal(12, 2)
-  gstAmount   Decimal   @default(0) @map("gst_amount") @db.Decimal(12, 2)
-  totalAmount Decimal   @map("total_amount") @db.Decimal(12, 2)
-  description String?
-  status      String    @default("SUBMITTED") // SUBMITTED, APPROVED, PAID, DISPUTED, CANCELLED
-  dueDate     DateTime? @db.Timestamptz @map("due_date")
-  paidAt      DateTime? @db.Timestamptz @map("paid_at")
-  fileUrl     String?   @map("file_url")
-  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId   String    @map("work_order_id") @db.Uuid
+  schemeId      String    @map("scheme_id") @db.Uuid
+  supplierId    String    @map("supplier_id") @db.Uuid
+  invoiceNumber String    @map("invoice_number")
+  amount        Decimal   @db.Decimal(12, 2)
+  gstAmount     Decimal   @default(0) @map("gst_amount") @db.Decimal(12, 2)
+  totalAmount   Decimal   @map("total_amount") @db.Decimal(12, 2)
+  description   String?
+  status        String    @default("SUBMITTED") // SUBMITTED, APPROVED, PAID, DISPUTED, CANCELLED
+  dueDate       DateTime? @db.Timestamptz @map("due_date")
+  paidAt        DateTime? @db.Timestamptz @map("paid_at")
+  fileUrl       String?   @map("file_url")
+  createdAt     DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime  @updatedAt @db.Timestamptz @map("updated_at")
 
-  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  scheme    Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  supplier  Profile   @relation(fields: [supplierId], references: [id])
+  workOrder     WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  scheme        Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  supplier      Profile   @relation(fields: [supplierId], references: [id])
 
   @@index([schemeId, status])
   @@index([supplierId, status])
@@ -372,7 +396,6 @@ model Invoice {
 }
 
 // ─── Announcements / Notices ─────────────────────────────────────
-
 model Announcement {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId    String    @map("scheme_id") @db.Uuid
@@ -387,36 +410,35 @@ model Announcement {
   updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
   deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  author Profile @relation(fields: [authorId], references: [id])
+  scheme      Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  author      Profile   @relation(fields: [authorId], references: [id])
 
   @@index([schemeId, publishedAt])
   @@map("announcements")
 }
 
 // ─── Insurance Tracking ─────────────────────────────────────────
-
 model InsurancePolicy {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId        String    @map("scheme_id") @db.Uuid
-  policyNumber    String    @map("policy_number")
-  policyType      String    @map("policy_type") // BUILDING, PUBLIC_LIABILITY, WORKERS_COMP, OFFICE_BEARERS, FIDELITY_GUARANTEE, MACHINERY, VOLUNTARY_WORKERS, OTHER
-  insurer         String
-  broker          String?
-  brokerContact   String?   @map("broker_contact")
-  coverageAmount  Decimal   @map("coverage_amount") @db.Decimal(12, 2)
-  premium         Decimal   @db.Decimal(12, 2)
-  excessAmount    Decimal?  @map("excess_amount") @db.Decimal(12, 2)
-  startDate       DateTime  @db.Timestamptz @map("start_date")
-  endDate         DateTime  @db.Timestamptz @map("end_date")
-  status          String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED, PENDING_RENEWAL
-  renewalDate     DateTime? @db.Timestamptz @map("renewal_date")
-  notes           String?
-  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
-  deletedAt       DateTime? @db.Timestamptz @map("deleted_at")
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId       String    @map("scheme_id") @db.Uuid
+  policyNumber   String    @map("policy_number")
+  policyType     String    @map("policy_type") // BUILDING, PUBLIC_LIABILITY, WORKERS_COMP, OFFICE_BEARERS, FIDELITY_GUARANTEE, MACHINERY, VOLUNTARY_WORKERS, OTHER
+  insurer        String
+  broker         String?
+  brokerContact  String?   @map("broker_contact")
+  coverageAmount Decimal   @map("coverage_amount") @db.Decimal(12, 2)
+  premium        Decimal   @db.Decimal(12, 2)
+  excessAmount   Decimal?  @map("excess_amount") @db.Decimal(12, 2)
+  startDate      DateTime  @db.Timestamptz @map("start_date")
+  endDate        DateTime  @db.Timestamptz @map("end_date")
+  status         String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED, PENDING_RENEWAL
+  renewalDate    DateTime? @db.Timestamptz @map("renewal_date")
+  notes          String?
+  createdAt      DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt      DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  scheme         Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
   @@unique([schemeId, policyNumber])
   @@index([schemeId, status])
@@ -425,30 +447,28 @@ model InsurancePolicy {
 }
 
 // ─── Contacts / Contractor Directory ───────────────────────────
-
 model Contact {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId      String   @map("scheme_id") @db.Uuid
-  name          String
-  company       String?
-  category      String   // PLUMBER, ELECTRICIAN, BUILDER, GARDENER, CLEANER, LOCKSMITH, PEST_CONTROL, FIRE_SAFETY, LIFT, POOL, BODY_CORPORATE, LEGAL, ACCOUNTING, INSURANCE_BROKER, OTHER
-  phone         String?
-  email         String?
-  address       String?
-  notes         String?
-  isPreferred   Boolean  @default(false) @map("is_preferred")
-  createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt     DateTime @updatedAt @db.Timestamptz @map("updated_at")
-  deletedAt     DateTime? @db.Timestamptz @map("deleted_at")
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId    String    @map("scheme_id") @db.Uuid
+  name        String
+  company     String?
+  category    String // PLUMBER, ELECTRICIAN, BUILDER, GARDENER, CLEANER, LOCKSMITH, PEST_CONTROL, FIRE_SAFETY, LIFT, POOL, BODY_CORPORATE, LEGAL, ACCOUNTING, INSURANCE_BROKER, OTHER
+  phone       String?
+  email       String?
+  address     String?
+  notes       String?
+  isPreferred Boolean   @default(false) @map("is_preferred")
+  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  scheme      Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
   @@index([schemeId, category])
   @@map("contacts")
 }
 
 // ─── By-Laws Register ───────────────────────────────────────────
-
 model ByLaw {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId      String    @map("scheme_id") @db.Uuid
@@ -466,7 +486,7 @@ model ByLaw {
   updatedAt     DateTime  @updatedAt @db.Timestamptz @map("updated_at")
   deletedAt     DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  scheme        Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
   @@unique([schemeId, bylawNumber])
   @@index([schemeId, status])
@@ -474,41 +494,39 @@ model ByLaw {
 }
 
 // ─── Document Management ─────────────────────────────────────────
-
 model Document {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId      String   @map("scheme_id") @db.Uuid
-  title         String
-  description   String?
-  category      String   // MINUTES, INSURANCE, BYLAW, FINANCIAL, COMPLIANCE, OTHER
-  documentType  String?  @map("document_type") // More granular: STRATA_PLAN, BY_LAW, SCHEDULE, NOTICE, CERTIFICATE, CORRESPONDENCE, REPORT, CONTRACT, OTHER
-  fileUrl       String   @map("file_url")
-  fileName      String   @map("file_name")
-  fileSize      Int?     @map("file_size")
-  mimeType      String?  @map("mime_type")
-  uploadedBy    String   @map("uploaded_by") @db.Uuid
-  documentDate  DateTime? @db.Timestamptz @map("document_date")
-  strataPlan    String?  @map("strata_plan")
-  schedule      String?
-  lotNumber     String?  @map("lot_number")
-  supplier      String?
-  comments      String?
-  createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
-  deletedAt     DateTime? @db.Timestamptz @map("deleted_at")
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId     String    @map("scheme_id") @db.Uuid
+  title        String
+  description  String?
+  category     String // MINUTES, INSURANCE, BYLAW, FINANCIAL, COMPLIANCE, OTHER
+  documentType String?   @map("document_type") // More granular: STRATA_PLAN, BY_LAW, SCHEDULE, NOTICE, CERTIFICATE, CORRESPONDENCE, REPORT, CONTRACT, OTHER
+  fileUrl      String    @map("file_url")
+  fileName     String    @map("file_name")
+  fileSize     Int?      @map("file_size")
+  mimeType     String?   @map("mime_type")
+  uploadedBy   String    @map("uploaded_by") @db.Uuid
+  documentDate DateTime? @db.Timestamptz @map("document_date")
+  strataPlan   String?   @map("strata_plan")
+  schedule     String?
+  lotNumber    String?   @map("lot_number")
+  supplier     String?
+  comments     String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt    DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  scheme       Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
   @@map("documents")
 }
 
 // ─── Compliance Tracker ──────────────────────────────────────────
-
 model ComplianceItem {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId    String    @map("scheme_id") @db.Uuid
   title       String
   description String?
-  category    String    // INSURANCE, FIRE_SAFETY, OHS, BUILDING, OTHER
+  category    String // INSURANCE, FIRE_SAFETY, OHS, BUILDING, OTHER
   dueDate     DateTime? @db.Timestamptz @map("due_date")
   status      String    @default("PENDING")
   lastChecked DateTime? @db.Timestamptz @map("last_checked")
@@ -517,13 +535,12 @@ model ComplianceItem {
   updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
   deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  scheme      Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
   @@map("compliance_items")
 }
 
 // ─── Invitations ─────────────────────────────────────────────────
-
 model Invitation {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId    String     @map("scheme_id") @db.Uuid
@@ -537,29 +554,358 @@ model Invitation {
   acceptedAt  DateTime?  @db.Timestamptz @map("accepted_at")
   createdAt   DateTime   @default(now()) @db.Timestamptz @map("created_at")
 
-  scheme    Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  invitedBy Profile @relation("InvitedBy", fields: [invitedById], references: [id])
-  lot       Lot?    @relation(fields: [lotId], references: [id])
+  scheme      Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  invitedBy   Profile    @relation("InvitedBy", fields: [invitedById], references: [id])
+  lot         Lot?       @relation(fields: [lotId], references: [id])
 
   @@unique([schemeId, email, role])
   @@map("invitations")
 }
 
 // ─── Activity Log / Audit Trail ─────────────────────────────────
-
 model ActivityLog {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId   String   @map("scheme_id") @db.Uuid
   actorId    String   @map("actor_id") @db.Uuid
-  action     String   // LEVY_CREATED, LEVY_ISSUED, INVITATION_SENT, MEMBER_JOINED, DOCUMENT_UPLOADED, WORK_ORDER_CREATED, MEETING_SCHEDULED, COMPLIANCE_UPDATED, SCHEME_UPDATED, MEMBER_REMOVED
+  action     String // LEVY_CREATED, LEVY_ISSUED, INVITATION_SENT, MEMBER_JOINED, DOCUMENT_UPLOADED, WORK_ORDER_CREATED, MEETING_SCHEDULED, COMPLIANCE_UPDATED, SCHEME_UPDATED, MEMBER_REMOVED
   entityType String   @map("entity_type") // Levy, Invitation, SchemeMembership, Document, WorkOrder, Meeting, ComplianceItem, Scheme
   entityId   String?  @map("entity_id") @db.Uuid
-  metadata   Json?    // Additional context (e.g. { levyTitle: "Q1 FY26", amount: 10000 })
+  metadata   Json? // Additional context (e.g. { levyTitle: "Q1 FY26", amount: 10000 })
   createdAt  DateTime @default(now()) @db.Timestamptz @map("created_at")
 
-  scheme Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  actor  Profile @relation(fields: [actorId], references: [id])
+  scheme     Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  actor      Profile  @relation(fields: [actorId], references: [id])
 
   @@index([schemeId, createdAt])
   @@map("activity_logs")
+}
+
+// ─── Financial Management Module ────────────────────────────────
+model SchemeBankAccount {
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId              String            @map("scheme_id") @db.Uuid
+  accountName           String            @map("account_name")
+  bsb                   String            @db.VarChar(7)
+  accountNumber         String            @map("account_number") @db.VarChar(20)
+  bankName              String?           @map("bank_name")
+  accountType           String            @default("CHEQUE") @map("account_type") // CHEQUE, SAVINGS, TRUST, TERM_DEPOSIT
+  isOperating           Boolean           @default(false) @map("is_operating")
+  isActive              Boolean           @default(true) @map("is_active")
+  lastReconciledDate    DateTime?         @db.Date @map("last_reconciled_date")
+  lastReconciledBalance Decimal?          @db.Decimal(12, 2) @map("last_reconciled_balance")
+  bankFeedEnabled       Boolean           @default(false) @map("bank_feed_enabled")
+  createdAt             DateTime          @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime          @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme                Scheme            @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  funds                 Fund[]
+  bankTransactions      BankTransaction[]
+
+  @@index([schemeId])
+  @@map("scheme_bank_accounts")
+}
+
+model AccountCode {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String            @map("scheme_id") @db.Uuid
+  code             String            @db.VarChar(10)
+  name             String            @db.VarChar(200)
+  accountType      String            @map("account_type") // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
+  accountSubType   String?           @map("account_sub_type") // BANK, ACCOUNTS_RECEIVABLE, ACCOUNTS_PAYABLE, LEVY_INCOME, etc.
+  fundId           String?           @map("fund_id") @db.Uuid
+  parentAccountId  String?           @map("parent_account_id") @db.Uuid
+  isSystemAccount  Boolean           @default(false) @map("is_system_account")
+  isActive         Boolean           @default(true) @map("is_active")
+  gstApplicable    Boolean           @default(false) @map("gst_applicable")
+  description      String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime          @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme           Scheme            @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  fund             Fund?             @relation(fields: [fundId], references: [id])
+  parentAccount    AccountCode?      @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  childAccounts    AccountCode[]     @relation("AccountHierarchy")
+  journalLines     JournalLine[]
+  supplierInvoices SupplierInvoice[]
+
+  @@unique([schemeId, code])
+  @@index([schemeId, accountType])
+  @@map("account_codes")
+}
+
+model FinancialPeriod {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId   String    @map("scheme_id") @db.Uuid
+  name       String    @db.VarChar(100)
+  startDate  DateTime  @db.Date @map("start_date")
+  endDate    DateTime  @db.Date @map("end_date")
+  periodType String    @map("period_type") // MONTH, QUARTER, HALF_YEAR, FULL_YEAR
+  status     String    @default("OPEN") // OPEN, CLOSED, LOCKED
+  closedAt   DateTime? @db.Timestamptz @map("closed_at")
+  closedBy   String?   @map("closed_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  scheme     Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, startDate, endDate])
+  @@index([schemeId, status])
+  @@map("financial_periods")
+}
+
+model JournalEntry {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String            @map("scheme_id") @db.Uuid
+  entryNumber      String            @map("entry_number") @db.VarChar(20)
+  transactionDate  DateTime          @db.Date @map("transaction_date")
+  postingDate      DateTime          @default(now()) @db.Date @map("posting_date")
+  description      String            @db.VarChar(500)
+  entryType        String            @map("entry_type") // LEVY_RAISED, RECEIPT, INVOICE, PAYMENT, BANK_FEE, INTEREST, TRANSFER, ADJUSTMENT, OPENING_BALANCE, REVERSAL
+  sourceType       String            @map("source_type") // LEVY_ISSUE, PAYMENT_RECEIPT, SUPPLIER_INVOICE, SUPPLIER_PAYMENT, BANK_FEE, INTEREST, TRANSFER, MANUAL_JOURNAL, ADJUSTMENT, REVERSAL
+  sourceId         String?           @map("source_id") @db.Uuid
+  status           String            @default("DRAFT") // DRAFT, POSTED, REVERSED
+  reversalOfId     String?           @map("reversal_of_id") @db.Uuid
+  postedAt         DateTime?         @db.Timestamptz @map("posted_at")
+  postedBy         String?           @map("posted_by") @db.Uuid
+  createdBy        String            @map("created_by") @db.Uuid
+  createdAt        DateTime          @default(now()) @db.Timestamptz @map("created_at")
+
+  scheme           Scheme            @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  reversalOf       JournalEntry?     @relation("JournalReversal", fields: [reversalOfId], references: [id])
+  reversedBy       JournalEntry[]    @relation("JournalReversal")
+  lines            JournalLine[]
+  bankTransactions BankTransaction[]
+
+  @@unique([schemeId, entryNumber])
+  @@index([schemeId, transactionDate])
+  @@index([schemeId, entryType])
+  @@index([schemeId, status])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  journalEntryId    String           @map("journal_entry_id") @db.Uuid
+  accountCodeId     String           @map("account_code_id") @db.Uuid
+  fundId            String           @map("fund_id") @db.Uuid
+  debit             Decimal?         @db.Decimal(12, 2)
+  credit            Decimal?         @db.Decimal(12, 2)
+  description       String?          @db.VarChar(500)
+  lotId             String?          @map("lot_id") @db.Uuid
+  supplierId        String?          @map("supplier_id") @db.Uuid
+  gstAmount         Decimal?         @db.Decimal(12, 2) @map("gst_amount")
+  bankTransactionId String?          @map("bank_transaction_id") @db.Uuid
+
+  journalEntry      JournalEntry     @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountCode       AccountCode      @relation(fields: [accountCodeId], references: [id])
+  fund              Fund             @relation(fields: [fundId], references: [id])
+  lot               Lot?             @relation(fields: [lotId], references: [id])
+  supplier          Supplier?        @relation(fields: [supplierId], references: [id])
+  bankTransaction   BankTransaction? @relation(fields: [bankTransactionId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountCodeId])
+  @@index([fundId])
+  @@map("journal_lines")
+}
+
+model BankTransaction {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bankAccountId         String              @map("bank_account_id") @db.Uuid
+  schemeId              String              @map("scheme_id") @db.Uuid
+  transactionDate       DateTime            @db.Date @map("transaction_date")
+  amount                Decimal             @db.Decimal(12, 2) // positive = credit/receipt, negative = debit/payment
+  description           String              @db.VarChar(500)
+  reference             String?             @db.VarChar(100)
+  balance               Decimal?            @db.Decimal(12, 2)
+  importSource          String              @map("import_source") // MANUAL, CSV_IMPORT, OFX_IMPORT, BANK_FEED
+  importBatchId         String?             @map("import_batch_id") @db.Uuid
+  importedAt            DateTime            @default(now()) @db.Timestamptz @map("imported_at")
+  reconciliationStatus  String              @default("UNMATCHED") @map("reconciliation_status") // UNMATCHED, MATCHED, RECONCILED, EXCLUDED
+  matchedJournalEntryId String?             @map("matched_journal_entry_id") @db.Uuid
+  matchedAt             DateTime?           @db.Timestamptz @map("matched_at")
+  matchedBy             String?             @map("matched_by") @db.Uuid
+  isDuplicate           Boolean             @default(false) @map("is_duplicate")
+
+  bankAccount           SchemeBankAccount   @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  scheme                Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  matchedJournalEntry   JournalEntry?       @relation(fields: [matchedJournalEntryId], references: [id])
+  journalLines          JournalLine[]
+  financialDocuments    FinancialDocument[]
+
+  @@index([bankAccountId, transactionDate])
+  @@index([schemeId, reconciliationStatus])
+  @@index([bankAccountId, amount, transactionDate]) // for duplicate detection
+  @@map("bank_transactions")
+}
+
+model LevySchedule {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String       @map("scheme_id") @db.Uuid
+  fundId           String       @map("fund_id") @db.Uuid
+  financialYear    Int          @map("financial_year")
+  budgetAmount     Decimal      @db.Decimal(12, 2) @map("budget_amount")
+  frequency        String // QUARTERLY, MONTHLY, HALF_YEARLY, ANNUALLY
+  totalLots        Int          @map("total_lots")
+  totalEntitlement Decimal      @db.Decimal(10, 2) @map("total_entitlement")
+  status           String       @default("DRAFT") // DRAFT, APPROVED, ACTIVE, SUPERSEDED
+  approvedAt       DateTime?    @db.Timestamptz @map("approved_at")
+  approvedBy       String?      @map("approved_by") @db.Uuid
+  createdAt        DateTime     @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime     @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme           Scheme       @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  fund             Fund         @relation(fields: [fundId], references: [id])
+  levyNotices      LevyNotice[]
+
+  @@index([schemeId, financialYear])
+  @@map("levy_schedules")
+}
+
+model LevyNotice {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String              @map("scheme_id") @db.Uuid
+  levyScheduleId     String              @map("levy_schedule_id") @db.Uuid
+  lotId              String              @map("lot_id") @db.Uuid
+  ownerId            String              @map("owner_id") @db.Uuid
+  fundId             String              @map("fund_id") @db.Uuid
+  noticeNumber       String              @map("notice_number") @db.VarChar(20)
+  periodStart        DateTime            @db.Date @map("period_start")
+  periodEnd          DateTime            @db.Date @map("period_end")
+  dueDate            DateTime            @db.Date @map("due_date")
+  amountDue          Decimal             @db.Decimal(12, 2) @map("amount_due")
+  amountPaid         Decimal             @default(0) @db.Decimal(12, 2) @map("amount_paid")
+  balanceOutstanding Decimal             @db.Decimal(12, 2) @map("balance_outstanding")
+  interestCharged    Decimal             @default(0) @db.Decimal(12, 2) @map("interest_charged")
+  status             String              @default("DRAFT") // DRAFT, ISSUED, PARTIALLY_PAID, PAID, OVERDUE, WRITTEN_OFF
+  issuedAt           DateTime?           @db.Timestamptz @map("issued_at")
+  paidInFullAt       DateTime?           @db.Timestamptz @map("paid_in_full_at")
+  createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme             Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  levySchedule       LevySchedule        @relation(fields: [levyScheduleId], references: [id])
+  lot                Lot                 @relation(fields: [lotId], references: [id])
+  fund               Fund                @relation(fields: [fundId], references: [id])
+  financialDocuments FinancialDocument[]
+
+  @@unique([schemeId, noticeNumber])
+  @@index([schemeId, status])
+  @@index([lotId, status])
+  @@index([ownerId])
+  @@map("levy_notices")
+}
+
+model Supplier {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String?             @map("scheme_id") @db.Uuid
+  companyName        String              @map("company_name") @db.VarChar(200)
+  tradingName        String?             @map("trading_name") @db.VarChar(200)
+  abn                String?             @db.VarChar(11)
+  contactName        String?             @map("contact_name") @db.VarChar(200)
+  email              String?             @db.VarChar(320)
+  phone              String?             @db.VarChar(20)
+  bankBsb            String?             @map("bank_bsb") @db.VarChar(7)
+  bankAccountNumber  String?             @map("bank_account_number") @db.VarChar(20)
+  bankAccountName    String?             @map("bank_account_name") @db.VarChar(200)
+  paymentTerms       Int?                @map("payment_terms") // days
+  gstRegistered      Boolean             @default(false) @map("gst_registered")
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme             Scheme?             @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  supplierInvoices   SupplierInvoice[]
+  journalLines       JournalLine[]
+  financialDocuments FinancialDocument[]
+
+  @@index([schemeId])
+  @@map("suppliers")
+}
+
+model SupplierInvoice {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String              @map("scheme_id") @db.Uuid
+  supplierId         String              @map("supplier_id") @db.Uuid
+  invoiceNumber      String              @map("invoice_number") @db.VarChar(50)
+  invoiceDate        DateTime            @db.Date @map("invoice_date")
+  dueDate            DateTime            @db.Date @map("due_date")
+  subtotal           Decimal             @db.Decimal(12, 2)
+  gstAmount          Decimal             @default(0) @db.Decimal(12, 2) @map("gst_amount")
+  totalAmount        Decimal             @db.Decimal(12, 2) @map("total_amount")
+  amountPaid         Decimal             @default(0) @db.Decimal(12, 2) @map("amount_paid")
+  balanceOutstanding Decimal             @db.Decimal(12, 2) @map("balance_outstanding")
+  fundId             String              @map("fund_id") @db.Uuid
+  accountCodeId      String              @map("account_code_id") @db.Uuid
+  description        String              @db.VarChar(500)
+  status             String              @default("DRAFT") // DRAFT, AWAITING_APPROVAL, APPROVED, PARTIALLY_PAID, PAID, CANCELLED
+  approvedBy         String?             @map("approved_by") @db.Uuid
+  approvedAt         DateTime?           @db.Timestamptz @map("approved_at")
+  journalEntryId     String?             @map("journal_entry_id") @db.Uuid
+  createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme             Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  supplier           Supplier            @relation(fields: [supplierId], references: [id])
+  fund               Fund                @relation(fields: [fundId], references: [id])
+  accountCode        AccountCode         @relation(fields: [accountCodeId], references: [id])
+  financialDocuments FinancialDocument[]
+
+  @@index([schemeId, status])
+  @@index([supplierId])
+  @@index([schemeId, dueDate])
+  @@map("supplier_invoices")
+}
+
+model FinancialDocument {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String           @map("scheme_id") @db.Uuid
+  documentType       String           @map("document_type") // SUPPLIER_INVOICE, SUPPLIER_RECEIPT, BANK_STATEMENT, PAYMENT_CONFIRMATION, LEVY_NOTICE, RECEIPT_ISSUED, OTHER
+  uploadedBy         String           @map("uploaded_by") @db.Uuid
+  uploadedAt         DateTime         @default(now()) @db.Timestamptz @map("uploaded_at")
+  fileName           String           @map("file_name") @db.VarChar(500)
+  fileUrl            String           @map("file_url")
+  fileSize           Int              @map("file_size")
+  mimeType           String           @map("mime_type") @db.VarChar(100)
+  lotId              String?          @map("lot_id") @db.Uuid
+  supplierId         String?          @map("supplier_id") @db.Uuid
+  supplierInvoiceId  String?          @map("supplier_invoice_id") @db.Uuid
+  levyNoticeId       String?          @map("levy_notice_id") @db.Uuid
+  bankTransactionId  String?          @map("bank_transaction_id") @db.Uuid
+  amount             Decimal?         @db.Decimal(12, 2)
+  documentDate       DateTime?        @db.Date @map("document_date")
+  payerName          String?          @map("payer_name") @db.VarChar(200)
+  payeeReference     String?          @map("payee_reference") @db.VarChar(200)
+  documentStatus     String           @default("UPLOADED") @map("document_status") // UPLOADED, UNDER_REVIEW, VERIFIED, REJECTED, SUPERSEDED
+  verificationStatus String           @default("PENDING") @map("verification_status") // PENDING, MATCHED, UNMATCHED, DISPUTED
+  reviewedBy         String?          @map("reviewed_by") @db.Uuid
+  reviewedAt         DateTime?        @db.Timestamptz @map("reviewed_at")
+  reviewNotes        String?          @map("review_notes")
+  createdAt          DateTime         @default(now()) @db.Timestamptz @map("created_at")
+
+  scheme             Scheme           @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot                Lot?             @relation(fields: [lotId], references: [id])
+  supplier           Supplier?        @relation(fields: [supplierId], references: [id])
+  supplierInvoice    SupplierInvoice? @relation(fields: [supplierInvoiceId], references: [id])
+  levyNotice         LevyNotice?      @relation(fields: [levyNoticeId], references: [id])
+  bankTransaction    BankTransaction? @relation(fields: [bankTransactionId], references: [id])
+
+  @@index([schemeId, documentType])
+  @@index([schemeId, documentStatus])
+  @@map("financial_documents")
+}
+
+model BudgetLine {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fundId        String   @map("fund_id") @db.Uuid
+  accountCodeId String   @map("account_code_id") @db.Uuid
+  financialYear Int      @map("financial_year")
+  budgetAmount  Decimal  @db.Decimal(12, 2) @map("budget_amount")
+  notes         String?
+  createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  fund          Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@unique([fundId, accountCodeId, financialYear])
+  @@map("budget_lines")
 }

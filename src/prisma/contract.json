@@ -4,12 +4,24 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "account_codes": {
+      "model": "AccountCode",
+      "namespace": "public"
+    },
     "activity_logs": {
       "model": "ActivityLog",
       "namespace": "public"
     },
     "announcements": {
       "model": "Announcement",
+      "namespace": "public"
+    },
+    "bank_transactions": {
+      "model": "BankTransaction",
+      "namespace": "public"
+    },
+    "budget_lines": {
+      "model": "BudgetLine",
       "namespace": "public"
     },
     "bylaws": {
@@ -32,6 +44,14 @@
       "model": "Document",
       "namespace": "public"
     },
+    "financial_documents": {
+      "model": "FinancialDocument",
+      "namespace": "public"
+    },
+    "financial_periods": {
+      "model": "FinancialPeriod",
+      "namespace": "public"
+    },
     "funds": {
       "model": "Fund",
       "namespace": "public"
@@ -48,12 +68,28 @@
       "model": "Invoice",
       "namespace": "public"
     },
+    "journal_entries": {
+      "model": "JournalEntry",
+      "namespace": "public"
+    },
+    "journal_lines": {
+      "model": "JournalLine",
+      "namespace": "public"
+    },
     "levies": {
       "model": "Levy",
       "namespace": "public"
     },
     "levy_items": {
       "model": "LevyItem",
+      "namespace": "public"
+    },
+    "levy_notices": {
+      "model": "LevyNotice",
+      "namespace": "public"
+    },
+    "levy_schedules": {
+      "model": "LevySchedule",
       "namespace": "public"
     },
     "lots": {
@@ -80,6 +116,10 @@
       "model": "Quote",
       "namespace": "public"
     },
+    "scheme_bank_accounts": {
+      "model": "SchemeBankAccount",
+      "namespace": "public"
+    },
     "scheme_images": {
       "model": "SchemeImage",
       "namespace": "public"
@@ -90,6 +130,14 @@
     },
     "schemes": {
       "model": "Scheme",
+      "namespace": "public"
+    },
+    "supplier_invoices": {
+      "model": "SupplierInvoice",
+      "namespace": "public"
+    },
+    "suppliers": {
+      "model": "Supplier",
       "namespace": "public"
     },
     "votes": {
@@ -105,6 +153,257 @@
     "namespaces": {
       "public": {
         "models": {
+          "AccountCode": {
+            "fields": {
+              "accountSubType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "accountType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "code": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 10
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fundId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstApplicable": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "isSystemAccount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "parentAccountId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "childAccounts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "parentAccountId"
+                  ]
+                },
+                "to": {
+                  "model": "AccountCode",
+                  "namespace": "public"
+                }
+              },
+              "fund": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "fundId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              },
+              "journalLines": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "accountCodeId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalLine",
+                  "namespace": "public"
+                }
+              },
+              "parentAccount": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "parentAccountId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AccountCode",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              },
+              "supplierInvoices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "accountCodeId"
+                  ]
+                },
+                "to": {
+                  "model": "SupplierInvoice",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accountSubType": {
+                  "column": "account_sub_type"
+                },
+                "accountType": {
+                  "column": "account_type"
+                },
+                "code": {
+                  "column": "code"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "fundId": {
+                  "column": "fund_id"
+                },
+                "gstApplicable": {
+                  "column": "gst_applicable"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isActive": {
+                  "column": "is_active"
+                },
+                "isSystemAccount": {
+                  "column": "is_system_account"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "parentAccountId": {
+                  "column": "parent_account_id"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "account_codes"
+            }
+          },
           "ActivityLog": {
             "fields": {
               "action": {
@@ -391,6 +690,382 @@
               },
               "namespaceId": "public",
               "table": "announcements"
+            }
+          },
+          "BankTransaction": {
+            "fields": {
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "balance": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "bankAccountId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "importBatchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "importSource": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "importedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "isDuplicate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchedJournalEntryId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "reconciliationStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reference": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "transactionDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "bankAccount": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "bankAccountId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "SchemeBankAccount",
+                  "namespace": "public"
+                }
+              },
+              "financialDocuments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "bankTransactionId"
+                  ]
+                },
+                "to": {
+                  "model": "FinancialDocument",
+                  "namespace": "public"
+                }
+              },
+              "journalLines": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "bankTransactionId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalLine",
+                  "namespace": "public"
+                }
+              },
+              "matchedJournalEntry": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "matchedJournalEntryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JournalEntry",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "balance": {
+                  "column": "balance"
+                },
+                "bankAccountId": {
+                  "column": "bank_account_id"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "importBatchId": {
+                  "column": "import_batch_id"
+                },
+                "importSource": {
+                  "column": "import_source"
+                },
+                "importedAt": {
+                  "column": "imported_at"
+                },
+                "isDuplicate": {
+                  "column": "is_duplicate"
+                },
+                "matchedAt": {
+                  "column": "matched_at"
+                },
+                "matchedBy": {
+                  "column": "matched_by"
+                },
+                "matchedJournalEntryId": {
+                  "column": "matched_journal_entry_id"
+                },
+                "reconciliationStatus": {
+                  "column": "reconciliation_status"
+                },
+                "reference": {
+                  "column": "reference"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "transactionDate": {
+                  "column": "transaction_date"
+                }
+              },
+              "namespaceId": "public",
+              "table": "bank_transactions"
+            }
+          },
+          "BudgetLine": {
+            "fields": {
+              "accountCodeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "budgetAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "financialYear": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "fundId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "notes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "fund": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "fundId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accountCodeId": {
+                  "column": "account_code_id"
+                },
+                "budgetAmount": {
+                  "column": "budget_amount"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "financialYear": {
+                  "column": "financial_year"
+                },
+                "fundId": {
+                  "column": "fund_id"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "notes": {
+                  "column": "notes"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "budget_lines"
             }
           },
           "ByLaw": {
@@ -1189,6 +1864,501 @@
               "table": "documents"
             }
           },
+          "FinancialDocument": {
+            "fields": {
+              "amount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "bankTransactionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "documentDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "documentStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "documentType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fileName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "fileSize": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "fileUrl": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "levyNoticeId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "mimeType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "payeeReference": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "payerName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "reviewNotes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "supplierId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "supplierInvoiceId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "uploadedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "uploadedBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "bankTransaction": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "bankTransactionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "BankTransaction",
+                  "namespace": "public"
+                }
+              },
+              "levyNotice": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "levyNoticeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "LevyNotice",
+                  "namespace": "public"
+                }
+              },
+              "lot": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "lotId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Lot",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              },
+              "supplier": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "supplierId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Supplier",
+                  "namespace": "public"
+                }
+              },
+              "supplierInvoice": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "supplierInvoiceId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "SupplierInvoice",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "bankTransactionId": {
+                  "column": "bank_transaction_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "documentDate": {
+                  "column": "document_date"
+                },
+                "documentStatus": {
+                  "column": "document_status"
+                },
+                "documentType": {
+                  "column": "document_type"
+                },
+                "fileName": {
+                  "column": "file_name"
+                },
+                "fileSize": {
+                  "column": "file_size"
+                },
+                "fileUrl": {
+                  "column": "file_url"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "levyNoticeId": {
+                  "column": "levy_notice_id"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "mimeType": {
+                  "column": "mime_type"
+                },
+                "payeeReference": {
+                  "column": "payee_reference"
+                },
+                "payerName": {
+                  "column": "payer_name"
+                },
+                "reviewNotes": {
+                  "column": "review_notes"
+                },
+                "reviewedAt": {
+                  "column": "reviewed_at"
+                },
+                "reviewedBy": {
+                  "column": "reviewed_by"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "supplierId": {
+                  "column": "supplier_id"
+                },
+                "supplierInvoiceId": {
+                  "column": "supplier_invoice_id"
+                },
+                "uploadedAt": {
+                  "column": "uploaded_at"
+                },
+                "uploadedBy": {
+                  "column": "uploaded_by"
+                },
+                "verificationStatus": {
+                  "column": "verification_status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "financial_documents"
+            }
+          },
+          "FinancialPeriod": {
+            "fields": {
+              "closedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "closedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "endDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "periodType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "startDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "closedAt": {
+                  "column": "closed_at"
+                },
+                "closedBy": {
+                  "column": "closed_by"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "endDate": {
+                  "column": "end_date"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "periodType": {
+                  "column": "period_type"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "startDate": {
+                  "column": "start_date"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "financial_periods"
+            }
+          },
           "Fund": {
             "fields": {
               "balance": {
@@ -1200,6 +2370,13 @@
                     "precision": 12,
                     "scale": 2
                   }
+                }
+              },
+              "bankAccountId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
                 }
               },
               "createdAt": {
@@ -1230,10 +2407,35 @@
                   "kind": "scalar"
                 }
               },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "openingBalance": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "openingBalanceDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
                   "kind": "scalar"
                 }
               },
@@ -1243,9 +2445,107 @@
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
+              "accountCodes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "fundId"
+                  ]
+                },
+                "to": {
+                  "model": "AccountCode",
+                  "namespace": "public"
+                }
+              },
+              "bankAccount": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "bankAccountId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "SchemeBankAccount",
+                  "namespace": "public"
+                }
+              },
+              "budgetLines": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "fundId"
+                  ]
+                },
+                "to": {
+                  "model": "BudgetLine",
+                  "namespace": "public"
+                }
+              },
+              "journalLines": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "fundId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalLine",
+                  "namespace": "public"
+                }
+              },
+              "levyNotices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "fundId"
+                  ]
+                },
+                "to": {
+                  "model": "LevyNotice",
+                  "namespace": "public"
+                }
+              },
+              "levySchedules": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "fundId"
+                  ]
+                },
+                "to": {
+                  "model": "LevySchedule",
+                  "namespace": "public"
+                }
+              },
               "scheme": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -1261,12 +2561,30 @@
                   "model": "Scheme",
                   "namespace": "public"
                 }
+              },
+              "supplierInvoices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "fundId"
+                  ]
+                },
+                "to": {
+                  "model": "SupplierInvoice",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
               "fields": {
                 "balance": {
                   "column": "balance"
+                },
+                "bankAccountId": {
+                  "column": "bank_account_id"
                 },
                 "createdAt": {
                   "column": "created_at"
@@ -1280,11 +2598,23 @@
                 "id": {
                   "column": "id"
                 },
+                "isActive": {
+                  "column": "is_active"
+                },
                 "name": {
                   "column": "name"
                 },
+                "openingBalance": {
+                  "column": "opening_balance"
+                },
+                "openingBalanceDate": {
+                  "column": "opening_balance_date"
+                },
                 "schemeId": {
                   "column": "scheme_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
                 }
               },
               "namespaceId": "public",
@@ -1906,6 +3236,484 @@
               "table": "invoices"
             }
           },
+          "JournalEntry": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "entryNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 20
+                  }
+                }
+              },
+              "entryType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "postedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "postedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "postingDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "reversalOfId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sourceId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sourceType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "transactionDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "bankTransactions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "matchedJournalEntryId"
+                  ]
+                },
+                "to": {
+                  "model": "BankTransaction",
+                  "namespace": "public"
+                }
+              },
+              "lines": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "journalEntryId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalLine",
+                  "namespace": "public"
+                }
+              },
+              "reversalOf": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "reversalOfId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JournalEntry",
+                  "namespace": "public"
+                }
+              },
+              "reversedBy": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "reversalOfId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalEntry",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "createdBy": {
+                  "column": "created_by"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "entryNumber": {
+                  "column": "entry_number"
+                },
+                "entryType": {
+                  "column": "entry_type"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "postedAt": {
+                  "column": "posted_at"
+                },
+                "postedBy": {
+                  "column": "posted_by"
+                },
+                "postingDate": {
+                  "column": "posting_date"
+                },
+                "reversalOfId": {
+                  "column": "reversal_of_id"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "sourceId": {
+                  "column": "source_id"
+                },
+                "sourceType": {
+                  "column": "source_type"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "transactionDate": {
+                  "column": "transaction_date"
+                }
+              },
+              "namespaceId": "public",
+              "table": "journal_entries"
+            }
+          },
+          "JournalLine": {
+            "fields": {
+              "accountCodeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "bankTransactionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "credit": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "debit": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "fundId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "journalEntryId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "supplierId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "accountCode": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "accountCodeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AccountCode",
+                  "namespace": "public"
+                }
+              },
+              "bankTransaction": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "bankTransactionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "BankTransaction",
+                  "namespace": "public"
+                }
+              },
+              "fund": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "fundId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              },
+              "journalEntry": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "journalEntryId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "JournalEntry",
+                  "namespace": "public"
+                }
+              },
+              "lot": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "lotId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Lot",
+                  "namespace": "public"
+                }
+              },
+              "supplier": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "supplierId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Supplier",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accountCodeId": {
+                  "column": "account_code_id"
+                },
+                "bankTransactionId": {
+                  "column": "bank_transaction_id"
+                },
+                "credit": {
+                  "column": "credit"
+                },
+                "debit": {
+                  "column": "debit"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "fundId": {
+                  "column": "fund_id"
+                },
+                "gstAmount": {
+                  "column": "gst_amount"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "journalEntryId": {
+                  "column": "journal_entry_id"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "supplierId": {
+                  "column": "supplier_id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "journal_lines"
+            }
+          },
           "Levy": {
             "fields": {
               "createdAt": {
@@ -2195,6 +4003,503 @@
               "table": "levy_items"
             }
           },
+          "LevyNotice": {
+            "fields": {
+              "amountDue": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "amountPaid": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "balanceOutstanding": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "dueDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "fundId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "interestCharged": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "issuedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "levyScheduleId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "noticeNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 20
+                  }
+                }
+              },
+              "ownerId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "paidInFullAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "periodEnd": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "periodStart": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "financialDocuments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "levyNoticeId"
+                  ]
+                },
+                "to": {
+                  "model": "FinancialDocument",
+                  "namespace": "public"
+                }
+              },
+              "fund": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "fundId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              },
+              "levySchedule": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "levyScheduleId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "LevySchedule",
+                  "namespace": "public"
+                }
+              },
+              "lot": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "lotId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Lot",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amountDue": {
+                  "column": "amount_due"
+                },
+                "amountPaid": {
+                  "column": "amount_paid"
+                },
+                "balanceOutstanding": {
+                  "column": "balance_outstanding"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "dueDate": {
+                  "column": "due_date"
+                },
+                "fundId": {
+                  "column": "fund_id"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "interestCharged": {
+                  "column": "interest_charged"
+                },
+                "issuedAt": {
+                  "column": "issued_at"
+                },
+                "levyScheduleId": {
+                  "column": "levy_schedule_id"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "noticeNumber": {
+                  "column": "notice_number"
+                },
+                "ownerId": {
+                  "column": "owner_id"
+                },
+                "paidInFullAt": {
+                  "column": "paid_in_full_at"
+                },
+                "periodEnd": {
+                  "column": "period_end"
+                },
+                "periodStart": {
+                  "column": "period_start"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "levy_notices"
+            }
+          },
+          "LevySchedule": {
+            "fields": {
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "budgetAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "financialYear": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "frequency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fundId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "totalEntitlement": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                }
+              },
+              "totalLots": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "fund": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "fundId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              },
+              "levyNotices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "levyScheduleId"
+                  ]
+                },
+                "to": {
+                  "model": "LevyNotice",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "approvedAt": {
+                  "column": "approved_at"
+                },
+                "approvedBy": {
+                  "column": "approved_by"
+                },
+                "budgetAmount": {
+                  "column": "budget_amount"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "financialYear": {
+                  "column": "financial_year"
+                },
+                "frequency": {
+                  "column": "frequency"
+                },
+                "fundId": {
+                  "column": "fund_id"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "totalEntitlement": {
+                  "column": "total_entitlement"
+                },
+                "totalLots": {
+                  "column": "total_lots"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "levy_schedules"
+            }
+          },
           "Lot": {
             "fields": {
               "entitlement": {
@@ -2248,6 +4553,21 @@
               }
             },
             "relations": {
+              "financialDocuments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "lotId"
+                  ]
+                },
+                "to": {
+                  "model": "FinancialDocument",
+                  "namespace": "public"
+                }
+              },
               "invitations": {
                 "cardinality": "1:N",
                 "on": {
@@ -2263,6 +4583,21 @@
                   "namespace": "public"
                 }
               },
+              "journalLines": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "lotId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalLine",
+                  "namespace": "public"
+                }
+              },
               "levyItems": {
                 "cardinality": "1:N",
                 "on": {
@@ -2275,6 +4610,21 @@
                 },
                 "to": {
                   "model": "LevyItem",
+                  "namespace": "public"
+                }
+              },
+              "levyNotices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "lotId"
+                  ]
+                },
+                "to": {
+                  "model": "LevyNotice",
                   "namespace": "public"
                 }
               },
@@ -3354,6 +5704,13 @@
                   "kind": "scalar"
                 }
               },
+              "defaultPaymentTerms": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "financialYearEnd": {
                 "nullable": false,
                 "type": {
@@ -3368,11 +5725,29 @@
                   "kind": "scalar"
                 }
               },
+              "gstRegistered": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
+                }
+              },
+              "interestRate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
                 }
               },
               "isActive": {
@@ -3447,6 +5822,21 @@
               }
             },
             "relations": {
+              "accountCodes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "AccountCode",
+                  "namespace": "public"
+                }
+              },
               "activityLogs": {
                 "cardinality": "1:N",
                 "on": {
@@ -3474,6 +5864,36 @@
                 },
                 "to": {
                   "model": "Announcement",
+                  "namespace": "public"
+                }
+              },
+              "bankAccounts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "SchemeBankAccount",
+                  "namespace": "public"
+                }
+              },
+              "bankTransactions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "BankTransaction",
                   "namespace": "public"
                 }
               },
@@ -3534,6 +5954,36 @@
                 },
                 "to": {
                   "model": "Document",
+                  "namespace": "public"
+                }
+              },
+              "financialDocuments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "FinancialDocument",
+                  "namespace": "public"
+                }
+              },
+              "financialPeriods": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "FinancialPeriod",
                   "namespace": "public"
                 }
               },
@@ -3612,6 +6062,21 @@
                   "namespace": "public"
                 }
               },
+              "journalEntries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalEntry",
+                  "namespace": "public"
+                }
+              },
               "levies": {
                 "cardinality": "1:N",
                 "on": {
@@ -3624,6 +6089,36 @@
                 },
                 "to": {
                   "model": "Levy",
+                  "namespace": "public"
+                }
+              },
+              "levyNotices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "LevyNotice",
+                  "namespace": "public"
+                }
+              },
+              "levySchedules": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "LevySchedule",
                   "namespace": "public"
                 }
               },
@@ -3702,6 +6197,36 @@
                   "namespace": "public"
                 }
               },
+              "supplierInvoices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "SupplierInvoice",
+                  "namespace": "public"
+                }
+              },
+              "suppliers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "Supplier",
+                  "namespace": "public"
+                }
+              },
               "workOrders": {
                 "cardinality": "1:N",
                 "on": {
@@ -3744,14 +6269,23 @@
                 "debtCollection": {
                   "column": "debt_collection"
                 },
+                "defaultPaymentTerms": {
+                  "column": "default_payment_terms"
+                },
                 "financialYearEnd": {
                   "column": "financial_year_end"
                 },
                 "folio": {
                   "column": "folio"
                 },
+                "gstRegistered": {
+                  "column": "gst_registered"
+                },
                 "id": {
                   "column": "id"
+                },
+                "interestRate": {
+                  "column": "interest_rate"
                 },
                 "isActive": {
                   "column": "is_active"
@@ -3786,6 +6320,214 @@
               },
               "namespaceId": "public",
               "table": "schemes"
+            }
+          },
+          "SchemeBankAccount": {
+            "fields": {
+              "accountName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "accountNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 20
+                  }
+                }
+              },
+              "accountType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "bankFeedEnabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "bankName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "bsb": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 7
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "isOperating": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastReconciledBalance": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "lastReconciledDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "bankTransactions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "bankAccountId"
+                  ]
+                },
+                "to": {
+                  "model": "BankTransaction",
+                  "namespace": "public"
+                }
+              },
+              "funds": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "bankAccountId"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accountName": {
+                  "column": "account_name"
+                },
+                "accountNumber": {
+                  "column": "account_number"
+                },
+                "accountType": {
+                  "column": "account_type"
+                },
+                "bankFeedEnabled": {
+                  "column": "bank_feed_enabled"
+                },
+                "bankName": {
+                  "column": "bank_name"
+                },
+                "bsb": {
+                  "column": "bsb"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isActive": {
+                  "column": "is_active"
+                },
+                "isOperating": {
+                  "column": "is_operating"
+                },
+                "lastReconciledBalance": {
+                  "column": "last_reconciled_balance"
+                },
+                "lastReconciledDate": {
+                  "column": "last_reconciled_date"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "scheme_bank_accounts"
             }
           },
           "SchemeImage": {
@@ -4027,6 +6769,583 @@
               },
               "namespaceId": "public",
               "table": "scheme_memberships"
+            }
+          },
+          "Supplier": {
+            "fields": {
+              "abn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 11
+                  }
+                }
+              },
+              "bankAccountName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "bankAccountNumber": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 20
+                  }
+                }
+              },
+              "bankBsb": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 7
+                  }
+                }
+              },
+              "companyName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "contactName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 320
+                  }
+                }
+              },
+              "gstRegistered": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "paymentTerms": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "phone": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 20
+                  }
+                }
+              },
+              "schemeId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "tradingName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "financialDocuments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "supplierId"
+                  ]
+                },
+                "to": {
+                  "model": "FinancialDocument",
+                  "namespace": "public"
+                }
+              },
+              "journalLines": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "supplierId"
+                  ]
+                },
+                "to": {
+                  "model": "JournalLine",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              },
+              "supplierInvoices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "supplierId"
+                  ]
+                },
+                "to": {
+                  "model": "SupplierInvoice",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "abn": {
+                  "column": "abn"
+                },
+                "bankAccountName": {
+                  "column": "bank_account_name"
+                },
+                "bankAccountNumber": {
+                  "column": "bank_account_number"
+                },
+                "bankBsb": {
+                  "column": "bank_bsb"
+                },
+                "companyName": {
+                  "column": "company_name"
+                },
+                "contactName": {
+                  "column": "contact_name"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "gstRegistered": {
+                  "column": "gst_registered"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isActive": {
+                  "column": "is_active"
+                },
+                "paymentTerms": {
+                  "column": "payment_terms"
+                },
+                "phone": {
+                  "column": "phone"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "tradingName": {
+                  "column": "trading_name"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "suppliers"
+            }
+          },
+          "SupplierInvoice": {
+            "fields": {
+              "accountCodeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "amountPaid": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "approvedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "approvedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "balanceOutstanding": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "dueDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "fundId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "invoiceDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "invoiceNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 50
+                  }
+                }
+              },
+              "journalEntryId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "subtotal": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "supplierId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "totalAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "accountCode": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "accountCodeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AccountCode",
+                  "namespace": "public"
+                }
+              },
+              "financialDocuments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "supplierInvoiceId"
+                  ]
+                },
+                "to": {
+                  "model": "FinancialDocument",
+                  "namespace": "public"
+                }
+              },
+              "fund": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "fundId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              },
+              "supplier": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "supplierId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Supplier",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accountCodeId": {
+                  "column": "account_code_id"
+                },
+                "amountPaid": {
+                  "column": "amount_paid"
+                },
+                "approvedAt": {
+                  "column": "approved_at"
+                },
+                "approvedBy": {
+                  "column": "approved_by"
+                },
+                "balanceOutstanding": {
+                  "column": "balance_outstanding"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "dueDate": {
+                  "column": "due_date"
+                },
+                "fundId": {
+                  "column": "fund_id"
+                },
+                "gstAmount": {
+                  "column": "gst_amount"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "invoiceDate": {
+                  "column": "invoice_date"
+                },
+                "invoiceNumber": {
+                  "column": "invoice_number"
+                },
+                "journalEntryId": {
+                  "column": "journal_entry_id"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "subtotal": {
+                  "column": "subtotal"
+                },
+                "supplierId": {
+                  "column": "supplier_id"
+                },
+                "totalAmount": {
+                  "column": "total_amount"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "supplier_invoices"
             }
           },
           "Vote": {
@@ -4443,6 +7762,189 @@
             }
           },
           "table": {
+            "account_codes": {
+              "columns": {
+                "account_sub_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "account_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "code": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 10
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "gst_applicable": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "is_system_account": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "parent_account_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "account_codes_scheme_id_code_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "account_codes"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "fund_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "account_codes"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "parent_account_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "account_codes"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "account_codes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "account_type"
+                  ],
+                  "name": "account_codes_scheme_id_account_type_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "code"
+                  ],
+                  "name": "account_codes_scheme_id_code_key",
+                  "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "activity_logs": {
               "columns": {
                 "action": {
@@ -4684,6 +8186,311 @@
                   ],
                   "name": "announcements_scheme_id_published_at_idx",
                   "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "bank_transactions": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "balance": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "bank_account_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "import_batch_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "import_source": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "imported_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "is_duplicate": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "matched_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "matched_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "matched_journal_entry_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "reconciliation_status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "UNMATCHED"
+                  },
+                  "nullable": false
+                },
+                "reference": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "transaction_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "bank_transactions_bank_account_id_transaction_date_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "bank_account_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "bank_transactions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "scheme_bank_accounts"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "bank_transactions_scheme_id_reconciliation_status_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "bank_transactions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "matched_journal_entry_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "bank_transactions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_entries"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "bank_account_id",
+                    "amount",
+                    "transaction_date"
+                  ],
+                  "name": "bank_transactions_bank_account_id_amount_transaction_date_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "bank_account_id",
+                    "transaction_date"
+                  ],
+                  "name": "bank_transactions_bank_account_id_transaction_date_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "reconciliation_status"
+                  ],
+                  "name": "bank_transactions_scheme_id_reconciliation_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "budget_lines": {
+              "columns": {
+                "account_code_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "budget_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "financial_year": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "budget_lines_fund_id_account_code_id_financial_year_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "fund_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "budget_lines"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "fund_id",
+                    "account_code_id",
+                    "financial_year"
+                  ],
+                  "name": "budget_lines_fund_id_account_code_id_financial_year_key",
+                  "unique": true
                 }
               ],
               "primaryKey": {
@@ -5274,6 +9081,420 @@
               },
               "uniques": []
             },
+            "financial_documents": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "bank_transaction_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "document_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "document_status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "UPLOADED"
+                  },
+                  "nullable": false
+                },
+                "document_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "file_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "file_size": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "file_url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "levy_notice_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "mime_type": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "payee_reference": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "payer_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "review_notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reviewed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "reviewed_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "supplier_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "supplier_invoice_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "uploaded_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "uploaded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "verification_status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING"
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "financial_documents_scheme_id_document_type_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "financial_documents"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "lot_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "financial_documents"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "lots"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "supplier_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "financial_documents"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "suppliers"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "supplier_invoice_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "financial_documents"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "supplier_invoices"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "levy_notice_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "financial_documents"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_notices"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "bank_transaction_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "financial_documents"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "bank_transactions"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "document_status"
+                  ],
+                  "name": "financial_documents_scheme_id_document_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "document_type"
+                  ],
+                  "name": "financial_documents_scheme_id_document_type_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "financial_periods": {
+              "columns": {
+                "closed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "closed_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "end_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "period_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "start_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "OPEN"
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "financial_periods_scheme_id_start_date_end_date_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "financial_periods"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "start_date",
+                    "end_date"
+                  ],
+                  "name": "financial_periods_scheme_id_start_date_end_date_key",
+                  "unique": true
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "status"
+                  ],
+                  "name": "financial_periods_scheme_id_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "funds": {
               "columns": {
                 "balance": {
@@ -5288,6 +9509,11 @@
                     "precision": 12,
                     "scale": 2
                   }
+                },
+                "bank_account_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
                 },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -5317,21 +9543,49 @@
                   },
                   "nullable": false
                 },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "opening_balance": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "opening_balance_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
                   "nullable": false
                 }
               },
               "foreignKeys": [
                 {
                   "index": {
-                    "name": "funds_scheme_id_fund_type_key"
+                    "name": "funds_scheme_id_fund_type_idx"
                   },
                   "onDelete": "cascade",
                   "onUpdate": "cascade",
@@ -5349,6 +9603,24 @@
                     "namespaceId": "public",
                     "tableName": "schemes"
                   }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "bank_account_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "scheme_bank_accounts"
+                  }
                 }
               ],
               "indexes": [
@@ -5357,8 +9629,8 @@
                     "scheme_id",
                     "fund_type"
                   ],
-                  "name": "funds_scheme_id_fund_type_key",
-                  "unique": true
+                  "name": "funds_scheme_id_fund_type_idx",
+                  "unique": false
                 }
               ],
               "primaryKey": {
@@ -5901,6 +10173,414 @@
               },
               "uniques": []
             },
+            "journal_entries": {
+              "columns": {
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "created_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "entry_number": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 20
+                  }
+                },
+                "entry_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "posted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "posted_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "posting_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "reversal_of_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "source_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "source_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "DRAFT"
+                  },
+                  "nullable": false
+                },
+                "transaction_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "journal_entries_scheme_id_entry_number_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_entries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "reversal_of_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_entries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_entries"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "entry_number"
+                  ],
+                  "name": "journal_entries_scheme_id_entry_number_key",
+                  "unique": true
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "entry_type"
+                  ],
+                  "name": "journal_entries_scheme_id_entry_type_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "status"
+                  ],
+                  "name": "journal_entries_scheme_id_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "transaction_date"
+                  ],
+                  "name": "journal_entries_scheme_id_transaction_date_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "journal_lines": {
+              "columns": {
+                "account_code_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "bank_transaction_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "credit": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "debit": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "description": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "gst_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "journal_entry_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "supplier_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "journal_lines_journal_entry_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "journal_entry_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_lines"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_entries"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "journal_lines_account_code_id_idx"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "account_code_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_lines"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "account_codes"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "journal_lines_fund_id_idx"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "fund_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_lines"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "lot_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_lines"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "lots"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "supplier_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_lines"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "suppliers"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "bank_transaction_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "journal_lines"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "bank_transactions"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "account_code_id"
+                  ],
+                  "name": "journal_lines_account_code_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "fund_id"
+                  ],
+                  "name": "journal_lines_fund_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "journal_entry_id"
+                  ],
+                  "name": "journal_lines_journal_entry_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "levies": {
               "columns": {
                 "created_at": {
@@ -6115,6 +10795,409 @@
                   ],
                   "name": "levy_items_levy_id_lot_id_key",
                   "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "levy_notices": {
+              "columns": {
+                "amount_due": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "amount_paid": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "balance_outstanding": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "due_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "interest_charged": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "issued_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "levy_schedule_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "notice_number": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 20
+                  }
+                },
+                "owner_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "paid_in_full_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "period_end": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "period_start": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "DRAFT"
+                  },
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "levy_notices_scheme_id_notice_number_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_notices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "levy_schedule_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_notices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_schedules"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "levy_notices_lot_id_status_idx"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "lot_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_notices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "lots"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "fund_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_notices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "lot_id",
+                    "status"
+                  ],
+                  "name": "levy_notices_lot_id_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "owner_id"
+                  ],
+                  "name": "levy_notices_owner_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "notice_number"
+                  ],
+                  "name": "levy_notices_scheme_id_notice_number_key",
+                  "unique": true
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "status"
+                  ],
+                  "name": "levy_notices_scheme_id_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "levy_schedules": {
+              "columns": {
+                "approved_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "approved_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "budget_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "financial_year": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "frequency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "DRAFT"
+                  },
+                  "nullable": false
+                },
+                "total_entitlement": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                },
+                "total_lots": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "levy_schedules_scheme_id_financial_year_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_schedules"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "fund_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_schedules"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "financial_year"
+                  ],
+                  "name": "levy_schedules_scheme_id_financial_year_idx",
+                  "unique": false
                 }
               ],
               "primaryKey": {
@@ -6799,6 +11882,152 @@
               },
               "uniques": []
             },
+            "scheme_bank_accounts": {
+              "columns": {
+                "account_name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "account_number": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 20
+                  }
+                },
+                "account_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "CHEQUE"
+                  },
+                  "nullable": false
+                },
+                "bank_feed_enabled": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "bank_name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "bsb": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 7
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "is_operating": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "last_reconciled_balance": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "last_reconciled_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "scheme_bank_accounts_scheme_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "scheme_bank_accounts"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id"
+                  ],
+                  "name": "scheme_bank_accounts_scheme_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "scheme_images": {
               "columns": {
                 "caption": {
@@ -7088,6 +12317,11 @@
                   },
                   "nullable": false
                 },
+                "default_payment_terms": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "financial_year_end": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -7102,6 +12336,15 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "gst_registered": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -7110,6 +12353,15 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "interest_rate": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
                 },
                 "is_active": {
                   "codecId": "pg/bool@1",
@@ -7178,6 +12430,432 @@
                   ],
                   "name": "schemes_plan_number_key",
                   "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "supplier_invoices": {
+              "columns": {
+                "account_code_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "amount_paid": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "approved_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "approved_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "balance_outstanding": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "due_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "gst_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "invoice_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "invoice_number": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 50
+                  }
+                },
+                "journal_entry_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "DRAFT"
+                  },
+                  "nullable": false
+                },
+                "subtotal": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "supplier_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "total_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "supplier_invoices_scheme_id_status_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "supplier_invoices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "supplier_invoices_supplier_id_idx"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "supplier_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "supplier_invoices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "suppliers"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "fund_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "supplier_invoices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "account_code_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "supplier_invoices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "account_codes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "due_date"
+                  ],
+                  "name": "supplier_invoices_scheme_id_due_date_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "status"
+                  ],
+                  "name": "supplier_invoices_scheme_id_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "supplier_id"
+                  ],
+                  "name": "supplier_invoices_supplier_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "suppliers": {
+              "columns": {
+                "abn": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 11
+                  }
+                },
+                "bank_account_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "bank_account_number": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 20
+                  }
+                },
+                "bank_bsb": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 7
+                  }
+                },
+                "company_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "contact_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "email": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 320
+                  }
+                },
+                "gst_registered": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "payment_terms": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "phone": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 20
+                  }
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "trading_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "suppliers_scheme_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "suppliers"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id"
+                  ],
+                  "name": "suppliers_scheme_id_idx",
+                  "unique": false
                 }
               ],
               "primaryKey": {
@@ -7503,10 +13181,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "88c505005f858c126473d08a0911483546b5d2ba167ee004d2fb8f16d1ddb185"
+    "storageHash": "e2be0ab069ca13d5f54a3f2daab5a6a83faa5d7beb6882d6d3984fae21149153"
   },
   "execution": {
-    "executionHash": "c40e2371777b2cf8bac49f589868fb7a3461b56b49528e34f46d25cb0e91558f",
+    "executionHash": "5bdd7d29fdbc9eddc05c32a3aed5a619f4a5e0024fd8fbd6b5e786f58e3dca5f",
     "mutations": {
       "defaults": [
         {
@@ -7519,7 +13197,37 @@
             "kind": "generator"
           },
           "ref": {
+            "entry": "account_codes",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
             "entry": "announcements",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "budget_lines",
             "field": "updated_at",
             "namespace": "public"
           }
@@ -7579,6 +13287,21 @@
             "kind": "generator"
           },
           "ref": {
+            "entry": "funds",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
             "entry": "insurance_policies",
             "field": "updated_at",
             "namespace": "public"
@@ -7610,6 +13333,36 @@
           },
           "ref": {
             "entry": "levies",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "levy_notices",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "levy_schedules",
             "field": "updated_at",
             "namespace": "public"
           }
@@ -7684,7 +13437,52 @@
             "kind": "generator"
           },
           "ref": {
+            "entry": "scheme_bank_accounts",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
             "entry": "schemes",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "supplier_invoices",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "suppliers",
             "field": "updated_at",
             "namespace": "public"
           }
