@@ -40,20 +40,22 @@ export type SchemeDetailHeaderProps = {
   images: SchemeImage[];
   /** Navigation pill buttons */
   navButtons: NavButton[];
+  /** Href of the currently active nav button (gets solid gold fill) */
+  activeHref?: string;
 };
 
 /* ------------------------------------------------------------------ */
 /*  Circled plus icon (matches reference exactly)                      */
 /* ------------------------------------------------------------------ */
 
-function CircledPlusIcon() {
+function CircledPlusIcon({ active = false }: { active?: boolean }) {
   return (
     <svg
       width="18"
       height="18"
       viewBox="0 0 18 18"
       fill="none"
-      className="shrink-0 text-primary-400"
+      className={`shrink-0 ${active ? "text-white" : "text-gold-300"}`}
     >
       <circle
         cx="9"
@@ -140,6 +142,7 @@ export function SchemeDetailHeader({
   details,
   images,
   navButtons,
+  activeHref,
 }: SchemeDetailHeaderProps) {
   return (
     <div className="mb-6">
@@ -197,18 +200,27 @@ export function SchemeDetailHeader({
         </div>
       </div>
 
-      {/* ---- Navigation pill buttons — teal border, circled "+" icon ---- */}
-      <div className="flex flex-wrap gap-2.5">
-        {navButtons.map((btn) => (
-          <Link
-            key={btn.label}
-            href={btn.href}
-            className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary-400 bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-primary-50 transition-colors"
-          >
-            <CircledPlusIcon />
-            {btn.label}
-          </Link>
-        ))}
+      {/* ---- Navigation pill buttons — gold top line, solid gold when active ---- */}
+      <div className="border-t-2 border-gold-300 pt-4">
+        <div className="flex flex-wrap gap-2.5">
+          {navButtons.map((btn) => {
+            const isActive = activeHref === btn.href;
+            return (
+              <Link
+                key={btn.label}
+                href={btn.href}
+                className={`inline-flex items-center gap-1.5 rounded-full border-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "border-gold-300 bg-gold-300 text-white"
+                    : "border-gold-300 bg-white text-foreground hover:bg-gold-50"
+                }`}
+              >
+                <CircledPlusIcon active={isActive} />
+                {btn.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
