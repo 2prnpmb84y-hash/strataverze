@@ -65,10 +65,9 @@ export function DocumentsTabContent({
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [, startTransition] = useTransition();
 
-  // Sync documents state when server data changes (after router.refresh)
-  useEffect(() => {
-    setDocuments(initialDocuments);
-  }, [initialDocuments]);
+  // Sync documents state when server data changes (after router.refresh).
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncing prop into state on server re-render
+  useEffect(() => { setDocuments(initialDocuments); }, [initialDocuments]);
 
   const getPublicUrl = useCallback(
     (storagePath: string) => {
