@@ -29,7 +29,35 @@ export type ActivityAction =
   | "QUOTE_SUBMITTED"
   | "QUOTE_WITHDRAWN"
   | "INVOICE_SUBMITTED"
-  | "WORK_ORDER_STATUS_UPDATED";
+  | "WORK_ORDER_STATUS_UPDATED"
+  // Financial module actions
+  | "CHART_OF_ACCOUNTS_SEEDED"
+  | "ACCOUNT_CODE_CREATED"
+  | "ACCOUNT_CODE_DEACTIVATED"
+  | "BANK_ACCOUNT_CREATED"
+  | "BANK_ACCOUNT_DEACTIVATED"
+  | "JOURNAL_ENTRY_CREATED"
+  | "JOURNAL_ENTRY_POSTED"
+  | "JOURNAL_ENTRY_REVERSED"
+  | "BANK_TRANSACTIONS_IMPORTED"
+  | "BANK_TRANSACTION_MATCHED"
+  | "BANK_TRANSACTION_RECONCILED"
+  | "BANK_TRANSACTION_EXCLUDED"
+  | "BANK_TRANSACTION_UNMATCHED"
+  | "LEVY_SCHEDULE_CREATED"
+  | "LEVY_NOTICES_ISSUED"
+  | "FINANCIAL_SUPPLIER_CREATED"
+  | "SUPPLIER_INVOICE_CREATED"
+  | "SUPPLIER_INVOICE_APPROVED"
+  | "SUPPLIER_INVOICE_PAYMENT"
+  | "SUPPLIER_INVOICE_CANCELLED"
+  | "FINANCIAL_DOCUMENT_UPLOADED"
+  | "FINANCIAL_DOCUMENT_REVIEWED"
+  | "FINANCIAL_DOCUMENT_VERIFICATION_UPDATED"
+  | "FINANCIAL_PERIODS_GENERATED"
+  | "FINANCIAL_PERIOD_CLOSED"
+  | "FINANCIAL_PERIOD_LOCKED"
+  | "FINANCIAL_PERIOD_REOPENED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -48,7 +76,18 @@ export type ActivityEntityType =
   | "InsurancePolicy"
   | "Contact"
   | "Quote"
-  | "Invoice";
+  | "Invoice"
+  // Financial module entity types
+  | "AccountCode"
+  | "SchemeBankAccount"
+  | "JournalEntry"
+  | "BankTransaction"
+  | "LevySchedule"
+  | "LevyNotice"
+  | "Supplier"
+  | "SupplierInvoice"
+  | "FinancialDocument"
+  | "FinancialPeriod";
 
 type LogActivityData = {
   schemeId: string;
