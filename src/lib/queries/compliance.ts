@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
@@ -11,7 +12,7 @@ function toTimestamp(value: string): TimestampString<3> {
  */
 export async function getComplianceForScheme(schemeId: string) {
   return db.orm.public.ComplianceItem
-    .where((c) => c.schemeId.eq(schemeId))
+    .where((c) => and(c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
     .orderBy((c) => c.dueDate.asc())
     .all();
 }
@@ -20,7 +21,9 @@ export async function getComplianceForScheme(schemeId: string) {
  * Fetch a single compliance item by ID.
  */
 export async function getComplianceItemById(itemId: string) {
-  return db.orm.public.ComplianceItem.first({ id: itemId });
+  return db.orm.public.ComplianceItem
+    .where((c) => and(c.id.eq(itemId), c.deletedAt.eq(null)))
+    .first();
 }
 
 /**
@@ -76,12 +79,12 @@ export async function updateComplianceItem(
 }
 
 /**
- * Delete a compliance item.
+ * Soft-delete a compliance item.
  */
 export async function deleteComplianceItem(itemId: string) {
   return db.orm.public.ComplianceItem
     .where({ id: itemId })
-    .delete();
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 
 /**
@@ -90,7 +93,7 @@ export async function deleteComplianceItem(itemId: string) {
 export async function getComplianceForSchemes(schemeIds: string[]) {
   if (schemeIds.length === 0) return [];
   return db.orm.public.ComplianceItem
-    .where((c) => c.schemeId.in(schemeIds))
+    .where((c) => and(c.schemeId.in(schemeIds), c.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((c) => c.dueDate.asc())
     .all();

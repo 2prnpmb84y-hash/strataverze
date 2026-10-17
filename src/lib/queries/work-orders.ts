@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
@@ -16,7 +17,7 @@ function toTimestamp(value: string): TimestampString<3> {
  */
 export async function getWorkOrdersForScheme(schemeId: string) {
   return db.orm.public.WorkOrder
-    .where((wo) => wo.schemeId.eq(schemeId))
+    .where((wo) => and(wo.schemeId.eq(schemeId), wo.deletedAt.eq(null)))
     .include("raisedBy")
     .include("comments")
     .orderBy((wo) => wo.createdAt.desc())
@@ -28,11 +29,12 @@ export async function getWorkOrdersForScheme(schemeId: string) {
  */
 export async function getWorkOrderById(workOrderId: string) {
   return db.orm.public.WorkOrder
+    .where((wo) => and(wo.id.eq(workOrderId), wo.deletedAt.eq(null)))
     .include("raisedBy")
     .include("comments", (c) =>
       c.include("author").orderBy((cm) => cm.createdAt.asc()),
     )
-    .first({ id: workOrderId });
+    .first();
 }
 
 /**
@@ -97,12 +99,12 @@ export async function updateWorkOrder(
 }
 
 /**
- * Delete a work order.
+ * Soft-delete a work order.
  */
 export async function deleteWorkOrder(workOrderId: string) {
   return db.orm.public.WorkOrder
     .where({ id: workOrderId })
-    .delete();
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 
 /**
@@ -146,7 +148,7 @@ export async function deleteComment(commentId: string) {
 export async function getWorkOrdersForSchemes(schemeIds: string[]) {
   if (schemeIds.length === 0) return [];
   return db.orm.public.WorkOrder
-    .where((wo) => wo.schemeId.in(schemeIds))
+    .where((wo) => and(wo.schemeId.in(schemeIds), wo.deletedAt.eq(null)))
     .include("raisedBy")
     .include("comments")
     .orderBy((wo) => wo.createdAt.desc())

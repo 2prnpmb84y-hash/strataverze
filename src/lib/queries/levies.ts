@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
@@ -16,9 +17,9 @@ function toTimestamp(value: string): TimestampString<3> {
  */
 export async function getLeviesForScheme(schemeId: string) {
   return db.orm.public.Levy
-    .where((l) => l.schemeId.eq(schemeId))
+    .where((l) => and(l.schemeId.eq(schemeId), l.deletedAt.eq(null)))
     .include("items", (i) =>
-      i.include("lot"),
+      i.where((li) => li.deletedAt.eq(null)).include("lot"),
     )
     .orderBy((l) => l.createdAt.desc())
     .all();
@@ -29,10 +30,11 @@ export async function getLeviesForScheme(schemeId: string) {
  */
 export async function getLevyById(levyId: string) {
   return db.orm.public.Levy
+    .where((l) => and(l.id.eq(levyId), l.deletedAt.eq(null)))
     .include("items", (i) =>
-      i.include("lot"),
+      i.where((li) => li.deletedAt.eq(null)).include("lot"),
     )
-    .first({ id: levyId });
+    .first();
 }
 
 /**
@@ -112,10 +114,14 @@ export async function updateLevy(
 }
 
 /**
- * Delete a levy and its items (cascade).
+ * Soft-delete a levy and its items.
  */
 export async function deleteLevy(levyId: string) {
-  return db.orm.public.Levy.where({ id: levyId }).delete();
+  const now = toTimestamp(new Date().toISOString());
+  return db.transaction(async (tx) => {
+    await tx.orm.public.LevyItem.where({ levyId }).update({ deletedAt: now });
+    return tx.orm.public.Levy.where({ id: levyId }).update({ deletedAt: now });
+  });
 }
 
 /**
@@ -147,8 +153,8 @@ export async function getLeviesForSchemes(schemeIds: string[]) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Levy
-    .where((l) => l.schemeId.in(schemeIds))
-    .include("items")
+    .where((l) => and(l.schemeId.in(schemeIds), l.deletedAt.eq(null)))
+    .include("items", (i) => i.where((li) => li.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((l) => l.dueDate.desc())
     .all();
@@ -159,7 +165,7 @@ export async function getLeviesForSchemes(schemeIds: string[]) {
  */
 export async function getLevyItemsForLot(lotId: string) {
   return db.orm.public.LevyItem
-    .where((li) => li.lotId.eq(lotId))
+    .where((li) => and(li.lotId.eq(lotId), li.deletedAt.eq(null)))
     .include("levy")
     .all();
 }

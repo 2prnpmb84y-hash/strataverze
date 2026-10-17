@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
@@ -11,7 +12,7 @@ function toTimestamp(value: string): TimestampString<3> {
  */
 export async function getMeetingsForScheme(schemeId: string) {
   return db.orm.public.Meeting
-    .where((m) => m.schemeId.eq(schemeId))
+    .where((m) => and(m.schemeId.eq(schemeId), m.deletedAt.eq(null)))
     .include("motions")
     .orderBy((m) => m.scheduledAt.desc())
     .all();
@@ -22,13 +23,14 @@ export async function getMeetingsForScheme(schemeId: string) {
  */
 export async function getMeetingById(meetingId: string) {
   return db.orm.public.Meeting
+    .where((m) => and(m.id.eq(meetingId), m.deletedAt.eq(null)))
     .include("motions", (mot) =>
       mot
         .include("raisedBy")
         .include("votes", (v) => v.include("profile"))
         .orderBy((m) => m.createdAt.asc()),
     )
-    .first({ id: meetingId });
+    .first();
 }
 
 /**
@@ -81,10 +83,12 @@ export async function updateMeeting(
 }
 
 /**
- * Delete a meeting.
+ * Soft-delete a meeting.
  */
 export async function deleteMeeting(meetingId: string) {
-  return db.orm.public.Meeting.where({ id: meetingId }).delete();
+  return db.orm.public.Meeting
+    .where({ id: meetingId })
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 
 /**
@@ -94,7 +98,7 @@ export async function getUpcomingMeetingsForOwner(schemeIds: string[]) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Meeting
-    .where((m) => m.schemeId.in(schemeIds))
+    .where((m) => and(m.schemeId.in(schemeIds), m.deletedAt.eq(null)))
     .include("motions", (mot) =>
       mot
         .include("votes")

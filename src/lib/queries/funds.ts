@@ -1,5 +1,11 @@
 import { db } from "@/prisma/db";
-import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
+import { and } from "@prisma/orm-postgres/orm-client";
+import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
+
+/** Cast an ISO string to the Prisma 8 TimestampString branded type. */
+function toTimestamp(value: string): TimestampString<3> {
+  return value as unknown as TimestampString<3>;
+}
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric(value: number | string): Numeric<12, 2> {
@@ -11,7 +17,7 @@ function toNumeric(value: number | string): Numeric<12, 2> {
  */
 export async function getFundsForScheme(schemeId: string) {
   return db.orm.public.Fund
-    .where((f) => f.schemeId.eq(schemeId))
+    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
     .orderBy((f) => f.createdAt.asc())
     .all();
 }
@@ -20,7 +26,9 @@ export async function getFundsForScheme(schemeId: string) {
  * Fetch a single fund by ID.
  */
 export async function getFundById(fundId: string) {
-  return db.orm.public.Fund.first({ id: fundId });
+  return db.orm.public.Fund
+    .where((f) => and(f.id.eq(fundId), f.deletedAt.eq(null)))
+    .first();
 }
 
 /**
@@ -63,14 +71,16 @@ export async function updateFund(
 export async function getFundsForSchemes(schemeIds: string[]) {
   if (schemeIds.length === 0) return [];
   return db.orm.public.Fund
-    .where((f) => f.schemeId.in(schemeIds))
+    .where((f) => and(f.schemeId.in(schemeIds), f.deletedAt.eq(null)))
     .orderBy((f) => f.createdAt.asc())
     .all();
 }
 
 /**
- * Delete a fund.
+ * Soft-delete a fund.
  */
 export async function deleteFund(fundId: string) {
-  return db.orm.public.Fund.where({ id: fundId }).delete();
+  return db.orm.public.Fund
+    .where({ id: fundId })
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

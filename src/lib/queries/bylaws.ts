@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
@@ -11,7 +12,7 @@ function toTimestamp(value: string): TimestampString<3> {
  */
 export async function getBylawsForScheme(schemeId: string) {
   return db.orm.public.ByLaw
-    .where((b) => b.schemeId.eq(schemeId))
+    .where((b) => and(b.schemeId.eq(schemeId), b.deletedAt.eq(null)))
     .orderBy((b) => b.bylawNumber.asc())
     .all();
 }
@@ -21,7 +22,7 @@ export async function getBylawsForScheme(schemeId: string) {
  */
 export async function getActiveBylawsForScheme(schemeId: string) {
   const all = await db.orm.public.ByLaw
-    .where((b) => b.schemeId.eq(schemeId))
+    .where((b) => and(b.schemeId.eq(schemeId), b.deletedAt.eq(null)))
     .orderBy((b) => b.bylawNumber.asc())
     .all();
   return all.filter((b) => b.status !== "REPEALED");
@@ -37,7 +38,7 @@ export async function getBylawsForSchemes(
   if (schemeIds.length === 0) return [];
 
   const all = await db.orm.public.ByLaw
-    .where((b) => b.schemeId.in(schemeIds))
+    .where((b) => and(b.schemeId.in(schemeIds), b.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((b) => b.bylawNumber.asc())
     .all();
@@ -51,8 +52,9 @@ export async function getBylawsForSchemes(
  */
 export async function getBylawById(bylawId: string) {
   return db.orm.public.ByLaw
+    .where((b) => and(b.id.eq(bylawId), b.deletedAt.eq(null)))
     .include("scheme")
-    .first({ id: bylawId });
+    .first();
 }
 
 /**
@@ -60,7 +62,7 @@ export async function getBylawById(bylawId: string) {
  */
 export async function getNextBylawNumber(schemeId: string): Promise<number> {
   const all = await db.orm.public.ByLaw
-    .where((b) => b.schemeId.eq(schemeId))
+    .where((b) => and(b.schemeId.eq(schemeId), b.deletedAt.eq(null)))
     .orderBy((b) => b.bylawNumber.desc())
     .limit(1)
     .all();
@@ -129,8 +131,10 @@ export async function updateBylaw(
 }
 
 /**
- * Delete a by-law.
+ * Soft-delete a by-law.
  */
 export async function deleteBylaw(bylawId: string) {
-  return db.orm.public.ByLaw.where({ id: bylawId }).delete();
+  return db.orm.public.ByLaw
+    .where({ id: bylawId })
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

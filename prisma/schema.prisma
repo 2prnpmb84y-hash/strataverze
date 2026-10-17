@@ -154,6 +154,7 @@ model Fund {
   fundType  String   @map("fund_type") // ADMIN, SINKING, RESERVE
   balance   Decimal  @default(0) @db.Decimal(12, 2)
   createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
@@ -172,6 +173,7 @@ model Levy {
   status      String   @default("DRAFT")
   createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   items  LevyItem[]
@@ -187,6 +189,7 @@ model LevyItem {
   paidAmount Decimal  @default(0) @map("paid_amount") @db.Decimal(12, 2)
   status     String   @default("UNPAID")
   paidAt     DateTime? @db.Timestamptz @map("paid_at")
+  deletedAt  DateTime? @db.Timestamptz @map("deleted_at")
 
   levy Levy @relation(fields: [levyId], references: [id], onDelete: Cascade)
   lot  Lot  @relation(fields: [lotId], references: [id])
@@ -208,6 +211,7 @@ model Meeting {
   minutesUrl  String?   @map("minutes_url")
   status      String    @default("SCHEDULED")
   createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme  Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   motions Motion[]
@@ -269,6 +273,7 @@ model WorkOrder {
   completedAt     DateTime? @db.Timestamptz @map("completed_at")
   createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt       DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme       Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   raisedBy     Profile   @relation("RaisedBy", fields: [raisedById], references: [id])
@@ -380,6 +385,7 @@ model Announcement {
   expiresAt   DateTime? @db.Timestamptz @map("expires_at")
   createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   author Profile @relation(fields: [authorId], references: [id])
@@ -408,6 +414,7 @@ model InsurancePolicy {
   notes           String?
   createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt       DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
@@ -432,6 +439,7 @@ model Contact {
   isPreferred   Boolean  @default(false) @map("is_preferred")
   createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
   updatedAt     DateTime @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt     DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
@@ -456,6 +464,7 @@ model ByLaw {
   notes         String?
   createdAt     DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt     DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt     DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
@@ -478,6 +487,7 @@ model Document {
   mimeType    String?  @map("mime_type")
   uploadedBy  String   @map("uploaded_by") @db.Uuid
   createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 
@@ -498,6 +508,7 @@ model ComplianceItem {
   notes       String?
   createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme Scheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
 

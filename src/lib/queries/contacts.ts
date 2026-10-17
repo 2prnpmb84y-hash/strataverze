@@ -1,11 +1,18 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
+import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+
+/** Cast an ISO string to the Prisma 8 TimestampString branded type. */
+function toTimestamp(value: string): TimestampString<3> {
+  return value as unknown as TimestampString<3>;
+}
 
 /**
  * Fetch all contacts for a scheme, ordered by name.
  */
 export async function getContactsForScheme(schemeId: string) {
   return db.orm.public.Contact
-    .where((c) => c.schemeId.eq(schemeId))
+    .where((c) => and(c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
     .orderBy((c) => c.name.asc())
     .all();
 }
@@ -17,7 +24,7 @@ export async function getContactsForSchemes(schemeIds: string[]) {
   if (schemeIds.length === 0) return [];
 
   return db.orm.public.Contact
-    .where((c) => c.schemeId.in(schemeIds))
+    .where((c) => and(c.schemeId.in(schemeIds), c.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((c) => c.name.asc())
     .all();
@@ -28,8 +35,9 @@ export async function getContactsForSchemes(schemeIds: string[]) {
  */
 export async function getContactById(contactId: string) {
   return db.orm.public.Contact
+    .where((c) => and(c.id.eq(contactId), c.deletedAt.eq(null)))
     .include("scheme")
-    .first({ id: contactId });
+    .first();
 }
 
 /**
@@ -89,8 +97,10 @@ export async function updateContact(
 }
 
 /**
- * Delete a contact.
+ * Soft-delete a contact.
  */
 export async function deleteContact(contactId: string) {
-  return db.orm.public.Contact.where({ id: contactId }).delete();
+  return db.orm.public.Contact
+    .where({ id: contactId })
+    .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
