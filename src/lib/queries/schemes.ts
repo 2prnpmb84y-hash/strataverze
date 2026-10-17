@@ -28,6 +28,7 @@ export async function getSchemesForOwner(profileId: string) {
         .where((sm) => sm.isActive.eq(true))
         .include("lot"),
     )
+    .include("images", (i) => i.orderBy((img) => img.sortOrder.asc()))
     .orderBy((s) => s.name.asc())
     .all()
     .then((schemes) =>

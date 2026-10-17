@@ -13,12 +13,11 @@ import { getInsuranceForScheme } from "@/lib/queries/insurance";
 import { getContactsForScheme } from "@/lib/queries/contacts";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getActivityForScheme } from "@/lib/queries/activity-log";
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { DocumentsTabContent } from "@/components/documents/documents-tab-content";
+import { SchemeDetailHeader } from "@/components/scheme-detail-header";
 import { SchemeForm } from "../scheme-form";
 import { DeleteSchemeButton } from "./delete-button";
 import { SchemeTabs } from "./scheme-tabs";
@@ -63,44 +62,47 @@ export default async function SchemeDetailPage({
     (m) => m.role === "COMMITTEE",
   ).length;
 
+  const schemeImages = (scheme.images ?? []).map((img) => ({
+    id: img.id,
+    url: img.url,
+    caption: img.caption ?? null,
+  }));
+
+  const addressLine = `${scheme.address}, ${scheme.suburb}, ${scheme.postcode}`;
+  const fullAddress = `${scheme.address}, ${scheme.suburb}, ${scheme.state} ${scheme.postcode}`;
+
+  const navButtons = [
+    { label: "Lots / Owners", href: `/adviser/schemes/${id}?tab=lots` },
+    { label: "Financials", href: `/adviser/schemes/${id}/levies/new` },
+    { label: "Compliance", href: `/adviser/schemes/${id}/compliance/new` },
+    { label: "Insurance", href: `/adviser/schemes/${id}/insurance/new` },
+    { label: "Conversations", href: `/adviser/schemes/${id}/announcements/new` },
+    { label: "Document", href: `/adviser/schemes/${id}?tab=documents` },
+    { label: "Work Order", href: `/adviser/schemes/${id}/work-orders/new` },
+    { label: "Meetings", href: `/adviser/schemes/${id}/meetings/new` },
+    { label: "Budget", href: `/adviser/schemes/${id}/funds/new` },
+    { label: "Notes", href: `/adviser/schemes/${id}/contacts/new` },
+    { label: "Invoices", href: `/adviser/schemes/${id}/levies/new` },
+  ];
+
   return (
     <div className="max-w-5xl">
-      <PageHeader
-        title={scheme.name}
-        description={`${scheme.planNumber} · ${scheme.suburb}, ${scheme.state} ${scheme.postcode}`}
+      <SchemeDetailHeader
         backHref="/adviser/schemes"
         backLabel="Schemes"
+        planNumber={scheme.planNumber}
+        addressLine={addressLine}
+        fullAddress={fullAddress}
+        details={[
+          { label: "State", value: scheme.state },
+          { label: "Total Lots", value: scheme.totalLots },
+          { label: "Building class", value: scheme.buildingClass },
+          { label: "Total UOE", value: scheme.totalEntitlement },
+          { label: "Building type", value: scheme.buildingType },
+        ]}
+        images={schemeImages}
+        navButtons={navButtons}
       />
-
-      {/* Quick stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <StatCard
-          label="Lots"
-          value={scheme.totalLots}
-          accent="bg-adviser"
-        />
-        <StatCard
-          label="Entitlement"
-          value={scheme.totalEntitlement}
-          accent="bg-adviser"
-        />
-        <StatCard
-          label="Owners"
-          value={ownerCount}
-          accent="bg-owner"
-        />
-        <StatCard
-          label="Committee"
-          value={committeeCount}
-          accent="bg-committee"
-        />
-      </div>
-
-      <div className="mb-8">
-        <Button href={`/adviser/schemes/${id}/members`} variant="secondary">
-          Manage Members &amp; Invitations
-        </Button>
-      </div>
 
       <SchemeTabs>
         {{

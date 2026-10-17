@@ -2,8 +2,8 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { SchemeDetailHeader } from "@/components/scheme-detail-header";
 
 export default async function OwnerSchemePage() {
   const profile = await getCurrentProfile();
@@ -42,47 +42,56 @@ export default async function OwnerSchemePage() {
   }
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader
-        title="My Scheme"
-        description="Details of the Owners Corporation you belong to."
-      />
-
+    <div className="max-w-5xl">
       {schemes.map((scheme) => {
         const myMembership = scheme.memberships[0];
         const myLot = myMembership?.lot;
 
+        const schemeImages = (scheme.images ?? []).map((img) => ({
+          id: img.id,
+          url: img.url,
+          caption: img.caption ?? null,
+        }));
+
+        const addressLine = `${scheme.address}, ${scheme.suburb}, ${scheme.postcode}`;
+        const fullAddress = `${scheme.address}, ${scheme.suburb}, ${scheme.state} ${scheme.postcode}`;
+
+        const navButtons = [
+          { label: "Lots / Owners", href: "/owner/scheme/lots" },
+          { label: "Financials", href: "/owner/scheme/financials" },
+          { label: "Compliance", href: "/owner/scheme/compliance" },
+          { label: "Insurance", href: "/owner/scheme/insurance" },
+          { label: "Conversations", href: "/owner/scheme/conversations" },
+          { label: "Document", href: "/owner/scheme/documents" },
+          { label: "Work Order", href: "/owner/scheme/work-orders" },
+          { label: "Meetings", href: "/owner/scheme/meetings" },
+          { label: "Budget", href: "/owner/scheme/budget" },
+          { label: "Notes", href: "/owner/scheme/notes" },
+          { label: "Invoices", href: "/owner/scheme/invoices" },
+        ];
+
         return (
           <div key={scheme.id} className="mb-8">
-            {/* Scheme overview */}
-            <Card className="mb-4">
-              <CardHeader
-                title={scheme.name}
-                description={`${scheme.planNumber} · ${scheme.address}, ${scheme.suburb}, ${scheme.state} ${scheme.postcode}`}
-              />
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-                <StatCard
-                  label="Total Lots"
-                  value={scheme.totalLots}
-                  accent="bg-owner"
-                />
-                <StatCard
-                  label="Entitlement"
-                  value={scheme.totalEntitlement}
-                  accent="bg-owner"
-                />
-                <StatCard
-                  label="FY Ends"
-                  value={scheme.financialYearEnd}
-                  accent="bg-owner"
-                />
-              </div>
-            </Card>
+            <SchemeDetailHeader
+              backHref="/owner"
+              backLabel="Dashboard"
+              planNumber={scheme.planNumber}
+              addressLine={addressLine}
+              fullAddress={fullAddress}
+              details={[
+                { label: "State", value: scheme.state },
+                { label: "Total Lots", value: scheme.totalLots },
+                { label: "Building class", value: scheme.buildingClass },
+                { label: "Total UOE", value: scheme.totalEntitlement },
+                { label: "Building type", value: scheme.buildingType },
+              ]}
+              images={schemeImages}
+              navButtons={navButtons}
+            />
 
             {/* My lot details */}
             {myLot && (
-              <Card>
+              <Card className="mt-4">
                 <CardHeader
                   title="My Lot"
                   description="Your lot details within this scheme."
