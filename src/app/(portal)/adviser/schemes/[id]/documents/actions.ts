@@ -146,15 +146,31 @@ export async function uploadFileAction(
       return { id: "", error: `Upload failed: ${uploadError.message}` };
     }
 
+    // Read optional metadata from form data
+    const category = (formData.get("category") as string) || "OTHER";
+    const documentType = (formData.get("documentType") as string) || undefined;
+    const strataPlan = (formData.get("strataPlan") as string) || undefined;
+    const schedule = (formData.get("schedule") as string) || undefined;
+    const lotNumber = (formData.get("lotNumber") as string) || undefined;
+    const supplier = (formData.get("supplier") as string) || undefined;
+    const comments = (formData.get("comments") as string) || undefined;
+    const title = file.name.replace(/\.[^.]+$/, "");
+
     const doc = await createDocument({
       schemeId,
-      title: file.name.replace(/\.[^.]+$/, ""),
-      category: "OTHER",
+      title,
+      category,
+      documentType,
       fileUrl: storagePath,
       fileName: file.name,
       fileSize: file.size,
       mimeType: file.type || undefined,
       uploadedBy: profile.id,
+      strataPlan,
+      schedule,
+      lotNumber,
+      supplier,
+      comments,
     });
 
     await logActivity({
@@ -163,7 +179,7 @@ export async function uploadFileAction(
       action: "DOCUMENT_UPLOADED",
       entityType: "Document",
       entityId: doc.id,
-      metadata: { title: file.name, category: "OTHER", fileName: file.name },
+      metadata: { title, category, fileName: file.name },
     });
 
     return { id: doc.id };

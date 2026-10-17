@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DocumentUploadModal } from "./document-upload-modal";
@@ -10,6 +10,16 @@ import {
   updateDocumentMetadataAction,
   removeDocumentAction,
 } from "@/app/(portal)/adviser/schemes/[id]/documents/actions";
+
+export type DocumentMetadata = {
+  category: string;
+  documentType: string;
+  strataPlan: string;
+  schedule: string;
+  lotNumber: string;
+  supplier: string;
+  comments: string;
+};
 
 type DocumentRecord = {
   id: string;
@@ -55,6 +65,11 @@ export function DocumentsTabContent({
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [, startTransition] = useTransition();
 
+  // Sync documents state when server data changes (after router.refresh)
+  useEffect(() => {
+    setDocuments(initialDocuments);
+  }, [initialDocuments]);
+
   const getPublicUrl = useCallback(
     (storagePath: string) => {
       return `${supabaseUrl}/storage/v1/object/public/documents/${storagePath}`;
@@ -63,7 +78,7 @@ export function DocumentsTabContent({
   );
 
   const handleFilesReady = useCallback(
-    async (files: File[]) => {
+    async (files: File[], metadata: DocumentMetadata) => {
       setShowUploadModal(false);
       setUploading(true);
       setUploadProgress({ current: 0, total: files.length });
@@ -77,6 +92,13 @@ export function DocumentsTabContent({
 
         const fd = new FormData();
         fd.append("file", files[i]);
+        fd.append("category", metadata.category || "OTHER");
+        if (metadata.documentType) fd.append("documentType", metadata.documentType);
+        if (metadata.strataPlan) fd.append("strataPlan", metadata.strataPlan);
+        if (metadata.schedule) fd.append("schedule", metadata.schedule);
+        if (metadata.lotNumber) fd.append("lotNumber", metadata.lotNumber);
+        if (metadata.supplier) fd.append("supplier", metadata.supplier);
+        if (metadata.comments) fd.append("comments", metadata.comments);
 
         const result = await uploadFileAction(schemeId, fd);
         if (result.id) {
@@ -354,6 +376,7 @@ export function DocumentsTabContent({
         open={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         onFilesReady={handleFilesReady}
+        schemePlanNumber={schemePlanNumber}
       />
     </div>
   );
