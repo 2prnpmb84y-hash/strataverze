@@ -1,0 +1,459 @@
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
+import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+
+/** Cast an ISO string to the Prisma 8 TimestampString branded type. */
+function toTimestamp(value: string): TimestampString<3> {
+  return value as unknown as TimestampString<3>;
+}
+
+// ─── Income and Expenditure Report ─────────────────────────────
+
+export interface IncomeExpenseLineItem {
+  accountCode: string;
+  accountName: string;
+  fundName: string;
+  accountType: string;
+  currentAmount: number;
+  comparativeAmount: number;
+}
+
+export interface IncomeExpenseReport {
+  incomeLines: IncomeExpenseLineItem[];
+  expenseLines: IncomeExpenseLineItem[];
+  totalIncome: number;
+  totalExpenses: number;
+  netSurplus: number;
+  comparativeTotalIncome: number;
+  comparativeTotalExpenses: number;
+  comparativeNetSurplus: number;
+}
+
+/**
+ * Generate an income and expenditure report for a scheme and fund.
+ * Uses posted journal entries only.
+ */
+export async function getIncomeExpenseReport(
+  schemeId: string,
+  fundId: string | null,
+  startDate: string,
+  endDate: string,
+  compStartDate: string,
+  compEndDate: string,
+): Promise<IncomeExpenseReport> {
+  // Fetch all posted journal entries in the current period
+  const currentEntries = await db.orm.public.JournalEntry
+    .where((je) =>
+      and(
+        je.schemeId.eq(schemeId),
+        je.status.eq("POSTED"),
+        je.transactionDate.gte(toTimestamp(startDate)),
+        je.transactionDate.lte(toTimestamp(endDate)),
+      ),
+    )
+    .include("lines", (l) => l.include("accountCode").include("fund"))
+    .all();
+
+  // Fetch comparative period entries
+  const compEntries = await db.orm.public.JournalEntry
+    .where((je) =>
+      and(
+        je.schemeId.eq(schemeId),
+        je.status.eq("POSTED"),
+        je.transactionDate.gte(toTimestamp(compStartDate)),
+        je.transactionDate.lte(toTimestamp(compEndDate)),
+      ),
+    )
+    .include("lines", (l) => l.include("accountCode").include("fund"))
+    .all();
+
+  // Aggregate by account code for current period
+  const currentTotals = aggregateByAccount(currentEntries, fundId);
+  const compTotals = aggregateByAccount(compEntries, fundId);
+
+  // Build report lines
+  const allCodes = new Set([
+    ...Object.keys(currentTotals),
+    ...Object.keys(compTotals),
+  ]);
+
+  const incomeLines: IncomeExpenseLineItem[] = [];
+  const expenseLines: IncomeExpenseLineItem[] = [];
+
+  for (const code of allCodes) {
+    const current = currentTotals[code];
+    const comp = compTotals[code];
+    const accountType = current?.accountType ?? comp?.accountType ?? "";
+
+    if (accountType !== "INCOME" && accountType !== "EXPENSE") continue;
+
+    const line: IncomeExpenseLineItem = {
+      accountCode: current?.accountCode ?? comp?.accountCode ?? code,
+      accountName: current?.accountName ?? comp?.accountName ?? "",
+      fundName: current?.fundName ?? comp?.fundName ?? "",
+      accountType,
+      currentAmount: current?.amount ?? 0,
+      comparativeAmount: comp?.amount ?? 0,
+    };
+
+    if (accountType === "INCOME") {
+      incomeLines.push(line);
+    } else {
+      expenseLines.push(line);
+    }
+  }
+
+  // Sort by account code
+  incomeLines.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+  expenseLines.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+
+  const totalIncome = incomeLines.reduce((s, l) => s + l.currentAmount, 0);
+  const totalExpenses = expenseLines.reduce((s, l) => s + l.currentAmount, 0);
+  const comparativeTotalIncome = incomeLines.reduce(
+    (s, l) => s + l.comparativeAmount,
+    0,
+  );
+  const comparativeTotalExpenses = expenseLines.reduce(
+    (s, l) => s + l.comparativeAmount,
+    0,
+  );
+
+  return {
+    incomeLines,
+    expenseLines,
+    totalIncome,
+    totalExpenses,
+    netSurplus: totalIncome - totalExpenses,
+    comparativeTotalIncome,
+    comparativeTotalExpenses,
+    comparativeNetSurplus: comparativeTotalIncome - comparativeTotalExpenses,
+  };
+}
+
+interface AccountAggregate {
+  accountCode: string;
+  accountName: string;
+  fundName: string;
+  accountType: string;
+  amount: number;
+}
+
+function aggregateByAccount(
+  entries: Array<{
+    lines: Array<{
+      accountCode: { code: unknown; name: unknown; accountType: unknown } | null;
+      fund: { name: unknown } | null;
+      fundId: string;
+      debit: unknown;
+      credit: unknown;
+    }>;
+  }>,
+  fundId: string | null,
+): Record<string, AccountAggregate> {
+  const totals: Record<string, AccountAggregate> = {};
+
+  for (const entry of entries) {
+    for (const line of entry.lines) {
+      if (fundId && line.fundId !== fundId) continue;
+      if (!line.accountCode) continue;
+
+      const code = String(line.accountCode.code);
+      const accountType = String(line.accountCode.accountType);
+
+      if (!totals[code]) {
+        totals[code] = {
+          accountCode: code,
+          accountName: String(line.accountCode.name),
+          fundName: line.fund ? String(line.fund.name) : "",
+          accountType,
+          amount: 0,
+        };
+      }
+
+      // For income accounts: credits increase, debits decrease
+      // For expense accounts: debits increase, credits decrease
+      const debit = Number(line.debit ?? 0);
+      const credit = Number(line.credit ?? 0);
+
+      if (accountType === "INCOME") {
+        totals[code].amount += credit - debit;
+      } else if (accountType === "EXPENSE") {
+        totals[code].amount += debit - credit;
+      }
+    }
+  }
+
+  return totals;
+}
+
+// ─── Aged Arrears Report ────────────────────────────────────────
+
+export interface AgedArrearsItem {
+  lotNumber: string;
+  unitNumber: string;
+  ownerName: string;
+  current: number;
+  days30: number;
+  days60: number;
+  days90: number;
+  days90Plus: number;
+  total: number;
+  interestCharged: number;
+}
+
+/**
+ * Generate an aged arrears report for outstanding levies.
+ */
+export async function getAgedArrearsReport(
+  schemeId: string,
+  asAtDate: string,
+): Promise<AgedArrearsItem[]> {
+  // Fetch all levy notices with outstanding balances
+  const notices = await db.orm.public.LevyNotice
+    .where((ln) => ln.schemeId.eq(schemeId))
+    .include("lot")
+    .all();
+
+  const asAt = new Date(asAtDate);
+  const lotArrears: Record<string, AgedArrearsItem> = {};
+
+  for (const notice of notices) {
+    const balance = Number(notice.balanceOutstanding ?? 0);
+    if (balance <= 0) continue;
+
+    const dueDate = new Date(String(notice.dueDate));
+    const daysOverdue = Math.floor(
+      (asAt.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    const lotId = notice.lotId ?? "unknown";
+    if (!lotArrears[lotId]) {
+      // Get lot owner info
+      const lot = notice.lot;
+      lotArrears[lotId] = {
+        lotNumber: lot ? String(lot.lotNumber) : "",
+        unitNumber: lot ? String(lot.unitNumber ?? "") : "",
+        ownerName: "", // Will be populated below
+        current: 0,
+        days30: 0,
+        days60: 0,
+        days90: 0,
+        days90Plus: 0,
+        total: 0,
+        interestCharged: Number(notice.interestCharged ?? 0),
+      };
+    }
+
+    if (daysOverdue <= 0) {
+      lotArrears[lotId].current += balance;
+    } else if (daysOverdue <= 30) {
+      lotArrears[lotId].days30 += balance;
+    } else if (daysOverdue <= 60) {
+      lotArrears[lotId].days60 += balance;
+    } else if (daysOverdue <= 90) {
+      lotArrears[lotId].days90 += balance;
+    } else {
+      lotArrears[lotId].days90Plus += balance;
+    }
+    lotArrears[lotId].total += balance;
+    lotArrears[lotId].interestCharged += Number(notice.interestCharged ?? 0);
+  }
+
+  // Populate owner names from lot memberships
+  const lotIds = Object.keys(lotArrears);
+  if (lotIds.length > 0) {
+    for (const lotId of lotIds) {
+      const lot = await db.orm.public.Lot
+        .where((l) => l.id.eq(lotId))
+        .include("memberships", (m) =>
+          m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
+            .include("profile"),
+        )
+        .first();
+
+      if (lot && lot.memberships.length > 0 && lot.memberships[0].profile) {
+        const profile = lot.memberships[0].profile;
+        lotArrears[lotId].ownerName = [
+          String(profile.firstName ?? ""),
+          String(profile.lastName ?? ""),
+        ]
+          .filter(Boolean)
+          .join(" ");
+      }
+    }
+  }
+
+  return Object.values(lotArrears).sort((a, b) =>
+    a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true }),
+  );
+}
+
+// ─── Levy Register Report ───────────────────────────────────────
+
+export interface LevyRegisterItem {
+  noticeNumber: string;
+  lotNumber: string;
+  unitNumber: string;
+  ownerName: string;
+  fundName: string;
+  dueDate: string;
+  amountDue: number;
+  amountPaid: number;
+  balanceOutstanding: number;
+  status: string;
+}
+
+/**
+ * Generate a levy register report.
+ */
+export async function getLevyRegisterReport(
+  schemeId: string,
+  fundId: string | null,
+  startDate: string | null,
+  endDate: string | null,
+  status: string | null,
+): Promise<LevyRegisterItem[]> {
+  let query = db.orm.public.LevyNotice.where((ln) =>
+    ln.schemeId.eq(schemeId),
+  );
+
+  if (startDate) {
+    query = query.where((ln) =>
+      ln.dueDate.gte(toTimestamp(startDate)),
+    );
+  }
+  if (endDate) {
+    query = query.where((ln) =>
+      ln.dueDate.lte(toTimestamp(endDate)),
+    );
+  }
+  if (status) {
+    query = query.where((ln) => ln.status.eq(status));
+  }
+
+  const notices = await query
+    .include("lot")
+    .include("levySchedule", (ls) => ls.include("fund"))
+    .orderBy((ln) => ln.dueDate.desc())
+    .limit(500)
+    .all();
+
+  const items: LevyRegisterItem[] = [];
+
+  for (const notice of notices) {
+    // Filter by fund if specified
+    if (fundId && notice.levySchedule?.fundId !== fundId) continue;
+
+    // Get owner name
+    let ownerName = "";
+    if (notice.lotId) {
+      const lot = await db.orm.public.Lot
+        .where((l) => l.id.eq(notice.lotId!))
+        .include("memberships", (m) =>
+          m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
+            .include("profile")
+            .limit(1),
+        )
+        .first();
+      if (lot && lot.memberships.length > 0 && lot.memberships[0].profile) {
+        const p = lot.memberships[0].profile;
+        ownerName = [String(p.firstName ?? ""), String(p.lastName ?? "")]
+          .filter(Boolean)
+          .join(" ");
+      }
+    }
+
+    items.push({
+      noticeNumber: String(notice.noticeNumber ?? ""),
+      lotNumber: notice.lot ? String(notice.lot.lotNumber) : "",
+      unitNumber: notice.lot ? String(notice.lot.unitNumber ?? "") : "",
+      ownerName,
+      fundName: notice.levySchedule?.fund
+        ? String(notice.levySchedule.fund.name)
+        : "",
+      dueDate: String(notice.dueDate),
+      amountDue: Number(notice.amountDue ?? 0),
+      amountPaid: Number(notice.amountPaid ?? 0),
+      balanceOutstanding: Number(notice.balanceOutstanding ?? 0),
+      status: String(notice.status),
+    });
+  }
+
+  return items;
+}
+
+// ─── Bank Reconciliation Report ─────────────────────────────────
+
+export interface BankReconciliationReport {
+  openingBalance: number;
+  receipts: number;
+  payments: number;
+  closingBankBalance: number;
+  unmatchedBankItems: number;
+  matchedItems: number;
+  reconciledItems: number;
+  excludedItems: number;
+}
+
+/**
+ * Generate a bank reconciliation summary report.
+ */
+export async function getBankReconciliationReport(
+  bankAccountId: string,
+): Promise<BankReconciliationReport> {
+  const bankAccount = await db.orm.public.SchemeBankAccount
+    .where((ba) => ba.id.eq(bankAccountId))
+    .first();
+
+  if (!bankAccount) {
+    return {
+      openingBalance: 0,
+      receipts: 0,
+      payments: 0,
+      closingBankBalance: 0,
+      unmatchedBankItems: 0,
+      matchedItems: 0,
+      reconciledItems: 0,
+      excludedItems: 0,
+    };
+  }
+
+  const openingBalance = Number(bankAccount.lastReconciledBalance ?? 0);
+
+  const transactions = await db.orm.public.BankTransaction
+    .where((t) => t.bankAccountId.eq(bankAccountId))
+    .all();
+
+  let receipts = 0;
+  let payments = 0;
+  let unmatchedBankItems = 0;
+  let matchedItems = 0;
+  let reconciledItems = 0;
+  let excludedItems = 0;
+
+  for (const txn of transactions) {
+    const amount = Number(txn.amount);
+    if (amount >= 0) {
+      receipts += amount;
+    } else {
+      payments += Math.abs(amount);
+    }
+
+    const status = String(txn.reconciliationStatus);
+    if (status === "UNMATCHED") unmatchedBankItems++;
+    else if (status === "MATCHED") matchedItems++;
+    else if (status === "RECONCILED") reconciledItems++;
+    else if (status === "EXCLUDED") excludedItems++;
+  }
+
+  return {
+    openingBalance,
+    receipts,
+    payments,
+    closingBankBalance: openingBalance + receipts - payments,
+    unmatchedBankItems,
+    matchedItems,
+    reconciledItems,
+    excludedItems,
+  };
+}
