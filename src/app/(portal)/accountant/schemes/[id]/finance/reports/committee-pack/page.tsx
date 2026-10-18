@@ -4,6 +4,7 @@ import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access
 import { getCommitteeReportingPack } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { CommitteePackClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/committee-pack/committee-pack-client";
+import { connection } from "next/server";
 
 export default async function CommitteePackPage({
   params,
@@ -16,6 +17,7 @@ export default async function CommitteePackPage({
     endDate?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   await requireFinancialReadAccess(id);
   const sp = await searchParams;

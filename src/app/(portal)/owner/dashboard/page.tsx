@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { StaticMap } from "@/components/ui/static-map";
 import { FinancialCard } from "@/components/ui/financial-card";
+import { connection } from "next/server";
 
 const statusLabels: Record<string, string> = {
   OPEN: "Open",
@@ -44,6 +45,7 @@ const quickActions = [
 ];
 
 export default async function OwnerDashboard() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

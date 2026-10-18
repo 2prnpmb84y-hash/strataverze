@@ -6,6 +6,7 @@ import { getBankReconciliationReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BankReconciliationClient } from "./bank-reconciliation-client";
+import { connection } from "next/server";
 
 export default async function BankReconciliationReportPage({
   params,
@@ -14,6 +15,7 @@ export default async function BankReconciliationReportPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ account?: string; asAt?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { account: selectedAccountId, asAt } = await searchParams;
   const profile = await getCurrentProfile();

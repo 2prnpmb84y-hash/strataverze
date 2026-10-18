@@ -5,6 +5,7 @@ import { getSupplierInvoiceById } from "@/lib/queries/supplier-invoices";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InvoiceActions } from "./invoice-actions";
+import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -44,6 +45,7 @@ function DetailItem({
   label: string;
   value: string | null | undefined;
 }) {
+  await connection();
   return (
     <div>
       <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

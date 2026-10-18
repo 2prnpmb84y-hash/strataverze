@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getGstSummaryReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { GstSummaryClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/gst-summary/gst-summary-client";
+import { connection } from "next/server";
 
 export default async function AccountantGstSummaryPage({
   params,
@@ -16,6 +17,7 @@ export default async function AccountantGstSummaryPage({
     endDate?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
 

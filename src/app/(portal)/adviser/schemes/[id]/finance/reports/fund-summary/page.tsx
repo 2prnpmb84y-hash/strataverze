@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getFundSummaryReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundSummaryClient } from "./fund-summary-client";
+import { connection } from "next/server";
 
 export default async function FundSummaryPage({
   params,
@@ -12,6 +13,7 @@ export default async function FundSummaryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ startDate?: string; endDate?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { startDate: startParam, endDate: endParam } = await searchParams;
   const profile = await getCurrentProfile();

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -28,6 +28,9 @@ export const metadata: Metadata = {
   title: "StrataVerze",
   description: "Owner-first strata management platform for Australian Owners Corporations",
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
   themeColor: "#00D4BF",
 };
 

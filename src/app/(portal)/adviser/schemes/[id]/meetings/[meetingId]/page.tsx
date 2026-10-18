@@ -9,12 +9,14 @@ import { MeetingForm } from "../meeting-form";
 import { DeleteMeetingButton } from "./delete-meeting-button";
 import { MeetingStatusButton } from "./meeting-status-button";
 import { MotionSection } from "./motion-section";
+import { connection } from "next/server";
 
 export default async function MeetingDetailPage({
   params,
 }: {
   params: Promise<{ id: string; meetingId: string }>;
 }) {
+  await connection();
   const { id, meetingId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

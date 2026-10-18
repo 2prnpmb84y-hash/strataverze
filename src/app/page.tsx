@@ -610,17 +610,17 @@ export default function LandingPage() {
               </h4>
               <ul className="flex flex-col gap-2.5 text-sm text-white/60">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#platform" className="hover:text-white transition-colors">
                     About
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#early-access" className="hover:text-white transition-colors">
                     Contact
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a href="#early-access" className="hover:text-white transition-colors">
                     Careers
                   </a>
                 </li>
@@ -639,13 +639,13 @@ export default function LandingPage() {
               &copy; 2026 StrataVerze Pty Ltd. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-xs text-white/40">
-              <a href="#" className="hover:text-white/60 transition-colors">
+              <Link href="/privacy" className="hover:text-white/60 transition-colors">
                 Privacy Policy
-              </a>
-              <a href="#" className="hover:text-white/60 transition-colors">
+              </Link>
+              <Link href="/terms" className="hover:text-white/60 transition-colors">
                 Terms of Service
-              </a>
-              <a href="#" className="hover:text-white/60 transition-colors">
+              </Link>
+              <a href="#early-access" className="hover:text-white/60 transition-colors">
                 Accessibility
               </a>
             </div>

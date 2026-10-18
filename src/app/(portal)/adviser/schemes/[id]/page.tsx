@@ -22,12 +22,14 @@ import { SchemeForm } from "../scheme-form";
 import { DeleteSchemeButton } from "./delete-button";
 import { SchemeTabs } from "./scheme-tabs";
 import { StrataRollTable } from "./strata-roll-table";
+import { connection } from "next/server";
 
 export default async function SchemeDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;
@@ -35,18 +37,33 @@ export default async function SchemeDetailPage({
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
-  const lots = await getLotsForScheme(id);
-  const strataRollRows = await getStrataRollData(id);
-  const levies = await getLeviesForScheme(id);
-  const meetings = await getMeetingsForScheme(id);
-  const documents = await getDocumentsForScheme(id);
-  const workOrders = await getWorkOrdersForScheme(id);
-  const complianceItems = await getComplianceForScheme(id);
-  const announcements = await getAnnouncementsForScheme(id, { includeExpired: true });
-  const bylaws = await getBylawsForScheme(id);
-  const insurancePolicies = await getInsuranceForScheme(id);
-  const contacts = await getContactsForScheme(id);
-  const activities = await getActivityForScheme(id, 20);
+  const [
+    lots,
+    strataRollRows,
+    levies,
+    meetings,
+    documents,
+    workOrders,
+    complianceItems,
+    announcements,
+    bylaws,
+    insurancePolicies,
+    contacts,
+    activities,
+  ] = await Promise.all([
+    getLotsForScheme(id),
+    getStrataRollData(id),
+    getLeviesForScheme(id),
+    getMeetingsForScheme(id),
+    getDocumentsForScheme(id),
+    getWorkOrdersForScheme(id),
+    getComplianceForScheme(id),
+    getAnnouncementsForScheme(id, { includeExpired: true }),
+    getBylawsForScheme(id),
+    getInsuranceForScheme(id),
+    getContactsForScheme(id),
+    getActivityForScheme(id, 20),
+  ]);
 
   // Check the current user is an adviser on this scheme
   const isAdviser = scheme.memberships.some(

@@ -4,6 +4,7 @@ import { getActivityForSchemes } from "@/lib/queries/activity-log";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { connection } from "next/server";
 
 const actionLabels: Record<string, string> = {
   LEVY_CREATED: "New levy created",
@@ -65,6 +66,7 @@ function formatTimeAgo(date: Date): string {
 }
 
 export default async function OwnerNotificationsPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

@@ -6,6 +6,7 @@ import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { getBudgetLinesForScheme, getBudgetVsActual } from "@/lib/queries/budget";
 import { PageHeader } from "@/components/ui/page-header";
 import { BudgetClient } from "./budget-client";
+import { connection } from "next/server";
 
 export default async function BudgetPage({
   params,
@@ -14,6 +15,7 @@ export default async function BudgetPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ year?: string; fund?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { year: yearParam, fund: fundParam } = await searchParams;
   const profile = await getCurrentProfile();

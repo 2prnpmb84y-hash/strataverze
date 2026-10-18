@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getAvailablePortals, hasCommitteeRole } from "@/lib/queries/profiles";
 import { getPendingInvitationsForEmail } from "@/lib/queries/invitations";
@@ -14,6 +15,8 @@ export default async function PortalLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await connection();
+
   const supabase = await createClient();
 
   const {

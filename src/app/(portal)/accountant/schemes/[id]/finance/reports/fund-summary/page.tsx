@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getFundSummaryReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundSummaryClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/fund-summary/fund-summary-client";
+import { connection } from "next/server";
 
 export default async function AccountantFundSummaryPage({
   params,
@@ -12,6 +13,7 @@ export default async function AccountantFundSummaryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ startDate?: string; endDate?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { startDate: startParam, endDate: endParam } = await searchParams;
 

@@ -15,6 +15,7 @@ const protectedPrefixes = [
   "/owner",
   "/committee",
   "/adviser",
+  "/accountant",
   "/supplier",
   "/settings",
   "/invitations",

@@ -5,6 +5,7 @@ import { getFundsForScheme } from "@/lib/queries/funds";
 import { getTrialBalanceReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { TrialBalanceClient } from "./trial-balance-client";
+import { connection } from "next/server";
 
 export default async function TrialBalancePage({
   params,
@@ -13,6 +14,7 @@ export default async function TrialBalancePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ fund?: string; asAtDate?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { fund: fundFilter, asAtDate } = await searchParams;
   const profile = await getCurrentProfile();

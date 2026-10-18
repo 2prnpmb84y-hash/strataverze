@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getCommitteeReportingPack } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { CommitteePackClient } from "./committee-pack-client";
+import { connection } from "next/server";
 
 export default async function CommitteePackPage({
   params,
@@ -16,6 +17,7 @@ export default async function CommitteePackPage({
     endDate?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
   const profile = await getCurrentProfile();

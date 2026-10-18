@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getGstSummaryReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { GstSummaryClient } from "./gst-summary-client";
+import { connection } from "next/server";
 
 export default async function GstSummaryPage({
   params,
@@ -16,6 +17,7 @@ export default async function GstSummaryPage({
     endDate?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
   const profile = await getCurrentProfile();
