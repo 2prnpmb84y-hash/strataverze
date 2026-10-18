@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { getFundsForScheme } from "@/lib/queries/funds";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -145,9 +146,10 @@ export default async function ChartOfAccountsPage({
                       gstApplicable: boolean;
                       fund: { name: string } | null;
                     }) => (
-                      <div
+                      <Link
                         key={account.id}
-                        className={`grid grid-cols-[80px_1fr_120px_140px_50px] gap-4 py-3 items-center text-sm ${
+                        href={`/adviser/schemes/${id}/finance/accounts/${account.id}`}
+                        className={`grid grid-cols-[80px_1fr_120px_140px_50px] gap-4 py-3 items-center text-sm hover:bg-muted/50 -mx-2 px-2 rounded-lg transition-colors ${
                           !account.isActive ? "opacity-50" : ""
                         }`}
                       >
@@ -192,7 +194,7 @@ export default async function ChartOfAccountsPage({
                             }
                           />
                         </div>
-                      </div>
+                      </Link>
                     )
                   )}
                 </div>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getFinancialSuppliersForScheme } from "@/lib/queries/supplier-invoices";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,9 +55,10 @@ export default async function SuppliersPage({
 
           <div className="divide-y divide-border">
             {suppliers.map((supplier) => (
-              <div
+              <Link
                 key={String(supplier.id)}
-                className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_1fr_1fr_80px] gap-2 sm:gap-4 px-6 py-4 items-center"
+                href={`/adviser/schemes/${id}/finance/suppliers/${String(supplier.id)}`}
+                className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_1fr_1fr_80px] gap-2 sm:gap-4 px-6 py-4 items-center hover:bg-muted/50 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="font-medium text-foreground truncate">
@@ -98,7 +100,7 @@ export default async function SuppliersPage({
                 <div className="text-sm text-muted-foreground text-right">
                   {String(supplier.paymentTerms ?? 30)}d
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </Card>

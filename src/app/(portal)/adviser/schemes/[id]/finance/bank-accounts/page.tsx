@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,8 @@ export default async function BankAccountsPage({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {bankAccounts.map((account) => (
-            <Card key={account.id}>
+            <Link key={account.id} href={`/adviser/schemes/${id}/finance/bank-accounts/${account.id}`} className="block">
+            <Card className="hover:border-primary-300 transition-colors">
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -120,6 +122,7 @@ export default async function BankAccountsPage({
                 </div>
               </div>
             </Card>
+            </Link>
           ))}
         </div>
       )}
