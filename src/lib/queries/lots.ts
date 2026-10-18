@@ -193,16 +193,33 @@ export async function getLotDetail(lotId: string) {
  * Fetch strata roll data for a scheme: lots with owners and levy financials.
  */
 export async function getStrataRollData(schemeId: string, limit = 500) {
-  const lots = await db.orm.public.Lot
-    .where((l) => l.schemeId.eq(schemeId))
-    .include("memberships", (m) =>
-      m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
-        .include("profile"),
-    )
-    .include("levyItems", (li) => li.include("levy"))
-    .orderBy((l) => l.lotNumber.asc())
-    .limit(limit)
-    .all();
+  let lots;
+  try {
+    lots = await db.orm.public.Lot
+      .where((l) => l.schemeId.eq(schemeId))
+      .include("memberships", (m) =>
+        m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
+          .include("profile"),
+      )
+      .include("levyItems", (li) => li.include("levy"))
+      .include("journalLines")
+      .include("levyNotices")
+      .orderBy((l) => l.lotNumber.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Fallback if journal_lines or levy_notices tables do not exist yet
+    lots = await db.orm.public.Lot
+      .where((l) => l.schemeId.eq(schemeId))
+      .include("memberships", (m) =>
+        m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
+          .include("profile"),
+      )
+      .include("levyItems", (li) => li.include("levy"))
+      .orderBy((l) => l.lotNumber.asc())
+      .limit(limit)
+      .all();
+  }
 
   return lots.map((lot) => {
     const owners = lot.memberships.map((m) => {
@@ -229,12 +246,30 @@ export async function getStrataRollData(schemeId: string, limit = 500) {
       paidTotal += paid;
     }
 
-    // Opening balance: placeholder (no dedicated field yet)
-    const opening = 0;
+    // Opening balance: sum of all prior journal line debits minus credits for this lot
+    // This represents the balance carried forward (levies raised minus payments received)
+    const lotData = lot as typeof lot & {
+      journalLines?: Array<{ debit?: unknown; credit?: unknown }>;
+      levyNotices?: Array<{ interestCharged?: unknown }>;
+    };
+    const lotJournalLines = lotData.journalLines ?? [];
+    let journalDebit = 0;
+    let journalCredit = 0;
+    for (const jl of lotJournalLines) {
+      journalDebit += Number(jl.debit ?? 0);
+      journalCredit += Number(jl.credit ?? 0);
+    }
+    // Opening = net debit balance from journal lines (positive = amount owed)
+    const opening = journalDebit - journalCredit;
     // Closing = Opening + Annual + Special - Paid
     const closing = opening + annualTotal + specialTotal - paidTotal;
-    // Interest: placeholder (no dedicated field yet)
-    const interestPaid = 0;
+    // Interest: sum of interest charged on overdue levy notices for this lot
+    const lotNotices = lotData.levyNotices ?? [];
+    const interestPaid = lotNotices.reduce(
+      (sum: number, ln: { interestCharged?: unknown }) =>
+        sum + Number(ln.interestCharged ?? 0),
+      0,
+    );
 
     return {
       id: lot.id,
