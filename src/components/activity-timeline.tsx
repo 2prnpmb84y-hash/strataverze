@@ -1,3 +1,5 @@
+import { formatLotLabel } from "@/lib/format";
+
 const ACTION_LABELS: Record<string, string> = {
   LEVY_CREATED: "created a levy",
   LEVY_ISSUED: "issued a levy",
@@ -106,7 +108,7 @@ function getMetadataDetail(action: string, metadata: Record<string, unknown> | n
       if (metadata.name) return String(metadata.name);
       return null;
     case "LOT_CREATED":
-      if (metadata.lotNumber) return `Lot ${metadata.lotNumber}`;
+      if (metadata.lotNumber) return formatLotLabel(String(metadata.lotNumber));
       return null;
     default:
       return null;

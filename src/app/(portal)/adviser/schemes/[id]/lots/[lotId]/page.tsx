@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { LotForm } from "../lot-form";
 import { DeleteLotButton } from "./delete-lot-button";
+import { formatLotLabel } from "@/lib/format";
 import { OwnerAssignment } from "./owner-assignment";
 import { LotDetailTabs } from "./lot-detail-tabs";
 import { LotFinancials } from "./lot-financials";
@@ -43,7 +44,7 @@ export default async function LotDetailPage({
   return (
     <div className="max-w-5xl">
       <PageHeader
-        title={`Lot ${lot.lotNumber}${lot.unitNumber ? ` / Unit ${lot.unitNumber}` : ""}`}
+        title={`${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` / Unit ${lot.unitNumber}` : ""}`}
         description={`${scheme.name} · ${scheme.planNumber}`}
         backHref={`/adviser/schemes/${id}?tab=lots`}
         backLabel="Strata Roll"

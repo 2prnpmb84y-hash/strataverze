@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DocumentActions } from "./document-actions";
 import { connection } from "next/server";
+import { formatLotLabel } from "@/lib/format";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
@@ -165,7 +166,7 @@ export default async function DocumentDetailPage({
               {doc.lot && (
                 <LinkedRecord
                   label="Lot"
-                  value={`Lot ${String(doc.lot.lotNumber)}${doc.lot.unitNumber ? ` (Unit ${String(doc.lot.unitNumber)})` : ""}`}
+                  value={`${formatLotLabel(doc.lot.lotNumber)}${doc.lot.unitNumber ? ` (Unit ${String(doc.lot.unitNumber)})` : ""}`}
                 />
               )}
               {doc.supplier && (

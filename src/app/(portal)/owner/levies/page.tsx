@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots, getLevyItemsForLot } from "@/lib/queries/levies";
 import { PageHeader } from "@/components/ui/page-header";
+import { formatLotLabel } from "@/lib/format";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -48,7 +49,7 @@ export default async function OwnerLeviesPage() {
   const lotLabels = new Map(
     lotEntries.map((e) => [
       e.lotId,
-      `Lot ${e.lotNumber}${e.unitNumber ? ` (Unit ${e.unitNumber})` : ""}`,
+      `${formatLotLabel(e.lotNumber)}${e.unitNumber ? ` (Unit ${e.unitNumber})` : ""}`,
     ]),
   );
 

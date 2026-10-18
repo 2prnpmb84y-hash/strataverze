@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
+import { formatLotLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { selectScheme } from "@/lib/actions/scheme-selection";
 
@@ -195,7 +196,7 @@ export function SchemeGrid({
                   </span>
                   {scheme.lotNumber && (
                     <span>
-                      {/^lot\s/i.test(scheme.lotNumber) ? scheme.lotNumber : `Lot ${scheme.lotNumber}`}
+                      {formatLotLabel(scheme.lotNumber)}
                       {scheme.unitNumber ? ` / Unit ${scheme.unitNumber}` : ""}
                     </span>
                   )}
