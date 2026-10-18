@@ -1,5 +1,5 @@
 import { db } from "@/prisma/db";
-import { and, or } from "@prisma/orm-postgres/orm-client";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */

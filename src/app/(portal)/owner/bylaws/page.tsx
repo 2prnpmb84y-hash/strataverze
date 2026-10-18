@@ -2,7 +2,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getBylawsForSchemes } from "@/lib/queries/bylaws";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { connection } from "next/server";
 
 const statusLabels: Record<string, string> = {

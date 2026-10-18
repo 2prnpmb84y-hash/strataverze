@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createJournalEntryAction, ActionState } from "../actions";
+import { createJournalEntryAction } from "../actions";
 import {
   FormField,
   SelectField,

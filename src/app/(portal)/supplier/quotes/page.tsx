@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getOpenQuoteRequests } from "@/lib/queries/supplier";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { connection } from "next/server";
 
 export default async function QuoteRequestsPage() {

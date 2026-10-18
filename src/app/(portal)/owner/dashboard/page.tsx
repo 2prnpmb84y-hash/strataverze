@@ -101,10 +101,6 @@ export default async function OwnerDashboard() {
     }
   }
 
-  const activeWorkOrders = workOrders.filter(
-    (wo) => wo.status === "OPEN" || wo.status === "IN_PROGRESS",
-  );
-
   const recentWorkOrders = workOrders.slice(0, 5);
 
   const fullAddress = `${scheme.address}, ${scheme.suburb} ${scheme.state} ${scheme.postcode}`;

@@ -4,8 +4,6 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getFundsForScheme } from "@/lib/queries/funds";
 import { getJournalEntriesForScheme } from "@/lib/queries/journal-entries";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { IncomeExpenditureClient } from "./income-expenditure-client";
 import { connection } from "next/server";
 

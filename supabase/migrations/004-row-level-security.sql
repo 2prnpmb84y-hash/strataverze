@@ -13,6 +13,10 @@
 -- Run this in Supabase SQL Editor AFTER Migration 3 (financial tables).
 -- ============================================================================
 
+-- PREREQUISITE: Run this statement SEPARATELY before executing this migration:
+--   ALTER TYPE "PortalRole" ADD VALUE IF NOT EXISTS 'ACCOUNTANT';
+-- (ALTER TYPE ... ADD VALUE cannot run inside a transaction block.)
+
 -- Helper function: get the profile ID for the current auth user
 CREATE OR REPLACE FUNCTION public.current_profile_id()
 RETURNS uuid

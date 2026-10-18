@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getInvoicesBySupplier } from "@/lib/queries/supplier";
 import { Card, CardHeader } from "@/components/ui/card";

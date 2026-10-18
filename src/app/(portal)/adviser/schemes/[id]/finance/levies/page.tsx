@@ -1,5 +1,4 @@
 import { getLevySchedulesForScheme, getOverdueLevyNotices } from "@/lib/queries/levy-schedules";
-import { getFundsForScheme } from "@/lib/queries/funds";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";

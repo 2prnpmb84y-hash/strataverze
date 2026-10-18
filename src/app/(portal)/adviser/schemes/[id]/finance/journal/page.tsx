@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getJournalEntriesForScheme } from "@/lib/queries/journal-entries";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";

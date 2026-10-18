@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SelectField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
@@ -142,7 +141,6 @@ export function BankImportForm({
   schemeId: string;
   bankAccounts: BankAccount[];
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState<ImportStep>("select");
   const [selectedAccountId, setSelectedAccountId] = useState("");

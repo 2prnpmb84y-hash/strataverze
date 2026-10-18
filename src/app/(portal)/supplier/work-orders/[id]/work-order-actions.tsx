@@ -7,11 +7,9 @@ import { Card, CardHeader } from "@/components/ui/card";
 export function WorkOrderActions({
   workOrderId,
   currentStatus,
-  schemeId: _schemeId,
 }: {
   workOrderId: string;
   currentStatus: string;
-  schemeId: string;
 }) {
   const [statusState, statusAction, statusPending] = useActionState(
     (_prev: { error?: string }, formData: FormData) => {

@@ -125,7 +125,6 @@ export default async function SupplierWorkOrderDetailPage({
       <WorkOrderActions
         workOrderId={id}
         currentStatus={workOrder.status}
-        schemeId={workOrder.schemeId}
       />
 
       {/* Comments */}

@@ -5,7 +5,6 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getFinancialDocumentById } from "@/lib/queries/financial-documents";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { DocumentActions } from "./document-actions";
 import { connection } from "next/server";
 

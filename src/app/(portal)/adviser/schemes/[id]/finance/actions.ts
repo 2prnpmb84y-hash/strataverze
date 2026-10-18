@@ -1193,7 +1193,7 @@ export async function recordInvoicePaymentAction(
   invoiceId: string,
   amount: number,
   paymentDate: string,
-  paymentReference?: string,
+  _paymentReference?: string,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);

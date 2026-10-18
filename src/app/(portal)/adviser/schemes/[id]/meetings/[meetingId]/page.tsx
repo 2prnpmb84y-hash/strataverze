@@ -33,7 +33,6 @@ export default async function MeetingDetailPage({
   if (!meeting || meeting.schemeId !== id) notFound();
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
-  const isPast = scheduledDate < new Date();
   const motionCount = meeting.motions.length;
 
   const votedMotions = meeting.motions.filter(

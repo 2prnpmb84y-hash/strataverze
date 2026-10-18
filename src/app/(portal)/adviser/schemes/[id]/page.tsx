@@ -71,14 +71,6 @@ export default async function SchemeDetailPage({
   );
   if (!isAdviser) notFound();
 
-  const ownerCount = scheme.memberships.filter(
-    (m) => m.role === "OWNER",
-  ).length;
-
-  const committeeCount = scheme.memberships.filter(
-    (m) => m.role === "COMMITTEE",
-  ).length;
-
   const schemeImages = (scheme.images ?? []).map((img) => ({
     id: img.id,
     url: img.url,
@@ -586,13 +578,6 @@ export default async function SchemeDetailPage({
         {workOrders.length > 0 ? (
           <div className="flex flex-col gap-2">
             {workOrders.map((wo) => {
-              const priorityStyle: Record<string, string> = {
-                LOW: "bg-gray-100 text-gray-700",
-                MEDIUM: "bg-blue-100 text-blue-700",
-                HIGH: "bg-orange-100 text-orange-700",
-                URGENT: "bg-red-100 text-red-700",
-              };
-
               const woStatusStyle: Record<string, string> = {
                 OPEN: "bg-blue-100 text-blue-700",
                 IN_PROGRESS: "bg-yellow-100 text-yellow-700",

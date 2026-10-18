@@ -3,9 +3,6 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots, getLevyItemsForLot } from "@/lib/queries/levies";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { OwnerStatementTable } from "./statement-table";
 import { connection } from "next/server";
 

@@ -384,7 +384,7 @@ describe("MIGRATION_TEMPLATES", () => {
   });
 
   it("all templates have requiredFields and defaultMappings", () => {
-    for (const [key, template] of Object.entries(MIGRATION_TEMPLATES)) {
+    for (const [, template] of Object.entries(MIGRATION_TEMPLATES)) {
       expect(template.requiredFields.length).toBeGreaterThan(0);
       expect(Object.keys(template.defaultMappings).length).toBeGreaterThan(0);
     }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { getFundsForScheme } from "@/lib/queries/funds";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { seedChartOfAccountsAction } from "../actions";
 import { connection } from "next/server";

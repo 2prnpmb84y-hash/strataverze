@@ -179,7 +179,7 @@ function MotionItem({
   schemeId,
   meetingId,
   meetingStatus,
-  currentProfileId,
+  currentProfileId: _currentProfileId,
   motionTypeLabels,
   statusStyle,
 }: {
@@ -200,10 +200,6 @@ function MotionItem({
   const abstainCount = motion.votes.filter(
     (v) => v.voteValue === "ABSTAIN",
   ).length;
-
-  const hasVoted = motion.votes.some(
-    (v) => v.profile.email !== undefined,
-  );
 
   function handleStatusChange(status: string, outcome?: string) {
     startTransition(async () => {

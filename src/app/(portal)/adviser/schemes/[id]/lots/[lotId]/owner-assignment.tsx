@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import {
   searchProfilesAction,
   assignOwnerAction,

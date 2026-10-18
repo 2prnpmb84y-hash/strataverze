@@ -33,8 +33,6 @@ export default async function OwnerLeviesPage() {
   const schemes = await getSchemesForOwner(profile.id);
   if (schemes.length === 0) notFound();
 
-  const schemeNames = new Map(schemes.map((s) => [s.id, String(s.name)]));
-
   // Get the owner's lot IDs from their memberships
   const lotEntries = schemes.flatMap((s) =>
     s.memberships

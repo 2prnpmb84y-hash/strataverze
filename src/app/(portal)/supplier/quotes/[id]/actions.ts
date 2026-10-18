@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
 import {
   requireAuth,
   requireSchemeMembership,

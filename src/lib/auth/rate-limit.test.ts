@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { rateLimit, authRateLimit } from "./rate-limit";
-
 describe("rateLimit", () => {
   beforeEach(() => {
     // Reset the module to clear the in-memory store between tests
