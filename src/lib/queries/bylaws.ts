@@ -11,20 +11,22 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Fetch all by-laws for a scheme, ordered by by-law number.
  */
-export async function getBylawsForScheme(schemeId: string) {
+export async function getBylawsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.ByLaw
     .where((b) => and(b.schemeId.eq(schemeId), b.deletedAt.eq(null)))
     .orderBy((b) => b.bylawNumber.asc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Fetch active by-laws for a scheme (excludes repealed).
  */
-export async function getActiveBylawsForScheme(schemeId: string) {
+export async function getActiveBylawsForScheme(schemeId: string, limit = 200) {
   const all = await db.orm.public.ByLaw
     .where((b) => and(b.schemeId.eq(schemeId), b.deletedAt.eq(null)))
     .orderBy((b) => b.bylawNumber.asc())
+    .limit(limit)
     .all();
   return all.filter((b) => b.status !== "REPEALED");
 }
@@ -42,6 +44,7 @@ export async function getBylawsForSchemes(
     .where((b) => and(b.schemeId.in(schemeIds), b.deletedAt.eq(null)))
     .include("scheme")
     .orderBy((b) => b.bylawNumber.asc())
+    .limit(500)
     .all();
 
   if (options?.includeRepealed) return all;

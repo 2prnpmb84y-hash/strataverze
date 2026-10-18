@@ -52,6 +52,7 @@ export async function getIncomeExpenseReport(
       ),
     )
     .include("lines", (l) => l.include("accountCode").include("fund"))
+    .limit(2000)
     .all();
 
   // Fetch comparative period entries
@@ -65,6 +66,7 @@ export async function getIncomeExpenseReport(
       ),
     )
     .include("lines", (l) => l.include("accountCode").include("fund"))
+    .limit(2000)
     .all();
 
   // Aggregate by account code for current period
@@ -212,6 +214,7 @@ export async function getAgedArrearsReport(
   const notices = await db.orm.public.LevyNotice
     .where((ln) => ln.schemeId.eq(schemeId))
     .include("lot")
+    .limit(2000)
     .all();
 
   const asAt = new Date(asAtDate);
@@ -422,6 +425,7 @@ export async function getBankReconciliationReport(
 
   const transactions = await db.orm.public.BankTransaction
     .where((t) => t.bankAccountId.eq(bankAccountId))
+    .limit(5000)
     .all();
 
   let receipts = 0;

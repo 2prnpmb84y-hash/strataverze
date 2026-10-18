@@ -254,6 +254,7 @@ export async function getJournalEntriesBySource(
   schemeId: string,
   sourceType: string,
   sourceId: string,
+  limit = 200,
 ) {
   return db.orm.public.JournalEntry
     .where((je) =>
@@ -265,6 +266,7 @@ export async function getJournalEntriesBySource(
     )
     .include("lines", (l) => l.include("accountCode").include("fund"))
     .orderBy((je) => je.transactionDate.desc())
+    .limit(limit)
     .all();
 }
 
@@ -291,11 +293,14 @@ export async function getUnmatchedJournalEntries(
     .all();
 
   // Filter out entries that are already matched to bank transactions
-  const matchedEntryIds = new Set<string>();
-  const bankTxns = await db.orm.public.BankTransaction
-    .where((t) => t.schemeId.eq(schemeId))
+  // Only fetch transactions that actually have a match (much smaller set)
+  const matchedTxns = await db.orm.public.BankTransaction
+    .where((t) => and(t.schemeId.eq(schemeId), t.matchedJournalEntryId.isNotNull()))
+    .limit(1000)
     .all();
-  for (const txn of bankTxns) {
+
+  const matchedEntryIds = new Set<string>();
+  for (const txn of matchedTxns) {
     if (txn.matchedJournalEntryId) {
       matchedEntryIds.add(txn.matchedJournalEntryId);
     }
@@ -307,8 +312,15 @@ export async function getUnmatchedJournalEntries(
 export async function getNextEntryNumber(schemeId: string): Promise<string> {
   const entries = await db.orm.public.JournalEntry
     .where((je) => je.schemeId.eq(schemeId))
+    .orderBy((je) => je.entryNumber.desc())
+    .limit(1)
     .all();
 
-  const nextNum = entries.length + 1;
+  if (entries.length === 0) return "JE-0001";
+
+  // Parse the numeric portion of the last entry number
+  const last = String(entries[0].entryNumber);
+  const match = last.match(/(\d+)$/);
+  const nextNum = match ? parseInt(match[1], 10) + 1 : 1;
   return `JE-${String(nextNum).padStart(4, "0")}`;
 }

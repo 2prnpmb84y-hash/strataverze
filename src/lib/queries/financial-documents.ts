@@ -78,30 +78,33 @@ export async function getFinancialDocumentById(documentId: string) {
 /**
  * Fetch all documents linked to a levy notice.
  */
-export async function getDocumentsForLevyNotice(levyNoticeId: string) {
+export async function getDocumentsForLevyNotice(levyNoticeId: string, limit = 100) {
   return db.orm.public.FinancialDocument
     .where((d) => d.levyNoticeId.eq(levyNoticeId))
     .orderBy((d) => d.uploadedAt.desc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Fetch all documents linked to a supplier invoice.
  */
-export async function getDocumentsForSupplierInvoice(supplierInvoiceId: string) {
+export async function getDocumentsForSupplierInvoice(supplierInvoiceId: string, limit = 100) {
   return db.orm.public.FinancialDocument
     .where((d) => d.supplierInvoiceId.eq(supplierInvoiceId))
     .orderBy((d) => d.uploadedAt.desc())
+    .limit(limit)
     .all();
 }
 
 /**
  * Fetch all documents linked to a bank transaction.
  */
-export async function getDocumentsForBankTransaction(bankTransactionId: string) {
+export async function getDocumentsForBankTransaction(bankTransactionId: string, limit = 100) {
   return db.orm.public.FinancialDocument
     .where((d) => d.bankTransactionId.eq(bankTransactionId))
     .orderBy((d) => d.uploadedAt.desc())
+    .limit(limit)
     .all();
 }
 

@@ -196,14 +196,17 @@ export async function getSchemeNotificationCounts(
       .where((l) => l.schemeId.in(schemeIds))
       .where((l) => l.status.eq("ISSUED"))
       .include("items")
+      .limit(1000)
       .all(),
     db.orm.public.WorkOrder
       .where((wo) => wo.schemeId.in(schemeIds))
       .where((wo) => wo.status.in(["OPEN", "IN_PROGRESS"]))
+      .limit(1000)
       .all(),
     db.orm.public.Meeting
       .where((m) => m.schemeId.in(schemeIds))
       .where((m) => m.status.eq("SCHEDULED"))
+      .limit(500)
       .all(),
   ]);
 
@@ -252,11 +255,13 @@ export async function getMemberEmailsForScheme(
         .where((m) => m.role.eq(role))
         .where((m) => m.isActive.eq(true))
         .include("profile")
+        .limit(500)
         .all()
     : await db.orm.public.SchemeMembership
         .where((m) => m.schemeId.eq(schemeId))
         .where((m) => m.isActive.eq(true))
         .include("profile")
+        .limit(500)
         .all();
 
   return memberships

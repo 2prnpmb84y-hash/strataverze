@@ -26,16 +26,19 @@ function toVarchar<N extends number>(value: string): Varchar<N> {
 export async function getFinancialSuppliersForScheme(
   schemeId: string,
   includeInactive = false,
+  limit = 500,
 ) {
   if (includeInactive) {
     return db.orm.public.Supplier
       .where((s) => s.schemeId.eq(schemeId))
       .orderBy((s) => s.companyName.asc())
+      .limit(limit)
       .all();
   }
   return db.orm.public.Supplier
     .where((s) => and(s.schemeId.eq(schemeId), s.isActive.eq(true)))
     .orderBy((s) => s.companyName.asc())
+    .limit(limit)
     .all();
 }
 
@@ -329,7 +332,7 @@ export async function linkJournalEntry(
  * An invoice is overdue when its status is APPROVED or PARTIALLY_PAID
  * and its due date has passed.
  */
-export async function getOverdueInvoices(schemeId: string) {
+export async function getOverdueInvoices(schemeId: string, limit = 500) {
   const now = toTimestamp(new Date().toISOString());
   return db.orm.public.SupplierInvoice
     .where((si) =>
@@ -341,6 +344,7 @@ export async function getOverdueInvoices(schemeId: string) {
     )
     .include("supplier")
     .orderBy((si) => si.dueDate.asc())
+    .limit(limit)
     .all();
 }
 

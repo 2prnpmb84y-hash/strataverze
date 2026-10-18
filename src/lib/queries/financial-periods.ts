@@ -38,10 +38,11 @@ export async function getFinancialPeriodById(periodId: string) {
 /**
  * Fetch all OPEN periods for a scheme, ordered by start date ascending.
  */
-export async function getOpenPeriods(schemeId: string) {
+export async function getOpenPeriods(schemeId: string, limit = 50) {
   return db.orm.public.FinancialPeriod
     .where((fp) => and(fp.schemeId.eq(schemeId), fp.status.eq("OPEN")))
     .orderBy((fp) => fp.startDate.asc())
+    .limit(limit)
     .all();
 }
 

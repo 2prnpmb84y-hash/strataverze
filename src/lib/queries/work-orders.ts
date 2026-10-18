@@ -126,11 +126,12 @@ export async function addComment(data: {
 /**
  * Fetch all comments for a work order with author profiles, ordered by createdAt ascending.
  */
-export async function getCommentsForWorkOrder(workOrderId: string) {
+export async function getCommentsForWorkOrder(workOrderId: string, limit = 200) {
   return db.orm.public.Comment
     .where((c) => c.workOrderId.eq(workOrderId))
     .include("author")
     .orderBy((c) => c.createdAt.asc())
+    .limit(limit)
     .all();
 }
 

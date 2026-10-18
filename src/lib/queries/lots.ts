@@ -192,7 +192,7 @@ export async function getLotDetail(lotId: string) {
 /**
  * Fetch strata roll data for a scheme: lots with owners and levy financials.
  */
-export async function getStrataRollData(schemeId: string) {
+export async function getStrataRollData(schemeId: string, limit = 500) {
   const lots = await db.orm.public.Lot
     .where((l) => l.schemeId.eq(schemeId))
     .include("memberships", (m) =>
@@ -201,6 +201,7 @@ export async function getStrataRollData(schemeId: string) {
     )
     .include("levyItems", (li) => li.include("levy"))
     .orderBy((l) => l.lotNumber.asc())
+    .limit(limit)
     .all();
 
   return lots.map((lot) => {

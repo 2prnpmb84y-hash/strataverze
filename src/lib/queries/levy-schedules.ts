@@ -333,8 +333,14 @@ export async function getOverdueLevyNotices(schemeId: string, limit = 500) {
 export async function getNextNoticeNumber(schemeId: string): Promise<string> {
   const existing = await db.orm.public.LevyNotice
     .where((ln) => ln.schemeId.eq(schemeId))
+    .orderBy((ln) => ln.noticeNumber.desc())
+    .limit(1)
     .all();
 
-  const nextNum = existing.length + 1;
+  if (existing.length === 0) return "LN-0001";
+
+  const last = String(existing[0].noticeNumber);
+  const match = last.match(/(\d+)$/);
+  const nextNum = match ? parseInt(match[1], 10) + 1 : 1;
   return `LN-${String(nextNum).padStart(4, "0")}`;
 }

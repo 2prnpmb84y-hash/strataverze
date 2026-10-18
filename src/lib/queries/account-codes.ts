@@ -41,6 +41,7 @@ export async function getAccountCodeById(accountCodeId: string) {
 export async function getAccountCodesByType(
   schemeId: string,
   accountType: string,
+  limit = 200,
 ) {
   return db.orm.public.AccountCode
     .where((a) =>
@@ -52,6 +53,7 @@ export async function getAccountCodesByType(
     )
     .include("fund")
     .orderBy((a) => a.code.asc())
+    .limit(limit)
     .all();
 }
 
@@ -61,6 +63,7 @@ export async function getAccountCodesByType(
 export async function getAccountCodesByFund(
   schemeId: string,
   fundId: string,
+  limit = 200,
 ) {
   return db.orm.public.AccountCode
     .where((a) =>
@@ -71,6 +74,7 @@ export async function getAccountCodesByFund(
       ),
     )
     .orderBy((a) => a.code.asc())
+    .limit(limit)
     .all();
 }
 
@@ -148,7 +152,7 @@ export async function deactivateAccountCode(accountCodeId: string) {
 /**
  * Fetch all system accounts for a scheme.
  */
-export async function getSystemAccounts(schemeId: string) {
+export async function getSystemAccounts(schemeId: string, limit = 100) {
   return db.orm.public.AccountCode
     .where((a) =>
       and(
@@ -159,5 +163,6 @@ export async function getSystemAccounts(schemeId: string) {
     )
     .include("fund")
     .orderBy((a) => a.code.asc())
+    .limit(limit)
     .all();
 }
