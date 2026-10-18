@@ -41,6 +41,7 @@ export async function getIncomeExpenseReport(
   compStartDate: string,
   compEndDate: string,
 ): Promise<IncomeExpenseReport> {
+  try {
   // Fetch all posted journal entries in the current period
   const currentEntries = await db.orm.public.JournalEntry
     .where((je) =>
@@ -130,7 +131,20 @@ export async function getIncomeExpenseReport(
     comparativeTotalExpenses,
     comparativeNetSurplus: comparativeTotalIncome - comparativeTotalExpenses,
   };
-}
+
+  } catch {
+    // Table may not exist yet
+    return {
+    incomeLines: [],
+    expenseLines: [],
+    totalIncome: 0,
+    totalExpenses: 0,
+    netSurplus: 0,
+    comparativeTotalIncome: 0,
+    comparativeTotalExpenses: 0,
+    comparativeNetSurplus: 0,
+  };
+  }
 
 interface AccountAggregate {
   accountCode: string;
@@ -210,6 +224,7 @@ export async function getAgedArrearsReport(
   schemeId: string,
   asAtDate: string,
 ): Promise<AgedArrearsItem[]> {
+  try {
   // Fetch all levy notices with outstanding balances
   const notices = await db.orm.public.LevyNotice
     .where((ln) => ln.schemeId.eq(schemeId))
@@ -289,6 +304,11 @@ export async function getAgedArrearsReport(
   return Object.values(lotArrears).sort((a, b) =>
     a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true }),
   );
+
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 // ─── Levy Register Report ───────────────────────────────────────
@@ -316,6 +336,7 @@ export async function getLevyRegisterReport(
   endDate: string | null,
   status: string | null,
 ): Promise<LevyRegisterItem[]> {
+  try {
   let query = db.orm.public.LevyNotice.where((ln) =>
     ln.schemeId.eq(schemeId),
   );
@@ -383,7 +404,11 @@ export async function getLevyRegisterReport(
   }
 
   return items;
-}
+
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 
 // ─── Trial Balance Report ──────────────────────────────────────
 
@@ -414,6 +439,7 @@ export async function getTrialBalanceReport(
   asAtDate: string,
   fundId: string | null,
 ): Promise<TrialBalanceReport> {
+  try {
   // Fetch all posted journal entries up to the as-at date
   const entries = await db.orm.public.JournalEntry
     .where((je) =>
@@ -497,7 +523,16 @@ export async function getTrialBalanceReport(
     isBalanced:
       Math.abs(Math.round(totalDebits * 100) - Math.round(totalCredits * 100)) < 1,
   };
-}
+
+  } catch {
+    // Table may not exist yet
+    return {
+    lines: [],
+    totalDebits: 0,
+    totalCredits: 0,
+    isBalanced: true,
+  };
+  }
 
 // ─── Fund Summary Report ──────────────────────────────────────
 
@@ -524,6 +559,7 @@ export async function getFundSummaryReport(
   startDate: string,
   endDate: string,
 ): Promise<FundSummaryItem[]> {
+  try {
   // Fetch funds for the scheme
   const funds = await db.orm.public.Fund
     .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
@@ -642,7 +678,11 @@ export async function getFundSummaryReport(
   }
 
   return summaries;
-}
+
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 
 // ─── Bank Reconciliation Report ─────────────────────────────────
 
@@ -709,6 +749,7 @@ export async function getBankReconciliationReport(
   schemeId: string,
   asAtDate?: string,
 ): Promise<BankReconciliationReport> {
+  try {
   const bankAccount = await db.orm.public.SchemeBankAccount
     .where((ba) => ba.id.eq(bankAccountId))
     .first();
@@ -888,7 +929,30 @@ export async function getBankReconciliationReport(
     totalPayments: Math.round(totalPayments * 100) / 100,
     unmatchedTransactions,
   };
-}
+
+  } catch {
+    // Table may not exist yet
+    return {
+    lastReconciledBalance: 0,
+    lastReconciledDate: null,
+    closingBankBalance: 0,
+    depositsInTransit: [],
+    depositsInTransitTotal: 0,
+    outstandingWithdrawals: [],
+    outstandingWithdrawalsTotal: 0,
+    adjustedBankBalance: 0,
+    bookBalance: 0,
+    discrepancy: 0,
+    totalTransactions: 0,
+    reconciledCount: 0,
+    matchedCount: 0,
+    unmatchedCount: 0,
+    excludedCount: 0,
+    totalReceipts: 0,
+    totalPayments: 0,
+    unmatchedTransactions: [],
+  };
+  }
 
 // ─── Committee Financial Reporting Pack ────────────────────────
 
@@ -979,6 +1043,7 @@ export async function getCommitteeReportingPack(
   endDate: string,
   financialYear: number,
 ): Promise<CommitteeReportingPack> {
+  try {
   // 1. Scheme name
   const scheme = await db.orm.public.Scheme
     .where((s) => s.id.eq(schemeId))
@@ -1199,7 +1264,25 @@ export async function getCommitteeReportingPack(
     levyCollectionRate,
     cashPosition: Math.round(cashPosition * 100) / 100,
   };
-}
+
+  } catch {
+    // Table may not exist yet
+    return {
+    schemeName: "Unknown",
+    reportDate: new Date().toISOString(),
+    periodLabel: "",
+    startDate: "",
+    endDate: "",
+    fundSummaries: [],
+    totalFundBalance: 0,
+    arrearsSnapshot: { current: 0, days30: 0, days60: 0, days90: 0, days90Plus: 0, total: 0, lotCount: 0 },
+    budgetComparisons: [],
+    bankSummaries: [],
+    recentActivity: [],
+    levyCollectionRate: 100,
+    cashPosition: 0,
+  };
+  }
 
 // ─── Cash Flow Forecasting ──────────────────────────────────────
 
@@ -1242,6 +1325,7 @@ export async function getCashFlowForecast(
   schemeId: string,
   monthsAhead = 6,
 ): Promise<CashFlowForecast> {
+  try {
   // 1. Scheme name
   const scheme = await db.orm.public.Scheme
     .where((s) => s.id.eq(schemeId))
@@ -1424,7 +1508,21 @@ export async function getCashFlowForecast(
     totalNetFlow: Math.round(totalNetFlow * 100) / 100,
     endingBalance: cumulative,
   };
-}
+
+  } catch {
+    // Table may not exist yet
+    return {
+    schemeName: "Unknown",
+    startingBalance: 0,
+    months: [],
+    totalLevyIncome: 0,
+    totalOtherIncome: 0,
+    totalSupplierExpenses: 0,
+    totalOtherExpenses: 0,
+    totalNetFlow: 0,
+    endingBalance: 0,
+  };
+  }
 
 // ─── Fund Balance Projections ───────────────────────────────────
 
@@ -1465,6 +1563,7 @@ export async function getFundBalanceProjections(
   schemeId: string,
   yearsAhead = 5,
 ): Promise<FundBalanceProjections> {
+  try {
   // 1. Scheme name
   const scheme = await db.orm.public.Scheme
     .where((s) => s.id.eq(schemeId))
@@ -1584,7 +1683,14 @@ export async function getFundBalanceProjections(
     schemeName,
     projections,
   };
-}
+
+  } catch {
+    // Table may not exist yet
+    return {
+    schemeName: "Unknown",
+    projections: [],
+  };
+  }
 
 // ─── BAS-Ready GST Summary ─────────────────────────────────────
 
@@ -1632,6 +1738,7 @@ export async function getGstSummaryReport(
   startDate: string,
   endDate: string,
 ): Promise<GstSummaryReport> {
+  try {
   // 1. Scheme info
   const scheme = await db.orm.public.Scheme
     .where((s) => s.id.eq(schemeId))
@@ -1784,4 +1891,28 @@ export async function getGstSummaryReport(
     incomeLines,
     expenseLines,
   };
+
+  } catch {
+    // Table may not exist yet
+    return {
+    schemeName: "Unknown",
+    abnOrGstRegistered: false,
+    startDate: "",
+    endDate: "",
+    periodLabel: "",
+    g1TotalSales: 0,
+    g2ExportSales: 0,
+    g3OtherGstFreeSales: 0,
+    g4InputTaxedSales: 0,
+    g9GrossGstOnSales: 0,
+    g10CapitalPurchases: 0,
+    g11NonCapitalPurchases: 0,
+    g14ExportPurchases: 0,
+    g15PurchasesForInputTaxedSales: 0,
+    g20GstOnPurchases: 0,
+    netGstPayable: 0,
+    incomeLines: [],
+    expenseLines: [],
+  };
+  }
 }

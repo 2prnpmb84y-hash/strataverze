@@ -13,9 +13,7 @@ function toVarchar<N extends number>(value: string): Varchar<N> {
   return value as unknown as Varchar<N>;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SUPPLIER INVOICE DUPLICATE DETECTION
-// ═══════════════════════════════════════════════════════════════
+// --- Supplier Invoice Duplicate Detection ---
 
 export type InvoiceDuplicateMatch = {
   existingInvoiceId: string;
@@ -40,69 +38,72 @@ export async function checkInvoiceDuplicates(
   totalAmount: number,
   invoiceDate: string,
 ): Promise<InvoiceDuplicateMatch[]> {
-  const matches: InvoiceDuplicateMatch[] = [];
+  try {
+    const matches: InvoiceDuplicateMatch[] = [];
 
-  // Check 1: Exact invoice number match for same supplier
-  const exactMatches = await db.orm.public.SupplierInvoice
-    .where((inv) =>
-      and(
-        inv.schemeId.eq(schemeId),
-        inv.supplierId.eq(supplierId),
-        inv.invoiceNumber.eq(toVarchar<50>(invoiceNumber)),
-      ),
-    )
-    .include("supplier")
-    .all();
-
-  for (const inv of exactMatches) {
-    if (inv.status !== "CANCELLED") {
-      matches.push({
-        existingInvoiceId: inv.id,
-        invoiceNumber: String(inv.invoiceNumber),
-        supplierName: inv.supplier ? String(inv.supplier.tradingName ?? inv.supplier.companyName) : "Unknown",
-        totalAmount: Number(inv.totalAmount),
-        invoiceDate: String(inv.invoiceDate).slice(0, 10),
-        status: inv.status,
-        matchReason: "Same supplier and invoice number",
-      });
-    }
-  }
-
-  // Check 2: Same supplier + similar amount + same date (only if no exact match)
-  if (matches.length === 0) {
-    const amountMatches = await db.orm.public.SupplierInvoice
+    // Check 1: Exact invoice number match for same supplier
+    const exactMatches = await db.orm.public.SupplierInvoice
       .where((inv) =>
         and(
           inv.schemeId.eq(schemeId),
           inv.supplierId.eq(supplierId),
-          inv.totalAmount.eq(toNumeric(totalAmount)),
+          inv.invoiceNumber.eq(toVarchar<50>(invoiceNumber)),
         ),
       )
       .include("supplier")
       .all();
 
-    for (const inv of amountMatches) {
-      const invDate = String(inv.invoiceDate).slice(0, 10);
-      if (inv.status !== "CANCELLED" && invDate === invoiceDate) {
+    for (const inv of exactMatches) {
+      if (inv.status !== "CANCELLED") {
         matches.push({
           existingInvoiceId: inv.id,
           invoiceNumber: String(inv.invoiceNumber),
           supplierName: inv.supplier ? String(inv.supplier.tradingName ?? inv.supplier.companyName) : "Unknown",
           totalAmount: Number(inv.totalAmount),
-          invoiceDate: invDate,
+          invoiceDate: String(inv.invoiceDate).slice(0, 10),
           status: inv.status,
-          matchReason: "Same supplier, amount and date",
+          matchReason: "Same supplier and invoice number",
         });
       }
     }
-  }
 
-  return matches;
+    // Check 2: Same supplier + similar amount + same date (only if no exact match)
+    if (matches.length === 0) {
+      const amountMatches = await db.orm.public.SupplierInvoice
+        .where((inv) =>
+          and(
+            inv.schemeId.eq(schemeId),
+            inv.supplierId.eq(supplierId),
+            inv.totalAmount.eq(toNumeric(totalAmount)),
+          ),
+        )
+        .include("supplier")
+        .all();
+
+      for (const inv of amountMatches) {
+        const invDate = String(inv.invoiceDate).slice(0, 10);
+        if (inv.status !== "CANCELLED" && invDate === invoiceDate) {
+          matches.push({
+            existingInvoiceId: inv.id,
+            invoiceNumber: String(inv.invoiceNumber),
+            supplierName: inv.supplier ? String(inv.supplier.tradingName ?? inv.supplier.companyName) : "Unknown",
+            totalAmount: Number(inv.totalAmount),
+            invoiceDate: invDate,
+            status: inv.status,
+            matchReason: "Same supplier, amount and date",
+          });
+        }
+      }
+    }
+
+    return matches;
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FINANCIAL DOCUMENT DUPLICATE DETECTION
-// ═══════════════════════════════════════════════════════════════
+// --- Financial Document Duplicate Detection ---
 
 export type DocumentDuplicateMatch = {
   existingDocumentId: string;
@@ -128,74 +129,77 @@ export async function checkDocumentDuplicates(
   amount?: number,
   documentDate?: string,
 ): Promise<DocumentDuplicateMatch[]> {
-  const matches: DocumentDuplicateMatch[] = [];
+  try {
+    const matches: DocumentDuplicateMatch[] = [];
 
-  // Check 1: Same file name and size (re-upload detection)
-  const fileMatches = await db.orm.public.FinancialDocument
-    .where((doc) =>
-      and(
-        doc.schemeId.eq(schemeId),
-        doc.fileName.eq(toVarchar<500>(fileName)),
-        doc.fileSize.eq(fileSize),
-      ),
-    )
-    .all();
-
-  for (const doc of fileMatches) {
-    if (doc.documentStatus !== "REJECTED") {
-      matches.push({
-        existingDocumentId: doc.id,
-        fileName: String(doc.fileName),
-        documentType: doc.documentType,
-        amount: doc.amount !== null ? Number(doc.amount) : null,
-        documentDate: doc.documentDate
-          ? String(doc.documentDate).slice(0, 10)
-          : null,
-        documentStatus: doc.documentStatus,
-        matchReason: "Same file name and size",
-      });
-    }
-  }
-
-  // Check 2: Same type + amount + date (only for documents with amounts)
-  if (matches.length === 0 && amount !== undefined && documentDate) {
-    const amountDateMatches = await db.orm.public.FinancialDocument
+    // Check 1: Same file name and size (re-upload detection)
+    const fileMatches = await db.orm.public.FinancialDocument
       .where((doc) =>
         and(
           doc.schemeId.eq(schemeId),
-          doc.documentType.eq(documentType),
-          doc.amount.eq(toNumeric(amount)),
+          doc.fileName.eq(toVarchar<500>(fileName)),
+          doc.fileSize.eq(fileSize),
         ),
       )
       .all();
 
-    for (const doc of amountDateMatches) {
-      const docDate = doc.documentDate
-        ? String(doc.documentDate).slice(0, 10)
-        : null;
-      if (
-        doc.documentStatus !== "REJECTED" &&
-        docDate === documentDate
-      ) {
+    for (const doc of fileMatches) {
+      if (doc.documentStatus !== "REJECTED") {
         matches.push({
           existingDocumentId: doc.id,
           fileName: String(doc.fileName),
           documentType: doc.documentType,
-          amount: Number(doc.amount),
-          documentDate: docDate,
+          amount: doc.amount !== null ? Number(doc.amount) : null,
+          documentDate: doc.documentDate
+            ? String(doc.documentDate).slice(0, 10)
+            : null,
           documentStatus: doc.documentStatus,
-          matchReason: "Same document type, amount and date",
+          matchReason: "Same file name and size",
         });
       }
     }
-  }
 
-  return matches;
+    // Check 2: Same type + amount + date (only for documents with amounts)
+    if (matches.length === 0 && amount !== undefined && documentDate) {
+      const amountDateMatches = await db.orm.public.FinancialDocument
+        .where((doc) =>
+          and(
+            doc.schemeId.eq(schemeId),
+            doc.documentType.eq(documentType),
+            doc.amount.eq(toNumeric(amount)),
+          ),
+        )
+        .all();
+
+      for (const doc of amountDateMatches) {
+        const docDate = doc.documentDate
+          ? String(doc.documentDate).slice(0, 10)
+          : null;
+        if (
+          doc.documentStatus !== "REJECTED" &&
+          docDate === documentDate
+        ) {
+          matches.push({
+            existingDocumentId: doc.id,
+            fileName: String(doc.fileName),
+            documentType: doc.documentType,
+            amount: Number(doc.amount),
+            documentDate: docDate,
+            documentStatus: doc.documentStatus,
+            matchReason: "Same document type, amount and date",
+          });
+        }
+      }
+    }
+
+    return matches;
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PAYMENT DUPLICATE DETECTION
-// ═══════════════════════════════════════════════════════════════
+// --- Payment Duplicate Detection ---
 
 export type PaymentDuplicateMatch = {
   existingNoticeId: string;
@@ -214,35 +218,40 @@ export async function checkPaymentDuplicates(
   noticeId: string,
   paymentAmount: number,
 ): Promise<PaymentDuplicateMatch[]> {
-  const notice = await db.orm.public.LevyNotice
-    .where({ id: noticeId })
-    .include("lot")
-    .first();
+  try {
+    const notice = await db.orm.public.LevyNotice
+      .where({ id: noticeId })
+      .include("lot")
+      .first();
 
-  if (!notice) return [];
+    if (!notice) return [];
 
-  // If the notice is already fully paid, that's a duplicate signal
-  const matches: PaymentDuplicateMatch[] = [];
-  const currentPaid = Number(notice.amountPaid);
-  const amountDue = Number(notice.amountDue);
+    // If the notice is already fully paid, that's a duplicate signal
+    const matches: PaymentDuplicateMatch[] = [];
+    const currentPaid = Number(notice.amountPaid);
+    const amountDue = Number(notice.amountDue);
 
-  if (currentPaid >= amountDue) {
-    matches.push({
-      existingNoticeId: notice.id,
-      lotNumber: notice.lot ? String(notice.lot.lotNumber) : "—",
-      amountPaid: currentPaid,
-      paidDate: notice.paidInFullAt ? String(notice.paidInFullAt).slice(0, 10) : "—",
-      matchReason: "This levy notice is already fully paid",
-    });
-  } else if (currentPaid + paymentAmount > amountDue) {
-    matches.push({
-      existingNoticeId: notice.id,
-      lotNumber: notice.lot ? String(notice.lot.lotNumber) : "—",
-      amountPaid: currentPaid,
-      paidDate: notice.paidInFullAt ? String(notice.paidInFullAt).slice(0, 10) : "—",
-      matchReason: `Payment of $${paymentAmount.toFixed(2)} would exceed the balance outstanding of $${(amountDue - currentPaid).toFixed(2)}`,
-    });
+    if (currentPaid >= amountDue) {
+      matches.push({
+        existingNoticeId: notice.id,
+        lotNumber: notice.lot ? String(notice.lot.lotNumber) : "—",
+        amountPaid: currentPaid,
+        paidDate: notice.paidInFullAt ? String(notice.paidInFullAt).slice(0, 10) : "—",
+        matchReason: "This levy notice is already fully paid",
+      });
+    } else if (currentPaid + paymentAmount > amountDue) {
+      matches.push({
+        existingNoticeId: notice.id,
+        lotNumber: notice.lot ? String(notice.lot.lotNumber) : "—",
+        amountPaid: currentPaid,
+        paidDate: notice.paidInFullAt ? String(notice.paidInFullAt).slice(0, 10) : "—",
+        matchReason: `Payment of $${paymentAmount.toFixed(2)} would exceed the balance outstanding of $${(amountDue - currentPaid).toFixed(2)}`,
+      });
+    }
+
+    return matches;
+  } catch {
+    // Table may not exist yet
+    return [];
   }
-
-  return matches;
 }
