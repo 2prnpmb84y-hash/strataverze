@@ -23,6 +23,8 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
       SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
       DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      RESEND_API_KEY: re_placeholder
+      EMAIL_FROM: noreply@example.com
 
     steps:
       - name: Checkout
@@ -31,7 +33,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
