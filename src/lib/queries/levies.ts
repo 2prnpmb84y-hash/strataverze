@@ -232,3 +232,31 @@ export async function getLevyItemsForLot(lotId: string, limit = 200) {
     .limit(limit)
     .all();
 }
+
+/**
+ * Get levy notices for a specific lot (owner view).
+ * Uses the LevyNotice model which provides richer data than LevyItem.
+ */
+export async function getLevyNoticesForLot(lotId: string, limit = 200) {
+  return db.orm.public.LevyNotice
+    .where((ln) => ln.lotId.eq(lotId))
+    .include("fund")
+    .include("levySchedule")
+    .orderBy((ln) => ln.dueDate.desc())
+    .limit(limit)
+    .all();
+}
+
+/**
+ * Get levy notices for multiple lots (owner view across schemes).
+ */
+export async function getLevyNoticesForLots(lotIds: string[], limit = 500) {
+  if (lotIds.length === 0) return [];
+  return db.orm.public.LevyNotice
+    .where((ln) => ln.lotId.in(lotIds))
+    .include("fund")
+    .include("levySchedule")
+    .orderBy((ln) => ln.dueDate.desc())
+    .limit(limit)
+    .all();
+}

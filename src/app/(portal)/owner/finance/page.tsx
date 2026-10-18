@@ -1,6 +1,6 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
-import { getLevyItemsForLot } from "@/lib/queries/levies";
+import { getLevyNoticesForLots, getLevyItemsForLot } from "@/lib/queries/levies";
 import { getFundsForSchemes } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -19,6 +19,7 @@ const statusStyle: Record<string, string> = {
   ISSUED: "bg-blue-100 text-blue-700",
   PAID: "bg-green-100 text-green-700",
   OVERDUE: "bg-red-100 text-red-700",
+  PARTIAL: "bg-amber-100 text-amber-700",
 };
 
 export default async function OwnerFinancePage() {
@@ -55,59 +56,104 @@ export default async function OwnerFinancePage() {
         lot: m.lot,
       })),
   );
+  const lotIds = lotEntries.map((e) => e.lotId);
 
-  // Fetch levy items and funds in parallel
-  const [allItemArrays, funds] = await Promise.all([
-    Promise.all(lotEntries.map((entry) => getLevyItemsForLot(entry.lotId))),
+  // Fetch levy notices and funds in parallel
+  const [notices, funds] = await Promise.all([
+    getLevyNoticesForLots(lotIds),
     getFundsForSchemes(schemeIds),
   ]);
 
-  const items = allItemArrays.flat();
+  // If no levy notices, fall back to levy items
+  let useNotices = notices.length > 0;
+  let totalDue = 0;
+  let totalPaid = 0;
 
-  // Calculate totals
-  const totalDue = items.reduce((sum, i) => sum + Number(i.amount), 0);
-  const totalPaid = items.reduce((sum, i) => sum + Number(i.paidAmount), 0);
-  const totalOutstanding = totalDue - totalPaid;
-
-  // Group by levy
-  const levyMap = new Map<
-    string,
-    {
-      title: string;
-      dueDate: string;
-      levyType: string;
-      status: string;
-      schemeId: string;
-      items: typeof items;
-    }
-  >();
-
-  for (const item of items) {
-    const levyId = item.levyId;
-    if (!levyMap.has(levyId)) {
-      levyMap.set(levyId, {
-        title: item.levy.title,
-        dueDate: String(item.levy.dueDate),
-        levyType: item.levy.levyType,
-        status: item.levy.status,
-        schemeId: item.levy.schemeId,
-        items: [],
-      });
-    }
-    levyMap.get(levyId)!.items.push(item);
+  interface DisplayLevy {
+    id: string;
+    title: string;
+    dueDate: string;
+    fundName: string;
+    status: string;
+    schemeId: string;
+    amountDue: number;
+    amountPaid: number;
+    balance: number;
+    interestCharged: number;
   }
 
-  const levies = Array.from(levyMap.entries())
-    .map(([id, data]) => ({ id, ...data }))
-    .sort(
-      (a, b) =>
-        new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
-    );
+  const displayLevies: DisplayLevy[] = [];
 
-  const outstandingLevies = levies.filter(
-    (l) => l.status === "ISSUED" || l.status === "OVERDUE",
+  if (useNotices) {
+    for (const notice of notices) {
+      const due = Number(notice.amountDue ?? 0);
+      const paid = Number(notice.amountPaid ?? 0);
+      const balance = Number(notice.balanceOutstanding ?? 0);
+      const interest = Number(notice.interestCharged ?? 0);
+      totalDue += due;
+      totalPaid += paid;
+
+      // Find the scheme for this notice
+      const entry = lotEntries.find((e) => e.lotId === notice.lotId);
+      const schemeId = entry?.schemeId ?? notice.schemeId;
+
+      displayLevies.push({
+        id: notice.id,
+        title: `Levy ${String(notice.noticeNumber)}`,
+        dueDate: String(notice.dueDate),
+        fundName: notice.fund ? String(notice.fund.name) : "",
+        status: String(notice.status).toUpperCase(),
+        schemeId,
+        amountDue: due,
+        amountPaid: paid,
+        balance,
+        interestCharged: interest,
+      });
+    }
+  } else {
+    // Fallback to LevyItem model
+    const allItemArrays = await Promise.all(
+      lotIds.map((lotId) => getLevyItemsForLot(lotId)),
+    );
+    const items = allItemArrays.flat();
+
+    for (const item of items) {
+      const amount = Number(item.amount);
+      const paid = Number(item.paidAmount);
+      totalDue += amount;
+      totalPaid += paid;
+
+      const entry = lotEntries.find((e) => e.lotId === item.lotId);
+      const schemeId = entry?.schemeId ?? item.levy.schemeId;
+
+      displayLevies.push({
+        id: item.id,
+        title: String(item.levy.title),
+        dueDate: String(item.levy.dueDate),
+        fundName: "",
+        status: String(item.status),
+        schemeId,
+        amountDue: amount,
+        amountPaid: paid,
+        balance: amount - paid,
+        interestCharged: 0,
+      });
+    }
+  }
+
+  const totalOutstanding = totalDue - totalPaid;
+  const totalInterest = displayLevies.reduce((s, l) => s + l.interestCharged, 0);
+
+  const outstandingLevies = displayLevies.filter(
+    (l) =>
+      l.status === "ISSUED" ||
+      l.status === "OVERDUE" ||
+      l.status === "PARTIAL" ||
+      l.balance > 0,
   );
-  const paidLevies = levies.filter((l) => l.status === "PAID");
+  const paidLevies = displayLevies.filter(
+    (l) => l.status === "PAID" || (l.balance <= 0 && l.amountDue > 0),
+  );
 
   return (
     <div className="space-y-6">
@@ -117,7 +163,7 @@ export default async function OwnerFinancePage() {
       />
 
       {/* Summary stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           label="Total Levied"
           value={formatCurrency(totalDue)}
@@ -133,6 +179,13 @@ export default async function OwnerFinancePage() {
           value={formatCurrency(totalOutstanding)}
           accent={totalOutstanding > 0 ? "bg-red-500" : "bg-green-500"}
         />
+        {totalInterest > 0 && (
+          <StatCard
+            label="Interest Charged"
+            value={formatCurrency(totalInterest)}
+            accent="bg-amber-500"
+          />
+        )}
       </div>
 
       {/* Fund Balances */}
@@ -174,7 +227,7 @@ export default async function OwnerFinancePage() {
         </Card>
       )}
 
-      {items.length === 0 ? (
+      {displayLevies.length === 0 ? (
         <EmptyState
           title="No levies yet"
           description="No levies have been issued for your lots. Your strata manager will create levy notices when contributions are due."
@@ -191,18 +244,9 @@ export default async function OwnerFinancePage() {
               <div className="flex flex-col gap-2 px-6 pb-6">
                 {outstandingLevies.map((levy) => {
                   const dueDate = new Date(levy.dueDate);
-                  const levyTotal = levy.items.reduce(
-                    (sum, i) => sum + Number(i.amount),
-                    0,
-                  );
-                  const levyPaid = levy.items.reduce(
-                    (sum, i) => sum + Number(i.paidAmount),
-                    0,
-                  );
-                  const levyBalance = levyTotal - levyPaid;
                   const pct =
-                    levyTotal > 0
-                      ? Math.round((levyPaid / levyTotal) * 100)
+                    levy.amountDue > 0
+                      ? Math.round((levy.amountPaid / levy.amountDue) * 100)
                       : 0;
 
                   return (
@@ -225,11 +269,8 @@ export default async function OwnerFinancePage() {
                       </div>
                       <p className="text-xs text-muted-foreground mb-1">
                         {schemeNames.get(levy.schemeId) ?? ""}
-                        {" · "}
-                        {levy.levyType === "ORDINARY"
-                          ? "Ordinary"
-                          : "Special"}{" "}
-                        levy · Due{" "}
+                        {levy.fundName ? ` · ${levy.fundName}` : ""}
+                        {" · Due "}
                         {dueDate.toLocaleDateString("en-AU", {
                           day: "numeric",
                           month: "short",
@@ -241,16 +282,26 @@ export default async function OwnerFinancePage() {
                           Balance due
                         </span>
                         <span className="font-semibold tabular-nums text-red-600">
-                          {formatCurrency(levyBalance)}
+                          {formatCurrency(levy.balance)}
                         </span>
                       </div>
-                      {levyPaid > 0 && (
+                      {levy.interestCharged > 0 && (
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <span className="text-muted-foreground">
+                            Interest charged
+                          </span>
+                          <span className="tabular-nums text-amber-600">
+                            {formatCurrency(levy.interestCharged)}
+                          </span>
+                        </div>
+                      )}
+                      {levy.amountPaid > 0 && (
                         <div className="mt-2">
                           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                             <span>{pct}% paid</span>
                             <span>
-                              {formatCurrency(levyPaid)} of{" "}
-                              {formatCurrency(levyTotal)}
+                              {formatCurrency(levy.amountPaid)} of{" "}
+                              {formatCurrency(levy.amountDue)}
                             </span>
                           </div>
                           <div className="h-1.5 rounded-full bg-border overflow-hidden">
@@ -280,10 +331,6 @@ export default async function OwnerFinancePage() {
               <div className="flex flex-col gap-2 px-6 pb-6">
                 {paidLevies.map((levy) => {
                   const dueDate = new Date(levy.dueDate);
-                  const levyTotal = levy.items.reduce(
-                    (sum, i) => sum + Number(i.amount),
-                    0,
-                  );
 
                   return (
                     <div
@@ -296,6 +343,7 @@ export default async function OwnerFinancePage() {
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {schemeNames.get(levy.schemeId) ?? ""}
+                          {levy.fundName ? ` · ${levy.fundName}` : ""}
                           {" · Paid · "}
                           {dueDate.toLocaleDateString("en-AU", {
                             day: "numeric",
@@ -306,7 +354,7 @@ export default async function OwnerFinancePage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium tabular-nums text-foreground">
-                          {formatCurrency(levyTotal)}
+                          {formatCurrency(levy.amountDue)}
                         </span>
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
                           Paid
