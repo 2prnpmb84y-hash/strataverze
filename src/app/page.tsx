@@ -345,7 +345,7 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Owner Master Controls */}
-          <div className="rounded-2xl border-2 border-primary-400 bg-white overflow-hidden">
+          <div className="rounded-2xl border-2 border-turquoise bg-white overflow-hidden">
             <div className="px-6 py-4 bg-mint-soft border-b border-mint">
               <h3 className="font-heading font-semibold text-ink">
                 Owner Master Controls

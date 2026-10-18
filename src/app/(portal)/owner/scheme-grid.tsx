@@ -162,7 +162,7 @@ export function SchemeGrid({
               type="button"
               onClick={() => handleSelect(scheme.id)}
               disabled={isPending}
-              className="group text-left rounded-[var(--radius-card)] bg-white border border-line overflow-hidden transition-all hover:shadow-md hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
+              className="group text-left rounded-[var(--radius-card)] bg-white border border-line overflow-hidden transition-all hover:shadow-md hover:border-mint focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
             >
               {/* Colour bar */}
               <div className="h-2 bg-turquoise group-hover:bg-mint-soft0 transition-colors" />
@@ -238,7 +238,7 @@ export function SchemeGrid({
               type="button"
               onClick={() => handleSelect(scheme.id)}
               disabled={isPending}
-              className="group text-left flex items-center gap-4 rounded-[var(--radius-card)] bg-white border border-line px-5 py-4 transition-all hover:shadow-md hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
+              className="group text-left flex items-center gap-4 rounded-[var(--radius-card)] bg-white border border-line px-5 py-4 transition-all hover:shadow-md hover:border-mint focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
             >
               {/* Accent dot */}
               <div className="w-3 h-3 rounded-full bg-turquoise shrink-0" />

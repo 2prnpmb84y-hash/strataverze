@@ -128,7 +128,7 @@ export default async function AccountantReportsPage({
             href={`/accountant/schemes/${id}/finance/reports${report.href}`}
             className="block group"
           >
-            <Card className="h-full transition-colors group-hover:border-primary-400">
+            <Card className="h-full transition-colors group-hover:border-turquoise">
               <CardHeader
                 title={report.title}
                 description={report.description}
