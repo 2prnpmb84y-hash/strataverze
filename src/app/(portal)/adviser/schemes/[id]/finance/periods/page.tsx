@@ -8,6 +8,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PeriodActions } from "./period-actions";
+import { connection } from "next/server";
 
 const statusStyles: Record<string, string> = {
   OPEN: "bg-green-100 text-green-700",
@@ -35,6 +36,7 @@ export default async function FinancialPeriodsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

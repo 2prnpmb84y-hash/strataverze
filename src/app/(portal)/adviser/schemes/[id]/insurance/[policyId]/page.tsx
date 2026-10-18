@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InsurancePolicyEditForm } from "../insurance-form";
 import { DeleteInsuranceButton } from "./delete-insurance-button";
+import { connection } from "next/server";
 
 const policyTypeLabels: Record<string, string> = {
   BUILDING: "Building",
@@ -52,6 +53,7 @@ export default async function InsurancePolicyDetailPage({
 }: {
   params: Promise<{ id: string; policyId: string }>;
 }) {
+  await connection();
   const { id, policyId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

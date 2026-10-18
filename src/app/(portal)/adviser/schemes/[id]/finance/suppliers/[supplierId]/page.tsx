@@ -5,6 +5,7 @@ import { getFinancialSupplierById } from "@/lib/queries/supplier-invoices";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -75,6 +76,7 @@ export default async function SupplierDetailPage({
 }: {
   params: Promise<{ id: string; supplierId: string }>;
 }) {
+  await connection();
   const { id, supplierId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

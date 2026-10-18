@@ -6,7 +6,6 @@ import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { OwnerMeetingList } from "@/components/owner-meeting-list";
-
 export default async function OwnerMeetingsPage({
   searchParams,
 }: {

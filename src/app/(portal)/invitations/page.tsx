@@ -4,8 +4,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { InvitationActions } from "./invitation-actions";
 import { db } from "@/prisma/db";
+import { connection } from "next/server";
 
 export default async function InvitationsPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

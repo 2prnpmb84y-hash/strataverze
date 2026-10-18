@@ -4,6 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
+import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -24,6 +25,7 @@ export default async function JournalEntriesPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const entries = await getJournalEntriesForScheme(id);
 

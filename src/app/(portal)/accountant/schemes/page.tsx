@@ -5,12 +5,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { SchemeList } from "@/components/scheme-list";
+import { connection } from "next/server";
 
 export default async function AccountantSchemesPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

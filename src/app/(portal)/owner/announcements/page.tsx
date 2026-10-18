@@ -4,6 +4,7 @@ import { getAnnouncementsForSchemes } from "@/lib/queries/announcements";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { connection } from "next/server";
 
 const priorityLabels: Record<string, string> = {
   NORMAL: "Normal",
@@ -18,6 +19,7 @@ const priorityStyles: Record<string, string> = {
 };
 
 export default async function OwnerAnnouncementsPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

@@ -7,12 +7,14 @@ import { getFundsForScheme } from "@/lib/queries/funds";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
 import { PageHeader } from "@/components/ui/page-header";
 import { MatchingRulesClient } from "./matching-rules-client";
+import { connection } from "next/server";
 
 export default async function MatchingRulesPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

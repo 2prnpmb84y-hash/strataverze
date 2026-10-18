@@ -6,12 +6,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityTimeline } from "@/components/activity-timeline";
+import { connection } from "next/server";
 
 export default async function SchemeActivityPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

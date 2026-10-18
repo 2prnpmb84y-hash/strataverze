@@ -10,7 +10,6 @@ import { connection } from "next/server";
 
 function formatCurrency(value: number): string {
   if (value < 0) {
-  await connection();
     return `($${Math.abs(value).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
   }
   return `$${value.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -32,6 +31,7 @@ export default async function AgedArrearsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

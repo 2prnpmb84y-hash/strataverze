@@ -4,12 +4,14 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getBankAccountById } from "@/lib/queries/bank-accounts";
 import { PageHeader } from "@/components/ui/page-header";
 import { BankAccountEditForm } from "./bank-account-edit-form";
+import { connection } from "next/server";
 
 export default async function EditBankAccountPage({
   params,
 }: {
   params: Promise<{ id: string; bankAccountId: string }>;
 }) {
+  await connection();
   const { id, bankAccountId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

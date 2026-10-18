@@ -2,8 +2,10 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getSchemeNotificationCounts } from "@/lib/queries/schemes";
 import { SchemeGrid } from "./scheme-grid";
+import { connection } from "next/server";
 
 export default async function OwnerSchemePicker() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

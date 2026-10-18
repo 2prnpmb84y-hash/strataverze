@@ -3,12 +3,14 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { PageHeader } from "@/components/ui/page-header";
 import { GeneratePeriodsForm } from "./generate-periods-form";
+import { connection } from "next/server";
 
 export default async function GeneratePeriodsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

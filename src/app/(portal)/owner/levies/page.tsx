@@ -7,6 +7,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { connection } from "next/server";
 
 function formatCurrency(value: number): string {
   if (value < 0) {
@@ -25,6 +26,7 @@ const statusStyle: Record<string, string> = {
 };
 
 export default async function OwnerLeviesPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

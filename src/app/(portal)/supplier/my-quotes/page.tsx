@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getQuotesBySupplier } from "@/lib/queries/supplier";
 import { Card, CardHeader } from "@/components/ui/card";
+import { connection } from "next/server";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   SUBMITTED: { label: "Pending", className: "bg-gold-100 text-gold-500" },
@@ -11,6 +12,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 export default async function MyQuotesPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

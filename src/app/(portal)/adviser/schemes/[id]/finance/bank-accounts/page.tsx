@@ -3,6 +3,7 @@ import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { connection } from "next/server";
 
 function maskAccountNumber(accountNumber: string): string {
   if (accountNumber.length <= 4) return accountNumber;
@@ -34,6 +35,7 @@ export default async function BankAccountsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const bankAccounts = await getBankAccountsForScheme(id);
 

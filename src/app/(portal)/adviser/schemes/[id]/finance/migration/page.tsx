@@ -3,12 +3,14 @@ import { requireSchemeMembership } from "@/lib/auth/require-membership";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { PageHeader } from "@/components/ui/page-header";
 import { MigrationClient } from "./migration-client";
+import { connection } from "next/server";
 
 export default async function MigrationPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   await requireSchemeMembership(id, ["ADVISER"]);
 

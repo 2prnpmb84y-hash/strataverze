@@ -4,8 +4,10 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots } from "@/lib/queries/levies";
 import { PageHeader } from "@/components/ui/page-header";
 import { PaymentUploadForm } from "./payment-upload-form";
+import { connection } from "next/server";
 
 export default async function PaymentUploadPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

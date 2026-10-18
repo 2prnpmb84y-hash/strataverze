@@ -12,12 +12,14 @@ import { OwnerAssignment } from "./owner-assignment";
 import { LotDetailTabs } from "./lot-detail-tabs";
 import { LotFinancials } from "./lot-financials";
 import { LotDocuments } from "./lot-documents";
+import { connection } from "next/server";
 
 export default async function LotDetailPage({
   params,
 }: {
   params: Promise<{ id: string; lotId: string }>;
 }) {
+  await connection();
   const { id, lotId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

@@ -6,12 +6,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InviteForm } from "./invite-form";
 import { RevokeButton } from "./revoke-button";
+import { connection } from "next/server";
 
 export default async function SchemeMembersPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

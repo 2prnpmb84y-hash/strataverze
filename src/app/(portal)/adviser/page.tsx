@@ -5,8 +5,10 @@ import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { getComplianceForSchemes } from "@/lib/queries/compliance";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader } from "@/components/ui/card";
+import { connection } from "next/server";
 
 export default async function AdviserDashboard() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

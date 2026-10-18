@@ -5,12 +5,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Pagination } from "@/components/ui/pagination";
 import { ComplianceList } from "@/components/compliance-list";
+import { connection } from "next/server";
 
 export default async function OwnerCompliancePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await connection();
   const access = await requireCommitteeAccess();
   if (!access) {
     return (

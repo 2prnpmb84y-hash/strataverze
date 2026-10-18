@@ -5,6 +5,7 @@ import { getLevyScheduleById } from "@/lib/queries/levy-schedules";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -55,6 +56,7 @@ export default async function LevyScheduleDetailPage({
 }: {
   params: Promise<{ id: string; scheduleId: string }>;
 }) {
+  await connection();
   const { id, scheduleId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

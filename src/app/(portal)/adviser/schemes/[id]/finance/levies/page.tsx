@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import Link from "next/link";
+import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -26,6 +27,7 @@ export default async function LevySchedulesPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
 
   const [schedules, overdueNotices] = await Promise.all([

@@ -10,6 +10,7 @@ import { DeleteWorkOrderButton } from "./delete-work-order-button";
 import { WorkOrderStatusButton } from "./work-order-status-button";
 import { CommentThread } from "./comment-thread";
 import { CommentForm } from "./comment-form";
+import { connection } from "next/server";
 
 const priorityStyle: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-700",
@@ -40,6 +41,7 @@ export default async function WorkOrderDetailPage({
 }: {
   params: Promise<{ id: string; workOrderId: string }>;
 }) {
+  await connection();
   const { id, workOrderId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

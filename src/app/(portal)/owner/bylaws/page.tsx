@@ -3,6 +3,7 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getBylawsForSchemes } from "@/lib/queries/bylaws";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
+import { connection } from "next/server";
 
 const statusLabels: Record<string, string> = {
   ACTIVE: "Active",
@@ -28,6 +29,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default async function OwnerBylawsPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

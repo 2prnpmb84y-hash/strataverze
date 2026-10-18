@@ -7,12 +7,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { WorkOrderList } from "@/components/work-order-list";
+import { connection } from "next/server";
 
 export default async function OwnerMaintenancePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

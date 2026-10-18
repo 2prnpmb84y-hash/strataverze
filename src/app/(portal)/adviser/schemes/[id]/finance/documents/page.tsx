@@ -4,6 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
+import { connection } from "next/server";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
@@ -64,6 +65,7 @@ export default async function FinanceDocumentsPage({
     verification?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const { type, status, verification } = await searchParams;
 

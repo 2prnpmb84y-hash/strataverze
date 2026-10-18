@@ -4,12 +4,14 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getOverdueLevyNoticesWithInterest } from "@/lib/queries/interest";
 import { PageHeader } from "@/components/ui/page-header";
 import { InterestClient } from "./interest-client";
+import { connection } from "next/server";
 
 export default async function InterestPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

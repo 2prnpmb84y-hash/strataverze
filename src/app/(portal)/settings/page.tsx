@@ -4,8 +4,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
 import { SignOutButton } from "./sign-out-button";
+import { connection } from "next/server";
 
 export default async function SettingsPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 

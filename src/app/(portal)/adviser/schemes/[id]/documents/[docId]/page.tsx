@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DocumentEditForm } from "../document-form";
 import { DeleteDocumentButton } from "./delete-document-button";
+import { connection } from "next/server";
 
 const categoryLabels: Record<string, string> = {
   MINUTES: "Meeting Minutes",
@@ -29,6 +30,7 @@ export default async function DocumentDetailPage({
 }: {
   params: Promise<{ id: string; docId: string }>;
 }) {
+  await connection();
   const { id, docId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

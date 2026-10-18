@@ -5,12 +5,14 @@ import { getAccountCodeById } from "@/lib/queries/account-codes";
 import { getFundsForScheme } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
 import { AccountCodeEditForm } from "./account-code-edit-form";
+import { connection } from "next/server";
 
 export default async function EditAccountCodePage({
   params,
 }: {
   params: Promise<{ id: string; accountId: string }>;
 }) {
+  await connection();
   const { id, accountId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

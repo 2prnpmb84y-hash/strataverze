@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getFundBalanceProjections } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundProjectionsClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/fund-projections/fund-projections-client";
+import { connection } from "next/server";
 
 export default async function AccountantFundProjectionsPage({
   params,
@@ -12,6 +13,7 @@ export default async function AccountantFundProjectionsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ years?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
 

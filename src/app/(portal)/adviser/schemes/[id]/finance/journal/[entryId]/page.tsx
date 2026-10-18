@@ -5,6 +5,7 @@ import { getJournalEntryById } from "@/lib/queries/journal-entries";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { JournalEntryActions } from "./journal-entry-actions";
+import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -47,6 +48,7 @@ export default async function JournalEntryDetailPage({
 }: {
   params: Promise<{ id: string; entryId: string }>;
 }) {
+  await connection();
   const { id, entryId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

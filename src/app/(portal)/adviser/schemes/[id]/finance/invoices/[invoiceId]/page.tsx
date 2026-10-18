@@ -45,7 +45,6 @@ function DetailItem({
   label: string;
   value: string | null | undefined;
 }) {
-  await connection();
   return (
     <div>
       <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -61,6 +60,7 @@ export default async function InvoiceDetailPage({
 }: {
   params: Promise<{ id: string; invoiceId: string }>;
 }) {
+  await connection();
   const { id, invoiceId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

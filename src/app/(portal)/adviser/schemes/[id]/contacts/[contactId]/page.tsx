@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ContactEditForm } from "../contact-form";
 import { DeleteContactButton } from "./delete-contact-button";
+import { connection } from "next/server";
 
 const categoryLabels: Record<string, string> = {
   PLUMBER: "Plumber",
@@ -30,6 +31,7 @@ export default async function ContactDetailPage({
 }: {
   params: Promise<{ id: string; contactId: string }>;
 }) {
+  await connection();
   const { id, contactId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

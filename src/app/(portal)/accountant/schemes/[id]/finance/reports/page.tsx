@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { connection } from "next/server";
 
 const reports = [
   {
@@ -97,6 +98,7 @@ export default async function AccountantReportsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   await requireFinancialReadAccess(id);
 

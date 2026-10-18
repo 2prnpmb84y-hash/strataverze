@@ -10,6 +10,7 @@ import { getUnmatchedJournalEntries } from "@/lib/queries/journal-entries";
 import { ReconciliationView } from "./reconciliation-view";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
+import { connection } from "next/server";
 
 export default async function ReconciliationPage({
   params,
@@ -18,6 +19,7 @@ export default async function ReconciliationPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ account?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { account: selectedAccountId } = await searchParams;
   const profile = await getCurrentProfile();

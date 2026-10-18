@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FundForm } from "../fund-form";
 import { DeleteFundButton } from "./delete-button";
+import { connection } from "next/server";
 
 const fundTypeLabels: Record<string, string> = {
   ADMIN: "Administrative Fund",
@@ -18,6 +19,7 @@ export default async function FundDetailPage({
 }: {
   params: Promise<{ id: string; fundId: string }>;
 }) {
+  await connection();
   const { id, fundId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

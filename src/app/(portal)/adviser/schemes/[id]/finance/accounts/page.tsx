@@ -4,6 +4,7 @@ import { getFundsForScheme } from "@/lib/queries/funds";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { seedChartOfAccountsAction } from "../actions";
+import { connection } from "next/server";
 
 async function handleSeedAction(formData: FormData) {
   "use server";
@@ -40,6 +41,7 @@ export default async function ChartOfAccountsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
 
   const [accounts, funds] = await Promise.all([

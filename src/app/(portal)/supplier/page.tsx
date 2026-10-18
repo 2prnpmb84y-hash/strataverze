@@ -8,8 +8,10 @@ import {
 } from "@/lib/queries/supplier";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader } from "@/components/ui/card";
+import { connection } from "next/server";
 
 export default async function SupplierDashboard() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

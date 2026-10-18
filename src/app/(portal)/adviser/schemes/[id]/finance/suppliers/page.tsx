@@ -3,12 +3,14 @@ import { getFinancialSuppliersForScheme } from "@/lib/queries/supplier-invoices"
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { connection } from "next/server";
 
 export default async function SuppliersPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const suppliers = await getFinancialSuppliersForScheme(id);
 

@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getCashFlowForecast } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { CashFlowClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/cash-flow/cash-flow-client";
+import { connection } from "next/server";
 
 export default async function AccountantCashFlowPage({
   params,
@@ -12,6 +13,7 @@ export default async function AccountantCashFlowPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ months?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
 

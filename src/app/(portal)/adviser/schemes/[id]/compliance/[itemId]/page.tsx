@@ -7,6 +7,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { ComplianceEditForm } from "../compliance-form";
 import { DeleteComplianceButton } from "./delete-compliance-button";
 import { ComplianceStatusButton } from "./compliance-status-button";
+import { connection } from "next/server";
 
 const statusStyle: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-700",
@@ -28,6 +29,7 @@ export default async function ComplianceDetailPage({
 }: {
   params: Promise<{ id: string; itemId: string }>;
 }) {
+  await connection();
   const { id, itemId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

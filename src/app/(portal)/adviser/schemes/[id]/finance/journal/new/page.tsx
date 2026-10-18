@@ -5,12 +5,14 @@ import { getFundsForScheme } from "@/lib/queries/funds";
 import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { PageHeader } from "@/components/ui/page-header";
 import { JournalEntryForm } from "../journal-entry-form";
+import { connection } from "next/server";
 
 export default async function NewJournalEntryPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

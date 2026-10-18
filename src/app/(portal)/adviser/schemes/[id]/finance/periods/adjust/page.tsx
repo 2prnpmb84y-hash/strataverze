@@ -6,6 +6,7 @@ import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { getFundsForScheme } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
 import { AdjustmentForm } from "./adjustment-form";
+import { connection } from "next/server";
 
 export default async function AdjustmentEntryPage({
   params,
@@ -14,6 +15,7 @@ export default async function AdjustmentEntryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ periodId?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { periodId } = await searchParams;
   const profile = await getCurrentProfile();

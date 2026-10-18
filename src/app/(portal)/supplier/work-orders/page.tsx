@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getWorkOrdersForSupplier } from "@/lib/queries/supplier";
 import { Card, CardHeader } from "@/components/ui/card";
+import { connection } from "next/server";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   AWARDED: { label: "Awarded", className: "bg-gold-100 text-gold-500" },
@@ -11,6 +12,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 export default async function SupplierWorkOrdersPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

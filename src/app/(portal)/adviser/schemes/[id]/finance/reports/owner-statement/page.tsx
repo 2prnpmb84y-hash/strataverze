@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OwnerStatementClient } from "./owner-statement-client";
 import { db } from "@/prisma/db";
+import { connection } from "next/server";
 
 export default async function OwnerStatementPage({
   params,
@@ -18,6 +19,7 @@ export default async function OwnerStatementPage({
     endDate?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const { lot: selectedLotId, startDate, endDate } = await searchParams;
   const profile = await getCurrentProfile();

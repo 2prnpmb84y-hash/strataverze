@@ -4,12 +4,14 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { getFundsForScheme } from "@/lib/queries/funds";
 import { AccountCodeForm } from "../account-code-form";
+import { connection } from "next/server";
 
 export default async function NewAccountCodePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

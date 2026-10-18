@@ -6,8 +6,10 @@ import { getComplianceForSchemes } from "@/lib/queries/compliance";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
+import { connection } from "next/server";
 
 export default async function AdviserReportingPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

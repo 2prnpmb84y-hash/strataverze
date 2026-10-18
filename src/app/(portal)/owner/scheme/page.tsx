@@ -4,8 +4,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SchemeDetailHeader } from "@/components/scheme-detail-header";
+import { connection } from "next/server";
 
 export default async function OwnerSchemePage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

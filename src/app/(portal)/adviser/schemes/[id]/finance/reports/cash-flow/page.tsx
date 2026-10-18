@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getCashFlowForecast } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { CashFlowClient } from "./cash-flow-client";
+import { connection } from "next/server";
 
 export default async function CashFlowPage({
   params,
@@ -14,6 +15,7 @@ export default async function CashFlowPage({
     months?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
   const profile = await getCurrentProfile();

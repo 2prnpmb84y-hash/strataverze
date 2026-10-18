@@ -9,6 +9,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { CommentThread } from "./comment-thread";
 import { CommentForm } from "./comment-form";
 import { WorkOrderStatusButton } from "./work-order-status-button";
+import { connection } from "next/server";
 
 const priorityStyle: Record<string, string> = {
   LOW: "bg-gray-100 text-gray-700",
@@ -39,6 +40,7 @@ export default async function OwnerWorkOrderDetailPage({
 }: {
   params: Promise<{ workOrderId: string }>;
 }) {
+  await connection();
   const { workOrderId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

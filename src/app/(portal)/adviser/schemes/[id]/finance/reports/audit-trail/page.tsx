@@ -8,6 +8,7 @@ import {
 } from "@/lib/queries/activity-log";
 import { PageHeader } from "@/components/ui/page-header";
 import { AuditTrailClient } from "./audit-trail-client";
+import { connection } from "next/server";
 
 export default async function AuditTrailPage({
   params,
@@ -23,6 +24,7 @@ export default async function AuditTrailPage({
     actorId?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
   const profile = await getCurrentProfile();

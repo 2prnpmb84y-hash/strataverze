@@ -2,8 +2,10 @@ import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { DocumentUploadForm } from "./upload-form";
+import { connection } from "next/server";
 
 export default async function OwnerDocumentUploadPage() {
+  await connection();
   const access = await requireCommitteeAccess();
 
   if (!access) {

@@ -5,12 +5,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { MotionSection } from "./motion-section";
+import { connection } from "next/server";
 
 export default async function OwnerMeetingDetailPage({
   params,
 }: {
   params: Promise<{ meetingId: string }>;
 }) {
+  await connection();
   const { meetingId } = await params;
   const access = await requireCommitteeAccess();
   if (!access) return null;

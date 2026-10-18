@@ -3,6 +3,7 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getInsuranceForSchemes } from "@/lib/queries/insurance";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { connection } from "next/server";
 
 const policyTypeLabels: Record<string, string> = {
   BUILDING: "Building",
@@ -37,6 +38,7 @@ function formatCurrency(value: string | number): string {
 }
 
 export default async function OwnerInsurancePage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

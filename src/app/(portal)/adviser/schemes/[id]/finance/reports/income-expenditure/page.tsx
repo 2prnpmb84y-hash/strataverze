@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IncomeExpenditureClient } from "./income-expenditure-client";
+import { connection } from "next/server";
 
 export default async function IncomeExpenditurePage({
   params,
@@ -15,6 +16,7 @@ export default async function IncomeExpenditurePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ fund?: string; startDate?: string; endDate?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { fund: fundFilter, startDate, endDate } = await searchParams;
   const profile = await getCurrentProfile();

@@ -4,7 +4,6 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { db } from "@/prisma/db";
 import { Card, CardHeader } from "@/components/ui/card";
 import { WorkOrderActions } from "./work-order-actions";
-
 const statusConfig: Record<string, { label: string; className: string }> = {
   AWARDED: { label: "Awarded", className: "bg-gold-100 text-gold-500" },
   IN_PROGRESS: { label: "In Progress", className: "bg-primary-100 text-primary-500" },

@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { connection } from "next/server";
 
 function formatCurrency(value: number): string {
   if (value < 0) {
@@ -23,6 +24,7 @@ export default async function AccountantLevyRegisterPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
 
   await requireFinancialReadAccess(id);

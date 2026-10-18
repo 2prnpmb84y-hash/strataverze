@@ -7,6 +7,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { OwnerStatementTable } from "./statement-table";
+import { connection } from "next/server";
 
 export default async function OwnerStatementPage({
   searchParams,
@@ -17,6 +18,7 @@ export default async function OwnerStatementPage({
     endDate?: string;
   }>;
 }) {
+  await connection();
   const { lot: selectedLotId, startDate, endDate } = await searchParams;
   const profile = await getCurrentProfile();
   if (!profile) return null;

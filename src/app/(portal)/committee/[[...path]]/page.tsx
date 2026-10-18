@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
 /**
  * Catch-all redirect from the old /committee/* routes to /owner/*.
@@ -9,6 +10,7 @@ export default async function CommitteeRedirect({
 }: {
   params: Promise<{ path?: string[] }>;
 }) {
+  await connection();
   const { path } = await params;
   const suffix = path ? `/${path.join("/")}` : "";
   redirect(`/owner${suffix}`);

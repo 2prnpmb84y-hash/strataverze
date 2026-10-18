@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { Card, CardHeader } from "@/components/ui/card";
+import { connection } from "next/server";
 
 const reports = [
   {
@@ -96,6 +97,7 @@ export default async function ReportsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

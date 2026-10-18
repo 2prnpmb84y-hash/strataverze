@@ -3,6 +3,7 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getContactsForSchemes } from "@/lib/queries/contacts";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
+import { connection } from "next/server";
 
 const categoryLabels: Record<string, string> = {
   PLUMBER: "Plumber",
@@ -23,6 +24,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 export default async function OwnerContactsPage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

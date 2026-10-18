@@ -4,7 +4,6 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getQuoteRequestById, hasSupplierQuoted } from "@/lib/queries/supplier";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SubmitQuoteForm } from "./submit-quote-form";
-
 const urgencyColours: Record<string, string> = {
   URGENT: "bg-danger/10 text-danger",
   STANDARD: "bg-gold-100 text-gold-500",

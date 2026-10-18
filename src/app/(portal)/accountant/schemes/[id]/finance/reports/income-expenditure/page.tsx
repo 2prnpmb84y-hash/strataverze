@@ -5,6 +5,7 @@ import { getFundsForScheme } from "@/lib/queries/funds";
 import { getJournalEntriesForScheme } from "@/lib/queries/journal-entries";
 import { PageHeader } from "@/components/ui/page-header";
 import { IncomeExpenditureClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/income-expenditure/income-expenditure-client";
+import { connection } from "next/server";
 
 export default async function AccountantIncomeExpenditurePage({
   params,
@@ -13,6 +14,7 @@ export default async function AccountantIncomeExpenditurePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ fund?: string; startDate?: string; endDate?: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const { fund: fundFilter, startDate, endDate } = await searchParams;
 

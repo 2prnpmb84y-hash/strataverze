@@ -3,12 +3,14 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FinancialDocumentUploadForm } from "../upload-form";
+import { connection } from "next/server";
 
 export default async function UploadFinancialDocumentPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

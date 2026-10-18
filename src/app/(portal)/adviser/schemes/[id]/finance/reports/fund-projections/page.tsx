@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getFundBalanceProjections } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundProjectionsClient } from "./fund-projections-client";
+import { connection } from "next/server";
 
 export default async function FundProjectionsPage({
   params,
@@ -14,6 +15,7 @@ export default async function FundProjectionsPage({
     years?: string;
   }>;
 }) {
+  await connection();
   const { id } = await params;
   const sp = await searchParams;
   const profile = await getCurrentProfile();

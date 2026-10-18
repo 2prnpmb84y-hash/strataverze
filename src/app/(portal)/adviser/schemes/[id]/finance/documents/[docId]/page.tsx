@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DocumentActions } from "./document-actions";
+import { connection } from "next/server";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
@@ -65,6 +66,7 @@ export default async function DocumentDetailPage({
 }: {
   params: Promise<{ id: string; docId: string }>;
 }) {
+  await connection();
   const { id, docId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

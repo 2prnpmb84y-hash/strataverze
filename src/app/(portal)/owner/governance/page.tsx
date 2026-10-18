@@ -6,12 +6,14 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { CommitteeMeetingList } from "@/components/committee-meeting-list";
+import { connection } from "next/server";
 
 export default async function OwnerGovernancePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await connection();
   const access = await requireCommitteeAccess();
   if (!access) {
     return (

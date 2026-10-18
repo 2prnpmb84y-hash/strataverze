@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { AnnouncementEditForm } from "../announcement-form";
 import { DeleteAnnouncementButton } from "./delete-announcement-button";
+import { connection } from "next/server";
 
 const priorityLabels: Record<string, string> = {
   NORMAL: "Normal",
@@ -24,6 +25,7 @@ export default async function AnnouncementDetailPage({
 }: {
   params: Promise<{ id: string; announcementId: string }>;
 }) {
+  await connection();
   const { id, announcementId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

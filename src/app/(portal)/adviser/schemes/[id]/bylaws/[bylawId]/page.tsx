@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { BylawEditForm } from "../bylaw-form";
 import { DeleteBylawButton } from "./delete-bylaw-button";
+import { connection } from "next/server";
 
 const statusLabels: Record<string, string> = {
   ACTIVE: "Active",
@@ -35,6 +36,7 @@ export default async function BylawDetailPage({
 }: {
   params: Promise<{ id: string; bylawId: string }>;
 }) {
+  await connection();
   const { id, bylawId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;

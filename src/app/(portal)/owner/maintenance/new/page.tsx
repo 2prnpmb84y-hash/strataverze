@@ -4,8 +4,10 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { OwnerMaintenanceForm } from "./form";
+import { connection } from "next/server";
 
 export default async function NewOwnerMaintenancePage() {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

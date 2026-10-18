@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { SchemeList } from "@/components/scheme-list";
+import { connection } from "next/server";
 
 export default async function AdviserSchemesPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 

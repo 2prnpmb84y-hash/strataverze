@@ -9,12 +9,14 @@ import { LevyForm } from "../levy-form";
 import { DeleteLevyButton } from "./delete-levy-button";
 import { IssueLevyButton } from "./issue-levy-button";
 import { MarkPaidButton } from "./mark-paid-button";
+import { connection } from "next/server";
 
 export default async function LevyDetailPage({
   params,
 }: {
   params: Promise<{ id: string; levyId: string }>;
 }) {
+  await connection();
   const { id, levyId } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;
