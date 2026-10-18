@@ -54,6 +54,12 @@ export function PeriodActions({
 
       {status === "CLOSED" && (
         <>
+          <a
+            href={`/adviser/schemes/${schemeId}/finance/periods/adjust?periodId=${periodId}`}
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
+          >
+            Adjustment
+          </a>
           <button
             type="button"
             disabled={isPending}

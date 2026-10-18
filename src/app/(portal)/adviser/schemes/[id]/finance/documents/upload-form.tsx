@@ -35,10 +35,13 @@ export function FinancialDocumentUploadForm({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [skipDuplicate, setSkipDuplicate] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setDuplicateWarning(null);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -95,7 +98,7 @@ export function FinancialDocumentUploadForm({
 
       // Call server action with the storage path
       startTransition(async () => {
-        const result = await uploadFinancialDocumentAction(schemeId, {
+        const payload: Record<string, unknown> = {
           documentType,
           fileName: file.name,
           fileUrl: storagePath,
@@ -105,9 +108,24 @@ export function FinancialDocumentUploadForm({
           documentDate: documentDate || undefined,
           payerName: payerName || undefined,
           payeeReference: payeeReference || undefined,
-        });
+        };
+
+        if (skipDuplicate) {
+          payload.skipDuplicateCheck = true;
+          setSkipDuplicate(false);
+        }
+
+        const result = await uploadFinancialDocumentAction(
+          schemeId,
+          payload as Parameters<typeof uploadFinancialDocumentAction>[1],
+        );
 
         if (result.error) {
+          if (result.data?.isDuplicate) {
+            setDuplicateWarning(result.error);
+            setSkipDuplicate(true);
+            return;
+          }
           setError(result.error);
         } else {
           router.push(`/adviser/schemes/${schemeId}/finance/documents`);
@@ -128,6 +146,16 @@ export function FinancialDocumentUploadForm({
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {duplicateWarning && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-medium">Possible Duplicate Detected</p>
+          <p className="mt-1">{duplicateWarning}</p>
+          <p className="mt-2 text-xs text-amber-600">
+            Click &ldquo;Upload Document&rdquo; again to proceed anyway.
+          </p>
         </div>
       )}
 

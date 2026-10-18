@@ -16,7 +16,7 @@ export type InvitationFormState = {
   success?: string;
 };
 
-const VALID_ROLES = ["OWNER", "COMMITTEE"];
+const VALID_ROLES = ["OWNER", "COMMITTEE", "ACCOUNTANT"];
 
 export async function sendInvitationAction(
   schemeId: string,
@@ -46,7 +46,7 @@ export async function sendInvitationAction(
     const invitation = await createInvitation({
       schemeId,
       email,
-      role: role as "OWNER" | "COMMITTEE",
+      role: role as "OWNER" | "COMMITTEE" | "ACCOUNTANT",
       invitedById: profile.id,
       expiresAt: expiresAt.toISOString(),
     });

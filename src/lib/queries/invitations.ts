@@ -47,7 +47,7 @@ export async function getInvitationByToken(token: string) {
 export async function createInvitation(data: {
   schemeId: string;
   email: string;
-  role: "OWNER" | "COMMITTEE";
+  role: "OWNER" | "COMMITTEE" | "ACCOUNTANT";
   lotId?: string;
   invitedById: string;
   expiresAt: string;

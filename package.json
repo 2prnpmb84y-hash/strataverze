@@ -25,6 +25,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "resend": "^6.33.0",
+    "temporal-polyfill": "^1.0.6",
     "unpdf": "^1.9.0"
   },
   "devDependencies": {

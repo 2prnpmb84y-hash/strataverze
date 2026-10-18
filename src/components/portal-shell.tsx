@@ -71,6 +71,16 @@ const portalConfig = {
       { label: "Invoices", href: "/supplier/invoices" },
     ],
   },
+  accountant: {
+    label: "Accountant Portal",
+    shortLabel: "Accountant",
+    colour: "bg-primary-600",
+    textColour: "text-primary-600",
+    nav: [
+      { label: "Dashboard", href: "/accountant" },
+      { label: "Schemes", href: "/accountant/schemes" },
+    ],
+  },
 } as const;
 
 type PortalKey = keyof typeof portalConfig;

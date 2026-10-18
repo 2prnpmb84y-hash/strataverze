@@ -6,6 +6,9 @@ import { SelectField } from "@/components/ui/form-field";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 
+const inputClasses =
+  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+
 interface BankAccount {
   id: string;
   accountName: string;
@@ -13,12 +16,34 @@ interface BankAccount {
   accountNumber: string;
 }
 
-interface UnmatchedTransaction {
+interface ReconciliationTransaction {
   id: string;
   transactionDate: string;
-  amount: number;
   description: string;
   reference: string | null;
+  amount: number;
+  reconciliationStatus: string;
+}
+
+interface ReconciliationReport {
+  lastReconciledBalance: number;
+  lastReconciledDate: string | null;
+  closingBankBalance: number;
+  depositsInTransit: ReconciliationTransaction[];
+  depositsInTransitTotal: number;
+  outstandingWithdrawals: ReconciliationTransaction[];
+  outstandingWithdrawalsTotal: number;
+  adjustedBankBalance: number;
+  bookBalance: number;
+  discrepancy: number;
+  totalTransactions: number;
+  reconciledCount: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  excludedCount: number;
+  totalReceipts: number;
+  totalPayments: number;
+  unmatchedTransactions: ReconciliationTransaction[];
 }
 
 function formatCurrency(value: number): string {
@@ -37,43 +62,50 @@ export function BankReconciliationClient({
   bankAccounts,
   selectedAccountId,
   selectedAccountName,
-  summary,
-  unmatchedTransactions,
+  asAtDate,
+  report,
+  basePath,
 }: {
   schemeId: string;
   bankAccounts: BankAccount[];
   selectedAccountId: string;
   selectedAccountName: string;
-  summary: {
-    totalTransactions: number;
-    reconciledCount: number;
-    matchedCount: number;
-    unmatchedCount: number;
-    excludedCount: number;
-    totalReceipts: number;
-    totalPayments: number;
-  };
-  unmatchedTransactions: UnmatchedTransaction[];
+  asAtDate: string;
+  report: ReconciliationReport | null;
+  basePath?: string;
 }) {
   const router = useRouter();
+  const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
-  function handleAccountChange(accountId: string) {
+  function updateParams(accountId: string, date: string) {
     const params = new URLSearchParams();
     if (accountId) params.set("account", accountId);
+    if (date) params.set("asAt", date);
+    const qs = params.toString();
     router.push(
-      `/adviser/schemes/${schemeId}/finance/reports/bank-reconciliation${accountId ? `?${params}` : ""}`,
+      `${reportBase}/bank-reconciliation${qs ? `?${qs}` : ""}`,
     );
+  }
+
+  function handleAccountChange(accountId: string) {
+    updateParams(accountId, asAtDate);
+  }
+
+  function handleDateChange(date: string) {
+    if (date) {
+      updateParams(selectedAccountId, date);
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* Account selector */}
+      {/* Filters: account selector and as-at date */}
       <Card>
         <CardHeader
-          title="Select Bank Account"
-          description="Choose the bank account for this reconciliation report."
+          title="Reconciliation Parameters"
+          description="Select the bank account and the date to reconcile as at."
         />
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <SelectField
             label="Bank Account"
             name="bankAccountId"
@@ -88,75 +120,219 @@ export function BankReconciliationClient({
               })),
             ]}
           />
+          <div>
+            <label
+              htmlFor="asAtDate"
+              className="block text-sm font-medium text-foreground mb-1.5"
+            >
+              Reconcile As At
+            </label>
+            <input
+              id="asAtDate"
+              type="date"
+              className={inputClasses}
+              value={asAtDate}
+              onChange={(e) => handleDateChange(e.target.value)}
+            />
+          </div>
         </div>
       </Card>
 
-      {selectedAccountId && summary.totalTransactions === 0 && (
+      {selectedAccountId && !report && (
+        <EmptyState
+          title="Loading report..."
+          description="Generating reconciliation data."
+        />
+      )}
+
+      {selectedAccountId && report && report.totalTransactions === 0 && (
         <EmptyState
           title="No transactions"
           description="Import bank transactions to generate a reconciliation report."
           actionLabel="Import Transactions"
-          actionHref={`/adviser/schemes/${schemeId}/finance/bank-import`}
+          actionHref={`${reportBase.replace("/finance/reports", "")}/finance/bank-import`}
         />
       )}
 
-      {selectedAccountId && summary.totalTransactions > 0 && (
+      {selectedAccountId && report && report.totalTransactions > 0 && (
         <>
           {/* Summary stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <StatCard
               label="Reconciled"
-              value={String(summary.reconciledCount)}
+              value={String(report.reconciledCount)}
               accent="bg-green-500"
             />
             <StatCard
               label="Matched"
-              value={String(summary.matchedCount)}
+              value={String(report.matchedCount)}
               accent="bg-blue-500"
             />
             <StatCard
               label="Unmatched"
-              value={String(summary.unmatchedCount)}
+              value={String(report.unmatchedCount)}
               accent="bg-amber-500"
             />
             <StatCard
               label="Excluded"
-              value={String(summary.excludedCount)}
+              value={String(report.excludedCount)}
               accent="bg-zinc-400"
             />
           </div>
 
-          {/* Cash flow summary */}
+          {/* Bank Reconciliation Statement */}
           <Card>
             <CardHeader
-              title={`Cash Flow Summary — ${selectedAccountName}`}
+              title={`Bank Reconciliation Statement — ${selectedAccountName}`}
+              description={`As at ${formatDate(asAtDate)}${report.lastReconciledDate ? ` (last reconciled: ${formatDate(report.lastReconciledDate)})` : ""}`}
             />
             <div className="px-6 pb-6">
               <table className="w-full text-sm">
                 <tbody>
-                  <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground">Total Receipts (Credits)</td>
-                    <td className="py-2 text-right tabular-nums font-medium text-green-600">
-                      {formatCurrency(summary.totalReceipts)}
+                  {/* Section 1: Bank Statement Balance */}
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                    >
+                      Bank Statement
                     </td>
                   </tr>
                   <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground">Total Payments (Debits)</td>
+                    <td className="py-2 text-foreground">
+                      Closing Bank Balance
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-medium text-foreground">
+                      {formatCurrency(report.closingBankBalance)}
+                    </td>
+                  </tr>
+
+                  {/* Section 2: Outstanding items */}
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                    >
+                      Outstanding Items
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2 text-foreground pl-4">
+                      Add: Deposits in transit
+                      <span className="text-muted-foreground ml-1">
+                        ({report.depositsInTransit.length})
+                      </span>
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-medium text-green-600">
+                      {formatCurrency(report.depositsInTransitTotal)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2 text-foreground pl-4">
+                      Less: Outstanding withdrawals
+                      <span className="text-muted-foreground ml-1">
+                        ({report.outstandingWithdrawals.length})
+                      </span>
+                    </td>
                     <td className="py-2 text-right tabular-nums font-medium text-red-600">
-                      {formatCurrency(summary.totalPayments)}
+                      ({formatCurrency(report.outstandingWithdrawalsTotal)})
+                    </td>
+                  </tr>
+                  <tr className="border-t-2 border-border">
+                    <td className="py-2 font-semibold text-foreground">
+                      Adjusted Bank Balance
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-bold text-foreground">
+                      {formatCurrency(report.adjustedBankBalance)}
+                    </td>
+                  </tr>
+
+                  {/* Section 3: Book Balance */}
+                  <tr>
+                    <td
+                      colSpan={2}
+                      className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                    >
+                      Ledger
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2 text-foreground">
+                      Book Balance (General Ledger)
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-medium text-foreground">
+                      {formatCurrency(report.bookBalance)}
+                    </td>
+                  </tr>
+
+                  {/* Section 4: Discrepancy */}
+                  <tr className="border-t-2 border-border">
+                    <td className="py-3 font-semibold text-foreground">
+                      Discrepancy
+                    </td>
+                    <td
+                      className={`py-3 text-right tabular-nums font-bold ${
+                        Math.abs(report.discrepancy) < 0.01
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {formatCurrency(report.discrepancy)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {Math.abs(report.discrepancy) < 0.01 && (
+                <div className="mt-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+                  The bank balance and book balance are reconciled.
+                </div>
+              )}
+
+              {Math.abs(report.discrepancy) >= 0.01 && (
+                <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                  There is a discrepancy of{" "}
+                  {formatCurrency(Math.abs(report.discrepancy))} between the
+                  adjusted bank balance and the book balance. Review unmatched
+                  items and outstanding transactions below.
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Cash Flow Summary */}
+          <Card>
+            <CardHeader title="Cash Flow Summary" />
+            <div className="px-6 pb-6">
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2 text-foreground">
+                      Total Receipts (Credits)
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-medium text-green-600">
+                      {formatCurrency(report.totalReceipts)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <td className="py-2 text-foreground">
+                      Total Payments (Debits)
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-medium text-red-600">
+                      {formatCurrency(report.totalPayments)}
                     </td>
                   </tr>
                   <tr className="border-t-2 border-border font-semibold">
                     <td className="py-2 text-foreground">Net Movement</td>
                     <td
                       className={`py-2 text-right tabular-nums ${
-                        summary.totalReceipts - summary.totalPayments >= 0
+                        report.totalReceipts - report.totalPayments >= 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
                       {formatCurrency(
-                        summary.totalReceipts - summary.totalPayments,
+                        report.totalReceipts - report.totalPayments,
                       )}
                     </td>
                   </tr>
@@ -165,50 +341,90 @@ export function BankReconciliationClient({
             </div>
           </Card>
 
+          {/* Deposits in Transit detail */}
+          {report.depositsInTransit.length > 0 && (
+            <Card>
+              <CardHeader
+                title="Deposits in Transit"
+                description={`${report.depositsInTransit.length} deposit${report.depositsInTransit.length !== 1 ? "s" : ""} recorded in books but not yet cleared at bank`}
+              />
+              <TransactionTable
+                transactions={report.depositsInTransit}
+              />
+            </Card>
+          )}
+
+          {/* Outstanding Withdrawals detail */}
+          {report.outstandingWithdrawals.length > 0 && (
+            <Card>
+              <CardHeader
+                title="Outstanding Withdrawals"
+                description={`${report.outstandingWithdrawals.length} payment${report.outstandingWithdrawals.length !== 1 ? "s" : ""} issued but not yet cleared at bank`}
+              />
+              <TransactionTable
+                transactions={report.outstandingWithdrawals}
+              />
+            </Card>
+          )}
+
           {/* Unmatched items */}
-          {unmatchedTransactions.length > 0 && (
+          {report.unmatchedTransactions.length > 0 && (
             <Card>
               <CardHeader
                 title="Unmatched Bank Items"
-                description={`${unmatchedTransactions.length} transaction${unmatchedTransactions.length !== 1 ? "s" : ""} with no matching journal entry`}
+                description={`${report.unmatchedTransactions.length} transaction${report.unmatchedTransactions.length !== 1 ? "s" : ""} with no matching journal entry`}
               />
-
-              <div className="hidden sm:grid sm:grid-cols-[100px_1fr_120px_120px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
-                <div>Date</div>
-                <div>Description</div>
-                <div>Reference</div>
-                <div className="text-right">Amount</div>
-              </div>
-
-              <div className="divide-y divide-border">
-                {unmatchedTransactions.map((txn) => (
-                  <div
-                    key={txn.id}
-                    className="grid grid-cols-1 sm:grid-cols-[100px_1fr_120px_120px] gap-2 sm:gap-4 px-6 py-3 items-center"
-                  >
-                    <div className="text-sm text-muted-foreground">
-                      {formatDate(txn.transactionDate)}
-                    </div>
-                    <div className="text-sm text-foreground truncate">
-                      {txn.description}
-                    </div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      {txn.reference ?? "—"}
-                    </div>
-                    <div
-                      className={`text-sm text-right tabular-nums font-medium ${
-                        txn.amount >= 0 ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {formatCurrency(txn.amount)}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <TransactionTable
+                transactions={report.unmatchedTransactions}
+              />
             </Card>
           )}
         </>
       )}
     </div>
+  );
+}
+
+/** Reusable transaction list table. */
+function TransactionTable({
+  transactions,
+}: {
+  transactions: ReconciliationTransaction[];
+}) {
+  return (
+    <>
+      <div className="hidden sm:grid sm:grid-cols-[100px_1fr_120px_120px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+        <div>Date</div>
+        <div>Description</div>
+        <div>Reference</div>
+        <div className="text-right">Amount</div>
+      </div>
+
+      <div className="divide-y divide-border">
+        {transactions.map((txn) => (
+          <div
+            key={txn.id}
+            className="grid grid-cols-1 sm:grid-cols-[100px_1fr_120px_120px] gap-2 sm:gap-4 px-6 py-3 items-center"
+          >
+            <div className="text-sm text-muted-foreground">
+              {formatDate(txn.transactionDate)}
+            </div>
+            <div className="text-sm text-foreground truncate">
+              {txn.description}
+            </div>
+            <div className="text-sm text-muted-foreground truncate">
+              {txn.reference ?? "—"}
+            </div>
+            <div
+              className={`text-sm text-right tabular-nums font-medium ${
+                txn.amount >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {formatCurrency(txn.amount)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

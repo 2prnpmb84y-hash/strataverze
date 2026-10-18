@@ -31,6 +31,7 @@ export function TrialBalanceClient({
   totalDebits,
   totalCredits,
   isBalanced,
+  basePath,
 }: {
   schemeId: string;
   funds: { id: string; name: string }[];
@@ -40,8 +41,10 @@ export function TrialBalanceClient({
   totalDebits: number;
   totalCredits: number;
   isBalanced: boolean;
+  basePath?: string;
 }) {
   const router = useRouter();
+  const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
   function applyFilters(updates: Record<string, string>) {
     const params = new URLSearchParams();
@@ -50,7 +53,7 @@ export function TrialBalanceClient({
     if (current.asAtDate) params.set("asAtDate", current.asAtDate);
     const qs = params.toString();
     router.push(
-      `/adviser/schemes/${schemeId}/finance/reports/trial-balance${qs ? `?${qs}` : ""}`,
+      `${reportBase}/trial-balance${qs ? `?${qs}` : ""}`,
     );
   }
 

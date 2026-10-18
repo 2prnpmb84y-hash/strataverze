@@ -2,7 +2,7 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 
-export type PortalRole = "OWNER" | "COMMITTEE" | "ADVISER" | "SUPPLIER";
+export type PortalRole = "OWNER" | "COMMITTEE" | "ADVISER" | "SUPPLIER" | "ACCOUNTANT";
 
 /**
  * Verify the current user is authenticated and has an active membership

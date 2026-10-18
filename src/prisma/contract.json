@@ -96,6 +96,10 @@
       "model": "Lot",
       "namespace": "public"
     },
+    "matching_rules": {
+      "model": "MatchingRule",
+      "namespace": "public"
+    },
     "meetings": {
       "model": "Meeting",
       "namespace": "public"
@@ -304,6 +308,21 @@
                 },
                 "to": {
                   "model": "JournalLine",
+                  "namespace": "public"
+                }
+              },
+              "matchingRules": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "targetAccountCodeId"
+                  ]
+                },
+                "to": {
+                  "model": "MatchingRule",
                   "namespace": "public"
                 }
               },
@@ -789,6 +808,13 @@
                   "kind": "scalar"
                 }
               },
+              "matchingRuleId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "reconciliationStatus": {
                 "nullable": false,
                 "type": {
@@ -884,6 +910,22 @@
                   "namespace": "public"
                 }
               },
+              "matchingRule": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "matchingRuleId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "MatchingRule",
+                  "namespace": "public"
+                }
+              },
               "scheme": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -938,6 +980,9 @@
                 },
                 "matchedJournalEntryId": {
                   "column": "matched_journal_entry_id"
+                },
+                "matchingRuleId": {
+                  "column": "matching_rule_id"
                 },
                 "reconciliationStatus": {
                   "column": "reconciliation_status"
@@ -2543,6 +2588,21 @@
                 },
                 "to": {
                   "model": "LevySchedule",
+                  "namespace": "public"
+                }
+              },
+              "matchingRules": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "targetFundId"
+                  ]
+                },
+                "to": {
+                  "model": "MatchingRule",
                   "namespace": "public"
                 }
               },
@@ -4688,6 +4748,305 @@
               "table": "lots"
             }
           },
+          "MatchingRule": {
+            "fields": {
+              "autoPost": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "descriptionPattern": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "exactAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastMatchedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchCount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "matchType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "maxAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "minAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "priority": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "referencePattern": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "targetAccountCodeId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "targetFundId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "transactionSign": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "matchedTransactions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "matchingRuleId"
+                  ]
+                },
+                "to": {
+                  "model": "BankTransaction",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              },
+              "targetAccountCode": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "targetAccountCodeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "AccountCode",
+                  "namespace": "public"
+                }
+              },
+              "targetFund": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "targetFundId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Fund",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "autoPost": {
+                  "column": "auto_post"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "descriptionPattern": {
+                  "column": "description_pattern"
+                },
+                "exactAmount": {
+                  "column": "exact_amount"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isActive": {
+                  "column": "is_active"
+                },
+                "lastMatchedAt": {
+                  "column": "last_matched_at"
+                },
+                "matchCount": {
+                  "column": "match_count"
+                },
+                "matchType": {
+                  "column": "match_type"
+                },
+                "maxAmount": {
+                  "column": "max_amount"
+                },
+                "minAmount": {
+                  "column": "min_amount"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "priority": {
+                  "column": "priority"
+                },
+                "referencePattern": {
+                  "column": "reference_pattern"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "targetAccountCodeId": {
+                  "column": "target_account_code_id"
+                },
+                "targetFundId": {
+                  "column": "target_fund_id"
+                },
+                "transactionSign": {
+                  "column": "transaction_sign"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "matching_rules"
+            }
+          },
           "Meeting": {
             "fields": {
               "agenda": {
@@ -6134,6 +6493,21 @@
                 },
                 "to": {
                   "model": "Lot",
+                  "namespace": "public"
+                }
+              },
+              "matchingRules": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "MatchingRule",
                   "namespace": "public"
                 }
               },
@@ -7756,7 +8130,8 @@
                 "OWNER",
                 "COMMITTEE",
                 "ADVISER",
-                "SUPPLIER"
+                "SUPPLIER",
+                "ACCOUNTANT"
               ],
               "typeName": "PortalRole"
             }
@@ -8280,6 +8655,11 @@
                   "dataType": "pg/uuid",
                   "nullable": true
                 },
+                "matching_rule_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "reconciliation_status": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -8367,6 +8747,24 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "journal_entries"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "matching_rule_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "bank_transactions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "matching_rules"
                   }
                 }
               ],
@@ -11293,6 +11691,233 @@
               },
               "uniques": []
             },
+            "matching_rules": {
+              "columns": {
+                "auto_post": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "description_pattern": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "exact_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "last_matched_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "match_count": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "match_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "max_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "min_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "priority": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "reference_pattern": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "target_account_code_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "target_fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "transaction_sign": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "matching_rules_scheme_id_is_active_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "matching_rules"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "target_account_code_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "matching_rules"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "account_codes"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "target_fund_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "matching_rules"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "funds"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "is_active"
+                  ],
+                  "name": "matching_rules_scheme_id_is_active_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "meetings": {
               "columns": {
                 "agenda": {
@@ -13172,7 +13797,8 @@
                 "OWNER",
                 "COMMITTEE",
                 "ADVISER",
-                "SUPPLIER"
+                "SUPPLIER",
+                "ACCOUNTANT"
               ]
             }
           }
@@ -13181,10 +13807,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e2be0ab069ca13d5f54a3f2daab5a6a83faa5d7beb6882d6d3984fae21149153"
+    "storageHash": "b9a382f1b4e30d14a55041910b7151ab9d44c8de837bd397115b61fcd06a7dd7"
   },
   "execution": {
-    "executionHash": "5bdd7d29fdbc9eddc05c32a3aed5a619f4a5e0024fd8fbd6b5e786f58e3dca5f",
+    "executionHash": "b3b2d5bd2a40d97936d0e89ddc360d0503e1b5a3a45e4237ce1a3a757c7dfec2",
     "mutations": {
       "defaults": [
         {
@@ -13363,6 +13989,21 @@
           },
           "ref": {
             "entry": "levy_schedules",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "matching_rules",
             "field": "updated_at",
             "namespace": "public"
           }

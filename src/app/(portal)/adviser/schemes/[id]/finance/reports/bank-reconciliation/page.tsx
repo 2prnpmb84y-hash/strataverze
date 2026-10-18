@@ -2,9 +2,8 @@ import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
-import { getBankTransactionsForAccount } from "@/lib/queries/bank-transactions";
+import { getBankReconciliationReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BankReconciliationClient } from "./bank-reconciliation-client";
 
@@ -13,10 +12,10 @@ export default async function BankReconciliationReportPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ account?: string }>;
+  searchParams: Promise<{ account?: string; asAt?: string }>;
 }) {
   const { id } = await params;
-  const { account: selectedAccountId } = await searchParams;
+  const { account: selectedAccountId, asAt } = await searchParams;
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -48,34 +47,20 @@ export default async function BankReconciliationReportPage({
     );
   }
 
-  // Load transactions for the selected account
-  let transactions: Awaited<ReturnType<typeof getBankTransactionsForAccount>> =
-    [];
+  // Default as-at date to today
+  const asAtDate = asAt || new Date().toISOString().slice(0, 10);
+
+  // Generate the reconciliation report for the selected account
+  let report: Awaited<ReturnType<typeof getBankReconciliationReport>> | null =
+    null;
   if (selectedAccountId) {
-    transactions = await getBankTransactionsForAccount(selectedAccountId);
+    report = await getBankReconciliationReport(
+      selectedAccountId,
+      id,
+      asAtDate,
+    );
   }
 
-  // Calculate reconciliation summary
-  const reconciled = transactions.filter(
-    (t) => String(t.reconciliationStatus) === "RECONCILED",
-  );
-  const matched = transactions.filter(
-    (t) => String(t.reconciliationStatus) === "MATCHED",
-  );
-  const unmatched = transactions.filter(
-    (t) => String(t.reconciliationStatus) === "UNMATCHED",
-  );
-  const excluded = transactions.filter(
-    (t) => String(t.reconciliationStatus) === "EXCLUDED",
-  );
-
-  const receipts = transactions.filter((t) => Number(t.amount) > 0);
-  const payments = transactions.filter((t) => Number(t.amount) < 0);
-
-  const totalReceipts = receipts.reduce((s, t) => s + Number(t.amount), 0);
-  const totalPayments = payments.reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
-
-  // Get the selected account details
   const selectedAccount = selectedAccountId
     ? bankAccounts.find((ba) => ba.id === selectedAccountId)
     : null;
@@ -101,22 +86,32 @@ export default async function BankReconciliationReportPage({
         selectedAccountName={
           selectedAccount ? String(selectedAccount.accountName) : ""
         }
-        summary={{
-          totalTransactions: transactions.length,
-          reconciledCount: reconciled.length,
-          matchedCount: matched.length,
-          unmatchedCount: unmatched.length,
-          excludedCount: excluded.length,
-          totalReceipts,
-          totalPayments,
-        }}
-        unmatchedTransactions={unmatched.map((t) => ({
-          id: t.id,
-          transactionDate: String(t.transactionDate),
-          amount: Number(t.amount),
-          description: String(t.description),
-          reference: t.reference ? String(t.reference) : null,
-        }))}
+        asAtDate={asAtDate}
+        report={
+          report
+            ? {
+                lastReconciledBalance: report.lastReconciledBalance,
+                lastReconciledDate: report.lastReconciledDate,
+                closingBankBalance: report.closingBankBalance,
+                depositsInTransit: report.depositsInTransit,
+                depositsInTransitTotal: report.depositsInTransitTotal,
+                outstandingWithdrawals: report.outstandingWithdrawals,
+                outstandingWithdrawalsTotal:
+                  report.outstandingWithdrawalsTotal,
+                adjustedBankBalance: report.adjustedBankBalance,
+                bookBalance: report.bookBalance,
+                discrepancy: report.discrepancy,
+                totalTransactions: report.totalTransactions,
+                reconciledCount: report.reconciledCount,
+                matchedCount: report.matchedCount,
+                unmatchedCount: report.unmatchedCount,
+                excludedCount: report.excludedCount,
+                totalReceipts: report.totalReceipts,
+                totalPayments: report.totalPayments,
+                unmatchedTransactions: report.unmatchedTransactions,
+              }
+            : null
+        }
       />
     </div>
   );

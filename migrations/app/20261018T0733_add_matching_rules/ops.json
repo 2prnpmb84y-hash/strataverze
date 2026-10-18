@@ -1,0 +1,290 @@
+[
+  {
+    "id": "table.matching_rules",
+    "label": "Create table \"matching_rules\"",
+    "summary": "Creates table \"matching_rules\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "matching_rules"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"matching_rules\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"matching_rules\"",
+        "sql": "CREATE TABLE \"public\".\"matching_rules\" (\n  \"auto_post\" bool DEFAULT false NOT NULL,\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" character varying(500),\n  \"description_pattern\" character varying(500),\n  \"exact_amount\" numeric(12,2),\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"is_active\" bool DEFAULT true NOT NULL,\n  \"last_matched_at\" timestamptz,\n  \"match_count\" int4 DEFAULT 0 NOT NULL,\n  \"match_type\" text NOT NULL,\n  \"max_amount\" numeric(12,2),\n  \"min_amount\" numeric(12,2),\n  \"name\" character varying(200) NOT NULL,\n  \"priority\" int4 DEFAULT 0 NOT NULL,\n  \"reference_pattern\" character varying(200),\n  \"scheme_id\" uuid NOT NULL,\n  \"target_account_code_id\" uuid,\n  \"target_fund_id\" uuid,\n  \"transaction_sign\" text,\n  \"updated_at\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"matching_rules\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.bank_transactions.matching_rule_id",
+    "label": "Add column \"matching_rule_id\" to \"bank_transactions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "matching_rule_id",
+        "table": "bank_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"matching_rule_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bank_transactions",
+          "matching_rule_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"matching_rule_id\"",
+        "sql": "ALTER TABLE \"public\".\"bank_transactions\" ADD COLUMN \"matching_rule_id\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"matching_rule_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bank_transactions",
+          "matching_rule_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.matching_rules.matching_rules_scheme_id_is_active_idx",
+    "label": "Create index \"matching_rules_scheme_id_is_active_idx\" on \"matching_rules\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "matching_rules_scheme_id_is_active_idx",
+        "table": "matching_rules"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"matching_rules_scheme_id_is_active_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"matching_rules_scheme_id_is_active_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"matching_rules_scheme_id_is_active_idx\"",
+        "sql": "CREATE INDEX \"matching_rules_scheme_id_is_active_idx\" ON \"public\".\"matching_rules\" (\"scheme_id\", \"is_active\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"matching_rules_scheme_id_is_active_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"matching_rules_scheme_id_is_active_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.matching_rules.matching_rules_scheme_id_fkey",
+    "label": "Add foreign key \"matching_rules_scheme_id_fkey\" on \"matching_rules\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "matching_rules_scheme_id_fkey",
+        "table": "matching_rules"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"matching_rules_scheme_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "matching_rules_scheme_id_fkey",
+          "public",
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"matching_rules_scheme_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"matching_rules\"\nADD CONSTRAINT \"matching_rules_scheme_id_fkey\"\nFOREIGN KEY (\"scheme_id\")\nREFERENCES \"public\".\"schemes\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"matching_rules_scheme_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "matching_rules_scheme_id_fkey",
+          "public",
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.matching_rules.matching_rules_target_account_code_id_fkey",
+    "label": "Add foreign key \"matching_rules_target_account_code_id_fkey\" on \"matching_rules\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "matching_rules_target_account_code_id_fkey",
+        "table": "matching_rules"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"matching_rules_target_account_code_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "matching_rules_target_account_code_id_fkey",
+          "public",
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"matching_rules_target_account_code_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"matching_rules\"\nADD CONSTRAINT \"matching_rules_target_account_code_id_fkey\"\nFOREIGN KEY (\"target_account_code_id\")\nREFERENCES \"public\".\"account_codes\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"matching_rules_target_account_code_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "matching_rules_target_account_code_id_fkey",
+          "public",
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.matching_rules.matching_rules_target_fund_id_fkey",
+    "label": "Add foreign key \"matching_rules_target_fund_id_fkey\" on \"matching_rules\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "matching_rules_target_fund_id_fkey",
+        "table": "matching_rules"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"matching_rules_target_fund_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "matching_rules_target_fund_id_fkey",
+          "public",
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"matching_rules_target_fund_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"matching_rules\"\nADD CONSTRAINT \"matching_rules_target_fund_id_fkey\"\nFOREIGN KEY (\"target_fund_id\")\nREFERENCES \"public\".\"funds\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"matching_rules_target_fund_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "matching_rules_target_fund_id_fkey",
+          "public",
+          "\"public\".\"matching_rules\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.bank_transactions.bank_transactions_matching_rule_id_fkey",
+    "label": "Add foreign key \"bank_transactions_matching_rule_id_fkey\" on \"bank_transactions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "bank_transactions_matching_rule_id_fkey",
+        "table": "bank_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"bank_transactions_matching_rule_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bank_transactions_matching_rule_id_fkey",
+          "public",
+          "\"public\".\"bank_transactions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"bank_transactions_matching_rule_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"bank_transactions\"\nADD CONSTRAINT \"bank_transactions_matching_rule_id_fkey\"\nFOREIGN KEY (\"matching_rule_id\")\nREFERENCES \"public\".\"matching_rules\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"bank_transactions_matching_rule_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bank_transactions_matching_rule_id_fkey",
+          "public",
+          "\"public\".\"bank_transactions\""
+        ]
+      }
+    ]
+  }
+]

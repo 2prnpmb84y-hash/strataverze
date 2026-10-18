@@ -43,13 +43,16 @@ export function FundSummaryClient({
   startDate,
   endDate,
   summaries,
+  basePath,
 }: {
   schemeId: string;
   startDate: string;
   endDate: string;
   summaries: FundSummaryData[];
+  basePath?: string;
 }) {
   const router = useRouter();
+  const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
   function applyFilters(updates: Record<string, string>) {
     const params = new URLSearchParams();
@@ -58,7 +61,7 @@ export function FundSummaryClient({
     if (current.endDate) params.set("endDate", current.endDate);
     const qs = params.toString();
     router.push(
-      `/adviser/schemes/${schemeId}/finance/reports/fund-summary${qs ? `?${qs}` : ""}`,
+      `${reportBase}/fund-summary${qs ? `?${qs}` : ""}`,
     );
   }
 

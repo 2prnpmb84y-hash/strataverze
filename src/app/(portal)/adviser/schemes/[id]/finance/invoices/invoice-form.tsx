@@ -27,6 +27,8 @@ export function InvoiceForm({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [skipDuplicate, setSkipDuplicate] = useState(false);
 
   const [subtotal, setSubtotal] = useState(0);
   const [gstAmount, setGstAmount] = useState(0);
@@ -54,11 +56,12 @@ export function InvoiceForm({
     e.preventDefault();
     setError(undefined);
     setFieldErrors({});
+    setDuplicateWarning(null);
 
     const form = new FormData(e.currentTarget);
 
     startTransition(async () => {
-      const result: ActionState = await createSupplierInvoiceAction(schemeId, {
+      const payload: Record<string, unknown> = {
         supplierId: form.get("supplierId") as string,
         invoiceNumber: form.get("invoiceNumber") as string,
         invoiceDate: form.get("invoiceDate") as string,
@@ -69,12 +72,27 @@ export function InvoiceForm({
         description: (form.get("description") as string) ?? "",
         accountCodeId: form.get("accountCodeId") as string,
         fundId: form.get("fundId") as string,
-      });
+      };
+
+      if (skipDuplicate) {
+        payload.skipDuplicateCheck = true;
+        setSkipDuplicate(false);
+      }
+
+      const result: ActionState = await createSupplierInvoiceAction(
+        schemeId,
+        payload as Parameters<typeof createSupplierInvoiceAction>[1],
+      );
 
       if (result.fieldErrors) {
         setFieldErrors(result.fieldErrors);
       }
       if (result.error) {
+        if (result.data?.isDuplicate) {
+          setDuplicateWarning(result.error);
+          setSkipDuplicate(true);
+          return;
+        }
         setError(result.error);
         return;
       }
@@ -89,6 +107,16 @@ export function InvoiceForm({
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {duplicateWarning && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-medium">Possible Duplicate Detected</p>
+          <p className="mt-1">{duplicateWarning}</p>
+          <p className="mt-2 text-xs text-amber-600">
+            Click &ldquo;Create Invoice&rdquo; again to proceed anyway.
+          </p>
         </div>
       )}
 

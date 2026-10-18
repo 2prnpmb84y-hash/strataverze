@@ -15,7 +15,13 @@ type SchemeItem = {
   totalLots: number;
 };
 
-export function SchemeList({ schemes }: { schemes: SchemeItem[] }) {
+export function SchemeList({
+  schemes,
+  portalPrefix = "adviser",
+}: {
+  schemes: SchemeItem[];
+  portalPrefix?: string;
+}) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -56,7 +62,7 @@ export function SchemeList({ schemes }: { schemes: SchemeItem[] }) {
           {filtered.map((scheme) => (
             <Link
               key={scheme.id}
-              href={`/adviser/schemes/${scheme.id}`}
+              href={`/${portalPrefix}/schemes/${scheme.id}`}
               className="block rounded-xl bg-card border border-border p-5 hover:border-primary-300 transition-colors"
             >
               <div className="flex items-start justify-between gap-4">

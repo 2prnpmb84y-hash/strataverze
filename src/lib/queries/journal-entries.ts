@@ -5,6 +5,7 @@ import type {
   TimestampString,
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
+import { getFinancialPeriodsForScheme } from "./financial-periods";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric(value: number | string): Numeric<12, 2> {
@@ -51,6 +52,65 @@ interface JournalEntryFilters {
   entryType?: string;
   startDate?: string;
   endDate?: string;
+}
+
+// ─── Period Validation ────────────────────────────────────────
+
+/**
+ * Find the financial period that covers a given transaction date.
+ * Returns null if no period exists for that date.
+ */
+export async function findPeriodForDate(
+  schemeId: string,
+  transactionDate: string,
+) {
+  const periods = await getFinancialPeriodsForScheme(schemeId);
+  const txDate = transactionDate.slice(0, 10);
+
+  return (
+    periods.find((p) => {
+      const start = String(p.startDate).slice(0, 10);
+      const end = String(p.endDate).slice(0, 10);
+      return txDate >= start && txDate <= end;
+    }) ?? null
+  );
+}
+
+/**
+ * Validate that a journal entry can be posted to its transaction date's period.
+ *
+ * Rules:
+ * - If no periods exist for the scheme, posting is allowed (periods not yet set up).
+ * - If the date falls within an OPEN period, posting is allowed.
+ * - If the date falls within a CLOSED period, only ADJUSTMENT entries are allowed.
+ * - If the date falls within a LOCKED period, no entries are allowed.
+ * - If the date doesn't fall within any period, posting is allowed (gap tolerance).
+ *
+ * Throws an error when posting is blocked.
+ */
+export async function validatePeriodForPosting(
+  schemeId: string,
+  transactionDate: string,
+  entryType: string,
+) {
+  const period = await findPeriodForDate(schemeId, transactionDate);
+
+  // No matching period — allow (periods may not be set up yet or date is in a gap)
+  if (!period) return;
+
+  if (period.status === "LOCKED") {
+    throw new Error(
+      `Cannot post to a locked period (${String(period.name)}). The period must be reopened before any entries can be posted.`,
+    );
+  }
+
+  if (period.status === "CLOSED" && entryType !== "ADJUSTMENT") {
+    throw new Error(
+      `Cannot post to a closed period (${String(period.name)}). Use an adjustment entry or reopen the period first.`,
+    );
+  }
+
+  // OPEN period or CLOSED + ADJUSTMENT — allowed
 }
 
 // ─── Queries ───────────────────────────────────────────────────
@@ -169,8 +229,43 @@ export async function createJournalEntry(data: CreateJournalEntryInput) {
 
 /**
  * Post a journal entry (transition from DRAFT to POSTED).
+ *
+ * Validates the transaction date against financial periods:
+ * - OPEN periods allow all entries
+ * - CLOSED periods allow only ADJUSTMENT entries
+ * - LOCKED periods block all entries
+ *
+ * Pass skipPeriodCheck = true only for system-generated entries
+ * (e.g. levy issuance, payment recording) that must go through
+ * regardless of period status.
  */
-export async function postJournalEntry(entryId: string, postedBy: string) {
+export async function postJournalEntry(
+  entryId: string,
+  postedBy: string,
+  skipPeriodCheck = false,
+) {
+  // Fetch the entry to get its transaction date and scheme
+  const entry = await db.orm.public.JournalEntry
+    .where((je) => je.id.eq(entryId))
+    .first();
+
+  if (!entry) {
+    throw new Error("Journal entry not found.");
+  }
+
+  if (entry.status !== "DRAFT") {
+    throw new Error("Only draft journal entries can be posted.");
+  }
+
+  // Validate against financial period unless explicitly skipped
+  if (!skipPeriodCheck) {
+    await validatePeriodForPosting(
+      entry.schemeId,
+      String(entry.transactionDate).slice(0, 10),
+      entry.entryType,
+    );
+  }
+
   return db.orm.public.JournalEntry
     .where({ id: entryId })
     .update({

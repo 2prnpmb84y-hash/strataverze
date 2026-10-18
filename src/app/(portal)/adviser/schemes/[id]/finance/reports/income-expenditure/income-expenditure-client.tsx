@@ -34,6 +34,7 @@ export function IncomeExpenditureClient({
   totalIncome,
   totalExpenses,
   netSurplus,
+  basePath,
 }: {
   schemeId: string;
   funds: { id: string; name: string }[];
@@ -45,8 +46,10 @@ export function IncomeExpenditureClient({
   totalIncome: number;
   totalExpenses: number;
   netSurplus: number;
+  basePath?: string;
 }) {
   const router = useRouter();
+  const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
   function applyFilters(updates: Record<string, string>) {
     const params = new URLSearchParams();
@@ -56,7 +59,7 @@ export function IncomeExpenditureClient({
     if (current.endDate) params.set("endDate", current.endDate);
     const qs = params.toString();
     router.push(
-      `/adviser/schemes/${schemeId}/finance/reports/income-expenditure${qs ? `?${qs}` : ""}`,
+      `${reportBase}/income-expenditure${qs ? `?${qs}` : ""}`,
     );
   }
 

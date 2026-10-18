@@ -54,6 +54,41 @@ const reports = [
       "Opening and closing balances, income, expenses, and levy collection status for each fund.",
     href: "/fund-summary",
   },
+  {
+    key: "audit-trail",
+    title: "Audit Trail",
+    description:
+      "Comprehensive log of all financial actions with filtering by date, user, and entity type. Export to CSV.",
+    href: "/audit-trail",
+  },
+  {
+    key: "committee-pack",
+    title: "Committee Reporting Pack",
+    description:
+      "Consolidated financial summary for committee meetings: fund balances, arrears, budget vs actual, bank status, and recent activity.",
+    href: "/committee-pack",
+  },
+  {
+    key: "cash-flow",
+    title: "Cash Flow Forecast",
+    description:
+      "Projected cash inflows and outflows over the coming months based on levy notices, supplier invoices, and budget estimates.",
+    href: "/cash-flow",
+  },
+  {
+    key: "fund-projections",
+    title: "Fund Balance Projections",
+    description:
+      "Multi-year fund balance trajectory based on current levy schedules and budget. Helps plan capital works funding.",
+    href: "/fund-projections",
+  },
+  {
+    key: "gst-summary",
+    title: "GST Summary (BAS-Ready)",
+    description:
+      "Quarterly GST summary aligned to ATO BAS labels. Shows GST on sales, GST on purchases, and net GST payable.",
+    href: "/gst-summary",
+  },
 ];
 
 export default async function ReportsPage({

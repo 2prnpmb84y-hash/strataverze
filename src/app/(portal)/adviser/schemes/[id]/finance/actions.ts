@@ -5,7 +5,12 @@ import {
   requireSchemeMembership,
   AuthorisationError,
 } from "@/lib/auth/require-membership";
-import { logActivity } from "@/lib/queries/activity-log";
+import {
+  logActivity,
+  getAuditTrailForExport,
+  formatAuditTrailCsv,
+  type AuditTrailFilters,
+} from "@/lib/queries/activity-log";
 import { db } from "@/prisma/db";
 
 // ── Chart of accounts ─────────────────────────────────────────
@@ -82,6 +87,27 @@ import {
   updateBudgetLine,
   deleteBudgetLine,
 } from "@/lib/queries/budget";
+
+// ── Interest ─────────────────────────────────────────────────
+import {
+  chargeInterest,
+  chargeInterestBatch,
+} from "@/lib/queries/interest";
+
+// ── Matching rules ──────────────────────────────────────────
+import {
+  createMatchingRule,
+  updateMatchingRule,
+  deleteMatchingRule,
+  autoMatchTransactions,
+} from "@/lib/queries/matching-rules";
+
+// ── Duplicate detection ─────────────────────────────────────
+import {
+  checkInvoiceDuplicates,
+  checkPaymentDuplicates,
+  checkDocumentDuplicates,
+} from "@/lib/queries/duplicate-detection";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -831,6 +857,15 @@ export async function recordLevyPaymentAction(
     if (amount <= 0) return { error: "Payment amount must be greater than zero." };
     if (!paymentDate) return { error: "Payment date is required." };
 
+    // Duplicate/overpayment detection
+    const paymentDuplicates = await checkPaymentDuplicates(levyNoticeId, amount);
+    if (paymentDuplicates.length > 0) {
+      return {
+        error: paymentDuplicates[0].matchReason,
+        data: { isDuplicate: true },
+      };
+    }
+
     // Fetch the levy notice to determine its fund before recording payment
     const notice = await db.orm.public.LevyNotice
       .where((ln) => ln.id.eq(levyNoticeId))
@@ -990,6 +1025,22 @@ export async function createSupplierInvoiceAction(
     if (!data.invoiceDate) return { error: "Invoice date is required." };
     if (!data.dueDate) return { error: "Due date is required." };
     if (data.totalAmount <= 0) return { error: "Total amount must be greater than zero." };
+
+    // Duplicate detection (warn but allow override via skipDuplicateCheck)
+    const duplicates = await checkInvoiceDuplicates(
+      schemeId,
+      data.supplierId,
+      data.invoiceNumber.trim(),
+      data.totalAmount,
+      data.invoiceDate,
+    );
+
+    if (duplicates.length > 0 && !(data as { skipDuplicateCheck?: boolean }).skipDuplicateCheck) {
+      return {
+        error: `Possible duplicate: ${duplicates[0].matchReason}. Existing invoice ${duplicates[0].invoiceNumber} (${duplicates[0].status}) for $${duplicates[0].totalAmount.toFixed(2)}. Submit again to proceed anyway.`,
+        data: { isDuplicate: true, duplicates },
+      };
+    }
 
     const invoice = await createSupplierInvoice({
       schemeId,
@@ -1285,6 +1336,23 @@ export async function uploadFinancialDocumentAction(
     ];
     if (!allowedTypes.includes(data.mimeType)) {
       return { error: "Only PDF, PNG, JPG, JPEG, and HEIC files are allowed." };
+    }
+
+    // Duplicate detection for documents
+    const docDuplicates = await checkDocumentDuplicates(
+      schemeId,
+      data.fileName,
+      data.fileSize,
+      data.documentType,
+      data.amount,
+      data.documentDate,
+    );
+
+    if (docDuplicates.length > 0 && !(data as { skipDuplicateCheck?: boolean }).skipDuplicateCheck) {
+      return {
+        error: `Possible duplicate: ${docDuplicates[0].matchReason}. Existing document "${docDuplicates[0].fileName}" (${docDuplicates[0].documentStatus}). Submit again to proceed anyway.`,
+        data: { isDuplicate: true, duplicates: docDuplicates },
+      };
     }
 
     const doc = await createFinancialDocument({
@@ -1592,5 +1660,326 @@ export async function deleteBudgetLineAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to delete budget line." };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 11. INTEREST CHARGES
+// ═══════════════════════════════════════════════════════════════
+
+export async function chargeInterestAction(
+  schemeId: string,
+  noticeId: string,
+  interestAmount: number,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    if (interestAmount <= 0) {
+      return { error: "Interest amount must be greater than zero." };
+    }
+
+    const result = await chargeInterest({
+      schemeId,
+      noticeId,
+      interestAmount,
+      actorId: profile.id,
+    });
+
+    revalidatePath(financePath(schemeId, "/interest"));
+    revalidatePath(financePath(schemeId));
+    return {
+      success: true,
+      data: {
+        noticeId: result.noticeId,
+        interestAmount: result.interestAmount,
+        journalEntryId: result.journalEntryId,
+      },
+    };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (isRedirectError(err)) throw err;
+    const msg = err instanceof Error ? err.message : "Failed to charge interest.";
+    return { error: msg };
+  }
+}
+
+export async function chargeInterestBatchAction(
+  schemeId: string,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const result = await chargeInterestBatch({
+      schemeId,
+      actorId: profile.id,
+    });
+
+    revalidatePath(financePath(schemeId, "/interest"));
+    revalidatePath(financePath(schemeId));
+    return {
+      success: true,
+      data: {
+        charged: result.charged,
+        totalInterest: result.totalInterest,
+      },
+    };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (isRedirectError(err)) throw err;
+    const msg = err instanceof Error ? err.message : "Failed to charge interest.";
+    return { error: msg };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 12. ADJUSTMENT ENTRIES (CLOSED PERIOD)
+// ═══════════════════════════════════════════════════════════════
+
+export async function createAdjustmentEntryAction(
+  schemeId: string,
+  data: {
+    transactionDate: string;
+    description: string;
+    lines: Array<{
+      accountCodeId: string;
+      fundId: string;
+      debit?: number;
+      credit?: number;
+      description?: string;
+    }>;
+  },
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    if (!data.description.trim()) {
+      return { error: "Description is required." };
+    }
+
+    if (data.lines.length < 2) {
+      return { error: "At least two journal lines are required for a balanced entry." };
+    }
+
+    const entryNumber = await getNextEntryNumber(schemeId);
+
+    const entry = await createJournalEntry({
+      schemeId,
+      entryNumber,
+      transactionDate: data.transactionDate,
+      description: data.description.trim(),
+      entryType: "ADJUSTMENT",
+      sourceType: "ADJUSTMENT",
+      createdBy: profile.id,
+      lines: data.lines,
+    });
+
+    // Post immediately — period validation in postJournalEntry allows
+    // ADJUSTMENT entries in CLOSED periods
+    await postJournalEntry(entry.id, profile.id);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "JOURNAL_ENTRY_POSTED",
+      entityType: "JournalEntry",
+      entityId: entry.id,
+      metadata: {
+        entryNumber,
+        entryType: "ADJUSTMENT",
+        transactionDate: data.transactionDate,
+      },
+    });
+
+    revalidatePath(financePath(schemeId, "/periods"));
+    revalidatePath(financePath(schemeId, "/journal"));
+    revalidatePath(financePath(schemeId));
+    return {
+      success: true,
+      data: { entryId: entry.id, entryNumber },
+    };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (isRedirectError(err)) throw err;
+    const msg = err instanceof Error ? err.message : "Failed to create adjustment entry.";
+    return { error: msg };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 13. MATCHING RULES
+// ═══════════════════════════════════════════════════════════════
+
+export async function createMatchingRuleAction(
+  schemeId: string,
+  data: {
+    name: string;
+    description?: string;
+    matchType: string;
+    descriptionPattern?: string;
+    referencePattern?: string;
+    exactAmount?: number;
+    minAmount?: number;
+    maxAmount?: number;
+    transactionSign?: string;
+    targetAccountCodeId?: string;
+    targetFundId?: string;
+    autoPost?: boolean;
+    priority?: number;
+  },
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    if (!data.name.trim()) {
+      return { error: "Rule name is required." };
+    }
+
+    if (!data.matchType) {
+      return { error: "Match type is required." };
+    }
+
+    const rule = await createMatchingRule({ schemeId, ...data });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "MATCHING_RULE_CREATED",
+      entityType: "MatchingRule",
+      entityId: rule.id,
+      metadata: { name: data.name, matchType: data.matchType },
+    });
+
+    revalidatePath(financePath(schemeId, "/matching-rules"));
+    return { success: true, data: { id: rule.id } };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to create matching rule." };
+  }
+}
+
+export async function updateMatchingRuleAction(
+  schemeId: string,
+  ruleId: string,
+  data: Partial<{
+    name: string;
+    description: string | null;
+    matchType: string;
+    descriptionPattern: string | null;
+    referencePattern: string | null;
+    exactAmount: number | null;
+    minAmount: number | null;
+    maxAmount: number | null;
+    transactionSign: string | null;
+    targetAccountCodeId: string | null;
+    targetFundId: string | null;
+    autoPost: boolean;
+    priority: number;
+    isActive: boolean;
+  }>,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    await updateMatchingRule(ruleId, data);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "MATCHING_RULE_UPDATED",
+      entityType: "MatchingRule",
+      entityId: ruleId,
+      metadata: { ...data },
+    });
+
+    revalidatePath(financePath(schemeId, "/matching-rules"));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to update matching rule." };
+  }
+}
+
+export async function deleteMatchingRuleAction(
+  schemeId: string,
+  ruleId: string,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    await deleteMatchingRule(ruleId);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "MATCHING_RULE_DELETED",
+      entityType: "MatchingRule",
+      entityId: ruleId,
+      metadata: {},
+    });
+
+    revalidatePath(financePath(schemeId, "/matching-rules"));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to delete matching rule." };
+  }
+}
+
+export async function runAutoMatchAction(
+  schemeId: string,
+  bankAccountId?: string,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const result = await autoMatchTransactions(schemeId, bankAccountId, profile.id);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "AUTO_MATCH_RUN",
+      entityType: "Scheme",
+      entityId: schemeId,
+      metadata: {
+        matched: result.matched,
+        bankAccountId: bankAccountId ?? "all",
+      },
+    });
+
+    revalidatePath(financePath(schemeId, "/matching-rules"));
+    revalidatePath(financePath(schemeId, "/reconciliation"));
+    return {
+      success: true,
+      data: {
+        matched: result.matched,
+        results: result.results,
+      },
+    };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to run auto-matching." };
+  }
+}
+
+// ── Audit trail CSV export ───────────────────────────────────
+
+export async function exportAuditTrailAction(
+  schemeId: string,
+  filters: AuditTrailFilters,
+): Promise<{ error?: string; data?: { csv: string; filename: string } }> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const rows = await getAuditTrailForExport(schemeId, filters);
+    const csv = formatAuditTrailCsv(rows);
+
+    const datePart = new Date().toISOString().slice(0, 10);
+    const filename = `audit-trail-${datePart}.csv`;
+
+    return { data: { csv, filename } };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to export audit trail." };
   }
 }

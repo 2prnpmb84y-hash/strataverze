@@ -54,6 +54,23 @@ export async function getSchemesForCommittee(profileId: string) {
 }
 
 /**
+ * Fetch all schemes an external accountant has read-only access to.
+ */
+export async function getSchemesForAccountant(profileId: string) {
+  return db.orm.public.Scheme
+    .include("memberships", (m) =>
+      m.where((sm) => sm.profileId.eq(profileId))
+        .where((sm) => sm.role.eq("ACCOUNTANT"))
+        .where((sm) => sm.isActive.eq(true)),
+    )
+    .orderBy((s) => s.name.asc())
+    .all()
+    .then((schemes) =>
+      schemes.filter((s) => s.memberships.length > 0),
+    );
+}
+
+/**
  * Fetch a single scheme by ID with lot count and membership summary.
  */
 export async function getSchemeById(schemeId: string) {

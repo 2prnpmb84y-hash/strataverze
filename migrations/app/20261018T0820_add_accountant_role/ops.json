@@ -1,0 +1,53 @@
+[
+  {
+    "id": "addNativeEnumValue.PortalRole.ACCOUNTANT",
+    "label": "Add value \"ACCOUNTANT\" to enum type \"PortalRole\"",
+    "summary": "Adds value \"ACCOUNTANT\" to enum type \"PortalRole\". A newly added enum value cannot be used until the transaction that adds it commits, so a migration that both appends a value and uses it in the same step will fail at apply.",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "PortalRole"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure enum type \"PortalRole\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_type\" AS \"t\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"t\".\"typtype\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "PortalRole",
+          "e"
+        ]
+      },
+      {
+        "description": "ensure value \"ACCOUNTANT\" is absent from enum type \"PortalRole\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_enum\" AS \"e\" INNER JOIN \"pg_type\" AS \"t\" ON \"t\".\"oid\" = \"e\".\"enumtypid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"e\".\"enumlabel\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "PortalRole",
+          "ACCOUNTANT"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add value \"ACCOUNTANT\" to enum type \"PortalRole\"",
+        "sql": "ALTER TYPE \"public\".\"PortalRole\" ADD VALUE 'ACCOUNTANT'"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify value \"ACCOUNTANT\" exists on enum type \"PortalRole\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_enum\" AS \"e\" INNER JOIN \"pg_type\" AS \"t\" ON \"t\".\"oid\" = \"e\".\"enumtypid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"t\".\"typnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"t\".\"typname\" = $2 AND \"e\".\"enumlabel\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "PortalRole",
+          "ACCOUNTANT"
+        ]
+      }
+    ]
+  }
+]

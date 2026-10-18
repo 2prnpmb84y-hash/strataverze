@@ -17,6 +17,7 @@ enum PortalRole {
   COMMITTEE
   ADVISER
   SUPPLIER
+  ACCOUNTANT
 }
 
 model Profile {
@@ -102,6 +103,7 @@ model Scheme {
   financialDocuments  FinancialDocument[]
   suppliers           Supplier[]
   supplierInvoices    SupplierInvoice[]
+  matchingRules       MatchingRule[]
 
   @@map("schemes")
 }
@@ -183,6 +185,7 @@ model Fund {
   journalLines       JournalLine[]
   supplierInvoices   SupplierInvoice[]
   budgetLines        BudgetLine[]
+  matchingRules      MatchingRule[]
 
   @@index([schemeId, fundType])
   @@map("funds")
@@ -627,6 +630,7 @@ model AccountCode {
   childAccounts    AccountCode[]     @relation("AccountHierarchy")
   journalLines     JournalLine[]
   supplierInvoices SupplierInvoice[]
+  matchingRules    MatchingRule[]
 
   @@unique([schemeId, code])
   @@index([schemeId, accountType])
@@ -732,10 +736,49 @@ model BankTransaction {
   journalLines          JournalLine[]
   financialDocuments    FinancialDocument[]
 
+  matchingRuleId        String?             @map("matching_rule_id") @db.Uuid
+  matchingRule          MatchingRule?        @relation(fields: [matchingRuleId], references: [id])
+
   @@index([bankAccountId, transactionDate])
   @@index([schemeId, reconciliationStatus])
   @@index([bankAccountId, amount, transactionDate]) // for duplicate detection
   @@map("bank_transactions")
+}
+
+model MatchingRule {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId          String              @map("scheme_id") @db.Uuid
+  name              String              @db.VarChar(200)
+  description       String?             @db.VarChar(500)
+  isActive          Boolean             @default(true) @map("is_active")
+
+  // Match criteria
+  matchType         String              @map("match_type") // DESCRIPTION, REFERENCE, AMOUNT, DESCRIPTION_AND_AMOUNT
+  descriptionPattern String?            @map("description_pattern") @db.VarChar(500) // substring or regex to match
+  referencePattern  String?             @map("reference_pattern") @db.VarChar(200)
+  exactAmount       Decimal?            @db.Decimal(12, 2) @map("exact_amount")
+  minAmount         Decimal?            @db.Decimal(12, 2) @map("min_amount")
+  maxAmount         Decimal?            @db.Decimal(12, 2) @map("max_amount")
+  transactionSign   String?             @map("transaction_sign") // CREDIT, DEBIT, ANY
+
+  // Action when matched
+  targetAccountCodeId String?           @map("target_account_code_id") @db.Uuid
+  targetFundId      String?             @map("target_fund_id") @db.Uuid
+  autoPost          Boolean             @default(false) @map("auto_post")
+
+  priority          Int                 @default(0) // higher = checked first
+  matchCount        Int                 @default(0) @map("match_count")
+  lastMatchedAt     DateTime?           @db.Timestamptz @map("last_matched_at")
+  createdAt         DateTime            @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime            @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme            Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  targetAccountCode AccountCode?        @relation(fields: [targetAccountCodeId], references: [id])
+  targetFund        Fund?               @relation(fields: [targetFundId], references: [id])
+  matchedTransactions BankTransaction[]
+
+  @@index([schemeId, isActive])
+  @@map("matching_rules")
 }
 
 model LevySchedule {

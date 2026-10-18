@@ -194,6 +194,17 @@ export default async function FinanceDashboardPage({
           }
         />
         <QuickActionCard
+          title="Interest"
+          description={`${overdueLevies.length} overdue – charge interest`}
+          href={`/adviser/schemes/${id}/finance/interest`}
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              <circle cx="19" cy="5" r="3" />
+            </svg>
+          }
+        />
+        <QuickActionCard
           title="Financial Reports"
           description="Trial balance, fund summary and more"
           href={`/adviser/schemes/${id}/finance/reports`}

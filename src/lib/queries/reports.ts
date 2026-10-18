@@ -646,22 +646,68 @@ export async function getFundSummaryReport(
 
 // ─── Bank Reconciliation Report ─────────────────────────────────
 
+export interface ReconciliationTransaction {
+  id: string;
+  transactionDate: string;
+  description: string;
+  reference: string | null;
+  amount: number;
+  reconciliationStatus: string;
+}
+
 export interface BankReconciliationReport {
-  openingBalance: number;
-  receipts: number;
-  payments: number;
+  /** Last reconciled balance from the bank account record */
+  lastReconciledBalance: number;
+  /** Date of last reconciliation */
+  lastReconciledDate: string | null;
+  /** Closing bank statement balance (last reconciled + all transactions up to asAtDate) */
   closingBankBalance: number;
-  unmatchedBankItems: number;
-  matchedItems: number;
-  reconciledItems: number;
-  excludedItems: number;
+  /** Deposits recorded in the books but not yet cleared at the bank */
+  depositsInTransit: ReconciliationTransaction[];
+  depositsInTransitTotal: number;
+  /** Payments/cheques issued but not yet cleared at the bank */
+  outstandingWithdrawals: ReconciliationTransaction[];
+  outstandingWithdrawalsTotal: number;
+  /** Adjusted bank balance (closing + deposits in transit - outstanding withdrawals) */
+  adjustedBankBalance: number;
+  /** Book balance: net of all posted journal entries against the bank ledger account */
+  bookBalance: number;
+  /** Difference between adjusted bank balance and book balance */
+  discrepancy: number;
+  /** Summary counts */
+  totalTransactions: number;
+  reconciledCount: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  excludedCount: number;
+  /** Cash flow totals for the period */
+  totalReceipts: number;
+  totalPayments: number;
+  /** Unmatched transactions needing attention */
+  unmatchedTransactions: ReconciliationTransaction[];
 }
 
 /**
- * Generate a bank reconciliation summary report.
+ * Generate a comprehensive bank reconciliation report.
+ *
+ * The report reconciles the bank statement balance to the book (ledger) balance:
+ *   Bank Statement Balance (closing)
+ *   + Deposits in transit (matched in books, not yet on statement)
+ *   - Outstanding withdrawals (matched in books, not yet on statement)
+ *   = Adjusted Bank Balance
+ *
+ *   Book Balance (journal entries against bank ledger account)
+ *
+ *   Discrepancy = Adjusted Bank Balance - Book Balance
+ *
+ * @param bankAccountId The bank account to reconcile
+ * @param schemeId The scheme (needed for book balance lookup)
+ * @param asAtDate Optional cutoff date (ISO string). Defaults to all transactions.
  */
 export async function getBankReconciliationReport(
   bankAccountId: string,
+  schemeId: string,
+  asAtDate?: string,
 ): Promise<BankReconciliationReport> {
   const bankAccount = await db.orm.public.SchemeBankAccount
     .where((ba) => ba.id.eq(bankAccountId))
@@ -669,54 +715,1073 @@ export async function getBankReconciliationReport(
 
   if (!bankAccount) {
     return {
-      openingBalance: 0,
-      receipts: 0,
-      payments: 0,
+      lastReconciledBalance: 0,
+      lastReconciledDate: null,
       closingBankBalance: 0,
-      unmatchedBankItems: 0,
-      matchedItems: 0,
-      reconciledItems: 0,
-      excludedItems: 0,
+      depositsInTransit: [],
+      depositsInTransitTotal: 0,
+      outstandingWithdrawals: [],
+      outstandingWithdrawalsTotal: 0,
+      adjustedBankBalance: 0,
+      bookBalance: 0,
+      discrepancy: 0,
+      totalTransactions: 0,
+      reconciledCount: 0,
+      matchedCount: 0,
+      unmatchedCount: 0,
+      excludedCount: 0,
+      totalReceipts: 0,
+      totalPayments: 0,
+      unmatchedTransactions: [],
     };
   }
 
-  const openingBalance = Number(bankAccount.lastReconciledBalance ?? 0);
+  const lastReconciledBalance = Number(bankAccount.lastReconciledBalance ?? 0);
+  const lastReconciledDate = bankAccount.lastReconciledDate
+    ? String(bankAccount.lastReconciledDate)
+    : null;
 
-  const transactions = await db.orm.public.BankTransaction
-    .where((t) => t.bankAccountId.eq(bankAccountId))
+  // Fetch all bank transactions up to the as-at date
+  let txnQuery = db.orm.public.BankTransaction
+    .where((t) => t.bankAccountId.eq(bankAccountId));
+
+  if (asAtDate) {
+    txnQuery = txnQuery.where((t) =>
+      t.transactionDate.lte(toTimestamp(asAtDate)),
+    );
+  }
+
+  const transactions = await txnQuery
+    .orderBy((t) => t.transactionDate.asc())
     .limit(5000)
     .all();
 
-  let receipts = 0;
-  let payments = 0;
-  let unmatchedBankItems = 0;
-  let matchedItems = 0;
-  let reconciledItems = 0;
-  let excludedItems = 0;
+  let totalReceipts = 0;
+  let totalPayments = 0;
+  let reconciledCount = 0;
+  let matchedCount = 0;
+  let unmatchedCount = 0;
+  let excludedCount = 0;
+
+  const depositsInTransit: ReconciliationTransaction[] = [];
+  const outstandingWithdrawals: ReconciliationTransaction[] = [];
+  const unmatchedTransactions: ReconciliationTransaction[] = [];
 
   for (const txn of transactions) {
     const amount = Number(txn.amount);
+    const status = String(txn.reconciliationStatus);
+
     if (amount >= 0) {
-      receipts += amount;
+      totalReceipts += amount;
     } else {
-      payments += Math.abs(amount);
+      totalPayments += Math.abs(amount);
     }
 
-    const status = String(txn.reconciliationStatus);
-    if (status === "UNMATCHED") unmatchedBankItems++;
-    else if (status === "MATCHED") matchedItems++;
-    else if (status === "RECONCILED") reconciledItems++;
-    else if (status === "EXCLUDED") excludedItems++;
+    if (status === "RECONCILED") {
+      reconciledCount++;
+    } else if (status === "MATCHED") {
+      matchedCount++;
+      // Matched but not reconciled = outstanding items
+      // These are recorded in the books (have a journal entry) but not confirmed
+      // against the bank statement
+      const serialised: ReconciliationTransaction = {
+        id: txn.id,
+        transactionDate: String(txn.transactionDate),
+        description: String(txn.description),
+        reference: txn.reference ? String(txn.reference) : null,
+        amount,
+      reconciliationStatus: status,
+      };
+      if (amount >= 0) {
+        depositsInTransit.push(serialised);
+      } else {
+        outstandingWithdrawals.push(serialised);
+      }
+    } else if (status === "UNMATCHED") {
+      unmatchedCount++;
+      unmatchedTransactions.push({
+        id: txn.id,
+        transactionDate: String(txn.transactionDate),
+        description: String(txn.description),
+        reference: txn.reference ? String(txn.reference) : null,
+        amount,
+        reconciliationStatus: status,
+      });
+    } else if (status === "EXCLUDED") {
+      excludedCount++;
+    }
+  }
+
+  // Closing bank balance = last reconciled + all cleared (reconciled) transactions
+  // For simplicity: last reconciled balance + net of all transactions gives the
+  // current bank statement position
+  const closingBankBalance = lastReconciledBalance + totalReceipts - totalPayments;
+
+  const depositsInTransitTotal = depositsInTransit.reduce(
+    (sum, t) => sum + t.amount, 0,
+  );
+  const outstandingWithdrawalsTotal = outstandingWithdrawals.reduce(
+    (sum, t) => sum + Math.abs(t.amount), 0,
+  );
+
+  // Adjusted bank balance
+  const adjustedBankBalance =
+    closingBankBalance + depositsInTransitTotal - outstandingWithdrawalsTotal;
+
+  // Book balance: sum of debits minus credits for the bank ledger account
+  // from posted journal entries
+  const bankAccountCode = await db.orm.public.AccountCode
+    .where((a) =>
+      and(
+        a.schemeId.eq(schemeId),
+        a.accountSubType.eq("BANK"),
+        a.isSystemAccount.eq(true),
+        a.isActive.eq(true),
+      ),
+    )
+    .first();
+
+  let bookBalance = 0;
+
+  if (bankAccountCode) {
+    const lineQuery = db.orm.public.JournalLine
+      .where((l) => l.accountCodeId.eq(bankAccountCode.id))
+      .include("journalEntry");
+
+    const lines = await lineQuery.limit(10000).all();
+
+    for (const line of lines) {
+      // Only count posted entries
+      if (line.journalEntry && String(line.journalEntry.status) === "POSTED") {
+        // Check date filter
+        if (asAtDate) {
+          const entryDate = String(line.journalEntry.transactionDate);
+          if (entryDate > asAtDate) continue;
+        }
+        // Bank is an asset account: debits increase, credits decrease
+        const debit = Number(line.debit ?? 0);
+        const credit = Number(line.credit ?? 0);
+        bookBalance += debit - credit;
+      }
+    }
+  }
+
+  const discrepancy = Math.round((adjustedBankBalance - bookBalance) * 100) / 100;
+
+  return {
+    lastReconciledBalance,
+    lastReconciledDate,
+    closingBankBalance: Math.round(closingBankBalance * 100) / 100,
+    depositsInTransit,
+    depositsInTransitTotal: Math.round(depositsInTransitTotal * 100) / 100,
+    outstandingWithdrawals,
+    outstandingWithdrawalsTotal: Math.round(outstandingWithdrawalsTotal * 100) / 100,
+    adjustedBankBalance: Math.round(adjustedBankBalance * 100) / 100,
+    bookBalance: Math.round(bookBalance * 100) / 100,
+    discrepancy,
+    totalTransactions: transactions.length,
+    reconciledCount,
+    matchedCount,
+    unmatchedCount,
+    excludedCount,
+    totalReceipts: Math.round(totalReceipts * 100) / 100,
+    totalPayments: Math.round(totalPayments * 100) / 100,
+    unmatchedTransactions,
+  };
+}
+
+// ─── Committee Financial Reporting Pack ────────────────────────
+
+export interface CommitteeFundSummary {
+  fundId: string;
+  fundName: string;
+  fundType: string;
+  openingBalance: number;
+  totalIncome: number;
+  totalExpenses: number;
+  netMovement: number;
+  closingBalance: number;
+  totalLevied: number;
+  totalCollected: number;
+  outstandingLevies: number;
+}
+
+export interface CommitteeArrearsSnapshot {
+  current: number;
+  days30: number;
+  days60: number;
+  days90: number;
+  days90Plus: number;
+  total: number;
+  lotCount: number;
+}
+
+export interface CommitteeBudgetComparison {
+  fundName: string;
+  totalBudget: number;
+  totalActual: number;
+  totalVariance: number;
+  variancePercent: number;
+  lines: Array<{
+    accountCode: string;
+    accountName: string;
+    budgetAmount: number;
+    actualAmount: number;
+    variance: number;
+    variancePercent: number;
+  }>;
+}
+
+export interface CommitteeBankSummary {
+  bankAccountName: string;
+  closingBalance: number;
+  unmatchedCount: number;
+  lastReconciledDate: string | null;
+}
+
+export interface CommitteeRecentActivity {
+  action: string;
+  entityType: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export interface CommitteeReportingPack {
+  schemeName: string;
+  reportDate: string;
+  periodLabel: string;
+  startDate: string;
+  endDate: string;
+  fundSummaries: CommitteeFundSummary[];
+  totalFundBalance: number;
+  arrearsSnapshot: CommitteeArrearsSnapshot;
+  budgetComparisons: CommitteeBudgetComparison[];
+  bankSummaries: CommitteeBankSummary[];
+  recentActivity: CommitteeRecentActivity[];
+  levyCollectionRate: number;
+  cashPosition: number;
+}
+
+/**
+ * Generate a consolidated financial reporting pack for committee meetings.
+ *
+ * Aggregates:
+ *  - Fund balances and income/expenditure summaries
+ *  - Aged arrears snapshot
+ *  - Budget vs actual per fund
+ *  - Bank account balances and reconciliation status
+ *  - Recent financial activity
+ *  - Key metrics (collection rate, cash position)
+ */
+export async function getCommitteeReportingPack(
+  schemeId: string,
+  startDate: string,
+  endDate: string,
+  financialYear: number,
+): Promise<CommitteeReportingPack> {
+  // 1. Scheme name
+  const scheme = await db.orm.public.Scheme
+    .where((s) => s.id.eq(schemeId))
+    .first();
+  const schemeName = scheme ? String(scheme.name) : "Unknown Scheme";
+
+  // 2. Fund summaries (reuse existing logic)
+  const fundSummaries = await getFundSummaryReport(schemeId, startDate, endDate);
+
+  const totalFundBalance = fundSummaries.reduce(
+    (sum, f) => sum + f.closingBalance,
+    0,
+  );
+
+  // 3. Aged arrears snapshot
+  const arrearsItems = await getAgedArrearsReport(schemeId, endDate);
+  const arrearsSnapshot: CommitteeArrearsSnapshot = {
+    current: 0,
+    days30: 0,
+    days60: 0,
+    days90: 0,
+    days90Plus: 0,
+    total: 0,
+    lotCount: arrearsItems.length,
+  };
+  for (const item of arrearsItems) {
+    arrearsSnapshot.current += item.current;
+    arrearsSnapshot.days30 += item.days30;
+    arrearsSnapshot.days60 += item.days60;
+    arrearsSnapshot.days90 += item.days90;
+    arrearsSnapshot.days90Plus += item.days90Plus;
+    arrearsSnapshot.total += item.total;
+  }
+  // Round
+  arrearsSnapshot.current = Math.round(arrearsSnapshot.current * 100) / 100;
+  arrearsSnapshot.days30 = Math.round(arrearsSnapshot.days30 * 100) / 100;
+  arrearsSnapshot.days60 = Math.round(arrearsSnapshot.days60 * 100) / 100;
+  arrearsSnapshot.days90 = Math.round(arrearsSnapshot.days90 * 100) / 100;
+  arrearsSnapshot.days90Plus = Math.round(arrearsSnapshot.days90Plus * 100) / 100;
+  arrearsSnapshot.total = Math.round(arrearsSnapshot.total * 100) / 100;
+
+  // 4. Budget vs actual per fund
+  const funds = await db.orm.public.Fund
+    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
+    .limit(20)
+    .all();
+
+  const budgetComparisons: CommitteeBudgetComparison[] = [];
+
+  for (const fund of funds) {
+    // Check if budget lines exist for this fund/year
+    const budgetLines = await db.orm.public.BudgetLine
+      .where((b) =>
+        and(b.fundId.eq(fund.id), b.financialYear.eq(financialYear)),
+      )
+      .limit(1)
+      .all();
+
+    if (budgetLines.length === 0) continue;
+
+    // Get account codes for the scheme
+    const accountCodes = await db.orm.public.AccountCode
+      .where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true)))
+      .limit(500)
+      .all();
+    const accountMap = new Map(accountCodes.map((a) => [a.id, a]));
+
+    // Get all budget lines for this fund
+    const allBudgetLines = await db.orm.public.BudgetLine
+      .where((b) =>
+        and(b.fundId.eq(fund.id), b.financialYear.eq(financialYear)),
+      )
+      .limit(200)
+      .all();
+
+    // Get actual amounts from posted journal entries
+    const journalLines = await db.orm.public.JournalLine
+      .where((jl) => jl.fundId.eq(fund.id))
+      .include("journalEntry")
+      .limit(10000)
+      .all();
+
+    const fyStart = `${financialYear}-07-01`;
+    const fyEnd = `${financialYear + 1}-06-30`;
+
+    const postedLines = journalLines.filter((jl) => {
+      const entry = jl.journalEntry;
+      if (!entry || entry.status !== "POSTED") return false;
+      const txDate = String(entry.transactionDate).slice(0, 10);
+      return txDate >= fyStart && txDate <= fyEnd;
+    });
+
+    const actualsByAccount = new Map<string, number>();
+    for (const line of postedLines) {
+      const account = accountMap.get(line.accountCodeId);
+      if (!account) continue;
+      const current = actualsByAccount.get(line.accountCodeId) ?? 0;
+      if (account.accountType === "EXPENSE") {
+        actualsByAccount.set(line.accountCodeId, current + Number(line.debit ?? 0));
+      } else if (account.accountType === "INCOME") {
+        actualsByAccount.set(line.accountCodeId, current + Number(line.credit ?? 0));
+      }
+    }
+
+    const lines = allBudgetLines.map((bl) => {
+      const account = accountMap.get(bl.accountCodeId);
+      const budgetAmount = Number(bl.budgetAmount);
+      const actualAmount = actualsByAccount.get(bl.accountCodeId) ?? 0;
+      const variance = budgetAmount - actualAmount;
+      return {
+        accountCode: account ? String(account.code) : "",
+        accountName: account ? String(account.name) : "Unknown",
+        budgetAmount,
+        actualAmount,
+        variance,
+        variancePercent: budgetAmount !== 0 ? (variance / budgetAmount) * 100 : 0,
+      };
+    }).sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+
+    const totalBudget = lines.reduce((s, l) => s + l.budgetAmount, 0);
+    const totalActual = lines.reduce((s, l) => s + l.actualAmount, 0);
+    const totalVariance = totalBudget - totalActual;
+
+    budgetComparisons.push({
+      fundName: String(fund.name),
+      totalBudget: Math.round(totalBudget * 100) / 100,
+      totalActual: Math.round(totalActual * 100) / 100,
+      totalVariance: Math.round(totalVariance * 100) / 100,
+      variancePercent: totalBudget !== 0
+        ? Math.round(((totalVariance / totalBudget) * 100) * 100) / 100
+        : 0,
+      lines,
+    });
+  }
+
+  // 5. Bank account summaries
+  const bankAccounts = await db.orm.public.SchemeBankAccount
+    .where((ba) => and(ba.schemeId.eq(schemeId), ba.isActive.eq(true)))
+    .limit(10)
+    .all();
+
+  const bankSummaries: CommitteeBankSummary[] = [];
+  for (const ba of bankAccounts) {
+    // Count unmatched transactions
+    const unmatchedTxns = await db.orm.public.BankTransaction
+      .where((t) =>
+        and(
+          t.bankAccountId.eq(ba.id),
+          t.reconciliationStatus.eq("UNMATCHED"),
+        ),
+      )
+      .limit(1000)
+      .all();
+
+    bankSummaries.push({
+      bankAccountName: String(ba.accountName),
+      closingBalance: Number(ba.lastReconciledBalance ?? 0),
+      unmatchedCount: unmatchedTxns.length,
+      lastReconciledDate: ba.lastReconciledDate
+        ? String(ba.lastReconciledDate)
+        : null,
+    });
+  }
+
+  // 6. Recent financial activity (last 20 items)
+  const recentLogs = await db.orm.public.ActivityLog
+    .where((a) => a.schemeId.eq(schemeId))
+    .include("actor")
+    .orderBy((a) => a.createdAt.desc())
+    .limit(20)
+    .all();
+
+  const recentActivity: CommitteeRecentActivity[] = recentLogs.map((log) => ({
+    action: String(log.action),
+    entityType: String(log.entityType),
+    actorName: log.actor
+      ? `${String(log.actor.firstName)} ${String(log.actor.lastName)}`
+      : "System",
+    createdAt: String(log.createdAt),
+  }));
+
+  // 7. Key metrics
+  const totalLevied = fundSummaries.reduce((s, f) => s + f.totalLevied, 0);
+  const totalCollected = fundSummaries.reduce((s, f) => s + f.totalCollected, 0);
+  const levyCollectionRate =
+    totalLevied > 0
+      ? Math.round(((totalCollected / totalLevied) * 100) * 100) / 100
+      : 100;
+
+  const cashPosition = bankSummaries.reduce(
+    (s, b) => s + b.closingBalance,
+    0,
+  );
+
+  // Period label
+  const startMonth = new Date(startDate).toLocaleDateString("en-AU", {
+    month: "short",
+    year: "numeric",
+  });
+  const endMonth = new Date(endDate).toLocaleDateString("en-AU", {
+    month: "short",
+    year: "numeric",
+  });
+  const periodLabel = `${startMonth} to ${endMonth}`;
+
+  return {
+    schemeName,
+    reportDate: new Date().toISOString(),
+    periodLabel,
+    startDate,
+    endDate,
+    fundSummaries,
+    totalFundBalance: Math.round(totalFundBalance * 100) / 100,
+    arrearsSnapshot,
+    budgetComparisons,
+    bankSummaries,
+    recentActivity,
+    levyCollectionRate,
+    cashPosition: Math.round(cashPosition * 100) / 100,
+  };
+}
+
+// ─── Cash Flow Forecasting ──────────────────────────────────────
+
+export interface CashFlowMonth {
+  month: string; // "2026-07" format
+  label: string; // "Jul 2026" display label
+  levyIncome: number;
+  otherIncome: number;
+  supplierExpenses: number;
+  otherExpenses: number;
+  netFlow: number;
+  cumulativeBalance: number;
+}
+
+export interface CashFlowForecast {
+  schemeName: string;
+  startingBalance: number;
+  months: CashFlowMonth[];
+  totalLevyIncome: number;
+  totalOtherIncome: number;
+  totalSupplierExpenses: number;
+  totalOtherExpenses: number;
+  totalNetFlow: number;
+  endingBalance: number;
+}
+
+/**
+ * Generate a cash flow forecast for the coming months.
+ *
+ * Aggregates:
+ *  - Starting balance from bank accounts
+ *  - Projected levy income from issued/outstanding levy notices
+ *  - Projected expenses from approved/outstanding supplier invoices
+ *  - Budget-based projections for months without specific transactions
+ *
+ * @param schemeId - the scheme to forecast
+ * @param monthsAhead - how many months to forecast (default 6)
+ */
+export async function getCashFlowForecast(
+  schemeId: string,
+  monthsAhead = 6,
+): Promise<CashFlowForecast> {
+  // 1. Scheme name
+  const scheme = await db.orm.public.Scheme
+    .where((s) => s.id.eq(schemeId))
+    .first();
+  const schemeName = scheme ? String(scheme.name) : "Unknown Scheme";
+
+  // 2. Starting balance from bank accounts
+  const bankAccounts = await db.orm.public.SchemeBankAccount
+    .where((ba) => and(ba.schemeId.eq(schemeId), ba.isActive.eq(true)))
+    .limit(10)
+    .all();
+
+  const startingBalance = bankAccounts.reduce(
+    (sum, ba) => sum + Number(ba.lastReconciledBalance ?? 0),
+    0,
+  );
+
+  // 3. Build month buckets
+  const now = new Date();
+  const monthBuckets: CashFlowMonth[] = [];
+  for (let i = 0; i < monthsAhead; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("en-AU", { month: "short", year: "numeric" });
+    monthBuckets.push({
+      month,
+      label,
+      levyIncome: 0,
+      otherIncome: 0,
+      supplierExpenses: 0,
+      otherExpenses: 0,
+      netFlow: 0,
+      cumulativeBalance: 0,
+    });
+  }
+
+  const firstMonth = monthBuckets[0].month;
+
+  // Helper to find bucket index for a date
+  function bucketIndex(dateStr: string): number {
+    const monthKey = dateStr.slice(0, 7);
+    return monthBuckets.findIndex((b) => b.month === monthKey);
+  }
+
+  // 4. Levy notices (outstanding/issued) with due dates in forecast range
+  const levyNotices = await db.orm.public.LevyNotice
+    .where((ln) =>
+      and(
+        ln.schemeId.eq(schemeId),
+        ln.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]),
+      ),
+    )
+    .limit(5000)
+    .all();
+
+  for (const notice of levyNotices) {
+    const dueDateStr = String(notice.dueDate).slice(0, 10);
+    const idx = bucketIndex(dueDateStr);
+    if (idx >= 0) {
+      monthBuckets[idx].levyIncome += Number(notice.balanceOutstanding);
+    } else if (dueDateStr < `${firstMonth}-01`) {
+      // Overdue levies: assume collected in current month
+      monthBuckets[0].levyIncome += Number(notice.balanceOutstanding);
+    }
+  }
+
+  // 5. Supplier invoices (approved/outstanding) with due dates in forecast range
+  const supplierInvoices = await db.orm.public.SupplierInvoice
+    .where((si) =>
+      and(
+        si.schemeId.eq(schemeId),
+        si.status.in(["AWAITING_APPROVAL", "APPROVED", "PARTIALLY_PAID"]),
+      ),
+    )
+    .limit(2000)
+    .all();
+
+  for (const invoice of supplierInvoices) {
+    const dueDateStr = String(invoice.dueDate).slice(0, 10);
+    const idx = bucketIndex(dueDateStr);
+    if (idx >= 0) {
+      monthBuckets[idx].supplierExpenses += Number(invoice.balanceOutstanding);
+    } else if (dueDateStr < `${firstMonth}-01`) {
+      // Past-due invoices: assume paid in current month
+      monthBuckets[0].supplierExpenses += Number(invoice.balanceOutstanding);
+    }
+  }
+
+  // 6. Budget-based projections for months without specific levy data
+  // Use monthly budget amounts as a baseline for months where no levy notices exist
+  const currentFY = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+
+  // Only use budget lines where the fund belongs to this scheme
+  const schemeFunds = await db.orm.public.Fund
+    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
+    .limit(20)
+    .all();
+  const schemeFundIds = new Set(schemeFunds.map((f) => f.id));
+
+  const budgetLines = await db.orm.public.BudgetLine
+    .where((bl) => bl.financialYear.eq(currentFY))
+    .include("fund")
+    .limit(500)
+    .all();
+
+  // Collect distinct account code IDs from budget lines belonging to this scheme
+  const relevantBudgetLines = budgetLines.filter((bl) =>
+    schemeFundIds.has(bl.fundId),
+  );
+  const accountCodeIds = [
+    ...new Set(relevantBudgetLines.map((bl) => bl.accountCodeId)),
+  ];
+
+  // Fetch account codes to determine income vs expense
+  const accountCodes =
+    accountCodeIds.length > 0
+      ? await db.orm.public.AccountCode
+          .where((ac) => ac.id.in(accountCodeIds))
+          .limit(500)
+          .all()
+      : [];
+  const accountCodeMap = new Map(accountCodes.map((ac) => [ac.id, ac]));
+
+  // Calculate monthly budget amounts
+  let monthlyBudgetIncome = 0;
+  let monthlyBudgetExpense = 0;
+  for (const bl of relevantBudgetLines) {
+    const monthly = Number(bl.budgetAmount) / 12;
+    const ac = accountCodeMap.get(bl.accountCodeId);
+    if (ac?.accountType === "INCOME") {
+      monthlyBudgetIncome += monthly;
+    } else if (ac?.accountType === "EXPENSE") {
+      monthlyBudgetExpense += monthly;
+    }
+  }
+
+  // Fill in budget-based estimates for months with no specific data
+  for (const bucket of monthBuckets) {
+    if (bucket.levyIncome === 0 && monthlyBudgetIncome > 0) {
+      bucket.otherIncome = Math.round(monthlyBudgetIncome * 100) / 100;
+    }
+    if (bucket.supplierExpenses === 0 && monthlyBudgetExpense > 0) {
+      bucket.otherExpenses = Math.round(monthlyBudgetExpense * 100) / 100;
+    }
+  }
+
+  // 7. Calculate net flows and cumulative balances
+  let cumulative = startingBalance;
+  for (const bucket of monthBuckets) {
+    bucket.levyIncome = Math.round(bucket.levyIncome * 100) / 100;
+    bucket.supplierExpenses = Math.round(bucket.supplierExpenses * 100) / 100;
+    const totalIn = bucket.levyIncome + bucket.otherIncome;
+    const totalOut = bucket.supplierExpenses + bucket.otherExpenses;
+    bucket.netFlow = Math.round((totalIn - totalOut) * 100) / 100;
+    cumulative = Math.round((cumulative + bucket.netFlow) * 100) / 100;
+    bucket.cumulativeBalance = cumulative;
+  }
+
+  // 8. Totals
+  const totalLevyIncome = monthBuckets.reduce((s, m) => s + m.levyIncome, 0);
+  const totalOtherIncome = monthBuckets.reduce((s, m) => s + m.otherIncome, 0);
+  const totalSupplierExpenses = monthBuckets.reduce(
+    (s, m) => s + m.supplierExpenses,
+    0,
+  );
+  const totalOtherExpenses = monthBuckets.reduce(
+    (s, m) => s + m.otherExpenses,
+    0,
+  );
+  const totalNetFlow = monthBuckets.reduce((s, m) => s + m.netFlow, 0);
+
+  return {
+    schemeName,
+    startingBalance: Math.round(startingBalance * 100) / 100,
+    months: monthBuckets,
+    totalLevyIncome: Math.round(totalLevyIncome * 100) / 100,
+    totalOtherIncome: Math.round(totalOtherIncome * 100) / 100,
+    totalSupplierExpenses: Math.round(totalSupplierExpenses * 100) / 100,
+    totalOtherExpenses: Math.round(totalOtherExpenses * 100) / 100,
+    totalNetFlow: Math.round(totalNetFlow * 100) / 100,
+    endingBalance: cumulative,
+  };
+}
+
+// ─── Fund Balance Projections ───────────────────────────────────
+
+export interface FundProjectionYear {
+  financialYear: number; // e.g. 2026 means FY 2026/2027
+  label: string; // "FY 2026/27"
+  openingBalance: number;
+  levyIncome: number;
+  expenses: number;
+  netMovement: number;
+  closingBalance: number;
+}
+
+export interface FundProjection {
+  fundId: string;
+  fundName: string;
+  fundType: string;
+  currentBalance: number;
+  years: FundProjectionYear[];
+}
+
+export interface FundBalanceProjections {
+  schemeName: string;
+  projections: FundProjection[];
+}
+
+/**
+ * Project fund balances forward over multiple financial years.
+ *
+ * For each active fund, uses the current balance and budget data to project
+ * year-by-year balances. Capital works funds show the long-term accumulation
+ * trajectory, while administrative funds show the annual cycle.
+ *
+ * @param schemeId - the scheme to project
+ * @param yearsAhead - how many FYs to project (default 5)
+ */
+export async function getFundBalanceProjections(
+  schemeId: string,
+  yearsAhead = 5,
+): Promise<FundBalanceProjections> {
+  // 1. Scheme name
+  const scheme = await db.orm.public.Scheme
+    .where((s) => s.id.eq(schemeId))
+    .first();
+  const schemeName = scheme ? String(scheme.name) : "Unknown Scheme";
+
+  // 2. Active funds for this scheme
+  const funds = await db.orm.public.Fund
+    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
+    .limit(20)
+    .all();
+
+  // 3. Current financial year
+  const now = new Date();
+  const currentFY = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+
+  // 4. Get budget lines for current FY and all funds
+  const allBudgetLines = await db.orm.public.BudgetLine
+    .where((bl) => bl.financialYear.eq(currentFY))
+    .limit(1000)
+    .all();
+
+  // Get account codes for budget lines
+  const budgetAccountCodeIds = [
+    ...new Set(allBudgetLines.map((bl) => bl.accountCodeId)),
+  ];
+  const budgetAccountCodes =
+    budgetAccountCodeIds.length > 0
+      ? await db.orm.public.AccountCode
+          .where((ac) => ac.id.in(budgetAccountCodeIds))
+          .limit(500)
+          .all()
+      : [];
+  const acMap = new Map(budgetAccountCodes.map((ac) => [ac.id, ac]));
+
+  // 5. Get active levy schedules to estimate annual levy income per fund
+  const levySchedules = await db.orm.public.LevySchedule
+    .where((ls) =>
+      and(ls.schemeId.eq(schemeId), ls.status.in(["ACTIVE", "APPROVED"])),
+    )
+    .limit(50)
+    .all();
+
+  // Build per-fund annual income/expense from budget
+  const fundBudgetIncome = new Map<string, number>();
+  const fundBudgetExpense = new Map<string, number>();
+  for (const bl of allBudgetLines) {
+    const ac = acMap.get(bl.accountCodeId);
+    if (!ac) continue;
+    const amount = Number(bl.budgetAmount);
+    if (ac.accountType === "INCOME") {
+      fundBudgetIncome.set(
+        bl.fundId,
+        (fundBudgetIncome.get(bl.fundId) ?? 0) + amount,
+      );
+    } else if (ac.accountType === "EXPENSE") {
+      fundBudgetExpense.set(
+        bl.fundId,
+        (fundBudgetExpense.get(bl.fundId) ?? 0) + amount,
+      );
+    }
+  }
+
+  // Build per-fund levy income from schedules (annual amount = budgetAmount on schedule)
+  const fundLevyIncome = new Map<string, number>();
+  for (const ls of levySchedules) {
+    fundLevyIncome.set(
+      ls.fundId,
+      (fundLevyIncome.get(ls.fundId) ?? 0) + Number(ls.budgetAmount),
+    );
+  }
+
+  // 6. Build projections per fund
+  const projections: FundProjection[] = [];
+
+  for (const fund of funds) {
+    const currentBalance = Number(fund.balance);
+    // Use levy schedule income if available, otherwise budget income
+    const annualIncome =
+      fundLevyIncome.get(fund.id) ?? fundBudgetIncome.get(fund.id) ?? 0;
+    const annualExpense = fundBudgetExpense.get(fund.id) ?? 0;
+
+    const years: FundProjectionYear[] = [];
+    let opening = currentBalance;
+
+    for (let i = 0; i < yearsAhead; i++) {
+      const fy = currentFY + i;
+      const label = `FY ${fy}/${String(fy + 1).slice(2)}`;
+      const levyIncome = Math.round(annualIncome * 100) / 100;
+      const expenses = Math.round(annualExpense * 100) / 100;
+      const netMovement = Math.round((levyIncome - expenses) * 100) / 100;
+      const closing = Math.round((opening + netMovement) * 100) / 100;
+
+      years.push({
+        financialYear: fy,
+        label,
+        openingBalance: Math.round(opening * 100) / 100,
+        levyIncome,
+        expenses,
+        netMovement,
+        closingBalance: closing,
+      });
+
+      opening = closing;
+    }
+
+    projections.push({
+      fundId: fund.id,
+      fundName: String(fund.name),
+      fundType: String(fund.fundType),
+      currentBalance: Math.round(currentBalance * 100) / 100,
+      years,
+    });
   }
 
   return {
-    openingBalance,
-    receipts,
-    payments,
-    closingBankBalance: openingBalance + receipts - payments,
-    unmatchedBankItems,
-    matchedItems,
-    reconciledItems,
-    excludedItems,
+    schemeName,
+    projections,
+  };
+}
+
+// ─── BAS-Ready GST Summary ─────────────────────────────────────
+
+export interface GstLineItem {
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  netAmount: number;
+  gstAmount: number;
+  grossAmount: number;
+}
+
+export interface GstSummaryReport {
+  schemeName: string;
+  abnOrGstRegistered: boolean;
+  startDate: string;
+  endDate: string;
+  periodLabel: string;
+  // BAS label fields
+  g1TotalSales: number; // Total sales (including GST-free)
+  g2ExportSales: number; // Export sales (always 0 for strata)
+  g3OtherGstFreeSales: number; // GST-free sales
+  g4InputTaxedSales: number; // Input-taxed sales (always 0 for strata)
+  g9GrossGstOnSales: number; // Total GST on sales
+  g10CapitalPurchases: number; // Capital purchases (not separately tracked yet)
+  g11NonCapitalPurchases: number; // Non-capital purchases
+  g14ExportPurchases: number; // Export purchases (always 0)
+  g15PurchasesForInputTaxedSales: number; // Always 0 for strata
+  g20GstOnPurchases: number; // Total GST on purchases
+  // Net position
+  netGstPayable: number; // g9 - g20
+  // Detail lines
+  incomeLines: GstLineItem[];
+  expenseLines: GstLineItem[];
+}
+
+/**
+ * Generate a GST summary report to support BAS preparation.
+ *
+ * Aggregates GST amounts from posted journal lines within the period,
+ * broken down by account to match BAS label structure.
+ */
+export async function getGstSummaryReport(
+  schemeId: string,
+  startDate: string,
+  endDate: string,
+): Promise<GstSummaryReport> {
+  // 1. Scheme info
+  const scheme = await db.orm.public.Scheme
+    .where((s) => s.id.eq(schemeId))
+    .first();
+  const schemeName = scheme ? String(scheme.name) : "Unknown Scheme";
+  const abnOrGstRegistered = scheme?.gstRegistered ?? false;
+
+  // 2. Period label
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const periodLabel = `${start.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })} – ${end.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`;
+
+  // 3. Posted journal entries in the period
+  const entries = await db.orm.public.JournalEntry
+    .where((je) =>
+      and(
+        je.schemeId.eq(schemeId),
+        je.status.eq("POSTED"),
+        je.transactionDate.gte(toTimestamp(startDate)),
+        je.transactionDate.lte(toTimestamp(endDate)),
+      ),
+    )
+    .limit(5000)
+    .all();
+
+  const entryIds = entries.map((e) => e.id);
+
+  // 4. Get all journal lines for these entries
+  const allLines =
+    entryIds.length > 0
+      ? await db.orm.public.JournalLine
+          .where((jl) => jl.journalEntryId.in(entryIds))
+          .limit(20000)
+          .all()
+      : [];
+
+  // 5. Get account codes for grouping
+  const accountCodeIds = [...new Set(allLines.map((l) => l.accountCodeId))];
+  const accountCodes =
+    accountCodeIds.length > 0
+      ? await db.orm.public.AccountCode
+          .where((ac) => ac.id.in(accountCodeIds))
+          .limit(500)
+          .all()
+      : [];
+  const acMap = new Map(accountCodes.map((ac) => [ac.id, ac]));
+
+  // 6. Aggregate by account code
+  const accountAggregates = new Map<
+    string,
+    { debit: number; credit: number; gst: number }
+  >();
+
+  for (const line of allLines) {
+    const existing = accountAggregates.get(line.accountCodeId) ?? {
+      debit: 0,
+      credit: 0,
+      gst: 0,
+    };
+    existing.debit += Number(line.debit ?? 0);
+    existing.credit += Number(line.credit ?? 0);
+    existing.gst += Number(line.gstAmount ?? 0);
+    accountAggregates.set(line.accountCodeId, existing);
+  }
+
+  // 7. Build line items
+  const incomeLines: GstLineItem[] = [];
+  const expenseLines: GstLineItem[] = [];
+
+  let totalIncomeNet = 0;
+  let totalIncomeGst = 0;
+  let totalExpenseNet = 0;
+  let totalExpenseGst = 0;
+
+  for (const [acId, agg] of accountAggregates) {
+    const ac = acMap.get(acId);
+    if (!ac) continue;
+
+    const accountCode = String(ac.code);
+    const accountName = String(ac.name);
+    const accountType = String(ac.accountType);
+
+    if (accountType === "INCOME") {
+      // Income: credits increase, debits decrease
+      const net = Math.round((agg.credit - agg.debit) * 100) / 100;
+      const gst = Math.round(agg.gst * 100) / 100;
+      incomeLines.push({
+        accountCode,
+        accountName,
+        accountType,
+        netAmount: net,
+        gstAmount: gst,
+        grossAmount: Math.round((net + gst) * 100) / 100,
+      });
+      totalIncomeNet += net;
+      totalIncomeGst += gst;
+    } else if (accountType === "EXPENSE") {
+      // Expenses: debits increase, credits decrease
+      const net = Math.round((agg.debit - agg.credit) * 100) / 100;
+      const gst = Math.round(agg.gst * 100) / 100;
+      expenseLines.push({
+        accountCode,
+        accountName,
+        accountType,
+        netAmount: net,
+        gstAmount: gst,
+        grossAmount: Math.round((net + gst) * 100) / 100,
+      });
+      totalExpenseNet += net;
+      totalExpenseGst += gst;
+    }
+  }
+
+  // Sort by account code
+  incomeLines.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+  expenseLines.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+
+  // 8. Map to BAS labels
+  // GST-free income = income with no GST
+  const gstFreeIncome = incomeLines
+    .filter((l) => l.gstAmount === 0)
+    .reduce((s, l) => s + l.netAmount, 0);
+
+  const g1TotalSales = Math.round((totalIncomeNet + totalIncomeGst) * 100) / 100;
+  const g3OtherGstFreeSales = Math.round(gstFreeIncome * 100) / 100;
+  const g9GrossGstOnSales = Math.round(totalIncomeGst * 100) / 100;
+  const g11NonCapitalPurchases = Math.round(
+    (totalExpenseNet + totalExpenseGst) * 100,
+  ) / 100;
+  const g20GstOnPurchases = Math.round(totalExpenseGst * 100) / 100;
+  const netGstPayable = Math.round((g9GrossGstOnSales - g20GstOnPurchases) * 100) / 100;
+
+  return {
+    schemeName,
+    abnOrGstRegistered,
+    startDate,
+    endDate,
+    periodLabel,
+    g1TotalSales,
+    g2ExportSales: 0,
+    g3OtherGstFreeSales,
+    g4InputTaxedSales: 0,
+    g9GrossGstOnSales,
+    g10CapitalPurchases: 0,
+    g11NonCapitalPurchases,
+    g14ExportPurchases: 0,
+    g15PurchasesForInputTaxedSales: 0,
+    g20GstOnPurchases,
+    netGstPayable,
+    incomeLines,
+    expenseLines,
   };
 }

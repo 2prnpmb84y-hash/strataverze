@@ -1,4 +1,15 @@
 import { db } from "@/prisma/db";
+import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import {
+  normalisePagination,
+  paginate,
+  type PaginatedResult,
+  type PaginationParams,
+} from "@/lib/pagination";
+
+function toTimestamp(value: string): TimestampString<3> {
+  return value as unknown as TimestampString<3>;
+}
 
 export type ActivityAction =
   | "LEVY_CREATED"
@@ -61,7 +72,12 @@ export type ActivityAction =
   | "PAYMENT_CONFIRMATION_UPLOADED"
   | "BUDGET_LINE_CREATED"
   | "BUDGET_LINE_UPDATED"
-  | "BUDGET_LINE_DELETED";
+  | "BUDGET_LINE_DELETED"
+  | "INTEREST_CHARGED"
+  | "MATCHING_RULE_CREATED"
+  | "MATCHING_RULE_UPDATED"
+  | "MATCHING_RULE_DELETED"
+  | "AUTO_MATCH_RUN";
 
 export type ActivityEntityType =
   | "Levy"
@@ -92,7 +108,8 @@ export type ActivityEntityType =
   | "SupplierInvoice"
   | "FinancialDocument"
   | "FinancialPeriod"
-  | "BudgetLine";
+  | "BudgetLine"
+  | "MatchingRule";
 
 type LogActivityData = {
   schemeId: string;
@@ -147,6 +164,230 @@ export async function getActivityForScheme(
     .orderBy((a) => a.createdAt.desc())
     .limit(limit)
     .all();
+}
+
+// ---------------------------------------------------------------------------
+// Audit trail (filtered, paginated)
+// ---------------------------------------------------------------------------
+
+export type AuditTrailFilters = {
+  startDate?: string; // ISO date string e.g. "2025-07-01"
+  endDate?: string;
+  entityType?: string;
+  action?: string;
+  actorId?: string;
+};
+
+export type AuditTrailRow = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  createdAt: string;
+  metadata: Record<string, unknown> | null;
+  actorName: string;
+  actorEmail: string;
+};
+
+/**
+ * Fetch a paginated, filtered audit trail for a scheme.
+ * Returns rows with actor display name pre-resolved.
+ */
+export async function getAuditTrail(
+  schemeId: string,
+  filters: AuditTrailFilters = {},
+  pagination?: PaginationParams,
+): Promise<PaginatedResult<AuditTrailRow>> {
+  const { page, pageSize, limit } = normalisePagination(pagination);
+
+  // Build the base query
+  let query = db.orm.public.ActivityLog.where((a) => a.schemeId.eq(schemeId));
+
+  // Apply filters
+  if (filters.entityType) {
+    query = query.where((a) => a.entityType.eq(filters.entityType!));
+  }
+  if (filters.action) {
+    query = query.where((a) => a.action.eq(filters.action!));
+  }
+  if (filters.actorId) {
+    query = query.where((a) => a.actorId.eq(filters.actorId!));
+  }
+  if (filters.startDate) {
+    query = query.where((a) =>
+      a.createdAt.gte(toTimestamp(`${filters.startDate!}T00:00:00.000Z`)),
+    );
+  }
+  if (filters.endDate) {
+    // End date is inclusive, so use start of next day
+    const endPlusOne = new Date(filters.endDate!);
+    endPlusOne.setDate(endPlusOne.getDate() + 1);
+    query = query.where((a) =>
+      a.createdAt.lt(toTimestamp(endPlusOne.toISOString())),
+    );
+  }
+
+  const rows = await query
+    .include("actor")
+    .orderBy((a) => a.createdAt.desc())
+    .offset((page - 1) * pageSize)
+    .limit(limit)
+    .all();
+
+  const mapped: AuditTrailRow[] = rows.map((r) => ({
+    id: r.id,
+    action: r.action,
+    entityType: r.entityType,
+    entityId: r.entityId,
+    createdAt: String(r.createdAt),
+    metadata: r.metadata as Record<string, unknown> | null,
+    actorName: r.actor
+      ? `${String(r.actor.firstName)} ${String(r.actor.lastName)}`
+      : "System",
+    actorEmail: r.actor ? String(r.actor.email) : "",
+  }));
+
+  return paginate(mapped, page, pageSize);
+}
+
+/**
+ * Fetch all audit trail rows (no pagination) for CSV export.
+ * Limited to 10,000 rows to prevent memory issues.
+ */
+export async function getAuditTrailForExport(
+  schemeId: string,
+  filters: AuditTrailFilters = {},
+): Promise<AuditTrailRow[]> {
+  let query = db.orm.public.ActivityLog.where((a) => a.schemeId.eq(schemeId));
+
+  if (filters.entityType) {
+    query = query.where((a) => a.entityType.eq(filters.entityType!));
+  }
+  if (filters.action) {
+    query = query.where((a) => a.action.eq(filters.action!));
+  }
+  if (filters.actorId) {
+    query = query.where((a) => a.actorId.eq(filters.actorId!));
+  }
+  if (filters.startDate) {
+    query = query.where((a) =>
+      a.createdAt.gte(toTimestamp(`${filters.startDate!}T00:00:00.000Z`)),
+    );
+  }
+  if (filters.endDate) {
+    const endPlusOne = new Date(filters.endDate!);
+    endPlusOne.setDate(endPlusOne.getDate() + 1);
+    query = query.where((a) =>
+      a.createdAt.lt(toTimestamp(endPlusOne.toISOString())),
+    );
+  }
+
+  const rows = await query
+    .include("actor")
+    .orderBy((a) => a.createdAt.desc())
+    .limit(10000)
+    .all();
+
+  return rows.map((r) => ({
+    id: r.id,
+    action: r.action,
+    entityType: r.entityType,
+    entityId: r.entityId,
+    createdAt: String(r.createdAt),
+    metadata: r.metadata as Record<string, unknown> | null,
+    actorName: r.actor
+      ? `${String(r.actor.firstName)} ${String(r.actor.lastName)}`
+      : "System",
+    actorEmail: r.actor ? String(r.actor.email) : "",
+  }));
+}
+
+/**
+ * Generate CSV content from audit trail rows.
+ */
+export function formatAuditTrailCsv(rows: AuditTrailRow[]): string {
+  const headers = [
+    "Date/Time",
+    "User",
+    "Email",
+    "Action",
+    "Entity Type",
+    "Entity ID",
+    "Details",
+  ];
+
+  const escCsv = (val: string) => {
+    if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+      return `"${val.replace(/"/g, '""')}"`;
+    }
+    return val;
+  };
+
+  const lines = [headers.map(escCsv).join(",")];
+
+  for (const row of rows) {
+    const dateStr = new Date(row.createdAt).toLocaleString("en-AU", {
+      timeZone: "Australia/Sydney",
+    });
+    const details = row.metadata
+      ? Object.entries(row.metadata)
+          .map(([k, v]) => `${k}: ${String(v)}`)
+          .join("; ")
+      : "";
+
+    lines.push(
+      [
+        escCsv(dateStr),
+        escCsv(row.actorName),
+        escCsv(row.actorEmail),
+        escCsv(formatActionLabel(row.action)),
+        escCsv(formatEntityTypeLabel(row.entityType)),
+        escCsv(row.entityId ?? ""),
+        escCsv(details),
+      ].join(","),
+    );
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Get distinct actors who have activity in a scheme (for filter dropdown).
+ */
+export async function getAuditTrailActors(schemeId: string) {
+  const rows = await db.orm.public.ActivityLog
+    .where((a) => a.schemeId.eq(schemeId))
+    .include("actor")
+    .orderBy((a) => a.createdAt.desc())
+    .limit(5000)
+    .all();
+
+  const seen = new Map<string, { id: string; name: string }>();
+  for (const r of rows) {
+    if (r.actor && !seen.has(r.actorId)) {
+      seen.set(r.actorId, {
+        id: r.actorId,
+        name: `${String(r.actor.firstName)} ${String(r.actor.lastName)}`,
+      });
+    }
+  }
+  return Array.from(seen.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+}
+
+/** Human-readable label for an action code. */
+export function formatActionLabel(action: string): string {
+  return action
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Human-readable label for an entity type code. */
+export function formatEntityTypeLabel(entityType: string): string {
+  // Insert spaces before uppercase letters (CamelCase to Title Case)
+  return entityType.replace(/([a-z])([A-Z])/g, "$1 $2");
 }
 
 /**
