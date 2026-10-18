@@ -2,13 +2,38 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getCurrentProfile } from "@/lib/queries/profiles";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 const COOKIE_NAME = "sv_selected_scheme";
 
 /**
- * Server action: set the selected scheme cookie and redirect to the dashboard.
+ * Server action: verify the user has a membership on the scheme,
+ * then set the selected scheme cookie and redirect to the dashboard.
  */
 export async function selectScheme(schemeId: string) {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    redirect("/login");
+  }
+
+  // Verify the user has an active membership on this scheme
+  const membership = await db.orm.public.SchemeMembership
+    .where((m) =>
+      and(
+        m.schemeId.eq(schemeId),
+        m.profileId.eq(profile.id),
+        m.isActive.eq(true),
+      ),
+    )
+    .first();
+
+  if (!membership) {
+    // User does not belong to this scheme — do not set cookie
+    redirect("/owner");
+  }
+
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, schemeId, {
     path: "/",

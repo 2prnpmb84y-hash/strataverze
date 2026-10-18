@@ -22,6 +22,17 @@ export async function acceptInvitationAction(invitationId: string) {
     const invitation = await getInvitationById(invitationId);
     if (!invitation) return { error: "Invitation not found." };
 
+    // Verify the invitation was sent to this user's email
+    const profileEmail = String(profile.email).toLowerCase();
+    const invitationEmail = String(invitation.email).toLowerCase();
+    if (profileEmail !== invitationEmail) {
+      return {
+        error:
+          "This invitation was sent to a different email address. " +
+          "Please sign in with the correct account.",
+      };
+    }
+
     const result = await acceptInvitation(invitationId, profile.id);
     if (result.error) return { error: result.error };
 
