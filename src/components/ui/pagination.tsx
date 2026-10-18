@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
@@ -12,7 +13,15 @@ type PaginationProps = {
  * Simple prev/next pagination control.
  * Preserves existing query params while updating the `page` param.
  */
-export function Pagination({ page, hasMore }: PaginationProps) {
+export function Pagination(props: PaginationProps) {
+  return (
+    <Suspense fallback={null}>
+      <PaginationInner {...props} />
+    </Suspense>
+  );
+}
+
+function PaginationInner({ page, hasMore }: PaginationProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 

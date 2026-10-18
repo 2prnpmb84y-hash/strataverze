@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -13,6 +14,44 @@ const tabs = [
 type TabKey = (typeof tabs)[number]["key"];
 
 export function LotDetailTabs({
+  children,
+}: {
+  children: Record<TabKey, ReactNode>;
+}) {
+  return (
+    <Suspense fallback={<LotDetailTabsFallback>{children}</LotDetailTabsFallback>}>
+      <LotDetailTabsInner>{children}</LotDetailTabsInner>
+    </Suspense>
+  );
+}
+
+function LotDetailTabsFallback({ children }: { children: Record<TabKey, ReactNode> }) {
+  return (
+    <div>
+      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
+              tab.key === "details"
+                ? "text-primary-500"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab.label}
+            {tab.key === "details" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-400 rounded-t" />
+            )}
+          </button>
+        ))}
+      </div>
+      {children["details"]}
+    </div>
+  );
+}
+
+function LotDetailTabsInner({
   children,
 }: {
   children: Record<TabKey, ReactNode>;
