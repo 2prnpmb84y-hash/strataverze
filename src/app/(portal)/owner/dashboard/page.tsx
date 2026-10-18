@@ -40,9 +40,7 @@ const quickActions = [
   { label: "Contacts", href: "/owner/contacts", built: true },
   { label: "Announcements", href: "/owner/announcements", built: true },
   { label: "Governance", href: "/owner/governance", committee: true, built: true },
-  { label: "Budget", href: "/owner/coming-soon", committee: true, built: false },
-  { label: "Notes", href: "/owner/coming-soon", built: false },
-  { label: "Invoices", href: "/owner/coming-soon", committee: true, built: false },
+  { label: "Notifications", href: "/owner/notifications", built: true },
 ];
 
 export default async function OwnerDashboard() {

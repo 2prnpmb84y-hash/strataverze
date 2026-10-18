@@ -915,6 +915,11 @@ export default async function SchemeDetailPage({
         <CardHeader
           title="Recent Activity"
           description="Actions taken on this scheme."
+          action={
+            <Button variant="secondary" href={`/adviser/schemes/${id}/activity`}>
+              View All
+            </Button>
+          }
         />
         <ActivityTimeline activities={activities} />
       </Card>
