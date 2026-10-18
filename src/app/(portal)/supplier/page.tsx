@@ -142,7 +142,7 @@ export default async function SupplierDashboard() {
                 <span
                   className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     wo.status === "IN_PROGRESS"
-                      ? "bg-primary-100 text-turquoise"
+                      ? "bg-mint-soft text-turquoise"
                       : "bg-gold-100 text-gold-500"
                   }`}
                 >

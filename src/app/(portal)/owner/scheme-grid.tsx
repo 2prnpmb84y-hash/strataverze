@@ -195,7 +195,7 @@ export function SchemeGrid({
                   </span>
                   {scheme.lotNumber && (
                     <span>
-                      Lot {scheme.lotNumber}
+                      {/^lot\s/i.test(scheme.lotNumber) ? scheme.lotNumber : `Lot ${scheme.lotNumber}`}
                       {scheme.unitNumber ? ` / Unit ${scheme.unitNumber}` : ""}
                     </span>
                   )}

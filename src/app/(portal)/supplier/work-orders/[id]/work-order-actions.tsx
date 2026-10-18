@@ -45,7 +45,7 @@ export function WorkOrderActions({
                 <button
                   type="submit"
                   disabled={statusPending}
-                  className="rounded-[var(--radius-card)] bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 transition-colors disabled:opacity-50"
+                  className="rounded-[var(--radius-card)] bg-turquoise px-4 py-2 text-sm font-medium text-white hover:bg-turquoise/90 transition-colors disabled:opacity-50"
                 >
                   {statusPending ? "Updating..." : "Start Work"}
                 </button>

@@ -6,7 +6,7 @@ import { connection } from "next/server";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   AWARDED: { label: "Awarded", className: "bg-gold-100 text-gold-500" },
-  IN_PROGRESS: { label: "In Progress", className: "bg-primary-100 text-turquoise" },
+  IN_PROGRESS: { label: "In Progress", className: "bg-mint-soft text-turquoise" },
   COMPLETED: { label: "Completed", className: "bg-success/10 text-success" },
   CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
 };

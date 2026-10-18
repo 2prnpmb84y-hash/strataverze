@@ -93,7 +93,7 @@ export function LotFinancials({
                 onClick={() => setFilterType(type)}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   filterType === type
-                    ? "bg-primary-400 text-white"
+                    ? "bg-turquoise text-white"
                     : "bg-white text-ink-muted hover:text-ink hover:bg-muted"
                 }`}
               >

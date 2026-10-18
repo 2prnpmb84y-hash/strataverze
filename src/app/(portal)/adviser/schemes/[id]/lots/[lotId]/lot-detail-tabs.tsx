@@ -41,7 +41,7 @@ function LotDetailTabsFallback({ children }: { children: Record<TabKey, ReactNod
           >
             {tab.label}
             {tab.key === "details" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-400 rounded-t" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-turquoise rounded-t" />
             )}
           </button>
         ))}
@@ -92,7 +92,7 @@ function LotDetailTabsInner({
           >
             {tab.label}
             {currentTab === tab.key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-400 rounded-t" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-turquoise rounded-t" />
             )}
           </button>
         ))}

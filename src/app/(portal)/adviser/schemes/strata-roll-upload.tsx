@@ -175,10 +175,10 @@ export function StrataRollUpload({
         onClick={() => fileInputRef.current?.click()}
         className={`relative flex flex-col items-center justify-center rounded-[var(--radius-card)] border-2 border-dashed p-8 cursor-pointer transition-colors ${
           isDragging
-            ? "border-primary-400 bg-primary-50"
+            ? "border-turquoise bg-mint-soft"
             : selectedFile
-              ? "border-primary-300 bg-primary-50/50"
-              : "border-line hover:border-primary-300 hover:bg-muted/50"
+              ? "border-mint bg-mint-soft/50"
+              : "border-line hover:border-mint hover:bg-muted/50"
         }`}
       >
         <input
@@ -192,7 +192,7 @@ export function StrataRollUpload({
         {selectedFile ? (
           <div className="flex items-center gap-3">
             {/* File icon */}
-            <div className="flex items-center justify-center w-10 h-10 rounded-[var(--radius-card)] bg-primary-100 text-turquoise">
+            <div className="flex items-center justify-center w-10 h-10 rounded-[var(--radius-card)] bg-mint-soft text-turquoise">
               <svg
                 width="20"
                 height="20"

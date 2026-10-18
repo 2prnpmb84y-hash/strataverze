@@ -451,7 +451,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
               {i > 0 && (
                 <div
                   className={`h-px w-6 ${
-                    isComplete ? "bg-primary-500" : "bg-line"
+                    isComplete ? "bg-turquoise" : "bg-line"
                   }`}
                   aria-hidden="true"
                 />
@@ -460,9 +460,9 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 <div
                   className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
                     isActive
-                      ? "bg-primary-500 text-white"
+                      ? "bg-turquoise text-white"
                       : isComplete
-                        ? "bg-primary-100 text-primary-700"
+                        ? "bg-mint-soft text-turquoise"
                         : "bg-muted text-ink-muted"
                   }`}
                   aria-current={isActive ? "step" : undefined}
@@ -524,9 +524,9 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 key={sys.id}
                 type="button"
                 onClick={() => handleSelectSource(sys.id)}
-                className={`rounded-[var(--radius-card)] border-2 p-5 text-left transition-colors hover:border-primary-400 hover:bg-primary-50/50 ${
+                className={`rounded-[var(--radius-card)] border-2 p-5 text-left transition-colors hover:border-turquoise hover:bg-mint-soft/50 ${
                   sourceSystem === sys.id
-                    ? "border-primary-500 bg-primary-50/50"
+                    ? "border-turquoise bg-mint-soft/50"
                     : "border-line bg-white"
                 }`}
               >
@@ -558,9 +558,9 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 key={dt.id}
                 type="button"
                 onClick={() => handleSelectDataType(dt.id)}
-                className={`rounded-[var(--radius-card)] border-2 p-5 text-left transition-colors hover:border-primary-400 hover:bg-primary-50/50 ${
+                className={`rounded-[var(--radius-card)] border-2 p-5 text-left transition-colors hover:border-turquoise hover:bg-mint-soft/50 ${
                   dataType === dt.id
-                    ? "border-primary-500 bg-primary-50/50"
+                    ? "border-turquoise bg-mint-soft/50"
                     : "border-line bg-white"
                 }`}
               >
@@ -608,7 +608,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
             </div>
 
             <div
-              className="rounded-[var(--radius-card)] border-2 border-dashed border-line p-8 text-center transition-colors hover:border-primary-400"
+              className="rounded-[var(--radius-card)] border-2 border-dashed border-line p-8 text-center transition-colors hover:border-turquoise"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleFileDrop}
               role="button"
@@ -643,7 +643,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 type="file"
                 accept=".csv"
                 onChange={handleFileUpload}
-                className="mt-3 block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-[var(--radius-card)] file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                className="mt-3 block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-[var(--radius-card)] file:border-0 file:text-sm file:font-medium file:bg-mint-soft file:text-turquoise hover:file:bg-mint-soft cursor-pointer"
               />
             </div>
 

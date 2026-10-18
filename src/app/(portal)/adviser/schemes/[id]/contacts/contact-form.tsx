@@ -107,7 +107,7 @@ export function ContactForm({ schemeId }: { schemeId: string }) {
         <input
           type="checkbox"
           name="isPreferred"
-          className="rounded border-line text-primary-600 focus:ring-turquoise"
+          className="rounded border-line text-turquoise focus:ring-turquoise"
         />
         Preferred contractor
       </label>
@@ -222,7 +222,7 @@ export function ContactEditForm({
           type="checkbox"
           name="isPreferred"
           defaultChecked={defaults.isPreferred}
-          className="rounded border-line text-primary-600 focus:ring-turquoise"
+          className="rounded border-line text-turquoise focus:ring-turquoise"
         />
         Preferred contractor
       </label>

@@ -82,7 +82,7 @@ export default async function LevyDetailPage({
         <StatCard
           label="Collected"
           value={`$${paidTotal.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`}
-          accent="bg-primary-400"
+          accent="bg-turquoise"
         />
         <StatCard
           label="Outstanding"
@@ -92,7 +92,7 @@ export default async function LevyDetailPage({
         <StatCard
           label="Paid"
           value={`${paidCount}/${levy.items.length}`}
-          accent="bg-primary-400"
+          accent="bg-turquoise"
         />
       </div>
 

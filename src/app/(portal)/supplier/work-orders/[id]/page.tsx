@@ -6,7 +6,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { WorkOrderActions } from "./work-order-actions";
 const statusConfig: Record<string, { label: string; className: string }> = {
   AWARDED: { label: "Awarded", className: "bg-gold-100 text-gold-500" },
-  IN_PROGRESS: { label: "In Progress", className: "bg-primary-100 text-turquoise" },
+  IN_PROGRESS: { label: "In Progress", className: "bg-mint-soft text-turquoise" },
   COMPLETED: { label: "Completed", className: "bg-success/10 text-success" },
   CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
 };
@@ -20,7 +20,7 @@ const priorityConfig: Record<string, { label: string; className: string }> = {
 
 const invoiceStatusConfig: Record<string, { label: string; className: string }> = {
   SUBMITTED: { label: "Submitted", className: "bg-gold-100 text-gold-500" },
-  APPROVED: { label: "Approved", className: "bg-primary-100 text-turquoise" },
+  APPROVED: { label: "Approved", className: "bg-mint-soft text-turquoise" },
   PAID: { label: "Paid", className: "bg-success/10 text-success" },
   DISPUTED: { label: "Disputed", className: "bg-danger/10 text-danger" },
   CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },

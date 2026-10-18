@@ -130,7 +130,7 @@ export function OwnerAssignment({
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-turquoise">
+                  <span className="inline-flex items-center rounded-full bg-mint-soft px-2.5 py-0.5 text-xs font-medium text-turquoise">
                     Owner
                   </span>
                   <button

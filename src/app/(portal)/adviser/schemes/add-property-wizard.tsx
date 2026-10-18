@@ -158,9 +158,9 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                   <span
                     className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors ${
                       isActive
-                        ? "bg-primary-400 text-white"
+                        ? "bg-turquoise text-white"
                         : isComplete
-                          ? "bg-primary-100 text-turquoise"
+                          ? "bg-mint-soft text-turquoise"
                           : "bg-muted text-ink-muted"
                     }`}
                   >
@@ -183,7 +183,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 {i < STEPS.length - 1 && (
                   <div
                     className={`flex-1 h-px ${
-                      isComplete ? "bg-primary-300" : "bg-line"
+                      isComplete ? "bg-turquoise/60" : "bg-line"
                     }`}
                   />
                 )}
