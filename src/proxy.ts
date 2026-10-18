@@ -1,17 +1,31 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedRoutes = [
+/**
+ * Next.js Proxy (formerly middleware) for StrataVerze.
+ *
+ * Responsibilities:
+ * 1. Refresh the Supabase auth session on every matched request so
+ *    server components always see a fresh token.
+ * 2. Redirect unauthenticated visitors away from portal routes.
+ * 3. Redirect authenticated visitors away from auth pages.
+ */
+
+const protectedPrefixes = [
   "/owner",
   "/committee",
   "/adviser",
   "/supplier",
-  "/dashboard",
   "/settings",
   "/invitations",
 ];
 
-const authRoutes = ["/login", "/forgot-password", "/reset-password"];
+const authRoutes = new Set([
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+]);
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -25,54 +39,91 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
+          // Forward new cookies to the browser via the request object
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
+          // Rebuild the response so it carries updated cookies downstream
+          // AND sets the new cookies on the outgoing response.
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
+  // Refresh the session. This reads + writes cookies, so it must run
+  // before we inspect the user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
-  // Redirect unauthenticated users away from protected routes
-  if (
-    !user &&
-    protectedRoutes.some((route) => pathname.startsWith(route))
-  ) {
-    const loginUrl = new URL("/login", request.url);
+  // --- Protected portal routes ---
+  const isProtected = protectedPrefixes.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+
+  if (!user && isProtected) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from auth routes
-  if (user && authRoutes.some((route) => pathname === route)) {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(dashboardUrl);
+  // --- Auth pages: redirect logged-in users to their portal ---
+  if (user && authRoutes.has(pathname)) {
+    const next = request.nextUrl.searchParams.get("next");
+    const destination = sanitisePath(next) ?? "/owner/dashboard";
+
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = destination;
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
   }
 
   return supabaseResponse;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Sanitise a redirect path so it cannot be used for open-redirect
+ * attacks. Returns null for anything suspicious.
+ */
+function sanitisePath(raw: string | null): string | null {
+  if (!raw) return null;
+
+  // Strip double-slash prefixes that browsers interpret as protocol-relative
+  const cleaned = raw.replace(/^\/\/+/, "/");
+
+  // Must start with a single slash and not contain a protocol
+  if (!cleaned.startsWith("/") || cleaned.includes("://")) return null;
+
+  try {
+    const parsed = new URL(cleaned, "http://localhost");
+    if (parsed.hostname !== "localhost") return null;
+    return parsed.pathname + parsed.search;
+  } catch {
+    return null;
+  }
+}
+
+// ── Matcher ─────────────────────────────────────────────────────────
+
 export const config = {
   matcher: [
-    "/owner/:path*",
-    "/committee/:path*",
-    "/adviser/:path*",
-    "/supplier/:path*",
-    "/dashboard/:path*",
-    "/settings/:path*",
-    "/invitations/:path*",
-    "/login",
-    "/forgot-password",
-    "/reset-password",
+    /*
+     * Match all paths except:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimisation)
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - Public assets (images, fonts etc.)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)$).*)",
   ],
 };
