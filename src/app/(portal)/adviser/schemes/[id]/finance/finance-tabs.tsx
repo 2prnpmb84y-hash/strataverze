@@ -11,6 +11,8 @@ const tabs = [
   { key: "invoices", label: "Invoices", href: "/invoices" },
   { key: "suppliers", label: "Suppliers", href: "/suppliers" },
   { key: "journal", label: "Journal", href: "/journal" },
+  { key: "bank-import", label: "Bank Import", href: "/bank-import" },
+  { key: "reconciliation", label: "Reconciliation", href: "/reconciliation" },
 ] as const;
 
 export function FinanceTabs({ schemeId }: { schemeId: string }) {

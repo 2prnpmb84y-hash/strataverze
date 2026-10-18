@@ -272,6 +272,38 @@ export async function getJournalEntriesBySource(
  * Generate the next sequential journal entry number for a scheme.
  * Format: JE-0001, JE-0002, etc.
  */
+/**
+ * Fetch posted journal entries that have not been matched to a bank transaction.
+ * Used for reconciliation matching. Optionally filter by a bank account's fund.
+ */
+export async function getUnmatchedJournalEntries(
+  schemeId: string,
+  limit = 200,
+) {
+  // Get all posted entries, then filter out ones already matched to a bank transaction
+  const entries = await db.orm.public.JournalEntry
+    .where((je) =>
+      and(je.schemeId.eq(schemeId), je.status.eq("POSTED")),
+    )
+    .include("lines", (l) => l.include("accountCode").include("fund"))
+    .orderBy((je) => je.transactionDate.desc())
+    .limit(limit)
+    .all();
+
+  // Filter out entries that are already matched to bank transactions
+  const matchedEntryIds = new Set<string>();
+  const bankTxns = await db.orm.public.BankTransaction
+    .where((t) => t.schemeId.eq(schemeId))
+    .all();
+  for (const txn of bankTxns) {
+    if (txn.matchedJournalEntryId) {
+      matchedEntryIds.add(txn.matchedJournalEntryId);
+    }
+  }
+
+  return entries.filter((e) => !matchedEntryIds.has(e.id));
+}
+
 export async function getNextEntryNumber(schemeId: string): Promise<string> {
   const entries = await db.orm.public.JournalEntry
     .where((je) => je.schemeId.eq(schemeId))
