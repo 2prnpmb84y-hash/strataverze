@@ -145,6 +145,7 @@ export async function getIncomeExpenseReport(
     comparativeNetSurplus: 0,
   };
   }
+}
 
 interface AccountAggregate {
   accountCode: string;
@@ -534,6 +535,7 @@ export async function getTrialBalanceReport(
     isBalanced: true,
   };
   }
+}
 
 // ─── Fund Summary Report ──────────────────────────────────────
 
@@ -955,6 +957,7 @@ export async function getBankReconciliationReport(
     unmatchedTransactions: [],
   };
   }
+}
 
 // ─── Committee Financial Reporting Pack ────────────────────────
 
@@ -1285,6 +1288,7 @@ export async function getCommitteeReportingPack(
     cashPosition: 0,
   };
   }
+}
 
 // ─── Cash Flow Forecasting ──────────────────────────────────────
 
@@ -1525,6 +1529,7 @@ export async function getCashFlowForecast(
     endingBalance: 0,
   };
   }
+}
 
 // ─── Fund Balance Projections ───────────────────────────────────
 
@@ -1693,6 +1698,7 @@ export async function getFundBalanceProjections(
     projections: [],
   };
   }
+}
 
 // ─── BAS-Ready GST Summary ─────────────────────────────────────
 

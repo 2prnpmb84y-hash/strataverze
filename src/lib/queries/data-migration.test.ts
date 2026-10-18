@@ -357,7 +357,8 @@ describe("getTemplate", () => {
   });
 
   it("returns undefined for an unknown combination", () => {
-    const result = getTemplate("myob", "lots");
+    // "owners" is not a valid data type in any template
+    const result = getTemplate("strata_master", "owners");
     expect(result).toBeUndefined();
   });
 });
