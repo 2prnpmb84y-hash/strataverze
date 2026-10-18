@@ -27,6 +27,7 @@ export function PageHeader({
               viewBox="0 0 16 16"
               fill="none"
               className="shrink-0"
+              aria-hidden="true"
             >
               <path
                 d="M10 12L6 8L10 4"

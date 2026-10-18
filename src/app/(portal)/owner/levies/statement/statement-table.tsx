@@ -169,12 +169,12 @@ export function OwnerStatementTable({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                    <th className="text-left px-6 py-2">Date</th>
-                    <th className="text-left px-4 py-2">Type</th>
-                    <th className="text-left px-4 py-2">Description</th>
-                    <th className="text-right px-4 py-2">Charges</th>
-                    <th className="text-right px-4 py-2">Payments</th>
-                    <th className="text-right px-6 py-2">Balance</th>
+                    <th scope="col" className="text-left px-6 py-2">Date</th>
+                    <th scope="col" className="text-left px-4 py-2">Type</th>
+                    <th scope="col" className="text-left px-4 py-2">Description</th>
+                    <th scope="col" className="text-right px-4 py-2">Charges</th>
+                    <th scope="col" className="text-right px-4 py-2">Payments</th>
+                    <th scope="col" className="text-right px-6 py-2">Balance</th>
                   </tr>
                 </thead>
                 <tbody>

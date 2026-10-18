@@ -112,28 +112,28 @@ export function LotFinancials({
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                     Levy
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                     Type
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                     Due Date
                   </th>
-                  <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                     Amount
                   </th>
-                  <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                     Paid
                   </th>
-                  <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                     Outstanding
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                     Status
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                     Paid Date
                   </th>
                 </tr>

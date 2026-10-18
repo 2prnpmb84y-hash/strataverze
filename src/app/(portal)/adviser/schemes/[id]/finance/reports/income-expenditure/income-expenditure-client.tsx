@@ -124,10 +124,10 @@ export function IncomeExpenditureClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                  <th className="text-left py-2 pr-4">Code</th>
-                  <th className="text-left py-2 pr-4">Account</th>
-                  <th className="text-left py-2 pr-4">Fund</th>
-                  <th className="text-right py-2">Amount</th>
+                  <th scope="col" className="text-left py-2 pr-4">Code</th>
+                  <th scope="col" className="text-left py-2 pr-4">Account</th>
+                  <th scope="col" className="text-left py-2 pr-4">Fund</th>
+                  <th scope="col" className="text-right py-2">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -170,10 +170,10 @@ export function IncomeExpenditureClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                  <th className="text-left py-2 pr-4">Code</th>
-                  <th className="text-left py-2 pr-4">Account</th>
-                  <th className="text-left py-2 pr-4">Fund</th>
-                  <th className="text-right py-2">Amount</th>
+                  <th scope="col" className="text-left py-2 pr-4">Code</th>
+                  <th scope="col" className="text-left py-2 pr-4">Account</th>
+                  <th scope="col" className="text-left py-2 pr-4">Fund</th>
+                  <th scope="col" className="text-right py-2">Amount</th>
                 </tr>
               </thead>
               <tbody>

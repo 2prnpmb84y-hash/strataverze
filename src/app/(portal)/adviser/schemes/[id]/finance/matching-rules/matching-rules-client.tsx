@@ -715,13 +715,13 @@ export function MatchingRulesClient({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left">
-                        <th className="pb-2 pr-4 font-medium text-muted-foreground">
+                        <th scope="col" className="pb-2 pr-4 font-medium text-muted-foreground">
                           Rule
                         </th>
-                        <th className="pb-2 pr-4 font-medium text-muted-foreground">
+                        <th scope="col" className="pb-2 pr-4 font-medium text-muted-foreground">
                           Account
                         </th>
-                        <th className="pb-2 font-medium text-muted-foreground">
+                        <th scope="col" className="pb-2 font-medium text-muted-foreground">
                           Fund
                         </th>
                       </tr>
@@ -762,34 +762,34 @@ export function MatchingRulesClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Priority
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Name
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Match Type
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Criteria
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Target Account
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Fund
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Auto
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Status
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     Matches
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Actions
                   </th>
                 </tr>

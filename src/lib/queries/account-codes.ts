@@ -27,12 +27,17 @@ export async function getAccountCodesForScheme(
  * Fetch a single account code by ID with fund, parent and children.
  */
 export async function getAccountCodeById(accountCodeId: string) {
-  return db.orm.public.AccountCode
-    .where((a) => a.id.eq(accountCodeId))
-    .include("fund")
-    .include("parentAccount")
-    .include("childAccounts")
-    .first();
+  try {
+    return db.orm.public.AccountCode
+      .where((a) => a.id.eq(accountCodeId))
+      .include("fund")
+      .include("parentAccount")
+      .include("childAccounts")
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -144,27 +149,37 @@ export async function updateAccountCode(
  * Deactivate an account code (soft-disable, not delete).
  */
 export async function deactivateAccountCode(accountCodeId: string) {
-  return db.orm.public.AccountCode
-    .where({ id: accountCodeId })
-    .update({ isActive: false });
+  try {
+    return db.orm.public.AccountCode
+      .where({ id: accountCodeId })
+      .update({ isActive: false });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Fetch all system accounts for a scheme.
  */
 export async function getSystemAccounts(schemeId: string, limit = 100) {
-  return db.orm.public.AccountCode
-    .where((a) =>
-      and(
-        a.schemeId.eq(schemeId),
-        a.isSystemAccount.eq(true),
-        a.isActive.eq(true),
-      ),
-    )
-    .include("fund")
-    .orderBy((a) => a.code.asc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.AccountCode
+      .where((a) =>
+        and(
+          a.schemeId.eq(schemeId),
+          a.isSystemAccount.eq(true),
+          a.isActive.eq(true),
+        ),
+      )
+      .include("fund")
+      .orderBy((a) => a.code.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**

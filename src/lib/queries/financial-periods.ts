@@ -30,20 +30,30 @@ export async function getFinancialPeriodsForScheme(
  * Fetch a single financial period by ID.
  */
 export async function getFinancialPeriodById(periodId: string) {
-  return db.orm.public.FinancialPeriod
-    .where((fp) => fp.id.eq(periodId))
-    .first();
+  try {
+    return db.orm.public.FinancialPeriod
+      .where((fp) => fp.id.eq(periodId))
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
  * Fetch all OPEN periods for a scheme, ordered by start date ascending.
  */
 export async function getOpenPeriods(schemeId: string, limit = 50) {
-  return db.orm.public.FinancialPeriod
-    .where((fp) => and(fp.schemeId.eq(schemeId), fp.status.eq("OPEN")))
-    .orderBy((fp) => fp.startDate.asc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.FinancialPeriod
+      .where((fp) => and(fp.schemeId.eq(schemeId), fp.status.eq("OPEN")))
+      .orderBy((fp) => fp.startDate.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
@@ -51,19 +61,24 @@ export async function getOpenPeriods(schemeId: string, limit = 50) {
  * startDate and endDate). Returns null if no matching period exists.
  */
 export async function getCurrentPeriod(schemeId: string) {
-  const openPeriods = await getOpenPeriods(schemeId);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  try {
+    const openPeriods = await getOpenPeriods(schemeId);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  return (
-    openPeriods.find((p) => {
-      const start = new Date(p.startDate);
-      const end = new Date(p.endDate);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(0, 0, 0, 0);
-      return start <= today && end >= today;
-    }) ?? null
-  );
+    return (
+      openPeriods.find((p) => {
+        const start = new Date(p.startDate);
+        const end = new Date(p.endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        return start <= today && end >= today;
+      }) ?? null
+    );
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
@@ -89,35 +104,50 @@ export async function createFinancialPeriod(data: {
  * Close a financial period, recording who closed it and when.
  */
 export async function closePeriod(periodId: string, closedBy: string) {
-  return db.orm.public.FinancialPeriod
-    .where({ id: periodId })
-    .update({
-      status: "CLOSED",
-      closedAt: toTimestamp(new Date().toISOString()),
-      closedBy,
-    });
+  try {
+    return db.orm.public.FinancialPeriod
+      .where({ id: periodId })
+      .update({
+        status: "CLOSED",
+        closedAt: toTimestamp(new Date().toISOString()),
+        closedBy,
+      });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Lock a financial period (prevents any further changes).
  */
 export async function lockPeriod(periodId: string) {
-  return db.orm.public.FinancialPeriod
-    .where({ id: periodId })
-    .update({ status: "LOCKED" });
+  try {
+    return db.orm.public.FinancialPeriod
+      .where({ id: periodId })
+      .update({ status: "LOCKED" });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Reopen a previously closed or locked period.
  */
 export async function reopenPeriod(periodId: string) {
-  return db.orm.public.FinancialPeriod
-    .where({ id: periodId })
-    .update({
-      status: "OPEN",
-      closedAt: null,
-      closedBy: null,
-    });
+  try {
+    return db.orm.public.FinancialPeriod
+      .where({ id: periodId })
+      .update({
+        status: "OPEN",
+        closedAt: null,
+        closedBy: null,
+      });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**

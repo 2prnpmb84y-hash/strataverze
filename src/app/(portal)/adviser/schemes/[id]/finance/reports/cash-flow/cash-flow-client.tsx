@@ -144,25 +144,25 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                   Month
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Levy Income
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Other Income
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Supplier Costs
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Other Costs
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Net Flow
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Balance
                 </th>
               </tr>

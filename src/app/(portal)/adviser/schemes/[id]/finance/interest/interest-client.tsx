@@ -188,31 +188,31 @@ export function InterestClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                   Notice
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                   Lot
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                   Fund
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                   Due Date
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Days Overdue
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Balance
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Previously Charged
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Additional
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Actions
                 </th>
               </tr>

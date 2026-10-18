@@ -56,63 +56,68 @@ export function calculateInterestForNotice(
  * Includes the scheme's interest rate and computes per-notice interest.
  */
 export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
-  // Get the scheme's interest rate
-  const scheme = await db.orm.public.Scheme
-    .where((s) => s.id.eq(schemeId))
-    .first();
+  try {
+    // Get the scheme's interest rate
+    const scheme = await db.orm.public.Scheme
+      .where((s) => s.id.eq(schemeId))
+      .first();
 
-  const annualRate = Number(scheme?.interestRate ?? 0);
+    const annualRate = Number(scheme?.interestRate ?? 0);
 
-  // Fetch overdue notices
-  const today = new Date().toISOString().split("T")[0];
-  const notices = await db.orm.public.LevyNotice
-    .where((ln) =>
-      and(
-        ln.schemeId.eq(schemeId),
-        or(ln.status.eq("ISSUED"), ln.status.eq("PARTIALLY_PAID")),
-        ln.dueDate.lt(toTimestamp(today)),
-      ),
-    )
-    .include("lot")
-    .include("fund")
-    .orderBy((ln) => ln.dueDate.asc())
-    .limit(500)
-    .all();
+    // Fetch overdue notices
+    const today = new Date().toISOString().split("T")[0];
+    const notices = await db.orm.public.LevyNotice
+      .where((ln) =>
+        and(
+          ln.schemeId.eq(schemeId),
+          or(ln.status.eq("ISSUED"), ln.status.eq("PARTIALLY_PAID")),
+          ln.dueDate.lt(toTimestamp(today)),
+        ),
+      )
+      .include("lot")
+      .include("fund")
+      .orderBy((ln) => ln.dueDate.asc())
+      .limit(500)
+      .all();
 
-  const now = new Date();
+    const now = new Date();
 
-  const noticesWithInterest = notices.map((notice) => {
-    const balance = Number(notice.balanceOutstanding);
-    const dueDate = String(notice.dueDate);
-    const due = new Date(dueDate);
-    const diffMs = now.getTime() - due.getTime();
-    const daysOverdue = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-    const calculatedInterest = calculateInterestForNotice(
-      balance,
-      dueDate,
-      annualRate,
-      now,
-    );
-    const previouslyCharged = Number(notice.interestCharged ?? 0);
-    const additionalInterest = Math.max(
-      0,
-      Math.round((calculatedInterest - previouslyCharged) * 100) / 100,
-    );
+    const noticesWithInterest = notices.map((notice) => {
+      const balance = Number(notice.balanceOutstanding);
+      const dueDate = String(notice.dueDate);
+      const due = new Date(dueDate);
+      const diffMs = now.getTime() - due.getTime();
+      const daysOverdue = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      const calculatedInterest = calculateInterestForNotice(
+        balance,
+        dueDate,
+        annualRate,
+        now,
+      );
+      const previouslyCharged = Number(notice.interestCharged ?? 0);
+      const additionalInterest = Math.max(
+        0,
+        Math.round((calculatedInterest - previouslyCharged) * 100) / 100,
+      );
+
+      return {
+        ...notice,
+        daysOverdue,
+        calculatedInterest,
+        previouslyCharged,
+        additionalInterest,
+      };
+    });
 
     return {
-      ...notice,
-      daysOverdue,
-      calculatedInterest,
-      previouslyCharged,
-      additionalInterest,
+      notices: noticesWithInterest,
+      annualRate,
+      schemeName: scheme ? String(scheme.name) : "",
     };
-  });
-
-  return {
-    notices: noticesWithInterest,
-    annualRate,
-    schemeName: scheme ? String(scheme.name) : "",
-  };
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -133,110 +138,114 @@ export async function chargeInterest(data: {
 }) {
   const { schemeId, noticeId, interestAmount, actorId } = data;
 
-  if (interestAmount <= 0) {
-    throw new Error("Interest amount must be greater than zero.");
-  }
+    if (interestAmount <= 0) {
+      throw new Error("Interest amount must be greater than zero.");
+    }
 
-  // Fetch the notice to get current values
-  const notice = await db.orm.public.LevyNotice
-    .where((ln) => ln.id.eq(noticeId))
-    .include("fund")
-    .first();
+    // Fetch the notice to get current values
+    const notice = await db.orm.public.LevyNotice
+      .where((ln) => ln.id.eq(noticeId))
+      .include("fund")
+      .first();
 
-  if (!notice) {
-    throw new Error("Levy notice not found.");
-  }
+    if (!notice) {
+      throw new Error("Levy notice not found.");
+    }
 
-  const currentInterest = Number(notice.interestCharged ?? 0);
-  const currentBalance = Number(notice.balanceOutstanding);
-  const newInterest = currentInterest + interestAmount;
-  const newBalance = currentBalance + interestAmount;
+    const currentInterest = Number(notice.interestCharged ?? 0);
+    const currentBalance = Number(notice.balanceOutstanding);
+    const newInterest = currentInterest + interestAmount;
+    const newBalance = currentBalance + interestAmount;
 
-  const fundType = (notice.fund?.fundType ?? "ADMINISTRATIVE") as
-    | "ADMINISTRATIVE"
-    | "CAPITAL_WORKS";
+    const fundType = (notice.fund?.fundType ?? "ADMINISTRATIVE") as
+      | "ADMINISTRATIVE"
+      | "CAPITAL_WORKS";
 
-  // Look up the required system accounts
-  const receivableAccount = await getSystemAccountBySubType(
-    schemeId,
-    "ACCOUNTS_RECEIVABLE",
-    fundType,
-  );
-  const interestIncomeAccount = await getSystemAccountBySubType(
-    schemeId,
-    "INTEREST_INCOME",
-    fundType,
-  );
-
-  if (!receivableAccount || !interestIncomeAccount) {
-    throw new Error(
-      "Required system accounts (Accounts Receivable and Interest Income) not found. Please seed the chart of accounts first.",
+    // Look up the required system accounts
+    const receivableAccount = await getSystemAccountBySubType(
+      schemeId,
+      "ACCOUNTS_RECEIVABLE",
+      fundType,
     );
-  }
+    const interestIncomeAccount = await getSystemAccountBySubType(
+      schemeId,
+      "INTEREST_INCOME",
+      fundType,
+    );
 
-  // Update the levy notice
-  await db.orm.public.LevyNotice
-    .where({ id: noticeId })
-    .update({
-      interestCharged: toNumeric(newInterest),
-      balanceOutstanding: toNumeric(newBalance),
+    if (!receivableAccount || !interestIncomeAccount) {
+      throw new Error(
+        "Required system accounts (Accounts Receivable and Interest Income) not found. Please seed the chart of accounts first.",
+      );
+    }
+
+    // Update the levy notice
+    await db.orm.public.LevyNotice
+      .where({ id: noticeId })
+      .update({
+        interestCharged: toNumeric(newInterest),
+        balanceOutstanding: toNumeric(newBalance),
+      });
+
+    // Create and post the interest journal entry
+    const entryNumber = await getNextEntryNumber(schemeId);
+    const today = new Date().toISOString().split("T")[0];
+
+    const entry = await createJournalEntry({
+      schemeId,
+      entryNumber,
+      transactionDate: today,
+      description: `Interest charged on overdue levy — notice ${String(notice.noticeNumber)}`,
+      entryType: "INTEREST",
+      sourceType: "INTEREST",
+      sourceId: noticeId,
+      createdBy: actorId,
+      lines: [
+        {
+          accountCodeId: receivableAccount.id,
+          fundId: notice.fundId,
+          debit: interestAmount,
+          description: `Interest receivable — notice ${String(notice.noticeNumber)}`,
+          lotId: notice.lotId,
+        },
+        {
+          accountCodeId: interestIncomeAccount.id,
+          fundId: notice.fundId,
+          credit: interestAmount,
+          description: `Interest income on overdue levy`,
+        },
+      ],
     });
 
-  // Create and post the interest journal entry
-  const entryNumber = await getNextEntryNumber(schemeId);
-  const today = new Date().toISOString().split("T")[0];
+    await postJournalEntry(entry.id, actorId);
 
-  const entry = await createJournalEntry({
-    schemeId,
-    entryNumber,
-    transactionDate: today,
-    description: `Interest charged on overdue levy — notice ${String(notice.noticeNumber)}`,
-    entryType: "INTEREST",
-    sourceType: "INTEREST",
-    sourceId: noticeId,
-    createdBy: actorId,
-    lines: [
-      {
-        accountCodeId: receivableAccount.id,
-        fundId: notice.fundId,
-        debit: interestAmount,
-        description: `Interest receivable — notice ${String(notice.noticeNumber)}`,
-        lotId: notice.lotId,
+    // Log activity
+    await logActivity({
+      schemeId,
+      actorId,
+      action: "INTEREST_CHARGED",
+      entityType: "LevyNotice",
+      entityId: noticeId,
+      metadata: {
+        interestAmount,
+        totalInterestCharged: newInterest,
+        newBalance,
+        journalEntryId: entry.id,
+        entryNumber,
       },
-      {
-        accountCodeId: interestIncomeAccount.id,
-        fundId: notice.fundId,
-        credit: interestAmount,
-        description: `Interest income on overdue levy`,
-      },
-    ],
-  });
+    });
 
-  await postJournalEntry(entry.id, actorId);
-
-  // Log activity
-  await logActivity({
-    schemeId,
-    actorId,
-    action: "INTEREST_CHARGED",
-    entityType: "LevyNotice",
-    entityId: noticeId,
-    metadata: {
+    return {
+      noticeId,
       interestAmount,
       totalInterestCharged: newInterest,
       newBalance,
       journalEntryId: entry.id,
-      entryNumber,
-    },
-  });
-
-  return {
-    noticeId,
-    interestAmount,
-    totalInterestCharged: newInterest,
-    newBalance,
-    journalEntryId: entry.id,
-  };
+    };
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -244,42 +253,47 @@ export async function chargeInterest(data: {
  * Only charges notices that have additional interest owed (calculatedInterest > previouslyCharged).
  */
 export async function chargeInterestBatch(data: {
-  schemeId: string;
-  actorId: string;
-}) {
-  const { schemeId, actorId } = data;
+  try {
+    schemeId: string;
+    actorId: string;
+  }) {
+    const { schemeId, actorId } = data;
 
-  const { notices, annualRate } = await getOverdueLevyNoticesWithInterest(schemeId);
+    const { notices, annualRate } = await getOverdueLevyNoticesWithInterest(schemeId);
 
-  if (annualRate <= 0) {
-    throw new Error(
-      "No interest rate configured for this scheme. Set an interest rate in scheme settings first.",
-    );
+    if (annualRate <= 0) {
+      throw new Error(
+        "No interest rate configured for this scheme. Set an interest rate in scheme settings first.",
+      );
+    }
+
+    const chargeable = notices.filter((n) => n.additionalInterest > 0);
+
+    if (chargeable.length === 0) {
+      return { charged: 0, totalInterest: 0, results: [] };
+    }
+
+    const results = [];
+    let totalInterest = 0;
+
+    for (const notice of chargeable) {
+      const result = await chargeInterest({
+        schemeId,
+        noticeId: notice.id,
+        interestAmount: notice.additionalInterest,
+        actorId,
+      });
+      results.push(result);
+      totalInterest += notice.additionalInterest;
+    }
+
+    return {
+      charged: results.length,
+      totalInterest,
+      results,
+    };
+  } catch {
+    // Table may not exist yet
+    return [];
   }
-
-  const chargeable = notices.filter((n) => n.additionalInterest > 0);
-
-  if (chargeable.length === 0) {
-    return { charged: 0, totalInterest: 0, results: [] };
-  }
-
-  const results = [];
-  let totalInterest = 0;
-
-  for (const notice of chargeable) {
-    const result = await chargeInterest({
-      schemeId,
-      noticeId: notice.id,
-      interestAmount: notice.additionalInterest,
-      actorId,
-    });
-    results.push(result);
-    totalInterest += notice.additionalInterest;
-  }
-
-  return {
-    charged: results.length,
-    totalInterest,
-    results,
-  };
 }

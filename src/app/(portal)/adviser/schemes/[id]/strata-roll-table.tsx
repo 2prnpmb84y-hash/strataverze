@@ -116,34 +116,34 @@ export function StrataRollTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/50">
-              <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                 Lot
               </th>
-              <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                 Unit
               </th>
-              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                 UOE
               </th>
-              <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                 Owner
               </th>
-              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                 Opening
               </th>
-              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                 +Annual
               </th>
-              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                 +Special
               </th>
-              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                 ~Paid
               </th>
-              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                 ~Closing
               </th>
-              <th className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
                 Interest Paid
               </th>
             </tr>

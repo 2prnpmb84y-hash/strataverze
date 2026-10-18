@@ -569,10 +569,10 @@ function ReviewSummary({
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">Lot</th>
-                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">Unit</th>
-                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">Owner</th>
-                  <th className="text-right px-3 py-2 font-medium text-muted-foreground">Entitlement</th>
+                  <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Lot</th>
+                  <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Unit</th>
+                  <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Owner</th>
+                  <th scope="col" className="text-right px-3 py-2 font-medium text-muted-foreground">Entitlement</th>
                 </tr>
               </thead>
               <tbody>

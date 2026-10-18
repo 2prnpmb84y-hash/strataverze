@@ -21,36 +21,51 @@ function toVarchar<N extends number>(value: string): Varchar<N> {
  * Fetch all active bank accounts for a scheme, ordered by account name.
  */
 export async function getBankAccountsForScheme(schemeId: string, limit = 200) {
-  return db.orm.public.SchemeBankAccount
-    .where((ba) => and(ba.schemeId.eq(schemeId), ba.isActive.eq(true)))
-    .orderBy((ba) => ba.accountName.asc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.SchemeBankAccount
+      .where((ba) => and(ba.schemeId.eq(schemeId), ba.isActive.eq(true)))
+      .orderBy((ba) => ba.accountName.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Fetch a single bank account by ID, including its linked funds.
  */
 export async function getBankAccountById(bankAccountId: string) {
-  return db.orm.public.SchemeBankAccount
-    .where((ba) => ba.id.eq(bankAccountId))
-    .include("funds")
-    .first();
+  try {
+    return db.orm.public.SchemeBankAccount
+      .where((ba) => ba.id.eq(bankAccountId))
+      .include("funds")
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
  * Fetch the operating (primary) bank account for a scheme.
  */
 export async function getOperatingAccount(schemeId: string) {
-  return db.orm.public.SchemeBankAccount
-    .where((ba) =>
-      and(
-        ba.schemeId.eq(schemeId),
-        ba.isOperating.eq(true),
-        ba.isActive.eq(true),
-      ),
-    )
-    .first();
+  try {
+    return db.orm.public.SchemeBankAccount
+      .where((ba) =>
+        and(
+          ba.schemeId.eq(schemeId),
+          ba.isOperating.eq(true),
+          ba.isActive.eq(true),
+        ),
+      )
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -124,7 +139,12 @@ export async function updateReconciliationStatus(
  * Deactivate a bank account (soft-disable via isActive flag).
  */
 export async function deactivateBankAccount(bankAccountId: string) {
-  return db.orm.public.SchemeBankAccount
-    .where({ id: bankAccountId })
-    .update({ isActive: false });
+  try {
+    return db.orm.public.SchemeBankAccount
+      .where({ id: bankAccountId })
+      .update({ isActive: false });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }

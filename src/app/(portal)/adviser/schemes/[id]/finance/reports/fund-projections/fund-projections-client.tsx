@@ -176,22 +176,22 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-t border-b border-border text-left">
-                    <th className="px-4 py-3 font-medium text-muted-foreground">
+                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                       Financial Year
                     </th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                       Opening
                     </th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                       Levy Income
                     </th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                       Expenses
                     </th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                       Net Movement
                     </th>
-                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                       Closing
                     </th>
                   </tr>

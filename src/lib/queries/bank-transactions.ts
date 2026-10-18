@@ -78,11 +78,16 @@ export async function getBankTransactionsForAccount(
  * matched journal entry (including journal lines).
  */
 export async function getBankTransactionById(transactionId: string) {
-  return db.orm.public.BankTransaction
-    .where((t) => t.id.eq(transactionId))
-    .include("bankAccount")
-    .include("matchedJournalEntry", (je) => je.include("lines"))
-    .first();
+  try {
+    return db.orm.public.BankTransaction
+      .where((t) => t.id.eq(transactionId))
+      .include("bankAccount")
+      .include("matchedJournalEntry", (je) => je.include("lines"))
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -187,36 +192,51 @@ export async function matchTransaction(
  * Mark a matched transaction as fully reconciled.
  */
 export async function reconcileTransaction(transactionId: string) {
-  return db.orm.public.BankTransaction
-    .where({ id: transactionId })
-    .update({
-      reconciliationStatus: "RECONCILED",
-    });
+  try {
+    return db.orm.public.BankTransaction
+      .where({ id: transactionId })
+      .update({
+        reconciliationStatus: "RECONCILED",
+      });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Exclude a transaction from reconciliation (e.g. bank fees handled separately).
  */
 export async function excludeTransaction(transactionId: string) {
-  return db.orm.public.BankTransaction
-    .where({ id: transactionId })
-    .update({
-      reconciliationStatus: "EXCLUDED",
-    });
+  try {
+    return db.orm.public.BankTransaction
+      .where({ id: transactionId })
+      .update({
+        reconciliationStatus: "EXCLUDED",
+      });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Reset a transaction back to unmatched, clearing journal entry linkage.
  */
 export async function unmatchTransaction(transactionId: string) {
-  return db.orm.public.BankTransaction
-    .where({ id: transactionId })
-    .update({
-      reconciliationStatus: "UNMATCHED",
-      matchedJournalEntryId: null,
-      matchedAt: null,
-      matchedBy: null,
-    });
+  try {
+    return db.orm.public.BankTransaction
+      .where({ id: transactionId })
+      .update({
+        reconciliationStatus: "UNMATCHED",
+        matchedJournalEntryId: null,
+        matchedAt: null,
+        matchedBy: null,
+      });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**

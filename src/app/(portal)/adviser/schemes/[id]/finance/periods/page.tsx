@@ -115,25 +115,25 @@ export default async function FinancialPeriodsPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Period
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Start Date
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     End Date
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Type
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Status
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Closed
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     Actions
                   </th>
                 </tr>

@@ -107,11 +107,11 @@ export default async function LevyDetailPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="pb-2 font-medium text-muted-foreground">Lot</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Amount</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Paid</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Status</th>
-                  <th className="pb-2 font-medium text-muted-foreground"></th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Lot</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">Amount</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">Paid</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Status</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground"></th>
                 </tr>
               </thead>
               <tbody>

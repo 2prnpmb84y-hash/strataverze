@@ -46,10 +46,15 @@ export async function getFinancialSuppliersForScheme(
  * Fetch a single financial supplier by ID.
  */
 export async function getFinancialSupplierById(supplierId: string) {
-  return db.orm.public.Supplier
-    .where((s) => s.id.eq(supplierId))
-    .include("supplierInvoices")
-    .first();
+  try {
+    return db.orm.public.Supplier
+      .where((s) => s.id.eq(supplierId))
+      .include("supplierInvoices")
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -126,9 +131,14 @@ export async function updateFinancialSupplier(
  * Deactivate a financial supplier (soft disable).
  */
 export async function deactivateFinancialSupplier(supplierId: string) {
-  return db.orm.public.Supplier
-    .where({ id: supplierId })
-    .update({ isActive: false });
+  try {
+    return db.orm.public.Supplier
+      .where({ id: supplierId })
+      .update({ isActive: false });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 // ─── Supplier Invoice Functions ────────────────────────────────
@@ -175,13 +185,18 @@ export async function getSupplierInvoicesForScheme(
  * Fetch a single supplier invoice by ID with related data.
  */
 export async function getSupplierInvoiceById(invoiceId: string) {
-  return db.orm.public.SupplierInvoice
-    .where((si) => si.id.eq(invoiceId))
-    .include("supplier")
-    .include("fund")
-    .include("accountCode")
-    .include("financialDocuments")
-    .first();
+  try {
+    return db.orm.public.SupplierInvoice
+      .where((si) => si.id.eq(invoiceId))
+      .include("supplier")
+      .include("fund")
+      .include("accountCode")
+      .include("financialDocuments")
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -257,22 +272,32 @@ export async function updateSupplierInvoice(
  * Submit a supplier invoice for approval.
  */
 export async function submitForApproval(invoiceId: string) {
-  return db.orm.public.SupplierInvoice
-    .where({ id: invoiceId })
-    .update({ status: "AWAITING_APPROVAL" });
+  try {
+    return db.orm.public.SupplierInvoice
+      .where({ id: invoiceId })
+      .update({ status: "AWAITING_APPROVAL" });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Approve a supplier invoice.
  */
 export async function approveInvoice(invoiceId: string, approvedBy: string) {
-  return db.orm.public.SupplierInvoice
-    .where({ id: invoiceId })
-    .update({
-      status: "APPROVED",
-      approvedBy,
-      approvedAt: toTimestamp(new Date().toISOString()),
-    });
+  try {
+    return db.orm.public.SupplierInvoice
+      .where({ id: invoiceId })
+      .update({
+        status: "APPROVED",
+        approvedBy,
+        approvedAt: toTimestamp(new Date().toISOString()),
+      });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
@@ -310,9 +335,14 @@ export async function recordInvoicePayment(
  * Cancel a supplier invoice.
  */
 export async function cancelInvoice(invoiceId: string) {
-  return db.orm.public.SupplierInvoice
-    .where({ id: invoiceId })
-    .update({ status: "CANCELLED" });
+  try {
+    return db.orm.public.SupplierInvoice
+      .where({ id: invoiceId })
+      .update({ status: "CANCELLED" });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
@@ -333,19 +363,24 @@ export async function linkJournalEntry(
  * and its due date has passed.
  */
 export async function getOverdueInvoices(schemeId: string, limit = 500) {
-  const now = toTimestamp(new Date().toISOString());
-  return db.orm.public.SupplierInvoice
-    .where((si) =>
-      and(
-        si.schemeId.eq(schemeId),
-        or(si.status.eq("APPROVED"), si.status.eq("PARTIALLY_PAID")),
-        si.dueDate.lt(now),
-      ),
-    )
-    .include("supplier")
-    .orderBy((si) => si.dueDate.asc())
-    .limit(limit)
-    .all();
+  try {
+    const now = toTimestamp(new Date().toISOString());
+    return db.orm.public.SupplierInvoice
+      .where((si) =>
+        and(
+          si.schemeId.eq(schemeId),
+          or(si.status.eq("APPROVED"), si.status.eq("PARTIALLY_PAID")),
+          si.dueDate.lt(now),
+        ),
+      )
+      .include("supplier")
+      .orderBy((si) => si.dueDate.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**

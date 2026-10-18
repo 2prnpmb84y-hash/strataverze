@@ -303,11 +303,11 @@ export default async function SchemeDetailPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="pb-2 font-medium text-muted-foreground">Lot</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Unit</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Type</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Entitlement</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Owner</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Lot</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Unit</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Type</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">Entitlement</th>
+                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Owner</th>
                 </tr>
               </thead>
               <tbody>

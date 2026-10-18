@@ -4,6 +4,10 @@ import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
+import {
+  PasswordStrength,
+  validatePasswordStrength,
+} from "@/components/ui/password-strength";
 
 export default function ResetPasswordPage() {
   return (
@@ -49,16 +53,18 @@ function ResetPasswordForm() {
     e.preventDefault();
     setStatus(null);
 
-    if (password.length < 8) {
+    const { allMet } = validatePasswordStrength(password);
+    if (!allMet) {
       setStatus({
         type: "error",
-        message: "Password must be at least 8 characters",
+        message:
+          "Password must be at least 8 characters with uppercase, lowercase, number and special character.",
       });
       return;
     }
 
     if (password !== confirmPassword) {
-      setStatus({ type: "error", message: "Passwords do not match" });
+      setStatus({ type: "error", message: "Passwords do not match." });
       return;
     }
 
@@ -138,6 +144,7 @@ function ResetPasswordForm() {
                   className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-shadow"
                   placeholder="At least 8 characters"
                 />
+                <PasswordStrength password={password} />
               </div>
 
               <div>
@@ -163,7 +170,12 @@ function ResetPasswordForm() {
 
               <button
                 type="submit"
-                disabled={loading || (!ready && !error)}
+                disabled={
+                  loading ||
+                  (!ready && !error) ||
+                  !validatePasswordStrength(password).allMet ||
+                  password !== confirmPassword
+                }
                 className="w-full h-11 rounded-lg bg-primary-400 text-white font-semibold text-sm transition-colors hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Updating..." : "Update password"}

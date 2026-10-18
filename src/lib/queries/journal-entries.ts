@@ -156,16 +156,21 @@ export async function getJournalEntriesForScheme(
  * Fetch a single journal entry by ID with full line details.
  */
 export async function getJournalEntryById(entryId: string) {
-  return db.orm.public.JournalEntry
-    .where((je) => je.id.eq(entryId))
-    .include("lines", (l) =>
-      l
-        .include("accountCode")
-        .include("fund")
-        .include("lot")
-        .include("supplier"),
-    )
-    .first();
+  try {
+    return db.orm.public.JournalEntry
+      .where((je) => je.id.eq(entryId))
+      .include("lines", (l) =>
+        l
+          .include("accountCode")
+          .include("fund")
+          .include("lot")
+          .include("supplier"),
+      )
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -405,17 +410,22 @@ export async function getUnmatchedJournalEntries(
 }
 
 export async function getNextEntryNumber(schemeId: string): Promise<string> {
-  const entries = await db.orm.public.JournalEntry
-    .where((je) => je.schemeId.eq(schemeId))
-    .orderBy((je) => je.entryNumber.desc())
-    .limit(1)
-    .all();
+  try {
+    const entries = await db.orm.public.JournalEntry
+      .where((je) => je.schemeId.eq(schemeId))
+      .orderBy((je) => je.entryNumber.desc())
+      .limit(1)
+      .all();
 
-  if (entries.length === 0) return "JE-0001";
+    if (entries.length === 0) return "JE-0001";
 
-  // Parse the numeric portion of the last entry number
-  const last = String(entries[0].entryNumber);
-  const match = last.match(/(\d+)$/);
-  const nextNum = match ? parseInt(match[1], 10) + 1 : 1;
-  return `JE-${String(nextNum).padStart(4, "0")}`;
+    // Parse the numeric portion of the last entry number
+    const last = String(entries[0].entryNumber);
+    const match = last.match(/(\d+)$/);
+    const nextNum = match ? parseInt(match[1], 10) + 1 : 1;
+    return `JE-${String(nextNum).padStart(4, "0")}`;
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }

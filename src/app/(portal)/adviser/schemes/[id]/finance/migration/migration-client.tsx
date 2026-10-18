@@ -852,7 +852,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border">
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                       Row
                     </th>
                     {TARGET_FIELDS[dataType].map((field) => (
@@ -863,7 +863,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                         {field.label}
                       </th>
                     ))}
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
                       Status
                     </th>
                   </tr>

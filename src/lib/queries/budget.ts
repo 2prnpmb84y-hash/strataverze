@@ -60,10 +60,15 @@ export async function getBudgetLinesForScheme(
  * Fetch a single budget line by ID.
  */
 export async function getBudgetLineById(budgetLineId: string) {
-  return db.orm.public.BudgetLine
-    .where((b) => b.id.eq(budgetLineId))
-    .include("fund")
-    .first();
+  try {
+    return db.orm.public.BudgetLine
+      .where((b) => b.id.eq(budgetLineId))
+      .include("fund")
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**

@@ -44,11 +44,16 @@ export async function getMatchingRulesForScheme(
  * Fetch a single matching rule by ID.
  */
 export async function getMatchingRuleById(ruleId: string) {
-  return db.orm.public.MatchingRule
-    .where((r) => r.id.eq(ruleId))
-    .include("targetAccountCode")
-    .include("targetFund")
-    .first();
+  try {
+    return db.orm.public.MatchingRule
+      .where((r) => r.id.eq(ruleId))
+      .include("targetAccountCode")
+      .include("targetFund")
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**

@@ -124,19 +124,27 @@ export function PortalShell({
 
   return (
     <div className="flex min-h-full">
+      {/* Skip to content link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-primary-400 focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col sidebar-gradient">
+      <aside className="hidden md:flex w-64 flex-col sidebar-gradient" aria-label={portal.label}>
         <div className="px-6 pt-8 pb-6">
           <Logo size="md" variant="white" />
         </div>
 
         <div className="px-4 mb-4">
-          <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white">
+          <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white" aria-label={`Current portal: ${portal.label}`}>
             {portal.label}
           </span>
         </div>
 
-        <nav className="flex-1 px-3 flex flex-col gap-0.5">
+        <nav className="flex-1 px-3 flex flex-col gap-0.5" aria-label="Main navigation">
           {portal.nav.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -147,6 +155,7 @@ export function PortalShell({
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-white/25 text-white"
@@ -161,8 +170,8 @@ export function PortalShell({
 
         {/* Portal switcher */}
         {otherPortals.length > 0 && (
-          <div className="px-3 pb-2">
-            <p className="px-3 mb-1.5 text-[10px] uppercase tracking-widest text-white/50 font-medium">
+          <nav className="px-3 pb-2" aria-label="Portal switcher">
+            <p className="px-3 mb-1.5 text-[10px] uppercase tracking-widest text-white/50 font-medium" aria-hidden="true">
               Switch portal
             </p>
             <div className="flex flex-col gap-0.5">
@@ -183,7 +192,7 @@ export function PortalShell({
                 );
               })}
             </div>
-          </div>
+          </nav>
         )}
 
         {/* Settings & user info */}
@@ -199,7 +208,7 @@ export function PortalShell({
                 }`}
               >
                 Invitations
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/30 text-[10px] font-bold text-white">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/30 text-[10px] font-bold text-white" aria-label={`${pendingInvitationCount} pending`}>
                   {pendingInvitationCount}
                 </span>
               </Link>
@@ -220,6 +229,7 @@ export function PortalShell({
                 viewBox="0 0 16 16"
                 fill="none"
                 className="shrink-0"
+                aria-hidden="true"
               >
                 <path
                   d="M6.86 2.572a1.25 1.25 0 0 1 2.28 0l.384.838a1.25 1.25 0 0 0 1.142.744l.921.017a1.25 1.25 0 0 1 1.14 1.971l-.538.75a1.25 1.25 0 0 0-.143 1.35l.43.816a1.25 1.25 0 0 1-.73 1.788l-.876.298a1.25 1.25 0 0 0-.847.984l-.143.912a1.25 1.25 0 0 1-2.121.678l-.658-.66a1.25 1.25 0 0 0-1.354-.276l-.84.387a1.25 1.25 0 0 1-1.788-.73l-.298-.876a1.25 1.25 0 0 0-.984-.847l-.912-.143A1.25 1.25 0 0 1 1.39 7.46l.66-.658a1.25 1.25 0 0 0 .276-1.354l-.387-.84a1.25 1.25 0 0 1 .73-1.788l.876-.298a1.25 1.25 0 0 0 .847-.984l.143-.912a.104.104 0 0 1 .004-.02L6.86 2.572Z"
@@ -257,7 +267,7 @@ export function PortalShell({
         </header>
 
         {/* Mobile nav */}
-        <nav className="md:hidden flex gap-1 overflow-x-auto px-4 py-2 border-b border-border bg-card">
+        <nav className="md:hidden flex gap-1 overflow-x-auto px-4 py-2 border-b border-border bg-card" aria-label="Main navigation">
           {portal.nav.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -268,6 +278,7 @@ export function PortalShell({
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   isActive
                     ? "bg-muted text-foreground"
@@ -322,7 +333,7 @@ export function PortalShell({
         </nav>
 
         {/* Main content */}
-        <main className="flex-1 p-6 bg-muted">{children}</main>
+        <main id="main-content" className="flex-1 p-6 bg-muted">{children}</main>
       </div>
     </div>
   );

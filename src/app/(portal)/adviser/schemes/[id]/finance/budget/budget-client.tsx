@@ -348,12 +348,12 @@ export function BudgetClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                  <th className="text-left py-2 pr-4">Code</th>
-                  <th className="text-left py-2 pr-4">Account</th>
-                  <th className="text-right py-2 pr-4">Annual Budget</th>
-                  <th className="text-right py-2 pr-4">Quarterly</th>
-                  <th className="text-left py-2 pr-4">Notes</th>
-                  <th className="text-right py-2 w-24">Actions</th>
+                  <th scope="col" className="text-left py-2 pr-4">Code</th>
+                  <th scope="col" className="text-left py-2 pr-4">Account</th>
+                  <th scope="col" className="text-right py-2 pr-4">Annual Budget</th>
+                  <th scope="col" className="text-right py-2 pr-4">Quarterly</th>
+                  <th scope="col" className="text-left py-2 pr-4">Notes</th>
+                  <th scope="col" className="text-right py-2 w-24">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -480,12 +480,12 @@ export function BudgetClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                  <th className="text-left py-2 pr-4">Code</th>
-                  <th className="text-left py-2 pr-4">Account</th>
-                  <th className="text-right py-2 pr-4">Budget</th>
-                  <th className="text-right py-2 pr-4">Actual</th>
-                  <th className="text-right py-2 pr-4">Variance</th>
-                  <th className="text-right py-2">%</th>
+                  <th scope="col" className="text-left py-2 pr-4">Code</th>
+                  <th scope="col" className="text-left py-2 pr-4">Account</th>
+                  <th scope="col" className="text-right py-2 pr-4">Budget</th>
+                  <th scope="col" className="text-right py-2 pr-4">Actual</th>
+                  <th scope="col" className="text-right py-2 pr-4">Variance</th>
+                  <th scope="col" className="text-right py-2">%</th>
                 </tr>
               </thead>
               <tbody>

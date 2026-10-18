@@ -1,7 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { login, signup } from "./actions";
+import {
+  PasswordStrength,
+  validatePasswordStrength,
+} from "@/components/ui/password-strength";
 
 type Tab = "owner" | "adviser";
 
@@ -30,6 +34,8 @@ export function LoginForm({
   message?: string;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("owner");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [password, setPassword] = useState("");
   const config = tabConfig[activeTab];
 
   return (
@@ -58,7 +64,7 @@ export function LoginForm({
       </div>
 
       <h1 className="text-xl font-bold font-heading text-card-foreground mb-1">
-        Sign in
+        {isSignUp ? "Create account" : "Sign in"}
       </h1>
       <p className="text-sm text-muted-foreground mb-6">{config.description}</p>
 
@@ -111,13 +117,17 @@ export function LoginForm({
             name="password"
             type="password"
             required
-            autoComplete="current-password"
+            autoComplete={isSignUp ? "new-password" : "current-password"}
+            minLength={isSignUp ? 8 : undefined}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
             style={
               { "--tw-ring-color": config.accent } as React.CSSProperties
             }
             placeholder="••••••••"
           />
+          {isSignUp && <PasswordStrength password={password} />}
         </div>
 
         <div className="flex justify-end">
@@ -131,26 +141,64 @@ export function LoginForm({
         </div>
 
         <div className="flex flex-col gap-2 mt-2">
-          <button
-            formAction={login}
-            className="w-full h-11 rounded-lg text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={{
-              backgroundColor: config.accent,
-              "--tw-ring-color": config.accent,
-            } as React.CSSProperties}
-          >
-            Sign in
-          </button>
-
-          <button
-            formAction={signup}
-            className="w-full h-11 rounded-lg border border-border bg-background text-card-foreground font-medium text-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={
-              { "--tw-ring-color": config.accent } as React.CSSProperties
-            }
-          >
-            Create account
-          </button>
+          {isSignUp ? (
+            <>
+              <button
+                formAction={(formData) => {
+                  const { allMet } = validatePasswordStrength(password);
+                  if (!allMet) return;
+                  signup(formData);
+                }}
+                className="w-full h-11 rounded-lg text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: config.accent,
+                  "--tw-ring-color": config.accent,
+                } as React.CSSProperties}
+                disabled={!validatePasswordStrength(password).allMet}
+              >
+                Create account
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(false);
+                  setPassword("");
+                }}
+                className="w-full h-11 rounded-lg border border-border bg-background text-card-foreground font-medium text-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={
+                  { "--tw-ring-color": config.accent } as React.CSSProperties
+                }
+              >
+                Back to sign in
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                formAction={login}
+                className="w-full h-11 rounded-lg text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{
+                  backgroundColor: config.accent,
+                  "--tw-ring-color": config.accent,
+                } as React.CSSProperties}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(true);
+                  setPassword("");
+                }}
+                className="w-full h-11 rounded-lg border border-border bg-background text-card-foreground font-medium text-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={
+                  { "--tw-ring-color": config.accent } as React.CSSProperties
+                }
+              >
+                Create account
+              </button>
+            </>
+          )}
         </div>
       </form>
     </>

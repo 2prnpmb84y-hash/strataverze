@@ -207,16 +207,16 @@ export default async function AdviserReportingPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left">
-                    <th className="pb-2 font-medium text-muted-foreground">
+                    <th scope="col" className="pb-2 font-medium text-muted-foreground">
                       Scheme
                     </th>
-                    <th className="pb-2 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">
                       Outstanding
                     </th>
-                    <th className="pb-2 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">
                       Work Orders
                     </th>
-                    <th className="pb-2 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">
                       Alerts
                     </th>
                   </tr>

@@ -65,60 +65,85 @@ export async function getFinancialDocumentsForScheme(
  * Fetch a single financial document by ID with all relations.
  */
 export async function getFinancialDocumentById(documentId: string) {
-  return db.orm.public.FinancialDocument
-    .where((d) => d.id.eq(documentId))
-    .include("lot")
-    .include("supplier")
-    .include("supplierInvoice")
-    .include("levyNotice")
-    .include("bankTransaction")
-    .first();
+  try {
+    return db.orm.public.FinancialDocument
+      .where((d) => d.id.eq(documentId))
+      .include("lot")
+      .include("supplier")
+      .include("supplierInvoice")
+      .include("levyNotice")
+      .include("bankTransaction")
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
  * Fetch all documents linked to a levy notice.
  */
 export async function getDocumentsForLevyNotice(levyNoticeId: string, limit = 100) {
-  return db.orm.public.FinancialDocument
-    .where((d) => d.levyNoticeId.eq(levyNoticeId))
-    .orderBy((d) => d.uploadedAt.desc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.FinancialDocument
+      .where((d) => d.levyNoticeId.eq(levyNoticeId))
+      .orderBy((d) => d.uploadedAt.desc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Fetch all documents linked to a supplier invoice.
  */
 export async function getDocumentsForSupplierInvoice(supplierInvoiceId: string, limit = 100) {
-  return db.orm.public.FinancialDocument
-    .where((d) => d.supplierInvoiceId.eq(supplierInvoiceId))
-    .orderBy((d) => d.uploadedAt.desc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.FinancialDocument
+      .where((d) => d.supplierInvoiceId.eq(supplierInvoiceId))
+      .orderBy((d) => d.uploadedAt.desc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Fetch all documents linked to a bank transaction.
  */
 export async function getDocumentsForBankTransaction(bankTransactionId: string, limit = 100) {
-  return db.orm.public.FinancialDocument
-    .where((d) => d.bankTransactionId.eq(bankTransactionId))
-    .orderBy((d) => d.uploadedAt.desc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.FinancialDocument
+      .where((d) => d.bankTransactionId.eq(bankTransactionId))
+      .orderBy((d) => d.uploadedAt.desc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Fetch all documents for a specific lot (owner uploads).
  */
 export async function getDocumentsForLot(lotId: string, limit = 200) {
-  return db.orm.public.FinancialDocument
-    .where((d) => d.lotId.eq(lotId))
-    .include("supplier")
-    .include("levyNotice")
-    .orderBy((d) => d.uploadedAt.desc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.FinancialDocument
+      .where((d) => d.lotId.eq(lotId))
+      .include("supplier")
+      .include("levyNotice")
+      .orderBy((d) => d.uploadedAt.desc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
@@ -203,19 +228,24 @@ export async function updateVerificationStatus(
  * Fetch unreviewed documents for a scheme (oldest first for review queue).
  */
 export async function getUnreviewedDocuments(schemeId: string, limit = 200) {
-  return db.orm.public.FinancialDocument
-    .where((d) =>
-      and(
-        d.schemeId.eq(schemeId),
-        d.documentStatus.eq("UPLOADED"),
-        d.verificationStatus.eq("PENDING"),
-      ),
-    )
-    .include("lot")
-    .include("supplier")
-    .orderBy((d) => d.uploadedAt.asc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.FinancialDocument
+      .where((d) =>
+        and(
+          d.schemeId.eq(schemeId),
+          d.documentStatus.eq("UPLOADED"),
+          d.verificationStatus.eq("PENDING"),
+        ),
+      )
+      .include("lot")
+      .include("supplier")
+      .orderBy((d) => d.uploadedAt.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**

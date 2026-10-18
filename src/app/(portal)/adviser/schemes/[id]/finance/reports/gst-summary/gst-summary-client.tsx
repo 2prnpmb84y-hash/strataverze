@@ -119,13 +119,13 @@ export function GstSummaryClient({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground w-16">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground w-16">
                   Label
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                   Description
                 </th>
-                <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                   Amount
                 </th>
               </tr>
@@ -215,16 +215,16 @@ export function GstSummaryClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Account
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     Net Amount
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     GST
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     Gross
                   </th>
                 </tr>
@@ -269,16 +269,16 @@ export function GstSummaryClient({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
                     Account
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     Net Amount
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     GST
                   </th>
-                  <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
                     Gross
                   </th>
                 </tr>

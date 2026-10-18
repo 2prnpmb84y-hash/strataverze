@@ -238,13 +238,18 @@ export async function getLevyItemsForLot(lotId: string, limit = 200) {
  * Uses the LevyNotice model which provides richer data than LevyItem.
  */
 export async function getLevyNoticesForLot(lotId: string, limit = 200) {
-  return db.orm.public.LevyNotice
-    .where((ln) => ln.lotId.eq(lotId))
-    .include("fund")
-    .include("levySchedule")
-    .orderBy((ln) => ln.dueDate.desc())
-    .limit(limit)
-    .all();
+  try {
+    return await db.orm.public.LevyNotice
+      .where((ln) => ln.lotId.eq(lotId))
+      .include("fund")
+      .include("levySchedule")
+      .orderBy((ln) => ln.dueDate.desc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet; return empty array
+    return [];
+  }
 }
 
 /**
@@ -252,11 +257,16 @@ export async function getLevyNoticesForLot(lotId: string, limit = 200) {
  */
 export async function getLevyNoticesForLots(lotIds: string[], limit = 500) {
   if (lotIds.length === 0) return [];
-  return db.orm.public.LevyNotice
-    .where((ln) => ln.lotId.in(lotIds))
-    .include("fund")
-    .include("levySchedule")
-    .orderBy((ln) => ln.dueDate.desc())
-    .limit(limit)
-    .all();
+  try {
+    return await db.orm.public.LevyNotice
+      .where((ln) => ln.lotId.in(lotIds))
+      .include("fund")
+      .include("levySchedule")
+      .orderBy((ln) => ln.dueDate.desc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet; return empty array
+    return [];
+  }
 }

@@ -288,9 +288,9 @@ export default function LandingPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-muted-foreground border-b border-border">
-                      <th className="px-6 py-3 font-medium">Date</th>
-                      <th className="px-6 py-3 font-medium">Description</th>
-                      <th className="px-6 py-3 font-medium text-right">Amount</th>
+                      <th scope="col" className="px-6 py-3 font-medium">Date</th>
+                      <th scope="col" className="px-6 py-3 font-medium">Description</th>
+                      <th scope="col" className="px-6 py-3 font-medium text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody className="text-foreground">

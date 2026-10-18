@@ -188,13 +188,13 @@ export default async function OwnerLeviesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                      <th className="text-left px-6 py-2">Levy</th>
-                      <th className="text-left px-4 py-2">Lot</th>
-                      <th className="text-left px-4 py-2">Due Date</th>
-                      <th className="text-right px-4 py-2">Amount</th>
-                      <th className="text-right px-4 py-2">Paid</th>
-                      <th className="text-right px-4 py-2">Balance</th>
-                      <th className="text-right px-6 py-2">Status</th>
+                      <th scope="col" className="text-left px-6 py-2">Levy</th>
+                      <th scope="col" className="text-left px-4 py-2">Lot</th>
+                      <th scope="col" className="text-left px-4 py-2">Due Date</th>
+                      <th scope="col" className="text-right px-4 py-2">Amount</th>
+                      <th scope="col" className="text-right px-4 py-2">Paid</th>
+                      <th scope="col" className="text-right px-4 py-2">Balance</th>
+                      <th scope="col" className="text-right px-6 py-2">Status</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -170,14 +170,14 @@ export default async function AgedArrearsPage({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
-                    <th className="text-left px-6 py-2">Lot</th>
-                    <th className="text-left px-4 py-2">Unit</th>
-                    <th className="text-right px-4 py-2">Current</th>
-                    <th className="text-right px-4 py-2">1-30 days</th>
-                    <th className="text-right px-4 py-2">31-60 days</th>
-                    <th className="text-right px-4 py-2">61-90 days</th>
-                    <th className="text-right px-4 py-2">90+ days</th>
-                    <th className="text-right px-6 py-2">Total</th>
+                    <th scope="col" className="text-left px-6 py-2">Lot</th>
+                    <th scope="col" className="text-left px-4 py-2">Unit</th>
+                    <th scope="col" className="text-right px-4 py-2">Current</th>
+                    <th scope="col" className="text-right px-4 py-2">1-30 days</th>
+                    <th scope="col" className="text-right px-4 py-2">31-60 days</th>
+                    <th scope="col" className="text-right px-4 py-2">61-90 days</th>
+                    <th scope="col" className="text-right px-4 py-2">90+ days</th>
+                    <th scope="col" className="text-right px-6 py-2">Total</th>
                   </tr>
                 </thead>
                 <tbody>

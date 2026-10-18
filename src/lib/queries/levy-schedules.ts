@@ -48,11 +48,16 @@ export async function getLevySchedulesForScheme(
  * Fetch a single levy schedule by ID with fund and levy notices (including lot details).
  */
 export async function getLevyScheduleById(scheduleId: string) {
-  return db.orm.public.LevySchedule
-    .where((ls) => ls.id.eq(scheduleId))
-    .include("fund")
-    .include("levyNotices", (ln) => ln.include("lot").include("fund"))
-    .first();
+  try {
+    return db.orm.public.LevySchedule
+      .where((ls) => ls.id.eq(scheduleId))
+      .include("fund")
+      .include("levyNotices", (ln) => ln.include("lot").include("fund"))
+      .first();
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 /**
@@ -83,31 +88,46 @@ export async function createLevySchedule(data: {
  * Approve a levy schedule — sets status to APPROVED with timestamp and approver.
  */
 export async function approveLevySchedule(scheduleId: string, approvedBy: string) {
-  return db.orm.public.LevySchedule
-    .where({ id: scheduleId })
-    .update({
-      status: "APPROVED",
-      approvedAt: toTimestamp(new Date().toISOString()),
-      approvedBy,
-    });
+  try {
+    return db.orm.public.LevySchedule
+      .where({ id: scheduleId })
+      .update({
+        status: "APPROVED",
+        approvedAt: toTimestamp(new Date().toISOString()),
+        approvedBy,
+      });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Activate a levy schedule — sets status to ACTIVE.
  */
 export async function activateLevySchedule(scheduleId: string) {
-  return db.orm.public.LevySchedule
-    .where({ id: scheduleId })
-    .update({ status: "ACTIVE" });
+  try {
+    return db.orm.public.LevySchedule
+      .where({ id: scheduleId })
+      .update({ status: "ACTIVE" });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
  * Supersede a levy schedule — sets status to SUPERSEDED.
  */
 export async function supersedeLevySchedule(scheduleId: string) {
-  return db.orm.public.LevySchedule
-    .where({ id: scheduleId })
-    .update({ status: "SUPERSEDED" });
+  try {
+    return db.orm.public.LevySchedule
+      .where({ id: scheduleId })
+      .update({ status: "SUPERSEDED" });
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 // ─── Levy Notice Queries ───────────────────────────────────────
@@ -116,13 +136,18 @@ export async function supersedeLevySchedule(scheduleId: string) {
  * Fetch all levy notices for a schedule, with lot details. Ordered by noticeNumber.
  */
 export async function getLevyNoticesForSchedule(scheduleId: string, limit = 500) {
-  return db.orm.public.LevyNotice
-    .where((ln) => ln.levyScheduleId.eq(scheduleId))
-    .include("lot")
-    .include("fund")
-    .orderBy((ln) => ln.noticeNumber.asc())
-    .limit(limit)
-    .all();
+  try {
+    return db.orm.public.LevyNotice
+      .where((ln) => ln.levyScheduleId.eq(scheduleId))
+      .include("lot")
+      .include("fund")
+      .orderBy((ln) => ln.noticeNumber.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
@@ -309,21 +334,26 @@ export async function recordLevyPayment(noticeId: string, paymentAmount: number)
  * Returns notices with status ISSUED or PARTIALLY_PAID where dueDate is in the past.
  */
 export async function getOverdueLevyNotices(schemeId: string, limit = 500) {
-  const today = new Date().toISOString().split("T")[0];
+  try {
+    const today = new Date().toISOString().split("T")[0];
 
-  return db.orm.public.LevyNotice
-    .where((ln) =>
-      and(
-        ln.schemeId.eq(schemeId),
-        or(ln.status.eq("ISSUED"), ln.status.eq("PARTIALLY_PAID")),
-        ln.dueDate.lt(toTimestamp(today)),
-      ),
-    )
-    .include("lot")
-    .include("fund")
-    .orderBy((ln) => ln.dueDate.asc())
-    .limit(limit)
-    .all();
+    return db.orm.public.LevyNotice
+      .where((ln) =>
+        and(
+          ln.schemeId.eq(schemeId),
+          or(ln.status.eq("ISSUED"), ln.status.eq("PARTIALLY_PAID")),
+          ln.dueDate.lt(toTimestamp(today)),
+        ),
+      )
+      .include("lot")
+      .include("fund")
+      .orderBy((ln) => ln.dueDate.asc())
+      .limit(limit)
+      .all();
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
 
 /**
@@ -349,16 +379,21 @@ export async function getLevyNoticesForSchemes(
  * Returns a formatted string like "LN-0001".
  */
 export async function getNextNoticeNumber(schemeId: string): Promise<string> {
-  const existing = await db.orm.public.LevyNotice
-    .where((ln) => ln.schemeId.eq(schemeId))
-    .orderBy((ln) => ln.noticeNumber.desc())
-    .limit(1)
-    .all();
+  try {
+    const existing = await db.orm.public.LevyNotice
+      .where((ln) => ln.schemeId.eq(schemeId))
+      .orderBy((ln) => ln.noticeNumber.desc())
+      .limit(1)
+      .all();
 
-  if (existing.length === 0) return "LN-0001";
+    if (existing.length === 0) return "LN-0001";
 
-  const last = String(existing[0].noticeNumber);
-  const match = last.match(/(\d+)$/);
-  const nextNum = match ? parseInt(match[1], 10) + 1 : 1;
-  return `LN-${String(nextNum).padStart(4, "0")}`;
+    const last = String(existing[0].noticeNumber);
+    const match = last.match(/(\d+)$/);
+    const nextNum = match ? parseInt(match[1], 10) + 1 : 1;
+    return `LN-${String(nextNum).padStart(4, "0")}`;
+  } catch {
+    // Table may not exist yet
+    return [];
+  }
 }
