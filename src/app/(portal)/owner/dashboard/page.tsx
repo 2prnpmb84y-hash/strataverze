@@ -26,7 +26,7 @@ const statusColours: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700",
 };
 
-/** Quick action definitions — existing pages are linked, unbuilt ones go to /coming-soon */
+/** Quick action definitions for the owner dashboard. */
 const quickActions = [
   { label: "Lots / Owners", href: "/owner/scheme", built: true },
   { label: "Levies", href: "/owner/levies", built: true },
