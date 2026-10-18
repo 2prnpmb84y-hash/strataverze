@@ -104,7 +104,7 @@ export default async function SupplierInvoicesPage({
       ) : (
         <Card>
           <CardHeader title="All Invoices" />
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-line">
             {invoices.map((invoice) => (
               <Link
                 key={invoice.id}
@@ -127,12 +127,12 @@ export default async function SupplierInvoicesPage({
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-ink-muted">
                     {invoice.supplier?.tradingName ||
                       invoice.supplier?.companyName ||
                       "Unknown Supplier"}
                   </p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 text-xs text-ink-muted">
                     <span>Invoiced: {formatDate(invoice.invoiceDate)}</span>
                     <span>Due: {formatDate(invoice.dueDate)}</span>
                     {invoice.fund && (
@@ -151,7 +151,7 @@ export default async function SupplierInvoicesPage({
                     {formatCurrency(invoice.totalAmount)}
                   </p>
                   {Number(invoice.balanceOutstanding ?? 0) > 0 && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-ink-muted">
                       Outstanding: {formatCurrency(invoice.balanceOutstanding)}
                     </p>
                   )}

@@ -135,32 +135,32 @@ export function FundSummaryClient({
                 {/* Financial position */}
                 <table className="w-full text-sm">
                   <tbody>
-                    <tr className="border-b border-border/50">
-                      <td className="py-2 text-muted-foreground">
+                    <tr className="border-b border-line/50">
+                      <td className="py-2 text-ink-muted">
                         Opening Balance
                       </td>
-                      <td className="py-2 text-right tabular-nums text-foreground">
+                      <td className="py-2 text-right tabular-nums text-ink">
                         {formatCurrency(fund.openingBalance)}
                       </td>
                     </tr>
-                    <tr className="border-b border-border/50">
-                      <td className="py-2 text-muted-foreground pl-4">
+                    <tr className="border-b border-line/50">
+                      <td className="py-2 text-ink-muted pl-4">
                         Income
                       </td>
                       <td className="py-2 text-right tabular-nums text-green-600">
                         {formatCurrency(fund.totalIncome)}
                       </td>
                     </tr>
-                    <tr className="border-b border-border/50">
-                      <td className="py-2 text-muted-foreground pl-4">
+                    <tr className="border-b border-line/50">
+                      <td className="py-2 text-ink-muted pl-4">
                         Expenses
                       </td>
                       <td className="py-2 text-right tabular-nums text-red-600">
                         {formatCurrency(fund.totalExpenses)}
                       </td>
                     </tr>
-                    <tr className="border-b border-border">
-                      <td className="py-2 font-medium text-foreground pl-4">
+                    <tr className="border-b border-line">
+                      <td className="py-2 font-medium text-ink pl-4">
                         Net Movement
                       </td>
                       <td
@@ -169,10 +169,10 @@ export function FundSummaryClient({
                         {formatCurrency(fund.netMovement)}
                       </td>
                     </tr>
-                    <tr className="border-b border-border font-semibold">
-                      <td className="py-2 text-foreground">Closing Balance</td>
+                    <tr className="border-b border-line font-semibold">
+                      <td className="py-2 text-ink">Closing Balance</td>
                       <td
-                        className={`py-2 text-right tabular-nums ${fund.closingBalance >= 0 ? "text-foreground" : "text-red-600"}`}
+                        className={`py-2 text-right tabular-nums ${fund.closingBalance >= 0 ? "text-ink" : "text-red-600"}`}
                       >
                         {formatCurrency(fund.closingBalance)}
                       </td>
@@ -182,27 +182,27 @@ export function FundSummaryClient({
 
                 {/* Levy collection */}
                 {fund.totalLevied > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                  <div className="mt-4 pt-4 border-t border-line">
+                    <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2">
                       Levy Collection
                     </h4>
                     <div className="grid grid-cols-3 gap-3">
-                      <div className="rounded-lg bg-muted px-3 py-2 text-center">
-                        <p className="text-xs text-muted-foreground">Levied</p>
-                        <p className="text-sm font-medium text-foreground tabular-nums">
+                      <div className="rounded-[var(--radius-card)] bg-muted px-3 py-2 text-center">
+                        <p className="text-xs text-ink-muted">Levied</p>
+                        <p className="text-sm font-medium text-ink tabular-nums">
                           {formatCurrency(fund.totalLevied)}
                         </p>
                       </div>
-                      <div className="rounded-lg bg-muted px-3 py-2 text-center">
-                        <p className="text-xs text-muted-foreground">
+                      <div className="rounded-[var(--radius-card)] bg-muted px-3 py-2 text-center">
+                        <p className="text-xs text-ink-muted">
                           Collected
                         </p>
                         <p className="text-sm font-medium text-green-600 tabular-nums">
                           {formatCurrency(fund.totalCollected)}
                         </p>
                       </div>
-                      <div className="rounded-lg bg-muted px-3 py-2 text-center">
-                        <p className="text-xs text-muted-foreground">
+                      <div className="rounded-[var(--radius-card)] bg-muted px-3 py-2 text-center">
+                        <p className="text-xs text-ink-muted">
                           Outstanding
                         </p>
                         <p className="text-sm font-medium text-red-600 tabular-nums">

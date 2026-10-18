@@ -14,7 +14,7 @@ export function StaticMap({
   const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik&marker=&query=${encoded}`;
 
   return (
-    <div className={`relative overflow-hidden rounded-xl bg-muted ${className}`}>
+    <div className={`relative overflow-hidden rounded-[var(--radius-card)] bg-muted ${className}`}>
       <iframe
         title={`Map of ${address}`}
         src={osmEmbedUrl}
@@ -26,7 +26,7 @@ export function StaticMap({
         href={googleMapsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-lg bg-card/90 backdrop-blur-sm border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-card transition-colors shadow-sm"
+        className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-[var(--radius-card)] bg-white/90 backdrop-blur-sm border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-white transition-colors shadow-sm"
       >
         <svg
           width="14"

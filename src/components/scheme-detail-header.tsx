@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { StaticMap } from "@/components/ui/static-map";
+import { Pill } from "@/components/ui/pill";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -40,39 +41,9 @@ export type SchemeDetailHeaderProps = {
   images: SchemeImage[];
   /** Navigation pill buttons */
   navButtons: NavButton[];
-  /** Href of the currently active nav button (gets solid gold fill) */
+  /** Href of the currently active nav button (gets solid fill) */
   activeHref?: string;
 };
-
-/* ------------------------------------------------------------------ */
-/*  Circled plus icon (matches reference exactly)                      */
-/* ------------------------------------------------------------------ */
-
-function CircledPlusIcon({ active = false }: { active?: boolean }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      className={`shrink-0 ${active ? "text-white" : "text-gold-300"}`}
-    >
-      <circle
-        cx="9"
-        cy="9"
-        r="8"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <path
-        d="M9 5.5v7M5.5 9h7"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /*  Back chevron                                                       */
@@ -109,7 +80,7 @@ function PinIcon() {
       height="16"
       viewBox="0 0 16 16"
       fill="none"
-      className="shrink-0 text-muted-foreground"
+      className="shrink-0 text-ink-muted"
     >
       <path
         d="M8 1.5A4.25 4.25 0 0 0 3.75 5.75C3.75 9.125 8 14.5 8 14.5s4.25-5.375 4.25-8.75A4.25 4.25 0 0 0 8 1.5Z"
@@ -151,20 +122,20 @@ export function SchemeDetailHeader({
         <div className="flex items-center gap-1.5">
           <Link
             href={backHref}
-            className="inline-flex items-center text-foreground hover:text-primary-400 transition-colors"
+            className="inline-flex items-center text-ink hover:text-turquoise transition-colors"
             aria-label={backLabel}
           >
             <BackChevron />
           </Link>
-          <h1 className="text-lg font-semibold font-heading text-foreground">
+          <h1 className="text-lg font-semibold font-heading text-ink">
             {planNumber}
           </h1>
         </div>
 
         {/* Address field in the header row */}
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2">
+        <div className="flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-white px-3 py-2">
           <PinIcon />
-          <span className="text-sm text-foreground">{addressLine}</span>
+          <span className="text-sm text-ink">{addressLine}</span>
         </div>
       </div>
 
@@ -173,19 +144,19 @@ export function SchemeDetailHeader({
         {/* Left column: Photo carousel */}
         <ImageGallery
           images={images}
-          className="aspect-[4/3] w-full rounded-lg overflow-hidden"
+          className="aspect-[4/3] w-full rounded-[var(--radius-card)] overflow-hidden"
         />
 
         {/* Right column: Details grid + map */}
         <div className="flex flex-col gap-4">
-          {/* Property details grid — 2 columns of label + boxed value */}
+          {/* Property details grid */}
           <div className="grid grid-cols-2 gap-x-8 gap-y-3">
             {details.map((detail) => (
               <div key={detail.label} className="flex items-center justify-between gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                <span className="text-sm text-ink-muted whitespace-nowrap">
                   {detail.label}
                 </span>
-                <span className="text-sm font-medium text-foreground rounded-md border border-border px-3 py-1 bg-white min-w-[3rem] text-center">
+                <span className="text-sm font-medium text-ink rounded-[var(--radius-card)] border border-line px-3 py-1 bg-white min-w-[3rem] text-center">
                   {detail.value ?? "—"}
                 </span>
               </div>
@@ -195,29 +166,25 @@ export function SchemeDetailHeader({
           {/* Embedded map */}
           <StaticMap
             address={fullAddress}
-            className="flex-1 min-h-[140px] rounded-lg overflow-hidden"
+            className="flex-1 min-h-[140px] rounded-[var(--radius-card)] overflow-hidden"
           />
         </div>
       </div>
 
-      {/* ---- Navigation pill buttons — gold top line, solid gold when active ---- */}
-      <div className="border-t-2 border-gold-300 pt-4">
+      {/* ---- Navigation pills using Pill component ---- */}
+      <div className="border-t-2 border-gold-line pt-4">
         <div className="flex flex-wrap gap-2.5">
           {navButtons.map((btn) => {
             const isActive = activeHref === btn.href;
             return (
-              <Link
+              <Pill
                 key={btn.label}
+                variant="nav"
+                selected={isActive}
                 href={btn.href}
-                className={`inline-flex items-center gap-1.5 rounded-full border-2 px-4 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "border-gold-300 bg-gold-300 text-white"
-                    : "border-gold-300 bg-white text-foreground hover:bg-gold-50"
-                }`}
               >
-                <CircledPlusIcon active={isActive} />
                 {btn.label}
-              </Link>
+              </Pill>
             );
           })}
         </div>

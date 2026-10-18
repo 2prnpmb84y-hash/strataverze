@@ -35,7 +35,7 @@ export function LevyForm({
   return (
     <form action={formAction} className="space-y-4">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 p-3">
           <p className="text-sm text-red-700">{state.error}</p>
         </div>
       )}

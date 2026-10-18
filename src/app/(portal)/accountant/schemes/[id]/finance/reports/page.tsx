@@ -114,7 +114,7 @@ export default async function AccountantReportsPage({
         backLabel="Schemes"
       />
 
-      <div className="rounded-lg border border-blue-400/30 bg-blue-50/10 p-3">
+      <div className="rounded-[var(--radius-card)] border border-blue-400/30 bg-blue-50/10 p-3">
         <p className="text-sm text-blue-600">
           You have read-only access to this scheme&apos;s financial data. Contact
           the strata manager to request changes.

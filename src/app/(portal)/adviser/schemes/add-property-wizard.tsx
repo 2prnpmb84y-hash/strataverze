@@ -149,10 +149,10 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                   onClick={() => goTo(step.id)}
                   className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? "text-primary-500"
+                      ? "text-turquoise"
                       : isComplete
-                        ? "text-foreground"
-                        : "text-muted-foreground"
+                        ? "text-ink"
+                        : "text-ink-muted"
                   }`}
                 >
                   <span
@@ -160,8 +160,8 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                       isActive
                         ? "bg-primary-400 text-white"
                         : isComplete
-                          ? "bg-primary-100 text-primary-500"
-                          : "bg-muted text-muted-foreground"
+                          ? "bg-primary-100 text-turquoise"
+                          : "bg-muted text-ink-muted"
                     }`}
                   >
                     {isComplete ? (
@@ -183,7 +183,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
                 {i < STEPS.length - 1 && (
                   <div
                     className={`flex-1 h-px ${
-                      isComplete ? "bg-primary-300" : "bg-border"
+                      isComplete ? "bg-primary-300" : "bg-line"
                     }`}
                   />
                 )}
@@ -201,7 +201,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
       {/* Form wraps steps 2-4 so hidden fields persist across steps */}
       <form key={formKey} action={formAction}>
         {state.error && currentStep !== "upload" && (
-          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="mb-6 rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {state.error}
           </div>
         )}
@@ -209,13 +209,13 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
         {/* Step 2: Property Details */}
         <div className={currentStep === "details" ? "" : "hidden"}>
           <Card>
-            <h2 className="font-heading font-semibold text-foreground mb-1">
+            <h2 className="font-heading font-semibold text-ink mb-1">
               Property Details
             </h2>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-sm text-ink-muted mb-6">
               Enter the core details of the Owners Corporation.
               {parsedLots.length > 0 && (
-                <span className="block mt-1 text-primary-500 font-medium">
+                <span className="block mt-1 text-turquoise font-medium">
                   Fields have been pre-filled from the strata roll ({parsedLots.length} lots parsed).
                 </span>
               )}
@@ -297,7 +297,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
               />
             </div>
 
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-line">
               <Button type="button" variant="secondary" onClick={handleBack}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -317,10 +317,10 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
         {/* Step 3: Address & Settings */}
         <div className={currentStep === "address" ? "" : "hidden"}>
           <Card>
-            <h2 className="font-heading font-semibold text-foreground mb-1">
+            <h2 className="font-heading font-semibold text-ink mb-1">
               Address &amp; Settings
             </h2>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-sm text-ink-muted mb-6">
               Set the property address, financial settings, and preferences.
             </p>
 
@@ -381,8 +381,8 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
 
             {/* Settings toggles */}
             {!simplified && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <h3 className="text-sm font-semibold text-foreground mb-4">
+              <div className="mt-6 pt-6 border-t border-line">
+                <h3 className="text-sm font-semibold text-ink mb-4">
                   Settings
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -406,7 +406,7 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
               </div>
             )}
 
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-line">
               <Button type="button" variant="secondary" onClick={handleBack}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -426,16 +426,16 @@ export function AddPropertyWizard({ simplified = false }: { simplified?: boolean
         {/* Step 4: Review & Create */}
         <div className={currentStep === "review" ? "" : "hidden"}>
           <Card>
-            <h2 className="font-heading font-semibold text-foreground mb-1">
+            <h2 className="font-heading font-semibold text-ink mb-1">
               Review &amp; Create
             </h2>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-sm text-ink-muted mb-6">
               Check the details below, then create the property.
             </p>
 
             <ReviewSummary simplified={simplified} parsedLots={parsedLots} />
 
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-line">
               <Button type="button" variant="secondary" onClick={handleBack}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -543,14 +543,14 @@ function ReviewSummary({
     <div className="space-y-6">
       {sections.map((section) => (
         <div key={section.title}>
-          <h3 className="text-sm font-semibold text-foreground mb-3">
+          <h3 className="text-sm font-semibold text-ink mb-3">
             {section.title}
           </h3>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
             {section.rows.map(([label, value]) => (
-              <div key={label} className="flex justify-between py-1.5 border-b border-border/50">
-                <dt className="text-sm text-muted-foreground">{label}</dt>
-                <dd className="text-sm font-medium text-foreground text-right">
+              <div key={label} className="flex justify-between py-1.5 border-b border-line/50">
+                <dt className="text-sm text-ink-muted">{label}</dt>
+                <dd className="text-sm font-medium text-ink text-right">
                   {value || "—"}
                 </dd>
               </div>
@@ -562,32 +562,32 @@ function ReviewSummary({
       {/* Parsed lots summary */}
       {parsedLots.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3">
+          <h3 className="text-sm font-semibold text-ink mb-3">
             Parsed Lots ({parsedLots.length})
           </h3>
-          <div className="rounded-lg border border-border overflow-hidden">
+          <div className="rounded-[var(--radius-card)] border border-line overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Lot</th>
-                  <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Unit</th>
-                  <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Owner</th>
-                  <th scope="col" className="text-right px-3 py-2 font-medium text-muted-foreground">Entitlement</th>
+                  <th scope="col" className="text-left px-3 py-2 font-medium text-ink-muted">Lot</th>
+                  <th scope="col" className="text-left px-3 py-2 font-medium text-ink-muted">Unit</th>
+                  <th scope="col" className="text-left px-3 py-2 font-medium text-ink-muted">Owner</th>
+                  <th scope="col" className="text-right px-3 py-2 font-medium text-ink-muted">Entitlement</th>
                 </tr>
               </thead>
               <tbody>
                 {parsedLots.slice(0, 10).map((lot) => (
-                  <tr key={lot.lotNumber} className="border-t border-border/50">
-                    <td className="px-3 py-2 text-foreground">{lot.lotNumber}</td>
-                    <td className="px-3 py-2 text-foreground">{lot.unitNumber ?? "—"}</td>
-                    <td className="px-3 py-2 text-foreground">{lot.ownerName ?? "—"}</td>
-                    <td className="px-3 py-2 text-foreground text-right tabular-nums">{lot.entitlement}</td>
+                  <tr key={lot.lotNumber} className="border-t border-line/50">
+                    <td className="px-3 py-2 text-ink">{lot.lotNumber}</td>
+                    <td className="px-3 py-2 text-ink">{lot.unitNumber ?? "—"}</td>
+                    <td className="px-3 py-2 text-ink">{lot.ownerName ?? "—"}</td>
+                    <td className="px-3 py-2 text-ink text-right tabular-nums">{lot.entitlement}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {parsedLots.length > 10 && (
-              <div className="px-3 py-2 bg-muted/30 text-xs text-muted-foreground border-t border-border/50">
+              <div className="px-3 py-2 bg-muted/30 text-xs text-ink-muted border-t border-line/50">
                 Showing 10 of {parsedLots.length} lots. All lots will be available after creation.
               </div>
             )}

@@ -95,7 +95,7 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className="text-sm text-ink-muted mb-4">
         Scheme documents accessible to this lot.
       </p>
 
@@ -104,7 +104,7 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+          className="rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise"
         >
           <option value="latest">Sort: Latest</option>
           <option value="oldest">Sort: Oldest</option>
@@ -114,7 +114,7 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+          className="rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise"
         >
           {CATEGORIES.map((cat) => (
             <option key={cat.value} value={cat.value}>
@@ -128,13 +128,13 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search documents..."
-          className="w-full sm:w-56 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 transition-colors"
+          className="w-full sm:w-56 rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise transition-colors"
         />
       </div>
 
       {/* Document list */}
       {filtered.length === 0 ? (
-        <div className="rounded-lg border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-[var(--radius-card)] border border-line px-4 py-8 text-center text-sm text-ink-muted">
           {documents.length === 0
             ? "No documents uploaded for this scheme yet."
             : "No documents match your filters."}
@@ -144,14 +144,14 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
           {filtered.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 hover:bg-muted/30 transition-colors"
+              className="flex items-center gap-3 rounded-[var(--radius-card)] border border-line bg-white px-4 py-3 hover:bg-muted/30 transition-colors"
             >
               <span className="text-lg shrink-0">{fileIcon(doc.fileName)}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground truncate">
+                <p className="text-sm font-medium text-ink truncate">
                   {doc.title}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-ink-muted">
                   {categoryLabel(doc.category)}
                   {doc.fileSize ? ` · ${formatFileSize(doc.fileSize)}` : ""}
                   {" · "}
@@ -162,7 +162,7 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
                 href={doc.fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-primary-500 hover:bg-primary-50 transition-colors"
+                className="shrink-0 rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-medium text-turquoise hover:bg-primary-50 transition-colors"
               >
                 View
               </a>
@@ -171,7 +171,7 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground text-center mt-3">
+      <p className="text-xs text-ink-muted text-center mt-3">
         {filtered.length} {filtered.length === 1 ? "document" : "documents"}
         {search && ` matching "${search}"`}
       </p>

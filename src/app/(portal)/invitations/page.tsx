@@ -43,7 +43,7 @@ export default async function InvitationsPage() {
       {invitations.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               You have no pending invitations.
             </p>
           </div>
@@ -59,17 +59,17 @@ export default async function InvitationsPage() {
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="font-heading font-semibold text-foreground">
+                      <h3 className="font-heading font-semibold text-ink">
                         {schemeName}
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-ink-muted mt-1">
                         You have been invited to join as{" "}
-                        <span className="font-medium text-foreground">
+                        <span className="font-medium text-ink">
                           {roleLabel[inv.role] ?? inv.role}
                         </span>
                         .
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-xs text-ink-muted mt-2">
                         Expires{" "}
                         {expiresDate.toLocaleDateString("en-AU", {
                           day: "numeric",

@@ -113,10 +113,10 @@ export default async function ReportsPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Financial Reports
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-ink-muted">
           Generate and view financial reports for {String(scheme.name)}.
         </p>
       </div>

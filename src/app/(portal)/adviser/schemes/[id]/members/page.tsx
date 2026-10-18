@@ -81,7 +81,7 @@ export default async function SchemeMembersPage({
         {/* Advisers */}
         {advisers.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+            <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">
               Advisers
             </h3>
             <div className="flex flex-col gap-2">
@@ -92,13 +92,13 @@ export default async function SchemeMembersPage({
                 return (
                   <div
                     key={m.id}
-                    className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                    className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-ink">
                         {name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {m.profile.email}
                       </p>
                     </div>
@@ -117,7 +117,7 @@ export default async function SchemeMembersPage({
         {/* Owners */}
         {owners.length > 0 && (
           <div className="mb-4">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+            <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">
               Owners
             </h3>
             <div className="flex flex-col gap-2">
@@ -128,13 +128,13 @@ export default async function SchemeMembersPage({
                 return (
                   <div
                     key={m.id}
-                    className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                    className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-ink">
                         {name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {m.profile.email}
                       </p>
                     </div>
@@ -153,7 +153,7 @@ export default async function SchemeMembersPage({
         {/* Committee */}
         {committeeMembers.length > 0 && (
           <div>
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+            <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">
               Committee
             </h3>
             <div className="flex flex-col gap-2">
@@ -164,13 +164,13 @@ export default async function SchemeMembersPage({
                 return (
                   <div
                     key={m.id}
-                    className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                    className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-ink">
                         {name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {m.profile.email}
                       </p>
                     </div>
@@ -187,7 +187,7 @@ export default async function SchemeMembersPage({
         )}
 
         {owners.length === 0 && committeeMembers.length === 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No owners or committee members yet. Send an invitation below.
           </p>
         )}
@@ -217,13 +217,13 @@ export default async function SchemeMembersPage({
               return (
                 <div
                   key={inv.id}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {inv.email}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {roleLabel[inv.role]} ·{" "}
                       {isExpired
                         ? "Expired"
@@ -262,13 +262,13 @@ export default async function SchemeMembersPage({
             {pastInvitations.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-ink">
                     {inv.email}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     {roleLabel[inv.role]} ·{" "}
                     {new Date(String(inv.createdAt)).toLocaleDateString(
                       "en-AU",

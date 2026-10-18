@@ -63,12 +63,12 @@ export function WaitlistForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="h-12 flex-1 rounded-lg bg-white/15 backdrop-blur-sm border border-white/20 px-4 text-white text-sm placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/40"
+          className="h-12 flex-1 rounded-[var(--radius-card)] bg-white/15 backdrop-blur-sm border border-white/20 px-4 text-white text-sm placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/40"
         />
         <button
           type="submit"
           disabled={isPending}
-          className="h-12 rounded-lg bg-coral px-8 text-white font-semibold text-sm transition-colors hover:opacity-90 whitespace-nowrap disabled:opacity-50"
+          className="h-12 rounded-[var(--radius-card)] bg-coral px-8 text-white font-semibold text-sm transition-colors hover:opacity-90 whitespace-nowrap disabled:opacity-50"
         >
           {isPending ? "Joining..." : "Get Early Access"}
         </button>

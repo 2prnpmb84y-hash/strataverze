@@ -136,7 +136,7 @@ export function TopBar({
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black/5 py-1 z-50">
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-[var(--radius-card)] bg-white shadow-lg ring-1 ring-black/5 py-1 z-50">
               <div className="px-4 py-3 border-b border-line">
                 <p className="text-sm font-medium text-ink truncate">
                   {displayName}

@@ -116,7 +116,7 @@ function getMetadataDetail(action: string, metadata: Record<string, unknown> | n
 export function ActivityTimeline({ activities }: { activities: ActivityEntry[] }) {
   if (activities.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-ink-muted">
         No activity recorded yet. Actions taken on this scheme will appear here.
       </p>
     );
@@ -144,20 +144,20 @@ export function ActivityTimeline({ activities }: { activities: ActivityEntry[] }
                 {icon}
               </span>
               {!isLast && (
-                <div className="w-px flex-1 bg-border min-h-4" />
+                <div className="w-px flex-1 bg-line min-h-4" />
               )}
             </div>
 
             {/* Content */}
             <div className="pb-4 min-w-0 flex-1">
-              <p className="text-sm text-foreground">
+              <p className="text-sm text-ink">
                 <span className="font-medium">{actorName}</span>{" "}
                 {label}
                 {detail ? (
-                  <span className="text-muted-foreground"> — {detail}</span>
+                  <span className="text-ink-muted"> — {detail}</span>
                 ) : null}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 {formatRelativeTime(String(activity.createdAt))}
               </p>
             </div>

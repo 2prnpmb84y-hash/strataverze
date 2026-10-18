@@ -229,10 +229,10 @@ export function DocumentsTabContent({
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="font-heading font-semibold text-foreground">
+          <h2 className="font-heading font-semibold text-ink">
             Documents
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             {documents.length === 0
               ? "No documents uploaded yet."
               : `${documents.length} document${documents.length === 1 ? "" : "s"} on file.`}
@@ -249,7 +249,7 @@ export function DocumentsTabContent({
 
       {/* Upload progress */}
       {uploading && uploadProgress && (
-        <div className="mb-5 rounded-lg bg-primary-50 border border-primary-200 px-4 py-3">
+        <div className="mb-5 rounded-[var(--radius-card)] bg-primary-50 border border-primary-200 px-4 py-3">
           <div className="flex items-center gap-3">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400 border-t-transparent" />
             <p className="text-sm font-medium text-primary-700">
@@ -261,7 +261,7 @@ export function DocumentsTabContent({
 
       {/* Upload errors */}
       {uploadErrors.length > 0 && (
-        <div className="mb-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+        <div className="mb-5 rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3">
           <div className="flex items-start gap-3">
             <svg
               width="20"
@@ -302,13 +302,13 @@ export function DocumentsTabContent({
             <button
               type="button"
               onClick={() => setSelectedDocId(null)}
-              className="text-sm text-primary-500 hover:text-primary-600 font-medium transition-colors"
+              className="text-sm text-turquoise hover:text-turquoise font-medium transition-colors"
             >
               &larr; Back to list
             </button>
           </div>
           {loadingUrl ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <div className="flex items-center justify-center py-12 text-ink-muted">
               Loading document…
             </div>
           ) : signedUrl ? (
@@ -320,7 +320,7 @@ export function DocumentsTabContent({
               onRemove={handleRemove}
             />
           ) : (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <div className="flex items-center justify-center py-12 text-ink-muted">
               Unable to load document preview.
             </div>
           )}
@@ -335,13 +335,13 @@ export function DocumentsTabContent({
               key={doc.id}
               type="button"
               onClick={() => setSelectedDocId(doc.id)}
-              className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors text-left w-full"
+              className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors text-left w-full"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground truncate">
+                <p className="text-sm font-medium text-ink truncate">
                   {doc.title}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-ink-muted">
                   {categoryLabels[doc.category] ?? doc.category}
                   {doc.documentType && ` · ${doc.documentType.replace(/_/g, " ")}`}
                   {" · "}
@@ -359,13 +359,13 @@ export function DocumentsTabContent({
 
       {/* Empty state */}
       {!selectedDoc && documents.length === 0 && !uploading && (
-        <div className="text-center py-12 rounded-xl border border-dashed border-border">
+        <div className="text-center py-12 rounded-[var(--radius-card)] border border-dashed border-line">
           <svg
             width="48"
             height="48"
             viewBox="0 0 48 48"
             fill="none"
-            className="mx-auto mb-3 text-muted-foreground"
+            className="mx-auto mb-3 text-ink-muted"
           >
             <rect
               x="8"
@@ -383,10 +383,10 @@ export function DocumentsTabContent({
               strokeLinecap="round"
             />
           </svg>
-          <p className="text-sm font-medium text-foreground mb-1">
+          <p className="text-sm font-medium text-ink mb-1">
             No documents yet
           </p>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-ink-muted mb-4">
             Upload documents to keep records for this scheme.
           </p>
           <Button

@@ -43,10 +43,10 @@ function DetailItem({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-foreground">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink">{value || "—"}</dd>
     </div>
   );
 }
@@ -148,20 +148,20 @@ export default async function LevyScheduleDetailPage({
         <div className="px-6 pb-6">
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total Levied</span>
-              <span className="text-foreground">
+              <span className="text-ink-muted">Total Levied</span>
+              <span className="text-ink">
                 {formatCurrency(totalNoticeAmount)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total Paid</span>
-              <span className="text-foreground">
+              <span className="text-ink-muted">Total Paid</span>
+              <span className="text-ink">
                 {formatCurrency(totalPaid)}
               </span>
             </div>
-            <div className="flex justify-between text-sm font-semibold border-t border-border pt-3">
-              <span className="text-foreground">Outstanding</span>
-              <span className="text-foreground">
+            <div className="flex justify-between text-sm font-semibold border-t border-line pt-3">
+              <span className="text-ink">Outstanding</span>
+              <span className="text-ink">
                 {formatCurrency(totalNoticeAmount - totalPaid)}
               </span>
             </div>
@@ -186,7 +186,7 @@ export default async function LevyScheduleDetailPage({
         ) : (
           <>
             {/* Table header */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_100px_100px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+            <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_100px_100px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
               <div>Lot</div>
               <div className="text-right">Amount</div>
               <div>Due Date</div>
@@ -194,26 +194,26 @@ export default async function LevyScheduleDetailPage({
               <div className="text-right">Status</div>
             </div>
 
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-line">
               {notices.map((notice, idx) => (
                 <div
                   key={idx}
                   className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px_100px] gap-2 sm:gap-4 px-6 py-3 items-center"
                 >
-                  <div className="text-sm text-foreground font-medium">
+                  <div className="text-sm text-ink font-medium">
                     {notice.lot
                       ? String(
                           notice.lot.unitNumber ?? notice.lot.lotNumber ?? "—",
                         )
                       : "—"}
                   </div>
-                  <div className="text-sm text-foreground text-right tabular-nums">
+                  <div className="text-sm text-ink text-right tabular-nums">
                     {formatCurrency(notice.amountDue)}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-ink-muted">
                     {formatDate(notice.dueDate)}
                   </div>
-                  <div className="text-sm text-foreground text-right tabular-nums">
+                  <div className="text-sm text-ink text-right tabular-nums">
                     {notice.amountPaid
                       ? formatCurrency(notice.amountPaid)
                       : "—"}

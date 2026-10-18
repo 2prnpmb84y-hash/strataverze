@@ -49,7 +49,7 @@ export function BankAccountEditForm({
   return (
     <form action={formAction} className="space-y-6">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       )}
@@ -57,24 +57,24 @@ export function BankAccountEditForm({
       {/* Read-only identifiers */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
+          <label className="block text-sm font-medium text-ink mb-1.5">
             BSB
           </label>
-          <div className="rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+          <div className="rounded-[var(--radius-card)] border border-line bg-muted px-3 py-2.5 text-sm text-ink-muted">
             {defaultValues.bsb || "—"}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-ink-muted">
             Cannot be changed after creation
           </p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
+          <label className="block text-sm font-medium text-ink mb-1.5">
             Account Number
           </label>
-          <div className="rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+          <div className="rounded-[var(--radius-card)] border border-line bg-muted px-3 py-2.5 text-sm text-ink-muted">
             {defaultValues.accountNumber || "—"}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-ink-muted">
             Cannot be changed after creation
           </p>
         </div>

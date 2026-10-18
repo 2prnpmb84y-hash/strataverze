@@ -48,7 +48,7 @@ export default async function OwnerBylawsPage() {
 
       {bylaws.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No by-laws have been registered for your scheme yet.
           </p>
         </Card>
@@ -61,10 +61,10 @@ export default async function OwnerBylawsPage() {
               <Card key={bylaw.id}>
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground">
+                    <h3 className="text-sm font-semibold text-ink">
                       {bylaw.bylawNumber}. {bylaw.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-ink-muted mt-0.5">
                       {bylaw.scheme.name}
                       {" · "}
                       {categoryLabels[bylaw.category] ?? bylaw.category}
@@ -83,7 +83,7 @@ export default async function OwnerBylawsPage() {
                     {statusLabels[bylaw.status] ?? bylaw.status}
                   </span>
                 </div>
-                <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap">
                   {bylaw.body}
                 </div>
               </Card>

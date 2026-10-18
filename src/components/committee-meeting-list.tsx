@@ -120,7 +120,7 @@ export function CommitteeMeetingList({
       {filtered.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               {meetings.length === 0
                 ? "No meetings have been scheduled for your schemes yet."
                 : "No meetings match your search."}
@@ -145,12 +145,12 @@ export function CommitteeMeetingList({
                   return (
                     <div
                       key={meeting.id}
-                      className="rounded-lg bg-muted px-4 py-3"
+                      className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
                         <Link
                           href={`/committee/governance/${meeting.id}`}
-                          className="text-sm font-medium text-foreground hover:text-primary-600 transition-colors"
+                          className="text-sm font-medium text-ink hover:text-turquoise transition-colors"
                         >
                           {meeting.title}
                         </Link>
@@ -160,7 +160,7 @@ export function CommitteeMeetingList({
                           {meeting.status}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}
                         {" · "}
                         {meetingTypeLabels[meeting.meetingType] ??
@@ -224,16 +224,16 @@ export function CommitteeMeetingList({
                   return (
                     <div
                       key={meeting.id}
-                      className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                      className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div>
                         <Link
                           href={`/committee/governance/${meeting.id}`}
-                          className="text-sm font-medium text-foreground hover:text-primary-600 transition-colors"
+                          className="text-sm font-medium text-ink hover:text-turquoise transition-colors"
                         >
                           {meeting.title}
                         </Link>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-ink-muted">
                           {schemeNames[meeting.schemeId] ?? ""}
                           {" · "}
                           {scheduledDate.toLocaleDateString("en-AU", {

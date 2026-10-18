@@ -213,13 +213,13 @@ export function InvoiceForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {duplicateWarning && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-[var(--radius-card)] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <p className="font-medium">Possible Duplicate Detected</p>
           <p className="mt-1">{duplicateWarning}</p>
           <p className="mt-2 text-xs text-amber-600">
@@ -229,13 +229,13 @@ export function InvoiceForm({
       )}
 
       {/* PDF extraction */}
-      <div className="rounded-lg border border-dashed border-border bg-card p-4">
+      <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-white p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-medium text-ink">
               Upload Invoice PDF
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-ink-muted mt-0.5">
               Upload a supplier invoice PDF to auto-fill the form fields.
             </p>
           </div>
@@ -251,7 +251,7 @@ export function InvoiceForm({
                 e.target.value = "";
               }}
             />
-            <span className="inline-flex items-center rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-card">
+            <span className="inline-flex items-center rounded-[var(--radius-card)] border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-white">
               {isExtracting ? "Extracting..." : "Choose PDF"}
             </span>
           </label>
@@ -259,7 +259,7 @@ export function InvoiceForm({
       </div>
 
       {extractionWarnings.length > 0 && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-[var(--radius-card)] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <p className="font-medium">Extraction Notes</p>
           <ul className="mt-1 list-disc pl-4 space-y-0.5">
             {extractionWarnings.map((w, i) => (

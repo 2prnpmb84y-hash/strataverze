@@ -32,7 +32,7 @@ const emptyLine = (): JournalLine => ({
 });
 
 const inputClasses =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
 export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
   const router = useRouter();
@@ -117,7 +117,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
     <form onSubmit={handleSubmit} className="max-w-4xl space-y-8">
       {/* Error banner */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -149,7 +149,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
       {/* Journal lines */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-lg font-semibold text-ink">
             Journal Lines
           </h2>
           <Button type="button" variant="ghost" onClick={addLine}>
@@ -159,19 +159,19 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
 
         {/* Column headers */}
         <div className="hidden sm:grid sm:grid-cols-[3fr_2fr_1.5fr_1.5fr_1.5fr_auto] gap-2 px-1">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-ink-muted">
             Account Code
           </span>
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-ink-muted">
             Fund
           </span>
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-ink-muted">
             Debit ($)
           </span>
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-ink-muted">
             Credit ($)
           </span>
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-ink-muted">
             Description
           </span>
           <span className="w-9" />
@@ -184,7 +184,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
             className="grid grid-cols-1 sm:grid-cols-[3fr_2fr_1.5fr_1.5fr_1.5fr_auto] gap-2 items-start"
           >
             <div>
-              <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+              <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                 Account Code
               </label>
               <select
@@ -204,7 +204,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
             </div>
 
             <div>
-              <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+              <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                 Fund
               </label>
               <select
@@ -222,7 +222,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
             </div>
 
             <div>
-              <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+              <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                 Debit ($)
               </label>
               <input
@@ -237,7 +237,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
             </div>
 
             <div>
-              <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+              <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                 Credit ($)
               </label>
               <input
@@ -252,7 +252,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
             </div>
 
             <div>
-              <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+              <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                 Description
               </label>
               <input
@@ -271,7 +271,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
                 type="button"
                 onClick={() => removeLine(index)}
                 disabled={lines.length <= 2}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--radius-card)] text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
                 title="Remove line"
               >
                 <svg
@@ -291,12 +291,12 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
         ))}
 
         {/* Balance summary */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm pt-4 border-t border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm pt-4 border-t border-line">
           <div className="flex gap-6">
-            <span className="text-foreground">
+            <span className="text-ink">
               Total Debits: <strong>${totalDebits.toFixed(2)}</strong>
             </span>
-            <span className="text-foreground">
+            <span className="text-ink">
               Total Credits: <strong>${totalCredits.toFixed(2)}</strong>
             </span>
           </div>

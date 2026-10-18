@@ -27,15 +27,15 @@ export function SchemeTabs({
 function SchemeTabsFallback({ children }: { children: Record<TabKey, ReactNode> }) {
   return (
     <div>
-      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+      <div className="flex gap-1 mb-6 border-b border-line overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               tab.key === "overview"
-                ? "text-primary-500"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-turquoise"
+                : "text-ink-muted hover:text-ink"
             }`}
           >
             {tab.label}
@@ -78,7 +78,7 @@ function SchemeTabsInner({
   return (
     <div>
       {/* Tab navigation */}
-      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+      <div className="flex gap-1 mb-6 border-b border-line overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -86,8 +86,8 @@ function SchemeTabsInner({
             onClick={() => switchTab(tab.key)}
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               currentTab === tab.key
-                ? "text-primary-500"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-turquoise"
+                : "text-ink-muted hover:text-ink"
             }`}
           >
             {tab.label}

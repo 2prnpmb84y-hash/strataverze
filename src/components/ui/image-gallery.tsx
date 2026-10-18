@@ -20,7 +20,7 @@ export function ImageGallery({
   if (images.length === 0) {
     return (
       <div
-        className={`relative overflow-hidden rounded-xl bg-muted flex items-center justify-center ${className}`}
+        className={`relative overflow-hidden rounded-[var(--radius-card)] bg-muted flex items-center justify-center ${className}`}
       >
         <div className="text-center p-8">
           <svg
@@ -28,7 +28,7 @@ export function ImageGallery({
             height="48"
             viewBox="0 0 24 24"
             fill="none"
-            className="mx-auto text-muted-foreground/40 mb-3"
+            className="mx-auto text-ink-muted/40 mb-3"
           >
             <rect
               x="3"
@@ -48,8 +48,8 @@ export function ImageGallery({
               strokeLinejoin="round"
             />
           </svg>
-          <p className="text-sm text-muted-foreground">No photos yet</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
+          <p className="text-sm text-ink-muted">No photos yet</p>
+          <p className="text-xs text-ink-muted/70 mt-1">
             Property images will appear here
           </p>
         </div>
@@ -69,7 +69,7 @@ export function ImageGallery({
   }
 
   return (
-    <div className={`relative overflow-hidden rounded-xl bg-muted group ${className}`}>
+    <div className={`relative overflow-hidden rounded-[var(--radius-card)] bg-muted group ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={current.url}

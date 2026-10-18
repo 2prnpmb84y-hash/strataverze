@@ -34,15 +34,15 @@ export function FinanceTabs({ schemeId }: { schemeId: string }) {
   }
 
   return (
-    <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+    <div className="flex gap-1 mb-6 border-b border-line overflow-x-auto">
       {tabs.map((tab) => (
         <Link
           key={tab.key}
           href={`${basePath}${tab.href}`}
           className={`px-4 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
             isActive(tab)
-              ? "text-primary-500"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-turquoise"
+              : "text-ink-muted hover:text-ink"
           }`}
         >
           {tab.label}

@@ -29,7 +29,7 @@ export function MarkPaidButton({
       type="button"
       onClick={handlePaid}
       disabled={isPending}
-      className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors disabled:opacity-50"
+      className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors disabled:opacity-50"
       title={`Mark Lot ${lotNumber} as paid`}
     >
       {isPending ? "Saving..." : "Mark Paid"}

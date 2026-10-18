@@ -180,7 +180,7 @@ export function PortalShell({
       {/* Skip to content */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-primary-400 focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-[var(--radius-card)] focus:bg-primary-400 focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium focus:shadow-lg"
       >
         Skip to main content
       </a>
@@ -207,7 +207,7 @@ export function PortalShell({
 
         {/* Mobile nav */}
         <nav
-          className="md:hidden flex gap-1 overflow-x-auto px-4 py-2 border-b border-border bg-card"
+          className="md:hidden flex gap-1 overflow-x-auto px-4 py-2 border-b border-line bg-white"
           aria-label="Main navigation"
         >
           {mobileNav.map((item) => {
@@ -219,10 +219,10 @@ export function PortalShell({
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`shrink-0 rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-medium transition-colors ${
                   isActive
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-muted text-ink"
+                    : "text-ink-muted hover:text-ink"
                 }`}
               >
                 {item.label}
@@ -236,7 +236,7 @@ export function PortalShell({
               <Link
                 key={key}
                 href={`/${key}`}
-                className="shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="shrink-0 flex items-center gap-1.5 rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${config.colour}`} />
                 {config.shortLabel}
@@ -246,10 +246,10 @@ export function PortalShell({
           {pendingInvitationCount > 0 && (
             <Link
               href="/invitations"
-              className={`shrink-0 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`shrink-0 flex items-center gap-1.5 rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-medium transition-colors ${
                 pathname === "/invitations"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-muted text-ink"
+                  : "text-ink-muted hover:text-ink"
               }`}
             >
               Invitations
@@ -260,10 +260,10 @@ export function PortalShell({
           )}
           <Link
             href="/settings"
-            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`shrink-0 rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-medium transition-colors ${
               pathname === "/settings"
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-muted text-ink"
+                : "text-ink-muted hover:text-ink"
             }`}
           >
             Settings

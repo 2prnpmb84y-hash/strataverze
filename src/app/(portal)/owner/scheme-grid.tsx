@@ -72,10 +72,10 @@ export function SchemeGrid({
   return (
     <div>
       {/* Greeting */}
-      <h1 className="text-2xl sm:text-3xl font-bold font-heading text-foreground mb-1">
+      <h1 className="text-2xl sm:text-3xl font-bold font-heading text-ink mb-1">
         G&apos;day, {firstName || "there"}!
       </h1>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-ink-muted mb-6">
         Select a property to manage.
       </p>
 
@@ -105,14 +105,14 @@ export function SchemeGrid({
           className="flex-1"
         />
         {/* View toggle */}
-        <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+        <div className="flex rounded-[var(--radius-card)] border border-line overflow-hidden shrink-0">
           <button
             type="button"
             onClick={() => setView("grid")}
             className={`px-3 py-2 transition-colors ${
               view === "grid"
-                ? "bg-primary-400 text-white"
-                : "bg-background text-muted-foreground hover:text-foreground"
+                ? "bg-turquoise text-white"
+                : "bg-white text-ink-muted hover:text-ink"
             }`}
             aria-label="Grid view"
           >
@@ -128,8 +128,8 @@ export function SchemeGrid({
             onClick={() => setView("list")}
             className={`px-3 py-2 transition-colors ${
               view === "list"
-                ? "bg-primary-400 text-white"
-                : "bg-background text-muted-foreground hover:text-foreground"
+                ? "bg-turquoise text-white"
+                : "bg-white text-ink-muted hover:text-ink"
             }`}
             aria-label="List view"
           >
@@ -141,14 +141,14 @@ export function SchemeGrid({
       </div>
 
       {/* Scheme count */}
-      <p className="text-xs text-muted-foreground mb-4">
+      <p className="text-xs text-ink-muted mb-4">
         {filtered.length} {filtered.length === 1 ? "property" : "properties"} found
       </p>
 
       {/* Cards */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl bg-card border border-border p-8 text-center">
-          <p className="text-muted-foreground text-sm">
+        <div className="rounded-[var(--radius-card)] bg-white border border-line p-8 text-center">
+          <p className="text-ink-muted text-sm">
             {schemes.length === 0
               ? "No properties registered yet. Contact your strata manager to get connected."
               : "No properties match your search."}
@@ -162,15 +162,15 @@ export function SchemeGrid({
               type="button"
               onClick={() => handleSelect(scheme.id)}
               disabled={isPending}
-              className="group text-left rounded-xl bg-card border border-border overflow-hidden transition-all hover:shadow-md hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 disabled:opacity-60"
+              className="group text-left rounded-[var(--radius-card)] bg-white border border-line overflow-hidden transition-all hover:shadow-md hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
             >
               {/* Colour bar */}
-              <div className="h-2 bg-primary-400 group-hover:bg-primary-500 transition-colors" />
+              <div className="h-2 bg-turquoise group-hover:bg-mint-soft0 transition-colors" />
 
               <div className="p-5">
                 {/* Plan badge + notification count */}
                 <div className="flex items-start justify-between gap-2 mb-3">
-                  <span className="inline-flex items-center rounded-md bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-500">
+                  <span className="inline-flex items-center rounded-md bg-mint-soft px-2.5 py-1 text-xs font-semibold text-turquoise">
                     {scheme.planNumber}
                   </span>
                   {totalNotifications(scheme) > 0 && (
@@ -181,15 +181,15 @@ export function SchemeGrid({
                 </div>
 
                 {/* Address */}
-                <p className="text-sm font-semibold text-foreground leading-snug mb-1">
+                <p className="text-sm font-semibold text-ink leading-snug mb-1">
                   {scheme.address}
                 </p>
-                <p className="text-xs text-muted-foreground mb-3">
+                <p className="text-xs text-ink-muted mb-3">
                   {scheme.suburb}, {scheme.state} {scheme.postcode}
                 </p>
 
                 {/* Meta row */}
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-3 text-xs text-ink-muted">
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-medium">
                     {scheme.state}
                   </span>
@@ -204,7 +204,7 @@ export function SchemeGrid({
 
                 {/* Notification breakdown */}
                 {totalNotifications(scheme) > 0 && (
-                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-line text-xs text-ink-muted">
                     {scheme.pendingLevies > 0 && (
                       <span className="inline-flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-danger" />
@@ -219,7 +219,7 @@ export function SchemeGrid({
                     )}
                     {scheme.upcomingMeetings > 0 && (
                       <span className="inline-flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary-400" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-turquoise" />
                         {scheme.upcomingMeetings} {scheme.upcomingMeetings === 1 ? "meeting" : "meetings"}
                       </span>
                     )}
@@ -238,21 +238,21 @@ export function SchemeGrid({
               type="button"
               onClick={() => handleSelect(scheme.id)}
               disabled={isPending}
-              className="group text-left flex items-center gap-4 rounded-xl bg-card border border-border px-5 py-4 transition-all hover:shadow-md hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 disabled:opacity-60"
+              className="group text-left flex items-center gap-4 rounded-[var(--radius-card)] bg-white border border-line px-5 py-4 transition-all hover:shadow-md hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
             >
               {/* Accent dot */}
-              <div className="w-3 h-3 rounded-full bg-primary-400 shrink-0" />
+              <div className="w-3 h-3 rounded-full bg-turquoise shrink-0" />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-semibold text-primary-500">
+                  <span className="text-xs font-semibold text-turquoise">
                     {scheme.planNumber}
                   </span>
-                  <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-ink-muted">
                     {scheme.state}
                   </span>
                 </div>
-                <p className="text-sm font-medium text-foreground truncate">
+                <p className="text-sm font-medium text-ink truncate">
                   {scheme.address}, {scheme.suburb} {scheme.postcode}
                 </p>
               </div>
@@ -270,7 +270,7 @@ export function SchemeGrid({
                 height="16"
                 viewBox="0 0 16 16"
                 fill="none"
-                className="shrink-0 text-muted-foreground group-hover:text-foreground transition-colors"
+                className="shrink-0 text-ink-muted group-hover:text-ink transition-colors"
               >
                 <path
                   d="M6 4l4 4-4 4"

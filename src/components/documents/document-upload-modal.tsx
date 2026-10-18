@@ -162,28 +162,28 @@ export function DocumentUploadModal({
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg mx-4 bg-background rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
+      <div className="relative z-10 w-full max-w-lg mx-4 bg-white rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
         <div className="px-6 pt-6 pb-2 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             {step === "metadata" && (
               <button
                 type="button"
                 onClick={() => setStep("files")}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                className="text-ink-muted hover:text-ink transition-colors p-1"
               >
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                   <path d="M12 4L6 10l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             )}
-            <h2 className="text-lg font-heading font-semibold text-foreground">
+            <h2 className="text-lg font-heading font-semibold text-ink">
               {stepTitle}
             </h2>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            className="text-ink-muted hover:text-ink transition-colors p-1"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -198,8 +198,8 @@ export function DocumentUploadModal({
             <div className={`h-1 flex-1 rounded-full ${step === "metadata" ? "bg-primary-400" : "bg-gray-200"}`} />
           </div>
           <div className="flex justify-between mt-1">
-            <span className="text-xs text-muted-foreground">Select files</span>
-            <span className="text-xs text-muted-foreground">Allocate details</span>
+            <span className="text-xs text-ink-muted">Select files</span>
+            <span className="text-xs text-ink-muted">Allocate details</span>
           </div>
         </div>
 
@@ -211,19 +211,19 @@ export function DocumentUploadModal({
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onClick={() => inputRef.current?.click()}
-              className={`mt-2 flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 cursor-pointer transition-colors ${
+              className={`mt-2 flex flex-col items-center justify-center rounded-[var(--radius-card)] border-2 border-dashed p-10 cursor-pointer transition-colors ${
                 isDragOver
                   ? "border-primary-400 bg-primary-50"
-                  : "border-border hover:border-primary-300 hover:bg-muted/50"
+                  : "border-line hover:border-primary-300 hover:bg-muted/50"
               }`}
             >
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mb-3 text-muted-foreground">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mb-3 text-ink-muted">
                 <path d="M24 32V16m0 0l-6 6m6-6l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M40 30v6a4 4 0 01-4 4H12a4 4 0 01-4-4v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <p className="text-sm font-medium text-foreground mb-1">Drag and drop files here</p>
-              <p className="text-xs text-muted-foreground">or click to browse</p>
-              <p className="text-xs text-muted-foreground mt-2">Supports .pdf, .docx, .xlsx and more (max 30 MB each)</p>
+              <p className="text-sm font-medium text-ink mb-1">Drag and drop files here</p>
+              <p className="text-xs text-ink-muted">or click to browse</p>
+              <p className="text-xs text-ink-muted mt-2">Supports .pdf, .docx, .xlsx and more (max 30 MB each)</p>
             </div>
 
             <input
@@ -251,18 +251,18 @@ export function DocumentUploadModal({
           <div className="px-6 pb-6 flex-1 overflow-y-auto">
             <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
               {files.map((f, idx) => (
-                <div key={f.id} className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
+                <div key={f.id} className="flex items-center gap-3 rounded-[var(--radius-card)] bg-muted px-4 py-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-medium flex items-center justify-center">
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{f.file.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatSize(f.file.size)}</p>
+                    <p className="text-sm font-medium text-ink truncate">{f.file.name}</p>
+                    <p className="text-xs text-ink-muted">{formatSize(f.file.size)}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeFile(f.id)}
-                    className="flex-shrink-0 text-muted-foreground hover:text-red-500 transition-colors p-1"
+                    className="flex-shrink-0 text-ink-muted hover:text-red-500 transition-colors p-1"
                   >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -298,20 +298,20 @@ export function DocumentUploadModal({
         {step === "metadata" && (
           /* Metadata form */
           <div className="px-6 pb-6 flex-1 overflow-y-auto">
-            <p className="text-xs text-muted-foreground mb-4">
+            <p className="text-xs text-ink-muted mb-4">
               Set the details below for {files.length === 1 ? "this document" : `all ${files.length} documents`}. You can update individual documents later.
             </p>
 
             <div className="space-y-4">
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={metadata.category}
                   onChange={(e) => updateMetadata("category", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -321,13 +321,13 @@ export function DocumentUploadModal({
 
               {/* Document Type */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   Document Type
                 </label>
                 <select
                   value={metadata.documentType}
                   onChange={(e) => updateMetadata("documentType", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise"
                 >
                   {DOCUMENT_TYPES.map((dt) => (
                     <option key={dt.value} value={dt.value}>{dt.label}</option>
@@ -337,7 +337,7 @@ export function DocumentUploadModal({
 
               {/* Strata Plan */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   Strata Plan
                 </label>
                 <input
@@ -345,14 +345,14 @@ export function DocumentUploadModal({
                   value={metadata.strataPlan}
                   onChange={(e) => updateMetadata("strataPlan", e.target.value)}
                   placeholder={schemePlanNumber || "e.g. SP 12345"}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise"
                 />
               </div>
 
               {/* Schedule and Lot Number in a row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
+                  <label className="block text-sm font-medium text-ink mb-1">
                     Schedule
                   </label>
                   <input
@@ -360,11 +360,11 @@ export function DocumentUploadModal({
                     value={metadata.schedule}
                     onChange={(e) => updateMetadata("schedule", e.target.value)}
                     placeholder="e.g. Schedule A"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+                    className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
+                  <label className="block text-sm font-medium text-ink mb-1">
                     Lot Number
                   </label>
                   <input
@@ -372,14 +372,14 @@ export function DocumentUploadModal({
                     value={metadata.lotNumber}
                     onChange={(e) => updateMetadata("lotNumber", e.target.value)}
                     placeholder="e.g. 42"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+                    className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise"
                   />
                 </div>
               </div>
 
               {/* Supplier */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   Supplier
                 </label>
                 <input
@@ -387,13 +387,13 @@ export function DocumentUploadModal({
                   value={metadata.supplier}
                   onChange={(e) => updateMetadata("supplier", e.target.value)}
                   placeholder="e.g. ABC Building Services"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise"
                 />
               </div>
 
               {/* Comments */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   Comments
                 </label>
                 <textarea
@@ -401,7 +401,7 @@ export function DocumentUploadModal({
                   onChange={(e) => updateMetadata("comments", e.target.value)}
                   placeholder="Any additional notes..."
                   rows={3}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none"
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise resize-none"
                 />
               </div>
             </div>

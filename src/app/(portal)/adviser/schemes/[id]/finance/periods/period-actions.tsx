@@ -80,7 +80,7 @@ export function PeriodActions({
       )}
 
       {status === "LOCKED" && (
-        <span className="text-xs text-muted-foreground italic">Locked</span>
+        <span className="text-xs text-ink-muted italic">Locked</span>
       )}
     </div>
   );

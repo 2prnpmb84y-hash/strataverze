@@ -83,7 +83,7 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -122,8 +122,8 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
 
       {/* Payment form */}
       {showPaymentForm && (
-        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-          <h3 className="text-sm font-semibold text-foreground">
+        <div className="rounded-[var(--radius-card)] border border-line bg-white p-6 space-y-4">
+          <h3 className="text-sm font-semibold text-ink">
             Record Payment
           </h3>
           <form onSubmit={handleRecordPayment} className="space-y-4">
@@ -167,7 +167,7 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
 
       {/* Cancel confirmation */}
       {showCancelConfirm && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 space-y-4">
+        <div className="rounded-[var(--radius-card)] border border-red-200 bg-red-50 p-6 space-y-4">
           <h3 className="text-sm font-semibold text-red-700">
             Cancel this invoice?
           </h3>

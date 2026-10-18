@@ -66,7 +66,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
   }
 
   const inputClasses =
-    "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+    "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
   return (
     <div className="space-y-6">
@@ -76,7 +76,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
           <div className="flex items-center gap-4">
             <label
               htmlFor="years-select"
-              className="text-sm font-medium text-foreground whitespace-nowrap"
+              className="text-sm font-medium text-ink whitespace-nowrap"
             >
               Projection period
             </label>
@@ -98,7 +98,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
 
       {data.projections.length === 0 && (
         <Card>
-          <div className="p-8 text-center text-sm text-muted-foreground">
+          <div className="p-8 text-center text-sm text-ink-muted">
             No active funds found for this scheme.
           </div>
         </Card>
@@ -124,16 +124,16 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
             {/* Summary strip */}
             <div className="px-4 pb-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="rounded-lg bg-card border border-border p-3">
-                  <p className="text-xs text-muted-foreground">
+                <div className="rounded-[var(--radius-card)] bg-white border border-line p-3">
+                  <p className="text-xs text-ink-muted">
                     Current Balance
                   </p>
-                  <p className="text-lg font-semibold text-foreground mt-0.5">
+                  <p className="text-lg font-semibold text-ink mt-0.5">
                     {formatCurrency(fund.currentBalance)}
                   </p>
                 </div>
-                <div className="rounded-lg bg-card border border-border p-3">
-                  <p className="text-xs text-muted-foreground">
+                <div className="rounded-[var(--radius-card)] bg-white border border-line p-3">
+                  <p className="text-xs text-ink-muted">
                     Annual Levy Income
                   </p>
                   <p className="text-lg font-semibold text-emerald-600 mt-0.5">
@@ -142,8 +142,8 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
                       : "–"}
                   </p>
                 </div>
-                <div className="rounded-lg bg-card border border-border p-3">
-                  <p className="text-xs text-muted-foreground">
+                <div className="rounded-[var(--radius-card)] bg-white border border-line p-3">
+                  <p className="text-xs text-ink-muted">
                     Annual Expenses
                   </p>
                   <p className="text-lg font-semibold text-rose-600 mt-0.5">
@@ -152,15 +152,15 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
                       : "–"}
                   </p>
                 </div>
-                <div className="rounded-lg bg-card border border-border p-3">
-                  <p className="text-xs text-muted-foreground">
+                <div className="rounded-[var(--radius-card)] bg-white border border-line p-3">
+                  <p className="text-xs text-ink-muted">
                     Projected Balance ({finalYear?.label ?? "–"})
                   </p>
                   <p
                     className={`text-lg font-semibold mt-0.5 ${
                       finalYear && finalYear.closingBalance < 0
                         ? "text-rose-600"
-                        : "text-foreground"
+                        : "text-ink"
                     }`}
                   >
                     {finalYear
@@ -175,23 +175,23 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-t border-b border-border text-left">
-                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <tr className="border-t border-b border-line text-left">
+                    <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                       Financial Year
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                       Opening
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                       Levy Income
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                       Expenses
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                       Net Movement
                     </th>
-                    <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                       Closing
                     </th>
                   </tr>
@@ -200,12 +200,12 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
                   {fund.years.map((year) => (
                     <tr
                       key={year.financialYear}
-                      className="border-b border-border hover:bg-card/30 transition-colors"
+                      className="border-b border-line hover:bg-white/30 transition-colors"
                     >
-                      <td className="px-4 py-3 font-medium text-foreground">
+                      <td className="px-4 py-3 font-medium text-ink">
                         {year.label}
                       </td>
-                      <td className="px-4 py-3 text-right text-foreground">
+                      <td className="px-4 py-3 text-right text-ink">
                         {formatCurrency(year.openingBalance)}
                       </td>
                       <td className="px-4 py-3 text-right text-emerald-600">
@@ -228,7 +228,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
                         className={`px-4 py-3 text-right font-semibold ${
                           year.closingBalance < 0
                             ? "text-rose-600"
-                            : "text-foreground"
+                            : "text-ink"
                         }`}
                       >
                         {formatCurrency(year.closingBalance)}
@@ -241,7 +241,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
 
             {/* Visual balance trajectory */}
             <div className="p-4">
-              <p className="text-xs font-medium text-muted-foreground mb-2">
+              <p className="text-xs font-medium text-ink-muted mb-2">
                 Balance trajectory
               </p>
               <div className="flex items-end gap-1 h-16">
@@ -273,7 +273,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
                           height: `${Math.max(heightPercent, 4)}%`,
                         }}
                       />
-                      <span className="text-[10px] text-muted-foreground leading-none">
+                      <span className="text-[10px] text-ink-muted leading-none">
                         {year.label.replace("FY ", "")}
                       </span>
                     </div>
@@ -284,7 +284,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
 
             {/* Trend indicator */}
             {trend === "deficit" && (
-              <div className="mx-4 mb-4 rounded-lg border border-rose-400/50 bg-rose-50/10 p-3">
+              <div className="mx-4 mb-4 rounded-[var(--radius-card)] border border-rose-400/50 bg-rose-50/10 p-3">
                 <p className="text-xs font-medium text-rose-600">
                   ⚠ This fund is projected to go into deficit. Consider
                   reviewing the levy schedule or deferring planned expenditure.
@@ -296,8 +296,8 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
       })}
 
       {/* Assumptions note */}
-      <div className="rounded-lg border border-border p-4 text-xs text-muted-foreground space-y-1">
-        <p className="font-medium text-foreground text-sm">
+      <div className="rounded-[var(--radius-card)] border border-line p-4 text-xs text-ink-muted space-y-1">
+        <p className="font-medium text-ink text-sm">
           Projection assumptions
         </p>
         <ul className="list-disc list-inside space-y-0.5">

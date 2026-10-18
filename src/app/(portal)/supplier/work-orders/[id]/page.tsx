@@ -6,13 +6,13 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { WorkOrderActions } from "./work-order-actions";
 const statusConfig: Record<string, { label: string; className: string }> = {
   AWARDED: { label: "Awarded", className: "bg-gold-100 text-gold-500" },
-  IN_PROGRESS: { label: "In Progress", className: "bg-primary-100 text-primary-500" },
+  IN_PROGRESS: { label: "In Progress", className: "bg-primary-100 text-turquoise" },
   COMPLETED: { label: "Completed", className: "bg-success/10 text-success" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
+  CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
 };
 
 const priorityConfig: Record<string, { label: string; className: string }> = {
-  LOW: { label: "Low", className: "bg-muted text-muted-foreground" },
+  LOW: { label: "Low", className: "bg-muted text-ink-muted" },
   MEDIUM: { label: "Medium", className: "bg-gold-100 text-gold-500" },
   HIGH: { label: "High", className: "bg-warning/10 text-warning" },
   URGENT: { label: "Urgent", className: "bg-danger/10 text-danger" },
@@ -20,10 +20,10 @@ const priorityConfig: Record<string, { label: string; className: string }> = {
 
 const invoiceStatusConfig: Record<string, { label: string; className: string }> = {
   SUBMITTED: { label: "Submitted", className: "bg-gold-100 text-gold-500" },
-  APPROVED: { label: "Approved", className: "bg-primary-100 text-primary-500" },
+  APPROVED: { label: "Approved", className: "bg-primary-100 text-turquoise" },
   PAID: { label: "Paid", className: "bg-success/10 text-success" },
   DISPUTED: { label: "Disputed", className: "bg-danger/10 text-danger" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
+  CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
 };
 
 export default async function SupplierWorkOrderDetailPage({
@@ -53,7 +53,7 @@ export default async function SupplierWorkOrderDetailPage({
     <div className="max-w-4xl">
       <Link
         href="/supplier/work-orders"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+        className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink transition-colors mb-6"
       >
         &larr; Back to Work Orders
       </Link>
@@ -62,10 +62,10 @@ export default async function SupplierWorkOrderDetailPage({
       <Card className="mb-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-xl font-heading font-bold text-foreground">
+            <h1 className="text-xl font-heading font-bold text-ink">
               {workOrder.title}
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-sm text-ink-muted mt-0.5">
               {workOrder.scheme?.name}
             </p>
           </div>
@@ -84,23 +84,23 @@ export default async function SupplierWorkOrderDetailPage({
         </div>
 
         {workOrder.description && (
-          <p className="text-sm text-foreground whitespace-pre-wrap mb-4">
+          <p className="text-sm text-ink whitespace-pre-wrap mb-4">
             {workOrder.description}
           </p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-line">
           {workOrder.category && (
             <div>
-              <p className="text-xs text-muted-foreground">Category</p>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs text-ink-muted">Category</p>
+              <p className="text-sm font-medium text-ink">
                 {workOrder.category}
               </p>
             </div>
           )}
           <div>
-            <p className="text-xs text-muted-foreground">Created</p>
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-xs text-ink-muted">Created</p>
+            <p className="text-sm font-medium text-ink">
               {new Date(String(workOrder.createdAt)).toLocaleDateString(
                 "en-AU",
                 { day: "numeric", month: "long", year: "numeric" },
@@ -109,8 +109,8 @@ export default async function SupplierWorkOrderDetailPage({
           </div>
           {workOrder.completedAt && (
             <div>
-              <p className="text-xs text-muted-foreground">Completed</p>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs text-ink-muted">Completed</p>
+              <p className="text-sm font-medium text-ink">
                 {new Date(String(workOrder.completedAt)).toLocaleDateString(
                   "en-AU",
                   { day: "numeric", month: "long", year: "numeric" },
@@ -139,27 +139,27 @@ export default async function SupplierWorkOrderDetailPage({
             {workOrder.comments.map((comment) => (
               <div
                 key={comment.id}
-                className="rounded-lg bg-muted px-4 py-3"
+                className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-medium text-foreground">
+                  <p className="text-xs font-medium text-ink">
                     {comment.author?.firstName} {comment.author?.lastName}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     {new Date(String(comment.createdAt)).toLocaleDateString(
                       "en-AU",
                       { day: "numeric", month: "short", year: "numeric" },
                     )}
                   </p>
                 </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">
+                <p className="text-sm text-ink whitespace-pre-wrap">
                   {comment.content}
                 </p>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No comments yet.
           </p>
         )}
@@ -181,20 +181,20 @@ export default async function SupplierWorkOrderDetailPage({
               return (
                 <div
                   key={inv.id}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {inv.invoiceNumber}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {inv.description}
                       {inv.dueDate &&
                         ` · Due ${new Date(String(inv.dueDate)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
                     </p>
                   </div>
                   <div className="shrink-0 flex items-center gap-3">
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="text-sm font-medium text-ink">
                       ${Number(inv.totalAmount).toLocaleString("en-AU", {
                         minimumFractionDigits: 2,
                       })}
@@ -210,7 +210,7 @@ export default async function SupplierWorkOrderDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No invoices have been submitted for this work order.
           </p>
         )}

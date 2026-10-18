@@ -144,13 +144,13 @@ export function FinancialDocumentUploadForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {duplicateWarning && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-[var(--radius-card)] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <p className="font-medium">Possible Duplicate Detected</p>
           <p className="mt-1">{duplicateWarning}</p>
           <p className="mt-2 text-xs text-amber-600">
@@ -169,7 +169,7 @@ export function FinancialDocumentUploadForm({
       <div>
         <label
           htmlFor="file"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           File
           <span className="text-red-500 ml-0.5">*</span>
@@ -180,9 +180,9 @@ export function FinancialDocumentUploadForm({
           type="file"
           required
           accept=".pdf,.png,.jpg,.jpeg,.heic"
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-100 file:text-primary-700 hover:file:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-100 file:text-primary-700 hover:file:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
         />
-        <p className="mt-1.5 text-xs text-muted-foreground">
+        <p className="mt-1.5 text-xs text-ink-muted">
           Max 10 MB. PDF, PNG, JPG, JPEG, HEIC accepted.
         </p>
       </div>

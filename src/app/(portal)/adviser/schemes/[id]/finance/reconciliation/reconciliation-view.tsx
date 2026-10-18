@@ -118,7 +118,7 @@ export function ReconciliationView({
   return (
     <div className="space-y-6">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -165,24 +165,24 @@ export function ReconciliationView({
           />
 
           {/* Table header */}
-          <div className="hidden sm:grid sm:grid-cols-[100px_1fr_100px_140px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+          <div className="hidden sm:grid sm:grid-cols-[100px_1fr_100px_140px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
             <div>Date</div>
             <div>Description</div>
             <div className="text-right">Amount</div>
             <div className="text-right">Actions</div>
           </div>
 
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-line">
             {transactions.map((txn) => (
               <div key={txn.id}>
                 <div className="grid grid-cols-1 sm:grid-cols-[100px_1fr_100px_140px] gap-2 sm:gap-4 px-6 py-3 items-center">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-ink-muted">
                     {formatDate(txn.transactionDate)}
                   </div>
-                  <div className="text-sm text-foreground min-w-0">
+                  <div className="text-sm text-ink min-w-0">
                     <span className="truncate block">{txn.description}</span>
                     {txn.reference && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-ink-muted">
                         Ref: {txn.reference}
                       </span>
                     )}
@@ -221,8 +221,8 @@ export function ReconciliationView({
                 {/* Matching panel */}
                 {matchingTxnId === txn.id && (
                   <div className="px-6 pb-4">
-                    <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-4">
-                      <h4 className="text-sm font-medium text-foreground">
+                    <div className="rounded-[var(--radius-card)] border border-line bg-muted/20 p-4 space-y-4">
+                      <h4 className="text-sm font-medium text-ink">
                         Match to Journal Entry
                       </h4>
 
@@ -232,7 +232,7 @@ export function ReconciliationView({
                         if (matches.length > 0) {
                           return (
                             <div className="space-y-2">
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-ink-muted">
                                 Suggested matches (by amount):
                               </p>
                               <div className="space-y-1">
@@ -242,22 +242,22 @@ export function ReconciliationView({
                                     onClick={() =>
                                       setSelectedJournalEntryId(je.id)
                                     }
-                                    className={`w-full text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
+                                    className={`w-full text-left rounded-[var(--radius-card)] border px-3 py-2 text-sm transition-colors ${
                                       selectedJournalEntryId === je.id
                                         ? "border-primary-400 bg-primary-50"
-                                        : "border-border hover:bg-muted/50"
+                                        : "border-line hover:bg-muted/50"
                                     }`}
                                   >
                                     <span className="font-medium">
                                       {je.entryNumber}
                                     </span>
-                                    <span className="mx-2 text-muted-foreground">
+                                    <span className="mx-2 text-ink-muted">
                                       {formatDate(je.transactionDate)}
                                     </span>
-                                    <span className="text-muted-foreground">
+                                    <span className="text-ink-muted">
                                       {je.description}
                                     </span>
-                                    <span className="ml-2 tabular-nums text-foreground">
+                                    <span className="ml-2 tabular-nums text-ink">
                                       {formatCurrency(je.totalAmount)}
                                     </span>
                                   </button>
@@ -267,7 +267,7 @@ export function ReconciliationView({
                           );
                         }
                         return (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-ink-muted">
                             No suggested matches found. Select a journal entry
                             manually below.
                           </p>

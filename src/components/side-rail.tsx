@@ -153,7 +153,7 @@ export function SideRail({ portal }: { portal: string }) {
               } ${
                 isActive
                   ? "bg-white text-ink rounded-l-none rounded-r-lg"
-                  : "text-white hover:bg-white/15 rounded-lg"
+                  : "text-white hover:bg-white/15 rounded-[var(--radius-card)]"
               }`}
               title={!expanded ? item.label : undefined}
             >

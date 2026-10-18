@@ -23,16 +23,16 @@ export default async function QuoteRequestsPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
+      <h1 className="text-2xl font-bold font-heading text-ink mb-1">
         Quote Requests
       </h1>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-sm text-ink-muted mb-8">
         Browse open quote requests from owners corporations.
       </p>
 
       {sorted.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             There are no open quote requests at the moment. Check back soon.
           </p>
         </Card>
@@ -52,37 +52,37 @@ export default async function QuoteRequestsPage() {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/supplier/quotes/${qr.id}`}
-                      className="text-sm font-semibold text-foreground hover:text-supplier transition-colors"
+                      className="text-sm font-semibold text-ink hover:text-supplier transition-colors"
                     >
                       {qr.title}
                     </Link>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-xs text-ink-muted mt-1 line-clamp-2">
                       {qr.description}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                      <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-ink-muted">
                         {qr.category}
                       </span>
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${urgencyColour}`}>
                         {qr.urgency}
                       </span>
                       {qr.budget && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-ink-muted">
                           Budget: {qr.budget}
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-ink-muted">
                         {qr.quotes?.length ?? 0} quote
                         {(qr.quotes?.length ?? 0) === 1 ? "" : "s"}
                       </span>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {qr.scheme?.name}
                     </p>
                     {qr.closesAt && (
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-ink-muted mt-1">
                         Closes{" "}
                         {new Date(String(qr.closesAt)).toLocaleDateString(
                           "en-AU",

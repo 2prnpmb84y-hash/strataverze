@@ -80,16 +80,16 @@ export default async function OwnerWorkOrderDetailPage({
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Status</p>
+        <div className="rounded-[var(--radius-card)] border border-line bg-white p-4">
+          <p className="text-xs text-ink-muted mb-1">Status</p>
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[workOrder.status] ?? "bg-gray-100 text-gray-700"}`}
           >
             {workOrder.status.replace("_", " ")}
           </span>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Priority</p>
+        <div className="rounded-[var(--radius-card)] border border-line bg-white p-4">
+          <p className="text-xs text-ink-muted mb-1">Priority</p>
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priorityStyle[workOrder.priority] ?? "bg-gray-100 text-gray-700"}`}
           >
@@ -130,46 +130,46 @@ export default async function OwnerWorkOrderDetailPage({
       <Card className="mb-6">
         <CardHeader title="Details" />
         <div className="flex flex-col gap-3">
-          <div className="rounded-lg bg-muted px-4 py-3">
-            <p className="text-sm text-foreground whitespace-pre-wrap">
+          <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3">
+            <p className="text-sm text-ink whitespace-pre-wrap">
               {workOrder.description}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {workOrder.category && (
-              <div className="rounded-lg bg-muted px-4 py-3">
-                <p className="text-xs text-muted-foreground mb-0.5">Category</p>
-                <p className="text-sm font-medium text-foreground">
+              <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3">
+                <p className="text-xs text-ink-muted mb-0.5">Category</p>
+                <p className="text-sm font-medium text-ink">
                   {categoryLabels[workOrder.category] ?? workOrder.category}
                 </p>
               </div>
             )}
             {workOrder.assignedTo && (
-              <div className="rounded-lg bg-muted px-4 py-3">
-                <p className="text-xs text-muted-foreground mb-0.5">
+              <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3">
+                <p className="text-xs text-ink-muted mb-0.5">
                   Assigned To
                 </p>
-                <p className="text-sm font-medium text-foreground">
+                <p className="text-sm font-medium text-ink">
                   {workOrder.assignedTo}
                 </p>
               </div>
             )}
             {workOrder.actualCost && (
-              <div className="rounded-lg bg-muted px-4 py-3">
-                <p className="text-xs text-muted-foreground mb-0.5">
+              <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3">
+                <p className="text-xs text-ink-muted mb-0.5">
                   Actual Cost
                 </p>
-                <p className="text-sm font-medium text-foreground">
+                <p className="text-sm font-medium text-ink">
                   ${Number(workOrder.actualCost).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
                 </p>
               </div>
             )}
             {workOrder.completedAt && (
-              <div className="rounded-lg bg-muted px-4 py-3">
-                <p className="text-xs text-muted-foreground mb-0.5">
+              <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3">
+                <p className="text-xs text-ink-muted mb-0.5">
                   Completed
                 </p>
-                <p className="text-sm font-medium text-foreground">
+                <p className="text-sm font-medium text-ink">
                   {new Date(String(workOrder.completedAt)).toLocaleDateString(
                     "en-AU",
                     { day: "numeric", month: "short", year: "numeric" },

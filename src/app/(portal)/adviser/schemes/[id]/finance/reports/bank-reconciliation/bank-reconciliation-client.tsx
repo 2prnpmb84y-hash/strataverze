@@ -7,7 +7,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 
 const inputClasses =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
 interface BankAccount {
   id: string;
@@ -123,7 +123,7 @@ export function BankReconciliationClient({
           <div>
             <label
               htmlFor="asAtDate"
-              className="block text-sm font-medium text-foreground mb-1.5"
+              className="block text-sm font-medium text-ink mb-1.5"
             >
               Reconcile As At
             </label>
@@ -193,16 +193,16 @@ export function BankReconciliationClient({
                   <tr>
                     <td
                       colSpan={2}
-                      className="pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted"
                     >
                       Bank Statement
                     </td>
                   </tr>
-                  <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground">
+                  <tr className="border-b border-line/50">
+                    <td className="py-2 text-ink">
                       Closing Bank Balance
                     </td>
-                    <td className="py-2 text-right tabular-nums font-medium text-foreground">
+                    <td className="py-2 text-right tabular-nums font-medium text-ink">
                       {formatCurrency(report.closingBankBalance)}
                     </td>
                   </tr>
@@ -211,15 +211,15 @@ export function BankReconciliationClient({
                   <tr>
                     <td
                       colSpan={2}
-                      className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted"
                     >
                       Outstanding Items
                     </td>
                   </tr>
-                  <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground pl-4">
+                  <tr className="border-b border-line/50">
+                    <td className="py-2 text-ink pl-4">
                       Add: Deposits in transit
-                      <span className="text-muted-foreground ml-1">
+                      <span className="text-ink-muted ml-1">
                         ({report.depositsInTransit.length})
                       </span>
                     </td>
@@ -227,10 +227,10 @@ export function BankReconciliationClient({
                       {formatCurrency(report.depositsInTransitTotal)}
                     </td>
                   </tr>
-                  <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground pl-4">
+                  <tr className="border-b border-line/50">
+                    <td className="py-2 text-ink pl-4">
                       Less: Outstanding withdrawals
-                      <span className="text-muted-foreground ml-1">
+                      <span className="text-ink-muted ml-1">
                         ({report.outstandingWithdrawals.length})
                       </span>
                     </td>
@@ -238,11 +238,11 @@ export function BankReconciliationClient({
                       ({formatCurrency(report.outstandingWithdrawalsTotal)})
                     </td>
                   </tr>
-                  <tr className="border-t-2 border-border">
-                    <td className="py-2 font-semibold text-foreground">
+                  <tr className="border-t-2 border-line">
+                    <td className="py-2 font-semibold text-ink">
                       Adjusted Bank Balance
                     </td>
-                    <td className="py-2 text-right tabular-nums font-bold text-foreground">
+                    <td className="py-2 text-right tabular-nums font-bold text-ink">
                       {formatCurrency(report.adjustedBankBalance)}
                     </td>
                   </tr>
@@ -251,23 +251,23 @@ export function BankReconciliationClient({
                   <tr>
                     <td
                       colSpan={2}
-                      className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                      className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-ink-muted"
                     >
                       Ledger
                     </td>
                   </tr>
-                  <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground">
+                  <tr className="border-b border-line/50">
+                    <td className="py-2 text-ink">
                       Book Balance (General Ledger)
                     </td>
-                    <td className="py-2 text-right tabular-nums font-medium text-foreground">
+                    <td className="py-2 text-right tabular-nums font-medium text-ink">
                       {formatCurrency(report.bookBalance)}
                     </td>
                   </tr>
 
                   {/* Section 4: Discrepancy */}
-                  <tr className="border-t-2 border-border">
-                    <td className="py-3 font-semibold text-foreground">
+                  <tr className="border-t-2 border-line">
+                    <td className="py-3 font-semibold text-ink">
                       Discrepancy
                     </td>
                     <td
@@ -284,13 +284,13 @@ export function BankReconciliationClient({
               </table>
 
               {Math.abs(report.discrepancy) < 0.01 && (
-                <div className="mt-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+                <div className="mt-4 rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
                   The bank balance and book balance are reconciled.
                 </div>
               )}
 
               {Math.abs(report.discrepancy) >= 0.01 && (
-                <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                <div className="mt-4 rounded-[var(--radius-card)] bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
                   There is a discrepancy of{" "}
                   {formatCurrency(Math.abs(report.discrepancy))} between the
                   adjusted bank balance and the book balance. Review unmatched
@@ -306,24 +306,24 @@ export function BankReconciliationClient({
             <div className="px-6 pb-6">
               <table className="w-full text-sm">
                 <tbody>
-                  <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground">
+                  <tr className="border-b border-line/50">
+                    <td className="py-2 text-ink">
                       Total Receipts (Credits)
                     </td>
                     <td className="py-2 text-right tabular-nums font-medium text-green-600">
                       {formatCurrency(report.totalReceipts)}
                     </td>
                   </tr>
-                  <tr className="border-b border-border/50">
-                    <td className="py-2 text-foreground">
+                  <tr className="border-b border-line/50">
+                    <td className="py-2 text-ink">
                       Total Payments (Debits)
                     </td>
                     <td className="py-2 text-right tabular-nums font-medium text-red-600">
                       {formatCurrency(report.totalPayments)}
                     </td>
                   </tr>
-                  <tr className="border-t-2 border-border font-semibold">
-                    <td className="py-2 text-foreground">Net Movement</td>
+                  <tr className="border-t-2 border-line font-semibold">
+                    <td className="py-2 text-ink">Net Movement</td>
                     <td
                       className={`py-2 text-right tabular-nums ${
                         report.totalReceipts - report.totalPayments >= 0
@@ -393,26 +393,26 @@ function TransactionTable({
 }) {
   return (
     <>
-      <div className="hidden sm:grid sm:grid-cols-[100px_1fr_120px_120px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+      <div className="hidden sm:grid sm:grid-cols-[100px_1fr_120px_120px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
         <div>Date</div>
         <div>Description</div>
         <div>Reference</div>
         <div className="text-right">Amount</div>
       </div>
 
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-line">
         {transactions.map((txn) => (
           <div
             key={txn.id}
             className="grid grid-cols-1 sm:grid-cols-[100px_1fr_120px_120px] gap-2 sm:gap-4 px-6 py-3 items-center"
           >
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-ink-muted">
               {formatDate(txn.transactionDate)}
             </div>
-            <div className="text-sm text-foreground truncate">
+            <div className="text-sm text-ink truncate">
               {txn.description}
             </div>
-            <div className="text-sm text-muted-foreground truncate">
+            <div className="text-sm text-ink-muted truncate">
               {txn.reference ?? "—"}
             </div>
             <div

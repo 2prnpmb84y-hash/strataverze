@@ -19,7 +19,7 @@ const quoteStatusConfig: Record<string, { label: string; className: string }> = 
   SUBMITTED: { label: "Submitted", className: "bg-gold-100 text-gold-500" },
   ACCEPTED: { label: "Accepted", className: "bg-success/10 text-success" },
   DECLINED: { label: "Declined", className: "bg-danger/10 text-danger" },
-  WITHDRAWN: { label: "Withdrawn", className: "bg-muted text-muted-foreground" },
+  WITHDRAWN: { label: "Withdrawn", className: "bg-muted text-ink-muted" },
 };
 
 export default async function QuoteRequestDetailPage({
@@ -65,7 +65,7 @@ export default async function QuoteRequestDetailPage({
     <div className="max-w-4xl">
       <Link
         href="/supplier/quotes"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+        className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink transition-colors mb-6"
       >
         &larr; Back to Quote Requests
       </Link>
@@ -77,20 +77,20 @@ export default async function QuoteRequestDetailPage({
         />
 
         {quoteRequest.description && (
-          <p className="text-sm text-foreground mb-4 whitespace-pre-wrap">
+          <p className="text-sm text-ink mb-4 whitespace-pre-wrap">
             {quoteRequest.description}
           </p>
         )}
 
         <div className="flex flex-wrap gap-3 text-sm">
           {quoteRequest.category && (
-            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-ink-muted">
               {quoteRequest.category}
             </span>
           )}
           {quoteRequest.urgency && (
             <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${urgencyColours[quoteRequest.urgency] ?? "bg-muted text-muted-foreground"}`}
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${urgencyColours[quoteRequest.urgency] ?? "bg-muted text-ink-muted"}`}
             >
               {quoteRequest.urgency}
             </span>
@@ -99,26 +99,26 @@ export default async function QuoteRequestDetailPage({
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
               quoteRequest.status === "OPEN"
                 ? "bg-success/10 text-success"
-                : "bg-muted text-muted-foreground"
+                : "bg-muted text-ink-muted"
             }`}
           >
             {quoteRequest.status}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-4 border-t border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-4 border-t border-line">
           {quoteRequest.budget && (
             <div>
-              <p className="text-xs text-muted-foreground">Budget</p>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs text-ink-muted">Budget</p>
+              <p className="text-sm font-medium text-ink">
                 {quoteRequest.budget}
               </p>
             </div>
           )}
           {quoteRequest.closesAt && (
             <div>
-              <p className="text-xs text-muted-foreground">Closing Date</p>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs text-ink-muted">Closing Date</p>
+              <p className="text-sm font-medium text-ink">
                 {new Date(String(quoteRequest.closesAt)).toLocaleDateString(
                   "en-AU",
                   { day: "numeric", month: "long", year: "numeric" },
@@ -128,8 +128,8 @@ export default async function QuoteRequestDetailPage({
           )}
           {quoteRequest.workOrder && (
             <div>
-              <p className="text-xs text-muted-foreground">Work Order</p>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-xs text-ink-muted">Work Order</p>
+              <p className="text-sm font-medium text-ink">
                 {quoteRequest.workOrder.title}
               </p>
             </div>
@@ -153,20 +153,20 @@ export default async function QuoteRequestDetailPage({
               return (
                 <div
                   key={quote.id}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       ${Number(quote.amount).toLocaleString("en-AU", {
                         minimumFractionDigits: 2,
                       })}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-ink-muted mt-0.5">
                       {quote.supplier?.firstName} {quote.supplier?.lastName}
                       {quote.description && ` — ${quote.description}`}
                     </p>
                     {quote.estimatedDays != null && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         Est. {quote.estimatedDays} day
                         {quote.estimatedDays === 1 ? "" : "s"}
                       </p>
@@ -182,7 +182,7 @@ export default async function QuoteRequestDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No quotes have been submitted yet. Be the first to respond.
           </p>
         )}
@@ -202,7 +202,7 @@ export default async function QuoteRequestDetailPage({
       {alreadyQuoted && supplierQuote && (
         <Card>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               You have already submitted a quote for this request.
             </p>
             {supplierQuote.status === "SUBMITTED" && (

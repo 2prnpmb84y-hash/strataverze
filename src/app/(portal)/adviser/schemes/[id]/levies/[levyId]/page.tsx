@@ -106,12 +106,12 @@ export default async function LevyDetailPage({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Lot</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">Amount</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">Paid</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Status</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground"></th>
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="pb-2 font-medium text-ink-muted">Lot</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted text-right">Amount</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted text-right">Paid</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted">Status</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted"></th>
                 </tr>
               </thead>
               <tbody>
@@ -121,9 +121,9 @@ export default async function LevyDetailPage({
                   return (
                     <tr
                       key={item.id}
-                      className="border-b border-border last:border-0"
+                      className="border-b border-line last:border-0"
                     >
-                      <td className="py-3 font-medium text-foreground">
+                      <td className="py-3 font-medium text-ink">
                         {item.lot.lotNumber}
                         {item.lot.unitNumber
                           ? ` (Unit ${item.lot.unitNumber})`
@@ -134,7 +134,7 @@ export default async function LevyDetailPage({
                           minimumFractionDigits: 2,
                         })}
                       </td>
-                      <td className="py-3 text-right font-variant-numeric tabular-nums text-muted-foreground">
+                      <td className="py-3 text-right font-variant-numeric tabular-nums text-ink-muted">
                         ${itemPaid.toLocaleString("en-AU", {
                           minimumFractionDigits: 2,
                         })}
@@ -168,7 +168,7 @@ export default async function LevyDetailPage({
             </table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No line items. Create lots first, then recreate this levy.
           </p>
         )}
@@ -177,7 +177,7 @@ export default async function LevyDetailPage({
       {/* Edit form (only for drafts) */}
       {levy.status === "DRAFT" && (
         <div className="mb-6">
-          <h2 className="font-heading font-semibold text-foreground mb-4">
+          <h2 className="font-heading font-semibold text-ink mb-4">
             Edit Levy Details
           </h2>
           <LevyForm

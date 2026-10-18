@@ -118,7 +118,7 @@ export default async function FinanceDocumentsPage({
       {/* Filters */}
       <Card>
         <div className="flex flex-wrap items-center gap-3 px-6 py-4">
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="text-sm font-medium text-ink-muted">
             Filter:
           </span>
           <FilterLink
@@ -163,7 +163,7 @@ export default async function FinanceDocumentsPage({
       ) : (
         <Card>
           <CardHeader title="Documents" />
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-line">
             {documents.map((doc) => (
               <Link
                 key={doc.id}
@@ -186,7 +186,7 @@ export default async function FinanceDocumentsPage({
                       {verificationLabels[doc.verificationStatus] ?? doc.verificationStatus}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 text-xs text-ink-muted">
                     <span>
                       {docTypeLabels[doc.documentType] ?? doc.documentType}
                     </span>
@@ -203,7 +203,7 @@ export default async function FinanceDocumentsPage({
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-ink-muted">
                     {String(doc.mimeType).split("/")[1]?.toUpperCase() ?? "FILE"}
                   </span>
                 </div>
@@ -231,7 +231,7 @@ function FilterLink({
       className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors ${
         active
           ? "bg-primary-100 text-primary-700"
-          : "bg-muted text-muted-foreground hover:bg-muted/80"
+          : "bg-muted text-ink-muted hover:bg-muted/80"
       }`}
     >
       {label}

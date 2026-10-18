@@ -39,7 +39,7 @@ export default async function ReconciliationPage({
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">
             Bank Reconciliation
           </h1>
         </div>
@@ -87,10 +87,10 @@ export default async function ReconciliationPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Bank Reconciliation
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-ink-muted">
           Match imported bank transactions to journal entries to reconcile your
           accounts.
         </p>

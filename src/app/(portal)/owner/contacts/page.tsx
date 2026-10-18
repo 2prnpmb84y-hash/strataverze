@@ -43,7 +43,7 @@ export default async function OwnerContactsPage() {
 
       {contacts.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No contacts have been added for your scheme yet.
           </p>
         </Card>
@@ -53,16 +53,16 @@ export default async function OwnerContactsPage() {
             <Card key={contact.id}>
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">
+                  <h3 className="text-sm font-semibold text-ink">
                     {contact.name}
                     {contact.company ? (
-                      <span className="font-normal text-muted-foreground">
+                      <span className="font-normal text-ink-muted">
                         {" "}
                         — {contact.company}
                       </span>
                     ) : null}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     {contact.scheme.name}
                   </p>
                 </div>
@@ -79,10 +79,10 @@ export default async function OwnerContactsPage() {
               </div>
               <div className="flex flex-wrap gap-4 text-sm">
                 {contact.phone ? (
-                  <span className="text-foreground">{contact.phone}</span>
+                  <span className="text-ink">{contact.phone}</span>
                 ) : null}
                 {contact.email ? (
-                  <span className="text-foreground">{contact.email}</span>
+                  <span className="text-ink">{contact.email}</span>
                 ) : null}
               </div>
             </Card>

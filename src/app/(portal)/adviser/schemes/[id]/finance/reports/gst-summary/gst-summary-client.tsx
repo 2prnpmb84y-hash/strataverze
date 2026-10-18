@@ -35,7 +35,7 @@ export function GstSummaryClient({
   const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
   const inputClasses =
-    "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+    "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
   function applyQuarter(value: string) {
     const [qs, qe] = value.split("|");
@@ -53,7 +53,7 @@ export function GstSummaryClient({
     <div className="space-y-6">
       {/* GST registration status */}
       {!report.abnOrGstRegistered && (
-        <div className="rounded-lg border border-amber-400/50 bg-amber-50/10 p-4">
+        <div className="rounded-[var(--radius-card)] border border-amber-400/50 bg-amber-50/10 p-4">
           <p className="text-sm text-amber-600">
             This scheme is not marked as GST-registered. BAS lodgement may not
             be required. Check with the scheme&apos;s accountant.
@@ -67,7 +67,7 @@ export function GstSummaryClient({
           <div className="flex items-center gap-4 flex-wrap">
             <label
               htmlFor="quarter-select"
-              className="text-sm font-medium text-foreground whitespace-nowrap"
+              className="text-sm font-medium text-ink whitespace-nowrap"
             >
               BAS period
             </label>
@@ -83,7 +83,7 @@ export function GstSummaryClient({
                 </option>
               ))}
             </select>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-ink-muted">
               {report.periodLabel}
             </span>
           </div>
@@ -118,24 +118,24 @@ export function GstSummaryClient({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left">
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground w-16">
+              <tr className="border-b border-line text-left">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted w-16">
                   Label
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                   Description
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Amount
                 </th>
               </tr>
             </thead>
             <tbody>
               {/* Sales section */}
-              <tr className="bg-card/30">
+              <tr className="bg-white/30">
                 <td
                   colSpan={3}
-                  className="px-4 py-2 font-semibold text-foreground text-xs uppercase tracking-wider"
+                  className="px-4 py-2 font-semibold text-ink text-xs uppercase tracking-wider"
                 >
                   GST on Sales
                 </td>
@@ -152,10 +152,10 @@ export function GstSummaryClient({
               />
 
               {/* Purchases section */}
-              <tr className="bg-card/30">
+              <tr className="bg-white/30">
                 <td
                   colSpan={3}
-                  className="px-4 py-2 font-semibold text-foreground text-xs uppercase tracking-wider"
+                  className="px-4 py-2 font-semibold text-ink text-xs uppercase tracking-wider"
                 >
                   GST on Purchases
                 </td>
@@ -184,9 +184,9 @@ export function GstSummaryClient({
               />
 
               {/* Net */}
-              <tr className="bg-card/50 font-semibold border-t-2 border-border">
-                <td className="px-4 py-3 text-foreground" />
-                <td className="px-4 py-3 text-foreground">
+              <tr className="bg-white/50 font-semibold border-t-2 border-line">
+                <td className="px-4 py-3 text-ink" />
+                <td className="px-4 py-3 text-ink">
                   Net GST payable (G9 minus G20)
                 </td>
                 <td
@@ -214,17 +214,17 @@ export function GstSummaryClient({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Account
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     Net Amount
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     GST
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     Gross
                   </th>
                 </tr>
@@ -233,21 +233,21 @@ export function GstSummaryClient({
                 {report.incomeLines.map((line) => (
                   <tr
                     key={line.accountCode}
-                    className="border-b border-border hover:bg-card/30 transition-colors"
+                    className="border-b border-line hover:bg-white/30 transition-colors"
                   >
-                    <td className="px-4 py-3 text-foreground">
-                      <span className="font-mono text-xs text-muted-foreground mr-2">
+                    <td className="px-4 py-3 text-ink">
+                      <span className="font-mono text-xs text-ink-muted mr-2">
                         {line.accountCode}
                       </span>
                       {line.accountName}
                     </td>
-                    <td className="px-4 py-3 text-right text-foreground">
+                    <td className="px-4 py-3 text-right text-ink">
                       {formatCurrency(line.netAmount)}
                     </td>
-                    <td className="px-4 py-3 text-right text-foreground">
+                    <td className="px-4 py-3 text-right text-ink">
                       {formatCurrency(line.gstAmount)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-foreground">
+                    <td className="px-4 py-3 text-right font-medium text-ink">
                       {formatCurrency(line.grossAmount)}
                     </td>
                   </tr>
@@ -268,17 +268,17 @@ export function GstSummaryClient({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Account
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     Net Amount
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     GST
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     Gross
                   </th>
                 </tr>
@@ -287,21 +287,21 @@ export function GstSummaryClient({
                 {report.expenseLines.map((line) => (
                   <tr
                     key={line.accountCode}
-                    className="border-b border-border hover:bg-card/30 transition-colors"
+                    className="border-b border-line hover:bg-white/30 transition-colors"
                   >
-                    <td className="px-4 py-3 text-foreground">
-                      <span className="font-mono text-xs text-muted-foreground mr-2">
+                    <td className="px-4 py-3 text-ink">
+                      <span className="font-mono text-xs text-ink-muted mr-2">
                         {line.accountCode}
                       </span>
                       {line.accountName}
                     </td>
-                    <td className="px-4 py-3 text-right text-foreground">
+                    <td className="px-4 py-3 text-right text-ink">
                       {formatCurrency(line.netAmount)}
                     </td>
-                    <td className="px-4 py-3 text-right text-foreground">
+                    <td className="px-4 py-3 text-right text-ink">
                       {formatCurrency(line.gstAmount)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-foreground">
+                    <td className="px-4 py-3 text-right font-medium text-ink">
                       {formatCurrency(line.grossAmount)}
                     </td>
                   </tr>
@@ -313,8 +313,8 @@ export function GstSummaryClient({
       )}
 
       {/* Notes */}
-      <div className="rounded-lg border border-border p-4 text-xs text-muted-foreground space-y-1">
-        <p className="font-medium text-foreground text-sm">Important notes</p>
+      <div className="rounded-[var(--radius-card)] border border-line p-4 text-xs text-ink-muted space-y-1">
+        <p className="font-medium text-ink text-sm">Important notes</p>
         <ul className="list-disc list-inside space-y-0.5">
           <li>
             This report is a summary to assist with BAS preparation. It does not
@@ -357,13 +357,13 @@ function BASRow({
 }) {
   return (
     <tr
-      className={`border-b border-border ${highlight ? "bg-card/50 font-medium" : ""}`}
+      className={`border-b border-line ${highlight ? "bg-white/50 font-medium" : ""}`}
     >
-      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+      <td className="px-4 py-2.5 font-mono text-xs text-ink-muted">
         {label}
       </td>
-      <td className="px-4 py-2.5 text-foreground">{desc}</td>
-      <td className="px-4 py-2.5 text-right text-foreground">
+      <td className="px-4 py-2.5 text-ink">{desc}</td>
+      <td className="px-4 py-2.5 text-right text-ink">
         {formatCurrency(amount)}
       </td>
     </tr>

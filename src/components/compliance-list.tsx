@@ -104,11 +104,11 @@ export function ComplianceList({
     return (
       <div
         key={item.id}
-        className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+        className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
       >
         <div>
-          <p className="text-sm font-medium text-foreground">{item.title}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm font-medium text-ink">{item.title}</p>
+          <p className="text-xs text-ink-muted">
             {schemeNames[item.schemeId] ?? item.scheme?.name ?? ""}
             {" · "}
             {categoryLabels[item.category] ?? item.category}
@@ -157,7 +157,7 @@ export function ComplianceList({
       {filtered.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               {items.length === 0
                 ? "No compliance items are being tracked yet."
                 : "No compliance items match your search."}

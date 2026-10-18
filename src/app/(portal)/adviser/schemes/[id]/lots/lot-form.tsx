@@ -51,7 +51,7 @@ export function LotForm({
     <Card>
       <form action={formAction}>
         {state.error && (
-          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="mb-6 rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {state.error}
           </div>
         )}
@@ -105,7 +105,7 @@ export function LotForm({
           />
         </div>
 
-        <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-border">
+        <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line">
           <Button variant="secondary" href={`/adviser/schemes/${schemeId}`}>
             Cancel
           </Button>

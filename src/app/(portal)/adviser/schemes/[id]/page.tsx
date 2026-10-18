@@ -119,10 +119,10 @@ export default async function SchemeDetailPage({
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="font-heading font-semibold text-foreground">
+                  <h2 className="font-heading font-semibold text-ink">
                     Strata Roll
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-ink-muted">
                     {lots.length} of {scheme.totalLots} lots registered
                   </p>
                 </div>
@@ -191,14 +191,14 @@ export default async function SchemeDetailPage({
                 <Link
                   key={ann.id}
                   href={`/adviser/schemes/${id}/announcements/${ann.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {ann.isPinned && "📌 "}
                       {ann.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {publishedDate.toLocaleDateString("en-AU", {
                         day: "numeric",
                         month: "short",
@@ -217,7 +217,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Post announcements to notify all scheme members.
           </p>
         )}
@@ -252,17 +252,17 @@ export default async function SchemeDetailPage({
                 <Link
                   key={fund.id}
                   href={`/adviser/schemes/${id}/funds/${fund.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {fund.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {fundTypeLabel[fund.fundType] ?? fund.fundType}
                     </p>
                   </div>
-                  <span className="text-sm font-medium text-foreground font-variant-numeric tabular-nums">
+                  <span className="text-sm font-medium text-ink font-variant-numeric tabular-nums">
                     {balance.toLocaleString("en-AU", {
                       style: "currency",
                       currency: "AUD",
@@ -273,7 +273,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Set up administrative and capital works funds for this scheme.
           </p>
         )}
@@ -294,12 +294,12 @@ export default async function SchemeDetailPage({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Lot</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Unit</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Type</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">Entitlement</th>
-                  <th scope="col" className="pb-2 font-medium text-muted-foreground">Owner</th>
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="pb-2 font-medium text-ink-muted">Lot</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted">Unit</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted">Type</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted text-right">Entitlement</th>
+                  <th scope="col" className="pb-2 font-medium text-ink-muted">Owner</th>
                 </tr>
               </thead>
               <tbody>
@@ -308,25 +308,25 @@ export default async function SchemeDetailPage({
                     (m) => m.role === "OWNER",
                   );
                   return (
-                    <tr key={lot.id} className="border-b border-border last:border-0">
+                    <tr key={lot.id} className="border-b border-line last:border-0">
                       <td className="py-3">
                         <Link
                           href={`/adviser/schemes/${id}/lots/${lot.id}`}
-                          className="font-medium text-foreground hover:text-primary-500 transition-colors"
+                          className="font-medium text-ink hover:text-turquoise transition-colors"
                         >
                           {lot.lotNumber}
                         </Link>
                       </td>
-                      <td className="py-3 text-muted-foreground">
+                      <td className="py-3 text-ink-muted">
                         {lot.unitNumber ?? "—"}
                       </td>
-                      <td className="py-3 text-muted-foreground">
+                      <td className="py-3 text-ink-muted">
                         {lot.lotType.charAt(0) + lot.lotType.slice(1).toLowerCase()}
                       </td>
                       <td className="py-3 text-right font-variant-numeric tabular-nums">
                         {lot.entitlement}
                       </td>
-                      <td className="py-3 text-muted-foreground">
+                      <td className="py-3 text-ink-muted">
                         {owner
                           ? `${owner.profile.firstName} ${owner.profile.lastName}`.trim() || owner.profile.email
                           : "—"}
@@ -338,7 +338,7 @@ export default async function SchemeDetailPage({
             </table>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No lots registered yet. Add lots to start assigning owners.
           </p>
         )}
@@ -385,13 +385,13 @@ export default async function SchemeDetailPage({
                 <Link
                   key={levy.id}
                   href={`/adviser/schemes/${id}/levies/${levy.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {levy.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       Due{" "}
                       {dueDate.toLocaleDateString("en-AU", {
                         day: "numeric",
@@ -406,7 +406,7 @@ export default async function SchemeDetailPage({
                   </div>
                   <div className="flex items-center gap-3">
                     {paid > 0 && paid < total && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-ink-muted">
                         {Math.round((paid / total) * 100)}% collected
                       </span>
                     )}
@@ -421,7 +421,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Create a levy to start billing lot owners.
           </p>
         )}
@@ -464,13 +464,13 @@ export default async function SchemeDetailPage({
                 <Link
                   key={meeting.id}
                   href={`/adviser/schemes/${id}/meetings/${meeting.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {meeting.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {meetingTypeShort[meeting.meetingType] ?? meeting.meetingType}
                       {" · "}
                       {scheduledDate.toLocaleDateString("en-AU", {
@@ -491,7 +491,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Schedule a meeting to manage governance for this scheme.
           </p>
         )}
@@ -530,13 +530,13 @@ export default async function SchemeDetailPage({
                 <Link
                   key={doc.id}
                   href={`/adviser/schemes/${id}/documents/${doc.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {doc.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {categoryLabels[doc.category] ?? doc.category}
                       {" · "}
                       {uploadDate.toLocaleDateString("en-AU", {
@@ -554,7 +554,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Upload documents to keep records for this scheme.
           </p>
         )}
@@ -589,13 +589,13 @@ export default async function SchemeDetailPage({
                 <Link
                   key={wo.id}
                   href={`/adviser/schemes/${id}/work-orders/${wo.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {wo.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {wo.priority}
                       {wo.assignedTo && ` · ${wo.assignedTo}`}
                       {wo.comments.length > 0 &&
@@ -612,7 +612,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Create a work order to track maintenance for this scheme.
           </p>
         )}
@@ -655,13 +655,13 @@ export default async function SchemeDetailPage({
                 <Link
                   key={item.id}
                   href={`/adviser/schemes/${id}/compliance/${item.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {item.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {compCategoryLabels[item.category] ?? item.category}
                       {item.dueDate &&
                         ` · Due ${new Date(String(item.dueDate)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
@@ -677,7 +677,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Track insurance, fire safety, OH&S and other compliance obligations.
           </p>
         )}
@@ -728,13 +728,13 @@ export default async function SchemeDetailPage({
                 <Link
                   key={bylaw.id}
                   href={`/adviser/schemes/${id}/bylaws/${bylaw.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {bylaw.bylawNumber}. {bylaw.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {bylawCategoryLabels[bylaw.category] ?? bylaw.category}
                       {" · Effective "}
                       {new Date(String(bylaw.effectiveDate)).toLocaleDateString(
@@ -753,7 +753,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Register by-laws to track the rules governing this scheme.
           </p>
         )}
@@ -803,13 +803,13 @@ export default async function SchemeDetailPage({
                 <Link
                   key={policy.id}
                   href={`/adviser/schemes/${id}/insurance/${policy.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {insuranceTypeLabels[policy.policyType] ?? policy.policyType}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {policy.insurer}
                       {" · #"}
                       {policy.policyNumber}
@@ -830,7 +830,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Add insurance policies to track coverage for this scheme.
           </p>
         )}
@@ -876,19 +876,19 @@ export default async function SchemeDetailPage({
                 <Link
                   key={contact.id}
                   href={`/adviser/schemes/${id}/contacts/${contact.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {contact.name}
                       {contact.company ? (
-                        <span className="font-normal text-muted-foreground">
+                        <span className="font-normal text-ink-muted">
                           {" "}
                           — {contact.company}
                         </span>
                       ) : null}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {contactCategoryLabels[contact.category] ?? contact.category}
                       {contact.phone && ` · ${contact.phone}`}
                     </p>
@@ -905,7 +905,7 @@ export default async function SchemeDetailPage({
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Add contractors and service providers for this scheme.
           </p>
         )}
@@ -927,7 +927,7 @@ export default async function SchemeDetailPage({
 
       {/* Edit form */}
       <div className="mb-6">
-        <h2 className="font-heading font-semibold text-foreground mb-4">
+        <h2 className="font-heading font-semibold text-ink mb-4">
           Edit Scheme Details
         </h2>
         <SchemeForm

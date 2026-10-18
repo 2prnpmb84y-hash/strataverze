@@ -34,10 +34,10 @@ export default async function SupplierDashboard() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
+      <h1 className="text-2xl font-bold font-heading text-ink mb-1">
         Supplier Dashboard
       </h1>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-sm text-ink-muted mb-8">
         Browse quote requests, manage your work orders, and track invoices.
       </p>
 
@@ -78,7 +78,7 @@ export default async function SupplierDashboard() {
           }
         />
         {openRequests.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No open quote requests at the moment. Check back soon.
           </p>
         ) : (
@@ -87,13 +87,13 @@ export default async function SupplierDashboard() {
               <Link
                 key={qr.id}
                 href={`/supplier/quotes/${qr.id}`}
-                className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
               >
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-ink">
                     {qr.title}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     {qr.category}
                     {qr.budget && ` · ${qr.budget}`}
                     {" · "}
@@ -129,20 +129,20 @@ export default async function SupplierDashboard() {
               <Link
                 key={wo.id}
                 href={`/supplier/work-orders/${wo.id}`}
-                className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
               >
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-ink">
                     {wo.title}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     {wo.scheme?.name}
                   </p>
                 </div>
                 <span
                   className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     wo.status === "IN_PROGRESS"
-                      ? "bg-primary-100 text-primary-500"
+                      ? "bg-primary-100 text-turquoise"
                       : "bg-gold-100 text-gold-500"
                   }`}
                 >

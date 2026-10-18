@@ -60,7 +60,7 @@ export default async function JournalEntriesPage({
         />
       ) : (
         <Card>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-line">
             {entries.map((entry) => {
               const totalDebit = entry.lines.reduce(
                 (sum, line) => sum + Number(line.debit ?? 0),
@@ -72,7 +72,7 @@ export default async function JournalEntriesPage({
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-medium text-muted-foreground">
+                        <span className="font-mono text-sm font-medium text-ink-muted">
                           {String(entry.entryNumber)}
                         </span>
                         <span
@@ -80,14 +80,14 @@ export default async function JournalEntriesPage({
                         >
                           {entry.status}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-ink-muted">
                           {entry.entryType}
                         </span>
                       </div>
                       <p className="mt-1 text-sm font-medium">
                         {String(entry.description)}
                       </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="mt-0.5 text-xs text-ink-muted">
                         {new Date(
                           String(entry.transactionDate)
                         ).toLocaleDateString("en-AU")}
@@ -97,15 +97,15 @@ export default async function JournalEntriesPage({
                       <p className="text-sm font-medium tabular-nums">
                         {formatCurrency(totalDebit)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         Total Debit
                       </p>
                     </div>
                   </div>
 
                   {entry.lines.length > 0 && (
-                    <div className="mt-2 ml-4 border-l-2 border-border pl-4 space-y-1">
-                      <div className="grid grid-cols-[1fr_1fr_auto_auto] gap-x-4 text-xs font-medium text-muted-foreground pb-1">
+                    <div className="mt-2 ml-4 border-l-2 border-line pl-4 space-y-1">
+                      <div className="grid grid-cols-[1fr_1fr_auto_auto] gap-x-4 text-xs font-medium text-ink-muted pb-1">
                         <span>Account</span>
                         <span>Fund</span>
                         <span className="text-right">Debit</span>
@@ -117,12 +117,12 @@ export default async function JournalEntriesPage({
                           className="grid grid-cols-[1fr_1fr_auto_auto] gap-x-4 text-sm"
                         >
                           <span className="truncate">
-                            <span className="font-mono text-xs text-muted-foreground">
+                            <span className="font-mono text-xs text-ink-muted">
                               {String(line.accountCode.code)}
                             </span>{" "}
                             {String(line.accountCode.name)}
                           </span>
-                          <span className="truncate text-muted-foreground">
+                          <span className="truncate text-ink-muted">
                             {line.fund?.name ?? "—"}
                           </span>
                           <span className="text-right tabular-nums">

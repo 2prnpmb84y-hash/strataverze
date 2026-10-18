@@ -37,7 +37,7 @@ export function ContactForm({ schemeId }: { schemeId: string }) {
   return (
     <form action={formAction} className="space-y-4">
       {state.error ? (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       ) : null}
@@ -90,7 +90,7 @@ export function ContactForm({ schemeId }: { schemeId: string }) {
       <div>
         <label
           htmlFor="notes"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           Notes
         </label>
@@ -99,15 +99,15 @@ export function ContactForm({ schemeId }: { schemeId: string }) {
           name="notes"
           rows={3}
           placeholder="Optional notes about this contact..."
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-foreground">
+      <label className="flex items-center gap-2 text-sm text-ink">
         <input
           type="checkbox"
           name="isPreferred"
-          className="rounded border-border text-primary-600 focus:ring-primary-400"
+          className="rounded border-line text-primary-600 focus:ring-turquoise"
         />
         Preferred contractor
       </label>
@@ -146,7 +146,7 @@ export function ContactEditForm({
   return (
     <form action={formAction} className="space-y-4">
       {state.error ? (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       ) : null}
@@ -203,7 +203,7 @@ export function ContactEditForm({
       <div>
         <label
           htmlFor="notes"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           Notes
         </label>
@@ -213,16 +213,16 @@ export function ContactEditForm({
           rows={3}
           defaultValue={defaults.notes ?? ""}
           placeholder="Optional notes about this contact..."
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-foreground">
+      <label className="flex items-center gap-2 text-sm text-ink">
         <input
           type="checkbox"
           name="isPreferred"
           defaultChecked={defaults.isPreferred}
-          className="rounded border-border text-primary-600 focus:ring-primary-400"
+          className="rounded border-line text-primary-600 focus:ring-turquoise"
         />
         Preferred contractor
       </label>

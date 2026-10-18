@@ -164,7 +164,7 @@ export default async function AccountantAgedArrearsPage({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                  <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                     <th scope="col" className="text-left px-6 py-2">Lot</th>
                     <th scope="col" className="text-left px-4 py-2">Unit</th>
                     <th scope="col" className="text-right px-4 py-2">Current</th>
@@ -179,64 +179,64 @@ export default async function AccountantAgedArrearsPage({
                   {rows.map((row) => (
                     <tr
                       key={row.lotNumber}
-                      className="border-b border-border/50"
+                      className="border-b border-line/50"
                     >
-                      <td className="px-6 py-2 font-medium text-foreground">
+                      <td className="px-6 py-2 font-medium text-ink">
                         {row.lotNumber}
                       </td>
-                      <td className="px-4 py-2 text-muted-foreground">
+                      <td className="px-4 py-2 text-ink-muted">
                         {row.unitNumber ?? "—"}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-foreground">
+                      <td className="px-4 py-2 text-right tabular-nums text-ink">
                         {row.current > 0 ? formatCurrency(row.current) : "—"}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-foreground">
+                      <td className="px-4 py-2 text-right tabular-nums text-ink">
                         {row.days30 > 0 ? formatCurrency(row.days30) : "—"}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-foreground">
+                      <td className="px-4 py-2 text-right tabular-nums text-ink">
                         {row.days60 > 0 ? formatCurrency(row.days60) : "—"}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-foreground">
+                      <td className="px-4 py-2 text-right tabular-nums text-ink">
                         {row.days90 > 0 ? formatCurrency(row.days90) : "—"}
                       </td>
                       <td
                         className={`px-4 py-2 text-right tabular-nums ${
                           row.days90Plus > 0
                             ? "text-red-600 font-medium"
-                            : "text-foreground"
+                            : "text-ink"
                         }`}
                       >
                         {row.days90Plus > 0
                           ? formatCurrency(row.days90Plus)
                           : "—"}
                       </td>
-                      <td className="px-6 py-2 text-right tabular-nums font-semibold text-foreground">
+                      <td className="px-6 py-2 text-right tabular-nums font-semibold text-ink">
                         {formatCurrency(row.total)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-border font-semibold">
-                    <td className="px-6 py-3 text-foreground" colSpan={2}>
+                  <tr className="border-t-2 border-line font-semibold">
+                    <td className="px-6 py-3 text-ink" colSpan={2}>
                       Total
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-ink">
                       {totals.current > 0
                         ? formatCurrency(totals.current)
                         : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-ink">
                       {totals.days30 > 0
                         ? formatCurrency(totals.days30)
                         : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-ink">
                       {totals.days60 > 0
                         ? formatCurrency(totals.days60)
                         : "—"}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-ink">
                       {totals.days90 > 0
                         ? formatCurrency(totals.days90)
                         : "—"}
@@ -245,14 +245,14 @@ export default async function AccountantAgedArrearsPage({
                       className={`px-4 py-3 text-right tabular-nums ${
                         totals.days90Plus > 0
                           ? "text-red-600"
-                          : "text-foreground"
+                          : "text-ink"
                       }`}
                     >
                       {totals.days90Plus > 0
                         ? formatCurrency(totals.days90Plus)
                         : "—"}
                     </td>
-                    <td className="px-6 py-3 text-right tabular-nums text-foreground">
+                    <td className="px-6 py-3 text-right tabular-nums text-ink">
                       {formatCurrency(totals.total)}
                     </td>
                   </tr>

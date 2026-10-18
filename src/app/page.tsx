@@ -29,9 +29,9 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-white text-ink">
       {/* ═══════ Navbar ═══════ */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-line">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
           {/* Logo + wordmark */}
           <Link href="/" className="flex items-center">
@@ -39,17 +39,17 @@ export default function LandingPage() {
           </Link>
 
           {/* Nav links — hidden below sm */}
-          <div className="hidden sm:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <a href="#platform" className="hover:text-foreground transition-colors">
+          <div className="hidden sm:flex items-center gap-6 text-sm font-medium text-ink-muted">
+            <a href="#platform" className="hover:text-ink transition-colors">
               Platform
             </a>
-            <a href="#financials" className="hover:text-foreground transition-colors">
+            <a href="#financials" className="hover:text-ink transition-colors">
               Financials
             </a>
-            <a href="#adviser" className="hover:text-foreground transition-colors">
+            <a href="#adviser" className="hover:text-ink transition-colors">
               Adviser Access
             </a>
-            <a href="#vault" className="hover:text-foreground transition-colors">
+            <a href="#vault" className="hover:text-ink transition-colors">
               Asset Vault
             </a>
           </div>
@@ -57,7 +57,7 @@ export default function LandingPage() {
           {/* Login button */}
           <Link
             href="/login"
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-coral px-5 text-sm text-white font-semibold transition-colors hover:opacity-90"
+            className="inline-flex h-9 items-center justify-center rounded-full bg-coral px-5 text-sm text-white font-semibold transition-colors hover:opacity-90"
           >
             Login
           </Link>
@@ -68,16 +68,16 @@ export default function LandingPage() {
       <section className="px-6 pt-20 pb-24 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto">
           {/* Badge */}
-          <span className="inline-block rounded-full bg-primary-50 text-primary-500 text-xs font-semibold tracking-wider uppercase px-4 py-1.5 mb-6">
+          <span className="inline-block rounded-full bg-mint-soft text-turquoise text-xs font-semibold tracking-wider uppercase px-4 py-1.5 mb-6">
             Data Sovereignty for Strata
           </span>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-foreground tracking-tight leading-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-heading text-ink tracking-tight leading-tight">
             When owners know everything,{" "}
-            <span className="text-primary-400">everyone wins.</span>
+            <span className="text-turquoise">everyone wins.</span>
           </h1>
 
-          <p className="mt-6 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          <p className="mt-6 text-lg text-ink-muted max-w-xl mx-auto leading-relaxed">
             StrataVerze puts lot owners in the driver&apos;s seat. Full financial
             transparency, real-time governance, and total data sovereignty &mdash;
             built for Australian owners corporations.
@@ -87,13 +87,13 @@ export default function LandingPage() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="#early-access"
-              className="inline-flex h-12 items-center justify-center rounded-lg bg-primary-400 px-8 text-white font-semibold text-base transition-colors hover:bg-primary-500"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-turquoise px-8 text-white font-semibold text-base transition-colors hover:bg-turquoise/90"
             >
               Get Early Access &rarr;
             </a>
             <a
               href="#platform"
-              className="inline-flex h-12 items-center justify-center rounded-lg border border-border px-8 text-foreground font-semibold text-base transition-colors hover:bg-muted"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-line px-8 text-ink font-semibold text-base transition-colors hover:bg-muted"
             >
               See How It Works
             </a>
@@ -113,14 +113,14 @@ export default function LandingPage() {
 
           {/* Stat pills */}
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-3">
-            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-foreground border border-border whitespace-nowrap">
-              <span className="text-primary-400 font-bold">100%</span> Owner-held data
+            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-ink border border-line whitespace-nowrap">
+              <span className="text-turquoise font-bold">100%</span> Owner-held data
             </div>
-            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-foreground border border-border whitespace-nowrap">
-              <span className="text-primary-400 font-bold">0</span> Hidden fees
+            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-ink border border-line whitespace-nowrap">
+              <span className="text-turquoise font-bold">0</span> Hidden fees
             </div>
-            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-foreground border border-border whitespace-nowrap">
-              <span className="text-primary-400 font-bold">24/7</span> Live visibility
+            <div className="bg-white rounded-full shadow-lg px-5 py-2.5 text-sm font-semibold text-ink border border-line whitespace-nowrap">
+              <span className="text-turquoise font-bold">24/7</span> Live visibility
             </div>
           </div>
         </div>
@@ -129,17 +129,17 @@ export default function LandingPage() {
       {/* ═══════ The Platform ═══════ */}
       <section id="platform" className="px-6 py-24 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+          <span className="text-sm font-semibold text-turquoise uppercase tracking-wider">
             The Platform
           </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
-            Built for owners. <span className="text-primary-400">Not managers.</span>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-ink">
+            Built for owners. <span className="text-turquoise">Not managers.</span>
           </h2>
         </div>
 
         <div className="flex flex-col gap-10">
           {/* Feature 1 — Financial Transparency (photo left) */}
-          <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
+          <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-line overflow-hidden bg-white border-l-4 border-l-primary-400">
             <div className="md:w-1/2 min-h-[240px] relative">
               <Image
                 src="/images/feature-financial.webp"
@@ -149,13 +149,13 @@ export default function LandingPage() {
               />
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
-              <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
+              <span className="inline-block self-start rounded-full bg-mint-soft text-turquoise text-xs font-semibold px-3 py-1 mb-3">
                 Financial Transparency
               </span>
-              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+              <h3 className="text-xl font-bold font-heading text-ink mb-2">
                 See everything. Always.
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-ink-muted leading-relaxed">
                 Every levy dollar tracked in real time. No hidden accounts, no buried
                 receipts. Owners see every transaction the moment it happens &mdash;
                 because it&apos;s their money.
@@ -164,7 +164,7 @@ export default function LandingPage() {
           </div>
 
           {/* Feature 2 — Owner Control (REVERSED — content left, photo right) */}
-          <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
+          <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-line overflow-hidden bg-white border-l-4 border-l-primary-400">
             <div className="md:w-1/2 min-h-[240px] relative">
               <Image
                 src="/images/feature-owner.webp"
@@ -174,13 +174,13 @@ export default function LandingPage() {
               />
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
-              <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
+              <span className="inline-block self-start rounded-full bg-mint-soft text-turquoise text-xs font-semibold px-3 py-1 mb-3">
                 Owner Control
               </span>
-              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+              <h3 className="text-xl font-bold font-heading text-ink mb-2">
                 It&apos;s your building. Own your data.
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-ink-muted leading-relaxed">
                 Data sovereignty means the owners corporation retains full control of
                 every record, document, and financial entry. Switch managers without
                 losing a single byte.
@@ -189,7 +189,7 @@ export default function LandingPage() {
           </div>
 
           {/* Feature 3 — Compliance Ready (amber border, photo left) */}
-          <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-gold-400">
+          <div className="flex flex-col md:flex-row items-stretch gap-0 rounded-2xl border border-line overflow-hidden bg-white border-l-4 border-l-gold-400">
             <div className="md:w-1/2 min-h-[240px] relative">
               <Image
                 src="/images/feature-compliance.webp"
@@ -202,10 +202,10 @@ export default function LandingPage() {
               <span className="inline-block self-start rounded-full bg-gold-50 text-gold-500 text-xs font-semibold px-3 py-1 mb-3">
                 Compliance Ready
               </span>
-              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+              <h3 className="text-xl font-bold font-heading text-ink mb-2">
                 Governance made simple.
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-ink-muted leading-relaxed">
                 Meeting minutes, AGM notices, by-law registers, and compliance
                 certificates &mdash; all organised, all auditable, all in one place.
               </p>
@@ -213,7 +213,7 @@ export default function LandingPage() {
           </div>
 
           {/* Feature 4 — Adviser Framework (REVERSED) */}
-          <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-border overflow-hidden bg-card border-l-4 border-l-primary-400">
+          <div className="flex flex-col md:flex-row-reverse items-stretch gap-0 rounded-2xl border border-line overflow-hidden bg-white border-l-4 border-l-primary-400">
             <div className="md:w-1/2 min-h-[240px] relative">
               <Image
                 src="/images/feature-adviser.webp"
@@ -223,13 +223,13 @@ export default function LandingPage() {
               />
             </div>
             <div className="md:w-1/2 p-8 flex flex-col justify-center">
-              <span className="inline-block self-start rounded-full bg-primary-50 text-primary-500 text-xs font-semibold px-3 py-1 mb-3">
+              <span className="inline-block self-start rounded-full bg-mint-soft text-turquoise text-xs font-semibold px-3 py-1 mb-3">
                 Adviser Framework
               </span>
-              <h3 className="text-xl font-bold font-heading text-foreground mb-2">
+              <h3 className="text-xl font-bold font-heading text-ink mb-2">
                 Your manager works for you.
               </h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-ink-muted leading-relaxed">
                 Strata managers become advisers with scoped, revocable permissions.
                 Owners grant access, set boundaries, and revoke privileges &mdash;
                 all from a single dashboard.
@@ -243,10 +243,10 @@ export default function LandingPage() {
       <section id="financials" className="px-6 py-24 bg-muted">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+            <span className="text-sm font-semibold text-turquoise uppercase tracking-wider">
               The Sovereign Ledger
             </span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-ink">
               Every dollar. Accounted for.
             </h2>
           </div>
@@ -259,7 +259,7 @@ export default function LandingPage() {
                 balance="$48,290"
                 change="+12%"
                 changePositive
-                color="bg-primary-400"
+                color="bg-turquoise"
               />
               <FundCard
                 name="Sinking Fund"
@@ -278,38 +278,38 @@ export default function LandingPage() {
             </div>
 
             {/* Transaction table */}
-            <div className="bg-card rounded-2xl border border-border overflow-hidden">
-              <div className="px-6 py-4 border-b border-border">
-                <h3 className="font-heading font-semibold text-foreground">
+            <div className="bg-white rounded-2xl border border-line overflow-hidden">
+              <div className="px-6 py-4 border-b border-line">
+                <h3 className="font-heading font-semibold text-ink">
                   Recent Transactions
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-muted-foreground border-b border-border">
+                    <tr className="text-left text-ink-muted border-b border-line">
                       <th scope="col" className="px-6 py-3 font-medium">Date</th>
                       <th scope="col" className="px-6 py-3 font-medium">Description</th>
                       <th scope="col" className="px-6 py-3 font-medium text-right">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="text-foreground">
-                    <tr className="border-b border-border">
+                  <tbody className="text-ink">
+                    <tr className="border-b border-line">
                       <td className="px-6 py-3 whitespace-nowrap">12 Oct 2026</td>
                       <td className="px-6 py-3">Quarterly levy &mdash; Lot 4</td>
                       <td className="px-6 py-3 text-right text-success font-medium">+$1,240</td>
                     </tr>
-                    <tr className="border-b border-border">
+                    <tr className="border-b border-line">
                       <td className="px-6 py-3 whitespace-nowrap">10 Oct 2026</td>
                       <td className="px-6 py-3">Lift maintenance &mdash; Schindler</td>
                       <td className="px-6 py-3 text-right text-danger font-medium">-$3,850</td>
                     </tr>
-                    <tr className="border-b border-border">
+                    <tr className="border-b border-line">
                       <td className="px-6 py-3 whitespace-nowrap">08 Oct 2026</td>
                       <td className="px-6 py-3">Insurance premium &mdash; CHU</td>
                       <td className="px-6 py-3 text-right text-danger font-medium">-$12,400</td>
                     </tr>
-                    <tr className="border-b border-border">
+                    <tr className="border-b border-line">
                       <td className="px-6 py-3 whitespace-nowrap">05 Oct 2026</td>
                       <td className="px-6 py-3">Quarterly levy &mdash; Lot 7</td>
                       <td className="px-6 py-3 text-right text-success font-medium">+$1,240</td>
@@ -322,8 +322,8 @@ export default function LandingPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-6 py-4 bg-primary-50 border-t border-primary-100">
-                <p className="text-sm font-semibold text-primary-500">
+              <div className="px-6 py-4 bg-mint-soft border-t border-mint">
+                <p className="text-sm font-semibold text-turquoise">
                   Your funds. Your oversight.
                 </p>
               </div>
@@ -335,36 +335,36 @@ export default function LandingPage() {
       {/* ═══════ The Adviser Gateway ═══════ */}
       <section id="adviser" className="px-6 py-24 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+          <span className="text-sm font-semibold text-turquoise uppercase tracking-wider">
             The Adviser Gateway
           </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
+          <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-ink">
             You set the rules. They follow them.
           </h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Owner Master Controls */}
-          <div className="rounded-2xl border-2 border-primary-400 bg-card overflow-hidden">
-            <div className="px-6 py-4 bg-primary-50 border-b border-primary-100">
-              <h3 className="font-heading font-semibold text-foreground">
+          <div className="rounded-2xl border-2 border-primary-400 bg-white overflow-hidden">
+            <div className="px-6 py-4 bg-mint-soft border-b border-mint">
+              <h3 className="font-heading font-semibold text-ink">
                 Owner Master Controls
               </h3>
             </div>
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-line">
               {permissions.map((perm, idx) => (
                 <div
                   key={perm.label}
                   className="flex items-center justify-between px-6 py-4"
                 >
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="text-sm font-medium text-ink">
                     {perm.label}
                   </span>
                   <button
                     type="button"
                     onClick={() => togglePermission(idx)}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
-                      perm.enabled ? "bg-primary-400" : "bg-gray-300"
+                      perm.enabled ? "bg-turquoise" : "bg-gray-300"
                     }`}
                     role="switch"
                     aria-checked={perm.enabled}
@@ -381,19 +381,19 @@ export default function LandingPage() {
           </div>
 
           {/* Adviser's View */}
-          <div className="rounded-2xl border-2 border-dashed border-gold-400 bg-card overflow-hidden">
+          <div className="rounded-2xl border-2 border-dashed border-gold-400 bg-white overflow-hidden">
             <div className="px-6 py-4 bg-gold-50 border-b border-gold-100">
-              <h3 className="font-heading font-semibold text-foreground">
+              <h3 className="font-heading font-semibold text-ink">
                 Adviser&apos;s View
               </h3>
             </div>
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-line">
               {permissions.map((perm) => (
                 <div
                   key={perm.label}
                   className="flex items-center justify-between px-6 py-4"
                 >
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="text-sm font-medium text-ink">
                     {perm.label}
                   </span>
                   <span
@@ -416,10 +416,10 @@ export default function LandingPage() {
       <section id="vault" className="px-6 py-24 bg-muted">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-primary-400 uppercase tracking-wider">
+            <span className="text-sm font-semibold text-turquoise uppercase tracking-wider">
               The Asset Vault
             </span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-foreground">
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold font-heading text-ink">
               Every document. Digitised and secure.
             </h2>
           </div>
@@ -441,7 +441,7 @@ export default function LandingPage() {
                 title="Financial Reports"
                 badge="Finance"
                 borderColor="border-t-primary-400"
-                badgeColor="bg-primary-50 text-primary-500"
+                badgeColor="bg-mint-soft text-turquoise"
               />
               <DocumentCard
                 title="AGM Minutes"
@@ -465,7 +465,7 @@ export default function LandingPage() {
                 title="Maintenance Log"
                 badge="Operations"
                 borderColor="border-t-primary-400"
-                badgeColor="bg-primary-50 text-primary-500"
+                badgeColor="bg-mint-soft text-turquoise"
               />
               <DocumentCard
                 title="Insurance Policies"
@@ -567,7 +567,7 @@ export default function LandingPage() {
               <div className="mb-4">
                 <Logo size="sm" variant="white" />
               </div>
-              <div className="w-12 h-1 rounded-full bg-primary-400 mb-4" />
+              <div className="w-12 h-1 rounded-full bg-turquoise mb-4" />
               <p className="text-sm text-white/60 leading-relaxed">
                 Owner-first strata management for Australian owners corporations.
                 Transparent. Sovereign. Simple.
@@ -672,11 +672,11 @@ function FundCard({
   color: string;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-card border border-border p-6">
+    <div className="flex items-center gap-4 rounded-2xl bg-white border border-line p-6">
       <div className={`w-3 h-12 rounded-full ${color}`} />
       <div className="flex-1">
-        <p className="text-sm text-muted-foreground">{name}</p>
-        <p className="text-2xl font-bold font-heading text-foreground">{balance}</p>
+        <p className="text-sm text-ink-muted">{name}</p>
+        <p className="text-2xl font-bold font-heading text-ink">{balance}</p>
       </div>
       <span
         className={`text-sm font-semibold ${
@@ -702,13 +702,13 @@ function DocumentCard({
 }) {
   return (
     <div
-      className={`rounded-xl bg-card border border-border border-t-4 ${borderColor} p-4 flex flex-col gap-3`}
+      className={`rounded-[var(--radius-card)] bg-white border border-line border-t-4 ${borderColor} p-4 flex flex-col gap-3`}
     >
       <span className={`inline-block self-start rounded-full text-[10px] font-semibold px-2.5 py-0.5 ${badgeColor}`}>
         {badge}
       </span>
-      <p className="text-sm font-semibold text-foreground leading-snug">{title}</p>
-      <div className="flex items-center gap-1 text-muted-foreground">
+      <p className="text-sm font-semibold text-ink leading-snug">{title}</p>
+      <div className="flex items-center gap-1 text-ink-muted">
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
         </svg>

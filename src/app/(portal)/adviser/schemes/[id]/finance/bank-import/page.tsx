@@ -31,7 +31,7 @@ export default async function BankImportPage({
         <h1 className="text-2xl font-semibold tracking-tight">
           Import Bank Transactions
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-ink-muted">
           Upload a CSV or OFX file from your bank to import transactions for
           reconciliation.
         </p>

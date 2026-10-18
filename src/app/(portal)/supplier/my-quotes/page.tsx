@@ -8,7 +8,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   SUBMITTED: { label: "Pending", className: "bg-gold-100 text-gold-500" },
   ACCEPTED: { label: "Accepted", className: "bg-success/10 text-success" },
   DECLINED: { label: "Declined", className: "bg-danger/10 text-danger" },
-  WITHDRAWN: { label: "Withdrawn", className: "bg-muted text-muted-foreground" },
+  WITHDRAWN: { label: "Withdrawn", className: "bg-muted text-ink-muted" },
 };
 
 export default async function MyQuotesPage() {
@@ -20,16 +20,16 @@ export default async function MyQuotesPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
+      <h1 className="text-2xl font-bold font-heading text-ink mb-1">
         My Quotes
       </h1>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-sm text-ink-muted mb-8">
         Track the status of quotes you have submitted.
       </p>
 
       {quotes.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             You have not submitted any quotes yet. Browse{" "}
             <Link
               href="/supplier/quotes"
@@ -49,20 +49,20 @@ export default async function MyQuotesPage() {
               <Card key={q.id}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="text-sm font-semibold text-ink">
                       {q.quoteRequest?.title ?? "Quote Request"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-xs text-ink-muted mt-1 line-clamp-2">
                       {q.description}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <span className="text-sm font-medium text-foreground">
+                      <span className="text-sm font-medium text-ink">
                         ${Number(q.amount).toLocaleString("en-AU", {
                           minimumFractionDigits: 2,
                         })}
                       </span>
                       {q.estimatedDays != null && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-ink-muted">
                           · {q.estimatedDays} day
                           {q.estimatedDays === 1 ? "" : "s"}
                         </span>
@@ -73,10 +73,10 @@ export default async function MyQuotesPage() {
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {q.quoteRequest?.scheme?.name}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-ink-muted mt-1">
                       Submitted{" "}
                       {new Date(String(q.createdAt)).toLocaleDateString(
                         "en-AU",

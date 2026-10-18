@@ -116,7 +116,7 @@ export default async function LotDetailPage({
                   }
                 />
                 {lot.owners.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-ink-muted">
                     No owners assigned to this lot.
                   </p>
                 ) : (
@@ -124,7 +124,7 @@ export default async function LotDetailPage({
                     {lot.owners.map((owner) => (
                       <div
                         key={owner.membershipId}
-                        className="rounded-lg border border-border p-4"
+                        className="rounded-[var(--radius-card)] border border-line p-4"
                       >
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                           <DetailRow
@@ -156,8 +156,8 @@ export default async function LotDetailPage({
                 )}
 
                 {/* Owner assignment */}
-                <div className="mt-6 pt-6 border-t border-border">
-                  <h3 className="text-sm font-medium text-foreground mb-3">
+                <div className="mt-6 pt-6 border-t border-line">
+                  <h3 className="text-sm font-medium text-ink mb-3">
                     Manage Owners
                   </h3>
                   <OwnerAssignment
@@ -244,7 +244,7 @@ export default async function LotDetailPage({
           settings: (
             <div className="space-y-6">
               <div>
-                <h2 className="font-heading font-semibold text-foreground mb-4">
+                <h2 className="font-heading font-semibold text-ink mb-4">
                   Edit Lot Details
                 </h2>
                 <LotForm
@@ -283,8 +283,8 @@ export default async function LotDetailPage({
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-muted-foreground text-xs mb-0.5">{label}</dt>
-      <dd className="text-foreground font-medium">{value}</dd>
+      <dt className="text-ink-muted text-xs mb-0.5">{label}</dt>
+      <dd className="text-ink font-medium">{value}</dd>
     </div>
   );
 }
@@ -300,8 +300,8 @@ function SnapshotStat({
 }) {
   return (
     <div className="text-center">
-      <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
-      <p className={`text-sm tabular-nums ${className ?? "text-foreground"}`}>
+      <p className="text-xs text-ink-muted mb-0.5">{label}</p>
+      <p className={`text-sm tabular-nums ${className ?? "text-ink"}`}>
         {value.toLocaleString("en-AU", {
           style: "currency",
           currency: "AUD",

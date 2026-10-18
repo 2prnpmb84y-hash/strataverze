@@ -152,17 +152,17 @@ export function StrataRollUpload({
   return (
     <Card>
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-heading font-semibold text-foreground">
+        <h2 className="font-heading font-semibold text-ink">
           Strata Roll Upload
         </h2>
       </div>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-ink-muted mb-6">
         Upload a strata roll document to automatically populate the scheme
         details, or skip to enter them manually.
       </p>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -173,12 +173,12 @@ export function StrataRollUpload({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors ${
+        className={`relative flex flex-col items-center justify-center rounded-[var(--radius-card)] border-2 border-dashed p-8 cursor-pointer transition-colors ${
           isDragging
             ? "border-primary-400 bg-primary-50"
             : selectedFile
               ? "border-primary-300 bg-primary-50/50"
-              : "border-border hover:border-primary-300 hover:bg-muted/50"
+              : "border-line hover:border-primary-300 hover:bg-muted/50"
         }`}
       >
         <input
@@ -192,7 +192,7 @@ export function StrataRollUpload({
         {selectedFile ? (
           <div className="flex items-center gap-3">
             {/* File icon */}
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-100 text-primary-500">
+            <div className="flex items-center justify-center w-10 h-10 rounded-[var(--radius-card)] bg-primary-100 text-turquoise">
               <svg
                 width="20"
                 height="20"
@@ -208,10 +208,10 @@ export function StrataRollUpload({
               </svg>
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-medium text-ink">
                 {selectedFile.name}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-ink-muted">
                 {formatFileSize(selectedFile.size)}
               </p>
             </div>
@@ -221,7 +221,7 @@ export function StrataRollUpload({
                 e.stopPropagation();
                 handleRemoveFile();
               }}
-              className="ml-2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="ml-2 p-1 rounded-md text-ink-muted hover:text-ink hover:bg-muted transition-colors"
               aria-label="Remove file"
             >
               <svg
@@ -240,7 +240,7 @@ export function StrataRollUpload({
         ) : (
           <>
             {/* Upload icon */}
-            <div className="mb-3 text-muted-foreground">
+            <div className="mb-3 text-ink-muted">
               <svg
                 width="32"
                 height="32"
@@ -256,7 +256,7 @@ export function StrataRollUpload({
                 <path d="M28 22v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4" />
               </svg>
             </div>
-            <p className="text-sm text-foreground font-medium mb-1">
+            <p className="text-sm text-ink font-medium mb-1">
               Drag and drop your documents
             </p>
           </>
@@ -266,17 +266,17 @@ export function StrataRollUpload({
       {/* File info */}
       <div className="mt-3 flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-ink-muted">
             File format supported: .docx, .pdf
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-ink-muted">
             Max file size: 30MB
           </p>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between mt-6 pt-6 border-t border-border">
+      <div className="flex items-center justify-between mt-6 pt-6 border-t border-line">
         <Button type="button" variant="ghost" onClick={onSkip}>
           Skip &mdash; enter manually
         </Button>

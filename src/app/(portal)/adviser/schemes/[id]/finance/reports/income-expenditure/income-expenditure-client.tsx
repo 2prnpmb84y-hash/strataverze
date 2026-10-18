@@ -118,12 +118,12 @@ export function IncomeExpenditureClient({
 
           {/* Income section */}
           <div className="px-6">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-2">
+            <h3 className="text-sm font-semibold text-ink uppercase tracking-wide mb-2">
               Income
             </h3>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                   <th scope="col" className="text-left py-2 pr-4">Code</th>
                   <th scope="col" className="text-left py-2 pr-4">Account</th>
                   <th scope="col" className="text-left py-2 pr-4">Fund</th>
@@ -136,25 +136,25 @@ export function IncomeExpenditureClient({
                   .map((a) => (
                     <tr
                       key={`${a.code}-${a.fundId}`}
-                      className="border-b border-border/50"
+                      className="border-b border-line/50"
                     >
-                      <td className="py-2 pr-4 text-muted-foreground tabular-nums">
+                      <td className="py-2 pr-4 text-ink-muted tabular-nums">
                         {a.code}
                       </td>
-                      <td className="py-2 pr-4 text-foreground">{a.name}</td>
-                      <td className="py-2 pr-4 text-muted-foreground">
+                      <td className="py-2 pr-4 text-ink">{a.name}</td>
+                      <td className="py-2 pr-4 text-ink-muted">
                         {a.fundName}
                       </td>
-                      <td className="py-2 text-right tabular-nums text-foreground">
+                      <td className="py-2 text-right tabular-nums text-ink">
                         {formatCurrency(a.netAmount)}
                       </td>
                     </tr>
                   ))}
-                <tr className="border-t-2 border-border font-semibold">
-                  <td colSpan={3} className="py-2 pr-4 text-foreground">
+                <tr className="border-t-2 border-line font-semibold">
+                  <td colSpan={3} className="py-2 pr-4 text-ink">
                     Total Income
                   </td>
-                  <td className="py-2 text-right tabular-nums text-foreground">
+                  <td className="py-2 text-right tabular-nums text-ink">
                     {formatCurrency(totalIncome)}
                   </td>
                 </tr>
@@ -164,12 +164,12 @@ export function IncomeExpenditureClient({
 
           {/* Expense section */}
           <div className="px-6 mt-6">
-            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-2">
+            <h3 className="text-sm font-semibold text-ink uppercase tracking-wide mb-2">
               Expenditure
             </h3>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                   <th scope="col" className="text-left py-2 pr-4">Code</th>
                   <th scope="col" className="text-left py-2 pr-4">Account</th>
                   <th scope="col" className="text-left py-2 pr-4">Fund</th>
@@ -182,25 +182,25 @@ export function IncomeExpenditureClient({
                   .map((a) => (
                     <tr
                       key={`${a.code}-${a.fundId}`}
-                      className="border-b border-border/50"
+                      className="border-b border-line/50"
                     >
-                      <td className="py-2 pr-4 text-muted-foreground tabular-nums">
+                      <td className="py-2 pr-4 text-ink-muted tabular-nums">
                         {a.code}
                       </td>
-                      <td className="py-2 pr-4 text-foreground">{a.name}</td>
-                      <td className="py-2 pr-4 text-muted-foreground">
+                      <td className="py-2 pr-4 text-ink">{a.name}</td>
+                      <td className="py-2 pr-4 text-ink-muted">
                         {a.fundName}
                       </td>
-                      <td className="py-2 text-right tabular-nums text-foreground">
+                      <td className="py-2 text-right tabular-nums text-ink">
                         {formatCurrency(a.netAmount)}
                       </td>
                     </tr>
                   ))}
-                <tr className="border-t-2 border-border font-semibold">
-                  <td colSpan={3} className="py-2 pr-4 text-foreground">
+                <tr className="border-t-2 border-line font-semibold">
+                  <td colSpan={3} className="py-2 pr-4 text-ink">
                     Total Expenditure
                   </td>
-                  <td className="py-2 text-right tabular-nums text-foreground">
+                  <td className="py-2 text-right tabular-nums text-ink">
                     {formatCurrency(totalExpenses)}
                   </td>
                 </tr>
@@ -209,9 +209,9 @@ export function IncomeExpenditureClient({
           </div>
 
           {/* Net surplus/deficit */}
-          <div className="px-6 py-4 mt-4 border-t-2 border-border">
+          <div className="px-6 py-4 mt-4 border-t-2 border-line">
             <div className="flex justify-between items-center">
-              <span className="text-base font-bold text-foreground">
+              <span className="text-base font-bold text-ink">
                 Net {netSurplus >= 0 ? "Surplus" : "Deficit"}
               </span>
               <span

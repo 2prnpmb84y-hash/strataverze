@@ -117,7 +117,7 @@ export default async function AdviserReportingPage() {
       {schemes.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               No schemes assigned yet. Create a scheme from the Schemes page to
               get started.
             </p>
@@ -133,24 +133,24 @@ export default async function AdviserReportingPage() {
             />
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-lg bg-muted px-4 py-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-0.5">
+                <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3 text-center">
+                  <p className="text-xs text-ink-muted mb-0.5">
                     Total Levied
                   </p>
-                  <p className="text-sm font-medium text-foreground font-variant-numeric tabular-nums">
+                  <p className="text-sm font-medium text-ink font-variant-numeric tabular-nums">
                     ${totalLevied.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="rounded-lg bg-muted px-4 py-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-0.5">
+                <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3 text-center">
+                  <p className="text-xs text-ink-muted mb-0.5">
                     Collected
                   </p>
                   <p className="text-sm font-medium text-green-600 font-variant-numeric tabular-nums">
                     ${totalCollected.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="rounded-lg bg-muted px-4 py-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-0.5">
+                <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3 text-center">
+                  <p className="text-xs text-ink-muted mb-0.5">
                     Outstanding
                   </p>
                   <p className="text-sm font-medium text-red-600 font-variant-numeric tabular-nums">
@@ -172,13 +172,13 @@ export default async function AdviserReportingPage() {
                 {nonCompliant.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                    className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-ink">
                         {item.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {schemeNames.get(item.schemeId) ?? ""}
                       </p>
                     </div>
@@ -206,17 +206,17 @@ export default async function AdviserReportingPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left">
-                    <th scope="col" className="pb-2 font-medium text-muted-foreground">
+                  <tr className="border-b border-line text-left">
+                    <th scope="col" className="pb-2 font-medium text-ink-muted">
                       Scheme
                     </th>
-                    <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="pb-2 font-medium text-ink-muted text-right">
                       Outstanding
                     </th>
-                    <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="pb-2 font-medium text-ink-muted text-right">
                       Work Orders
                     </th>
-                    <th scope="col" className="pb-2 font-medium text-muted-foreground text-right">
+                    <th scope="col" className="pb-2 font-medium text-ink-muted text-right">
                       Alerts
                     </th>
                   </tr>
@@ -225,9 +225,9 @@ export default async function AdviserReportingPage() {
                   {schemeSummaries.map((s) => (
                     <tr
                       key={s.id}
-                      className="border-b border-border last:border-0"
+                      className="border-b border-line last:border-0"
                     >
-                      <td className="py-3 font-medium text-foreground">
+                      <td className="py-3 font-medium text-ink">
                         {s.name}
                       </td>
                       <td className="py-3 text-right font-variant-numeric tabular-nums">
@@ -236,7 +236,7 @@ export default async function AdviserReportingPage() {
                             ${s.outstanding.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">$0.00</span>
+                          <span className="text-ink-muted">$0.00</span>
                         )}
                       </td>
                       <td className="py-3 text-right">
@@ -245,7 +245,7 @@ export default async function AdviserReportingPage() {
                             {s.activeWorkOrders}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">0</span>
+                          <span className="text-ink-muted">0</span>
                         )}
                       </td>
                       <td className="py-3 text-right">
@@ -254,7 +254,7 @@ export default async function AdviserReportingPage() {
                             {s.nonCompliant}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">0</span>
+                          <span className="text-ink-muted">0</span>
                         )}
                       </td>
                     </tr>

@@ -107,7 +107,7 @@ export function DocumentList({
       {filtered.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               {documents.length === 0
                 ? "No documents have been uploaded yet."
                 : "No documents match your search."}
@@ -129,13 +129,13 @@ export function DocumentList({
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                      className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {doc.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-ink-muted">
                           {schemeNames[doc.schemeId] ?? ""}
                           {" · "}
                           {uploadDate.toLocaleDateString("en-AU", {
@@ -151,7 +151,7 @@ export function DocumentList({
                         href={doc.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors"
+                        className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors"
                       >
                         Download
                       </a>

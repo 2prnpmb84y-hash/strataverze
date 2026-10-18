@@ -59,7 +59,7 @@ export function GeneratePeriodsForm({ schemeId }: { schemeId: string }) {
       />
       <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -83,7 +83,7 @@ export function GeneratePeriodsForm({ schemeId }: { schemeId: string }) {
           />
         </div>
 
-        <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700">
+        <div className="rounded-[var(--radius-card)] bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-700">
           This will create 12 monthly periods between the selected dates. Each
           period will be set to &ldquo;Open&rdquo; status, allowing journal
           entries to be posted against them.

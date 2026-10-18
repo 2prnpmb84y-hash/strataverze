@@ -139,7 +139,7 @@ function HorizontalSummary({ stats }: { stats?: StatRow[] }) {
           height="32"
           viewBox="0 0 24 24"
           fill="none"
-          className="mx-auto text-muted-foreground/30 mb-1.5"
+          className="mx-auto text-ink-muted/30 mb-1.5"
         >
           <path
             d="M3 3v18h18"

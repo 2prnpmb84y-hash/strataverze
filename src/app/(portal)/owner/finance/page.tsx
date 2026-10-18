@@ -211,13 +211,13 @@ export default async function OwnerFinancePage() {
               return (
                 <div
                   key={fund.id}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {fund.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {schemeNames.get(fund.schemeId) ?? ""}
                       {" · "}
                       {String(fund.fundType).replace("_", " ")}
@@ -262,10 +262,10 @@ export default async function OwnerFinancePage() {
                   return (
                     <div
                       key={levy.id}
-                      className="rounded-lg bg-muted px-4 py-3"
+                      className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {levy.title}
                         </p>
                         <span
@@ -277,7 +277,7 @@ export default async function OwnerFinancePage() {
                               levy.status.slice(1).toLowerCase()}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-1">
+                      <p className="text-xs text-ink-muted mb-1">
                         {schemeNames.get(levy.schemeId) ?? ""}
                         {levy.fundName ? ` · ${levy.fundName}` : ""}
                         {" · Due "}
@@ -288,7 +288,7 @@ export default async function OwnerFinancePage() {
                         })}
                       </p>
                       <div className="flex items-center justify-between text-sm mt-2">
-                        <span className="text-muted-foreground">
+                        <span className="text-ink-muted">
                           Balance due
                         </span>
                         <span className="font-semibold tabular-nums text-red-600">
@@ -297,7 +297,7 @@ export default async function OwnerFinancePage() {
                       </div>
                       {levy.interestCharged > 0 && (
                         <div className="flex items-center justify-between text-xs mt-1">
-                          <span className="text-muted-foreground">
+                          <span className="text-ink-muted">
                             Interest charged
                           </span>
                           <span className="tabular-nums text-amber-600">
@@ -307,14 +307,14 @@ export default async function OwnerFinancePage() {
                       )}
                       {levy.amountPaid > 0 && (
                         <div className="mt-2">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                          <div className="flex items-center justify-between text-xs text-ink-muted mb-1">
                             <span>{pct}% paid</span>
                             <span>
                               {formatCurrency(levy.amountPaid)} of{" "}
                               {formatCurrency(levy.amountDue)}
                             </span>
                           </div>
-                          <div className="h-1.5 rounded-full bg-border overflow-hidden">
+                          <div className="h-1.5 rounded-full bg-line overflow-hidden">
                             <div
                               className="h-full rounded-full bg-green-500"
                               style={{
@@ -345,13 +345,13 @@ export default async function OwnerFinancePage() {
                   return (
                     <div
                       key={levy.id}
-                      className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                      className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {levy.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-ink-muted">
                           {schemeNames.get(levy.schemeId) ?? ""}
                           {levy.fundName ? ` · ${levy.fundName}` : ""}
                           {" · Paid · "}
@@ -363,7 +363,7 @@ export default async function OwnerFinancePage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium tabular-nums text-foreground">
+                        <span className="text-sm font-medium tabular-nums text-ink">
                           {formatCurrency(levy.amountDue)}
                         </span>
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">

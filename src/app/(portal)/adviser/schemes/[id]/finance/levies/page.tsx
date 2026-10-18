@@ -44,7 +44,7 @@ export default async function LevySchedulesPage({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">
+        <h1 className="text-2xl font-semibold text-ink">
           Levy Schedules
         </h1>
         <Button
@@ -89,10 +89,10 @@ export default async function LevySchedulesPage({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div>
-                    <h3 className="text-lg font-medium text-foreground">
+                    <h3 className="text-lg font-medium text-ink">
                       {schedule.financialYear}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-ink-muted">
                       {schedule.fund.name} &middot; {schedule.frequency}
                     </p>
                   </div>
@@ -107,14 +107,14 @@ export default async function LevySchedulesPage({
 
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Budget</p>
-                    <p className="text-lg font-semibold text-foreground">
+                    <p className="text-sm text-ink-muted">Budget</p>
+                    <p className="text-lg font-semibold text-ink">
                       {formatCurrency(schedule.budgetAmount)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Notices</p>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm text-ink-muted">Notices</p>
+                    <p className="text-sm font-medium text-ink">
                       {schedule.levyNotices.length} / {schedule.totalLots}
                     </p>
                   </div>

@@ -168,7 +168,7 @@ export function OwnerStatementTable({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                  <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                     <th scope="col" className="text-left px-6 py-2">Date</th>
                     <th scope="col" className="text-left px-4 py-2">Type</th>
                     <th scope="col" className="text-left px-4 py-2">Description</th>
@@ -179,15 +179,15 @@ export function OwnerStatementTable({
                 </thead>
                 <tbody>
                   {/* Opening balance row */}
-                  <tr className="border-b border-border/50 bg-muted/20">
-                    <td className="px-6 py-2 text-muted-foreground" />
-                    <td className="px-4 py-2 text-muted-foreground" />
-                    <td className="px-4 py-2 font-medium text-foreground">
+                  <tr className="border-b border-line/50 bg-muted/20">
+                    <td className="px-6 py-2 text-ink-muted" />
+                    <td className="px-4 py-2 text-ink-muted" />
+                    <td className="px-4 py-2 font-medium text-ink">
                       Opening Balance
                     </td>
                     <td className="px-4 py-2 text-right" />
                     <td className="px-4 py-2 text-right" />
-                    <td className="px-6 py-2 text-right tabular-nums font-medium text-foreground">
+                    <td className="px-6 py-2 text-right tabular-nums font-medium text-ink">
                       {formatCurrency(openingBalance)}
                     </td>
                   </tr>
@@ -195,9 +195,9 @@ export function OwnerStatementTable({
                   {statementLines.map((line) => (
                     <tr
                       key={line.id}
-                      className="border-b border-border/50"
+                      className="border-b border-line/50"
                     >
-                      <td className="px-6 py-2 text-muted-foreground whitespace-nowrap">
+                      <td className="px-6 py-2 text-ink-muted whitespace-nowrap">
                         {formatDate(line.date)}
                       </td>
                       <td className="px-4 py-2">
@@ -213,10 +213,10 @@ export function OwnerStatementTable({
                           {line.type}
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-foreground">
+                      <td className="px-4 py-2 text-ink">
                         {line.description}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-foreground">
+                      <td className="px-4 py-2 text-right tabular-nums text-ink">
                         {line.charge > 0 ? formatCurrency(line.charge) : ""}
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums text-green-600">
@@ -224,7 +224,7 @@ export function OwnerStatementTable({
                       </td>
                       <td
                         className={`px-6 py-2 text-right tabular-nums font-medium ${
-                          line.balance > 0 ? "text-red-600" : "text-foreground"
+                          line.balance > 0 ? "text-red-600" : "text-ink"
                         }`}
                       >
                         {formatCurrency(line.balance)}
@@ -233,11 +233,11 @@ export function OwnerStatementTable({
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-border font-semibold">
-                    <td className="px-6 py-3 text-foreground" colSpan={3}>
+                  <tr className="border-t-2 border-line font-semibold">
+                    <td className="px-6 py-3 text-ink" colSpan={3}>
                       Closing Balance
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-ink">
                       {formatCurrency(totalCharges)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-green-600">
@@ -245,7 +245,7 @@ export function OwnerStatementTable({
                     </td>
                     <td
                       className={`px-6 py-3 text-right tabular-nums ${
-                        closingBalance > 0 ? "text-red-600" : "text-foreground"
+                        closingBalance > 0 ? "text-red-600" : "text-ink"
                       }`}
                     >
                       {formatCurrency(closingBalance)}

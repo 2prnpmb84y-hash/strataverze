@@ -14,7 +14,7 @@ import {
 } from "@/lib/queries/activity-log-utils";
 
 const inputClasses =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
 interface AuditTrailRow {
   id: string;
@@ -148,7 +148,7 @@ export function AuditTrailClient({
           <div>
             <label
               htmlFor="startDate"
-              className="block text-sm font-medium text-foreground mb-1.5"
+              className="block text-sm font-medium text-ink mb-1.5"
             >
               From Date
             </label>
@@ -163,7 +163,7 @@ export function AuditTrailClient({
           <div>
             <label
               htmlFor="endDate"
-              className="block text-sm font-medium text-foreground mb-1.5"
+              className="block text-sm font-medium text-ink mb-1.5"
             >
               To Date
             </label>
@@ -243,7 +243,7 @@ export function AuditTrailClient({
           />
 
           {/* Table header (desktop) */}
-          <div className="hidden lg:grid lg:grid-cols-[140px_1fr_140px_120px_1fr] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+          <div className="hidden lg:grid lg:grid-cols-[140px_1fr_140px_120px_1fr] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
             <div>Date/Time</div>
             <div>Action</div>
             <div>Entity Type</div>
@@ -251,30 +251,30 @@ export function AuditTrailClient({
             <div>Details</div>
           </div>
 
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-line">
             {rows.map((row) => (
               <div
                 key={row.id}
                 className="grid grid-cols-1 lg:grid-cols-[140px_1fr_140px_120px_1fr] gap-2 lg:gap-4 px-6 py-3 items-start"
               >
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-ink-muted">
                   <div>{formatDate(row.createdAt)}</div>
                   <div className="text-xs">{formatTime(row.createdAt)}</div>
                 </div>
-                <div className="text-sm text-foreground font-medium">
+                <div className="text-sm text-ink font-medium">
                   {formatActionLabel(row.action)}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-ink-muted">
                   {formatEntityTypeLabel(row.entityType)}
                 </div>
-                <div className="text-sm text-foreground truncate" title={row.actorEmail}>
+                <div className="text-sm text-ink truncate" title={row.actorEmail}>
                   {row.actorName}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-ink-muted">
                   {row.metadata ? (
                     <MetadataDisplay metadata={row.metadata} />
                   ) : (
-                    <span className="text-muted-foreground/50">{"—"}</span>
+                    <span className="text-ink-muted/50">{"—"}</span>
                   )}
                 </div>
               </div>
@@ -282,7 +282,7 @@ export function AuditTrailClient({
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-line">
             <Button
               onClick={() => updateFilters({ page: page - 1 })}
               disabled={page <= 1 || isPending}
@@ -290,7 +290,7 @@ export function AuditTrailClient({
             >
               Previous
             </Button>
-            <span className="text-sm text-muted-foreground">Page {page}</span>
+            <span className="text-sm text-ink-muted">Page {page}</span>
             <Button
               onClick={() => updateFilters({ page: page + 1 })}
               disabled={!hasMore || isPending}
@@ -310,18 +310,18 @@ function MetadataDisplay({ metadata }: { metadata: Record<string, unknown> }) {
   const entries = Object.entries(metadata).filter(
     ([, v]) => v !== null && v !== undefined && v !== "",
   );
-  if (entries.length === 0) return <span className="text-muted-foreground/50">{"—"}</span>;
+  if (entries.length === 0) return <span className="text-ink-muted/50">{"—"}</span>;
 
   return (
     <div className="flex flex-wrap gap-x-3 gap-y-1">
       {entries.slice(0, 4).map(([key, value]) => (
         <span key={key} className="inline-flex gap-1">
-          <span className="text-muted-foreground">{formatMetaKey(key)}:</span>
-          <span className="text-foreground">{String(value)}</span>
+          <span className="text-ink-muted">{formatMetaKey(key)}:</span>
+          <span className="text-ink">{String(value)}</span>
         </span>
       ))}
       {entries.length > 4 && (
-        <span className="text-muted-foreground/50">
+        <span className="text-ink-muted/50">
           +{entries.length - 4} more
         </span>
       )}
