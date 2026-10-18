@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getSupplierInvoicesForScheme } from "@/lib/queries/supplier-invoices";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,9 +104,10 @@ export default async function SupplierInvoicesPage({
           <CardHeader title="All Invoices" />
           <div className="divide-y divide-border">
             {invoices.map((invoice) => (
-              <div
+              <Link
                 key={invoice.id}
-                className="flex items-center justify-between gap-4 px-6 py-4"
+                href={`/adviser/schemes/${id}/finance/invoices/${invoice.id}`}
+                className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-muted/50 transition-colors"
               >
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-center gap-2">
@@ -152,7 +154,7 @@ export default async function SupplierInvoicesPage({
                     </p>
                   )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </Card>

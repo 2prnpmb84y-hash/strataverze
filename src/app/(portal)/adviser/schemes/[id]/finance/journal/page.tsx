@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getJournalEntriesForScheme } from "@/lib/queries/journal-entries";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ export default async function JournalEntriesPage({
               );
 
               return (
-                <div key={entry.id} className="p-4">
+                <Link key={entry.id} href={`/adviser/schemes/${id}/finance/journal/${entry.id}`} className="block p-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -132,7 +133,7 @@ export default async function JournalEntriesPage({
                       ))}
                     </div>
                   )}
-                </div>
+                </Link>
               );
             })}
           </div>
