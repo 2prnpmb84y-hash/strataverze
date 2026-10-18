@@ -7,7 +7,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-xl bg-card border border-border p-6 ${className}`}
+      className={`rounded-[var(--radius-card)] bg-white border border-line p-6 ${className}`}
     >
       {children}
     </div>
@@ -26,11 +26,11 @@ export function CardHeader({
   return (
     <div className="flex items-start justify-between gap-4 mb-4">
       <div>
-        <h2 className="font-heading font-semibold text-card-foreground">
+        <h2 className="font-heading font-semibold text-base text-ink">
           {title}
         </h2>
         {description && (
-          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+          <p className="text-sm text-ink-muted mt-0.5">{description}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

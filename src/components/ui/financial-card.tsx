@@ -53,15 +53,15 @@ export function FinancialCard({
         action={action}
       />
 
-      {/* Chart area */}
-      <div className="mx-1 mb-4 rounded-lg bg-muted/60 border border-border/50 h-36 flex items-end justify-center px-3 pb-3 pt-2">
-        {chartBars && chartBars.length > 0 ? (
-          <div className="w-full h-full flex flex-col">
+      {/* Chart area — sits directly in the card, no grey inner panel */}
+      {chartBars && chartBars.length > 0 ? (
+        <div className="mb-4">
+          <div className="flex flex-col">
             {/* Bar chart */}
-            <div className="flex-1 flex items-end gap-1.5 min-h-0">
+            <div className="flex items-end gap-1.5 h-32">
               {chartBars.map((bar, i) => {
                 const heightPct = maxValue > 0 ? (bar.value / maxValue) * 100 : 0;
-                const barColour = bar.colour ?? "bg-primary-400";
+                const barColour = bar.colour ?? "bg-turquoise";
 
                 return (
                   <div
@@ -83,17 +83,21 @@ export function FinancialCard({
                   key={`label-${bar.label}-${i}`}
                   className="flex-1 text-center"
                 >
-                  <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                  <p className="text-[9px] text-ink-muted truncate leading-tight">
                     {bar.label}
                   </p>
                 </div>
               ))}
             </div>
           </div>
-        ) : (
-          <HorizontalSummary stats={stats} />
-        )}
-      </div>
+        </div>
+      ) : (
+        stats && stats.length > 0 && !chartBars && (
+          <div className="mb-4">
+            <HorizontalSummary stats={stats} />
+          </div>
+        )
+      )}
 
       {/* Stats rows */}
       {stats && stats.length > 0 && (
@@ -103,7 +107,7 @@ export function FinancialCard({
               key={stat.label}
               className="flex items-center justify-between text-sm"
             >
-              <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="flex items-center gap-2 text-ink-muted">
                 {stat.colour && (
                   <span
                     className={`w-2 h-2 rounded-full ${stat.colour}`}
@@ -111,7 +115,7 @@ export function FinancialCard({
                 )}
                 {stat.label}
               </span>
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-ink">
                 {stat.value}
               </span>
             </div>
@@ -152,7 +156,7 @@ function HorizontalSummary({ stats }: { stats?: StatRow[] }) {
             strokeLinejoin="round"
           />
         </svg>
-        <p className="text-[11px] text-muted-foreground/50">No data yet</p>
+        <p className="text-[11px] text-ink-muted/50">No data yet</p>
       </div>
     );
   }
@@ -173,10 +177,10 @@ function HorizontalSummary({ stats }: { stats?: StatRow[] }) {
         return (
           <div key={stat.label} className="flex flex-col gap-0.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-ink-muted">
                 {stat.label}
               </span>
-              <span className="text-[10px] font-semibold text-foreground">
+              <span className="text-[10px] font-semibold text-ink">
                 {stat.value}
               </span>
             </div>
