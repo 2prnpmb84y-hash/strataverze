@@ -225,7 +225,16 @@ export default async function OwnerDashboard() {
                       ? "bg-blue-400"
                       : "bg-amber-400",
               }))}
-              chartPlaceholderLabel="Account balance chart"
+              chartBars={scheme.funds.map((fund) => ({
+                label: fund.name,
+                value: Math.abs(Number(fund.balance)),
+                colour:
+                  fund.fundType === "ADMIN"
+                    ? "bg-primary-400"
+                    : fund.fundType === "SINKING"
+                      ? "bg-blue-400"
+                      : "bg-amber-400",
+              }))}
             />
 
             <FinancialCard
@@ -244,7 +253,6 @@ export default async function OwnerDashboard() {
                   colour: "bg-danger",
                 },
               ]}
-              chartPlaceholderLabel="Levy receivable chart"
               action={
                 <Button variant="ghost" href="/owner/levies">
                   View all
@@ -258,7 +266,6 @@ export default async function OwnerDashboard() {
                 { label: "Cash in", value: "—", colour: "bg-green-400" },
                 { label: "Cash out", value: "—", colour: "bg-red-400" },
               ]}
-              chartPlaceholderLabel="Cash in / out chart"
             />
 
             <FinancialCard
@@ -271,7 +278,6 @@ export default async function OwnerDashboard() {
                 },
                 { label: "Overdue", value: "—", colour: "bg-danger" },
               ]}
-              chartPlaceholderLabel="Bills chart"
             />
           </div>
         </div>

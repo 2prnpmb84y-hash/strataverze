@@ -199,11 +199,16 @@ export default async function QuoteRequestDetailPage({
         </Card>
       )}
 
-      {alreadyQuoted && (
+      {alreadyQuoted && supplierQuote && (
         <Card>
-          <p className="text-sm text-muted-foreground">
-            You have already submitted a quote for this request.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              You have already submitted a quote for this request.
+            </p>
+            {supplierQuote.status === "SUBMITTED" && (
+              <WithdrawQuoteButton quoteId={supplierQuote.id} />
+            )}
+          </div>
         </Card>
       )}
     </div>

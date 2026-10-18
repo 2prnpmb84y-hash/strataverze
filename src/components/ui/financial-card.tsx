@@ -6,25 +6,35 @@ type StatRow = {
   colour?: string;
 };
 
+type ChartBar = {
+  label: string;
+  value: number;
+  colour?: string;
+};
+
 /**
  * FinancialCard — a dashboard widget card with a title, optional badge,
- * a placeholder chart area, and summary stats at the bottom.
+ * a mini bar chart (or horizontal summary bars), and summary stats at the bottom.
  */
 export function FinancialCard({
   title,
   badge,
   badgeColour = "bg-green-100 text-green-700",
   stats,
-  chartPlaceholderLabel = "Chart coming soon",
+  chartBars,
   action,
 }: {
   title: string;
   badge?: string;
   badgeColour?: string;
   stats?: StatRow[];
-  chartPlaceholderLabel?: string;
+  chartBars?: ChartBar[];
   action?: React.ReactNode;
 }) {
+  const maxValue = chartBars
+    ? Math.max(...chartBars.map((b) => b.value), 1)
+    : 0;
+
   return (
     <Card>
       <CardHeader
@@ -43,35 +53,46 @@ export function FinancialCard({
         action={action}
       />
 
-      {/* Chart placeholder */}
-      <div className="mx-1 mb-4 rounded-lg bg-muted/60 border border-border/50 h-36 flex items-center justify-center">
-        <div className="text-center">
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            className="mx-auto text-muted-foreground/30 mb-1.5"
-          >
-            <path
-              d="M3 3v18h18"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M7 16l4-4 4 2 5-6"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <p className="text-[11px] text-muted-foreground/50">
-            {chartPlaceholderLabel}
-          </p>
-        </div>
+      {/* Chart area */}
+      <div className="mx-1 mb-4 rounded-lg bg-muted/60 border border-border/50 h-36 flex items-end justify-center px-3 pb-3 pt-2">
+        {chartBars && chartBars.length > 0 ? (
+          <div className="w-full h-full flex flex-col">
+            {/* Bar chart */}
+            <div className="flex-1 flex items-end gap-1.5 min-h-0">
+              {chartBars.map((bar, i) => {
+                const heightPct = maxValue > 0 ? (bar.value / maxValue) * 100 : 0;
+                const barColour = bar.colour ?? "bg-primary-400";
+
+                return (
+                  <div
+                    key={`${bar.label}-${i}`}
+                    className="flex-1 flex flex-col items-center justify-end h-full"
+                  >
+                    <div
+                      className={`w-full rounded-t ${barColour} min-h-[2px] transition-all`}
+                      style={{ height: `${Math.max(heightPct, 2)}%` }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            {/* Labels */}
+            <div className="flex gap-1.5 mt-1.5">
+              {chartBars.map((bar, i) => (
+                <div
+                  key={`label-${bar.label}-${i}`}
+                  className="flex-1 text-center"
+                >
+                  <p className="text-[9px] text-muted-foreground truncate leading-tight">
+                    {bar.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <HorizontalSummary stats={stats} />
+        )}
       </div>
 
       {/* Stats rows */}
@@ -98,5 +119,76 @@ export function FinancialCard({
         </div>
       )}
     </Card>
+  );
+}
+
+/**
+ * When no explicit chartBars are passed, render horizontal proportion bars
+ * derived from the stats values (parsing dollar amounts).
+ */
+function HorizontalSummary({ stats }: { stats?: StatRow[] }) {
+  if (!stats || stats.length === 0) {
+    return (
+      <div className="text-center flex flex-col items-center justify-center h-full">
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="mx-auto text-muted-foreground/30 mb-1.5"
+        >
+          <path
+            d="M3 3v18h18"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7 16l4-4 4 2 5-6"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <p className="text-[11px] text-muted-foreground/50">No data yet</p>
+      </div>
+    );
+  }
+
+  // Parse numeric values from stat value strings (e.g. "$1,234.00" -> 1234)
+  const parsed = stats.map((s) => {
+    const num = parseFloat(s.value.replace(/[^0-9.-]/g, ""));
+    return isNaN(num) ? 0 : Math.abs(num);
+  });
+  const maxVal = Math.max(...parsed, 1);
+
+  return (
+    <div className="w-full h-full flex flex-col justify-center gap-2.5 px-1">
+      {stats.map((stat, i) => {
+        const widthPct = maxVal > 0 ? (parsed[i] / maxVal) * 100 : 0;
+        const barColour = stat.colour ?? "bg-primary-400";
+
+        return (
+          <div key={stat.label} className="flex flex-col gap-0.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">
+                {stat.label}
+              </span>
+              <span className="text-[10px] font-semibold text-foreground">
+                {stat.value}
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted">
+              <div
+                className={`h-full rounded-full ${barColour} transition-all`}
+                style={{ width: `${Math.max(widthPct, 2)}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
