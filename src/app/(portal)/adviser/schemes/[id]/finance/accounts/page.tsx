@@ -89,12 +89,17 @@ export default async function ChartOfAccountsPage({
             {funds.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <form action={handleSeedAction}>
-          <input type="hidden" name="schemeId" value={id} />
-          <Button type="submit" variant="secondary">
-            Re-seed Defaults
+        <div className="flex items-center gap-3">
+          <form action={handleSeedAction}>
+            <input type="hidden" name="schemeId" value={id} />
+            <Button type="submit" variant="secondary">
+              Re-seed Defaults
+            </Button>
+          </form>
+          <Button href={`/adviser/schemes/${id}/finance/accounts/new`}>
+            + New Account
           </Button>
-        </form>
+        </div>
       </div>
 
       {ACCOUNT_TYPE_ORDER.map((type) => {
