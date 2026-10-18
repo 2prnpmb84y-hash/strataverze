@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 type AvatarStackProps = {
   /** Array of people to display */
   people: { name: string; imageUrl?: string }[];
@@ -43,9 +45,11 @@ export function AvatarStack({ people, max = 3, size = 32 }: AvatarStackProps) {
           title={person.name}
         >
           {person.imageUrl ? (
-            <img
+            <Image
               src={person.imageUrl}
               alt={person.name}
+              width={size}
+              height={size}
               className="w-full h-full rounded-full object-cover"
             />
           ) : (

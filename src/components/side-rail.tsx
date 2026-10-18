@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   LayoutGrid,
   Building2,
@@ -70,17 +70,14 @@ export function SideRail({ portal }: { portal: string }) {
   const pathname = usePathname();
   const nav = navByPortal[portal] ?? ownerNav;
 
-  const [expanded, setExpanded] = useState(false);
-
-  // Persist collapsed/expanded state
-  useEffect(() => {
+  const [expanded, setExpanded] = useState(() => {
+    if (typeof window === "undefined") return false;
     try {
-      const stored = localStorage.getItem("sv-rail-expanded");
-      if (stored === "true") setExpanded(true);
+      return localStorage.getItem("sv-rail-expanded") === "true";
     } catch {
-      /* noop */
+      return false;
     }
-  }, []);
+  });
 
   function toggle() {
     const next = !expanded;

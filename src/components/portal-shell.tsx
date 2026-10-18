@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
 import { SideRail } from "@/components/side-rail";
 import { TopBar } from "@/components/top-bar";
 
@@ -154,7 +153,6 @@ export function PortalShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const segment = pathname.split("/")[1] as PortalKey;
   const portal = segment in portalConfig ? segment : "owner";
@@ -168,12 +166,6 @@ export function PortalShell({
 
   const otherPortals = availablePortals.filter((p) => p !== portal);
   const pageTitle = derivePageTitle(pathname);
-
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-  }
 
   return (
     <div className="flex min-h-screen">
