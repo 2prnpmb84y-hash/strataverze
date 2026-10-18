@@ -104,12 +104,25 @@ export async function removeOwnerFromLot(membershipId: string) {
  * Fetch full lot detail with owners, levy items, and computed financials.
  */
 export async function getLotDetail(lotId: string) {
-  const lot = await db.orm.public.Lot
-    .include("memberships", (m) =>
-      m.where((sm) => sm.isActive.eq(true)).include("profile"),
-    )
-    .include("levyItems", (li) => li.include("levy"))
-    .first({ id: lotId });
+  let lot;
+  try {
+    lot = await db.orm.public.Lot
+      .include("memberships", (m) =>
+        m.where((sm) => sm.isActive.eq(true)).include("profile"),
+      )
+      .include("levyItems", (li) => li.include("levy"))
+      .include("journalLines")
+      .include("levyNotices")
+      .first({ id: lotId });
+  } catch {
+    // Fallback if journal_lines or levy_notices tables do not exist yet
+    lot = await db.orm.public.Lot
+      .include("memberships", (m) =>
+        m.where((sm) => sm.isActive.eq(true)).include("profile"),
+      )
+      .include("levyItems", (li) => li.include("levy"))
+      .first({ id: lotId });
+  }
 
   if (!lot) return null;
 
@@ -164,8 +177,28 @@ export async function getLotDetail(lotId: string) {
     };
   });
 
-  const opening = 0;
+  // Opening balance from journal lines (debit minus credit)
+  const lotData = lot as typeof lot & {
+    journalLines?: Array<{ debit?: unknown; credit?: unknown }>;
+    levyNotices?: Array<{ interestCharged?: unknown }>;
+  };
+  const lotJournalLines = lotData.journalLines ?? [];
+  let journalDebit = 0;
+  let journalCredit = 0;
+  for (const jl of lotJournalLines) {
+    journalDebit += Number(jl.debit ?? 0);
+    journalCredit += Number(jl.credit ?? 0);
+  }
+  const opening = journalDebit - journalCredit;
   const closing = opening + annualTotal + specialTotal - paidTotal;
+
+  // Interest from levy notices
+  const lotNotices = lotData.levyNotices ?? [];
+  const interestPaid = lotNotices.reduce(
+    (sum: number, ln: { interestCharged?: unknown }) =>
+      sum + Number(ln.interestCharged ?? 0),
+    0,
+  );
 
   return {
     id: lot.id,
@@ -183,7 +216,7 @@ export async function getLotDetail(lotId: string) {
       special: specialTotal,
       paid: paidTotal,
       closing,
-      interestPaid: 0,
+      interestPaid,
     },
     levyHistory,
   };

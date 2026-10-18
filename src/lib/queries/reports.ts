@@ -1924,3 +1924,98 @@ export async function getGstSummaryReport(
   };
   }
 }
+
+// ─── Dashboard Financial Summary ─────────────────────────────
+
+export interface DashboardFinancialSummary {
+  cashIn: number;
+  cashOut: number;
+  billsAwaiting: number;
+  billsAwaitingCount: number;
+  billsOverdue: number;
+  billsOverdueCount: number;
+}
+
+/**
+ * Compute a quick financial summary for the owner dashboard.
+ *
+ * Cash in/out: summed from posted journal entry lines this month
+ * (credits to bank/cash accounts = cash in, debits = cash out).
+ *
+ * Bills to pay: from outstanding supplier invoices for the scheme.
+ */
+export async function getDashboardFinancialSummary(
+  schemeId: string,
+): Promise<DashboardFinancialSummary> {
+  try {
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
+
+    // Fetch posted journal entries for the current month
+    const entries = await db.orm.public.JournalEntry
+      .where((je) =>
+        and(
+          je.schemeId.eq(schemeId),
+          je.status.eq("POSTED"),
+          je.transactionDate.gte(toTimestamp(monthStart)),
+          je.transactionDate.lte(toTimestamp(monthEnd)),
+        ),
+      )
+      .include("lines")
+      .limit(500)
+      .all();
+
+    let cashIn = 0;
+    let cashOut = 0;
+    for (const entry of entries) {
+      for (const line of entry.lines) {
+        const debit = Number(line.debit ?? 0);
+        const credit = Number(line.credit ?? 0);
+        // In double-entry: credits increase income/liability (cash in),
+        // debits increase expense/asset (cash out)
+        cashIn += credit;
+        cashOut += debit;
+      }
+    }
+
+    // Fetch outstanding supplier invoices
+    const invoices = await db.orm.public.SupplierInvoice
+      .where((si) =>
+        and(
+          si.schemeId.eq(schemeId),
+          si.status.in(["AWAITING_APPROVAL", "APPROVED", "PARTIALLY_PAID"]),
+        ),
+      )
+      .limit(1000)
+      .all();
+
+    let billsAwaiting = 0;
+    let billsAwaitingCount = 0;
+    let billsOverdue = 0;
+    let billsOverdueCount = 0;
+
+    for (const inv of invoices) {
+      const outstanding = Number(inv.balanceOutstanding ?? inv.totalAmount ?? 0);
+      billsAwaiting += outstanding;
+      billsAwaitingCount++;
+      const dueDate = new Date(String(inv.dueDate));
+      if (dueDate < now) {
+        billsOverdue += outstanding;
+        billsOverdueCount++;
+      }
+    }
+
+    return { cashIn, cashOut, billsAwaiting, billsAwaitingCount, billsOverdue, billsOverdueCount };
+  } catch {
+    // Tables may not exist yet
+    return {
+      cashIn: 0,
+      cashOut: 0,
+      billsAwaiting: 0,
+      billsAwaitingCount: 0,
+      billsOverdue: 0,
+      billsOverdueCount: 0,
+    };
+  }
+}

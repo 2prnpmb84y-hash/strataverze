@@ -96,7 +96,7 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-4">
-        Scheme documents accessible to this lot. Lot-specific document tagging is coming soon.
+        Scheme documents accessible to this lot.
       </p>
 
       {/* Toolbar */}

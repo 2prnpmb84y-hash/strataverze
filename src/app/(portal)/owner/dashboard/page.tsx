@@ -5,12 +5,12 @@ import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { getLeviesForSchemes } from "@/lib/queries/levies";
-import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { StaticMap } from "@/components/ui/static-map";
 import { FinancialCard } from "@/components/ui/financial-card";
+import { getDashboardFinancialSummary } from "@/lib/queries/reports";
 import { connection } from "next/server";
 
 const statusLabels: Record<string, string> = {
@@ -73,10 +73,11 @@ export default async function OwnerDashboard() {
       .map((m) => m.lotId as string),
   );
 
-  const [meetings, workOrders, levies] = await Promise.all([
+  const [meetings, workOrders, levies, financialSummary] = await Promise.all([
     getUpcomingMeetingsForOwner(schemeIds),
     getWorkOrdersForSchemes(schemeIds),
     getLeviesForSchemes(schemeIds),
+    getDashboardFinancialSummary(selectedSchemeId),
   ]);
 
   const upcomingMeetings = meetings.filter((m) => m.status === "SCHEDULED");
@@ -262,22 +263,48 @@ export default async function OwnerDashboard() {
 
             <FinancialCard
               title="Cash Flow"
+              badge="This month"
+              badgeColour="bg-blue-100 text-blue-700"
               stats={[
-                { label: "Cash in", value: "—", colour: "bg-green-400" },
-                { label: "Cash out", value: "—", colour: "bg-red-400" },
+                {
+                  label: "Cash in",
+                  value: `$${financialSummary.cashIn.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`,
+                  colour: "bg-green-400",
+                },
+                {
+                  label: "Cash out",
+                  value: `$${financialSummary.cashOut.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`,
+                  colour: "bg-red-400",
+                },
               ]}
+              action={
+                <Button variant="ghost" href="/owner/finance/reports">
+                  View reports
+                </Button>
+              }
             />
 
             <FinancialCard
               title="Bills to Pay"
               stats={[
                 {
-                  label: "Awaiting payment",
-                  value: "—",
+                  label: `${financialSummary.billsAwaitingCount} Awaiting payment`,
+                  value: `$${financialSummary.billsAwaiting.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`,
                   colour: "bg-amber-400",
                 },
-                { label: "Overdue", value: "—", colour: "bg-danger" },
+                {
+                  label: `${financialSummary.billsOverdueCount} Overdue`,
+                  value: financialSummary.billsOverdue > 0
+                    ? `$${financialSummary.billsOverdue.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`
+                    : "$0.00",
+                  colour: "bg-danger",
+                },
               ]}
+              action={
+                <Button variant="ghost" href="/owner/finance/supplier-invoices">
+                  View all
+                </Button>
+              }
             />
           </div>
         </div>
