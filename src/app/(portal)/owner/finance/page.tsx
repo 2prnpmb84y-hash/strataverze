@@ -1,9 +1,18 @@
-import { requireCommitteeAccess } from "@/lib/queries/committee-access";
-import { getLeviesForSchemes } from "@/lib/queries/levies";
+import { getCurrentProfile } from "@/lib/queries/profiles";
+import { getSchemesForOwner } from "@/lib/queries/schemes";
+import { getLevyItemsForLot } from "@/lib/queries/levies";
 import { getFundsForSchemes } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+
+function formatCurrency(value: number): string {
+  if (value < 0) {
+    return `($${Math.abs(value).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+  }
+  return `$${value.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 const statusStyle: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
@@ -13,72 +22,127 @@ const statusStyle: Record<string, string> = {
 };
 
 export default async function OwnerFinancePage() {
-  const access = await requireCommitteeAccess();
-  if (!access) {
+  const profile = await getCurrentProfile();
+  if (!profile) return null;
+
+  const schemes = await getSchemesForOwner(profile.id);
+
+  if (schemes.length === 0) {
     return (
-      <div className="max-w-2xl">
-        <PageHeader title="Finance" description="You do not have committee access to view this page." />
+      <div className="space-y-6">
+        <PageHeader
+          title="Finance"
+          description="Your levy contributions and fund balances."
+        />
+        <EmptyState
+          title="No properties found"
+          description="You are not currently registered as an owner in any strata scheme."
+        />
       </div>
     );
   }
 
-  const { schemes, schemeIds } = access;
-  const [levies, funds] = await Promise.all([
-    schemeIds.length > 0 ? getLeviesForSchemes(schemeIds) : [],
-    schemeIds.length > 0 ? getFundsForSchemes(schemeIds) : [],
+  const schemeIds = schemes.map((s) => s.id);
+  const schemeNames = new Map(schemes.map((s) => [s.id, String(s.name)]));
+
+  // Get the owner's lot IDs from their memberships
+  const lotEntries = schemes.flatMap((s) =>
+    s.memberships
+      .filter((m) => m.lotId)
+      .map((m) => ({
+        lotId: m.lotId!,
+        schemeId: s.id,
+        lot: m.lot,
+      })),
+  );
+
+  // Fetch levy items and funds in parallel
+  const [allItemArrays, funds] = await Promise.all([
+    Promise.all(lotEntries.map((entry) => getLevyItemsForLot(entry.lotId))),
+    getFundsForSchemes(schemeIds),
   ]);
 
-  const schemeNames = new Map(schemes.map((s) => [s.id, s.name]));
+  const items = allItemArrays.flat();
 
-  const totalLevied = levies.reduce(
-    (sum, l) => sum + Number(l.totalAmount),
-    0,
-  );
-  const totalCollected = levies.reduce(
-    (sum, l) =>
-      sum + l.items.reduce((s, item) => s + Number(item.paidAmount), 0),
-    0,
-  );
-  const outstanding = totalLevied - totalCollected;
+  // Calculate totals
+  const totalDue = items.reduce((sum, i) => sum + Number(i.amount), 0);
+  const totalPaid = items.reduce((sum, i) => sum + Number(i.paidAmount), 0);
+  const totalOutstanding = totalDue - totalPaid;
 
-  const issuedLevies = levies.filter((l) => l.status === "ISSUED" || l.status === "OVERDUE");
-  const completedLevies = levies.filter((l) => l.status === "PAID");
-  const draftLevies = levies.filter((l) => l.status === "DRAFT");
+  // Group by levy
+  const levyMap = new Map<
+    string,
+    {
+      title: string;
+      dueDate: string;
+      levyType: string;
+      status: string;
+      schemeId: string;
+      items: typeof items;
+    }
+  >();
+
+  for (const item of items) {
+    const levyId = item.levyId;
+    if (!levyMap.has(levyId)) {
+      levyMap.set(levyId, {
+        title: item.levy.title,
+        dueDate: String(item.levy.dueDate),
+        levyType: item.levy.levyType,
+        status: item.levy.status,
+        schemeId: item.levy.schemeId,
+        items: [],
+      });
+    }
+    levyMap.get(levyId)!.items.push(item);
+  }
+
+  const levies = Array.from(levyMap.entries())
+    .map(([id, data]) => ({ id, ...data }))
+    .sort(
+      (a, b) =>
+        new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
+    );
+
+  const outstandingLevies = levies.filter(
+    (l) => l.status === "ISSUED" || l.status === "OVERDUE",
+  );
+  const paidLevies = levies.filter((l) => l.status === "PAID");
 
   return (
-    <div className="max-w-2xl">
+    <div className="space-y-6">
       <PageHeader
         title="Finance"
-        description="Levy collections and fund balances for your schemes."
+        description="Your levy contributions and fund balances."
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+      {/* Summary stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           label="Total Levied"
-          value={`$${totalLevied.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`}
-          accent="bg-owner"
+          value={formatCurrency(totalDue)}
+          accent="bg-blue-500"
         />
         <StatCard
-          label="Collected"
-          value={`$${totalCollected.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`}
+          label="Paid"
+          value={formatCurrency(totalPaid)}
           accent="bg-green-500"
         />
         <StatCard
           label="Outstanding"
-          value={`$${outstanding.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`}
-          accent="bg-red-500"
+          value={formatCurrency(totalOutstanding)}
+          accent={totalOutstanding > 0 ? "bg-red-500" : "bg-green-500"}
         />
       </div>
 
       {/* Fund Balances */}
       {funds.length > 0 && (
-        <Card className="mb-6">
+        <Card>
           <CardHeader
             title="Fund Balances"
             description="Current balances across your scheme funds."
           />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 px-6 pb-6">
             {funds.map((fund) => {
               const balance = Number(fund.balance);
               return (
@@ -93,11 +157,15 @@ export default async function OwnerFinancePage() {
                     <p className="text-xs text-muted-foreground">
                       {schemeNames.get(fund.schemeId) ?? ""}
                       {" · "}
-                      {fund.fundType.replace("_", " ")}
+                      {String(fund.fundType).replace("_", " ")}
                     </p>
                   </div>
-                  <span className={`text-sm font-semibold ${balance >= 0 ? "text-green-700" : "text-red-700"}`}>
-                    ${balance.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
+                  <span
+                    className={`text-sm font-semibold tabular-nums ${
+                      balance >= 0 ? "text-green-700" : "text-red-700"
+                    }`}
+                  >
+                    {formatCurrency(balance)}
                   </span>
                 </div>
               );
@@ -106,32 +174,36 @@ export default async function OwnerFinancePage() {
         </Card>
       )}
 
-      {levies.length === 0 ? (
-        <Card>
-          <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              No levies have been created for your schemes yet. Your strata
-              manager will create levy notices when contributions are due.
-            </p>
-          </div>
-        </Card>
+      {items.length === 0 ? (
+        <EmptyState
+          title="No levies yet"
+          description="No levies have been issued for your lots. Your strata manager will create levy notices when contributions are due."
+        />
       ) : (
         <>
-          {/* Active levies */}
-          {issuedLevies.length > 0 && (
-            <Card className="mb-6">
+          {/* Outstanding levies */}
+          {outstandingLevies.length > 0 && (
+            <Card>
               <CardHeader
-                title="Active Levies"
-                description={`${issuedLevies.length} lev${issuedLevies.length === 1 ? "y" : "ies"} currently issued.`}
+                title="Outstanding Levies"
+                description={`${outstandingLevies.length} lev${outstandingLevies.length === 1 ? "y" : "ies"} with amounts due.`}
               />
-              <div className="flex flex-col gap-2">
-                {issuedLevies.map((levy) => {
-                  const total = Number(levy.totalAmount);
-                  const paid = levy.items.reduce(
-                    (sum, item) => sum + Number(item.paidAmount),
+              <div className="flex flex-col gap-2 px-6 pb-6">
+                {outstandingLevies.map((levy) => {
+                  const dueDate = new Date(levy.dueDate);
+                  const levyTotal = levy.items.reduce(
+                    (sum, i) => sum + Number(i.amount),
                     0,
                   );
-                  const dueDate = new Date(String(levy.dueDate));
+                  const levyPaid = levy.items.reduce(
+                    (sum, i) => sum + Number(i.paidAmount),
+                    0,
+                  );
+                  const levyBalance = levyTotal - levyPaid;
+                  const pct =
+                    levyTotal > 0
+                      ? Math.round((levyPaid / levyTotal) * 100)
+                      : 0;
 
                   return (
                     <div
@@ -143,35 +215,50 @@ export default async function OwnerFinancePage() {
                           {levy.title}
                         </p>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[levy.status]}`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${statusStyle[levy.status] ?? "bg-gray-100 text-gray-700"}`}
                         >
-                          {levy.status}
+                          {levy.status === "OVERDUE"
+                            ? "Overdue"
+                            : levy.status.charAt(0) +
+                              levy.status.slice(1).toLowerCase()}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground mb-1">
                         {schemeNames.get(levy.schemeId) ?? ""}
-                        {" · Due "}
+                        {" · "}
+                        {levy.levyType === "ORDINARY"
+                          ? "Ordinary"
+                          : "Special"}{" "}
+                        levy · Due{" "}
                         {dueDate.toLocaleDateString("en-AU", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
                         })}
-                        {" · "}
-                        ${total.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
                       </p>
-                      {paid > 0 && (
+                      <div className="flex items-center justify-between text-sm mt-2">
+                        <span className="text-muted-foreground">
+                          Balance due
+                        </span>
+                        <span className="font-semibold tabular-nums text-red-600">
+                          {formatCurrency(levyBalance)}
+                        </span>
+                      </div>
+                      {levyPaid > 0 && (
                         <div className="mt-2">
                           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                            <span>{Math.round((paid / total) * 100)}% collected</span>
+                            <span>{pct}% paid</span>
                             <span>
-                              ${paid.toLocaleString("en-AU", { minimumFractionDigits: 2 })} of $
-                              {total.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
+                              {formatCurrency(levyPaid)} of{" "}
+                              {formatCurrency(levyTotal)}
                             </span>
                           </div>
                           <div className="h-1.5 rounded-full bg-border overflow-hidden">
                             <div
                               className="h-full rounded-full bg-green-500"
-                              style={{ width: `${Math.min(100, (paid / total) * 100)}%` }}
+                              style={{
+                                width: `${Math.min(100, pct)}%`,
+                              }}
                             />
                           </div>
                         </div>
@@ -183,66 +270,51 @@ export default async function OwnerFinancePage() {
             </Card>
           )}
 
-          {/* Draft levies */}
-          {draftLevies.length > 0 && (
-            <Card className="mb-6">
-              <CardHeader
-                title="Draft Levies"
-                description={`${draftLevies.length} lev${draftLevies.length === 1 ? "y" : "ies"} not yet issued.`}
-              />
-              <div className="flex flex-col gap-2">
-                {draftLevies.map((levy) => (
-                  <div
-                    key={levy.id}
-                    className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {levy.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {schemeNames.get(levy.schemeId) ?? ""}
-                        {" · "}
-                        ${Number(levy.totalAmount).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                      Draft
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* Completed levies */}
-          {completedLevies.length > 0 && (
+          {/* Paid levies */}
+          {paidLevies.length > 0 && (
             <Card>
               <CardHeader
-                title="Fully Paid"
-                description={`${completedLevies.length} lev${completedLevies.length === 1 ? "y" : "ies"} fully collected.`}
+                title="Paid Levies"
+                description={`${paidLevies.length} lev${paidLevies.length === 1 ? "y" : "ies"} fully paid.`}
               />
-              <div className="flex flex-col gap-2">
-                {completedLevies.map((levy) => (
-                  <div
-                    key={levy.id}
-                    className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {levy.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {schemeNames.get(levy.schemeId) ?? ""}
-                        {" · "}
-                        ${Number(levy.totalAmount).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
-                      </p>
+              <div className="flex flex-col gap-2 px-6 pb-6">
+                {paidLevies.map((levy) => {
+                  const dueDate = new Date(levy.dueDate);
+                  const levyTotal = levy.items.reduce(
+                    (sum, i) => sum + Number(i.amount),
+                    0,
+                  );
+
+                  return (
+                    <div
+                      key={levy.id}
+                      className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {levy.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {schemeNames.get(levy.schemeId) ?? ""}
+                          {" · Paid · "}
+                          {dueDate.toLocaleDateString("en-AU", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium tabular-nums text-foreground">
+                          {formatCurrency(levyTotal)}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                          Paid
+                        </span>
+                      </div>
                     </div>
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                      Paid
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           )}
