@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 
 function formatCurrency(value: number): string {
   if (value < 0) {
@@ -161,6 +162,13 @@ export default async function OwnerFinancePage() {
         title="Finance"
         description="Your levy contributions and fund balances."
       />
+
+      {/* Upload payment button */}
+      <div className="flex justify-end">
+        <Button variant="primary" href="/owner/finance/payment">
+          Upload Payment Confirmation
+        </Button>
+      </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

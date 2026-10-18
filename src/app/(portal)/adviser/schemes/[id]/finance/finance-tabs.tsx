@@ -13,6 +13,7 @@ const tabs = [
   { key: "journal", label: "Journal", href: "/journal" },
   { key: "bank-import", label: "Bank Import", href: "/bank-import" },
   { key: "reconciliation", label: "Reconciliation", href: "/reconciliation" },
+  { key: "periods", label: "Periods", href: "/periods" },
   { key: "reports", label: "Reports", href: "/reports" },
   { key: "documents", label: "Documents", href: "/documents" },
 ] as const;

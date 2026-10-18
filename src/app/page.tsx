@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { WaitlistForm } from "./waitlist-form";
 
 /* ─── Permission row type ─── */
 interface Permission {
@@ -519,13 +520,17 @@ export default function LandingPage() {
             true data sovereignty.
           </p>
 
-          {/* CTA link */}
-          <div className="flex items-center justify-center gap-3 max-w-md mx-auto mb-10">
+          {/* Waitlist form */}
+          <div className="max-w-md mx-auto mb-10">
+            <WaitlistForm />
+          </div>
+
+          <div className="flex items-center justify-center mb-6">
             <a
               href="/login"
-              className="h-12 rounded-lg bg-coral px-8 text-white font-semibold text-sm transition-colors hover:opacity-90 whitespace-nowrap inline-flex items-center"
+              className="text-white/70 text-sm hover:text-white transition-colors underline underline-offset-4"
             >
-              Get Started &rarr;
+              Already have an account? Log in
             </a>
           </div>
 
