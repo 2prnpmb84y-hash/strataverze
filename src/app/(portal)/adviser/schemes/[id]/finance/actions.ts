@@ -6,12 +6,14 @@ import {
   AuthorisationError,
 } from "@/lib/auth/require-membership";
 import { logActivity } from "@/lib/queries/activity-log";
+import { db } from "@/prisma/db";
 
 // ── Chart of accounts ─────────────────────────────────────────
 import {
   createAccountCode,
   updateAccountCode,
   deactivateAccountCode,
+  getSystemAccountBySubType,
 } from "@/lib/queries/account-codes";
 
 // ── Seed ──────────────────────────────────────────────────────
@@ -56,6 +58,7 @@ import {
   approveInvoice,
   recordInvoicePayment,
   cancelInvoice,
+  getSupplierInvoiceById,
 } from "@/lib/queries/supplier-invoices";
 
 // ── Financial documents ───────────────────────────────────────
@@ -739,6 +742,59 @@ export async function issueLevyNoticesAction(
       await issueLevyNotice(notice.id);
     }
 
+    // ── Auto journal entry: DR Levies Receivable, CR Levy Income ──
+    const totalAmount = data.notices.reduce((sum, n) => sum + n.amountDue, 0);
+    if (totalAmount > 0) {
+      // Determine fund type from the fund record
+      const fund = await db.orm.public.Fund
+        .where((f) => f.id.eq(data.fundId))
+        .first();
+      const fundType = (fund?.fundType ?? "ADMINISTRATIVE") as
+        | "ADMINISTRATIVE"
+        | "CAPITAL_WORKS";
+
+      const receivableAccount = await getSystemAccountBySubType(
+        schemeId,
+        "ACCOUNTS_RECEIVABLE",
+        fundType,
+      );
+      const incomeAccount = await getSystemAccountBySubType(
+        schemeId,
+        "LEVY_INCOME",
+        fundType,
+      );
+
+      if (receivableAccount && incomeAccount) {
+        const entryNumber = await getNextEntryNumber(schemeId);
+        const today = new Date().toISOString().split("T")[0];
+        const entry = await createJournalEntry({
+          schemeId,
+          entryNumber,
+          transactionDate: today,
+          description: `Levy notices issued — ${notices.length} notice(s), ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
+          entryType: "AUTO",
+          sourceType: "LEVY_RAISED",
+          sourceId: data.levyScheduleId,
+          createdBy: profile.id,
+          lines: [
+            {
+              accountCodeId: receivableAccount.id,
+              fundId: data.fundId,
+              debit: totalAmount,
+              description: "Levies receivable raised",
+            },
+            {
+              accountCodeId: incomeAccount.id,
+              fundId: data.fundId,
+              credit: totalAmount,
+              description: "Levy income recognised",
+            },
+          ],
+        });
+        await postJournalEntry(entry.id, profile.id);
+      }
+    }
+
     await logActivity({
       schemeId,
       actorId: profile.id,
@@ -768,7 +824,60 @@ export async function recordLevyPaymentAction(
     if (amount <= 0) return { error: "Payment amount must be greater than zero." };
     if (!paymentDate) return { error: "Payment date is required." };
 
+    // Fetch the levy notice to determine its fund before recording payment
+    const notice = await db.orm.public.LevyNotice
+      .where((ln) => ln.id.eq(levyNoticeId))
+      .include("fund")
+      .first();
+
     await recordLevyPayment(levyNoticeId, amount);
+
+    // ── Auto journal entry: DR Bank, CR Levies Receivable ──
+    if (notice) {
+      const fundType = (notice.fund?.fundType ?? "ADMINISTRATIVE") as
+        | "ADMINISTRATIVE"
+        | "CAPITAL_WORKS";
+
+      const bankAccount = await getSystemAccountBySubType(
+        schemeId,
+        "BANK",
+        "ADMINISTRATIVE",
+      );
+      const receivableAccount = await getSystemAccountBySubType(
+        schemeId,
+        "ACCOUNTS_RECEIVABLE",
+        fundType,
+      );
+
+      if (bankAccount && receivableAccount) {
+        const entryNumber = await getNextEntryNumber(schemeId);
+        const entry = await createJournalEntry({
+          schemeId,
+          entryNumber,
+          transactionDate: paymentDate,
+          description: `Levy payment received — notice ${String(notice.noticeNumber)}`,
+          entryType: "AUTO",
+          sourceType: "PAYMENT",
+          sourceId: levyNoticeId,
+          createdBy: profile.id,
+          lines: [
+            {
+              accountCodeId: bankAccount.id,
+              fundId: notice.fundId,
+              debit: amount,
+              description: "Bank receipt — levy payment",
+            },
+            {
+              accountCodeId: receivableAccount.id,
+              fundId: notice.fundId,
+              credit: amount,
+              description: "Levies receivable reduced",
+            },
+          ],
+        });
+        await postJournalEntry(entry.id, profile.id);
+      }
+    }
 
     await logActivity({
       schemeId,
@@ -923,6 +1032,81 @@ export async function approveInvoiceAction(
 
     await approveInvoice(invoiceId, profile.id);
 
+    // ── Auto journal entry: DR Expense, CR Accounts Payable ──
+    const invoice = await getSupplierInvoiceById(invoiceId);
+    if (invoice && Number(invoice.totalAmount) > 0) {
+      const totalAmount = Number(invoice.totalAmount);
+      const gstAmount = Number(invoice.gstAmount ?? 0);
+      const netAmount = totalAmount - gstAmount;
+
+      const payableAccount = await getSystemAccountBySubType(
+        schemeId,
+        "ACCOUNTS_PAYABLE",
+      );
+
+      if (payableAccount && invoice.accountCodeId) {
+        const entryNumber = await getNextEntryNumber(schemeId);
+        const today = new Date().toISOString().split("T")[0];
+
+        const lines: Array<{
+          accountCodeId: string;
+          fundId: string;
+          debit?: number;
+          credit?: number;
+          description?: string;
+          supplierId?: string;
+        }> = [
+          {
+            accountCodeId: invoice.accountCodeId,
+            fundId: invoice.fundId,
+            debit: netAmount,
+            description: `Expense — invoice ${String(invoice.invoiceNumber)}`,
+            supplierId: invoice.supplierId,
+          },
+        ];
+
+        // If GST was charged, debit the GST Paid account
+        if (gstAmount > 0) {
+          const gstPaidAccount = await getSystemAccountBySubType(
+            schemeId,
+            "GST_PAID",
+          );
+          if (gstPaidAccount) {
+            lines.push({
+              accountCodeId: gstPaidAccount.id,
+              fundId: invoice.fundId,
+              debit: gstAmount,
+              description: "GST on supplier invoice",
+            });
+          } else {
+            // No GST account seeded — debit full amount to expense
+            lines[0].debit = totalAmount;
+          }
+        }
+
+        lines.push({
+          accountCodeId: payableAccount.id,
+          fundId: invoice.fundId,
+          credit: totalAmount,
+          description: `Accounts payable — invoice ${String(invoice.invoiceNumber)}`,
+          supplierId: invoice.supplierId,
+        });
+
+        const entry = await createJournalEntry({
+          schemeId,
+          entryNumber,
+          transactionDate: today,
+          description: `Invoice approved — ${String(invoice.invoiceNumber)} (${invoice.supplier?.companyName ?? "supplier"})`,
+          entryType: "AUTO",
+          sourceType: "INVOICE",
+          sourceId: invoiceId,
+          createdBy: profile.id,
+          lines,
+        });
+        await postJournalEntry(entry.id, profile.id);
+      }
+    }
+
     await logActivity({
       schemeId,
       actorId: profile.id,
@@ -953,7 +1137,53 @@ export async function recordInvoicePaymentAction(
     if (amount <= 0) return { error: "Payment amount must be greater than zero." };
     if (!paymentDate) return { error: "Payment date is required." };
 
+    // Fetch invoice details before recording payment
+    const invoice = await getSupplierInvoiceById(invoiceId);
+
     await recordInvoicePayment(invoiceId, amount);
+
+    // ── Auto journal entry: DR Accounts Payable, CR Bank ──
+    if (invoice) {
+      const payableAccount = await getSystemAccountBySubType(
+        schemeId,
+        "ACCOUNTS_PAYABLE",
+      );
+      const bankAccount = await getSystemAccountBySubType(
+        schemeId,
+        "BANK",
+        "ADMINISTRATIVE",
+      );
+
+      if (payableAccount && bankAccount) {
+        const entryNumber = await getNextEntryNumber(schemeId);
+        const entry = await createJournalEntry({
+          schemeId,
+          entryNumber,
+          transactionDate: paymentDate,
+          description: `Invoice payment — ${String(invoice.invoiceNumber)} (${invoice.supplier?.companyName ?? "supplier"})`,
+          entryType: "AUTO",
+          sourceType: "PAYMENT",
+          sourceId: invoiceId,
+          createdBy: profile.id,
+          lines: [
+            {
+              accountCodeId: payableAccount.id,
+              fundId: invoice.fundId,
+              debit: amount,
+              description: `Accounts payable settled — invoice ${String(invoice.invoiceNumber)}`,
+              supplierId: invoice.supplierId,
+            },
+            {
+              accountCodeId: bankAccount.id,
+              fundId: invoice.fundId,
+              credit: amount,
+              description: "Bank payment — supplier invoice",
+            },
+          ],
+        });
+        await postJournalEntry(entry.id, profile.id);
+      }
+    }
 
     await logActivity({
       schemeId,

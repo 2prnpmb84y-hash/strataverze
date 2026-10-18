@@ -166,3 +166,36 @@ export async function getSystemAccounts(schemeId: string, limit = 100) {
     .limit(limit)
     .all();
 }
+
+/**
+ * Look up a system account by its sub-type and fund type.
+ *
+ * Used by automated journal entry generation to find the correct
+ * account for double-entry postings (e.g. Levies Receivable for a
+ * specific fund, Accounts Payable, Bank Account).
+ *
+ * Returns null if the scheme's chart of accounts has not been seeded
+ * or the requested account type does not exist.
+ */
+export async function getSystemAccountBySubType(
+  schemeId: string,
+  accountSubType: string,
+  fundType?: "ADMINISTRATIVE" | "CAPITAL_WORKS",
+) {
+  const accounts = await db.orm.public.AccountCode
+    .where((a) =>
+      and(
+        a.schemeId.eq(schemeId),
+        a.isSystemAccount.eq(true),
+        a.isActive.eq(true),
+        a.accountSubType.eq(accountSubType),
+      ),
+    )
+    .include("fund")
+    .limit(10)
+    .all();
+
+  if (!fundType) return accounts[0] ?? null;
+
+  return accounts.find((a) => a.fund?.fundType === fundType) ?? null;
+}
