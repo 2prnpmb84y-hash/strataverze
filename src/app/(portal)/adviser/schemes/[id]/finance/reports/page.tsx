@@ -40,6 +40,20 @@ const reports = [
       "Matched and unmatched transactions between bank statement and general ledger.",
     href: "/bank-reconciliation",
   },
+  {
+    key: "trial-balance",
+    title: "Trial Balance",
+    description:
+      "Debit and credit balances for all accounts as at a selected date, verifying the ledger is in balance.",
+    href: "/trial-balance",
+  },
+  {
+    key: "fund-summary",
+    title: "Fund Summary",
+    description:
+      "Opening and closing balances, income, expenses, and levy collection status for each fund.",
+    href: "/fund-summary",
+  },
 ];
 
 export default async function ReportsPage({

@@ -76,6 +76,13 @@ import {
   reopenPeriod,
 } from "@/lib/queries/financial-periods";
 
+// ── Budget management ────────────────────────────────────────
+import {
+  createBudgetLine,
+  updateBudgetLine,
+  deleteBudgetLine,
+} from "@/lib/queries/budget";
+
 // ── Types ─────────────────────────────────────────────────────
 
 export type ActionState = {
@@ -1484,5 +1491,106 @@ export async function reopenPeriodAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to reopen financial period." };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 10. BUDGET MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+export async function createBudgetLineAction(
+  schemeId: string,
+  data: {
+    fundId: string;
+    accountCodeId: string;
+    financialYear: number;
+    budgetAmount: number;
+    notes?: string;
+  },
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const line = await createBudgetLine(data);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "BUDGET_LINE_CREATED",
+      entityType: "BudgetLine",
+      entityId: line.id,
+      metadata: {
+        fundId: data.fundId,
+        accountCodeId: data.accountCodeId,
+        financialYear: data.financialYear,
+        budgetAmount: data.budgetAmount,
+      },
+    });
+
+    revalidatePath(financePath(schemeId, "/budget"));
+    return { success: true, data: { id: line.id } };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    const message = err instanceof Error ? err.message : "";
+    if (message.includes("unique") || message.includes("duplicate")) {
+      return { error: "A budget line already exists for this account and financial year." };
+    }
+    return { error: "Failed to create budget line." };
+  }
+}
+
+export async function updateBudgetLineAction(
+  schemeId: string,
+  budgetLineId: string,
+  data: {
+    budgetAmount?: number;
+    notes?: string | null;
+  },
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    await updateBudgetLine(budgetLineId, data);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "BUDGET_LINE_UPDATED",
+      entityType: "BudgetLine",
+      entityId: budgetLineId,
+      metadata: { ...data },
+    });
+
+    revalidatePath(financePath(schemeId, "/budget"));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to update budget line." };
+  }
+}
+
+export async function deleteBudgetLineAction(
+  schemeId: string,
+  budgetLineId: string,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    await deleteBudgetLine(budgetLineId);
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "BUDGET_LINE_DELETED",
+      entityType: "BudgetLine",
+      entityId: budgetLineId,
+      metadata: {},
+    });
+
+    revalidatePath(financePath(schemeId, "/budget"));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to delete budget line." };
   }
 }

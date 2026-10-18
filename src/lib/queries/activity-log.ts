@@ -58,7 +58,10 @@ export type ActivityAction =
   | "FINANCIAL_PERIOD_CLOSED"
   | "FINANCIAL_PERIOD_LOCKED"
   | "FINANCIAL_PERIOD_REOPENED"
-  | "PAYMENT_CONFIRMATION_UPLOADED";
+  | "PAYMENT_CONFIRMATION_UPLOADED"
+  | "BUDGET_LINE_CREATED"
+  | "BUDGET_LINE_UPDATED"
+  | "BUDGET_LINE_DELETED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -88,7 +91,8 @@ export type ActivityEntityType =
   | "Supplier"
   | "SupplierInvoice"
   | "FinancialDocument"
-  | "FinancialPeriod";
+  | "FinancialPeriod"
+  | "BudgetLine";
 
 type LogActivityData = {
   schemeId: string;

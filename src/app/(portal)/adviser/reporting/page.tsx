@@ -1,6 +1,6 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForAdviser } from "@/lib/queries/schemes";
-import { getLeviesForSchemes } from "@/lib/queries/levies";
+import { getLevyNoticesForSchemes } from "@/lib/queries/levy-schedules";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { getComplianceForSchemes } from "@/lib/queries/compliance";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,9 +14,9 @@ export default async function AdviserReportingPage() {
   const schemes = await getSchemesForAdviser(profile.id);
   const schemeIds = schemes.map((s) => s.id);
 
-  const [levies, workOrders, complianceItems] = schemeIds.length > 0
+  const [levyNotices, workOrders, complianceItems] = schemeIds.length > 0
     ? await Promise.all([
-        getLeviesForSchemes(schemeIds),
+        getLevyNoticesForSchemes(schemeIds),
         getWorkOrdersForSchemes(schemeIds),
         getComplianceForSchemes(schemeIds),
       ])
@@ -24,14 +24,13 @@ export default async function AdviserReportingPage() {
 
   const schemeNames = new Map(schemes.map((s) => [s.id, s.name]));
 
-  // Levy stats
-  const totalLevied = levies.reduce(
-    (sum, l) => sum + Number(l.totalAmount),
+  // Levy stats from LevyNotice model
+  const totalLevied = levyNotices.reduce(
+    (sum, n) => sum + Number(n.amountDue),
     0,
   );
-  const totalCollected = levies.reduce(
-    (sum, l) =>
-      sum + l.items.reduce((s, item) => s + Number(item.paidAmount), 0),
+  const totalCollected = levyNotices.reduce(
+    (sum, n) => sum + Number(n.amountPaid),
     0,
   );
   const collectionRate =
@@ -40,9 +39,6 @@ export default async function AdviserReportingPage() {
   // Work order stats
   const activeWorkOrders = workOrders.filter(
     (wo) => wo.status === "OPEN" || wo.status === "IN_PROGRESS",
-  );
-  const completedWorkOrders = workOrders.filter(
-    (wo) => wo.status === "COMPLETED",
   );
 
   // Compliance stats
@@ -57,11 +53,10 @@ export default async function AdviserReportingPage() {
 
   // Per-scheme summary
   const schemeSummaries = schemes.map((scheme) => {
-    const sLevies = levies.filter((l) => l.schemeId === scheme.id);
-    const sLevied = sLevies.reduce((sum, l) => sum + Number(l.totalAmount), 0);
-    const sCollected = sLevies.reduce(
-      (sum, l) =>
-        sum + l.items.reduce((s, item) => s + Number(item.paidAmount), 0),
+    const sNotices = levyNotices.filter((n) => n.schemeId === scheme.id);
+    const sLevied = sNotices.reduce((sum, n) => sum + Number(n.amountDue), 0);
+    const sCollected = sNotices.reduce(
+      (sum, n) => sum + Number(n.amountPaid),
       0,
     );
     const sActiveWo = workOrders.filter(

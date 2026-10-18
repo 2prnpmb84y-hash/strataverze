@@ -327,6 +327,24 @@ export async function getOverdueLevyNotices(schemeId: string, limit = 500) {
 }
 
 /**
+ * Fetch levy notices across multiple schemes for portfolio reporting.
+ * Returns notices with fund relation for financial aggregation.
+ */
+export async function getLevyNoticesForSchemes(
+  schemeIds: string[],
+  limit = 1000,
+) {
+  if (schemeIds.length === 0) return [];
+
+  return db.orm.public.LevyNotice
+    .where((ln) => ln.schemeId.in(schemeIds))
+    .include("fund")
+    .orderBy((ln) => ln.dueDate.desc())
+    .limit(limit)
+    .all();
+}
+
+/**
  * Get the next sequential levy notice number for a scheme.
  * Returns a formatted string like "LN-0001".
  */

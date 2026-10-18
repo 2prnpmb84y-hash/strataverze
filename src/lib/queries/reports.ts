@@ -385,6 +385,265 @@ export async function getLevyRegisterReport(
   return items;
 }
 
+// ─── Trial Balance Report ──────────────────────────────────────
+
+export interface TrialBalanceLineItem {
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  fundName: string;
+  debitBalance: number;
+  creditBalance: number;
+}
+
+export interface TrialBalanceReport {
+  lines: TrialBalanceLineItem[];
+  totalDebits: number;
+  totalCredits: number;
+  isBalanced: boolean;
+}
+
+/**
+ * Generate a trial balance report for a scheme as at a given date.
+ * Aggregates all posted journal entry lines into debit/credit balances
+ * per account code. The trial balance must always be in balance
+ * (total debits = total credits).
+ */
+export async function getTrialBalanceReport(
+  schemeId: string,
+  asAtDate: string,
+  fundId: string | null,
+): Promise<TrialBalanceReport> {
+  // Fetch all posted journal entries up to the as-at date
+  const entries = await db.orm.public.JournalEntry
+    .where((je) =>
+      and(
+        je.schemeId.eq(schemeId),
+        je.status.eq("POSTED"),
+        je.transactionDate.lte(toTimestamp(asAtDate)),
+      ),
+    )
+    .include("lines", (l) => l.include("accountCode").include("fund"))
+    .limit(5000)
+    .all();
+
+  // Aggregate by account code
+  const accountTotals = new Map<
+    string,
+    {
+      accountCode: string;
+      accountName: string;
+      accountType: string;
+      fundName: string;
+      totalDebit: number;
+      totalCredit: number;
+    }
+  >();
+
+  for (const entry of entries) {
+    for (const line of entry.lines) {
+      if (fundId && line.fundId !== fundId) continue;
+      if (!line.accountCode) continue;
+
+      const code = String(line.accountCode.code);
+      const key = `${code}-${line.fundId ?? "none"}`;
+
+      const existing = accountTotals.get(key);
+      const debit = Number(line.debit ?? 0);
+      const credit = Number(line.credit ?? 0);
+
+      if (existing) {
+        existing.totalDebit += debit;
+        existing.totalCredit += credit;
+      } else {
+        accountTotals.set(key, {
+          accountCode: code,
+          accountName: String(line.accountCode.name),
+          accountType: String(line.accountCode.accountType),
+          fundName: line.fund ? String(line.fund.name) : "Unallocated",
+          totalDebit: debit,
+          totalCredit: credit,
+        });
+      }
+    }
+  }
+
+  // Build trial balance lines with net debit or credit balances
+  const lines: TrialBalanceLineItem[] = [];
+
+  for (const acc of accountTotals.values()) {
+    const net = acc.totalDebit - acc.totalCredit;
+    if (Math.abs(net) < 0.005) continue; // Skip zero-balance accounts
+
+    lines.push({
+      accountCode: acc.accountCode,
+      accountName: acc.accountName,
+      accountType: acc.accountType,
+      fundName: acc.fundName,
+      debitBalance: net > 0 ? Math.round(net * 100) / 100 : 0,
+      creditBalance: net < 0 ? Math.round(Math.abs(net) * 100) / 100 : 0,
+    });
+  }
+
+  lines.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+
+  const totalDebits = lines.reduce((sum, l) => sum + l.debitBalance, 0);
+  const totalCredits = lines.reduce((sum, l) => sum + l.creditBalance, 0);
+
+  return {
+    lines,
+    totalDebits: Math.round(totalDebits * 100) / 100,
+    totalCredits: Math.round(totalCredits * 100) / 100,
+    isBalanced:
+      Math.abs(Math.round(totalDebits * 100) - Math.round(totalCredits * 100)) < 1,
+  };
+}
+
+// ─── Fund Summary Report ──────────────────────────────────────
+
+export interface FundSummaryItem {
+  fundId: string;
+  fundName: string;
+  fundType: string;
+  openingBalance: number;
+  totalIncome: number;
+  totalExpenses: number;
+  netMovement: number;
+  closingBalance: number;
+  totalLevied: number;
+  totalCollected: number;
+  outstandingLevies: number;
+}
+
+/**
+ * Generate a fund summary showing the financial position per fund.
+ * Combines journal entry aggregates with levy collection data.
+ */
+export async function getFundSummaryReport(
+  schemeId: string,
+  startDate: string,
+  endDate: string,
+): Promise<FundSummaryItem[]> {
+  // Fetch funds for the scheme
+  const funds = await db.orm.public.Fund
+    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
+    .limit(20)
+    .all();
+
+  if (funds.length === 0) return [];
+
+  // Fetch all posted journal entries in the period
+  const periodEntries = await db.orm.public.JournalEntry
+    .where((je) =>
+      and(
+        je.schemeId.eq(schemeId),
+        je.status.eq("POSTED"),
+        je.transactionDate.gte(toTimestamp(startDate)),
+        je.transactionDate.lte(toTimestamp(endDate)),
+      ),
+    )
+    .include("lines", (l) => l.include("accountCode").include("fund"))
+    .limit(5000)
+    .all();
+
+  // Fetch entries before the period for opening balances
+  const priorEntries = await db.orm.public.JournalEntry
+    .where((je) =>
+      and(
+        je.schemeId.eq(schemeId),
+        je.status.eq("POSTED"),
+        je.transactionDate.lt(toTimestamp(startDate)),
+      ),
+    )
+    .include("lines", (l) => l.include("accountCode").include("fund"))
+    .limit(5000)
+    .all();
+
+  // Fetch levy notices for the scheme
+  const levyNotices = await db.orm.public.LevyNotice
+    .where((ln) => ln.schemeId.eq(schemeId))
+    .include("fund")
+    .limit(5000)
+    .all();
+
+  const summaries: FundSummaryItem[] = [];
+
+  for (const fund of funds) {
+    // Calculate opening balance from prior entries (net assets = assets - liabilities)
+    let openingBalance = Number(fund.balance ?? 0);
+    let priorNet = 0;
+    for (const entry of priorEntries) {
+      for (const line of entry.lines) {
+        if (line.fundId !== fund.id) continue;
+        if (!line.accountCode) continue;
+        const accountType = String(line.accountCode.accountType);
+        const debit = Number(line.debit ?? 0);
+        const credit = Number(line.credit ?? 0);
+
+        if (accountType === "INCOME") {
+          priorNet += credit - debit;
+        } else if (accountType === "EXPENSE") {
+          priorNet -= debit - credit;
+        }
+      }
+    }
+    // If there are prior entries, use the calculated balance
+    if (priorEntries.length > 0) {
+      openingBalance = priorNet;
+    }
+
+    // Calculate current period income and expenses
+    let totalIncome = 0;
+    let totalExpenses = 0;
+
+    for (const entry of periodEntries) {
+      for (const line of entry.lines) {
+        if (line.fundId !== fund.id) continue;
+        if (!line.accountCode) continue;
+        const accountType = String(line.accountCode.accountType);
+        const debit = Number(line.debit ?? 0);
+        const credit = Number(line.credit ?? 0);
+
+        if (accountType === "INCOME") {
+          totalIncome += credit - debit;
+        } else if (accountType === "EXPENSE") {
+          totalExpenses += debit - credit;
+        }
+      }
+    }
+
+    const netMovement = totalIncome - totalExpenses;
+    const closingBalance = openingBalance + netMovement;
+
+    // Levy collection data for this fund
+    const fundNotices = levyNotices.filter((n) => n.fundId === fund.id);
+    const totalLevied = fundNotices.reduce(
+      (sum, n) => sum + Number(n.amountDue ?? 0),
+      0,
+    );
+    const totalCollected = fundNotices.reduce(
+      (sum, n) => sum + Number(n.amountPaid ?? 0),
+      0,
+    );
+
+    summaries.push({
+      fundId: fund.id,
+      fundName: String(fund.name),
+      fundType: String(fund.fundType),
+      openingBalance: Math.round(openingBalance * 100) / 100,
+      totalIncome: Math.round(totalIncome * 100) / 100,
+      totalExpenses: Math.round(totalExpenses * 100) / 100,
+      netMovement: Math.round(netMovement * 100) / 100,
+      closingBalance: Math.round(closingBalance * 100) / 100,
+      totalLevied: Math.round(totalLevied * 100) / 100,
+      totalCollected: Math.round(totalCollected * 100) / 100,
+      outstandingLevies: Math.round((totalLevied - totalCollected) * 100) / 100,
+    });
+  }
+
+  return summaries;
+}
+
 // ─── Bank Reconciliation Report ─────────────────────────────────
 
 export interface BankReconciliationReport {
