@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createSupplierInvoiceAction, ActionState } from "../actions";
+import {
+  createSupplierInvoiceAction,
+  extractInvoiceFromPdfAction,
+  ActionState,
+} from "../actions";
 import {
   FormField,
   SelectField,
@@ -33,6 +37,8 @@ export function InvoiceForm({
   const [subtotal, setSubtotal] = useState(0);
   const [gstAmount, setGstAmount] = useState(0);
   const totalAmount = subtotal + gstAmount;
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
 
   const supplierOptions = [
     { value: "", label: "Select..." },
@@ -51,6 +57,108 @@ export function InvoiceForm({
     { value: "", label: "Select..." },
     ...funds.map((f) => ({ value: f.id, label: f.name })),
   ];
+
+  async function handlePdfUpload(file: File) {
+    setIsExtracting(true);
+    setExtractionWarnings([]);
+    setError(undefined);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          "",
+        ),
+      );
+
+      const result = await extractInvoiceFromPdfAction(schemeId, base64);
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      if (result.data) {
+        const d = result.data;
+
+        if (d.invoiceNumber) {
+          const el = document.querySelector<HTMLInputElement>(
+            'input[name="invoiceNumber"]',
+          );
+          if (el) {
+            el.value = d.invoiceNumber;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
+
+        if (d.invoiceDate) {
+          const el = document.querySelector<HTMLInputElement>(
+            'input[name="invoiceDate"]',
+          );
+          if (el) {
+            el.value = d.invoiceDate;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
+
+        if (d.dueDate) {
+          const el = document.querySelector<HTMLInputElement>(
+            'input[name="dueDate"]',
+          );
+          if (el) {
+            el.value = d.dueDate;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
+
+        if (d.subtotal !== null) setSubtotal(d.subtotal);
+        if (d.gstAmount !== null) setGstAmount(d.gstAmount);
+
+        if (d.description) {
+          const el = document.querySelector<HTMLTextAreaElement>(
+            'textarea[name="description"]',
+          );
+          if (el) {
+            el.value = d.description;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
+
+        // Try to match supplier by name
+        if (d.supplierName) {
+          const match = suppliers.find(
+            (s) =>
+              s.companyName.toLowerCase() === d.supplierName!.toLowerCase(),
+          );
+          if (match) {
+            const el = document.querySelector<HTMLSelectElement>(
+              'select[name="supplierId"]',
+            );
+            if (el) {
+              el.value = match.id;
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+          }
+        }
+
+        if (d.warnings.length > 0) {
+          setExtractionWarnings(d.warnings);
+        }
+
+        if (d.confidence === "low") {
+          setExtractionWarnings((prev) => [
+            ...prev,
+            "Low confidence extraction. Please review all fields carefully.",
+          ]);
+        }
+      }
+    } catch {
+      setError("Failed to process PDF file.");
+    } finally {
+      setIsExtracting(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -117,6 +225,47 @@ export function InvoiceForm({
           <p className="mt-2 text-xs text-amber-600">
             Click &ldquo;Create Invoice&rdquo; again to proceed anyway.
           </p>
+        </div>
+      )}
+
+      {/* PDF extraction */}
+      <div className="rounded-lg border border-dashed border-border bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Upload Invoice PDF
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Upload a supplier invoice PDF to auto-fill the form fields.
+            </p>
+          </div>
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              disabled={isExtracting}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handlePdfUpload(file);
+                e.target.value = "";
+              }}
+            />
+            <span className="inline-flex items-center rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-card">
+              {isExtracting ? "Extracting..." : "Choose PDF"}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      {extractionWarnings.length > 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p className="font-medium">Extraction Notes</p>
+          <ul className="mt-1 list-disc pl-4 space-y-0.5">
+            {extractionWarnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
         </div>
       )}
 

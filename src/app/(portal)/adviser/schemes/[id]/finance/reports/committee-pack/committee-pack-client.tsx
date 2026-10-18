@@ -140,6 +140,7 @@ export function CommitteePackClient({
   startDate,
   endDate,
   pack,
+  basePath,
 }: {
   schemeId: string;
   financialYear: number;
@@ -147,8 +148,10 @@ export function CommitteePackClient({
   startDate: string;
   endDate: string;
   pack: CommitteeReportingPack;
+  basePath?: string;
 }) {
   const router = useRouter();
+  const resolvedBasePath = basePath ?? `/adviser/schemes/${schemeId}/finance/reports/committee-pack`;
 
   function updateParams(updates: Record<string, string>) {
     const params = new URLSearchParams();
@@ -163,7 +166,7 @@ export function CommitteePackClient({
     if (merged.endDate) params.set("endDate", merged.endDate);
     const qs = params.toString();
     router.push(
-      `/adviser/schemes/${schemeId}/finance/reports/committee-pack${qs ? `?${qs}` : ""}`,
+      `${resolvedBasePath}${qs ? `?${qs}` : ""}`,
     );
   }
 

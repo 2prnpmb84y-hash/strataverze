@@ -40,6 +40,7 @@ export function OwnerStatementClient({
   totalPayments,
   closingBalance,
   statementLines,
+  basePath,
 }: {
   schemeId: string;
   lotOptions: { id: string; label: string }[];
@@ -53,8 +54,10 @@ export function OwnerStatementClient({
   totalPayments: number;
   closingBalance: number;
   statementLines: StatementLine[];
+  basePath?: string;
 }) {
   const router = useRouter();
+  const resolvedBasePath = basePath ?? `/adviser/schemes/${schemeId}/finance/reports/owner-statement`;
 
   function applyFilters(updates: Record<string, string>) {
     const params = new URLSearchParams();
@@ -64,7 +67,7 @@ export function OwnerStatementClient({
     if (current.endDate) params.set("endDate", current.endDate);
     const qs = params.toString();
     router.push(
-      `/adviser/schemes/${schemeId}/finance/reports/owner-statement${qs ? `?${qs}` : ""}`,
+      `${resolvedBasePath}${qs ? `?${qs}` : ""}`,
     );
   }
 

@@ -69,6 +69,27 @@ const reports = [
       "Quarterly GST summary aligned to ATO BAS labels. Shows GST on sales, GST on purchases, and net GST payable.",
     href: "/gst-summary",
   },
+  {
+    key: "audit-trail",
+    title: "Audit Trail",
+    description:
+      "Chronological log of all financial actions including journal postings, levy changes, and bank reconciliation events.",
+    href: "/audit-trail",
+  },
+  {
+    key: "owner-statement",
+    title: "Owner Statement",
+    description:
+      "Individual lot owner account statement showing levies raised, payments received, interest charged, and running balance.",
+    href: "/owner-statement",
+  },
+  {
+    key: "committee-pack",
+    title: "Committee Reporting Pack",
+    description:
+      "Consolidated financial summary for committee meetings including fund balances, arrears, budget variance, and bank status.",
+    href: "/committee-pack",
+  },
 ];
 
 export default async function AccountantReportsPage({

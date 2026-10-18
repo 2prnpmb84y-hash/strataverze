@@ -13,6 +13,12 @@ import {
 } from "@/lib/queries/activity-log";
 import { db } from "@/prisma/db";
 
+// ── Invoice extraction ───────────────────────────────────────
+import {
+  extractInvoiceFromPdf,
+  type ExtractedInvoiceData,
+} from "@/lib/queries/invoice-extraction";
+
 // ── Chart of accounts ─────────────────────────────────────────
 import {
   createAccountCode,
@@ -1981,5 +1987,38 @@ export async function exportAuditTrailAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to export audit trail." };
+  }
+}
+
+// ── Invoice PDF extraction ───────────────────────────────────
+
+export async function extractInvoiceFromPdfAction(
+  schemeId: string,
+  base64Data: string,
+): Promise<{
+  error?: string;
+  data?: ExtractedInvoiceData;
+}> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const buffer = Buffer.from(base64Data, "base64");
+
+    if (buffer.length > 10 * 1024 * 1024) {
+      return { error: "PDF file exceeds 10 MB limit." };
+    }
+
+    const result = await extractInvoiceFromPdf(buffer);
+
+    return { data: result };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    console.error("Invoice extraction error:", err);
+    return {
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to extract data from the PDF.",
+    };
   }
 }

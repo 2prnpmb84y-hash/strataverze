@@ -83,6 +83,8 @@ export function AuditTrailClient({
   hasMore,
   actors,
   filters,
+  basePath,
+  readOnly,
 }: {
   schemeId: string;
   rows: AuditTrailRow[];
@@ -90,10 +92,13 @@ export function AuditTrailClient({
   hasMore: boolean;
   actors: { id: string; name: string }[];
   filters: AuditTrailFilters;
+  basePath?: string;
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isExporting, setIsExporting] = useState(false);
+  const resolvedBasePath = basePath ?? `/adviser/schemes/${schemeId}/finance/reports/audit-trail`;
 
   function updateFilters(updates: Partial<AuditTrailFilters & { page: number }>) {
     const merged = { ...filters, ...updates };
@@ -108,7 +113,7 @@ export function AuditTrailClient({
     const qs = params.toString();
     startTransition(() => {
       router.push(
-        `/adviser/schemes/${schemeId}/finance/reports/audit-trail${qs ? `?${qs}` : ""}`,
+        `${resolvedBasePath}${qs ? `?${qs}` : ""}`,
       );
     });
   }
@@ -211,13 +216,15 @@ export function AuditTrailClient({
             >
               Clear Filters
             </Button>
-            <Button
-              onClick={handleExport}
-              className="text-sm px-3 py-1.5"
-              disabled={isExporting}
-            >
-              {isExporting ? "Exporting..." : "Export CSV"}
-            </Button>
+            {!readOnly && (
+              <Button
+                onClick={handleExport}
+                className="text-sm px-3 py-1.5"
+                disabled={isExporting}
+              >
+                {isExporting ? "Exporting..." : "Export CSV"}
+              </Button>
+            )}
           </div>
         </div>
       </Card>
