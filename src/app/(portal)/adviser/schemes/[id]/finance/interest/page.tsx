@@ -24,8 +24,9 @@ export default async function InterestPage({
   );
   if (!isAdviser) notFound();
 
-  const { notices, annualRate } =
-    await getOverdueLevyNoticesWithInterest(id);
+  const interestData = await getOverdueLevyNoticesWithInterest(id);
+  const notices = interestData?.notices ?? [];
+  const annualRate = interestData?.annualRate ?? 0;
 
   return (
     <div className="space-y-6">

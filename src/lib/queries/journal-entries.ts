@@ -426,6 +426,6 @@ export async function getNextEntryNumber(schemeId: string): Promise<string> {
     return `JE-${String(nextNum).padStart(4, "0")}`;
   } catch {
     // Table may not exist yet
-    return [];
+    return "JE-0001";
   }
 }

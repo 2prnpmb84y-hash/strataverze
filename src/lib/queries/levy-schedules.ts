@@ -394,6 +394,6 @@ export async function getNextNoticeNumber(schemeId: string): Promise<string> {
     return `LN-${String(nextNum).padStart(4, "0")}`;
   } catch {
     // Table may not exist yet
-    return [];
+    return "LN-0001";
   }
 }
