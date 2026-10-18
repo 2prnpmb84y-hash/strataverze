@@ -57,7 +57,7 @@ export default async function OwnerStatementPage({
   }
 
   let statementLines: StatementLine[] = [];
-  let openingBalance = 0;
+  const openingBalance = 0;
   let totalCharges = 0;
   let totalPayments = 0;
   let closingBalance = 0;

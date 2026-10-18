@@ -66,7 +66,7 @@ export default async function OwnerFinancePage() {
   ]);
 
   // If no levy notices, fall back to levy items
-  let useNotices = notices.length > 0;
+  const useNotices = notices.length > 0;
   let totalDue = 0;
   let totalPaid = 0;
 
