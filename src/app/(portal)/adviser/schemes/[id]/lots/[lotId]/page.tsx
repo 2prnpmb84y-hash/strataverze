@@ -108,8 +108,8 @@ export default async function LotDetailPage({
                   }
                   action={
                     lot.isCommitteeMember ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary-400" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-soft px-2.5 py-1 text-xs font-medium text-turquoise">
+                        <span className="h-1.5 w-1.5 rounded-full bg-turquoise" />
                         Committee
                       </span>
                     ) : undefined

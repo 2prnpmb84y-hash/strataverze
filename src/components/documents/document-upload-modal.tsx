@@ -194,8 +194,8 @@ export function DocumentUploadModal({
         {/* Step indicator */}
         <div className="px-6 pb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className={`h-1 flex-1 rounded-full ${step === "files" ? "bg-primary-400" : "bg-primary-400"}`} />
-            <div className={`h-1 flex-1 rounded-full ${step === "metadata" ? "bg-primary-400" : "bg-gray-200"}`} />
+            <div className={`h-1 flex-1 rounded-full ${step === "files" ? "bg-turquoise" : "bg-turquoise"}`} />
+            <div className={`h-1 flex-1 rounded-full ${step === "metadata" ? "bg-turquoise" : "bg-gray-200"}`} />
           </div>
           <div className="flex justify-between mt-1">
             <span className="text-xs text-ink-muted">Select files</span>
@@ -213,8 +213,8 @@ export function DocumentUploadModal({
               onClick={() => inputRef.current?.click()}
               className={`mt-2 flex flex-col items-center justify-center rounded-[var(--radius-card)] border-2 border-dashed p-10 cursor-pointer transition-colors ${
                 isDragOver
-                  ? "border-primary-400 bg-primary-50"
-                  : "border-line hover:border-primary-300 hover:bg-muted/50"
+                  ? "border-turquoise bg-mint-soft"
+                  : "border-line hover:border-mint hover:bg-muted/50"
               }`}
             >
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="mb-3 text-ink-muted">
@@ -252,7 +252,7 @@ export function DocumentUploadModal({
             <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
               {files.map((f, idx) => (
                 <div key={f.id} className="flex items-center gap-3 rounded-[var(--radius-card)] bg-muted px-4 py-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-medium flex items-center justify-center">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-mint-soft text-turquoise text-xs font-medium flex items-center justify-center">
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">

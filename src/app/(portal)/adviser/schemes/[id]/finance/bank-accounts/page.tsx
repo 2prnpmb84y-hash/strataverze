@@ -65,7 +65,7 @@ export default async function BankAccountsPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {bankAccounts.map((account) => (
             <Link key={account.id} href={`/adviser/schemes/${id}/finance/bank-accounts/${account.id}`} className="block">
-            <Card className="hover:border-primary-300 transition-colors">
+            <Card className="hover:border-mint transition-colors">
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">

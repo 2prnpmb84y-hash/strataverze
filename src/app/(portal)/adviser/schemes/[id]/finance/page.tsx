@@ -370,7 +370,7 @@ function QuickActionCard({
   return (
     <Link
       href={href}
-      className="group rounded-[var(--radius-card)] bg-white border border-line p-5 hover:border-primary-300 hover:shadow-sm transition-all"
+      className="group rounded-[var(--radius-card)] bg-white border border-line p-5 hover:border-mint hover:shadow-sm transition-all"
     >
       <div className="text-ink-muted group-hover:text-turquoise transition-colors mb-3">
         {icon}

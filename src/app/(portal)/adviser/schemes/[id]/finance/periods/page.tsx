@@ -154,7 +154,7 @@ export default async function FinancialPeriodsPage({
                         <span className="flex items-center gap-2">
                           {String(period.name)}
                           {isCurrent && (
-                            <span className="inline-flex items-center rounded-full bg-primary-100 text-primary-700 px-2 py-0.5 text-[10px] font-medium">
+                            <span className="inline-flex items-center rounded-full bg-mint-soft text-turquoise px-2 py-0.5 text-[10px] font-medium">
                               Current
                             </span>
                           )}

@@ -282,7 +282,7 @@ function LinkedRecord({
       {href && (
         <Link
           href={href}
-          className="text-xs font-medium text-primary-600 hover:text-primary-700"
+          className="text-xs font-medium text-turquoise hover:text-turquoise/80"
         >
           View
         </Link>

@@ -172,7 +172,7 @@ function HorizontalSummary({ stats }: { stats?: StatRow[] }) {
     <div className="w-full h-full flex flex-col justify-center gap-2.5 px-1">
       {stats.map((stat, i) => {
         const widthPct = maxVal > 0 ? (parsed[i] / maxVal) * 100 : 0;
-        const barColour = stat.colour ?? "bg-primary-400";
+        const barColour = stat.colour ?? "bg-turquoise";
 
         return (
           <div key={stat.label} className="flex flex-col gap-0.5">

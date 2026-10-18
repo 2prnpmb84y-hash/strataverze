@@ -45,7 +45,7 @@ export default async function JournalEntriesPage({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Entries" value={totalEntries} accent="bg-primary-400" />
+        <StatCard label="Total Entries" value={totalEntries} accent="bg-turquoise" />
         <StatCard label="Posted" value={postedCount} accent="bg-green-500" />
         <StatCard label="Draft" value={draftCount} accent="bg-zinc-400" />
       </div>

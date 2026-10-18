@@ -249,10 +249,10 @@ export function DocumentsTabContent({
 
       {/* Upload progress */}
       {uploading && uploadProgress && (
-        <div className="mb-5 rounded-[var(--radius-card)] bg-primary-50 border border-primary-200 px-4 py-3">
+        <div className="mb-5 rounded-[var(--radius-card)] bg-mint-soft border border-mint px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-400 border-t-transparent" />
-            <p className="text-sm font-medium text-primary-700">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-turquoise border-t-transparent" />
+            <p className="text-sm font-medium text-turquoise">
               Uploading file {uploadProgress.current} of {uploadProgress.total}...
             </p>
           </div>

@@ -597,7 +597,7 @@ export function MatchingRulesClient({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   updateField("autoPost", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-line text-primary-400 focus:ring-turquoise"
+                className="h-4 w-4 rounded border-line text-turquoise focus:ring-turquoise"
               />
               <label
                 htmlFor="autoPost"
@@ -866,7 +866,7 @@ export function MatchingRulesClient({
                               type="button"
                               onClick={() => startEdit(rule)}
                               disabled={isPending}
-                              className="text-sm px-2 py-1 rounded text-turquoise hover:bg-primary-50 transition-colors"
+                              className="text-sm px-2 py-1 rounded text-turquoise hover:bg-mint-soft transition-colors"
                             >
                               Edit
                             </button>

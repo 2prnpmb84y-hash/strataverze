@@ -31,7 +31,7 @@ const portalConfig = {
   accountant: {
     label: "Accountant Portal",
     shortLabel: "Accountant",
-    colour: "bg-primary-600",
+    colour: "bg-turquoise",
   },
 } as const;
 
@@ -180,7 +180,7 @@ export function PortalShell({
       {/* Skip to content */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-[var(--radius-card)] focus:bg-primary-400 focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-[var(--radius-card)] focus:bg-turquoise focus:px-4 focus:py-2 focus:text-white focus:text-sm focus:font-medium focus:shadow-lg"
       >
         Skip to main content
       </a>
@@ -253,7 +253,7 @@ export function PortalShell({
               }`}
             >
               Invitations
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary-400 text-[9px] font-bold text-white">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-turquoise text-[9px] font-bold text-white">
                 {pendingInvitationCount}
               </span>
             </Link>

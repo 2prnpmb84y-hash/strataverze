@@ -244,7 +244,7 @@ export function ReconciliationView({
                                     }
                                     className={`w-full text-left rounded-[var(--radius-card)] border px-3 py-2 text-sm transition-colors ${
                                       selectedJournalEntryId === je.id
-                                        ? "border-primary-400 bg-primary-50"
+                                        ? "border-turquoise bg-mint-soft"
                                         : "border-line hover:bg-muted/50"
                                     }`}
                                   >

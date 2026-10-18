@@ -94,7 +94,7 @@ export function StrataRollTable({
               onClick={() => handleFilterChange(tab.key)}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeFilter === tab.key
-                  ? "bg-primary-400 text-white"
+                  ? "bg-turquoise text-white"
                   : "bg-white text-ink-muted hover:text-ink hover:bg-muted"
               }`}
             >
@@ -241,7 +241,7 @@ export function StrataRollTable({
               onClick={() => setCurrentPage(page)}
               className={`min-w-[28px] h-7 rounded text-sm font-medium transition-colors ${
                 page === safePage
-                  ? "bg-primary-400 text-white"
+                  ? "bg-turquoise text-white"
                   : "text-ink-muted hover:text-ink hover:bg-muted"
               }`}
             >

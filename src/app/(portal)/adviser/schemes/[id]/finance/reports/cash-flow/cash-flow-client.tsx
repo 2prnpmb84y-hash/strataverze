@@ -115,7 +115,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
         <StatCard
           label="Ending Balance"
           value={formatCurrency(forecast.endingBalance)}
-          accent={forecast.endingBalance >= 0 ? "bg-primary-400" : "bg-rose-500"}
+          accent={forecast.endingBalance >= 0 ? "bg-turquoise" : "bg-rose-500"}
         />
       </div>
 

@@ -36,13 +36,13 @@ function fundTypeLabel(type: string): string {
 function fundTypeAccent(type: string): string {
   switch (type) {
     case "ADMINISTRATIVE":
-      return "bg-primary-400";
+      return "bg-turquoise";
     case "CAPITAL_WORKS":
       return "bg-amber-500";
     case "SPECIAL":
       return "bg-violet-500";
     default:
-      return "bg-primary-400";
+      return "bg-turquoise";
   }
 }
 

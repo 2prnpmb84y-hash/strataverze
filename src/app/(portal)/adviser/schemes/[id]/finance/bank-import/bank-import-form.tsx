@@ -454,7 +454,7 @@ export function BankImportForm({
                 type="file"
                 accept=".csv,.ofx,.qfx"
                 onChange={handleFileUpload}
-                className="block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-[var(--radius-card)] file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                className="block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-[var(--radius-card)] file:border-0 file:text-sm file:font-medium file:bg-mint-soft file:text-turquoise hover:file:bg-mint-soft cursor-pointer"
               />
               <p className="mt-2 text-xs text-ink-muted">
                 Maximum file size: 5 MB

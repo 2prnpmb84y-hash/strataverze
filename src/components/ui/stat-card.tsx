@@ -1,7 +1,7 @@
 export function StatCard({
   label,
   value,
-  accent = "bg-primary-400",
+  accent = "bg-turquoise",
 }: {
   label: string;
   value: string | number;

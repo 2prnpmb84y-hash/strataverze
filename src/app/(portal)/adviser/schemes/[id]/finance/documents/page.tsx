@@ -230,7 +230,7 @@ function FilterLink({
       href={href}
       className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors ${
         active
-          ? "bg-primary-100 text-primary-700"
+          ? "bg-mint-soft text-turquoise"
           : "bg-muted text-ink-muted hover:bg-muted/80"
       }`}
     >

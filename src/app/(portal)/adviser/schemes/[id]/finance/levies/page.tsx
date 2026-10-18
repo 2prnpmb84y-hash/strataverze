@@ -85,7 +85,7 @@ export default async function LevySchedulesPage({
         <div className="space-y-4">
           {schedules.map((schedule) => (
             <Link key={schedule.id} href={`/adviser/schemes/${id}/finance/levies/${schedule.id}`} className="block">
-            <Card className="hover:border-primary-300 transition-colors">
+            <Card className="hover:border-mint transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div>

@@ -56,7 +56,7 @@ export function PeriodActions({
         <>
           <a
             href={`/adviser/schemes/${schemeId}/finance/periods/adjust?periodId=${periodId}`}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-turquoise bg-mint-soft hover:bg-mint-soft transition-colors"
           >
             Adjustment
           </a>
