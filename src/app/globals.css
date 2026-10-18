@@ -29,6 +29,19 @@
   --color-adviser: #FEBB56;
   --color-supplier: #FF6B54;
 
+  /* ─── Figma design tokens ─── */
+  --color-mint: #76E1CE;
+  --color-mint-soft: #CFF4EE;
+  --color-lavender: #B4B4E6;
+  --color-peach: #FFD9A0;
+  --color-gold-line: #F5C98A;
+  --color-ink: #1A202C;
+  --color-ink-muted: #64748B;
+  --color-line: #E2E8F0;
+  --color-turquoise: #00D4BF;
+  --radius-card: 12px;
+  --radius-pill: 9999px;
+
   /* ─── Neutrals ─── */
   --color-background: #ffffff;
   --color-foreground: #1A202C;
@@ -57,9 +70,14 @@
   --radius-xl: 24px;
 }
 
-/* ─── Sidebar gradient ─── */
+/* ─── Rail gradient (mint → blue → lavender) ─── */
+.rail-gradient {
+  background: linear-gradient(180deg, #76E1CE 0%, #9ED3E0 50%, #B4B4E6 100%);
+}
+
+/* Legacy alias — keep until all consumers are migrated */
 .sidebar-gradient {
-  background: linear-gradient(180deg, #00D4BF 0%, #A6B4FF 100%);
+  background: linear-gradient(180deg, #76E1CE 0%, #9ED3E0 50%, #B4B4E6 100%);
 }
 
 /* ─── Portal accent utilities ─── */
