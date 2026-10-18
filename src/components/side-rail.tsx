@@ -94,7 +94,7 @@ export function SideRail({ portal }: { portal: string }) {
 
   return (
     <aside
-      className={`hidden md:flex flex-col rail-gradient sticky top-0 h-screen transition-[width] duration-200 ${
+      className={`hidden md:flex flex-col rail-gradient sticky top-0 h-dvh transition-[width] duration-200 ${
         expanded ? "w-[220px]" : "w-[60px]"
       }`}
       aria-label="Main navigation"
@@ -136,12 +136,12 @@ export function SideRail({ portal }: { portal: string }) {
       </div>
 
       {/* Navigation items */}
-      <nav className="flex-1 flex flex-col gap-1 px-2">
+      <nav className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
         {nav.map((item) => {
           const Icon = item.icon;
           const isActive =
             pathname === item.href ||
-            (item.href !== `/${portal}` && pathname.startsWith(item.href));
+            (item.href !== `/${portal}` && pathname.startsWith(item.href + '/'));
 
           return (
             <Link

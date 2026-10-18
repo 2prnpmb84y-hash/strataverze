@@ -213,7 +213,7 @@ export function PortalShell({
           {mobileNav.map((item) => {
             const isActive =
               pathname === item.href ||
-              (item.href !== `/${portal}` && pathname.startsWith(item.href));
+              (item.href !== `/${portal}` && pathname.startsWith(item.href + '/'));
             return (
               <Link
                 key={item.href}
