@@ -83,7 +83,8 @@ export default async function LevySchedulesPage({
       ) : (
         <div className="space-y-4">
           {schedules.map((schedule) => (
-            <Card key={schedule.id}>
+            <Link key={schedule.id} href={`/adviser/schemes/${id}/finance/levies/${schedule.id}`} className="block">
+            <Card className="hover:border-primary-300 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div>
@@ -116,15 +117,10 @@ export default async function LevySchedulesPage({
                       {schedule.levyNotices.length} / {schedule.totalLots}
                     </p>
                   </div>
-                  <Link
-                    href={`/adviser/schemes/${id}/finance/levies/${schedule.id}`}
-                    className="text-sm font-medium text-primary-500 hover:text-primary-600"
-                  >
-                    View Details
-                  </Link>
                 </div>
               </div>
             </Card>
+            </Link>
           ))}
         </div>
       )}
