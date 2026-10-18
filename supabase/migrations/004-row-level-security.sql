@@ -54,7 +54,7 @@ AS $$
     FROM scheme_memberships
     WHERE scheme_id = p_scheme_id
       AND profile_id = public.current_profile_id()
-      AND role = p_role
+      AND role = p_role::"PortalRole"
       AND is_active = true
   );
 $$;
@@ -73,7 +73,7 @@ AS $$
     FROM scheme_memberships
     WHERE scheme_id = p_scheme_id
       AND profile_id = public.current_profile_id()
-      AND role IN ('ADVISER', 'COMMITTEE', 'ACCOUNTANT')
+      AND role IN ('ADVISER'::"PortalRole", 'COMMITTEE'::"PortalRole", 'ACCOUNTANT'::"PortalRole")
       AND is_active = true
   );
 $$;
@@ -401,7 +401,7 @@ CREATE POLICY quote_requests_select ON quote_requests
         SELECT 1 FROM scheme_memberships
         WHERE scheme_id = quote_requests.scheme_id
           AND profile_id = public.current_profile_id()
-          AND role = 'SUPPLIER'
+          AND role = 'SUPPLIER'::"PortalRole"
           AND is_active = true
       )
     )
