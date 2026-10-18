@@ -409,6 +409,7 @@ export async function getLevyRegisterReport(
     // Table may not exist yet
     return [];
   }
+}
 
 // ─── Trial Balance Report ──────────────────────────────────────
 
@@ -683,6 +684,7 @@ export async function getFundSummaryReport(
     // Table may not exist yet
     return [];
   }
+}
 
 // ─── Bank Reconciliation Report ─────────────────────────────────
 

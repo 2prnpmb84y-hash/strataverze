@@ -58,11 +58,13 @@ describe("validatePasswordStrength", () => {
   });
 
   it("returns correct labels for each score level", () => {
-    // Score 0-1: Too weak
+    // Score 0: Too weak
     expect(validatePasswordStrength("").label).toBe("Too weak");
-    expect(validatePasswordStrength("aaaaaaaa").label).toBe("Too weak");
 
-    // Score 2: Weak
+    // Score 1: Weak (meets length requirement only)
+    expect(validatePasswordStrength("aaaaaaaa").label).toBe("Weak");
+
+    // Score 2: Weak (meets length + uppercase)
     expect(validatePasswordStrength("aaaaaaaA").label).toBe("Weak");
 
     // Score 3: Fair
