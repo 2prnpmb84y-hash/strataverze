@@ -1,5 +1,3 @@
-"use server";
-
 /**
  * Invoice PDF text extraction and field parsing.
  *

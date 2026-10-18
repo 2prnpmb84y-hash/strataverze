@@ -11,7 +11,7 @@ import {
   formatActionLabel,
   formatEntityTypeLabel,
   type AuditTrailFilters,
-} from "@/lib/queries/activity-log";
+} from "@/lib/queries/activity-log-utils";
 
 const inputClasses =
   "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";

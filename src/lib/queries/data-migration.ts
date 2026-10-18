@@ -1,5 +1,3 @@
-"use server";
-
 import crypto from "crypto";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
