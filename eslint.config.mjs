@@ -16,6 +16,11 @@ const eslintConfig = defineConfig([
     "src/prisma/contract.d.ts",
     // Auto-generated migration snapshots
     "migrations/**",
+    // Prisma skills (third-party, not our code)
+    ".agents/**",
+    ".claude/skills/**",
+    ".cursor/**",
+    ".devin/**",
   ]),
 ]);
 
