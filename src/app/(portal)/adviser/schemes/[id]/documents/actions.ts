@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { validateFileUpload } from "@/lib/upload/validate-mime";
 import { logActivity } from "@/lib/queries/activity-log";
+import { resolveDocumentUrl } from "@/lib/queries/document-url";
 
 export type DocumentFormState = {
   error?: string;
@@ -296,5 +297,33 @@ export async function deleteDocumentAction(
       throw err;
     }
     return { error: "Failed to delete document." };
+  }
+}
+
+/**
+ * Return a short-lived signed URL for a document so the client
+ * never needs to construct raw public URLs.
+ */
+export async function getDocumentSignedUrlAction(
+  schemeId: string,
+  fileUrl: string,
+): Promise<{ url?: string; error?: string }> {
+  try {
+    await requireSchemeMembership(schemeId, [
+      "ADVISER",
+      "COMMITTEE",
+      "OWNER",
+      "SUPPLIER",
+    ]);
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    throw err;
+  }
+
+  try {
+    const url = await resolveDocumentUrl(fileUrl, 600); // 10 minutes
+    return { url };
+  } catch {
+    return { error: "Failed to generate document URL." };
   }
 }

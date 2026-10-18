@@ -146,7 +146,6 @@ export default async function SchemeDetailPage({
                 description: d.description ?? null,
                 createdAt: String(d.createdAt),
               }))}
-              supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
             />
           ),
           overview: (

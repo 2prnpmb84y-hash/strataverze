@@ -9,6 +9,7 @@ import {
   uploadFileAction,
   updateDocumentMetadataAction,
   removeDocumentAction,
+  getDocumentSignedUrlAction,
 } from "@/app/(portal)/adviser/schemes/[id]/documents/actions";
 
 export type DocumentMetadata = {
@@ -44,14 +45,12 @@ type Props = {
   schemeId: string;
   schemePlanNumber: string;
   documents: DocumentRecord[];
-  supabaseUrl: string;
 };
 
 export function DocumentsTabContent({
   schemeId,
   schemePlanNumber,
   documents: initialDocuments,
-  supabaseUrl,
 }: Props) {
   const router = useRouter();
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -63,18 +62,33 @@ export function DocumentsTabContent({
   } | null>(null);
   const [documents, setDocuments] = useState(initialDocuments);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadingUrl, setLoadingUrl] = useState(false);
   const [, startTransition] = useTransition();
 
   // Sync documents state when server data changes (after router.refresh).
   // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncing prop into state on server re-render
   useEffect(() => { setDocuments(initialDocuments); }, [initialDocuments]);
 
-  const getPublicUrl = useCallback(
-    (storagePath: string) => {
-      return `${supabaseUrl}/storage/v1/object/public/documents/${storagePath}`;
-    },
-    [supabaseUrl],
-  );
+  // Fetch a signed URL whenever the selected document changes
+  useEffect(() => {
+    if (!selectedDocId) {
+      setSignedUrl(null);
+      return;
+    }
+    const doc = documents.find((d) => d.id === selectedDocId);
+    if (!doc) return;
+
+    let cancelled = false;
+    setLoadingUrl(true);
+    setSignedUrl(null);
+    getDocumentSignedUrlAction(schemeId, doc.fileUrl).then((result) => {
+      if (cancelled) return;
+      if (result.url) setSignedUrl(result.url);
+      setLoadingUrl(false);
+    });
+    return () => { cancelled = true; };
+  }, [selectedDocId, schemeId, documents]);
 
   const handleFilesReady = useCallback(
     async (files: File[], metadata: DocumentMetadata) => {
@@ -289,13 +303,23 @@ export function DocumentsTabContent({
               &larr; Back to list
             </button>
           </div>
-          <DocumentViewer
-            document={selectedDoc}
-            filePublicUrl={getPublicUrl(selectedDoc.fileUrl)}
-            schemePlanNumber={schemePlanNumber}
-            onUpdate={handleUpdate}
-            onRemove={handleRemove}
-          />
+          {loadingUrl ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              Loading document…
+            </div>
+          ) : signedUrl ? (
+            <DocumentViewer
+              document={selectedDoc}
+              filePublicUrl={signedUrl}
+              schemePlanNumber={schemePlanNumber}
+              onUpdate={handleUpdate}
+              onRemove={handleRemove}
+            />
+          ) : (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              Unable to load document preview.
+            </div>
+          )}
         </div>
       )}
 
