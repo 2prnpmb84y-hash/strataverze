@@ -43,8 +43,8 @@ export default async function BankAccountsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Bank Accounts</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-lg font-semibold text-ink">Bank Accounts</h2>
+          <p className="text-sm text-ink-muted">
             Manage bank accounts linked to this scheme.
           </p>
         </div>
@@ -65,14 +65,14 @@ export default async function BankAccountsPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {bankAccounts.map((account) => (
             <Link key={account.id} href={`/adviser/schemes/${id}/finance/bank-accounts/${account.id}`} className="block">
-            <Card className="hover:border-primary-300 transition-colors">
+            <Card className="hover:border-mint transition-colors">
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-foreground truncate">
+                    <p className="font-semibold text-ink truncate">
                       {account.accountName}
                     </p>
-                    <p className="text-sm text-muted-foreground">{account.bankName}</p>
+                    <p className="text-sm text-ink-muted">{account.bankName}</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {account.isOperating && (
@@ -86,7 +86,7 @@ export default async function BankAccountsPage({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-ink-muted">
                   <span>
                     <span className="opacity-60">BSB</span>{" "}
                     {formatBsb(String(account.bsb))}
@@ -97,7 +97,7 @@ export default async function BankAccountsPage({
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-border pt-2">
+                <div className="flex items-center justify-between border-t border-line pt-2">
                   <div className="flex items-center gap-1.5">
                     <span
                       className={`inline-block h-1.5 w-1.5 rounded-full ${
@@ -106,7 +106,7 @@ export default async function BankAccountsPage({
                           : "bg-zinc-300"
                       }`}
                     />
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-ink-muted">
                       {account.bankFeedEnabled
                         ? "Bank feed active"
                         : "No bank feed"}
@@ -114,7 +114,7 @@ export default async function BankAccountsPage({
                   </div>
 
                   {account.lastReconciledDate && (
-                    <p className="text-xs text-muted-foreground opacity-75">
+                    <p className="text-xs text-ink-muted opacity-75">
                       Reconciled {formatDate(String(account.lastReconciledDate))}
                       {account.lastReconciledBalance != null && (
                         <> &middot; {formatCurrency(Number(account.lastReconciledBalance))}</>

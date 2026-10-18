@@ -58,7 +58,7 @@ export default async function ContactDetailPage({
 
       {/* Contact summary */}
       <Card className="mb-6">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-ink-muted mb-4">
           <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-2.5 py-0.5 text-xs font-medium">
             {categoryLabels[contact.category] ?? contact.category}
           </span>
@@ -78,30 +78,30 @@ export default async function ContactDetailPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           {contact.phone ? (
             <div>
-              <p className="text-xs text-muted-foreground">Phone</p>
-              <p className="font-medium text-foreground">{contact.phone}</p>
+              <p className="text-xs text-ink-muted">Phone</p>
+              <p className="font-medium text-ink">{contact.phone}</p>
             </div>
           ) : null}
           {contact.email ? (
             <div>
-              <p className="text-xs text-muted-foreground">Email</p>
-              <p className="font-medium text-foreground">{contact.email}</p>
+              <p className="text-xs text-ink-muted">Email</p>
+              <p className="font-medium text-ink">{contact.email}</p>
             </div>
           ) : null}
           {contact.address ? (
             <div className="sm:col-span-2">
-              <p className="text-xs text-muted-foreground">Address</p>
-              <p className="font-medium text-foreground">{contact.address}</p>
+              <p className="text-xs text-ink-muted">Address</p>
+              <p className="font-medium text-ink">{contact.address}</p>
             </div>
           ) : null}
         </div>
 
         {contact.notes ? (
-          <div className="mt-4 rounded-lg bg-muted px-4 py-3">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
+          <div className="mt-4 rounded-[var(--radius-card)] bg-muted px-4 py-3">
+            <p className="text-xs font-medium text-ink-muted mb-1">
               Notes
             </p>
-            <p className="text-sm text-foreground whitespace-pre-wrap">
+            <p className="text-sm text-ink whitespace-pre-wrap">
               {contact.notes}
             </p>
           </div>

@@ -57,9 +57,9 @@ export default async function AnnouncementDetailPage({
 
       {/* Meta info */}
       <Card className="mb-6">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-ink-muted">
           <span>
-            Posted by <span className="font-medium text-foreground">{authorName}</span>
+            Posted by <span className="font-medium text-ink">{authorName}</span>
           </span>
           <span>·</span>
           <span>
@@ -96,7 +96,7 @@ export default async function AnnouncementDetailPage({
             </>
           ) : null}
         </div>
-        <div className="mt-4 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+        <div className="mt-4 text-sm text-ink leading-relaxed whitespace-pre-wrap">
           {announcement.body}
         </div>
       </Card>

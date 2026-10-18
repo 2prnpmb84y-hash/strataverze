@@ -57,11 +57,11 @@ export default async function OwnerAnnouncementsPage() {
               <Card key={ann.id}>
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground">
+                    <h3 className="text-sm font-semibold text-ink">
                       {ann.isPinned && "📌 "}
                       {ann.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-ink-muted mt-0.5">
                       {schemeName}
                       {" · "}
                       {authorName}
@@ -79,7 +79,7 @@ export default async function OwnerAnnouncementsPage() {
                     {priorityLabels[ann.priority] ?? ann.priority}
                   </span>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-ink leading-relaxed whitespace-pre-wrap">
                   {ann.body}
                 </p>
               </Card>

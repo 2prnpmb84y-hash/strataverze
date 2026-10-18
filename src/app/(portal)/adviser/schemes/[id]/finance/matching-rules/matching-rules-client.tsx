@@ -87,7 +87,7 @@ const matchTypeLabels: Record<string, string> = {
 };
 
 const inputClasses =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
@@ -353,14 +353,14 @@ export function MatchingRulesClient({
     return (
       <Card>
         <div className="p-5 space-y-4">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-ink">
             {isEdit ? "Edit Matching Rule" : "New Matching Rule"}
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label className="block text-sm font-medium text-ink mb-1.5">
                 Name
               </label>
               <input
@@ -377,7 +377,7 @@ export function MatchingRulesClient({
 
             {/* Match Type */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label className="block text-sm font-medium text-ink mb-1.5">
                 Match Type
               </label>
               <select
@@ -399,7 +399,7 @@ export function MatchingRulesClient({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
+            <label className="block text-sm font-medium text-ink mb-1.5">
               Description (optional)
             </label>
             <textarea
@@ -417,7 +417,7 @@ export function MatchingRulesClient({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {showsDescription(form.matchType) && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
+                <label className="block text-sm font-medium text-ink mb-1.5">
                   Description Pattern
                 </label>
                 <input
@@ -429,7 +429,7 @@ export function MatchingRulesClient({
                   placeholder="e.g. INSURANCE PREMIUM"
                   className={inputClasses}
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-ink-muted">
                   Case-insensitive substring match
                 </p>
               </div>
@@ -437,7 +437,7 @@ export function MatchingRulesClient({
 
             {showsReference(form.matchType) && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
+                <label className="block text-sm font-medium text-ink mb-1.5">
                   Reference Pattern
                 </label>
                 <input
@@ -449,7 +449,7 @@ export function MatchingRulesClient({
                   placeholder="e.g. INV-2024"
                   className={inputClasses}
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-ink-muted">
                   Case-insensitive substring match
                 </p>
               </div>
@@ -459,7 +459,7 @@ export function MatchingRulesClient({
           {showsAmount(form.matchType) && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
+                <label className="block text-sm font-medium text-ink mb-1.5">
                   Exact Amount
                 </label>
                 <input
@@ -475,7 +475,7 @@ export function MatchingRulesClient({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
+                <label className="block text-sm font-medium text-ink mb-1.5">
                   Min Amount
                 </label>
                 <input
@@ -491,7 +491,7 @@ export function MatchingRulesClient({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
+                <label className="block text-sm font-medium text-ink mb-1.5">
                   Max Amount
                 </label>
                 <input
@@ -512,7 +512,7 @@ export function MatchingRulesClient({
           {/* Transaction sign, target account, target fund */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label className="block text-sm font-medium text-ink mb-1.5">
                 Transaction Sign
               </label>
               <select
@@ -529,7 +529,7 @@ export function MatchingRulesClient({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label className="block text-sm font-medium text-ink mb-1.5">
                 Target Account
               </label>
               <select
@@ -549,7 +549,7 @@ export function MatchingRulesClient({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label className="block text-sm font-medium text-ink mb-1.5">
                 Target Fund
               </label>
               <select
@@ -572,7 +572,7 @@ export function MatchingRulesClient({
           {/* Priority and auto-post */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
+              <label className="block text-sm font-medium text-ink mb-1.5">
                 Priority
               </label>
               <input
@@ -584,7 +584,7 @@ export function MatchingRulesClient({
                 }
                 className={inputClasses}
               />
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-ink-muted">
                 Higher priority rules are applied first
               </p>
             </div>
@@ -597,11 +597,11 @@ export function MatchingRulesClient({
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   updateField("autoPost", e.target.checked)
                 }
-                className="h-4 w-4 rounded border-border text-primary-400 focus:ring-primary-400"
+                className="h-4 w-4 rounded border-line text-turquoise focus:ring-turquoise"
               />
               <label
                 htmlFor="autoPost"
-                className="text-sm font-medium text-foreground"
+                className="text-sm font-medium text-ink"
               >
                 Auto-post matched journal entries
               </label>
@@ -609,7 +609,7 @@ export function MatchingRulesClient({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
+          <div className="flex items-center justify-end gap-3 pt-2 border-t border-line">
             <Button variant="ghost" type="button" onClick={resetForm}>
               Cancel
             </Button>
@@ -635,12 +635,12 @@ export function MatchingRulesClient({
     <div className="space-y-6">
       {/* Error / success messages */}
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
       {successMsg && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+        <div className="rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
           {successMsg}
         </div>
       )}
@@ -668,16 +668,16 @@ export function MatchingRulesClient({
       {showAutoMatch && (
         <Card>
           <div className="p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-ink">
               Run Auto-Match
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               Apply all active matching rules to unmatched bank transactions.
               Optionally filter by bank account.
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm font-medium text-foreground mb-1.5">
+                <label className="block text-sm font-medium text-ink mb-1.5">
                   Bank Account (optional)
                 </label>
                 <select
@@ -708,34 +708,34 @@ export function MatchingRulesClient({
             {/* Auto-match results */}
             {autoMatchResults && autoMatchResults.length > 0 && (
               <div className="mt-4">
-                <h4 className="text-sm font-medium text-foreground mb-2">
+                <h4 className="text-sm font-medium text-ink mb-2">
                   Matched Transactions
                 </h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-border text-left">
-                        <th scope="col" className="pb-2 pr-4 font-medium text-muted-foreground">
+                      <tr className="border-b border-line text-left">
+                        <th scope="col" className="pb-2 pr-4 font-medium text-ink-muted">
                           Rule
                         </th>
-                        <th scope="col" className="pb-2 pr-4 font-medium text-muted-foreground">
+                        <th scope="col" className="pb-2 pr-4 font-medium text-ink-muted">
                           Account
                         </th>
-                        <th scope="col" className="pb-2 font-medium text-muted-foreground">
+                        <th scope="col" className="pb-2 font-medium text-ink-muted">
                           Fund
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {autoMatchResults.map((r, i) => (
-                        <tr key={i} className="border-b border-border">
-                          <td className="py-2 pr-4 text-foreground">
+                        <tr key={i} className="border-b border-line">
+                          <td className="py-2 pr-4 text-ink">
                             {r.ruleName}
                           </td>
-                          <td className="py-2 pr-4 text-foreground">
+                          <td className="py-2 pr-4 text-ink">
                             {r.accountCode}
                           </td>
-                          <td className="py-2 text-foreground">{r.fundName}</td>
+                          <td className="py-2 text-ink">{r.fundName}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -761,73 +761,73 @@ export function MatchingRulesClient({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Priority
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Name
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Match Type
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Criteria
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Target Account
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Fund
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Auto
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     Matches
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {rules.map((rule) => (
-                  <tr key={rule.id} className="border-b border-border">
+                  <tr key={rule.id} className="border-b border-line">
                     {editingRuleId === rule.id ? (
                       <td colSpan={10} className="p-0">
                         {renderForm(true)}
                       </td>
                     ) : (
                       <>
-                        <td className="px-4 py-3 text-foreground font-mono">
+                        <td className="px-4 py-3 text-ink font-mono">
                           {rule.priority}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="text-foreground font-medium">
+                          <div className="text-ink font-medium">
                             {String(rule.name)}
                           </div>
                           {rule.description && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                            <div className="text-xs text-ink-muted mt-0.5">
                               {String(rule.description)}
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-foreground">
+                        <td className="px-4 py-3 text-ink">
                           {matchTypeLabels[rule.matchType] ?? rule.matchType}
                         </td>
-                        <td className="px-4 py-3 text-foreground text-xs max-w-[200px] truncate">
+                        <td className="px-4 py-3 text-ink text-xs max-w-[200px] truncate">
                           {getCriteriaSummary(rule)}
                         </td>
-                        <td className="px-4 py-3 text-foreground text-xs">
+                        <td className="px-4 py-3 text-ink text-xs">
                           {rule.targetAccountCode
                             ? `${String(rule.targetAccountCode.code)} — ${String(rule.targetAccountCode.name)}`
                             : "—"}
                         </td>
-                        <td className="px-4 py-3 text-foreground text-xs">
+                        <td className="px-4 py-3 text-ink text-xs">
                           {rule.targetFund
                             ? String(rule.targetFund.name)
                             : "—"}
@@ -857,7 +857,7 @@ export function MatchingRulesClient({
                             )}
                           </button>
                         </td>
-                        <td className="px-4 py-3 text-foreground text-right font-mono">
+                        <td className="px-4 py-3 text-ink text-right font-mono">
                           {rule.matchCount}
                         </td>
                         <td className="px-4 py-3">
@@ -866,7 +866,7 @@ export function MatchingRulesClient({
                               type="button"
                               onClick={() => startEdit(rule)}
                               disabled={isPending}
-                              className="text-sm px-2 py-1 rounded text-primary-500 hover:bg-primary-50 transition-colors"
+                              className="text-sm px-2 py-1 rounded text-turquoise hover:bg-mint-soft transition-colors"
                             >
                               Edit
                             </button>

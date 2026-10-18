@@ -241,7 +241,7 @@ export function BudgetClient({
       </Card>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
@@ -287,7 +287,7 @@ export function BudgetClient({
         <div className="px-6 pb-6">
           {/* Add form */}
           {showAddForm && (
-            <div className="mb-4 rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+            <div className="mb-4 rounded-[var(--radius-card)] border border-line bg-muted/30 p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <SelectField
                   label="Account"
@@ -347,7 +347,7 @@ export function BudgetClient({
           {fundLines.length > 0 && (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                   <th scope="col" className="text-left py-2 pr-4">Code</th>
                   <th scope="col" className="text-left py-2 pr-4">Account</th>
                   <th scope="col" className="text-right py-2 pr-4">Annual Budget</th>
@@ -365,12 +365,12 @@ export function BudgetClient({
                     return (
                       <tr
                         key={line.id}
-                        className="border-b border-border bg-muted/30"
+                        className="border-b border-line bg-muted/30"
                       >
-                        <td className="py-2 pr-4 text-muted-foreground tabular-nums">
+                        <td className="py-2 pr-4 text-ink-muted tabular-nums">
                           {account?.code ?? "—"}
                         </td>
-                        <td className="py-2 pr-4 text-foreground">
+                        <td className="py-2 pr-4 text-ink">
                           {account?.name ?? "Unknown"}
                         </td>
                         <td className="py-2 pr-4">
@@ -378,10 +378,10 @@ export function BudgetClient({
                             type="number"
                             value={editAmount}
                             onChange={(e) => setEditAmount(e.target.value)}
-                            className="w-full rounded border border-border bg-background px-2 py-1 text-right text-sm tabular-nums text-foreground"
+                            className="w-full rounded border border-line bg-white px-2 py-1 text-right text-sm tabular-nums text-ink"
                           />
                         </td>
-                        <td className="py-2 pr-4 text-right text-muted-foreground tabular-nums">
+                        <td className="py-2 pr-4 text-right text-ink-muted tabular-nums">
                           {formatCurrency(parseFloat(editAmount || "0") / 4)}
                         </td>
                         <td className="py-2 pr-4">
@@ -389,7 +389,7 @@ export function BudgetClient({
                             type="text"
                             value={editNotes}
                             onChange={(e) => setEditNotes(e.target.value)}
-                            className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
+                            className="w-full rounded border border-line bg-white px-2 py-1 text-sm text-ink"
                             placeholder="Notes"
                           />
                         </td>
@@ -415,20 +415,20 @@ export function BudgetClient({
                   }
 
                   return (
-                    <tr key={line.id} className="border-b border-border/50">
-                      <td className="py-2 pr-4 text-muted-foreground tabular-nums">
+                    <tr key={line.id} className="border-b border-line/50">
+                      <td className="py-2 pr-4 text-ink-muted tabular-nums">
                         {account?.code ?? "—"}
                       </td>
-                      <td className="py-2 pr-4 text-foreground">
+                      <td className="py-2 pr-4 text-ink">
                         {account?.name ?? "Unknown"}
                       </td>
-                      <td className="py-2 pr-4 text-right tabular-nums font-medium text-foreground">
+                      <td className="py-2 pr-4 text-right tabular-nums font-medium text-ink">
                         {formatCurrency(line.budgetAmount)}
                       </td>
-                      <td className="py-2 pr-4 text-right tabular-nums text-muted-foreground">
+                      <td className="py-2 pr-4 text-right tabular-nums text-ink-muted">
                         {formatCurrency(line.budgetAmount / 4)}
                       </td>
-                      <td className="py-2 pr-4 text-muted-foreground text-xs">
+                      <td className="py-2 pr-4 text-ink-muted text-xs">
                         {line.notes ?? ""}
                       </td>
                       <td className="py-2 text-right space-x-1">
@@ -451,14 +451,14 @@ export function BudgetClient({
                     </tr>
                   );
                 })}
-                <tr className="border-t-2 border-border font-bold">
-                  <td colSpan={2} className="py-3 pr-4 text-foreground">
+                <tr className="border-t-2 border-line font-bold">
+                  <td colSpan={2} className="py-3 pr-4 text-ink">
                     Total
                   </td>
-                  <td className="py-3 pr-4 text-right tabular-nums text-foreground">
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
                     {formatCurrency(totalBudget)}
                   </td>
-                  <td className="py-3 pr-4 text-right tabular-nums text-foreground">
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
                     {formatCurrency(totalBudget / 4)}
                   </td>
                   <td colSpan={2} />
@@ -479,7 +479,7 @@ export function BudgetClient({
           <div className="px-6 pb-6">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                   <th scope="col" className="text-left py-2 pr-4">Code</th>
                   <th scope="col" className="text-left py-2 pr-4">Account</th>
                   <th scope="col" className="text-right py-2 pr-4">Budget</th>
@@ -492,18 +492,18 @@ export function BudgetClient({
                 {budgetVsActual.lines.map((line) => (
                   <tr
                     key={line.budgetLineId}
-                    className="border-b border-border/50"
+                    className="border-b border-line/50"
                   >
-                    <td className="py-2 pr-4 text-muted-foreground tabular-nums">
+                    <td className="py-2 pr-4 text-ink-muted tabular-nums">
                       {line.accountCode}
                     </td>
-                    <td className="py-2 pr-4 text-foreground">
+                    <td className="py-2 pr-4 text-ink">
                       {line.accountName}
                     </td>
-                    <td className="py-2 pr-4 text-right tabular-nums text-foreground">
+                    <td className="py-2 pr-4 text-right tabular-nums text-ink">
                       {formatCurrency(line.budgetAmount)}
                     </td>
-                    <td className="py-2 pr-4 text-right tabular-nums text-foreground">
+                    <td className="py-2 pr-4 text-right tabular-nums text-ink">
                       {formatCurrency(line.actualAmount)}
                     </td>
                     <td
@@ -524,14 +524,14 @@ export function BudgetClient({
                     </td>
                   </tr>
                 ))}
-                <tr className="border-t-2 border-border font-bold">
-                  <td colSpan={2} className="py-3 pr-4 text-foreground">
+                <tr className="border-t-2 border-line font-bold">
+                  <td colSpan={2} className="py-3 pr-4 text-ink">
                     Totals
                   </td>
-                  <td className="py-3 pr-4 text-right tabular-nums text-foreground">
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
                     {formatCurrency(budgetVsActual.totalBudget)}
                   </td>
-                  <td className="py-3 pr-4 text-right tabular-nums text-foreground">
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
                     {formatCurrency(budgetVsActual.totalActual)}
                   </td>
                   <td

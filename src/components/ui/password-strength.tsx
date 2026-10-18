@@ -76,7 +76,7 @@ export function PasswordStrength({
             <div
               key={i}
               className={`h-1.5 flex-1 rounded-full transition-colors ${
-                i < score ? barColours[score] : "bg-border"
+                i < score ? barColours[score] : "bg-line"
               }`}
             />
           ))}
@@ -93,7 +93,7 @@ export function PasswordStrength({
             <li
               key={req.label}
               className={`flex items-center gap-1.5 text-xs transition-colors ${
-                req.met ? "text-green-600" : "text-muted-foreground"
+                req.met ? "text-green-600" : "text-ink-muted"
               }`}
             >
               <span aria-hidden="true">{req.met ? "✓" : "•"}</span>

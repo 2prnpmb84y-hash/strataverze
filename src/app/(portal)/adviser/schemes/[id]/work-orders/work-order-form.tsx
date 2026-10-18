@@ -41,7 +41,7 @@ export function WorkOrderCreateForm({
   return (
     <form action={formAction} className="space-y-4">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       )}
@@ -57,7 +57,7 @@ export function WorkOrderCreateForm({
       <div>
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           Description
           <span className="text-red-500 ml-0.5">*</span>
@@ -68,7 +68,7 @@ export function WorkOrderCreateForm({
           required
           rows={4}
           placeholder="Describe the issue, location, and any relevant details..."
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
         />
         {state.fieldErrors?.description && (
           <p className="mt-1.5 text-xs text-red-500">
@@ -143,7 +143,7 @@ export function WorkOrderEditForm({
   return (
     <form action={formAction} className="space-y-4">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       )}
@@ -159,7 +159,7 @@ export function WorkOrderEditForm({
       <div>
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           Description
           <span className="text-red-500 ml-0.5">*</span>
@@ -170,7 +170,7 @@ export function WorkOrderEditForm({
           required
           rows={4}
           defaultValue={defaults.description}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
         />
         {state.fieldErrors?.description && (
           <p className="mt-1.5 text-xs text-red-500">

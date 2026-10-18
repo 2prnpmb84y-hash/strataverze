@@ -4,13 +4,13 @@ type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary-400 text-white hover:bg-primary-500 focus:ring-primary-400",
+    "bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise",
   secondary:
-    "bg-background border border-border text-foreground hover:bg-muted focus:ring-primary-400",
+    "bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise",
   danger:
-    "bg-red-500 text-white hover:bg-red-600 focus:ring-red-400",
+    "bg-white border-[1.5px] border-coral text-coral hover:bg-coral/5 focus:ring-coral",
   ghost:
-    "text-muted-foreground hover:text-foreground hover:bg-muted focus:ring-primary-400",
+    "text-ink-muted hover:text-ink hover:bg-muted focus:ring-turquoise",
 };
 
 export function Button({
@@ -27,7 +27,7 @@ export function Button({
   className?: string;
   disabled?: boolean;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className">) {
-  const base = `inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ${variantStyles[variant]} ${className}`;
+  const base = `inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ${variantStyles[variant]} ${className}`;
 
   if (href && !disabled) {
     return (

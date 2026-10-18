@@ -62,20 +62,20 @@ export function AccountCodeEditForm({
   return (
     <form action={formAction} className="space-y-6">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
+          <label className="block text-sm font-medium text-ink mb-1.5">
             Account Code
           </label>
-          <p className="rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-muted-foreground font-mono">
+          <p className="rounded-[var(--radius-card)] border border-line bg-muted px-3 py-2.5 text-sm text-ink-muted font-mono">
             {defaultValues.code}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-ink-muted">
             Account codes cannot be changed
           </p>
         </div>
@@ -93,13 +93,13 @@ export function AccountCodeEditForm({
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {defaultValues.isSystemAccount ? (
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
+            <label className="block text-sm font-medium text-ink mb-1.5">
               Account Type
             </label>
-            <p className="rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+            <p className="rounded-[var(--radius-card)] border border-line bg-muted px-3 py-2.5 text-sm text-ink-muted">
               {defaultValues.accountType}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-ink-muted">
               System account types cannot be changed
             </p>
           </div>

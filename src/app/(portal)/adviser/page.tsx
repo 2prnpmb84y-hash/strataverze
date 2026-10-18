@@ -31,10 +31,10 @@ export default async function AdviserDashboard() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
+      <h1 className="text-2xl font-bold font-heading text-ink mb-1">
         Adviser Dashboard
       </h1>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-sm text-ink-muted mb-8">
         Oversee schemes, reporting, and operational compliance.
       </p>
 
@@ -57,15 +57,15 @@ export default async function AdviserDashboard() {
       </div>
 
       {schemes.length === 0 ? (
-        <div className="mt-8 rounded-xl bg-card border border-border p-6">
-          <h2 className="font-heading font-semibold text-foreground mb-2">
+        <div className="mt-8 rounded-[var(--radius-card)] bg-white border border-line p-6">
+          <h2 className="font-heading font-semibold text-ink mb-2">
             Getting Started
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-sm text-ink-muted leading-relaxed">
             Welcome to the Adviser Portal. Create your first scheme from the{" "}
             <Link
               href="/adviser/schemes"
-              className="text-primary-500 hover:underline"
+              className="text-turquoise hover:underline"
             >
               Schemes
             </Link>{" "}
@@ -88,13 +88,13 @@ export default async function AdviserDashboard() {
                 <Link
                   key={scheme.id}
                   href={`/adviser/schemes/${scheme.id}`}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {scheme.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {scheme.suburb}, {scheme.state}
                       {schemeWo > 0 && ` · ${schemeWo} active work order${schemeWo === 1 ? "" : "s"}`}
                     </p>

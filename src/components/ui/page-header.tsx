@@ -19,7 +19,7 @@ export function PageHeader({
         {backHref && (
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+            className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors mb-2"
           >
             <svg
               width="16"
@@ -40,11 +40,11 @@ export function PageHeader({
             {backLabel ?? "Back"}
           </Link>
         )}
-        <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
+        <h1 className="text-2xl font-bold font-heading text-ink mb-1">
           {title}
         </h1>
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-sm text-ink-muted">{description}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

@@ -24,7 +24,7 @@ export default function PublicLayout({
             </Link>
             <Link
               href="/login"
-              className="rounded-lg bg-[#00D4BF] px-4 py-2 text-sm font-medium text-[#0A0F1C] hover:bg-[#00bfad]"
+              className="rounded-[var(--radius-card)] bg-[#00D4BF] px-4 py-2 text-sm font-medium text-[#0A0F1C] hover:bg-[#00bfad]"
             >
               Sign in
             </Link>

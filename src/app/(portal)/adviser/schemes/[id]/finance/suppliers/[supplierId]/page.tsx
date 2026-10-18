@@ -61,10 +61,10 @@ function DetailItem({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-foreground">
+      <dd className="mt-1 text-sm text-ink">
         {value ? String(value) : "—"}
       </dd>
     </div>
@@ -138,12 +138,12 @@ export default async function SupplierDetailPage({
                 supplier.isActive !== false ? "bg-green-500" : "bg-zinc-400"
               }`}
             />
-            <span className="text-sm text-foreground">
+            <span className="text-sm text-ink">
               {supplier.isActive !== false ? "Active" : "Inactive"}
             </span>
           </div>
           {supplier.createdAt && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-ink-muted">
               Added {formatDate(supplier.createdAt)}
             </span>
           )}
@@ -167,26 +167,26 @@ export default async function SupplierDetailPage({
         ) : (
           <>
             {/* Table header */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_100px_120px_120px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+            <div className="hidden sm:grid sm:grid-cols-[1fr_100px_120px_120px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
               <div>Invoice #</div>
               <div>Date</div>
               <div className="text-right">Amount</div>
               <div className="text-right">Status</div>
             </div>
 
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-line">
               {invoices.map((invoice) => (
                 <div
                   key={String(invoice.id)}
                   className="grid grid-cols-1 sm:grid-cols-[1fr_100px_120px_120px] gap-2 sm:gap-4 px-6 py-3 items-center"
                 >
-                  <div className="font-medium text-sm text-foreground">
+                  <div className="font-medium text-sm text-ink">
                     {String(invoice.invoiceNumber ?? "—")}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-ink-muted">
                     {formatDate(invoice.invoiceDate)}
                   </div>
-                  <div className="text-sm text-foreground text-right font-medium">
+                  <div className="text-sm text-ink text-right font-medium">
                     {formatCurrency(invoice.totalAmount)}
                   </div>
                   <div className="text-right">

@@ -46,7 +46,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
   }
 
   const inputClasses =
-    "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+    "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
   // Find the max absolute flow value for bar chart scaling
   const maxFlow = forecast.months.reduce(
@@ -72,7 +72,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
           <div className="flex items-center gap-4">
             <label
               htmlFor="months-select"
-              className="text-sm font-medium text-foreground whitespace-nowrap"
+              className="text-sm font-medium text-ink whitespace-nowrap"
             >
               Forecast period
             </label>
@@ -115,13 +115,13 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
         <StatCard
           label="Ending Balance"
           value={formatCurrency(forecast.endingBalance)}
-          accent={forecast.endingBalance >= 0 ? "bg-primary-400" : "bg-rose-500"}
+          accent={forecast.endingBalance >= 0 ? "bg-turquoise" : "bg-rose-500"}
         />
       </div>
 
       {/* Low balance warning */}
       {lowestBalance < 0 && (
-        <div className="rounded-lg border border-amber-400/50 bg-amber-50/10 p-4">
+        <div className="rounded-[var(--radius-card)] border border-amber-400/50 bg-amber-50/10 p-4">
           <p className="text-sm font-medium text-amber-600">
             ⚠ Cash flow warning: projected balance drops below zero in the
             forecast period (lowest:{" "}
@@ -143,38 +143,38 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left">
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+              <tr className="border-b border-line text-left">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                   Month
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Levy Income
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Other Income
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Supplier Costs
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Other Costs
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Net Flow
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Balance
                 </th>
               </tr>
             </thead>
             <tbody>
               {/* Starting balance row */}
-              <tr className="border-b border-border bg-card/50">
-                <td className="px-4 py-3 font-medium text-foreground">
+              <tr className="border-b border-line bg-white/50">
+                <td className="px-4 py-3 font-medium text-ink">
                   Opening Balance
                 </td>
                 <td className="px-4 py-3" colSpan={5} />
-                <td className="px-4 py-3 text-right font-semibold text-foreground">
+                <td className="px-4 py-3 text-right font-semibold text-ink">
                   {formatCurrency(forecast.startingBalance)}
                 </td>
               </tr>
@@ -182,9 +182,9 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
               {forecast.months.map((month) => (
                 <tr
                   key={month.month}
-                  className="border-b border-border hover:bg-card/30 transition-colors"
+                  className="border-b border-line hover:bg-white/30 transition-colors"
                 >
-                  <td className="px-4 py-3 font-medium text-foreground">
+                  <td className="px-4 py-3 font-medium text-ink">
                     {month.label}
                   </td>
                   <td className="px-4 py-3 text-right text-emerald-600">
@@ -219,7 +219,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
                     className={`px-4 py-3 text-right font-semibold ${
                       month.cumulativeBalance < 0
                         ? "text-rose-600"
-                        : "text-foreground"
+                        : "text-ink"
                     }`}
                   >
                     {formatCurrency(month.cumulativeBalance)}
@@ -228,8 +228,8 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
               ))}
 
               {/* Totals row */}
-              <tr className="bg-card/50 font-semibold">
-                <td className="px-4 py-3 text-foreground">Total</td>
+              <tr className="bg-white/50 font-semibold">
+                <td className="px-4 py-3 text-ink">Total</td>
                 <td className="px-4 py-3 text-right text-emerald-600">
                   {formatCurrency(forecast.totalLevyIncome)}
                 </td>
@@ -256,7 +256,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
                   className={`px-4 py-3 text-right ${
                     forecast.endingBalance < 0
                       ? "text-rose-600"
-                      : "text-foreground"
+                      : "text-ink"
                   }`}
                 >
                   {formatCurrency(forecast.endingBalance)}
@@ -279,8 +279,8 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
             const totalOut = month.supplierExpenses + month.otherExpenses;
             return (
               <div key={month.month} className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground w-20">
+                <div className="flex items-center justify-between text-xs text-ink-muted">
+                  <span className="font-medium text-ink w-20">
                     {month.label}
                   </span>
                   <span>
@@ -289,13 +289,13 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
                   </span>
                 </div>
                 <div className="flex gap-1 items-center">
-                  <div className="flex-1 h-5 bg-card rounded overflow-hidden">
+                  <div className="flex-1 h-5 bg-white rounded overflow-hidden">
                     <div
                       className="h-full bg-emerald-500/70 rounded"
                       style={{ width: barWidth(totalIn, maxFlow) }}
                     />
                   </div>
-                  <div className="flex-1 h-5 bg-card rounded overflow-hidden">
+                  <div className="flex-1 h-5 bg-white rounded overflow-hidden">
                     <div
                       className="h-full bg-rose-500/70 rounded"
                       style={{ width: barWidth(totalOut, maxFlow) }}
@@ -305,7 +305,7 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
               </div>
             );
           })}
-          <div className="flex items-center gap-4 pt-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 pt-2 text-xs text-ink-muted">
             <span className="flex items-center gap-1.5">
               <span className="inline-block w-3 h-3 rounded bg-emerald-500/70" />
               Inflows
@@ -319,8 +319,8 @@ export function CashFlowClient({ schemeId, monthsAhead, forecast, basePath }: Pr
       </Card>
 
       {/* Assumptions note */}
-      <div className="rounded-lg border border-border p-4 text-xs text-muted-foreground space-y-1">
-        <p className="font-medium text-foreground text-sm">
+      <div className="rounded-[var(--radius-card)] border border-line p-4 text-xs text-ink-muted space-y-1">
+        <p className="font-medium text-ink text-sm">
           Forecast assumptions
         </p>
         <ul className="list-disc list-inside space-y-0.5">

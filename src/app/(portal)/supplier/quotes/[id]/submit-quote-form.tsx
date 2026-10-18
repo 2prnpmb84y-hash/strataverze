@@ -17,7 +17,7 @@ export function SubmitQuoteForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {state.error && (
-        <div className="rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
+        <div className="rounded-[var(--radius-card)] bg-danger/10 px-4 py-3 text-sm text-danger">
           {state.error}
         </div>
       )}
@@ -25,7 +25,7 @@ export function SubmitQuoteForm({
       <div>
         <label
           htmlFor="amount"
-          className="block text-sm font-medium text-foreground mb-1"
+          className="block text-sm font-medium text-ink mb-1"
         >
           Amount (AUD) <span className="text-danger">*</span>
         </label>
@@ -36,7 +36,7 @@ export function SubmitQuoteForm({
           step="0.01"
           min="0.01"
           required
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
           placeholder="0.00"
         />
       </div>
@@ -44,7 +44,7 @@ export function SubmitQuoteForm({
       <div>
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-foreground mb-1"
+          className="block text-sm font-medium text-ink mb-1"
         >
           Description <span className="text-danger">*</span>
         </label>
@@ -53,7 +53,7 @@ export function SubmitQuoteForm({
           name="description"
           required
           rows={3}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
           placeholder="Describe the work you would carry out..."
         />
       </div>
@@ -62,7 +62,7 @@ export function SubmitQuoteForm({
         <div>
           <label
             htmlFor="estimatedDays"
-            className="block text-sm font-medium text-foreground mb-1"
+            className="block text-sm font-medium text-ink mb-1"
           >
             Estimated Days
           </label>
@@ -72,7 +72,7 @@ export function SubmitQuoteForm({
             type="number"
             min="1"
             step="1"
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
             placeholder="e.g. 5"
           />
         </div>
@@ -80,7 +80,7 @@ export function SubmitQuoteForm({
         <div>
           <label
             htmlFor="validUntil"
-            className="block text-sm font-medium text-foreground mb-1"
+            className="block text-sm font-medium text-ink mb-1"
           >
             Valid Until
           </label>
@@ -88,7 +88,7 @@ export function SubmitQuoteForm({
             id="validUntil"
             name="validUntil"
             type="date"
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
           />
         </div>
       </div>
@@ -96,7 +96,7 @@ export function SubmitQuoteForm({
       <div>
         <label
           htmlFor="notes"
-          className="block text-sm font-medium text-foreground mb-1"
+          className="block text-sm font-medium text-ink mb-1"
         >
           Notes
         </label>
@@ -104,7 +104,7 @@ export function SubmitQuoteForm({
           id="notes"
           name="notes"
           rows={2}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
           placeholder="Any additional notes or conditions..."
         />
       </div>
@@ -113,7 +113,7 @@ export function SubmitQuoteForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-supplier px-4 py-2 text-sm font-medium text-white hover:bg-supplier/90 transition-colors disabled:opacity-50"
+          className="rounded-[var(--radius-card)] bg-supplier px-4 py-2 text-sm font-medium text-white hover:bg-supplier/90 transition-colors disabled:opacity-50"
         >
           {pending ? "Submitting..." : "Submit Quote"}
         </button>

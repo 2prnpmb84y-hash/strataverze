@@ -13,16 +13,14 @@ const tabConfig = {
   owner: {
     label: "Owner / Supplier",
     description: "Sign in to manage your strata property",
-    accent: "var(--color-owner)",
-    ring: "focus:ring-primary-400",
-    buttonBg: "bg-primary-400 hover:bg-primary-500 focus:ring-primary-400",
+    accent: "var(--color-turquoise)",
+    buttonClass: "bg-turquoise hover:bg-turquoise/90 focus:ring-turquoise",
   },
   adviser: {
     label: "Adviser",
     description: "Sign in to manage schemes as a strata professional",
-    accent: "var(--color-adviser)",
-    ring: "focus:ring-gold-400",
-    buttonBg: "bg-gold-400 hover:bg-gold-500 focus:ring-gold-400",
+    accent: "var(--color-gold-line)",
+    buttonClass: "bg-gold-line hover:bg-gold-line/90 focus:ring-gold-line",
   },
 } as const;
 
@@ -41,16 +39,16 @@ export function LoginForm({
   return (
     <>
       {/* Tab toggle */}
-      <div className="flex rounded-lg bg-muted p-1 mb-6">
+      <div className="flex rounded-full bg-muted p-1 mb-6">
         {(["owner", "adviser"] as const).map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-all ${
               activeTab === tab
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-ink shadow-sm"
+                : "text-ink-muted hover:text-ink"
             }`}
             style={
               activeTab === tab
@@ -63,20 +61,20 @@ export function LoginForm({
         ))}
       </div>
 
-      <h1 className="text-xl font-bold font-heading text-card-foreground mb-1">
+      <h1 className="text-xl font-bold font-heading text-ink mb-1">
         {isSignUp ? "Create account" : "Sign in"}
       </h1>
-      <p className="text-sm text-muted-foreground mb-6">{config.description}</p>
+      <p className="text-sm text-ink-muted mb-6">{config.description}</p>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 mb-4">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 mb-4">
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
       {message && (
-        <div className="rounded-lg bg-primary-50 border border-primary-200 px-4 py-3 mb-4">
-          <p className="text-sm text-primary-500">{message}</p>
+        <div className="rounded-[var(--radius-card)] bg-mint-soft border border-mint px-4 py-3 mb-4">
+          <p className="text-sm text-ink">{message}</p>
         </div>
       )}
 
@@ -87,7 +85,7 @@ export function LoginForm({
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-card-foreground mb-1.5"
+            className="block text-sm font-medium text-ink mb-1.5"
           >
             Email
           </label>
@@ -97,7 +95,7 @@ export function LoginForm({
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
             style={
               { "--tw-ring-color": config.accent } as React.CSSProperties
             }
@@ -108,7 +106,7 @@ export function LoginForm({
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-card-foreground mb-1.5"
+            className="block text-sm font-medium text-ink mb-1.5"
           >
             Password
           </label>
@@ -121,7 +119,7 @@ export function LoginForm({
             minLength={isSignUp ? 8 : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:border-transparent transition-shadow"
             style={
               { "--tw-ring-color": config.accent } as React.CSSProperties
             }
@@ -149,11 +147,7 @@ export function LoginForm({
                   if (!allMet) return;
                   signup(formData);
                 }}
-                className="w-full h-11 rounded-lg text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: config.accent,
-                  "--tw-ring-color": config.accent,
-                } as React.CSSProperties}
+                className={`w-full h-11 rounded-full text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${config.buttonClass}`}
                 disabled={!validatePasswordStrength(password).allMet}
               >
                 Create account
@@ -164,10 +158,7 @@ export function LoginForm({
                   setIsSignUp(false);
                   setPassword("");
                 }}
-                className="w-full h-11 rounded-lg border border-border bg-background text-card-foreground font-medium text-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={
-                  { "--tw-ring-color": config.accent } as React.CSSProperties
-                }
+                className="w-full h-11 rounded-full border-[1.5px] border-turquoise bg-white text-turquoise font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/5 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
               >
                 Back to sign in
               </button>
@@ -176,11 +167,7 @@ export function LoginForm({
             <>
               <button
                 formAction={login}
-                className="w-full h-11 rounded-lg text-white font-semibold text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={{
-                  backgroundColor: config.accent,
-                  "--tw-ring-color": config.accent,
-                } as React.CSSProperties}
+                className={`w-full h-11 rounded-full text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${config.buttonClass}`}
               >
                 Sign in
               </button>
@@ -190,10 +177,7 @@ export function LoginForm({
                   setIsSignUp(true);
                   setPassword("");
                 }}
-                className="w-full h-11 rounded-lg border border-border bg-background text-card-foreground font-medium text-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={
-                  { "--tw-ring-color": config.accent } as React.CSSProperties
-                }
+                className="w-full h-11 rounded-full border-[1.5px] border-turquoise bg-white text-turquoise font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/5 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
               >
                 Create account
               </button>

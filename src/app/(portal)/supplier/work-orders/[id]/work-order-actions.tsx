@@ -33,7 +33,7 @@ export function WorkOrderActions({
           <CardHeader title="Update Status" />
 
           {statusState.error && (
-            <div className="rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger mb-4">
+            <div className="rounded-[var(--radius-card)] bg-danger/10 px-4 py-3 text-sm text-danger mb-4">
               {statusState.error}
             </div>
           )}
@@ -45,7 +45,7 @@ export function WorkOrderActions({
                 <button
                   type="submit"
                   disabled={statusPending}
-                  className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 transition-colors disabled:opacity-50"
+                  className="rounded-[var(--radius-card)] bg-turquoise px-4 py-2 text-sm font-medium text-white hover:bg-turquoise/90 transition-colors disabled:opacity-50"
                 >
                   {statusPending ? "Updating..." : "Start Work"}
                 </button>
@@ -57,7 +57,7 @@ export function WorkOrderActions({
                 <button
                   type="submit"
                   disabled={statusPending}
-                  className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success/90 transition-colors disabled:opacity-50"
+                  className="rounded-[var(--radius-card)] bg-success px-4 py-2 text-sm font-medium text-white hover:bg-success/90 transition-colors disabled:opacity-50"
                 >
                   {statusPending ? "Updating..." : "Mark Complete"}
                 </button>
@@ -75,7 +75,7 @@ export function WorkOrderActions({
         />
 
         {invoiceState.error && (
-          <div className="rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger mb-4">
+          <div className="rounded-[var(--radius-card)] bg-danger/10 px-4 py-3 text-sm text-danger mb-4">
             {invoiceState.error}
           </div>
         )}
@@ -85,7 +85,7 @@ export function WorkOrderActions({
             <div>
               <label
                 htmlFor="invoiceNumber"
-                className="block text-sm font-medium text-foreground mb-1"
+                className="block text-sm font-medium text-ink mb-1"
               >
                 Invoice Number <span className="text-danger">*</span>
               </label>
@@ -94,7 +94,7 @@ export function WorkOrderActions({
                 name="invoiceNumber"
                 type="text"
                 required
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+                className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
                 placeholder="INV-001"
               />
             </div>
@@ -102,7 +102,7 @@ export function WorkOrderActions({
             <div>
               <label
                 htmlFor="amount"
-                className="block text-sm font-medium text-foreground mb-1"
+                className="block text-sm font-medium text-ink mb-1"
               >
                 Amount (ex. GST) <span className="text-danger">*</span>
               </label>
@@ -113,7 +113,7 @@ export function WorkOrderActions({
                 step="0.01"
                 min="0.01"
                 required
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+                className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
                 placeholder="0.00"
               />
             </div>
@@ -123,7 +123,7 @@ export function WorkOrderActions({
             <div>
               <label
                 htmlFor="gstAmount"
-                className="block text-sm font-medium text-foreground mb-1"
+                className="block text-sm font-medium text-ink mb-1"
               >
                 GST Amount
               </label>
@@ -133,7 +133,7 @@ export function WorkOrderActions({
                 type="number"
                 step="0.01"
                 min="0"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+                className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
                 placeholder="0.00"
               />
             </div>
@@ -141,7 +141,7 @@ export function WorkOrderActions({
             <div>
               <label
                 htmlFor="dueDate"
-                className="block text-sm font-medium text-foreground mb-1"
+                className="block text-sm font-medium text-ink mb-1"
               >
                 Due Date
               </label>
@@ -149,7 +149,7 @@ export function WorkOrderActions({
                 id="dueDate"
                 name="dueDate"
                 type="date"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+                className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
               />
             </div>
           </div>
@@ -157,7 +157,7 @@ export function WorkOrderActions({
           <div>
             <label
               htmlFor="invoiceDescription"
-              className="block text-sm font-medium text-foreground mb-1"
+              className="block text-sm font-medium text-ink mb-1"
             >
               Description
             </label>
@@ -165,7 +165,7 @@ export function WorkOrderActions({
               id="invoiceDescription"
               name="description"
               rows={2}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-supplier"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-supplier"
               placeholder="Description of work completed..."
             />
           </div>
@@ -174,7 +174,7 @@ export function WorkOrderActions({
             <button
               type="submit"
               disabled={invoicePending}
-              className="rounded-lg bg-supplier px-4 py-2 text-sm font-medium text-white hover:bg-supplier/90 transition-colors disabled:opacity-50"
+              className="rounded-[var(--radius-card)] bg-supplier px-4 py-2 text-sm font-medium text-white hover:bg-supplier/90 transition-colors disabled:opacity-50"
             >
               {invoicePending ? "Submitting..." : "Submit Invoice"}
             </button>

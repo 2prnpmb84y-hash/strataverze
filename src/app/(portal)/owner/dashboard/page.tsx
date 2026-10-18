@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { StaticMap } from "@/components/ui/static-map";
 import { FinancialCard } from "@/components/ui/financial-card";
+import { StatusChip } from "@/components/ui/status-chip";
 import { getDashboardFinancialSummary } from "@/lib/queries/reports";
 import { connection } from "next/server";
 
@@ -18,13 +19,6 @@ const statusLabels: Record<string, string> = {
   IN_PROGRESS: "In Progress",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
-};
-
-const statusColours: Record<string, string> = {
-  OPEN: "bg-amber-100 text-amber-700",
-  IN_PROGRESS: "bg-blue-100 text-blue-700",
-  COMPLETED: "bg-green-100 text-green-700",
-  CANCELLED: "bg-red-100 text-red-700",
 };
 
 /** Quick action definitions for the owner dashboard. */
@@ -131,7 +125,7 @@ export default async function OwnerDashboard() {
             height="20"
             viewBox="0 0 20 20"
             fill="none"
-            className="text-muted-foreground"
+            className="text-ink-muted"
           >
             <path
               d="M12.5 15L7.5 10l5-5"
@@ -144,11 +138,11 @@ export default async function OwnerDashboard() {
         </Button>
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="inline-flex items-center rounded-md bg-primary-50 px-2.5 py-0.5 text-xs font-semibold text-primary-500">
+            <span className="inline-flex items-center rounded-full bg-mint-soft px-2.5 py-0.5 text-xs font-semibold text-ink">
               {scheme.planNumber}
             </span>
           </div>
-          <h1 className="text-lg font-bold font-heading text-foreground truncate">
+          <h1 className="text-lg font-bold font-heading text-ink truncate">
             {fullAddress}
           </h1>
         </div>
@@ -187,13 +181,13 @@ export default async function OwnerDashboard() {
             href={action.href}
             className={
               !action.built
-                ? "opacity-60 border border-dashed border-border"
+                ? "opacity-60 border border-dashed border-line"
                 : ""
             }
           >
             {action.label}
             {!action.built && (
-              <span className="ml-1 text-[10px] text-muted-foreground">
+              <span className="ml-1 text-[10px] text-ink-muted">
                 Soon
               </span>
             )}
@@ -204,7 +198,7 @@ export default async function OwnerDashboard() {
       {/* Financial dashboard — committee view */}
       {isCommittee && (
         <div className="mt-8">
-          <h2 className="text-lg font-bold font-heading text-foreground mb-4">
+          <h2 className="text-lg font-bold font-heading text-ink mb-4">
             Financial Dashboard
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,7 +211,7 @@ export default async function OwnerDashboard() {
                 value: `$${Number(fund.balance).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`,
                 colour:
                   fund.fundType === "ADMIN"
-                    ? "bg-primary-400"
+                    ? "bg-turquoise"
                     : fund.fundType === "SINKING"
                       ? "bg-blue-400"
                       : "bg-amber-400",
@@ -227,7 +221,7 @@ export default async function OwnerDashboard() {
                 value: Math.abs(Number(fund.balance)),
                 colour:
                   fund.fundType === "ADMIN"
-                    ? "bg-primary-400"
+                    ? "bg-turquoise"
                     : fund.fundType === "SINKING"
                       ? "bg-blue-400"
                       : "bg-amber-400",
@@ -341,17 +335,17 @@ export default async function OwnerDashboard() {
                 return (
                   <div
                     key={levy.id}
-                    className="rounded-lg bg-muted px-4 py-3"
+                    className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                   >
                     <div className="flex items-start justify-between gap-3 mb-1">
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-ink">
                         {levy.title}
                       </p>
-                      <span className="text-sm font-semibold text-foreground">
+                      <span className="text-sm font-semibold text-ink">
                         ${totalOwed.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       Due{" "}
                       {dueDate.toLocaleDateString("en-AU", {
                         day: "numeric",
@@ -387,17 +381,15 @@ export default async function OwnerDashboard() {
               return (
                 <div
                   key={meeting.id}
-                  className="rounded-lg bg-muted px-4 py-3"
+                  className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                 >
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {meeting.title}
                     </p>
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                      Scheduled
-                    </span>
+                    <StatusChip status="Scheduled" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     {scheduledDate.toLocaleDateString("en-AU", {
                       weekday: "short",
                       day: "numeric",
@@ -432,19 +424,15 @@ export default async function OwnerDashboard() {
               return (
                 <div
                   key={wo.id}
-                  className="rounded-lg bg-muted px-4 py-3"
+                  className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                 >
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {wo.title}
                     </p>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColours[wo.status] ?? "bg-gray-100 text-gray-700"}`}
-                    >
-                      {statusLabels[wo.status] ?? wo.status}
-                    </span>
+                    <StatusChip status={statusLabels[wo.status] ?? wo.status} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     {createdDate.toLocaleDateString("en-AU", {
                       day: "numeric",
                       month: "short",
@@ -466,11 +454,11 @@ export default async function OwnerDashboard() {
 /** Small metadata chip for the property info row */
 function MetadataChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-card border border-border px-4 py-3">
-      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mb-0.5">
+    <div className="rounded-[var(--radius-card)] bg-white border border-line px-4 py-3">
+      <p className="text-[11px] text-ink-muted font-medium uppercase tracking-wide mb-0.5">
         {label}
       </p>
-      <p className="text-sm font-semibold text-foreground">{value}</p>
+      <p className="text-sm font-semibold text-ink">{value}</p>
     </div>
   );
 }

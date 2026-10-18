@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots, getLevyItemsForLot } from "@/lib/queries/levies";
 import { PageHeader } from "@/components/ui/page-header";
+import { formatLotLabel } from "@/lib/format";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -48,7 +49,7 @@ export default async function OwnerLeviesPage() {
   const lotLabels = new Map(
     lotEntries.map((e) => [
       e.lotId,
-      `Lot ${e.lotNumber}${e.unitNumber ? ` (Unit ${e.unitNumber})` : ""}`,
+      `${formatLotLabel(e.lotNumber)}${e.unitNumber ? ` (Unit ${e.unitNumber})` : ""}`,
     ]),
   );
 
@@ -185,7 +186,7 @@ export default async function OwnerLeviesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                    <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                       <th scope="col" className="text-left px-6 py-2">Levy</th>
                       <th scope="col" className="text-left px-4 py-2">Lot</th>
                       <th scope="col" className="text-left px-4 py-2">Due Date</th>
@@ -199,29 +200,29 @@ export default async function OwnerLeviesPage() {
                     {outstanding.map((item) => (
                       <tr
                         key={item.id}
-                        className="border-b border-border/50"
+                        className="border-b border-line/50"
                       >
                         <td className="px-6 py-2">
-                          <p className="font-medium text-foreground">
+                          <p className="font-medium text-ink">
                             {item.title}
                           </p>
                           {item.fundName && (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-ink-muted">
                               {item.fundName}
                             </p>
                           )}
                         </td>
-                        <td className="px-4 py-2 text-foreground">
+                        <td className="px-4 py-2 text-ink">
                           {item.lotLabel}
                         </td>
-                        <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
+                        <td className="px-4 py-2 text-ink-muted whitespace-nowrap">
                           {new Date(item.dueDate).toLocaleDateString("en-AU", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
                           })}
                         </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-foreground">
+                        <td className="px-4 py-2 text-right tabular-nums text-ink">
                           {formatCurrency(item.amountDue)}
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums text-green-600">
@@ -242,11 +243,11 @@ export default async function OwnerLeviesPage() {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 border-border font-semibold">
-                      <td className="px-6 py-3 text-foreground" colSpan={3}>
+                    <tr className="border-t-2 border-line font-semibold">
+                      <td className="px-6 py-3 text-ink" colSpan={3}>
                         Total Outstanding
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-foreground">
+                      <td className="px-4 py-3 text-right tabular-nums text-ink">
                         {formatCurrency(
                           outstanding.reduce((s, i) => s + i.amountDue, 0),
                         )}
@@ -282,13 +283,13 @@ export default async function OwnerLeviesPage() {
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                      className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {item.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-ink-muted">
                           {item.lotLabel}
                           {item.fundName ? ` · ${item.fundName}` : ""}
                           {" · Paid · "}
@@ -300,7 +301,7 @@ export default async function OwnerLeviesPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium tabular-nums text-foreground">
+                        <span className="text-sm font-medium tabular-nums text-ink">
                           {formatCurrency(item.amountDue)}
                         </span>
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">

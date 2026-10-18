@@ -57,7 +57,7 @@ export default async function OwnerInsurancePage() {
 
       {policies.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No insurance policies have been recorded for your scheme yet.
           </p>
         </Card>
@@ -67,10 +67,10 @@ export default async function OwnerInsurancePage() {
             <Card key={policy.id}>
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">
+                  <h3 className="text-sm font-semibold text-ink">
                     {policyTypeLabels[policy.policyType] ?? policy.policyType}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     {policy.scheme.name}
                     {" · "}
                     Policy #{policy.policyNumber}
@@ -86,20 +86,20 @@ export default async function OwnerInsurancePage() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">Coverage</p>
-                  <p className="font-medium text-foreground">
+                  <p className="text-xs text-ink-muted">Coverage</p>
+                  <p className="font-medium text-ink">
                     {formatCurrency(String(policy.coverageAmount))}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Premium</p>
-                  <p className="font-medium text-foreground">
+                  <p className="text-xs text-ink-muted">Premium</p>
+                  <p className="font-medium text-ink">
                     {formatCurrency(String(policy.premium))}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Expires</p>
-                  <p className="font-medium text-foreground">
+                  <p className="text-xs text-ink-muted">Expires</p>
+                  <p className="font-medium text-ink">
                     {new Date(String(policy.endDate)).toLocaleDateString(
                       "en-AU",
                       { day: "numeric", month: "short", year: "numeric" },
@@ -108,7 +108,7 @@ export default async function OwnerInsurancePage() {
                 </div>
               </div>
               {policy.broker ? (
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="mt-2 text-xs text-ink-muted">
                   Broker: {policy.broker}
                   {policy.brokerContact ? ` (${policy.brokerContact})` : ""}
                 </p>

@@ -22,12 +22,12 @@ export function ProfileForm({
   return (
     <form action={formAction} className="space-y-5">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       )}
       {state.success && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+        <div className="rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
           Profile updated successfully.
         </div>
       )}
@@ -70,7 +70,7 @@ export function ProfileForm({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center justify-center rounded-[var(--radius-card)] bg-turquoise px-5 py-2.5 text-sm font-medium text-white hover:bg-turquoise/80 focus:outline-none focus:ring-2 focus:ring-turquoise disabled:opacity-50 transition-colors"
         >
           {isPending ? "Saving…" : "Save changes"}
         </button>

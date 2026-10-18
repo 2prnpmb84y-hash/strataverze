@@ -119,7 +119,7 @@ export default async function OwnerNotificationsPage() {
         Array.from(grouped.entries()).map(([date, items]) => (
           <Card key={date}>
             <CardHeader title={date} />
-            <div className="divide-y divide-border -mx-6">
+            <div className="divide-y divide-line -mx-6">
               {items.map((item) => {
                 const createdAt = new Date(String(item.createdAt));
                 const label =
@@ -138,14 +138,14 @@ export default async function OwnerNotificationsPage() {
                   >
                     <span className="text-lg mt-0.5 shrink-0">{icon}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-ink">
                         {label}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs text-ink-muted mt-0.5">
                         {schemeName} &middot; {actorName}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    <span className="text-xs text-ink-muted whitespace-nowrap shrink-0">
                       {formatTimeAgo(createdAt)}
                     </span>
                   </div>

@@ -146,10 +146,10 @@ export function InterestClient({
     <div className="space-y-4">
       {/* Summary stats */}
       <div className="flex flex-wrap items-center gap-4 text-sm">
-        <span className="text-muted-foreground">
+        <span className="text-ink-muted">
           {notices.length} overdue notice{notices.length !== 1 ? "s" : ""}
         </span>
-        <span className="text-muted-foreground">
+        <span className="text-ink-muted">
           Previously charged: {formatCurrency(totalPreviouslyCharged)}
         </span>
         {chargeableNotices.length > 0 && (
@@ -172,12 +172,12 @@ export function InterestClient({
 
       {/* Messages */}
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
       {success && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+        <div className="rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
           {success}
         </div>
       )}
@@ -187,61 +187,61 @@ export function InterestClient({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left">
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+              <tr className="border-b border-line text-left">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                   Notice
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                   Lot
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                   Fund
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                   Due Date
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Days Overdue
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Balance
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Previously Charged
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Additional
                 </th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-line">
               {notices.map((notice) => (
                 <tr
                   key={notice.id}
                   className="hover:bg-muted/50 transition-colors"
                 >
-                  <td className="px-4 py-3 font-medium text-foreground">
+                  <td className="px-4 py-3 font-medium text-ink">
                     {notice.noticeNumber}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-4 py-3 text-ink-muted">
                     {notice.lotNumber}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                  <td className="px-4 py-3 text-ink-muted text-xs">
                     {notice.fundName}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-4 py-3 text-ink-muted">
                     {formatDate(notice.dueDate)}
                   </td>
                   <td className="px-4 py-3 text-right text-amber-600 font-medium">
                     {notice.daysOverdue}
                   </td>
-                  <td className="px-4 py-3 text-right text-foreground">
+                  <td className="px-4 py-3 text-right text-ink">
                     {formatCurrency(notice.balanceOutstanding)}
                   </td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">
+                  <td className="px-4 py-3 text-right text-ink-muted">
                     {formatCurrency(notice.previouslyCharged)}
                   </td>
                   <td className="px-4 py-3 text-right font-medium">
@@ -250,7 +250,7 @@ export function InterestClient({
                         {formatCurrency(notice.additionalInterest)}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-ink-muted">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -269,7 +269,7 @@ export function InterestClient({
                         {isPending ? "..." : "Charge"}
                       </button>
                     ) : (
-                      <span className="text-xs text-muted-foreground italic">
+                      <span className="text-xs text-ink-muted italic">
                         Up to date
                       </span>
                     )}

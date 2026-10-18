@@ -113,31 +113,31 @@ export default async function FinancialPeriodsPage({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left">
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Period
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Start Date
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     End Date
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Type
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                     Closed
                   </th>
-                  <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-line">
                 {periods.map((period) => {
                   const now = new Date();
                   now.setHours(0, 0, 0, 0);
@@ -150,23 +150,23 @@ export default async function FinancialPeriodsPage({
 
                   return (
                     <tr key={period.id} className="hover:bg-muted/50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-foreground">
+                      <td className="px-4 py-3 font-medium text-ink">
                         <span className="flex items-center gap-2">
                           {String(period.name)}
                           {isCurrent && (
-                            <span className="inline-flex items-center rounded-full bg-primary-100 text-primary-700 px-2 py-0.5 text-[10px] font-medium">
+                            <span className="inline-flex items-center rounded-full bg-mint-soft text-turquoise px-2 py-0.5 text-[10px] font-medium">
                               Current
                             </span>
                           )}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 text-ink-muted">
                         {formatDate(period.startDate)}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 text-ink-muted">
                         {formatDate(period.endDate)}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground capitalize">
+                      <td className="px-4 py-3 text-ink-muted capitalize">
                         {String(period.periodType ?? "MONTH").toLowerCase()}
                       </td>
                       <td className="px-4 py-3">
@@ -178,7 +178,7 @@ export default async function FinancialPeriodsPage({
                           {statusLabels[period.status] ?? period.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                      <td className="px-4 py-3 text-ink-muted text-xs">
                         {period.closedAt ? formatDate(period.closedAt) : "—"}
                       </td>
                       <td className="px-4 py-3 text-right">

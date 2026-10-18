@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots, getLevyItemsForLot } from "@/lib/queries/levies";
 import { PageHeader } from "@/components/ui/page-header";
+import { formatLotLabel } from "@/lib/format";
 import { OwnerStatementTable } from "./statement-table";
 import { connection } from "next/server";
 
@@ -38,7 +39,7 @@ export default async function OwnerStatementPage({
 
   const lotOptions = lotEntries.map((e) => ({
     id: e.lotId,
-    label: `Lot ${e.lotNumber}${e.unitNumber ? ` (Unit ${e.unitNumber})` : ""} — ${e.schemeName}`,
+    label: `${formatLotLabel(e.lotNumber)}${e.unitNumber ? ` (Unit ${e.unitNumber})` : ""} — ${e.schemeName}`,
   }));
 
   // If only one lot, auto-select it

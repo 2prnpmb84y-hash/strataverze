@@ -36,7 +36,7 @@ function formatCurrency(value: number): string {
 }
 
 const inputClasses =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
 let lineCounter = 2;
 
@@ -138,7 +138,7 @@ export function AdjustmentForm({
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -150,7 +150,7 @@ export function AdjustmentForm({
             <div>
               <label
                 htmlFor="transactionDate"
-                className="block text-sm font-medium text-foreground mb-1.5"
+                className="block text-sm font-medium text-ink mb-1.5"
               >
                 Transaction Date
               </label>
@@ -172,7 +172,7 @@ export function AdjustmentForm({
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-foreground mb-1.5"
+              className="block text-sm font-medium text-ink mb-1.5"
             >
               Description
             </label>
@@ -195,7 +195,7 @@ export function AdjustmentForm({
       <Card>
         <div className="p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-sm font-semibold text-ink">
               Journal Lines
             </h3>
             <Button type="button" variant="ghost" onClick={addLine}>
@@ -205,10 +205,10 @@ export function AdjustmentForm({
 
           {/* Column headers */}
           <div className="hidden sm:grid sm:grid-cols-[3fr_2fr_1.5fr_1.5fr_auto] gap-2 px-1">
-            <span className="text-xs font-medium text-muted-foreground">Account</span>
-            <span className="text-xs font-medium text-muted-foreground">Fund</span>
-            <span className="text-xs font-medium text-muted-foreground">Debit ($)</span>
-            <span className="text-xs font-medium text-muted-foreground">Credit ($)</span>
+            <span className="text-xs font-medium text-ink-muted">Account</span>
+            <span className="text-xs font-medium text-ink-muted">Fund</span>
+            <span className="text-xs font-medium text-ink-muted">Debit ($)</span>
+            <span className="text-xs font-medium text-ink-muted">Credit ($)</span>
             <span className="w-9" />
           </div>
 
@@ -219,7 +219,7 @@ export function AdjustmentForm({
               className="grid grid-cols-1 sm:grid-cols-[3fr_2fr_1.5fr_1.5fr_auto] gap-2 items-start"
             >
               <div>
-                <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+                <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                   Account
                 </label>
                 <select
@@ -239,7 +239,7 @@ export function AdjustmentForm({
               </div>
 
               <div>
-                <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+                <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                   Fund
                 </label>
                 <select
@@ -259,7 +259,7 @@ export function AdjustmentForm({
               </div>
 
               <div>
-                <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+                <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                   Debit ($)
                 </label>
                 <input
@@ -276,7 +276,7 @@ export function AdjustmentForm({
               </div>
 
               <div>
-                <label className="sm:hidden block text-xs font-medium text-muted-foreground mb-1">
+                <label className="sm:hidden block text-xs font-medium text-ink-muted mb-1">
                   Credit ($)
                 </label>
                 <input
@@ -297,7 +297,7 @@ export function AdjustmentForm({
                   type="button"
                   onClick={() => removeLine(line.key)}
                   disabled={lines.length <= 2}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-[var(--radius-card)] text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:pointer-events-none"
                   title="Remove line"
                 >
                   <svg
@@ -317,12 +317,12 @@ export function AdjustmentForm({
           ))}
 
           {/* Balance summary */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm pt-4 border-t border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm pt-4 border-t border-line">
             <div className="flex gap-6">
-              <span className="text-foreground">
+              <span className="text-ink">
                 Total Debits: <strong>{formatCurrency(totalDebits)}</strong>
               </span>
-              <span className="text-foreground">
+              <span className="text-ink">
                 Total Credits: <strong>{formatCurrency(totalCredits)}</strong>
               </span>
             </div>

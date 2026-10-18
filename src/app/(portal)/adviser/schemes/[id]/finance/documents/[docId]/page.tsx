@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DocumentActions } from "./document-actions";
 import { connection } from "next/server";
+import { formatLotLabel } from "@/lib/format";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
@@ -165,7 +166,7 @@ export default async function DocumentDetailPage({
               {doc.lot && (
                 <LinkedRecord
                   label="Lot"
-                  value={`Lot ${String(doc.lot.lotNumber)}${doc.lot.unitNumber ? ` (Unit ${String(doc.lot.unitNumber)})` : ""}`}
+                  value={`${formatLotLabel(doc.lot.lotNumber)}${doc.lot.unitNumber ? ` (Unit ${String(doc.lot.unitNumber)})` : ""}`}
                 />
               )}
               {doc.supplier && (
@@ -201,7 +202,7 @@ export default async function DocumentDetailPage({
                 !doc.supplierInvoice &&
                 !doc.levyNotice &&
                 !doc.bankTransaction && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-ink-muted">
                     No linked records. This document can be linked to a lot,
                     supplier, invoice, levy notice, or bank transaction.
                   </p>
@@ -254,10 +255,10 @@ function DetailItem({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-foreground">{children}</dd>
+      <dd className="mt-1 text-sm text-ink">{children}</dd>
     </div>
   );
 }
@@ -272,17 +273,17 @@ function LinkedRecord({
   href?: string;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-3">
+    <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
       <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">
           {label}
         </p>
-        <p className="text-sm font-medium text-foreground mt-0.5">{value}</p>
+        <p className="text-sm font-medium text-ink mt-0.5">{value}</p>
       </div>
       {href && (
         <Link
           href={href}
-          className="text-xs font-medium text-primary-600 hover:text-primary-700"
+          className="text-xs font-medium text-turquoise hover:text-turquoise/80"
         >
           View
         </Link>

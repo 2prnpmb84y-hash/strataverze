@@ -118,7 +118,7 @@ export function WorkOrderList({
       {filtered.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               {workOrders.length === 0
                 ? "No work orders have been raised yet."
                 : "No work orders match your search."}
@@ -142,12 +142,12 @@ export function WorkOrderList({
                   return (
                     <div
                       key={wo.id}
-                      className="rounded-lg bg-muted px-4 py-3"
+                      className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
                         <Link
                           href={`${basePath}/${wo.id}`}
-                          className="text-sm font-medium text-foreground hover:text-primary-600 transition-colors"
+                          className="text-sm font-medium text-ink hover:text-turquoise transition-colors"
                         >
                           {wo.title}
                         </Link>
@@ -164,14 +164,14 @@ export function WorkOrderList({
                           </span>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {schemeNames[wo.schemeId] ?? ""}
                         {" · Raised by "}
                         {raisedByName}
                         {wo.assignedTo && ` · Assigned to ${wo.assignedTo}`}
                       </p>
                       {wo.comments.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-ink-muted mt-1">
                           {wo.comments.length} comment
                           {wo.comments.length === 1 ? "" : "s"}
                         </p>
@@ -193,16 +193,16 @@ export function WorkOrderList({
                 {completed.map((wo) => (
                   <div
                     key={wo.id}
-                    className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                    className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                   >
                     <div>
                       <Link
                         href={`${basePath}/${wo.id}`}
-                        className="text-sm font-medium text-foreground hover:text-primary-600 transition-colors"
+                        className="text-sm font-medium text-ink hover:text-turquoise transition-colors"
                       >
                         {wo.title}
                       </Link>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {schemeNames[wo.schemeId] ?? ""}
                         {wo.actualCost
                           ? ` · $${Number(wo.actualCost).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`

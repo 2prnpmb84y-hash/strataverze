@@ -86,7 +86,7 @@ export function StrataRollTable({
     <div>
       {/* Filter tabs and search */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
-        <div className="flex rounded-lg border border-border overflow-hidden">
+        <div className="flex rounded-[var(--radius-card)] border border-line overflow-hidden">
           {filterTabs.map((tab) => (
             <button
               key={tab.key}
@@ -94,8 +94,8 @@ export function StrataRollTable({
               onClick={() => handleFilterChange(tab.key)}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeFilter === tab.key
-                  ? "bg-primary-400 text-white"
-                  : "bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-turquoise text-white"
+                  : "bg-white text-ink-muted hover:text-ink hover:bg-muted"
               }`}
             >
               {tab.label}
@@ -107,43 +107,43 @@ export function StrataRollTable({
           value={filterValue}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder={`Filter by ${activeFilter}...`}
-          className="w-full sm:w-56 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+          className="w-full sm:w-56 rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
         />
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/50">
-              <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                 Lot
               </th>
-              <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                 Unit
               </th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 UOE
               </th>
-              <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                 Owner
               </th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 Opening
               </th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 +Annual
               </th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 +Special
               </th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 ~Paid
               </th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 ~Closing
               </th>
-              <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+              <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 Interest Paid
               </th>
             </tr>
@@ -153,7 +153,7 @@ export function StrataRollTable({
               <tr>
                 <td
                   colSpan={10}
-                  className="px-3 py-8 text-center text-muted-foreground"
+                  className="px-3 py-8 text-center text-ink-muted"
                 >
                   {filterValue
                     ? "No lots match your filter."
@@ -164,26 +164,26 @@ export function StrataRollTable({
               paged.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-t border-border hover:bg-muted/30 transition-colors"
+                  className="border-t border-line hover:bg-muted/30 transition-colors"
                 >
                   <td className="px-3 py-2.5">
                     <Link
                       href={`/adviser/schemes/${schemeId}/lots/${row.id}`}
-                      className="font-medium text-foreground hover:text-primary-500 transition-colors"
+                      className="font-medium text-ink hover:text-turquoise transition-colors"
                     >
                       {row.lotNumber}
                     </Link>
                   </td>
-                  <td className="px-3 py-2.5 text-muted-foreground">
+                  <td className="px-3 py-2.5 text-ink-muted">
                     {row.unitNumber ?? "—"}
                   </td>
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums">
                     {row.entitlement}
                   </td>
-                  <td className="px-3 py-2.5 text-muted-foreground max-w-[200px] truncate">
+                  <td className="px-3 py-2.5 text-ink-muted max-w-[200px] truncate">
                     {row.ownerNames || "—"}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-muted-foreground">
+                  <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-ink-muted">
                     {formatCurrency(row.opening)}
                   </td>
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums">
@@ -198,7 +198,7 @@ export function StrataRollTable({
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums font-medium">
                     {formatCurrency(row.closing)}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-muted-foreground">
+                  <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-ink-muted">
                     {formatCurrency(row.interestPaid)}
                   </td>
                 </tr>
@@ -215,7 +215,7 @@ export function StrataRollTable({
             type="button"
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={safePage === 1}
-            className="px-2 py-1 rounded text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+            className="px-2 py-1 rounded text-sm text-ink-muted hover:text-ink disabled:opacity-40 transition-colors"
             aria-label="Previous page"
           >
             <svg
@@ -241,8 +241,8 @@ export function StrataRollTable({
               onClick={() => setCurrentPage(page)}
               className={`min-w-[28px] h-7 rounded text-sm font-medium transition-colors ${
                 page === safePage
-                  ? "bg-primary-400 text-white"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-turquoise text-white"
+                  : "text-ink-muted hover:text-ink hover:bg-muted"
               }`}
             >
               {page}
@@ -253,7 +253,7 @@ export function StrataRollTable({
             type="button"
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={safePage === totalPages}
-            className="px-2 py-1 rounded text-sm text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+            className="px-2 py-1 rounded text-sm text-ink-muted hover:text-ink disabled:opacity-40 transition-colors"
             aria-label="Next page"
           >
             <svg
@@ -275,7 +275,7 @@ export function StrataRollTable({
       )}
 
       {/* Row count */}
-      <p className="text-xs text-muted-foreground text-center mt-2">
+      <p className="text-xs text-ink-muted text-center mt-2">
         {filtered.length} {filtered.length === 1 ? "lot" : "lots"}
         {filterValue && ` matching "${filterValue}"`}
       </p>

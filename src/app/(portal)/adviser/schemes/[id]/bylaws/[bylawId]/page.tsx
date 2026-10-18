@@ -65,7 +65,7 @@ export default async function BylawDetailPage({
 
       {/* Meta info */}
       <Card className="mb-6">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-ink-muted">
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyles[bylaw.status] ?? "bg-gray-100 text-gray-700"}`}
           >
@@ -115,15 +115,15 @@ export default async function BylawDetailPage({
             </>
           ) : null}
         </div>
-        <div className="mt-4 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+        <div className="mt-4 text-sm text-ink leading-relaxed whitespace-pre-wrap">
           {bylaw.body}
         </div>
         {bylaw.notes ? (
-          <div className="mt-4 rounded-lg bg-muted px-4 py-3">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
+          <div className="mt-4 rounded-[var(--radius-card)] bg-muted px-4 py-3">
+            <p className="text-xs font-medium text-ink-muted mb-1">
               Notes
             </p>
-            <p className="text-sm text-foreground whitespace-pre-wrap">
+            <p className="text-sm text-ink whitespace-pre-wrap">
               {bylaw.notes}
             </p>
           </div>

@@ -6,9 +6,9 @@ import { connection } from "next/server";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   AWARDED: { label: "Awarded", className: "bg-gold-100 text-gold-500" },
-  IN_PROGRESS: { label: "In Progress", className: "bg-primary-100 text-primary-500" },
+  IN_PROGRESS: { label: "In Progress", className: "bg-mint-soft text-turquoise" },
   COMPLETED: { label: "Completed", className: "bg-success/10 text-success" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
+  CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
 };
 
 export default async function SupplierWorkOrdersPage() {
@@ -27,16 +27,16 @@ export default async function SupplierWorkOrdersPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
+      <h1 className="text-2xl font-bold font-heading text-ink mb-1">
         Work Orders
       </h1>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-sm text-ink-muted mb-8">
         Manage work orders awarded to you.
       </p>
 
       {workOrders.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             No work orders have been awarded to you yet. Submit quotes on{" "}
             <Link
               href="/supplier/quotes"
@@ -58,13 +58,13 @@ export default async function SupplierWorkOrdersPage() {
                   return (
                     <div
                       key={wo.id}
-                      className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                      className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {wo.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-ink-muted">
                           {wo.scheme?.name}
                           {wo.priority && ` · ${wo.priority}`}
                         </p>
@@ -88,13 +88,13 @@ export default async function SupplierWorkOrdersPage() {
                   return (
                     <div
                       key={wo.id}
-                      className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                      className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {wo.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-ink-muted">
                           {wo.scheme?.name}
                           {wo.completedAt &&
                             ` · Completed ${new Date(String(wo.completedAt)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}

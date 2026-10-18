@@ -50,8 +50,8 @@ export function SchemeList({
       )}
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl bg-card border border-border p-6 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="rounded-[var(--radius-card)] bg-white border border-line p-6 text-center">
+          <p className="text-sm text-ink-muted">
             {schemes.length === 0
               ? "No schemes yet."
               : "No schemes match your search."}
@@ -63,20 +63,20 @@ export function SchemeList({
             <Link
               key={scheme.id}
               href={`/${portalPrefix}/schemes/${scheme.id}`}
-              className="block rounded-xl bg-card border border-border p-5 hover:border-primary-300 transition-colors"
+              className="block rounded-[var(--radius-card)] bg-white border border-line p-5 hover:border-turquoise/30 transition-colors"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-heading font-semibold text-card-foreground">
+                  <h3 className="font-heading font-semibold text-ink">
                     {scheme.name}
                   </h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
+                  <p className="text-sm text-ink-muted mt-0.5">
                     {scheme.planNumber} &middot; {scheme.suburb},{" "}
                     {scheme.state} {scheme.postcode}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-ink-muted">
                     {scheme.totalLots} lot{scheme.totalLots === 1 ? "" : "s"}
                   </span>
                 </div>

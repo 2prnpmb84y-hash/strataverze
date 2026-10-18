@@ -27,9 +27,9 @@ export function VoteButtons({
 
   if (currentVote) {
     return (
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-ink-muted">
         You voted{" "}
-        <span className="font-semibold text-foreground">
+        <span className="font-semibold text-ink">
           {currentVote.charAt(0) + currentVote.slice(1).toLowerCase()}
         </span>
       </p>

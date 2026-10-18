@@ -35,10 +35,10 @@ function DetailItem({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-foreground">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink">{value || "—"}</dd>
     </div>
   );
 }
@@ -99,7 +99,7 @@ export default async function JournalEntryDetailPage({
       </div>
 
       {entry.description && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-muted">
           {String(entry.description)}
         </p>
       )}
@@ -142,7 +142,7 @@ export default async function JournalEntryDetailPage({
         {lines.length > 0 && (
           <>
             {/* Table header */}
-            <div className="hidden sm:grid sm:grid-cols-[1.5fr_1fr_1fr_100px_100px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+            <div className="hidden sm:grid sm:grid-cols-[1.5fr_1fr_1fr_100px_100px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
               <div>Account</div>
               <div>Fund</div>
               <div>Description</div>
@@ -150,30 +150,30 @@ export default async function JournalEntryDetailPage({
               <div className="text-right">Credit</div>
             </div>
 
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-line">
               {lines.map((line, idx) => (
                 <div
                   key={idx}
                   className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_1fr_100px_100px] gap-2 sm:gap-4 px-6 py-3 items-center"
                 >
                   <div className="min-w-0">
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <span className="font-mono text-xs text-ink-muted">
                       {String(line.accountCode.code)}
                     </span>{" "}
-                    <span className="text-sm text-foreground">
+                    <span className="text-sm text-ink">
                       {String(line.accountCode.name)}
                     </span>
                   </div>
-                  <div className="text-sm text-muted-foreground truncate">
+                  <div className="text-sm text-ink-muted truncate">
                     {line.fund?.name ? String(line.fund.name) : "—"}
                   </div>
-                  <div className="text-sm text-muted-foreground truncate">
+                  <div className="text-sm text-ink-muted truncate">
                     {line.description ? String(line.description) : "—"}
                   </div>
-                  <div className="text-sm text-foreground text-right tabular-nums font-medium">
+                  <div className="text-sm text-ink text-right tabular-nums font-medium">
                     {line.debit ? formatCurrency(line.debit) : "—"}
                   </div>
-                  <div className="text-sm text-foreground text-right tabular-nums font-medium">
+                  <div className="text-sm text-ink text-right tabular-nums font-medium">
                     {line.credit ? formatCurrency(line.credit) : "—"}
                   </div>
                 </div>
@@ -181,13 +181,13 @@ export default async function JournalEntryDetailPage({
 
               {/* Totals row */}
               <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_1fr_100px_100px] gap-2 sm:gap-4 px-6 py-3 items-center bg-muted/30">
-                <div className="text-sm font-semibold text-foreground sm:col-span-3">
+                <div className="text-sm font-semibold text-ink sm:col-span-3">
                   Totals
                 </div>
-                <div className="text-sm text-foreground text-right tabular-nums font-semibold">
+                <div className="text-sm text-ink text-right tabular-nums font-semibold">
                   {formatCurrency(totalDebits)}
                 </div>
-                <div className="text-sm text-foreground text-right tabular-nums font-semibold">
+                <div className="text-sm text-ink text-right tabular-nums font-semibold">
                   {formatCurrency(totalCredits)}
                 </div>
               </div>

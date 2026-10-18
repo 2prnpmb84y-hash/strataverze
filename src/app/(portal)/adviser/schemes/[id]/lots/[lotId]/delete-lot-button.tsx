@@ -29,7 +29,7 @@ export function DeleteLotButton({
 
   if (confirming) {
     return (
-      <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+      <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 p-4">
         <p className="text-sm text-red-700 mb-3">
           Are you sure you want to delete <strong>Lot {lotNumber}</strong>? Any
           owner memberships linked to this lot will also be removed.

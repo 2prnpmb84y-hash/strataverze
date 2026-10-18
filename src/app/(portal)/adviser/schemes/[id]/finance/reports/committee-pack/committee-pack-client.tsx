@@ -11,7 +11,7 @@ import {
 } from "@/lib/queries/activity-log-utils";
 
 const inputClasses =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
 // ─── Types ─────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ function formatTime(value: string): string {
 function varianceColour(variance: number): string {
   if (variance > 0) return "text-green-600";
   if (variance < 0) return "text-red-600";
-  return "text-foreground";
+  return "text-ink";
 }
 
 // ─── Component ─────────────────────────────────────────────────
@@ -201,7 +201,7 @@ export function CommitteePackClient({
           <div>
             <label
               htmlFor="startDate"
-              className="block text-sm font-medium text-foreground mb-1.5"
+              className="block text-sm font-medium text-ink mb-1.5"
             >
               Start Date
             </label>
@@ -216,7 +216,7 @@ export function CommitteePackClient({
           <div>
             <label
               htmlFor="endDate"
-              className="block text-sm font-medium text-foreground mb-1.5"
+              className="block text-sm font-medium text-ink mb-1.5"
             >
               End Date
             </label>
@@ -280,7 +280,7 @@ export function CommitteePackClient({
               <div className="px-6 pb-6 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <tr className="border-b border-line text-xs font-medium text-ink-muted uppercase tracking-wide">
                       <th scope="col" className="text-left py-2 pr-4">Fund</th>
                       <th scope="col" className="text-left py-2 pr-4">Type</th>
                       <th scope="col" className="text-right py-2 pr-4">Opening</th>
@@ -294,15 +294,15 @@ export function CommitteePackClient({
                     {pack.fundSummaries.map((fund) => (
                       <tr
                         key={fund.fundId}
-                        className="border-b border-border/50"
+                        className="border-b border-line/50"
                       >
-                        <td className="py-2.5 pr-4 font-medium text-foreground">
+                        <td className="py-2.5 pr-4 font-medium text-ink">
                           {fund.fundName}
                         </td>
-                        <td className="py-2.5 pr-4 text-muted-foreground">
+                        <td className="py-2.5 pr-4 text-ink-muted">
                           {fundTypeLabel(fund.fundType)}
                         </td>
-                        <td className="py-2.5 pr-4 text-right tabular-nums text-foreground">
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-ink">
                           {formatCurrency(fund.openingBalance)}
                         </td>
                         <td className="py-2.5 pr-4 text-right tabular-nums text-green-600">
@@ -317,7 +317,7 @@ export function CommitteePackClient({
                           {formatCurrency(fund.netMovement)}
                         </td>
                         <td
-                          className={`py-2.5 text-right tabular-nums font-semibold ${fund.closingBalance >= 0 ? "text-foreground" : "text-red-600"}`}
+                          className={`py-2.5 text-right tabular-nums font-semibold ${fund.closingBalance >= 0 ? "text-ink" : "text-red-600"}`}
                         >
                           {formatCurrency(fund.closingBalance)}
                         </td>
@@ -325,10 +325,10 @@ export function CommitteePackClient({
                     ))}
                     {/* Totals row */}
                     <tr className="font-semibold">
-                      <td className="py-2.5 pr-4 text-foreground" colSpan={2}>
+                      <td className="py-2.5 pr-4 text-ink" colSpan={2}>
                         Total
                       </td>
-                      <td className="py-2.5 pr-4 text-right tabular-nums text-foreground">
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-ink">
                         {formatCurrency(
                           pack.fundSummaries.reduce(
                             (s, f) => s + f.openingBalance,
@@ -362,7 +362,7 @@ export function CommitteePackClient({
                           ),
                         )}
                       </td>
-                      <td className="py-2.5 text-right tabular-nums text-foreground">
+                      <td className="py-2.5 text-right tabular-nums text-ink">
                         {formatCurrency(pack.totalFundBalance)}
                       </td>
                     </tr>
@@ -422,13 +422,13 @@ export function CommitteePackClient({
               <div className="px-6 pb-6 space-y-6">
                 {pack.budgetComparisons.map((comp) => (
                   <div key={comp.fundName}>
-                    <h4 className="text-sm font-semibold text-foreground mb-3">
+                    <h4 className="text-sm font-semibold text-ink mb-3">
                       {comp.fundName}
                     </h4>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          <tr className="border-b border-line text-xs font-medium text-ink-muted uppercase tracking-wide">
                             <th scope="col" className="text-left py-2 pr-4">Account</th>
                             <th scope="col" className="text-right py-2 pr-4">Budget</th>
                             <th scope="col" className="text-right py-2 pr-4">Actual</th>
@@ -440,18 +440,18 @@ export function CommitteePackClient({
                           {comp.lines.map((line) => (
                             <tr
                               key={line.accountCode}
-                              className="border-b border-border/50"
+                              className="border-b border-line/50"
                             >
-                              <td className="py-2 pr-4 text-foreground">
-                                <span className="text-muted-foreground mr-2">
+                              <td className="py-2 pr-4 text-ink">
+                                <span className="text-ink-muted mr-2">
                                   {line.accountCode}
                                 </span>
                                 {line.accountName}
                               </td>
-                              <td className="py-2 pr-4 text-right tabular-nums text-foreground">
+                              <td className="py-2 pr-4 text-right tabular-nums text-ink">
                                 {formatCurrency(line.budgetAmount)}
                               </td>
-                              <td className="py-2 pr-4 text-right tabular-nums text-foreground">
+                              <td className="py-2 pr-4 text-right tabular-nums text-ink">
                                 {formatCurrency(line.actualAmount)}
                               </td>
                               <td
@@ -468,11 +468,11 @@ export function CommitteePackClient({
                           ))}
                           {/* Fund totals */}
                           <tr className="font-semibold">
-                            <td className="py-2 pr-4 text-foreground">Total</td>
-                            <td className="py-2 pr-4 text-right tabular-nums text-foreground">
+                            <td className="py-2 pr-4 text-ink">Total</td>
+                            <td className="py-2 pr-4 text-right tabular-nums text-ink">
                               {formatCurrency(comp.totalBudget)}
                             </td>
-                            <td className="py-2 pr-4 text-right tabular-nums text-foreground">
+                            <td className="py-2 pr-4 text-right tabular-nums text-ink">
                               {formatCurrency(comp.totalActual)}
                             </td>
                             <td
@@ -507,20 +507,20 @@ export function CommitteePackClient({
                   {pack.bankSummaries.map((bank) => (
                     <div
                       key={bank.bankAccountName}
-                      className="rounded-lg border border-border p-4"
+                      className="rounded-[var(--radius-card)] border border-line p-4"
                     >
-                      <h4 className="text-sm font-semibold text-foreground mb-3">
+                      <h4 className="text-sm font-semibold text-ink mb-3">
                         {bank.bankAccountName}
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Balance</span>
-                          <span className="font-medium tabular-nums text-foreground">
+                          <span className="text-ink-muted">Balance</span>
+                          <span className="font-medium tabular-nums text-ink">
                             {formatCurrency(bank.closingBalance)}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">
+                          <span className="text-ink-muted">
                             Unmatched Transactions
                           </span>
                           <span
@@ -530,10 +530,10 @@ export function CommitteePackClient({
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">
+                          <span className="text-ink-muted">
                             Last Reconciled
                           </span>
-                          <span className="text-foreground">
+                          <span className="text-ink">
                             {bank.lastReconciledDate
                               ? formatDate(bank.lastReconciledDate)
                               : "Not yet reconciled"}
@@ -554,32 +554,32 @@ export function CommitteePackClient({
                 title="Recent Financial Activity"
                 description="Last 20 actions recorded for this scheme."
               />
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-line">
                 {pack.recentActivity.map((activity, idx) => (
                   <div
                     key={`${activity.createdAt}-${idx}`}
                     className="flex items-start gap-4 px-6 py-3"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
+                      <p className="text-sm text-ink">
                         <span className="font-medium">
                           {formatActionLabel(activity.action)}
                         </span>
-                        <span className="text-muted-foreground">
+                        <span className="text-ink-muted">
                           {" "}
                           on{" "}
                           {formatEntityTypeLabel(activity.entityType)}
                         </span>
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs text-ink-muted mt-0.5">
                         {activity.actorName}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {formatDate(activity.createdAt)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {formatTime(activity.createdAt)}
                       </p>
                     </div>
@@ -590,7 +590,7 @@ export function CommitteePackClient({
           )}
 
           {/* ── Report metadata ─────────────────────────────── */}
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-xs text-ink-muted text-center">
             Report generated {formatDate(pack.reportDate)} at{" "}
             {formatTime(pack.reportDate)} for {pack.schemeName}
           </p>
@@ -614,17 +614,17 @@ function ArrearsCell({
   bold?: boolean;
 }) {
   return (
-    <div className="rounded-lg bg-muted px-3 py-2.5 text-center">
-      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+    <div className="rounded-[var(--radius-card)] bg-muted px-3 py-2.5 text-center">
+      <p className="text-xs text-ink-muted mb-1">{label}</p>
       <p
         className={`text-sm tabular-nums ${
           bold
-            ? "font-bold text-foreground"
+            ? "font-bold text-ink"
             : highlight && value > 0
               ? "font-semibold text-red-600"
               : value > 0
-                ? "font-medium text-foreground"
-                : "text-muted-foreground"
+                ? "font-medium text-ink"
+                : "text-ink-muted"
         }`}
       >
         {formatCurrency(value)}

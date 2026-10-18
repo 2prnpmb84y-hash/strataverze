@@ -51,15 +51,15 @@ export default async function FundDetailPage({
       <Card className="mb-6">
         <CardHeader title="Fund Details" />
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-3">
-            <p className="text-sm text-muted-foreground">Fund Type</p>
-            <p className="text-sm font-medium text-foreground">
+          <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
+            <p className="text-sm text-ink-muted">Fund Type</p>
+            <p className="text-sm font-medium text-ink">
               {fundTypeLabels[fund.fundType] ?? fund.fundType}
             </p>
           </div>
-          <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-3">
-            <p className="text-sm text-muted-foreground">Current Balance</p>
-            <p className="text-sm font-medium text-foreground font-variant-numeric tabular-nums">
+          <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
+            <p className="text-sm text-ink-muted">Current Balance</p>
+            <p className="text-sm font-medium text-ink font-variant-numeric tabular-nums">
               {balance.toLocaleString("en-AU", {
                 style: "currency",
                 currency: "AUD",
@@ -71,7 +71,7 @@ export default async function FundDetailPage({
 
       {/* Edit form */}
       <div className="mb-6">
-        <h2 className="font-heading font-semibold text-foreground mb-4">
+        <h2 className="font-heading font-semibold text-ink mb-4">
           Edit Fund
         </h2>
         <FundForm

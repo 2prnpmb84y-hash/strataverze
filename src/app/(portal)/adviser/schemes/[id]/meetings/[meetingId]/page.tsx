@@ -68,7 +68,7 @@ export default async function MeetingDetailPage({
           {meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}
         </span>
         {meeting.location && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-ink-muted">
             📍 {meeting.location}
           </span>
         )}
@@ -88,7 +88,7 @@ export default async function MeetingDetailPage({
       {meeting.agenda && (
         <Card className="mb-6">
           <CardHeader title="Agenda" />
-          <div className="text-sm text-foreground whitespace-pre-wrap">
+          <div className="text-sm text-ink whitespace-pre-wrap">
             {meeting.agenda}
           </div>
         </Card>
@@ -106,7 +106,7 @@ export default async function MeetingDetailPage({
       {/* Edit form (only if scheduled) */}
       {meeting.status === "SCHEDULED" && (
         <div className="mb-6">
-          <h2 className="font-heading font-semibold text-foreground mb-4">
+          <h2 className="font-heading font-semibold text-ink mb-4">
             Edit Meeting Details
           </h2>
           <MeetingForm

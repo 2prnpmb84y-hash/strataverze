@@ -3,14 +3,16 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type PaginationProps = {
   page: number;
+  totalPages?: number;
   hasMore: boolean;
 };
 
 /**
- * Simple prev/next pagination control.
+ * Figma-aligned pagination: centred page numbers with mint-soft current page circle.
  * Preserves existing query params while updating the `page` param.
  */
 export function Pagination(props: PaginationProps) {
@@ -21,7 +23,7 @@ export function Pagination(props: PaginationProps) {
   );
 }
 
-function PaginationInner({ page, hasMore }: PaginationProps) {
+function PaginationInner({ page, totalPages, hasMore }: PaginationProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -38,32 +40,72 @@ function PaginationInner({ page, hasMore }: PaginationProps) {
     return qs ? `${pathname}?${qs}` : pathname;
   }
 
+  // Build page numbers to show
+  const pageNumbers: number[] = [];
+  if (totalPages && totalPages > 1) {
+    const maxVisible = 5;
+    let start = Math.max(1, page - Math.floor(maxVisible / 2));
+    const end = Math.min(totalPages, start + maxVisible - 1);
+    start = Math.max(1, end - maxVisible + 1);
+    for (let i = start; i <= end; i++) pageNumbers.push(i);
+  }
+
   return (
     <nav
       aria-label="Pagination"
-      className="flex items-center justify-between border-t border-white/10 pt-4 mt-6"
+      className="flex items-center justify-center gap-1 pt-4 mt-4"
     >
-      <div>
-        {page > 1 && (
+      {/* Previous */}
+      {page > 1 ? (
+        <Link
+          href={buildHref(page - 1)}
+          className="flex items-center justify-center w-8 h-8 rounded-full text-ink-muted hover:text-ink transition-colors"
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={16} />
+        </Link>
+      ) : (
+        <span className="flex items-center justify-center w-8 h-8 rounded-full text-ink-muted/30">
+          <ChevronLeft size={16} />
+        </span>
+      )}
+
+      {/* Page numbers */}
+      {pageNumbers.length > 0 ? (
+        pageNumbers.map((n) => (
           <Link
-            href={buildHref(page - 1)}
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white"
+            key={n}
+            href={buildHref(n)}
+            className={`flex items-center justify-center w-6 h-6 rounded-full text-[13px] font-medium transition-colors ${
+              n === page
+                ? "bg-mint-soft text-ink"
+                : "text-ink-muted hover:text-ink"
+            }`}
+            aria-current={n === page ? "page" : undefined}
           >
-            ← Previous
+            {n}
           </Link>
-        )}
-      </div>
-      <span className="text-sm text-white/50">Page {page}</span>
-      <div>
-        {hasMore && (
-          <Link
-            href={buildHref(page + 1)}
-            className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white"
-          >
-            Next →
-          </Link>
-        )}
-      </div>
+        ))
+      ) : (
+        <span className="text-sm text-ink-muted tabular-nums">
+          Page {page}
+        </span>
+      )}
+
+      {/* Next */}
+      {hasMore ? (
+        <Link
+          href={buildHref(page + 1)}
+          className="flex items-center justify-center w-8 h-8 rounded-full text-ink-muted hover:text-ink transition-colors"
+          aria-label="Next page"
+        >
+          <ChevronRight size={16} />
+        </Link>
+      ) : (
+        <span className="flex items-center justify-center w-8 h-8 rounded-full text-ink-muted/30">
+          <ChevronRight size={16} />
+        </span>
+      )}
     </nav>
   );
 }

@@ -27,11 +27,18 @@ const inter = localFont({
 export const metadata: Metadata = {
   title: "StrataVerze",
   description: "Owner-first strata management platform for Australian Owners Corporations",
-  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#00D4BF",
+  themeColor: "#1A2028",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -95,17 +95,17 @@ export function DocumentViewer({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-0 rounded-xl border border-border bg-background overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-0 rounded-[var(--radius-card)] border border-line bg-white overflow-hidden">
       {/* Left pane: Document preview */}
-      <div className="lg:w-[40%] flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-muted/30">
+      <div className="lg:w-[40%] flex flex-col border-b lg:border-b-0 lg:border-r border-line bg-muted/30">
         {/* Header bar with remove and zoom */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-line bg-white">
           <div className="flex items-center gap-2 min-w-0">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 text-red-500">
               <path d="M3 1h7l4 4v10a1 1 0 01-1 1H3a1 1 0 01-1-1V2a1 1 0 011-1z" fill="currentColor" opacity="0.2" />
               <path d="M10 1l4 4h-3a1 1 0 01-1-1V1z" fill="currentColor" opacity="0.3" />
             </svg>
-            <span className="text-sm font-medium text-foreground truncate">
+            <span className="text-sm font-medium text-ink truncate">
               {document.fileName}
             </span>
           </div>
@@ -124,7 +124,7 @@ export function DocumentViewer({
           {isPdf ? (
             <iframe
               src={`${filePublicUrl}#toolbar=0&view=FitH`}
-              className="w-full h-full rounded-lg border border-border bg-white"
+              className="w-full h-full rounded-[var(--radius-card)] border border-line bg-white"
               style={{
                 minHeight: "480px",
                 transform: `scale(${zoom / 100})`,
@@ -140,7 +140,7 @@ export function DocumentViewer({
               <img
                 src={filePublicUrl}
                 alt={document.fileName}
-                className="max-w-full max-h-full object-contain rounded-lg"
+                className="max-w-full max-h-full object-contain rounded-[var(--radius-card)]"
                 style={{
                   transform: `scale(${zoom / 100})`,
                   transformOrigin: "center",
@@ -148,7 +148,7 @@ export function DocumentViewer({
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-ink-muted">
               <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                 <rect x="8" y="4" width="32" height="40" rx="4" stroke="currentColor" strokeWidth="2" />
                 <path d="M16 16h16M16 24h16M16 32h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -158,7 +158,7 @@ export function DocumentViewer({
                 href={filePublicUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-primary-500 hover:text-primary-600 font-medium"
+                className="text-sm text-turquoise hover:text-turquoise font-medium"
               >
                 Open file
               </a>
@@ -167,21 +167,21 @@ export function DocumentViewer({
         </div>
 
         {/* Zoom control */}
-        <div className="flex items-center justify-center gap-3 px-4 py-2 border-t border-border bg-background">
+        <div className="flex items-center justify-center gap-3 px-4 py-2 border-t border-line bg-white">
           <button
             type="button"
             onClick={() => setZoom((z) => Math.max(25, z - 25))}
-            className="w-7 h-7 rounded-md border border-border text-foreground hover:bg-muted flex items-center justify-center text-sm font-medium transition-colors"
+            className="w-7 h-7 rounded-md border border-line text-ink hover:bg-muted flex items-center justify-center text-sm font-medium transition-colors"
           >
             &minus;
           </button>
-          <span className="text-xs text-muted-foreground font-medium w-10 text-center">
+          <span className="text-xs text-ink-muted font-medium w-10 text-center">
             {zoom}%
           </span>
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(200, z + 25))}
-            className="w-7 h-7 rounded-md border border-border text-foreground hover:bg-muted flex items-center justify-center text-sm font-medium transition-colors"
+            className="w-7 h-7 rounded-md border border-line text-ink hover:bg-muted flex items-center justify-center text-sm font-medium transition-colors"
           >
             +
           </button>
@@ -190,13 +190,13 @@ export function DocumentViewer({
 
       {/* Right pane: Metadata form */}
       <div className="lg:w-[60%] p-6 overflow-y-auto">
-        <h3 className="text-base font-heading font-semibold text-foreground mb-5">
+        <h3 className="text-base font-heading font-semibold text-ink mb-5">
           Document Details
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="documentDate" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="documentDate" className="block text-sm font-medium text-ink mb-1.5">
               Date
             </label>
             <input
@@ -204,12 +204,12 @@ export function DocumentViewer({
               name="documentDate"
               type="date"
               defaultValue={formatDate(document.documentDate)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="title" className="block text-sm font-medium text-ink mb-1.5">
               Name
               <span className="text-red-500 ml-0.5">*</span>
             </label>
@@ -219,12 +219,12 @@ export function DocumentViewer({
               type="text"
               required
               defaultValue={document.title}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="strataPlan" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="strataPlan" className="block text-sm font-medium text-ink mb-1.5">
               S/Plan
             </label>
             <input
@@ -232,12 +232,12 @@ export function DocumentViewer({
               name="strataPlan"
               type="text"
               defaultValue={document.strataPlan ?? schemePlanNumber}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="schedule" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="schedule" className="block text-sm font-medium text-ink mb-1.5">
               Schedule
             </label>
             <input
@@ -246,12 +246,12 @@ export function DocumentViewer({
               type="text"
               defaultValue={document.schedule ?? ""}
               placeholder="e.g. Schedule A"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="lotNumber" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="lotNumber" className="block text-sm font-medium text-ink mb-1.5">
               Lot
             </label>
             <input
@@ -260,12 +260,12 @@ export function DocumentViewer({
               type="text"
               defaultValue={document.lotNumber ?? ""}
               placeholder="e.g. Lot 1"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="supplier" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="supplier" className="block text-sm font-medium text-ink mb-1.5">
               Supplier
             </label>
             <input
@@ -274,12 +274,12 @@ export function DocumentViewer({
               type="text"
               defaultValue={document.supplier ?? ""}
               placeholder="e.g. ABC Insurance"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="documentType" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="documentType" className="block text-sm font-medium text-ink mb-1.5">
               Document Type
               <span className="text-red-500 ml-0.5">*</span>
             </label>
@@ -288,7 +288,7 @@ export function DocumentViewer({
               name="documentType"
               required
               defaultValue={document.documentType ?? ""}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             >
               {DOCUMENT_TYPES.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -299,7 +299,7 @@ export function DocumentViewer({
           </div>
 
           <div>
-            <label htmlFor="comments" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="comments" className="block text-sm font-medium text-ink mb-1.5">
               Comments
             </label>
             <textarea
@@ -308,7 +308,7 @@ export function DocumentViewer({
               rows={3}
               defaultValue={document.comments ?? ""}
               placeholder="Additional notes about this document..."
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
             />
           </div>
 

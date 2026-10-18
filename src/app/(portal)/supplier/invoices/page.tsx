@@ -6,10 +6,10 @@ import { connection } from "next/server";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   SUBMITTED: { label: "Submitted", className: "bg-gold-100 text-gold-500" },
-  APPROVED: { label: "Approved", className: "bg-primary-100 text-primary-500" },
+  APPROVED: { label: "Approved", className: "bg-mint-soft text-turquoise" },
   PAID: { label: "Paid", className: "bg-success/10 text-success" },
   DISPUTED: { label: "Disputed", className: "bg-danger/10 text-danger" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
+  CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
 };
 
 export default async function SupplierInvoicesPage() {
@@ -34,10 +34,10 @@ export default async function SupplierInvoicesPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold font-heading text-foreground mb-1">
+      <h1 className="text-2xl font-bold font-heading text-ink mb-1">
         Invoices
       </h1>
-      <p className="text-sm text-muted-foreground mb-8">
+      <p className="text-sm text-ink-muted mb-8">
         Track your submitted invoices and payment status.
       </p>
 
@@ -61,7 +61,7 @@ export default async function SupplierInvoicesPage() {
 
       {invoices.length === 0 ? (
         <Card>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             You have not submitted any invoices yet. Complete awarded work
             orders first, then submit your invoice.
           </p>
@@ -76,18 +76,18 @@ export default async function SupplierInvoicesPage() {
               return (
                 <div
                   key={inv.id}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {inv.invoiceNumber}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {inv.workOrder?.title} · {inv.scheme?.name}
                     </p>
                   </div>
                   <div className="shrink-0 flex items-center gap-3">
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="text-sm font-medium text-ink">
                       ${Number(inv.totalAmount).toLocaleString("en-AU", {
                         minimumFractionDigits: 2,
                       })}

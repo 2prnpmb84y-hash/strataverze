@@ -388,7 +388,7 @@ export function BankImportForm({
   return (
     <div className="space-y-6">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -434,8 +434,8 @@ export function BankImportForm({
             description="Upload a CSV or OFX/QFX file exported from your bank."
           />
           <div className="px-6 pb-6 space-y-4">
-            <div className="text-sm text-muted-foreground space-y-2">
-              <p className="font-medium text-foreground">Supported formats:</p>
+            <div className="text-sm text-ink-muted space-y-2">
+              <p className="font-medium text-ink">Supported formats:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>
                   <span className="font-medium">CSV</span> — comma-separated
@@ -449,14 +449,14 @@ export function BankImportForm({
               </ul>
             </div>
 
-            <div className="rounded-xl border-2 border-dashed border-border p-8 text-center">
+            <div className="rounded-[var(--radius-card)] border-2 border-dashed border-line p-8 text-center">
               <input
                 type="file"
                 accept=".csv,.ofx,.qfx"
                 onChange={handleFileUpload}
-                className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                className="block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-[var(--radius-card)] file:border-0 file:text-sm file:font-medium file:bg-mint-soft file:text-turquoise hover:file:bg-mint-soft cursor-pointer"
               />
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-ink-muted">
                 Maximum file size: 5 MB
               </p>
             </div>
@@ -483,25 +483,25 @@ export function BankImportForm({
           />
           <div className="px-6 pb-6 space-y-4">
             {/* Preview first 3 rows */}
-            <div className="overflow-x-auto rounded-lg border border-border">
+            <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="bg-muted/30">
                     {csvHeaders.map((h, i) => (
                       <th
                         key={i}
-                        className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase"
+                        className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase"
                       >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-line">
                   {csvRows.slice(0, 3).map((row, idx) => (
                     <tr key={idx}>
                       {row.map((cell, ci) => (
-                        <td key={ci} className="px-3 py-2 text-foreground">
+                        <td key={ci} className="px-3 py-2 text-ink">
                           {cell}
                         </td>
                       ))}
@@ -714,28 +714,28 @@ export function BankImportForm({
 
             <div className="overflow-x-auto">
               {/* Table header */}
-              <div className="hidden sm:grid sm:grid-cols-[120px_1fr_100px_100px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+              <div className="hidden sm:grid sm:grid-cols-[120px_1fr_100px_100px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
                 <div>Date</div>
                 <div>Description</div>
                 <div className="text-right">Amount</div>
                 <div className="text-right">Balance</div>
               </div>
 
-              <div className="divide-y divide-border max-h-96 overflow-y-auto">
+              <div className="divide-y divide-line max-h-96 overflow-y-auto">
                 {transactions.map((txn, idx) => (
                   <div
                     key={idx}
                     className="grid grid-cols-1 sm:grid-cols-[120px_1fr_100px_100px] gap-2 sm:gap-4 px-6 py-3 items-center"
                   >
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-ink-muted">
                       {new Date(txn.transactionDate).toLocaleDateString(
                         "en-AU",
                       )}
                     </div>
-                    <div className="text-sm text-foreground truncate">
+                    <div className="text-sm text-ink truncate">
                       {txn.description}
                       {txn.reference && (
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        <span className="ml-2 text-xs text-ink-muted">
                           Ref: {txn.reference}
                         </span>
                       )}
@@ -747,7 +747,7 @@ export function BankImportForm({
                     >
                       {formatCurrency(txn.amount)}
                     </div>
-                    <div className="text-sm text-right tabular-nums text-muted-foreground">
+                    <div className="text-sm text-right tabular-nums text-ink-muted">
                       {txn.balance !== undefined
                         ? formatCurrency(txn.balance)
                         : "—"}
@@ -763,15 +763,15 @@ export function BankImportForm({
             <CardHeader title="Import Summary" />
             <div className="px-6 pb-6 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
+                <span className="text-ink-muted">
                   Total transactions
                 </span>
-                <span className="font-medium text-foreground">
+                <span className="font-medium text-ink">
                   {transactions.length}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Credits (in)</span>
+                <span className="text-ink-muted">Credits (in)</span>
                 <span className="font-medium text-green-600">
                   {formatCurrency(
                     transactions
@@ -781,7 +781,7 @@ export function BankImportForm({
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Debits (out)</span>
+                <span className="text-ink-muted">Debits (out)</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(
                     transactions
@@ -790,9 +790,9 @@ export function BankImportForm({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between text-sm font-semibold border-t border-border pt-3">
-                <span className="text-foreground">Net movement</span>
-                <span className="text-foreground">
+              <div className="flex justify-between text-sm font-semibold border-t border-line pt-3">
+                <span className="text-ink">Net movement</span>
+                <span className="text-ink">
                   {formatCurrency(
                     transactions.reduce((sum, t) => sum + t.amount, 0),
                   )}
@@ -830,7 +830,7 @@ export function BankImportForm({
         <Card>
           <CardHeader title="Import Complete" />
           <div className="px-6 pb-6 space-y-4">
-            <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+            <div className="rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
               Successfully imported {importResult.imported} new transaction
               {importResult.imported !== 1 ? "s" : ""}.
               {importResult.duplicates > 0 && (

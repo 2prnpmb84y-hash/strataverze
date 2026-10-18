@@ -26,7 +26,7 @@ export function CommitteeMeetingForm({
   return (
     <form action={formAction} className="space-y-4">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
         </div>
       )}
@@ -69,7 +69,7 @@ export function CommitteeMeetingForm({
       <div>
         <label
           htmlFor="scheduledAt"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           Date & Time
           <span className="text-red-500 ml-0.5">*</span>
@@ -79,7 +79,7 @@ export function CommitteeMeetingForm({
           name="scheduledAt"
           type="datetime-local"
           required
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
         />
         {state.fieldErrors?.scheduledAt && (
           <p className="mt-1.5 text-xs text-red-500">
@@ -97,7 +97,7 @@ export function CommitteeMeetingForm({
       <div>
         <label
           htmlFor="agenda"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           Agenda
         </label>
@@ -106,7 +106,7 @@ export function CommitteeMeetingForm({
           name="agenda"
           rows={4}
           placeholder="Meeting agenda items..."
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
         />
       </div>
 

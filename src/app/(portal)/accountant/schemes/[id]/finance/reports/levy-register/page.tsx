@@ -98,7 +98,7 @@ export default async function AccountantLevyRegisterPage({
               />
 
               {/* Table header */}
-              <div className="hidden sm:grid sm:grid-cols-[80px_80px_1fr_100px_100px_100px_90px] gap-4 px-6 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide border-b border-border">
+              <div className="hidden sm:grid sm:grid-cols-[80px_80px_1fr_100px_100px_100px_90px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
                 <div>Lot</div>
                 <div>Unit</div>
                 <div>Owner</div>
@@ -108,7 +108,7 @@ export default async function AccountantLevyRegisterPage({
                 <div className="text-right">Status</div>
               </div>
 
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-line">
                 {levy.items
                   .sort((a, b) =>
                     (String(a.lot?.lotNumber ?? "")).localeCompare(
@@ -127,16 +127,16 @@ export default async function AccountantLevyRegisterPage({
                         key={item.id}
                         className="grid grid-cols-1 sm:grid-cols-[80px_80px_1fr_100px_100px_100px_90px] gap-2 sm:gap-4 px-6 py-3 items-center"
                       >
-                        <div className="text-sm text-foreground font-medium">
+                        <div className="text-sm text-ink font-medium">
                           {item.lot?.lotNumber ?? "—"}
                         </div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-sm text-ink-muted">
                           {item.lot?.unitNumber ? String(item.lot.unitNumber) : "—"}
                         </div>
-                        <div className="text-sm text-foreground">
+                        <div className="text-sm text-ink">
                           Lot {item.lot?.lotNumber}
                         </div>
-                        <div className="text-sm text-right tabular-nums text-foreground">
+                        <div className="text-sm text-right tabular-nums text-ink">
                           {formatCurrency(amount)}
                         </div>
                         <div className="text-sm text-right tabular-nums text-green-600">
@@ -144,7 +144,7 @@ export default async function AccountantLevyRegisterPage({
                         </div>
                         <div
                           className={`text-sm text-right tabular-nums font-medium ${
-                            balance > 0 ? "text-red-600" : "text-foreground"
+                            balance > 0 ? "text-red-600" : "text-ink"
                           }`}
                         >
                           {formatCurrency(balance)}
@@ -168,12 +168,12 @@ export default async function AccountantLevyRegisterPage({
               </div>
 
               {/* Levy total */}
-              <div className="px-6 py-3 border-t border-border bg-muted/20">
+              <div className="px-6 py-3 border-t border-line bg-muted/20">
                 <div className="grid grid-cols-1 sm:grid-cols-[80px_80px_1fr_100px_100px_100px_90px] gap-2 sm:gap-4 items-center">
-                  <div className="sm:col-span-3 text-sm font-semibold text-foreground">
+                  <div className="sm:col-span-3 text-sm font-semibold text-ink">
                     Levy Total
                   </div>
-                  <div className="text-sm text-right tabular-nums font-semibold text-foreground">
+                  <div className="text-sm text-right tabular-nums font-semibold text-ink">
                     {formatCurrency(Number(levy.totalAmount))}
                   </div>
                   <div className="text-sm text-right tabular-nums font-semibold text-green-600">
@@ -181,7 +181,7 @@ export default async function AccountantLevyRegisterPage({
                       levy.items.reduce((s, i) => s + Number(i.paidAmount), 0),
                     )}
                   </div>
-                  <div className="text-sm text-right tabular-nums font-semibold text-foreground">
+                  <div className="text-sm text-right tabular-nums font-semibold text-ink">
                     {formatCurrency(
                       Number(levy.totalAmount) -
                         levy.items.reduce(

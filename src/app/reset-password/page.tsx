@@ -17,7 +17,7 @@ export default function ResetPasswordPage() {
           <div className="flex justify-center mb-8">
             <Logo size="lg" variant="gradient" />
           </div>
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-ink-muted">Loading...</p>
         </div>
       </div>
     }>
@@ -39,8 +39,6 @@ function ResetPasswordForm() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Supabase delivers the recovery token via the URL hash.
-    // The client library picks it up automatically on init.
     const supabase = createClient();
     supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
@@ -97,26 +95,26 @@ function ResetPasswordForm() {
         </div>
 
         {/* Card */}
-        <div className="rounded-xl bg-card border border-border p-8 shadow-sm">
-          <h1 className="text-xl font-bold font-heading text-card-foreground mb-1">
+        <div className="rounded-[var(--radius-card)] bg-white border border-line p-8">
+          <h1 className="text-xl font-bold font-heading text-ink mb-1">
             Set new password
           </h1>
-          <p className="text-sm text-muted-foreground mb-6">
+          <p className="text-sm text-ink-muted mb-6">
             Enter your new password below
           </p>
 
           {status?.type === "error" && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 mb-4">
+            <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 mb-4">
               <p className="text-sm text-red-700">{status.message}</p>
             </div>
           )}
 
           {status?.type === "success" && (
-            <div className="rounded-lg bg-primary-50 border border-primary-200 px-4 py-3 mb-4">
-              <p className="text-sm text-primary-500">{status.message}</p>
+            <div className="rounded-[var(--radius-card)] bg-mint-soft border border-mint px-4 py-3 mb-4">
+              <p className="text-sm text-ink">{status.message}</p>
               <a
                 href="/login"
-                className="text-sm font-medium text-primary-400 hover:text-primary-500 transition-colors mt-2 inline-block"
+                className="text-sm font-medium text-turquoise hover:text-turquoise/80 transition-colors mt-2 inline-block"
               >
                 Sign in
               </a>
@@ -128,7 +126,7 @@ function ResetPasswordForm() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-card-foreground mb-1.5"
+                  className="block text-sm font-medium text-ink mb-1.5"
                 >
                   New password
                 </label>
@@ -141,7 +139,7 @@ function ResetPasswordForm() {
                   minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-shadow"
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
                   placeholder="At least 8 characters"
                 />
                 <PasswordStrength password={password} />
@@ -150,7 +148,7 @@ function ResetPasswordForm() {
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-card-foreground mb-1.5"
+                  className="block text-sm font-medium text-ink mb-1.5"
                 >
                   Confirm password
                 </label>
@@ -163,7 +161,7 @@ function ResetPasswordForm() {
                   minLength={8}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-shadow"
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition-shadow"
                   placeholder="Repeat your password"
                 />
               </div>
@@ -176,7 +174,7 @@ function ResetPasswordForm() {
                   !validatePasswordStrength(password).allMet ||
                   password !== confirmPassword
                 }
-                className="w-full h-11 rounded-lg bg-primary-400 text-white font-semibold text-sm transition-colors hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-11 rounded-full bg-turquoise text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/90 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Updating..." : "Update password"}
               </button>
@@ -186,14 +184,14 @@ function ResetPasswordForm() {
           <div className="mt-4 text-center">
             <a
               href="/login"
-              className="text-sm text-primary-400 hover:text-primary-500 transition-colors"
+              className="text-sm text-turquoise hover:text-turquoise/80 transition-colors"
             >
               Back to sign in
             </a>
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">
+        <p className="text-xs text-ink-muted text-center mt-6">
           Owner-first strata management for Australian Owners Corporations
         </p>
       </div>

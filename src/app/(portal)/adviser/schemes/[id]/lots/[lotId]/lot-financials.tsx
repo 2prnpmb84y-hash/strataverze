@@ -45,7 +45,7 @@ function StatusBadge({ status }: { status: string }) {
     UNPAID: "bg-red-100 text-red-700",
     OVERDUE: "bg-red-100 text-red-700",
   };
-  const cls = colours[status] ?? "bg-muted text-muted-foreground";
+  const cls = colours[status] ?? "bg-muted text-ink-muted";
   return (
     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
       {status.charAt(0) + status.slice(1).toLowerCase()}
@@ -82,10 +82,10 @@ export function LotFinancials({
       {/* Levy history */}
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-          <h3 className="font-heading font-semibold text-foreground">
+          <h3 className="font-heading font-semibold text-ink">
             Levy History
           </h3>
-          <div className="flex rounded-lg border border-border overflow-hidden">
+          <div className="flex rounded-[var(--radius-card)] border border-line overflow-hidden">
             {(["ALL", "ORDINARY", "SPECIAL"] as const).map((type) => (
               <button
                 key={type}
@@ -93,8 +93,8 @@ export function LotFinancials({
                 onClick={() => setFilterType(type)}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   filterType === type
-                    ? "bg-primary-400 text-white"
-                    : "bg-background text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "bg-turquoise text-white"
+                    : "bg-white text-ink-muted hover:text-ink hover:bg-muted"
                 }`}
               >
                 {type === "ALL" ? "All" : type === "ORDINARY" ? "Annual" : "Special"}
@@ -104,36 +104,36 @@ export function LotFinancials({
         </div>
 
         {filtered.length === 0 ? (
-          <div className="rounded-lg border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-[var(--radius-card)] border border-line px-4 py-8 text-center text-sm text-ink-muted">
             No levy items recorded for this lot.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                     Levy
                   </th>
-                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                     Type
                   </th>
-                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                     Due Date
                   </th>
-                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                     Amount
                   </th>
-                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                     Paid
                   </th>
-                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                     Outstanding
                   </th>
-                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                     Status
                   </th>
-                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                     Paid Date
                   </th>
                 </tr>
@@ -142,12 +142,12 @@ export function LotFinancials({
                 {filtered.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-t border-border hover:bg-muted/30 transition-colors"
+                    className="border-t border-line hover:bg-muted/30 transition-colors"
                   >
-                    <td className="px-3 py-2.5 font-medium text-foreground">
+                    <td className="px-3 py-2.5 font-medium text-ink">
                       {item.levyTitle}
                     </td>
-                    <td className="px-3 py-2.5 text-muted-foreground">
+                    <td className="px-3 py-2.5 text-ink-muted">
                       <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                         item.levyType === "ORDINARY"
                           ? "bg-blue-100 text-blue-700"
@@ -156,7 +156,7 @@ export function LotFinancials({
                         {item.levyType === "ORDINARY" ? "Annual" : "Special"}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-muted-foreground tabular-nums">
+                    <td className="px-3 py-2.5 text-ink-muted tabular-nums">
                       {formatDate(item.dueDate)}
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums">
@@ -171,7 +171,7 @@ export function LotFinancials({
                     <td className="px-3 py-2.5">
                       <StatusBadge status={item.status} />
                     </td>
-                    <td className="px-3 py-2.5 text-muted-foreground tabular-nums">
+                    <td className="px-3 py-2.5 text-ink-muted tabular-nums">
                       {item.paidAt ? formatDate(item.paidAt) : "—"}
                     </td>
                   </tr>
@@ -195,15 +195,15 @@ function SummaryCard({
   variant?: "green" | "bold";
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+    <div className="rounded-[var(--radius-card)] border border-line bg-white p-3">
+      <p className="text-xs text-ink-muted mb-1">{label}</p>
       <p
         className={`text-sm tabular-nums ${
           variant === "green"
             ? "text-green-600 font-medium"
             : variant === "bold"
-              ? "text-foreground font-semibold"
-              : "text-foreground"
+              ? "text-ink font-semibold"
+              : "text-ink"
         }`}
       >
         {formatCurrency(value)}

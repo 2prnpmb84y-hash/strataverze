@@ -35,7 +35,7 @@ export function WithdrawQuoteButton({ quoteId }: { quoteId: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground">Are you sure?</span>
+      <span className="text-xs text-ink-muted">Are you sure?</span>
       <Button
         variant="danger"
         onClick={handleWithdraw}

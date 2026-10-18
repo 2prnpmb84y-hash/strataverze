@@ -47,10 +47,10 @@ function DetailItem({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-foreground">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink">{value || "—"}</dd>
     </div>
   );
 }
@@ -109,7 +109,7 @@ export default async function InvoiceDetailPage({
       </div>
 
       {invoice.description && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-muted">
           {String(invoice.description)}
         </p>
       )}
@@ -156,20 +156,20 @@ export default async function InvoiceDetailPage({
         <div className="px-6 pb-6">
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="text-foreground">
+              <span className="text-ink-muted">Subtotal</span>
+              <span className="text-ink">
                 {formatCurrency(invoice.subtotal)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">GST</span>
-              <span className="text-foreground">
+              <span className="text-ink-muted">GST</span>
+              <span className="text-ink">
                 {formatCurrency(invoice.gstAmount)}
               </span>
             </div>
-            <div className="flex justify-between text-sm font-semibold border-t border-border pt-3">
-              <span className="text-foreground">Total Amount</span>
-              <span className="text-foreground">
+            <div className="flex justify-between text-sm font-semibold border-t border-line pt-3">
+              <span className="text-ink">Total Amount</span>
+              <span className="text-ink">
                 {formatCurrency(invoice.totalAmount)}
               </span>
             </div>

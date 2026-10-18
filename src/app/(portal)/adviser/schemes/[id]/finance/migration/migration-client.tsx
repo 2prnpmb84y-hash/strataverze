@@ -33,7 +33,7 @@ interface MigrationClientProps {
 // ── Constants ────────────────────────────────────────────────────
 
 const inputClasses =
-  "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors";
+  "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
 const SOURCE_SYSTEMS: {
   id: SourceSystem;
@@ -451,7 +451,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
               {i > 0 && (
                 <div
                   className={`h-px w-6 ${
-                    isComplete ? "bg-primary-500" : "bg-border"
+                    isComplete ? "bg-turquoise" : "bg-line"
                   }`}
                   aria-hidden="true"
                 />
@@ -460,10 +460,10 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 <div
                   className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
                     isActive
-                      ? "bg-primary-500 text-white"
+                      ? "bg-turquoise text-white"
                       : isComplete
-                        ? "bg-primary-100 text-primary-700"
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-mint-soft text-turquoise"
+                        : "bg-muted text-ink-muted"
                   }`}
                   aria-current={isActive ? "step" : undefined}
                 >
@@ -489,8 +489,8 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 <span
                   className={`hidden text-xs sm:inline ${
                     isActive
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground"
+                      ? "font-medium text-ink"
+                      : "text-ink-muted"
                   }`}
                 >
                   {s.label}
@@ -504,7 +504,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
       {/* Error banner */}
       {error && (
         <div
-          className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+          className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
           role="alert"
         >
           {error}
@@ -514,9 +514,9 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
       {/* Step 1: Select source system */}
       {step === "source" && (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             Select the system you are migrating data from for{" "}
-            <span className="font-medium text-foreground">{schemeName}</span>.
+            <span className="font-medium text-ink">{schemeName}</span>.
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {SOURCE_SYSTEMS.map((sys) => (
@@ -524,16 +524,16 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 key={sys.id}
                 type="button"
                 onClick={() => handleSelectSource(sys.id)}
-                className={`rounded-xl border-2 p-5 text-left transition-colors hover:border-primary-400 hover:bg-primary-50/50 ${
+                className={`rounded-[var(--radius-card)] border-2 p-5 text-left transition-colors hover:border-turquoise hover:bg-mint-soft/50 ${
                   sourceSystem === sys.id
-                    ? "border-primary-500 bg-primary-50/50"
-                    : "border-border bg-card"
+                    ? "border-turquoise bg-mint-soft/50"
+                    : "border-line bg-white"
                 }`}
               >
-                <h3 className="text-sm font-semibold text-foreground">
+                <h3 className="text-sm font-semibold text-ink">
                   {sys.name}
                 </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-ink-muted">
                   {sys.description}
                 </p>
               </button>
@@ -545,9 +545,9 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
       {/* Step 2: Select data type */}
       {step === "data_type" && (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-ink-muted">
             What data would you like to import from{" "}
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-ink">
               {SOURCE_SYSTEMS.find((s) => s.id === sourceSystem)?.name}
             </span>
             ?
@@ -558,16 +558,16 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 key={dt.id}
                 type="button"
                 onClick={() => handleSelectDataType(dt.id)}
-                className={`rounded-xl border-2 p-5 text-left transition-colors hover:border-primary-400 hover:bg-primary-50/50 ${
+                className={`rounded-[var(--radius-card)] border-2 p-5 text-left transition-colors hover:border-turquoise hover:bg-mint-soft/50 ${
                   dataType === dt.id
-                    ? "border-primary-500 bg-primary-50/50"
-                    : "border-border bg-card"
+                    ? "border-turquoise bg-mint-soft/50"
+                    : "border-line bg-white"
                 }`}
               >
-                <h3 className="text-sm font-semibold text-foreground">
+                <h3 className="text-sm font-semibold text-ink">
                   {dt.name}
                 </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-ink-muted">
                   {dt.description}
                 </p>
               </button>
@@ -593,8 +593,8 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
             description={`Upload a CSV export from ${SOURCE_SYSTEMS.find((s) => s.id === sourceSystem)?.name ?? "your source system"} containing ${DATA_TYPES.find((d) => d.id === dataType)?.name.toLowerCase() ?? "data"}.`}
           />
           <div className="px-6 pb-6 space-y-4">
-            <div className="text-sm text-muted-foreground space-y-2">
-              <p className="font-medium text-foreground">File requirements:</p>
+            <div className="text-sm text-ink-muted space-y-2">
+              <p className="font-medium text-ink">File requirements:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>CSV format with a header row</li>
                 <li>
@@ -608,7 +608,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
             </div>
 
             <div
-              className="rounded-xl border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary-400"
+              className="rounded-[var(--radius-card)] border-2 border-dashed border-line p-8 text-center transition-colors hover:border-turquoise"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleFileDrop}
               role="button"
@@ -622,7 +622,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
               }}
             >
               <svg
-                className="mx-auto h-10 w-10 text-muted-foreground"
+                className="mx-auto h-10 w-10 text-ink-muted"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -635,7 +635,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                   d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
                 />
               </svg>
-              <p className="mt-3 text-sm text-muted-foreground">
+              <p className="mt-3 text-sm text-ink-muted">
                 Drag and drop your CSV file here, or click to browse
               </p>
               <input
@@ -643,7 +643,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 type="file"
                 accept=".csv"
                 onChange={handleFileUpload}
-                className="mt-3 block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer"
+                className="mt-3 block w-full text-sm text-ink-muted file:mr-4 file:py-2 file:px-4 file:rounded-[var(--radius-card)] file:border-0 file:text-sm file:font-medium file:bg-mint-soft file:text-turquoise hover:file:bg-mint-soft cursor-pointer"
               />
             </div>
 
@@ -670,28 +670,28 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
           <div className="px-6 pb-6 space-y-6">
             {/* CSV preview */}
             <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="mb-2 text-xs font-medium text-ink-muted uppercase tracking-wide">
                 CSV Preview (first 3 rows)
               </p>
-              <div className="overflow-x-auto rounded-lg border border-border">
+              <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="bg-muted/30">
                       {csvHeaders.map((h, i) => (
                         <th
                           key={i}
-                          className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase"
+                          className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase"
                         >
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody className="divide-y divide-line">
                     {csvRows.slice(0, 3).map((row, idx) => (
                       <tr key={idx}>
                         {row.map((cell, ci) => (
-                          <td key={ci} className="px-3 py-2 text-foreground">
+                          <td key={ci} className="px-3 py-2 text-ink">
                             {cell}
                           </td>
                         ))}
@@ -704,7 +704,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
 
             {/* Mapping fields */}
             <div>
-              <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="mb-3 text-xs font-medium text-ink-muted uppercase tracking-wide">
                 Column Mapping
               </p>
               <div className="space-y-3">
@@ -715,7 +715,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                   >
                     <label
                       htmlFor={`mapping-${field.key}`}
-                      className="w-40 shrink-0 text-sm text-foreground"
+                      className="w-40 shrink-0 text-sm text-ink"
                     >
                       {field.label}
                       {field.required && (
@@ -760,7 +760,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
               <div className="flex items-center gap-4">
                 <label
                   htmlFor="cutover-date"
-                  className="w-40 shrink-0 text-sm text-foreground"
+                  className="w-40 shrink-0 text-sm text-ink"
                 >
                   Cutover Date
                   <span className="ml-1 text-red-500" aria-label="required">
@@ -807,28 +807,28 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
         <>
           {/* Summary stats */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <div className="rounded-[var(--radius-card)] border border-line bg-white p-4">
+              <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">
                 Total Rows
               </p>
-              <p className="mt-1 text-2xl font-semibold text-foreground">
+              <p className="mt-1 text-2xl font-semibold text-ink">
                 {migrationRows.length}
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <div className="rounded-[var(--radius-card)] border border-line bg-white p-4">
+              <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">
                 Valid
               </p>
               <p className="mt-1 text-2xl font-semibold text-green-600">
                 {validRowCount}
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <div className="rounded-[var(--radius-card)] border border-line bg-white p-4">
+              <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">
                 Errors
               </p>
               <p
-                className={`mt-1 text-2xl font-semibold ${errorRowCount > 0 ? "text-red-600" : "text-foreground"}`}
+                className={`mt-1 text-2xl font-semibold ${errorRowCount > 0 ? "text-red-600" : "text-ink"}`}
               >
                 {errorRowCount}
               </p>
@@ -836,7 +836,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
           </div>
 
           {warningRowCount > 0 && (
-            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+            <div className="rounded-[var(--radius-card)] bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
               {warningRowCount} row{warningRowCount !== 1 ? "s have" : " has"}{" "}
               warnings. These rows will still be imported but may need review.
             </div>
@@ -851,24 +851,24 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="bg-muted/30 border-b border-border">
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                  <tr className="bg-muted/30 border-b border-line">
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase">
                       Row
                     </th>
                     {TARGET_FIELDS[dataType].map((field) => (
                       <th
                         key={field.key}
-                        className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase"
+                        className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase"
                       >
                         {field.label}
                       </th>
                     ))}
-                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase">
                       Status
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-line">
                   {migrationRows.slice(0, 100).map((row) => {
                     const hasErrors = row.errors.length > 0;
                     const hasWarnings = row.warnings.length > 0;
@@ -884,16 +884,16 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                               : ""
                         }
                       >
-                        <td className="px-3 py-2 text-muted-foreground tabular-nums">
+                        <td className="px-3 py-2 text-ink-muted tabular-nums">
                           {row.rowNumber}
                         </td>
                         {TARGET_FIELDS[dataType].map((field) => (
                           <td
                             key={field.key}
-                            className="px-3 py-2 text-foreground"
+                            className="px-3 py-2 text-ink"
                           >
                             {row.data[field.key] || (
-                              <span className="text-muted-foreground">--</span>
+                              <span className="text-ink-muted">--</span>
                             )}
                           </td>
                         ))}
@@ -925,7 +925,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
               </table>
 
               {migrationRows.length > 100 && (
-                <div className="px-4 py-3 text-xs text-muted-foreground border-t border-border">
+                <div className="px-4 py-3 text-xs text-ink-muted border-t border-line">
                   Showing first 100 of {migrationRows.length} rows.
                 </div>
               )}
@@ -961,7 +961,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
         <Card>
           <CardHeader title="Import Complete" />
           <div className="px-6 pb-6 space-y-4">
-            <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+            <div className="rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
               Successfully imported{" "}
               <span className="font-semibold">{importResult.created}</span>{" "}
               {dataType === "lots"
@@ -982,13 +982,13 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total rows in file</span>
-                <span className="font-medium text-foreground tabular-nums">
+                <span className="text-ink-muted">Total rows in file</span>
+                <span className="font-medium text-ink tabular-nums">
                   {importResult.total}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
+                <span className="text-ink-muted">
                   Successfully imported
                 </span>
                 <span className="font-medium text-green-600 tabular-nums">
@@ -997,7 +997,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
               </div>
               {importResult.skipped > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
+                  <span className="text-ink-muted">
                     Skipped (errors)
                   </span>
                   <span className="font-medium text-red-600 tabular-nums">

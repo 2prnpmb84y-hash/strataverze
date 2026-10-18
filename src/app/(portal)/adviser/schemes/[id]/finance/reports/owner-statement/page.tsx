@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { OwnerStatementClient } from "./owner-statement-client";
 import { db } from "@/prisma/db";
 import { connection } from "next/server";
+import { formatLotLabel } from "@/lib/format";
 
 export default async function OwnerStatementPage({
   params,
@@ -69,7 +70,7 @@ export default async function OwnerStatementPage({
       id: lot.id,
       lotNumber: String(lot.lotNumber),
       unitNumber: lot.unitNumber ? String(lot.unitNumber) : null,
-      label: `Lot ${String(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${String(lot.unitNumber)})` : ""}${ownerLabel}`,
+      label: `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${String(lot.unitNumber)})` : ""}${ownerLabel}`,
       ownerName: owners.join(", ") || "No owner assigned",
     };
   });
@@ -96,7 +97,7 @@ export default async function OwnerStatementPage({
   if (selectedLotId) {
     const selectedOption = lotOptions.find((l) => l.id === selectedLotId);
     selectedLotLabel = selectedOption
-      ? `Lot ${selectedOption.lotNumber}${selectedOption.unitNumber ? ` (Unit ${selectedOption.unitNumber})` : ""}`
+      ? `${formatLotLabel(selectedOption.lotNumber)}${selectedOption.unitNumber ? ` (Unit ${selectedOption.unitNumber})` : ""}`
       : "";
     selectedOwnerName = selectedOption?.ownerName ?? "";
 

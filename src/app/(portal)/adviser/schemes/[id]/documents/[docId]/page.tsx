@@ -62,12 +62,12 @@ export default async function DocumentDetailPage({
       <Card className="mb-6">
         <CardHeader title="File Details" />
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-3">
+          <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-medium text-ink">
                 {document.fileName}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-ink-muted">
                 {formatFileSize(document.fileSize)}
                 {document.mimeType && ` · ${document.mimeType}`}
               </p>
@@ -76,13 +76,13 @@ export default async function DocumentDetailPage({
               href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors"
+              className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors"
             >
               Download
             </a>
           </div>
           {document.description && (
-            <p className="text-sm text-muted-foreground px-1">
+            <p className="text-sm text-ink-muted px-1">
               {document.description}
             </p>
           )}
@@ -91,7 +91,7 @@ export default async function DocumentDetailPage({
 
       {/* Edit metadata */}
       <div className="mb-6">
-        <h2 className="font-heading font-semibold text-foreground mb-4">
+        <h2 className="font-heading font-semibold text-ink mb-4">
           Edit Document Details
         </h2>
         <DocumentEditForm

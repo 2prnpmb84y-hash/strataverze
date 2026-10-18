@@ -27,7 +27,7 @@ export function FormField({
     <div className={className}>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-foreground mb-1.5"
+        className="block text-sm font-medium text-ink mb-1.5"
       >
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
@@ -41,11 +41,11 @@ export function FormField({
         value={value}
         placeholder={placeholder}
         onChange={onChange}
-        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+        className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
       />
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
       {helpText && !error && (
-        <p className="mt-1.5 text-xs text-muted-foreground">{helpText}</p>
+        <p className="mt-1.5 text-xs text-ink-muted">{helpText}</p>
       )}
     </div>
   );
@@ -76,7 +76,7 @@ export function TextareaField({
     <div className={className}>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-foreground mb-1.5"
+        className="block text-sm font-medium text-ink mb-1.5"
       >
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
@@ -88,11 +88,11 @@ export function TextareaField({
         defaultValue={defaultValue}
         placeholder={placeholder}
         rows={rows}
-        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+        className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
       />
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
       {helpText && !error && (
-        <p className="mt-1.5 text-xs text-muted-foreground">{helpText}</p>
+        <p className="mt-1.5 text-xs text-ink-muted">{helpText}</p>
       )}
     </div>
   );
@@ -119,12 +119,12 @@ export function CheckboxField({
           name={name}
           value="true"
           defaultChecked={defaultChecked}
-          className="mt-0.5 h-4 w-4 rounded border-border text-primary-400 focus:ring-primary-400"
+          className="mt-0.5 h-4 w-4 rounded border-line text-turquoise focus:ring-turquoise"
         />
         <div>
-          <span className="text-sm font-medium text-foreground">{label}</span>
+          <span className="text-sm font-medium text-ink">{label}</span>
           {helpText && (
-            <p className="text-xs text-muted-foreground mt-0.5">{helpText}</p>
+            <p className="text-xs text-ink-muted mt-0.5">{helpText}</p>
           )}
         </div>
       </label>
@@ -157,7 +157,7 @@ export function SelectField({
     <div className={className}>
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-foreground mb-1.5"
+        className="block text-sm font-medium text-ink mb-1.5"
       >
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
@@ -169,7 +169,7 @@ export function SelectField({
         defaultValue={value !== undefined ? undefined : defaultValue}
         value={value}
         onChange={onChange}
-        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+        className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

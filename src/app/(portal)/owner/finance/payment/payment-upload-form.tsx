@@ -142,10 +142,10 @@ export function PaymentUploadForm({
               />
             </svg>
           </div>
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-sm font-medium text-ink">
             Payment confirmation uploaded successfully
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-ink-muted">
             Your strata manager will review the document and confirm the payment.
           </p>
           <div className="flex items-center justify-center gap-3 pt-2">
@@ -175,7 +175,7 @@ export function PaymentUploadForm({
       />
       <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -197,7 +197,7 @@ export function PaymentUploadForm({
         <div>
           <label
             htmlFor="file"
-            className="block text-sm font-medium text-foreground mb-1.5"
+            className="block text-sm font-medium text-ink mb-1.5"
           >
             Payment Proof
             <span className="text-red-500 ml-0.5">*</span>
@@ -208,9 +208,9 @@ export function PaymentUploadForm({
             type="file"
             required
             accept=".pdf,.png,.jpg,.jpeg,.heic"
-            className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-100 file:text-primary-700 hover:file:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-mint-soft file:text-turquoise hover:file:bg-mint focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
           />
-          <p className="mt-1.5 text-xs text-muted-foreground">
+          <p className="mt-1.5 text-xs text-ink-muted">
             Max 10 MB. PDF, PNG, JPG, JPEG, HEIC accepted.
           </p>
         </div>

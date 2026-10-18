@@ -82,13 +82,13 @@ export function MotionSection({
 
       {/* New motion form */}
       {showForm && meetingStatus === "SCHEDULED" && (
-        <div className="rounded-lg border border-border p-4 mb-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">
+        <div className="rounded-[var(--radius-card)] border border-line p-4 mb-4">
+          <h3 className="text-sm font-semibold text-ink mb-3">
             New Motion
           </h3>
           <form action={formAction} className="space-y-3">
             {formState.error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+              <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
                 {formState.error}
               </div>
             )}
@@ -104,7 +104,7 @@ export function MotionSection({
             <div>
               <label
                 htmlFor="motionDescription"
-                className="block text-sm font-medium text-foreground mb-1.5"
+                className="block text-sm font-medium text-ink mb-1.5"
               >
                 Description
                 <span className="text-red-500 ml-0.5">*</span>
@@ -115,7 +115,7 @@ export function MotionSection({
                 rows={3}
                 required
                 placeholder="Details of the motion..."
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors resize-y"
+                className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
               />
               {formState.fieldErrors?.description && (
                 <p className="mt-1.5 text-xs text-red-500">
@@ -226,13 +226,13 @@ function MotionItem({
   }
 
   return (
-    <div className="rounded-lg border border-border p-4">
+    <div className="rounded-[var(--radius-card)] border border-line p-4">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-ink">
             {motion.title}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             {motionTypeLabels[motion.motionType] ?? motion.motionType} · Raised
             by{" "}
             {`${motion.raisedBy.firstName} ${motion.raisedBy.lastName}`.trim() ||
@@ -246,7 +246,7 @@ function MotionItem({
         </span>
       </div>
 
-      <p className="text-sm text-foreground mb-3 whitespace-pre-wrap">
+      <p className="text-sm text-ink mb-3 whitespace-pre-wrap">
         {motion.description}
       </p>
 
@@ -266,7 +266,7 @@ function MotionItem({
       )}
 
       {motion.outcome && (
-        <p className="text-xs text-muted-foreground mb-3">
+        <p className="text-xs text-ink-muted mb-3">
           Outcome: {motion.outcome}
         </p>
       )}
@@ -309,7 +309,7 @@ function MotionItem({
             type="button"
             onClick={() => handleStatusChange("OPEN")}
             disabled={isPending}
-            className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors disabled:opacity-50"
+            className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors disabled:opacity-50"
           >
             Open for Voting
           </button>
@@ -320,7 +320,7 @@ function MotionItem({
               type="button"
               onClick={() => handleStatusChange("CARRIED", "Motion carried")}
               disabled={isPending}
-              className="text-xs font-medium text-primary-500 hover:text-primary-600 transition-colors disabled:opacity-50"
+              className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors disabled:opacity-50"
             >
               Mark Carried
             </button>
@@ -342,7 +342,7 @@ function MotionItem({
               type="button"
               onClick={() => handleStatusChange("WITHDRAWN")}
               disabled={isPending}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              className="text-xs font-medium text-ink-muted hover:text-ink transition-colors disabled:opacity-50"
             >
               Withdraw
             </button>

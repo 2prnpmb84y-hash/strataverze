@@ -61,7 +61,7 @@ export default async function OwnerMeetingDetailPage({
           {meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}
         </span>
         {meeting.location && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-ink-muted">
             {meeting.location}
           </span>
         )}
@@ -82,7 +82,7 @@ export default async function OwnerMeetingDetailPage({
       {meeting.agenda && (
         <Card className="mb-6">
           <CardHeader title="Agenda" />
-          <div className="text-sm text-foreground whitespace-pre-wrap">
+          <div className="text-sm text-ink whitespace-pre-wrap">
             {meeting.agenda}
           </div>
         </Card>

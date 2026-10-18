@@ -65,8 +65,8 @@ export default async function ComplianceDetailPage({
       <Card className="mb-6">
         <CardHeader title="Status" />
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-3">
-            <p className="text-sm font-medium text-foreground">
+          <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
+            <p className="text-sm font-medium text-ink">
               Current Status
             </p>
             <span
@@ -76,9 +76,9 @@ export default async function ComplianceDetailPage({
             </span>
           </div>
           {item.dueDate && (
-            <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-3">
-              <p className="text-sm text-muted-foreground">Due Date</p>
-              <p className="text-sm font-medium text-foreground">
+            <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
+              <p className="text-sm text-ink-muted">Due Date</p>
+              <p className="text-sm font-medium text-ink">
                 {new Date(String(item.dueDate)).toLocaleDateString("en-AU", {
                   day: "numeric",
                   month: "short",
@@ -88,9 +88,9 @@ export default async function ComplianceDetailPage({
             </div>
           )}
           {item.lastChecked && (
-            <div className="flex items-center justify-between rounded-lg bg-muted px-4 py-3">
-              <p className="text-sm text-muted-foreground">Last Checked</p>
-              <p className="text-sm font-medium text-foreground">
+            <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
+              <p className="text-sm text-ink-muted">Last Checked</p>
+              <p className="text-sm font-medium text-ink">
                 {new Date(String(item.lastChecked)).toLocaleDateString("en-AU", {
                   day: "numeric",
                   month: "short",
@@ -100,17 +100,17 @@ export default async function ComplianceDetailPage({
             </div>
           )}
           {item.description && (
-            <div className="rounded-lg bg-muted px-4 py-3">
-              <p className="text-xs text-muted-foreground mb-0.5">
+            <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3">
+              <p className="text-xs text-ink-muted mb-0.5">
                 Description
               </p>
-              <p className="text-sm text-foreground">{item.description}</p>
+              <p className="text-sm text-ink">{item.description}</p>
             </div>
           )}
           {item.notes && (
-            <div className="rounded-lg bg-muted px-4 py-3">
-              <p className="text-xs text-muted-foreground mb-0.5">Notes</p>
-              <p className="text-sm text-foreground whitespace-pre-wrap">
+            <div className="rounded-[var(--radius-card)] bg-muted px-4 py-3">
+              <p className="text-xs text-ink-muted mb-0.5">Notes</p>
+              <p className="text-sm text-ink whitespace-pre-wrap">
                 {item.notes}
               </p>
             </div>
@@ -133,7 +133,7 @@ export default async function ComplianceDetailPage({
 
       {/* Edit form */}
       <div className="mb-6">
-        <h2 className="font-heading font-semibold text-foreground mb-4">
+        <h2 className="font-heading font-semibold text-ink mb-4">
           Edit Compliance Item
         </h2>
         <ComplianceEditForm

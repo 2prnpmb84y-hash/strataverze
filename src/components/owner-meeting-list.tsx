@@ -5,6 +5,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Card, CardHeader } from "@/components/ui/card";
+import { StatusChip } from "@/components/ui/status-chip";
 import { VoteButtons } from "@/app/(portal)/owner/meetings/vote-buttons";
 
 const meetingTypeLabels: Record<string, string> = {
@@ -13,18 +14,18 @@ const meetingTypeLabels: Record<string, string> = {
   COMMITTEE: "Committee",
 };
 
-const statusStyle: Record<string, string> = {
-  SCHEDULED: "bg-blue-100 text-blue-700",
-  COMPLETED: "bg-green-100 text-green-700",
-  CANCELLED: "bg-gray-100 text-gray-700",
+const statusLabels: Record<string, string> = {
+  SCHEDULED: "Scheduled",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
 };
 
-const motionStatusStyle: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  PROPOSED: "bg-yellow-100 text-yellow-700",
-  PASSED: "bg-green-100 text-green-700",
-  DEFEATED: "bg-red-100 text-red-700",
-  WITHDRAWN: "bg-gray-100 text-gray-500",
+const motionStatusLabels: Record<string, string> = {
+  DRAFT: "Draft",
+  PROPOSED: "Proposed",
+  PASSED: "Passed",
+  DEFEATED: "Defeated",
+  WITHDRAWN: "Withdrawn",
 };
 
 const statusOptions = [
@@ -143,7 +144,7 @@ export function OwnerMeetingList({
       {filtered.length === 0 ? (
         <Card>
           <div className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-muted">
               {meetings.length === 0
                 ? "No meetings have been scheduled for your schemes yet."
                 : "No meetings match your search."}
@@ -165,20 +166,15 @@ export function OwnerMeetingList({
                   return (
                     <div
                       key={meeting.id}
-                      className="rounded-lg bg-muted px-4 py-3"
+                      className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {meeting.title}
                         </p>
-                        <span
-                          className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
-                        >
-                          {meeting.status.charAt(0) +
-                            meeting.status.slice(1).toLowerCase()}
-                        </span>
+                        <StatusChip status={statusLabels[meeting.status] ?? meeting.status} />
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}
                         {" · "}
                         {meetingTypeLabels[meeting.meetingType] ??
@@ -197,14 +193,14 @@ export function OwnerMeetingList({
                         })}
                       </p>
                       {meeting.location && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-ink-muted mt-1">
                           📍 {meeting.location}
                         </p>
                       )}
 
                       {meeting.motions.length > 0 && (
                         <div className="mt-3 space-y-2">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">
                             Motions
                           </p>
                           {meeting.motions.map((motion) => {
@@ -215,26 +211,21 @@ export function OwnerMeetingList({
                             return (
                               <div
                                 key={motion.id}
-                                className="rounded-md bg-background border border-border p-3"
+                                className="rounded-[var(--radius-card)] bg-white border border-line p-3"
                               >
                                 <div className="flex items-start justify-between gap-2 mb-1">
-                                  <p className="text-sm font-medium text-foreground">
+                                  <p className="text-sm font-medium text-ink">
                                     {motion.title}
                                   </p>
-                                  <span
-                                    className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${motionStatusStyle[motion.status] ?? "bg-gray-100 text-gray-700"}`}
-                                  >
-                                    {motion.status.charAt(0) +
-                                      motion.status.slice(1).toLowerCase()}
-                                  </span>
+                                  <StatusChip status={motionStatusLabels[motion.status] ?? motion.status} />
                                 </div>
                                 {motion.description && (
-                                  <p className="text-xs text-muted-foreground mb-2">
+                                  <p className="text-xs text-ink-muted mb-2">
                                     {motion.description}
                                   </p>
                                 )}
                                 {motion.votes.length > 0 && (
-                                  <p className="text-xs text-muted-foreground mb-2">
+                                  <p className="text-xs text-ink-muted mb-2">
                                     {tally.FOR} For · {tally.AGAINST} Against ·{" "}
                                     {tally.ABSTAIN} Abstain
                                   </p>
@@ -270,20 +261,15 @@ export function OwnerMeetingList({
                   return (
                     <div
                       key={meeting.id}
-                      className="rounded-lg bg-muted px-4 py-3"
+                      className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-ink">
                           {meeting.title}
                         </p>
-                        <span
-                          className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
-                        >
-                          {meeting.status.charAt(0) +
-                            meeting.status.slice(1).toLowerCase()}
-                        </span>
+                        <StatusChip status={statusLabels[meeting.status] ?? meeting.status} />
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}
                         {" · "}
                         {scheduledDate.toLocaleDateString("en-AU", {
@@ -295,7 +281,7 @@ export function OwnerMeetingList({
 
                       {meeting.motions.length > 0 && (
                         <div className="mt-3 space-y-2">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">
                             Motions
                           </p>
                           {meeting.motions.map((motion) => {
@@ -304,21 +290,16 @@ export function OwnerMeetingList({
                             return (
                               <div
                                 key={motion.id}
-                                className="rounded-md bg-background border border-border p-3"
+                                className="rounded-[var(--radius-card)] bg-white border border-line p-3"
                               >
                                 <div className="flex items-start justify-between gap-2 mb-1">
-                                  <p className="text-sm font-medium text-foreground">
+                                  <p className="text-sm font-medium text-ink">
                                     {motion.title}
                                   </p>
-                                  <span
-                                    className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${motionStatusStyle[motion.status] ?? "bg-gray-100 text-gray-700"}`}
-                                  >
-                                    {motion.status.charAt(0) +
-                                      motion.status.slice(1).toLowerCase()}
-                                  </span>
+                                  <StatusChip status={motionStatusLabels[motion.status] ?? motion.status} />
                                 </div>
                                 {motion.votes.length > 0 && (
-                                  <p className="text-xs text-muted-foreground">
+                                  <p className="text-xs text-ink-muted">
                                     {tally.FOR} For · {tally.AGAINST} Against ·{" "}
                                     {tally.ABSTAIN} Abstain
                                   </p>

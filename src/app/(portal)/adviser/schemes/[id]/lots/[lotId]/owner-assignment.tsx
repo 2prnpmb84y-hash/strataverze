@@ -121,16 +121,16 @@ export function OwnerAssignment({
             return (
               <div
                 key={m.id}
-                className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-foreground">{name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm font-medium text-ink">{name}</p>
+                  <p className="text-xs text-ink-muted">
                     {m.profile.email}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-500">
+                  <span className="inline-flex items-center rounded-full bg-mint-soft px-2.5 py-0.5 text-xs font-medium text-turquoise">
                     Owner
                   </span>
                   <button
@@ -149,7 +149,7 @@ export function OwnerAssignment({
       )}
 
       {owners.length === 0 && (
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-ink-muted mb-4">
           No owners assigned to this lot.
         </p>
       )}
@@ -158,7 +158,7 @@ export function OwnerAssignment({
       <div ref={wrapperRef} className="relative">
         <label
           htmlFor="owner-search"
-          className="block text-sm font-medium text-foreground mb-1.5"
+          className="block text-sm font-medium text-ink mb-1.5"
         >
           Assign Owner
         </label>
@@ -169,16 +169,16 @@ export function OwnerAssignment({
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={() => results.length > 0 && setShowResults(true)}
           placeholder="Search by email or name..."
-          className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 transition-colors"
+          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
         />
 
         {searching && (
-          <p className="mt-1.5 text-xs text-muted-foreground">Searching...</p>
+          <p className="mt-1.5 text-xs text-ink-muted">Searching...</p>
         )}
 
         {/* Search results dropdown */}
         {showResults && results.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-y-auto">
+          <div className="absolute z-10 mt-1 w-full rounded-[var(--radius-card)] border border-line bg-white shadow-lg max-h-48 overflow-y-auto">
             {results.map((p) => {
               const name =
                 `${p.firstName} ${p.lastName}`.trim() || p.email;
@@ -188,10 +188,10 @@ export function OwnerAssignment({
                   type="button"
                   onClick={() => handleAssign(p.id, name)}
                   disabled={isPending}
-                  className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0 disabled:opacity-50"
+                  className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-line last:border-0 disabled:opacity-50"
                 >
-                  <p className="text-sm font-medium text-foreground">{name}</p>
-                  <p className="text-xs text-muted-foreground">{p.email}</p>
+                  <p className="text-sm font-medium text-ink">{name}</p>
+                  <p className="text-xs text-ink-muted">{p.email}</p>
                 </button>
               );
             })}
@@ -199,8 +199,8 @@ export function OwnerAssignment({
         )}
 
         {showResults && !searching && results.length === 0 && query.trim().length >= 2 && (
-          <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg px-4 py-3">
-            <p className="text-sm text-muted-foreground">
+          <div className="absolute z-10 mt-1 w-full rounded-[var(--radius-card)] border border-line bg-white shadow-lg px-4 py-3">
+            <p className="text-sm text-ink-muted">
               No matching profiles found. The owner must sign up first.
             </p>
           </div>

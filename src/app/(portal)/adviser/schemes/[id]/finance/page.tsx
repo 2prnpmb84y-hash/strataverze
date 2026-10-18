@@ -231,7 +231,7 @@ export default async function FinanceDashboardPage({
               </Button>
             }
           />
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-line">
             {journalEntries.slice(0, 5).map((entry) => {
               const totalDebit = entry.lines.reduce(
                 (sum, l) => sum + Number(l.debit ?? 0),
@@ -243,15 +243,15 @@ export default async function FinanceDashboardPage({
                   className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground truncate">
+                    <p className="text-sm font-medium text-ink truncate">
                       {entry.entryNumber} — {entry.description}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-ink-muted">
                       {new Date(String(entry.transactionDate)).toLocaleDateString("en-AU")} · {entry.entryType}
                     </p>
                   </div>
                   <div className="ml-4 text-right shrink-0">
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="text-sm font-semibold text-ink">
                       {formatCurrency(totalDebit)}
                     </p>
                     <StatusBadge status={entry.status} />
@@ -274,17 +274,17 @@ export default async function FinanceDashboardPage({
               </Button>
             }
           />
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-line">
             {overdueLevies.slice(0, 5).map((notice) => (
               <div
                 key={notice.id}
                 className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className="text-sm font-medium text-ink truncate">
                     {notice.noticeNumber} — Lot {notice.lot?.lotNumber ?? "—"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     Due {new Date(String(notice.dueDate)).toLocaleDateString("en-AU")} · {notice.fund?.name ?? "—"}
                   </p>
                 </div>
@@ -320,29 +320,29 @@ function SetupStep({
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors"
+      className="flex items-center gap-4 rounded-[var(--radius-card)] px-3 py-3 hover:bg-muted/50 transition-colors"
     >
       <span
         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
           done
             ? "bg-green-100 text-green-700"
-            : "bg-muted text-muted-foreground"
+            : "bg-muted text-ink-muted"
         }`}
       >
         {done ? "✓" : number}
       </span>
       <div className="min-w-0 flex-1">
-        <p className={`text-sm font-medium ${done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+        <p className={`text-sm font-medium ${done ? "text-ink-muted line-through" : "text-ink"}`}>
           {label}
         </p>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-xs text-ink-muted">{description}</p>
       </div>
       <svg
         width="16"
         height="16"
         viewBox="0 0 16 16"
         fill="none"
-        className="shrink-0 text-muted-foreground"
+        className="shrink-0 text-ink-muted"
       >
         <path
           d="M6 4L10 8L6 12"
@@ -370,13 +370,13 @@ function QuickActionCard({
   return (
     <Link
       href={href}
-      className="group rounded-xl bg-card border border-border p-5 hover:border-primary-300 hover:shadow-sm transition-all"
+      className="group rounded-[var(--radius-card)] bg-white border border-line p-5 hover:border-mint hover:shadow-sm transition-all"
     >
-      <div className="text-muted-foreground group-hover:text-primary-500 transition-colors mb-3">
+      <div className="text-ink-muted group-hover:text-turquoise transition-colors mb-3">
         {icon}
       </div>
-      <p className="text-sm font-semibold text-foreground mb-0.5">{title}</p>
-      <p className="text-xs text-muted-foreground">{description}</p>
+      <p className="text-sm font-semibold text-ink mb-0.5">{title}</p>
+      <p className="text-xs text-ink-muted">{description}</p>
     </Link>
   );
 }

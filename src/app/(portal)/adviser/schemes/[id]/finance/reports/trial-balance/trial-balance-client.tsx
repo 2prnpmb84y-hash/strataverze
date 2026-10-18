@@ -114,7 +114,7 @@ export function TrialBalanceClient({
 
           <div className="px-6 pb-6">
             {!isBalanced && (
-              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+              <div className="mb-4 rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3">
                 <p className="text-sm font-medium text-red-800">
                   Warning: Trial balance is out of balance by{" "}
                   ${Math.abs(totalDebits - totalCredits).toLocaleString("en-AU", { minimumFractionDigits: 2 })}
@@ -124,7 +124,7 @@ export function TrialBalanceClient({
 
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
                   <th scope="col" className="text-left py-2 pr-4">Code</th>
                   <th scope="col" className="text-left py-2 pr-4">Account</th>
                   <th scope="col" className="text-left py-2 pr-4">Fund</th>
@@ -140,14 +140,14 @@ export function TrialBalanceClient({
                     items={section.items}
                   />
                 ))}
-                <tr className="border-t-2 border-border font-bold">
-                  <td colSpan={3} className="py-3 pr-4 text-foreground">
+                <tr className="border-t-2 border-line font-bold">
+                  <td colSpan={3} className="py-3 pr-4 text-ink">
                     Totals
                   </td>
-                  <td className="py-3 pr-4 text-right tabular-nums text-foreground">
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
                     {formatCurrency(totalDebits)}
                   </td>
-                  <td className="py-3 text-right tabular-nums text-foreground">
+                  <td className="py-3 text-right tabular-nums text-ink">
                     {formatCurrency(totalCredits)}
                   </td>
                 </tr>
@@ -172,7 +172,7 @@ function SectionGroup({
       <tr>
         <td
           colSpan={5}
-          className="pt-4 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide"
+          className="pt-4 pb-1 text-xs font-semibold text-ink-muted uppercase tracking-wide"
         >
           {label}
         </td>
@@ -180,17 +180,17 @@ function SectionGroup({
       {items.map((line) => (
         <tr
           key={`${line.accountCode}-${line.fundName}`}
-          className="border-b border-border/50"
+          className="border-b border-line/50"
         >
-          <td className="py-2 pr-4 text-muted-foreground tabular-nums">
+          <td className="py-2 pr-4 text-ink-muted tabular-nums">
             {line.accountCode}
           </td>
-          <td className="py-2 pr-4 text-foreground">{line.accountName}</td>
-          <td className="py-2 pr-4 text-muted-foreground">{line.fundName}</td>
-          <td className="py-2 pr-4 text-right tabular-nums text-foreground">
+          <td className="py-2 pr-4 text-ink">{line.accountName}</td>
+          <td className="py-2 pr-4 text-ink-muted">{line.fundName}</td>
+          <td className="py-2 pr-4 text-right tabular-nums text-ink">
             {formatCurrency(line.debitBalance)}
           </td>
-          <td className="py-2 text-right tabular-nums text-foreground">
+          <td className="py-2 text-right tabular-nums text-ink">
             {formatCurrency(line.creditBalance)}
           </td>
         </tr>

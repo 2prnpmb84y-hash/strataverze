@@ -80,7 +80,7 @@ export default async function InsurancePolicyDetailPage({
 
       {/* Policy summary */}
       <Card className="mb-6">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-ink-muted mb-4">
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyles[policy.status] ?? "bg-gray-100 text-gray-700"}`}
           >
@@ -94,51 +94,51 @@ export default async function InsurancePolicyDetailPage({
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-xs text-muted-foreground">Coverage</p>
-            <p className="font-medium text-foreground">
+            <p className="text-xs text-ink-muted">Coverage</p>
+            <p className="font-medium text-ink">
               {formatCurrency(String(policy.coverageAmount))}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Premium</p>
-            <p className="font-medium text-foreground">
+            <p className="text-xs text-ink-muted">Premium</p>
+            <p className="font-medium text-ink">
               {formatCurrency(String(policy.premium))}
             </p>
           </div>
           {policy.excessAmount ? (
             <div>
-              <p className="text-xs text-muted-foreground">Excess</p>
-              <p className="font-medium text-foreground">
+              <p className="text-xs text-ink-muted">Excess</p>
+              <p className="font-medium text-ink">
                 {formatCurrency(String(policy.excessAmount))}
               </p>
             </div>
           ) : null}
           <div>
-            <p className="text-xs text-muted-foreground">Start Date</p>
-            <p className="font-medium text-foreground">
+            <p className="text-xs text-ink-muted">Start Date</p>
+            <p className="font-medium text-ink">
               {formatDate(String(policy.startDate))}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">End Date</p>
-            <p className="font-medium text-foreground">
+            <p className="text-xs text-ink-muted">End Date</p>
+            <p className="font-medium text-ink">
               {formatDate(String(policy.endDate))}
             </p>
           </div>
           {policy.renewalDate ? (
             <div>
-              <p className="text-xs text-muted-foreground">Renewal Date</p>
-              <p className="font-medium text-foreground">
+              <p className="text-xs text-ink-muted">Renewal Date</p>
+              <p className="font-medium text-ink">
                 {formatDate(String(policy.renewalDate))}
               </p>
             </div>
           ) : null}
           {policy.broker ? (
             <div>
-              <p className="text-xs text-muted-foreground">Broker</p>
-              <p className="font-medium text-foreground">{policy.broker}</p>
+              <p className="text-xs text-ink-muted">Broker</p>
+              <p className="font-medium text-ink">{policy.broker}</p>
               {policy.brokerContact ? (
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-ink-muted mt-0.5">
                   {policy.brokerContact}
                 </p>
               ) : null}
@@ -147,11 +147,11 @@ export default async function InsurancePolicyDetailPage({
         </div>
 
         {policy.notes ? (
-          <div className="mt-4 rounded-lg bg-muted px-4 py-3">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
+          <div className="mt-4 rounded-[var(--radius-card)] bg-muted px-4 py-3">
+            <p className="text-xs font-medium text-ink-muted mb-1">
               Notes
             </p>
-            <p className="text-sm text-foreground whitespace-pre-wrap">
+            <p className="text-sm text-ink whitespace-pre-wrap">
               {policy.notes}
             </p>
           </div>

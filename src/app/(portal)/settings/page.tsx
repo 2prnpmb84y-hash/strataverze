@@ -51,18 +51,18 @@ export default async function SettingsPage() {
               title="Scheme Memberships"
               description="Schemes you are currently a member of."
             />
-            <div className="divide-y divide-border -mx-6">
+            <div className="divide-y divide-line -mx-6">
               {memberships.map((m) => (
                 <div key={m.id} className="flex items-center justify-between px-6 py-3">
                   <div>
-                    <p className="text-sm font-medium text-card-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {m.schemeName}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-ink-muted mt-0.5">
                       Since {new Date(m.startDate).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   </div>
-                  <span className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  <span className="inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-ink-muted">
                     {roleLabels[m.role] ?? m.role}
                   </span>
                 </div>

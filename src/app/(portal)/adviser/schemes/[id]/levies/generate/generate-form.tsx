@@ -42,7 +42,7 @@ export function GenerateForm({
   return (
     <form action={formAction} className="space-y-6">
       {state.error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+        <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 p-3">
           <p className="text-sm text-red-700">{state.error}</p>
         </div>
       )}
@@ -123,17 +123,17 @@ export function GenerateForm({
             {preview.map((p, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between rounded-lg bg-muted px-4 py-3"
+                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-ink">
                     {p.label}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-muted">
                     Due at start of period
                   </p>
                 </div>
-                <span className="text-sm font-medium text-foreground tabular-nums">
+                <span className="text-sm font-medium text-ink tabular-nums">
                   {p.amount.toLocaleString("en-AU", {
                     style: "currency",
                     currency: "AUD",
@@ -141,9 +141,9 @@ export function GenerateForm({
                 </span>
               </div>
             ))}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-border">
-              <span className="text-sm font-medium text-foreground">Total</span>
-              <span className="text-sm font-semibold text-foreground tabular-nums">
+            <div className="flex items-center justify-between px-4 py-2 border-t border-line">
+              <span className="text-sm font-medium text-ink">Total</span>
+              <span className="text-sm font-semibold text-ink tabular-nums">
                 {budget.toLocaleString("en-AU", {
                   style: "currency",
                   currency: "AUD",

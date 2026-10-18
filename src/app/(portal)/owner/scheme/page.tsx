@@ -100,27 +100,27 @@ export default async function OwnerSchemePage() {
                 />
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-0.5">
                       Lot Number
                     </p>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {myLot.unitNumber}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-0.5">
                       Entitlement
                     </p>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-ink">
                       {myLot.entitlement}
                     </p>
                   </div>
                   {myLot.floorArea && (
                     <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-0.5">
+                      <p className="text-xs text-ink-muted uppercase tracking-wide mb-0.5">
                         Floor Area
                       </p>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-ink">
                         {myLot.floorArea} m²
                       </p>
                     </div>

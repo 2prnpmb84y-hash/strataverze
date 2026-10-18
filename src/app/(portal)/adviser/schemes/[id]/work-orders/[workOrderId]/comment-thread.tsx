@@ -36,7 +36,7 @@ export async function CommentThread({
 
   if (comments.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">No comments yet.</p>
+      <p className="text-sm text-ink-muted py-2">No comments yet.</p>
     );
   }
 
@@ -52,14 +52,14 @@ export async function CommentThread({
         return (
           <div
             key={comment.id}
-            className="rounded-lg bg-muted px-4 py-3"
+            className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
           >
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs font-medium text-foreground">
+              <p className="text-xs font-medium text-ink">
                 {authorName}
               </p>
               <div className="flex items-center gap-2">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-ink-muted">
                   {timeAgo(createdAt)}
                 </p>
                 {isAuthor && (
@@ -71,7 +71,7 @@ export async function CommentThread({
                 )}
               </div>
             </div>
-            <p className="text-sm text-foreground whitespace-pre-wrap">
+            <p className="text-sm text-ink whitespace-pre-wrap">
               {comment.content}
             </p>
           </div>
