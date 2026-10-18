@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getQuoteRequestById, hasSupplierQuoted } from "@/lib/queries/supplier";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SubmitQuoteForm } from "./submit-quote-form";
+import { WithdrawQuoteButton } from "./withdraw-button";
+
 const urgencyColours: Record<string, string> = {
   URGENT: "bg-danger/10 text-danger",
   STANDARD: "bg-gold-100 text-gold-500",
@@ -22,6 +27,7 @@ export default async function QuoteRequestDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
   const { id } = await params;
   const profile = await getCurrentProfile();
   if (!profile) return null;
@@ -29,7 +35,31 @@ export default async function QuoteRequestDetailPage({
   const quoteRequest = await getQuoteRequestById(id);
   if (!quoteRequest) notFound();
 
+  // Verify supplier has an active membership on this scheme (F-04)
+  const membership = await db.orm.public.SchemeMembership
+    .where((m) =>
+      and(
+        m.profileId.eq(profile.id),
+        m.schemeId.eq(quoteRequest.schemeId),
+        m.role.eq("SUPPLIER"),
+        m.isActive.eq(true),
+      ),
+    )
+    .first();
+
+  if (!membership) notFound();
+
   const alreadyQuoted = await hasSupplierQuoted(id, profile.id);
+
+  // Get the supplier's own quote if they submitted one
+  let supplierQuote = null;
+  if (alreadyQuoted) {
+    supplierQuote = await db.orm.public.Quote
+      .where((q) =>
+        and(q.quoteRequestId.eq(id), q.supplierId.eq(profile.id)),
+      )
+      .first();
+  }
 
   return (
     <div className="max-w-4xl">
