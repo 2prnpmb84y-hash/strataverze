@@ -19,6 +19,7 @@ const ownerBaseNav = [
   { label: "By-laws", href: "/owner/bylaws" },
   { label: "Insurance", href: "/owner/insurance" },
   { label: "Contacts", href: "/owner/contacts" },
+  { label: "Announcements", href: "/owner/announcements" },
   { label: "Notifications", href: "/owner/notifications" },
 ];
 

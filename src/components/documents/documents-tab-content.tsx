@@ -73,22 +73,26 @@ export function DocumentsTabContent({
   // Fetch a signed URL whenever the selected document changes
   useEffect(() => {
     if (!selectedDocId) {
-      setSignedUrl(null);
+      startTransition(() => { setSignedUrl(null); });
       return;
     }
     const doc = documents.find((d) => d.id === selectedDocId);
     if (!doc) return;
 
     let cancelled = false;
-    setLoadingUrl(true);
-    setSignedUrl(null);
+    startTransition(() => {
+      setLoadingUrl(true);
+      setSignedUrl(null);
+    });
     getDocumentSignedUrlAction(schemeId, doc.fileUrl).then((result) => {
       if (cancelled) return;
-      if (result.url) setSignedUrl(result.url);
-      setLoadingUrl(false);
+      startTransition(() => {
+        if (result.url) setSignedUrl(result.url);
+        setLoadingUrl(false);
+      });
     });
     return () => { cancelled = true; };
-  }, [selectedDocId, schemeId, documents]);
+  }, [selectedDocId, schemeId, documents, startTransition]);
 
   const handleFilesReady = useCallback(
     async (files: File[], metadata: DocumentMetadata) => {
