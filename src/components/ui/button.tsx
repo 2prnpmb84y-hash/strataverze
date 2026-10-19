@@ -8,7 +8,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   secondary:
     "bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise",
   danger:
-    "bg-white border-[1.5px] border-coral text-coral hover:bg-coral/5 focus:ring-coral",
+    "bg-white border-[1.5px] border-[#E88A7A] text-[#D4604E] hover:bg-[#FFF0ED] focus:ring-[#E88A7A]",
   ghost:
     "text-ink-muted hover:text-ink hover:bg-muted focus:ring-turquoise",
 };

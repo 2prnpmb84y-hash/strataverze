@@ -2,9 +2,9 @@ type ChipStatus = "default" | "success" | "warning" | "danger";
 
 const statusStyles: Record<ChipStatus, string> = {
   default: "bg-[#F1F5F9] text-ink-muted",
-  success: "bg-[#DCFCE7] text-[#166534]",
-  warning: "bg-[#FEF3C7] text-[#92400E]",
-  danger: "bg-[#FEE2E2] text-[#991B1B]",
+  success: "bg-[#E6F7F3] text-[#1A7A63]",
+  warning: "bg-[#FFF3E0] text-[#A16207]",
+  danger: "bg-[#FDECEC] text-[#B33A3A]",
 };
 
 /** Map common status strings to chip variants */

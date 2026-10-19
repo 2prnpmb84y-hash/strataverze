@@ -14,13 +14,15 @@ const tabConfig = {
     label: "Owner / Supplier",
     description: "Sign in to manage your strata property",
     accent: "var(--color-turquoise)",
-    buttonClass: "bg-turquoise hover:bg-turquoise/90 focus:ring-turquoise",
+    buttonClass:
+      "border-[1.5px] border-turquoise text-turquoise bg-white hover:bg-turquoise hover:text-white focus:ring-turquoise",
   },
   adviser: {
     label: "Adviser",
     description: "Sign in to manage schemes as a strata professional",
     accent: "var(--color-gold-line)",
-    buttonClass: "bg-gold-line hover:bg-gold-line/90 focus:ring-gold-line",
+    buttonClass:
+      "border-[1.5px] border-gold-line text-gold-line bg-white hover:bg-gold-line hover:text-white focus:ring-gold-line",
   },
 } as const;
 
@@ -158,7 +160,7 @@ export function LoginForm({
                   setIsSignUp(false);
                   setPassword("");
                 }}
-                className="w-full h-11 rounded-full border-[1.5px] border-turquoise bg-white text-turquoise font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/5 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
+                className="w-full h-11 rounded-full border-[1.5px] border-line bg-white text-ink-muted font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-muted hover:text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
               >
                 Back to sign in
               </button>
@@ -177,7 +179,7 @@ export function LoginForm({
                   setIsSignUp(true);
                   setPassword("");
                 }}
-                className="w-full h-11 rounded-full border-[1.5px] border-turquoise bg-white text-turquoise font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/5 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
+                className="w-full h-11 rounded-full border-[1.5px] border-line bg-white text-ink-muted font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-muted hover:text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2"
               >
                 Create account
               </button>

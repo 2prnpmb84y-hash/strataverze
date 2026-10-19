@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { castVoteAction } from "./actions";
 
 const voteOptions = [
-  { value: "FOR", label: "For", variant: "primary" as const },
+  { value: "FOR", label: "For", variant: "secondary" as const },
   { value: "AGAINST", label: "Against", variant: "danger" as const },
-  { value: "ABSTAIN", label: "Abstain", variant: "secondary" as const },
+  { value: "ABSTAIN", label: "Abstain", variant: "ghost" as const },
 ];
 
 export function VoteButtons({
