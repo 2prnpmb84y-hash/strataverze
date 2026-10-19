@@ -59,17 +59,15 @@ export default async function OwnerSchemePage() {
         const fullAddress = `${scheme.address}, ${scheme.suburb}, ${scheme.state} ${scheme.postcode}`;
 
         const navButtons = [
-          { label: "Lots / Owners", href: "/owner/scheme/lots" },
-          { label: "Financials", href: "/owner/scheme/financials" },
-          { label: "Compliance", href: "/owner/scheme/compliance" },
-          { label: "Insurance", href: "/owner/scheme/insurance" },
-          { label: "Conversations", href: "/owner/scheme/conversations" },
-          { label: "Document", href: "/owner/scheme/documents" },
-          { label: "Work Order", href: "/owner/scheme/work-orders" },
-          { label: "Meetings", href: "/owner/scheme/meetings" },
-          { label: "Budget", href: "/owner/scheme/budget" },
-          { label: "Notes", href: "/owner/scheme/notes" },
-          { label: "Invoices", href: "/owner/scheme/invoices" },
+          { label: "Lots / Owners", href: "/owner/contacts" },
+          { label: "Levies & Finance", href: "/owner/levies" },
+          { label: "Compliance", href: "/owner/compliance" },
+          { label: "Insurance", href: "/owner/insurance" },
+          { label: "Documents", href: "/owner/documents" },
+          { label: "Work Orders", href: "/owner/maintenance" },
+          { label: "Meetings", href: "/owner/meetings" },
+          { label: "By-laws", href: "/owner/bylaws" },
+          { label: "Announcements", href: "/owner/announcements" },
         ];
 
         return (

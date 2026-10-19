@@ -23,7 +23,7 @@ import {
 /* ------------------------------------------------------------------ */
 
 const ownerNav = [
-  { label: "Dashboard", href: "/owner", icon: LayoutGrid },
+  { label: "Properties", href: "/owner/properties", icon: LayoutGrid },
   { label: "My Property", href: "/owner/scheme", icon: Building2 },
   { label: "Compliance", href: "/owner/compliance", icon: CheckSquare },
   { label: "Community", href: "/owner/contacts", icon: Users },

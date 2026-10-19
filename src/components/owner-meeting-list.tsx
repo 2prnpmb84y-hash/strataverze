@@ -163,22 +163,31 @@ export function OwnerMeetingList({
                 {upcoming.map((meeting) => {
                   const scheduledDate = new Date(String(meeting.scheduledAt));
 
+                  const typeAccent =
+                    meeting.meetingType === "AGM"
+                      ? "border-l-turquoise"
+                      : meeting.meetingType === "SGM"
+                        ? "border-l-amber-500"
+                        : "border-l-blue-400";
+
                   return (
                     <div
                       key={meeting.id}
-                      className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
+                      className={`rounded-[var(--radius-card)] bg-white border border-line border-l-4 ${typeAccent} px-4 py-3 shadow-sm`}
                     >
                       <div className="flex items-start justify-between gap-3 mb-1">
-                        <p className="text-sm font-medium text-ink">
-                          {meeting.title}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-ink-muted tracking-wide uppercase">
+                            {meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType}
+                          </span>
+                          <p className="text-sm font-medium text-ink">
+                            {meeting.title}
+                          </p>
+                        </div>
                         <StatusChip status={statusLabels[meeting.status] ?? meeting.status} />
                       </div>
                       <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}
-                        {" · "}
-                        {meetingTypeLabels[meeting.meetingType] ??
-                          meeting.meetingType}
                         {" · "}
                         {scheduledDate.toLocaleDateString("en-AU", {
                           weekday: "short",
@@ -258,15 +267,27 @@ export function OwnerMeetingList({
                 {past.map((meeting) => {
                   const scheduledDate = new Date(String(meeting.scheduledAt));
 
+                  const typeAccent =
+                    meeting.meetingType === "AGM"
+                      ? "border-l-turquoise"
+                      : meeting.meetingType === "SGM"
+                        ? "border-l-amber-500"
+                        : "border-l-blue-400";
+
                   return (
                     <div
                       key={meeting.id}
-                      className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
+                      className={`rounded-[var(--radius-card)] bg-white border border-line border-l-4 ${typeAccent} px-4 py-3 shadow-sm opacity-75`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-ink">
-                          {meeting.title}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-ink-muted tracking-wide uppercase">
+                            {meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType}
+                          </span>
+                          <p className="text-sm font-medium text-ink">
+                            {meeting.title}
+                          </p>
+                        </div>
                         <StatusChip status={statusLabels[meeting.status] ?? meeting.status} />
                       </div>
                       <p className="text-xs text-ink-muted">
