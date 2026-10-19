@@ -61,6 +61,7 @@ const pageTitles: Record<string, string> = {
   quotes: "Quote Requests",
   "my-quotes": "My Quotes",
   "work-orders": "Work Orders",
+  suppliers: "Suppliers & Contacts",
   invoices: "Invoices",
   settings: "Settings",
   invitations: "Invitations",
@@ -113,6 +114,9 @@ const adviserNav = [
   { label: "Dashboard", href: "/adviser" },
   { label: "Schemes", href: "/adviser/schemes" },
   { label: "Compliance", href: "/adviser/compliance" },
+  { label: "Suppliers", href: "/adviser/suppliers" },
+  { label: "Work Orders", href: "/adviser/work-orders" },
+  { label: "Documents", href: "/adviser/documents" },
   { label: "Reporting", href: "/adviser/reporting" },
 ];
 

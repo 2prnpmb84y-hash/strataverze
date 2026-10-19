@@ -36,10 +36,10 @@ const adviserNav = [
   { label: "Dashboard", href: "/adviser", icon: LayoutGrid },
   { label: "Schemes", href: "/adviser/schemes", icon: Building2 },
   { label: "Compliance", href: "/adviser/compliance", icon: CheckSquare },
-  { label: "Suppliers", href: "/adviser/schemes", icon: Truck },
-  { label: "Work Orders", href: "/adviser/schemes", icon: Briefcase },
+  { label: "Suppliers", href: "/adviser/suppliers", icon: Truck },
+  { label: "Work Orders", href: "/adviser/work-orders", icon: Briefcase },
   { label: "Reporting", href: "/adviser/reporting", icon: BarChart3 },
-  { label: "Documents", href: "/adviser/schemes", icon: FileText },
+  { label: "Documents", href: "/adviser/documents", icon: FileText },
 ];
 
 const supplierNav = [

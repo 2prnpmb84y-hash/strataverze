@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { SearchDialog } from "@/components/search-dialog";
 
 /* ------------------------------------------------------------------ */
 /*  Portal accent colours (top-edge line)                             */
@@ -44,9 +45,22 @@ export function TopBar({
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const accent = accentByPortal[portal] ?? accentByPortal.owner;
+
+  // Cmd+K / Ctrl+K to open search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Close menu on outside click
   useEffect(() => {
@@ -85,13 +99,19 @@ export function TopBar({
 
       {/* Right: actions */}
       <div className="flex items-center gap-3">
-        {/* Search (placeholder) */}
+        {/* Search */}
         <button
-          className="flex items-center justify-center w-10 h-10 rounded-full text-ink-muted hover:text-ink hover:bg-muted transition-colors"
-          aria-label="Search"
+          onClick={() => setSearchOpen(true)}
+          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-ink-muted hover:text-ink hover:bg-muted transition-colors"
+          aria-label="Search (⌘K)"
         >
-          <Search size={20} strokeWidth={1.5} />
+          <Search size={18} strokeWidth={1.5} />
+          <span className="hidden lg:inline text-xs text-ink-muted">Search</span>
+          <kbd className="hidden lg:inline-flex items-center rounded border border-line bg-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-muted">
+            ⌘K
+          </kbd>
         </button>
+        <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
 
         {/* Notifications */}
         <Link
