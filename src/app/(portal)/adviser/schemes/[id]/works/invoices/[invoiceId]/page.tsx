@@ -89,12 +89,28 @@ export default async function InvoiceDetailPage({
                 Assess Invoice
               </Button>
             )}
-            <Button
-              href={`/adviser/schemes/${id}/works/invoices/${invoiceId}/edit`}
-              variant="secondary"
-            >
-              Edit
-            </Button>
+            {(invoice.status === "APPROVED" || invoice.status === "PARTIALLY_APPROVED") && (
+              <Button
+                href={`/adviser/schemes/${id}/works/invoices/${invoiceId}/payment`}
+              >
+                Authorise Payment
+              </Button>
+            )}
+            {invoice.status === "PAYMENT_INSTRUCTED" && (
+              <Button
+                href={`/adviser/schemes/${id}/works/invoices/${invoiceId}/record-payment`}
+              >
+                Record Payment
+              </Button>
+            )}
+            {invoice.status === "SUBMITTED" && (
+              <Button
+                href={`/adviser/schemes/${id}/works/invoices/${invoiceId}/edit`}
+                variant="secondary"
+              >
+                Edit
+              </Button>
+            )}
           </div>
         }
       />

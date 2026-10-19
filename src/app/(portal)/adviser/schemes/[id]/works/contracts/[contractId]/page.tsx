@@ -294,11 +294,10 @@ export default async function ContractDetailPage({
         />
         {contract.variations.length > 0 ? (
           <div className="flex flex-col gap-2 px-5 pb-5">
-            {contract.variations.slice(0, 5).map((variation) => (
-              <Link
+            {contract.variations.map((variation) => (
+              <div
                 key={variation.id}
-                href={`/adviser/schemes/${id}/works/contracts/${contractId}/variations/${variation.id}`}
-                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted p-4 hover:bg-muted/70 transition-colors"
+                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted p-4"
               >
                 <div>
                   <p className="text-sm font-medium text-ink">
@@ -315,18 +314,8 @@ export default async function ContractDetailPage({
                   </span>
                   <StatusChip status={variation.status} />
                 </div>
-              </Link>
-            ))}
-            {contract.variations.length > 5 && (
-              <div className="pt-2">
-                <Link
-                  href={`/adviser/schemes/${id}/works/contracts/${contractId}/variations`}
-                  className="text-sm font-medium text-accent hover:underline"
-                >
-                  View All Variations ({contract.variations.length})
-                </Link>
               </div>
-            )}
+            ))}
           </div>
         ) : (
           <div className="px-5 pb-5">

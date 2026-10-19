@@ -28,6 +28,7 @@ const ownerNav = [
   { label: "Compliance", href: "/owner/compliance", icon: CheckSquare },
   { label: "Community", href: "/owner/contacts", icon: Users },
   { label: "Work Orders", href: "/owner/maintenance", icon: Briefcase },
+  { label: "Works Overview", href: "/owner/works", icon: BarChart3 },
   { label: "Levies & Finance", href: "/owner/levies", icon: ClipboardList },
   { label: "Documents", href: "/owner/documents", icon: FileText },
 ];

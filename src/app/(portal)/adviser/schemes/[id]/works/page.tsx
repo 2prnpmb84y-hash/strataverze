@@ -119,6 +119,30 @@ export default async function WorksDashboardPage({
         />
       </div>
 
+      {/* Financial summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Contract Value"
+          value={formatCurrency(dashboard.contracts.totalValue)}
+          accent="bg-indigo-500"
+        />
+        <StatCard
+          label="Total Invoiced"
+          value={formatCurrency(dashboard.invoices.totalClaimed)}
+          accent="bg-violet-500"
+        />
+        <StatCard
+          label="Total Paid"
+          value={formatCurrency(dashboard.invoices.totalPaid)}
+          accent="bg-green-500"
+        />
+        <StatCard
+          label="Outstanding"
+          value={formatCurrency(dashboard.invoices.outstanding)}
+          accent="bg-red-500"
+        />
+      </div>
+
       {/* Filter bar */}
       <Card>
         <form className="flex flex-wrap items-end gap-3 p-4">
@@ -355,6 +379,34 @@ export default async function WorksDashboardPage({
               action={
                 <Button
                   href={`/adviser/schemes/${id}/works/work-orders`}
+                  variant="ghost"
+                >
+                  View
+                </Button>
+              }
+            />
+          </Card>
+          <Card>
+            <CardHeader
+              title="Audit Trail"
+              description="View all works activity history"
+              action={
+                <Button
+                  href={`/adviser/schemes/${id}/works/audit`}
+                  variant="ghost"
+                >
+                  View
+                </Button>
+              }
+            />
+          </Card>
+          <Card>
+            <CardHeader
+              title="Reports"
+              description="Works summary and financial reports"
+              action={
+                <Button
+                  href={`/adviser/schemes/${id}/works/reports`}
                   variant="ghost"
                 >
                   View

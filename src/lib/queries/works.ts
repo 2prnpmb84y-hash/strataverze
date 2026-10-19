@@ -358,6 +358,27 @@ export async function getWorksDashboardData(schemeId: string) {
     return new Date(inv.dueDate) < new Date();
   });
 
+  // Financial totals
+  const totalContractValue = contracts.reduce(
+    (sum, c) => sum + Number(c.contractValue ?? 0),
+    0,
+  );
+  const totalClaimed = invoices.reduce(
+    (sum, inv) => sum + Number(inv.claimedAmount ?? 0),
+    0,
+  );
+  const totalPaid = invoices.reduce(
+    (sum, inv) => sum + Number(inv.paidAmount ?? 0),
+    0,
+  );
+  const outstandingInvoices = invoices.filter(
+    (inv) => !["PAID", "RECONCILED", "VOIDED", "DUPLICATE"].includes(inv.status),
+  );
+  const outstanding = outstandingInvoices.reduce(
+    (sum, inv) => sum + Number(inv.claimedAmount ?? 0) - Number(inv.paidAmount ?? 0),
+    0,
+  );
+
   return {
     requests: {
       total: requests.length,
@@ -370,6 +391,7 @@ export async function getWorksDashboardData(schemeId: string) {
       total: contracts.length,
       byStatus: contractsByStatus,
       active: contracts.filter((c) => ["EXECUTED", "ACTIVE"].includes(c.status)).length,
+      totalValue: totalContractValue,
     },
     invoices: {
       total: invoices.length,
@@ -380,6 +402,9 @@ export async function getWorksDashboardData(schemeId: string) {
         (sum, inv) => sum + Number(inv.claimedAmount),
         0,
       ),
+      totalClaimed,
+      totalPaid,
+      outstanding,
     },
     compliance: {
       expired: complianceChecks.length,
@@ -665,4 +690,154 @@ export async function getVariationById(id: string) {
     .include("approvedBy")
     .include("contract")
     .first();
+}
+
+// ─── Reports ─────────────────────────────────────────────────
+
+/**
+ * Gather works financial report data for a scheme.
+ */
+export async function getWorksReportData(schemeId: string) {
+  const [contracts, invoices, requests] = await Promise.all([
+    db.orm.public.WorksContract
+      .where((c) => and(c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
+      .include("contractorBusiness")
+      .all(),
+    db.orm.public.WorksInvoice
+      .where((inv) => inv.schemeId.eq(schemeId))
+      .include("contractorBusiness")
+      .all(),
+    db.orm.public.WorksRequest
+      .where((wr) => and(wr.schemeId.eq(schemeId), wr.deletedAt.eq(null)))
+      .all(),
+  ]);
+
+  // Contract totals
+  const totalContractValue = contracts.reduce(
+    (sum, c) => sum + Number(c.contractValue),
+    0,
+  );
+
+  // Contract status breakdown
+  const contractsByStatus: Record<string, number> = {};
+  for (const c of contracts) {
+    contractsByStatus[c.status] = (contractsByStatus[c.status] ?? 0) + 1;
+  }
+
+  // Invoice totals
+  const totalInvoiced = invoices.reduce(
+    (sum, inv) => sum + Number(inv.claimedAmount),
+    0,
+  );
+  const totalPaid = invoices.reduce(
+    (sum, inv) => sum + Number(inv.paidAmount ?? 0),
+    0,
+  );
+  const outstanding = totalInvoiced - totalPaid;
+
+  // Invoice aging
+  const now = new Date();
+  const unpaid = invoices.filter(
+    (inv) => !["PAID", "RECONCILED"].includes(inv.status),
+  );
+
+  let current = 0;
+  let currentCount = 0;
+  let overdue30 = 0;
+  let overdue30Count = 0;
+  let overdue60 = 0;
+  let overdue60Count = 0;
+  let overdue60Plus = 0;
+  let overdue60PlusCount = 0;
+
+  for (const inv of unpaid) {
+    const dueDate = new Date(inv.dueDate);
+    const daysOverdue = Math.floor(
+      (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const amount = Number(inv.claimedAmount) - Number(inv.paidAmount ?? 0);
+    if (daysOverdue <= 0) {
+      current += amount;
+      currentCount++;
+    } else if (daysOverdue <= 30) {
+      overdue30 += amount;
+      overdue30Count++;
+    } else if (daysOverdue <= 60) {
+      overdue60 += amount;
+      overdue60Count++;
+    } else {
+      overdue60Plus += amount;
+      overdue60PlusCount++;
+    }
+  }
+
+  // Top contractors by spend
+  const contractorMap = new Map<
+    string,
+    {
+      name: string;
+      totalContractValue: number;
+      totalPaid: number;
+      contractCount: number;
+      invoiceCount: number;
+    }
+  >();
+
+  for (const c of contracts) {
+    const name = String(c.contractorBusiness.companyName);
+    const existing = contractorMap.get(name) ?? {
+      name,
+      totalContractValue: 0,
+      totalPaid: 0,
+      contractCount: 0,
+      invoiceCount: 0,
+    };
+    existing.totalContractValue += Number(c.contractValue);
+    existing.contractCount++;
+    contractorMap.set(name, existing);
+  }
+
+  for (const inv of invoices) {
+    const name = String(inv.contractorBusiness.companyName);
+    const existing = contractorMap.get(name) ?? {
+      name,
+      totalContractValue: 0,
+      totalPaid: 0,
+      contractCount: 0,
+      invoiceCount: 0,
+    };
+    existing.totalPaid += Number(inv.paidAmount ?? 0);
+    existing.invoiceCount++;
+    contractorMap.set(name, existing);
+  }
+
+  const topContractors = Array.from(contractorMap.values())
+    .sort((a, b) => b.totalPaid - a.totalPaid)
+    .slice(0, 10);
+
+  // Request status breakdown
+  const requestsByStatus: Record<string, number> = {};
+  for (const r of requests) {
+    requestsByStatus[r.status] = (requestsByStatus[r.status] ?? 0) + 1;
+  }
+
+  return {
+    totalContractValue,
+    totalInvoiced,
+    totalPaid,
+    outstanding,
+    contractsByStatus,
+    invoiceAging: {
+      current,
+      currentCount,
+      overdue30,
+      overdue30Count,
+      overdue60,
+      overdue60Count,
+      overdue60Plus,
+      overdue60PlusCount,
+    },
+    topContractors,
+    requestsByStatus,
+  };
 }

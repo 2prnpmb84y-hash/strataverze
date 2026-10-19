@@ -928,6 +928,68 @@ export async function submitWorksInvoice(
 }
 
 /**
+ * Update an existing works invoice.
+ */
+export async function updateWorksInvoice(
+  formData: FormData,
+): Promise<ActionResult> {
+  const invoiceId = formData.get("invoiceId") as string;
+  const schemeId = formData.get("schemeId") as string;
+  const contractId = (formData.get("contractId") as string) || null;
+  const contractorBusinessId = formData.get(
+    "contractorBusinessId",
+  ) as string;
+  const invoiceNumber = (formData.get("invoiceNumber") as string)?.trim();
+  const invoiceDate = formData.get("invoiceDate") as string;
+  const dueDate = formData.get("dueDate") as string;
+  const claimedAmountRaw = (formData.get("claimedAmount") as string)?.trim();
+  const gstAmountRaw =
+    (formData.get("gstAmount") as string)?.trim() || "0";
+
+  if (!invoiceId || !schemeId)
+    return { error: "Invoice and scheme are required." };
+  if (!contractorBusinessId)
+    return { error: "Contractor is required." };
+  if (!invoiceNumber) return { error: "Invoice number is required." };
+  if (!invoiceDate || !dueDate)
+    return { error: "Invoice date and due date are required." };
+  if (!claimedAmountRaw)
+    return { error: "Claimed amount is required." };
+
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, [
+      "ADVISER",
+    ]);
+
+    await db.orm.public.WorksInvoice
+      .where((i) => i.id.eq(invoiceId))
+      .update({
+        contractId,
+        contractorBusinessId,
+        invoiceNumber: toVarchar<50>(invoiceNumber),
+        invoiceDate: toTimestamp(invoiceDate),
+        dueDate: toTimestamp(dueDate),
+        claimedAmount: toNumeric(Number(claimedAmountRaw)),
+        gstAmount: toNumeric(Number(gstAmountRaw)),
+      });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "WORK_ORDER_STATUS_UPDATED",
+      entityType: "Invoice",
+      metadata: { invoiceId, invoiceNumber, module: "works_invoice" },
+    });
+
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return OK;
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to update invoice." };
+  }
+}
+
+/**
  * Assess an invoice (set the assessed amount).
  */
 export async function assessWorksInvoice(

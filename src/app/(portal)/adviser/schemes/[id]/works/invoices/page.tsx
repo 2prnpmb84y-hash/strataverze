@@ -71,6 +71,11 @@ export default async function InvoicesPage({
         description="Manage invoice assessment, approval, and payment"
         backHref={`/adviser/schemes/${id}/works`}
         backLabel="Works"
+        action={
+          <Button href={`/adviser/schemes/${id}/works/invoices/new`}>
+            Submit Invoice
+          </Button>
+        }
       />
 
       {/* Filter bar */}
