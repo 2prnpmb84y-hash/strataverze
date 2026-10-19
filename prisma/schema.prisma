@@ -2310,7 +2310,7 @@ model ContractorMembership {
   // Paid subscription
   paidActivationStatus    String             @default("NOT_ACTIVATED") @map("paid_activation_status") // NOT_ACTIVATED, PENDING, ACTIVATED, FAILED
   billingStart            DateTime?          @db.Timestamptz @map("billing_start")
-  subscriptionStatus      String             @default("PROMOTIONAL") // PROMOTIONAL, ACTIVATION_PENDING, PAID_ACTIVE, PAST_DUE, CANCELLED, EXPIRED
+  subscriptionStatus      String             @default("PROMOTIONAL") @map("subscription_status") // PROMOTIONAL, ACTIVATION_PENDING, PAID_ACTIVE, PAST_DUE, CANCELLED, EXPIRED
   // Payment provider references
   providerCustomerId      String?            @map("provider_customer_id") @db.VarChar(200)
   providerSubscriptionId  String?            @map("provider_subscription_id") @db.VarChar(200)

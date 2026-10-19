@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'6c9caf74ee58eb790305af12117a329da573d046ab9aaf38bfa47edd9793549f'>;
+  StorageHashBase<'ff893bf3b20a619c9476c24d9228c4820f8d2f3c396b0c53fdc4dc1eae33fa7f'>;
 export type ExecutionHash =
   ExecutionHashBase<'da7567e18d8c8827ca3d6ff13481a0ba4e5f4e35e8d65135397db1a6ddf33d85'>;
 export type ProfileHash =
@@ -3312,7 +3312,7 @@ export type StorageColumnTypes = {
       readonly provider_customer_id: Varchar<200> | null;
       readonly provider_price_id: Varchar<200> | null;
       readonly provider_subscription_id: Varchar<200> | null;
-      readonly subscriptionStatus: CodecTypes['pg/text@1']['output'];
+      readonly subscription_status: CodecTypes['pg/text@1']['output'];
       readonly terms_version: Varchar<50> | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -4736,7 +4736,7 @@ export type StorageColumnInputTypes = {
       readonly provider_customer_id: CodecTypes['sql/varchar@1']['input'] | null;
       readonly provider_price_id: CodecTypes['sql/varchar@1']['input'] | null;
       readonly provider_subscription_id: CodecTypes['sql/varchar@1']['input'] | null;
-      readonly subscriptionStatus: CodecTypes['pg/text@1']['input'];
+      readonly subscription_status: CodecTypes['pg/text@1']['input'];
       readonly terms_version: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -10099,7 +10099,7 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 200 };
                   readonly many: false;
                 };
-                readonly subscriptionStatus: {
+                readonly subscription_status: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
@@ -10132,8 +10132,8 @@ type ContractBase = Omit<
                   readonly unique: true;
                 },
                 {
-                  readonly name: 'contractor_memberships_subscriptionStatus_idx';
-                  readonly columns: readonly ['subscriptionStatus'];
+                  readonly name: 'contractor_memberships_subscription_status_idx';
+                  readonly columns: readonly ['subscription_status'];
                   readonly unique: false;
                 },
               ];
@@ -23136,7 +23136,7 @@ type ContractBase = Omit<
                 readonly providerCustomerId: { readonly column: 'provider_customer_id' };
                 readonly providerPriceId: { readonly column: 'provider_price_id' };
                 readonly providerSubscriptionId: { readonly column: 'provider_subscription_id' };
-                readonly subscriptionStatus: { readonly column: 'subscriptionStatus' };
+                readonly subscriptionStatus: { readonly column: 'subscription_status' };
                 readonly termsVersion: { readonly column: 'terms_version' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };

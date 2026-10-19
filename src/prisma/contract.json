@@ -3395,7 +3395,7 @@
                   "column": "provider_subscription_id"
                 },
                 "subscriptionStatus": {
-                  "column": "subscriptionStatus"
+                  "column": "subscription_status"
                 },
                 "termsVersion": {
                   "column": "terms_version"
@@ -22908,7 +22908,7 @@
                     "length": 200
                   }
                 },
-                "subscriptionStatus": {
+                "subscription_status": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "default": {
@@ -22982,9 +22982,9 @@
                 },
                 {
                   "columns": [
-                    "subscriptionStatus"
+                    "subscription_status"
                   ],
-                  "name": "contractor_memberships_subscriptionStatus_idx",
+                  "name": "contractor_memberships_subscription_status_idx",
                   "unique": false
                 }
               ],
@@ -35330,7 +35330,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "6c9caf74ee58eb790305af12117a329da573d046ab9aaf38bfa47edd9793549f"
+    "storageHash": "ff893bf3b20a619c9476c24d9228c4820f8d2f3c396b0c53fdc4dc1eae33fa7f"
   },
   "execution": {
     "executionHash": "da7567e18d8c8827ca3d6ff13481a0ba4e5f4e35e8d65135397db1a6ddf33d85",
