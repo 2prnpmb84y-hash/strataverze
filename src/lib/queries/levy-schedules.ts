@@ -130,6 +130,36 @@ export async function supersedeLevySchedule(scheduleId: string) {
   }
 }
 
+// ─── Levy Payment Calculation (exported for unit testing) ─────
+
+export interface LevyPaymentResult {
+  newPaid: number;
+  newBalance: number;
+  isPaidInFull: boolean;
+  status: "PAID" | "PARTIALLY_PAID";
+}
+
+/**
+ * Calculate the result of applying a payment to a levy notice.
+ * Pure function, no DB access.
+ */
+export function calculateLevyPayment(
+  currentPaid: number,
+  totalDue: number,
+  paymentAmount: number,
+): LevyPaymentResult {
+  const newPaid = currentPaid + paymentAmount;
+  const newBalance = totalDue - newPaid;
+  const isPaidInFull = newBalance <= 0;
+
+  return {
+    newPaid,
+    newBalance: Math.max(0, newBalance),
+    isPaidInFull,
+    status: isPaidInFull ? "PAID" : "PARTIALLY_PAID",
+  };
+}
+
 // ─── Levy Notice Queries ───────────────────────────────────────
 
 /**

@@ -6,20 +6,14 @@ import { SelectField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { importBankTransactionsAction } from "../actions";
+import { parseCSVLine, parseDate, parseOFX } from "@/lib/bank-import-parser";
+import type { ParsedTransaction } from "@/lib/bank-import-parser";
 
 interface BankAccount {
   id: string;
   accountName: string;
   bsb: string;
   accountNumber: string;
-}
-
-interface ParsedTransaction {
-  transactionDate: string;
-  amount: number;
-  description: string;
-  reference?: string;
-  balance?: number;
 }
 
 type ImportStep = "select" | "upload" | "mapping" | "preview" | "result";
@@ -39,99 +33,6 @@ function formatCurrency(value: number): string {
     style: "currency",
     currency: "AUD",
   }).format(value);
-}
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  result.push(current.trim());
-  return result;
-}
-
-function parseDate(value: string): string | null {
-  // Try DD/MM/YYYY (Australian format)
-  const auMatch = value.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
-  if (auMatch) {
-    const [, day, month, year] = auMatch;
-    const d = new Date(Number(year), Number(month) - 1, Number(day));
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-
-  // Try YYYY-MM-DD (ISO format)
-  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-
-  // Try YYYYMMDD (OFX date format)
-  const ofxMatch = value.match(/^(\d{4})(\d{2})(\d{2})/);
-  if (ofxMatch) {
-    const [, year, month, day] = ofxMatch;
-    const d = new Date(Number(year), Number(month) - 1, Number(day));
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-
-  return null;
-}
-
-function parseOFX(content: string): ParsedTransaction[] {
-  const transactions: ParsedTransaction[] = [];
-
-  // Extract STMTTRN blocks
-  const trnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
-  let match;
-
-  while ((match = trnRegex.exec(content)) !== null) {
-    const block = match[1];
-
-    const getTag = (tag: string): string | null => {
-      const tagRegex = new RegExp(`<${tag}>([^<\\n]+)`, "i");
-      const m = block.match(tagRegex);
-      return m ? m[1].trim() : null;
-    };
-
-    const dtPosted = getTag("DTPOSTED");
-    const trnAmt = getTag("TRNAMT");
-    const name = getTag("NAME") ?? getTag("MEMO") ?? "";
-    const memo = getTag("MEMO");
-    const fitId = getTag("FITID");
-
-    if (!dtPosted || !trnAmt) continue;
-
-    const date = parseDate(dtPosted);
-    if (!date) continue;
-
-    const amount = parseFloat(trnAmt);
-    if (isNaN(amount)) continue;
-
-    transactions.push({
-      transactionDate: date,
-      amount,
-      description: String(name),
-      reference: fitId ?? memo ?? undefined,
-    });
-  }
-
-  return transactions;
 }
 
 export function BankImportForm({

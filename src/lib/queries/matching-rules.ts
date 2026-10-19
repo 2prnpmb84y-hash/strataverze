@@ -173,8 +173,9 @@ export async function deleteMatchingRule(ruleId: string) {
 
 /**
  * Check if a bank transaction matches a rule's criteria.
+ * Exported for unit testing.
  */
-function transactionMatchesRule(
+export function transactionMatchesRule(
   transaction: {
     description: string;
     reference: string | null;

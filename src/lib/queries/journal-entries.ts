@@ -113,6 +113,58 @@ export async function validatePeriodForPosting(
   // OPEN period or CLOSED + ADJUSTMENT — allowed
 }
 
+// ─── Validation Helpers (exported for unit testing) ──────────
+
+export interface JournalBalanceResult {
+  isBalanced: boolean;
+  totalDebits: number;
+  totalCredits: number;
+}
+
+/**
+ * Validate that journal lines are balanced (total debits === total credits)
+ * and that there is at least one line. Pure function, no DB access.
+ */
+export function validateJournalBalance(
+  lines: Array<{ debit?: number; credit?: number }>,
+): JournalBalanceResult {
+  const totalDebits = lines.reduce(
+    (sum, line) => sum + (line.debit ?? 0),
+    0,
+  );
+  const totalCredits = lines.reduce(
+    (sum, line) => sum + (line.credit ?? 0),
+    0,
+  );
+  const roundedDebits = Math.round(totalDebits * 100) / 100;
+  const roundedCredits = Math.round(totalCredits * 100) / 100;
+
+  return {
+    isBalanced: roundedDebits === roundedCredits,
+    totalDebits: roundedDebits,
+    totalCredits: roundedCredits,
+  };
+}
+
+/**
+ * Determine whether a posting is allowed for a given period status and entry type.
+ * Returns null if allowed, or an error message string if blocked.
+ * Pure function, no DB access.
+ */
+export function checkPeriodPostingRule(
+  periodStatus: string,
+  periodName: string,
+  entryType: string,
+): string | null {
+  if (periodStatus === "LOCKED") {
+    return `Cannot post to a locked period (${periodName}). The period must be reopened before any entries can be posted.`;
+  }
+  if (periodStatus === "CLOSED" && entryType !== "ADJUSTMENT") {
+    return `Cannot post to a closed period (${periodName}). Use an adjustment entry or reopen the period first.`;
+  }
+  return null;
+}
+
 // ─── Queries ───────────────────────────────────────────────────
 
 /**

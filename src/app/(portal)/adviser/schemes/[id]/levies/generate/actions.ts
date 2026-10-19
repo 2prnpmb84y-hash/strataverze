@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { createLeviesBatch } from "@/lib/queries/levies";
 import { logActivity } from "@/lib/queries/activity-log";
+import { buildPeriods } from "@/lib/levy-periods";
 
 export type GenerateFormState = {
   error?: string;
@@ -92,73 +93,3 @@ export async function generateLeviesAction(
   }
 }
 
-function buildPeriods(
-  frequency: string,
-  startDate: Date,
-  annualBudget: number,
-  prefix: string,
-) {
-  const year = startDate.getFullYear();
-  const endYear = year + 1;
-  const fyLabel = `FY${String(endYear).slice(2)}`;
-
-  switch (frequency) {
-    case "QUARTERLY": {
-      const quarterAmount = Math.round((annualBudget / 4) * 100) / 100;
-      // Adjust last quarter for rounding
-      const lastQuarterAmount =
-        Math.round((annualBudget - quarterAmount * 3) * 100) / 100;
-
-      const quarters = [
-        { label: "Q1", monthsOffset: 0 },
-        { label: "Q2", monthsOffset: 3 },
-        { label: "Q3", monthsOffset: 6 },
-        { label: "Q4", monthsOffset: 9 },
-      ];
-
-      return quarters.map((q, i) => {
-        const dueDate = new Date(startDate);
-        dueDate.setMonth(dueDate.getMonth() + q.monthsOffset);
-
-        const titleParts = [prefix, q.label, fyLabel].filter(Boolean);
-        return {
-          title: titleParts.join(" "),
-          amount: i === 3 ? lastQuarterAmount : quarterAmount,
-          dueDate: dueDate.toISOString(),
-        };
-      });
-    }
-    case "HALF_YEARLY": {
-      const halfAmount = Math.round((annualBudget / 2) * 100) / 100;
-      const lastHalfAmount =
-        Math.round((annualBudget - halfAmount) * 100) / 100;
-
-      return [
-        {
-          title: [prefix, "H1", fyLabel].filter(Boolean).join(" "),
-          amount: halfAmount,
-          dueDate: startDate.toISOString(),
-        },
-        {
-          title: [prefix, "H2", fyLabel].filter(Boolean).join(" "),
-          amount: lastHalfAmount,
-          dueDate: new Date(
-            startDate.getFullYear(),
-            startDate.getMonth() + 6,
-            startDate.getDate(),
-          ).toISOString(),
-        },
-      ];
-    }
-    case "ANNUALLY":
-    default: {
-      return [
-        {
-          title: [prefix, "Annual Levy", fyLabel].filter(Boolean).join(" "),
-          amount: annualBudget,
-          dueDate: startDate.toISOString(),
-        },
-      ];
-    }
-  }
-}
