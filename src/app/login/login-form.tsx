@@ -7,20 +7,45 @@ import {
   validatePasswordStrength,
 } from "@/components/ui/password-strength";
 
-type Tab = "owner" | "adviser";
+type Portal = "owner" | "supplier" | "adviser";
 
-const tabConfig = {
+const portalConfig = {
   owner: {
-    label: "Owner / Supplier",
+    label: "Owner",
     description: "Sign in to manage your strata property",
     accent: "var(--color-turquoise)",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M11 2L2 8v12h7v-5h4v5h7V8L11 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    ),
     buttonClass:
       "border-[1.5px] border-turquoise text-turquoise bg-white hover:bg-turquoise hover:text-white focus:ring-turquoise",
+  },
+  supplier: {
+    label: "Supplier",
+    description: "Sign in to manage jobs and service requests",
+    accent: "var(--color-supplier)",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M14.5 2.5L7 5v6c0 4.5 3 7.5 5.5 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9 7l3-1.5M9 10l3-1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+        <path d="M14.5 2.5L20 5v6c0 4.5-2.5 7-5.5 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+      </svg>
+    ),
+    buttonClass:
+      "border-[1.5px] border-supplier text-supplier bg-white hover:bg-supplier hover:text-white focus:ring-supplier",
   },
   adviser: {
     label: "Adviser",
     description: "Sign in to manage schemes as a strata professional",
     accent: "var(--color-gold-line)",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="11" cy="7" r="4" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M4 19c0-3.87 3.13-7 7-7s7 3.13 7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
     buttonClass:
       "border-[1.5px] border-gold-line text-gold-line bg-white hover:bg-gold-line hover:text-white focus:ring-gold-line",
   },
@@ -33,35 +58,45 @@ export function LoginForm({
   error?: string;
   message?: string;
 }) {
-  const [activeTab, setActiveTab] = useState<Tab>("owner");
+  const [activePortal, setActivePortal] = useState<Portal>("owner");
   const [isSignUp, setIsSignUp] = useState(false);
   const [password, setPassword] = useState("");
-  const config = tabConfig[activeTab];
+  const config = portalConfig[activePortal];
 
   return (
     <>
-      {/* Tab toggle */}
-      <div className="flex rounded-full bg-muted p-1 mb-6">
-        {(["owner", "adviser"] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-all ${
-              activeTab === tab
-                ? "bg-white text-ink shadow-sm"
-                : "text-ink-muted hover:text-ink"
-            }`}
-            style={
-              activeTab === tab
-                ? { borderBottom: `2px solid ${tabConfig[tab].accent}` }
-                : undefined
-            }
-          >
-            {tabConfig[tab].label}
-          </button>
-        ))}
-      </div>
+      {/* Portal selector */}
+      <fieldset className="mb-6">
+        <legend className="text-xs font-medium text-ink-muted uppercase tracking-wider mb-3">
+          I am signing in as
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
+          {(["owner", "supplier", "adviser"] as const).map((portal) => {
+            const selected = activePortal === portal;
+            const cfg = portalConfig[portal];
+            return (
+              <button
+                key={portal}
+                type="button"
+                onClick={() => setActivePortal(portal)}
+                className={`flex flex-col items-center gap-1.5 rounded-[var(--radius-card)] px-2 py-3 text-xs font-medium transition-all border-[1.5px] ${
+                  selected
+                    ? "bg-white shadow-sm"
+                    : "bg-muted/50 border-transparent text-ink-muted hover:text-ink hover:bg-muted"
+                }`}
+                style={
+                  selected
+                    ? { borderColor: cfg.accent, color: cfg.accent }
+                    : undefined
+                }
+              >
+                <span className={selected ? "" : "text-ink-muted"}>{cfg.icon}</span>
+                {cfg.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <h1 className="text-xl font-bold font-heading text-ink mb-1">
         {isSignUp ? "Create account" : "Sign in"}
@@ -82,7 +117,7 @@ export function LoginForm({
 
       <form className="flex flex-col gap-4">
         {/* Hidden field to pass the selected portal mode to the server action */}
-        <input type="hidden" name="portal" value={activeTab} />
+        <input type="hidden" name="portal" value={activePortal} />
 
         <div>
           <label
