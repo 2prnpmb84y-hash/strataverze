@@ -18,6 +18,14 @@ enum PortalRole {
   ADVISER
   SUPPLIER
   ACCOUNTANT
+  ORG_ADMIN
+  STRATA_MANAGER
+  BUILDING_MANAGER
+  COMPLIANCE_REVIEWER
+  CONTRACTOR_ADMIN
+  ACCOUNTS_OFFICER
+  PAYMENT_AUTHORISER
+  AUDITOR
 }
 
 model Profile {
@@ -42,6 +50,61 @@ model Profile {
   announcements Announcement[]
   quotes        Quote[]
   invoices      Invoice[]
+  // Organisation relations
+  organisationMemberships       OrganisationMembership[]
+  // Works Module: Delegations
+  delegationsGiven              WorksDelegation[]          @relation("DelegatedBy")
+  delegationsReceived           WorksDelegation[]          @relation("DelegatedTo")
+  // Works Module: Requests
+  worksRequestsRaised           WorksRequest[]             @relation("WorksRequestRaisedBy")
+  worksRequestsAssigned         WorksRequest[]             @relation("WorksRequestAssignedTo")
+  worksRequestVersions          WorksRequestVersion[]      @relation("WorksRequestVersionCreatedBy")
+  worksRequestReviews           WorksRequestReview[]       @relation("WorksRequestReviewer")
+  // Works Module: Scope & RFQ
+  worksScopesApproved           WorksScope[]               @relation("WorksScopeApprovedBy")
+  worksScopeVersions            WorksScopeVersion[]        @relation("WorksScopeVersionCreatedBy")
+  worksRfqsIssued               WorksRfq[]                 @relation("WorksRfqIssuedBy")
+  worksRfqInvitations           WorksRfqInvitation[]       @relation("WorksRfqInvitedBy")
+  worksClarificationsAsked      WorksRfqClarification[]    @relation("WorksClarificationAskedBy")
+  worksClarificationsAnswered   WorksRfqClarification[]    @relation("WorksClarificationAnsweredBy")
+  worksAddenda                  WorksRfqAddendum[]         @relation("WorksAddendumIssuedBy")
+  // Works Module: Contractors
+  contractorContacts            ContractorContact[]
+  // Works Module: Compliance
+  worksComplianceVerifications  WorksComplianceCheck[]     @relation("WorksComplianceVerifiedBy")
+  worksLicenceVerifications     WorksLicence[]             @relation("WorksLicenceVerifiedBy")
+  worksInsuranceVerifications   WorksInsurance[]           @relation("WorksInsuranceVerifiedBy")
+  worksVerificationEvents       WorksVerificationEvent[]   @relation("WorksVerificationEventBy")
+  // Works Module: Quotations & Evaluation
+  worksEvaluations              WorksEvaluation[]          @relation("WorksEvaluator")
+  worksRecommendations          WorksRecommendation[]      @relation("WorksRecommendedBy")
+  // Works Module: Approvals
+  worksApprovalRecords          WorksApprovalRecord[]      @relation("WorksApprover")
+  // Works Module: Contracts & Delivery
+  worksContractsSigned          WorksContract[]            @relation("WorksContractSignedBy")
+  worksWorkOrdersAuthorised     WorksWorkOrder[]           @relation("WorksWorkOrderAuthorisedBy")
+  worksMilestonesCertified      WorksMilestone[]           @relation("WorksMilestoneCertifiedBy")
+  worksSiteVisits               WorksSiteVisit[]           @relation("WorksSiteVisitConductedBy")
+  worksProgressReports          WorksProgressReport[]      @relation("WorksProgressReportBy")
+  worksVariationsRequested      WorksVariation[]           @relation("WorksVariationRequestedBy")
+  worksVariationsApproved       WorksVariation[]           @relation("WorksVariationApprovedBy")
+  worksInspections              WorksInspection[]          @relation("WorksInspector")
+  worksDefectsVerified          WorksDefect[]              @relation("WorksDefectVerifiedBy")
+  worksCompletionSubmissions    WorksCompletionSubmission[] @relation("WorksCompletionSubmittedBy")
+  worksCompletionReviews        WorksCompletionSubmission[] @relation("WorksCompletionReviewedBy")
+  // Works Module: Invoices & Payments
+  worksInvoicesSubmitted        WorksInvoice[]             @relation("WorksInvoiceSubmittedBy")
+  worksInvoicesAssessed         WorksInvoice[]             @relation("WorksInvoiceAssessedBy")
+  worksPaymentAssessments       WorksPaymentAssessment[]   @relation("WorksPaymentAssessor")
+  worksPaymentInstructions      WorksPaymentInstruction[]  @relation("WorksPaymentAuthorisedBy")
+  worksPaymentRecords           WorksPaymentRecord[]       @relation("WorksPaymentRecordedBy")
+  worksPaymentReconciliations   WorksPaymentRecord[]       @relation("WorksPaymentReconciledBy")
+  worksBankDetailsUpdated       WorksBankDetailVersion[]   @relation("WorksBankDetailUpdatedBy")
+  worksBankDetailsVerified      WorksBankDetailVersion[]   @relation("WorksBankDetailVerifiedBy")
+  // Works Module: Documents, Notifications & Audit
+  worksDocuments                WorksDocument[]            @relation("WorksDocumentUploadedBy")
+  worksNotifications            WorksNotification[]        @relation("WorksNotificationRecipient")
+  worksAuditEvents              WorksAuditEvent[]          @relation("WorksAuditActor")
 
   @@map("profiles")
 }
@@ -71,9 +134,11 @@ model Scheme {
   gstRegistered       Boolean             @default(false) @map("gst_registered")
   interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // % p.a. for overdue levies
   defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
+  organisationId      String?             @map("organisation_id") @db.Uuid
   createdAt           DateTime            @default(now()) @db.Timestamptz @map("created_at")
   updatedAt           DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 
+  organisation        Organisation?       @relation(fields: [organisationId], references: [id])
   lots                Lot[]
   memberships         SchemeMembership[]
   images              SchemeImage[]
@@ -104,6 +169,21 @@ model Scheme {
   suppliers           Supplier[]
   supplierInvoices    SupplierInvoice[]
   matchingRules       MatchingRule[]
+  // Works Module relations
+  worksCategories             WorksCategory[]
+  worksApprovalRoutes         WorksApprovalRoute[]
+  worksDelegations            WorksDelegation[]
+  worksRequests               WorksRequest[]
+  worksScopes                 WorksScope[]
+  worksRfqs                   WorksRfq[]
+  worksWorkOrders             WorksWorkOrder[]
+  worksApprovalWorkflows      WorksApprovalWorkflow[]
+  worksContracts              WorksContract[]
+  worksInvoices               WorksInvoice[]
+  worksDocuments              WorksDocument[]
+  worksNotifications          WorksNotification[]
+  worksAuditEvents            WorksAuditEvent[]
+  worksComplianceRequirements WorksComplianceRequirement[]
 
   @@map("schemes")
 }
@@ -951,4 +1031,1159 @@ model BudgetLine {
 
   @@unique([fundId, accountCodeId, financialYear])
   @@map("budget_lines")
+}
+
+// ─── Organisation Layer ─────────────────────────────────────────
+
+model Organisation {
+  id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String                   @db.VarChar(300)
+  tradingName   String?                  @map("trading_name") @db.VarChar(300)
+  abn           String?                  @db.VarChar(11)
+  acn           String?                  @db.VarChar(9)
+  phone         String?                  @db.VarChar(20)
+  email         String?                  @db.VarChar(320)
+  address       String?
+  suburb        String?
+  state         String?                  @default("VIC")
+  postcode      String?                  @db.VarChar(10)
+  logoUrl       String?                  @map("logo_url")
+  isActive      Boolean                  @default(true) @map("is_active")
+  createdAt     DateTime                 @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime                 @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt     DateTime?                @db.Timestamptz @map("deleted_at")
+
+  schemes       Scheme[]
+  memberships                  OrganisationMembership[]
+  worksCategories              WorksCategory[]
+  worksApprovalRoutes          WorksApprovalRoute[]
+  worksComplianceRequirements  WorksComplianceRequirement[]
+
+  @@map("organisations")
+}
+
+model OrganisationMembership {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organisationId   String       @map("organisation_id") @db.Uuid
+  profileId        String       @map("profile_id") @db.Uuid
+  role             PortalRole
+  isActive         Boolean      @default(true) @map("is_active")
+  startDate        DateTime     @default(now()) @db.Timestamptz @map("start_date")
+  endDate          DateTime?    @db.Timestamptz @map("end_date")
+  createdAt        DateTime     @default(now()) @db.Timestamptz @map("created_at")
+
+  organisation     Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  profile          Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, profileId, role])
+  @@map("organisation_memberships")
+}
+
+// ─── Works Module: Configuration ────────────────────────────────
+
+model WorksCategory {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId      String?         @map("scheme_id") @db.Uuid
+  orgId         String?         @map("org_id") @db.Uuid
+  name          String          @db.VarChar(200)
+  code          String?         @db.VarChar(20)
+  description   String?
+  parentId      String?         @map("parent_id") @db.Uuid
+  isActive      Boolean         @default(true) @map("is_active")
+  createdAt     DateTime        @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime        @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme        Scheme?         @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  organisation  Organisation?   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  parent        WorksCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children      WorksCategory[] @relation("CategoryHierarchy")
+  requests      WorksRequest[]
+  scopes        WorksScope[]
+
+  @@index([schemeId])
+  @@index([orgId])
+  @@map("works_categories")
+}
+
+model WorksApprovalRoute {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String?   @map("scheme_id") @db.Uuid
+  orgId            String?   @map("org_id") @db.Uuid
+  name             String    @db.VarChar(200)
+  description      String?
+  minAmount        Decimal?  @db.Decimal(12, 2) @map("min_amount")
+  maxAmount        Decimal?  @db.Decimal(12, 2) @map("max_amount")
+  requiredApprovers Int      @default(1) @map("required_approvers")
+  approverRoles    String[]  @map("approver_roles") // array of PortalRole values
+  isActive         Boolean   @default(true) @map("is_active")
+  sortOrder        Int       @default(0) @map("sort_order")
+  createdAt        DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme           Scheme?   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  organisation     Organisation? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  workflows        WorksApprovalWorkflow[]
+
+  @@index([schemeId])
+  @@index([orgId])
+  @@map("works_approval_routes")
+}
+
+model WorksDelegation {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId        String    @map("scheme_id") @db.Uuid
+  delegatedById   String    @map("delegated_by_id") @db.Uuid
+  delegatedToId   String    @map("delegated_to_id") @db.Uuid
+  authorityType   String    @map("authority_type") // REQUEST, INVITE_QUOTATIONS, RECOMMEND, APPROVE_EXPENDITURE, SIGN_CONTRACT, CERTIFY_MILESTONE, APPROVE_PAYMENT, RELEASE_PAYMENT
+  maxAmount       Decimal?  @db.Decimal(12, 2) @map("max_amount")
+  startDate       DateTime  @db.Timestamptz @map("start_date")
+  endDate         DateTime? @db.Timestamptz @map("end_date")
+  conditions      String?
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme          Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  delegatedBy     Profile   @relation("DelegatedBy", fields: [delegatedById], references: [id])
+  delegatedTo     Profile   @relation("DelegatedTo", fields: [delegatedToId], references: [id])
+
+  @@index([schemeId, delegatedToId])
+  @@map("works_delegations")
+}
+
+// ─── Works Module: Requests ─────────────────────────────────────
+
+model WorksRequest {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId        String                @map("scheme_id") @db.Uuid
+  requestNumber   String                @map("request_number") @db.VarChar(30)
+  raisedById      String                @map("raised_by_id") @db.Uuid
+  assignedToId    String?               @map("assigned_to_id") @db.Uuid
+  categoryId      String?               @map("category_id") @db.Uuid
+  title           String                @db.VarChar(300)
+  description     String
+  location        String?               @db.VarChar(500)
+  priority        String                @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  isEmergency     Boolean               @default(false) @map("is_emergency")
+  estimatedCost   Decimal?              @db.Decimal(12, 2) @map("estimated_cost")
+  status          String                @default("DRAFT") // DRAFT, SUBMITTED, UNDER_REVIEW, SCOPE_PREPARATION, PROCUREMENT, APPROVAL, DELIVERY, CLOSE_OUT, CLOSED
+  isUrgent        Boolean               @default(false) @map("is_urgent")
+  isOverdue       Boolean               @default(false) @map("is_overdue")
+  hasDispute      Boolean               @default(false) @map("has_dispute")
+  hasComplianceIssue Boolean            @default(false) @map("has_compliance_issue")
+  currentVersion  Int                   @default(1) @map("current_version")
+  submittedAt     DateTime?             @db.Timestamptz @map("submitted_at")
+  closedAt        DateTime?             @db.Timestamptz @map("closed_at")
+  createdAt       DateTime              @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime              @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt       DateTime?             @db.Timestamptz @map("deleted_at")
+
+  scheme          Scheme                @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  raisedBy        Profile               @relation("WorksRequestRaisedBy", fields: [raisedById], references: [id])
+  assignedTo      Profile?              @relation("WorksRequestAssignedTo", fields: [assignedToId], references: [id])
+  category        WorksCategory?        @relation(fields: [categoryId], references: [id])
+  versions        WorksRequestVersion[]
+  reviews         WorksRequestReview[]
+  scopes          WorksScope[]
+  contracts       WorksContract[]
+  invoices        WorksInvoice[]
+  documents       WorksDocument[]
+  notifications   WorksNotification[]
+  auditEvents     WorksAuditEvent[]
+
+  @@unique([schemeId, requestNumber])
+  @@index([schemeId, status])
+  @@index([raisedById])
+  @@index([assignedToId])
+  @@map("works_requests")
+}
+
+model WorksRequestVersion {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId     String       @map("request_id") @db.Uuid
+  versionNumber Int          @map("version_number")
+  title         String       @db.VarChar(300)
+  description   String
+  location      String?      @db.VarChar(500)
+  priority      String
+  estimatedCost Decimal?     @db.Decimal(12, 2) @map("estimated_cost")
+  changeReason  String?      @map("change_reason")
+  createdById   String       @map("created_by_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @db.Timestamptz @map("created_at")
+
+  request       WorksRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  createdBy     Profile      @relation("WorksRequestVersionCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([requestId, versionNumber])
+  @@map("works_request_versions")
+}
+
+model WorksRequestReview {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId      String       @map("request_id") @db.Uuid
+  reviewerId     String       @map("reviewer_id") @db.Uuid
+  outcome        String       // APPROVED, RETURNED, REJECTED, EMERGENCY_APPROVED
+  procurementRoute String?    @map("procurement_route") // DIRECT_AWARD, SELECTIVE_TENDER, OPEN_TENDER, EMERGENCY
+  comments       String?
+  returnReason   String?      @map("return_reason")
+  reviewedAt     DateTime     @default(now()) @db.Timestamptz @map("reviewed_at")
+  createdAt      DateTime     @default(now()) @db.Timestamptz @map("created_at")
+
+  request        WorksRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reviewer       Profile      @relation("WorksRequestReviewer", fields: [reviewerId], references: [id])
+
+  @@index([requestId])
+  @@map("works_request_reviews")
+}
+
+// ─── Works Module: Scope & RFQ ──────────────────────────────────
+
+model WorksScope {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId       String              @map("request_id") @db.Uuid
+  schemeId        String              @map("scheme_id") @db.Uuid
+  categoryId      String?             @map("category_id") @db.Uuid
+  title           String              @db.VarChar(300)
+  description     String
+  specifications  String?
+  siteRequirements String?            @map("site_requirements")
+  ohsRequirements String?             @map("ohs_requirements")
+  insuranceMinimums Json?             @map("insurance_minimums") // { publicLiability: 20000000, workersComp: true, professionalIndemnity: null }
+  licenceRequirements String?         @map("licence_requirements")
+  currentVersion  Int                 @default(1) @map("current_version")
+  status          String              @default("DRAFT") // DRAFT, UNDER_REVIEW, APPROVED, SUPERSEDED
+  approvedById    String?             @map("approved_by_id") @db.Uuid
+  approvedAt      DateTime?           @db.Timestamptz @map("approved_at")
+  createdAt       DateTime            @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime            @updatedAt @db.Timestamptz @map("updated_at")
+
+  request         WorksRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  scheme          Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  category        WorksCategory?      @relation(fields: [categoryId], references: [id])
+  approvedBy      Profile?            @relation("WorksScopeApprovedBy", fields: [approvedById], references: [id])
+  versions        WorksScopeVersion[]
+  rfqs            WorksRfq[]
+
+  @@index([requestId])
+  @@index([schemeId])
+  @@map("works_scopes")
+}
+
+model WorksScopeVersion {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scopeId         String     @map("scope_id") @db.Uuid
+  versionNumber   Int        @map("version_number")
+  title           String     @db.VarChar(300)
+  description     String
+  specifications  String?
+  changeReason    String?    @map("change_reason")
+  createdById     String     @map("created_by_id") @db.Uuid
+  createdAt       DateTime   @default(now()) @db.Timestamptz @map("created_at")
+
+  scope           WorksScope @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  createdBy       Profile    @relation("WorksScopeVersionCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([scopeId, versionNumber])
+  @@map("works_scope_versions")
+}
+
+model WorksRfq {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scopeId          String              @map("scope_id") @db.Uuid
+  schemeId         String              @map("scheme_id") @db.Uuid
+  rfqNumber        String              @map("rfq_number") @db.VarChar(30)
+  title            String              @db.VarChar(300)
+  description      String?
+  closingDate      DateTime            @db.Timestamptz @map("closing_date")
+  scopeVersionUsed Int                 @map("scope_version_used")
+  status           String              @default("DRAFT") // DRAFT, ISSUED, CLARIFICATIONS, CLOSED, EVALUATED, AWARDED, CANCELLED
+  issuedAt         DateTime?           @db.Timestamptz @map("issued_at")
+  issuedById       String?             @map("issued_by_id") @db.Uuid
+  closedAt         DateTime?           @db.Timestamptz @map("closed_at")
+  cancelledReason  String?             @map("cancelled_reason")
+  createdAt        DateTime            @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime            @updatedAt @db.Timestamptz @map("updated_at")
+
+  scope            WorksScope          @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  scheme           Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  issuedBy         Profile?            @relation("WorksRfqIssuedBy", fields: [issuedById], references: [id])
+  invitations      WorksRfqInvitation[]
+  clarifications   WorksRfqClarification[]
+  addenda          WorksRfqAddendum[]
+  quotations       WorksQuotation[]
+  evaluations      WorksEvaluation[]
+
+  @@unique([schemeId, rfqNumber])
+  @@index([schemeId, status])
+  @@map("works_rfqs")
+}
+
+model WorksRfqInvitation {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId               String             @map("rfq_id") @db.Uuid
+  contractorBusinessId String            @map("contractor_business_id") @db.Uuid
+  invitedById         String             @map("invited_by_id") @db.Uuid
+  status              String             @default("PENDING") // PENDING, ACCEPTED, DECLINED, WITHDRAWN
+  invitedAt           DateTime           @default(now()) @db.Timestamptz @map("invited_at")
+  respondedAt         DateTime?          @db.Timestamptz @map("responded_at")
+  declineReason       String?            @map("decline_reason")
+
+  rfq                 WorksRfq           @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  contractorBusiness  ContractorBusiness @relation(fields: [contractorBusinessId], references: [id])
+  invitedBy           Profile            @relation("WorksRfqInvitedBy", fields: [invitedById], references: [id])
+
+  @@unique([rfqId, contractorBusinessId])
+  @@map("works_rfq_invitations")
+}
+
+model WorksRfqClarification {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId         String   @map("rfq_id") @db.Uuid
+  askedById     String   @map("asked_by_id") @db.Uuid
+  question      String
+  answer        String?
+  answeredById  String?  @map("answered_by_id") @db.Uuid
+  isPublic      Boolean  @default(true) @map("is_public")
+  askedAt       DateTime @default(now()) @db.Timestamptz @map("asked_at")
+  answeredAt    DateTime? @db.Timestamptz @map("answered_at")
+
+  rfq           WorksRfq @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  askedBy       Profile  @relation("WorksClarificationAskedBy", fields: [askedById], references: [id])
+  answeredBy    Profile? @relation("WorksClarificationAnsweredBy", fields: [answeredById], references: [id])
+
+  @@index([rfqId])
+  @@map("works_rfq_clarifications")
+}
+
+model WorksRfqAddendum {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId         String   @map("rfq_id") @db.Uuid
+  addendumNumber Int     @map("addendum_number")
+  title         String   @db.VarChar(300)
+  description   String
+  issuedById    String   @map("issued_by_id") @db.Uuid
+  issuedAt      DateTime @default(now()) @db.Timestamptz @map("issued_at")
+
+  rfq           WorksRfq @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  issuedBy      Profile  @relation("WorksAddendumIssuedBy", fields: [issuedById], references: [id])
+
+  @@unique([rfqId, addendumNumber])
+  @@map("works_rfq_addenda")
+}
+
+// ─── Works Module: Contractors ──────────────────────────────────
+
+model ContractorBusiness {
+  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyName           String                    @map("company_name") @db.VarChar(300)
+  tradingName           String?                   @map("trading_name") @db.VarChar(300)
+  abn                   String?                   @db.VarChar(11)
+  acn                   String?                   @db.VarChar(9)
+  registeredAddress     String?                   @map("registered_address")
+  phone                 String?                   @db.VarChar(20)
+  email                 String?                   @db.VarChar(320)
+  website               String?                   @db.VarChar(500)
+  tradeCategories       String[]                  @map("trade_categories")
+  status                String                    @default("PENDING") // PENDING, APPROVED, SUSPENDED, DEACTIVATED
+  gstRegistered         Boolean                   @default(false) @map("gst_registered")
+  notes                 String?
+  createdAt             DateTime                  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime                  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt             DateTime?                 @db.Timestamptz @map("deleted_at")
+
+  contacts              ContractorContact[]
+  licences              WorksLicence[]
+  insurances            WorksInsurance[]
+  rfqInvitations        WorksRfqInvitation[]
+  quotations            WorksQuotation[]
+  contracts             WorksContract[]
+  workOrders            WorksWorkOrder[]
+  invoices              WorksInvoice[]
+  complianceChecks      WorksComplianceCheck[]
+  bankDetailVersions    WorksBankDetailVersion[]
+
+  @@index([status])
+  @@map("contractor_businesses")
+}
+
+model ContractorContact {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId  String             @map("contractor_business_id") @db.Uuid
+  profileId             String?            @map("profile_id") @db.Uuid
+  firstName             String             @map("first_name") @db.VarChar(200)
+  lastName              String             @map("last_name") @db.VarChar(200)
+  email                 String             @db.VarChar(320)
+  phone                 String?            @db.VarChar(20)
+  position              String?            @db.VarChar(200)
+  isPrimary             Boolean            @default(false) @map("is_primary")
+  status                String             @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  contractorBusiness    ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  profile               Profile?           @relation(fields: [profileId], references: [id])
+
+  @@index([contractorBusinessId])
+  @@map("contractor_contacts")
+}
+
+// ─── Works Module: Compliance (3-layer) ─────────────────────────
+
+model WorksComplianceRequirement {
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String?                @map("scheme_id") @db.Uuid
+  orgId            String?                @map("org_id") @db.Uuid
+  name             String                 @db.VarChar(300)
+  description      String?
+  layer            String                 // SUPPLIER, JOB, SITE
+  documentType     String                 @map("document_type") // LICENCE, INSURANCE, CERTIFICATE, INDUCTION, SAFE_WORK_METHOD, OTHER
+  isMandatory      Boolean                @default(true) @map("is_mandatory")
+  validityPeriod   Int?                   @map("validity_period") // days until expiry
+  tradeCategories  String[]               @map("trade_categories") // applicable trade categories
+  isActive         Boolean                @default(true) @map("is_active")
+  createdAt        DateTime               @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime               @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme           Scheme?                @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  organisation     Organisation?          @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  checks           WorksComplianceCheck[]
+
+  @@index([schemeId])
+  @@index([orgId])
+  @@index([layer])
+  @@map("works_compliance_requirements")
+}
+
+model WorksComplianceCheck {
+  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requirementId       String                     @map("requirement_id") @db.Uuid
+  contractorBusinessId String?                   @map("contractor_business_id") @db.Uuid
+  worksWorkOrderId    String?                    @map("works_work_order_id") @db.Uuid
+  status              String                     @default("PENDING") // PENDING, SUBMITTED, UNDER_REVIEW, VERIFIED, REJECTED, EXPIRED, WAIVED
+  documentUrl         String?                    @map("document_url")
+  documentName        String?                    @map("document_name") @db.VarChar(500)
+  expiryDate          DateTime?                  @db.Timestamptz @map("expiry_date")
+  verifiedById        String?                    @map("verified_by_id") @db.Uuid
+  verifiedAt          DateTime?                  @db.Timestamptz @map("verified_at")
+  rejectionReason     String?                    @map("rejection_reason")
+  notes               String?
+  createdAt           DateTime                   @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt           DateTime                   @updatedAt @db.Timestamptz @map("updated_at")
+
+  requirement         WorksComplianceRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  contractorBusiness  ContractorBusiness?        @relation(fields: [contractorBusinessId], references: [id])
+  worksWorkOrder      WorksWorkOrder?            @relation(fields: [worksWorkOrderId], references: [id])
+  verifiedBy          Profile?                   @relation("WorksComplianceVerifiedBy", fields: [verifiedById], references: [id])
+  verificationEvents  WorksVerificationEvent[]
+
+  @@index([requirementId])
+  @@index([contractorBusinessId])
+  @@index([worksWorkOrderId])
+  @@index([status])
+  @@map("works_compliance_checks")
+}
+
+model WorksLicence {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId  String             @map("contractor_business_id") @db.Uuid
+  licenceType           String             @map("licence_type") @db.VarChar(200)
+  licenceNumber         String             @map("licence_number") @db.VarChar(100)
+  issuingAuthority      String             @map("issuing_authority") @db.VarChar(300)
+  holderName            String             @map("holder_name") @db.VarChar(300)
+  holderEntityName      String?            @map("holder_entity_name") @db.VarChar(300)
+  issueDate             DateTime?          @db.Date @map("issue_date")
+  expiryDate            DateTime?          @db.Date @map("expiry_date")
+  conditions            String?
+  status                String             @default("UNVERIFIED") // UNVERIFIED, VERIFIED, EXPIRED, SUSPENDED, ENTITY_MISMATCH
+  documentUrl           String?            @map("document_url")
+  verifiedById          String?            @map("verified_by_id") @db.Uuid
+  verifiedAt            DateTime?          @db.Timestamptz @map("verified_at")
+  createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  contractorBusiness    ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  verifiedBy            Profile?           @relation("WorksLicenceVerifiedBy", fields: [verifiedById], references: [id])
+  verificationEvents    WorksVerificationEvent[]
+
+  @@index([contractorBusinessId])
+  @@index([expiryDate])
+  @@map("works_licences")
+}
+
+model WorksInsurance {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId  String             @map("contractor_business_id") @db.Uuid
+  policyType            String             @map("policy_type") // PUBLIC_LIABILITY, WORKERS_COMP, PROFESSIONAL_INDEMNITY, CONTRACT_WORKS, MOTOR_VEHICLE, OTHER
+  policyNumber          String             @map("policy_number") @db.VarChar(100)
+  insurer               String             @db.VarChar(300)
+  insuredName           String             @map("insured_name") @db.VarChar(300)
+  insuredEntityName     String?            @map("insured_entity_name") @db.VarChar(300)
+  coverageAmount        Decimal            @db.Decimal(14, 2) @map("coverage_amount")
+  startDate             DateTime           @db.Date @map("start_date")
+  expiryDate            DateTime           @db.Date @map("expiry_date")
+  status                String             @default("UNVERIFIED") // UNVERIFIED, VERIFIED, EXPIRED, ENTITY_MISMATCH, COVERAGE_INSUFFICIENT
+  documentUrl           String?            @map("document_url")
+  verifiedById          String?            @map("verified_by_id") @db.Uuid
+  verifiedAt            DateTime?          @db.Timestamptz @map("verified_at")
+  createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  contractorBusiness    ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  verifiedBy            Profile?           @relation("WorksInsuranceVerifiedBy", fields: [verifiedById], references: [id])
+  verificationEvents    WorksVerificationEvent[]
+
+  @@index([contractorBusinessId])
+  @@index([expiryDate])
+  @@map("works_insurances")
+}
+
+model WorksVerificationEvent {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complianceCheckId  String?             @map("compliance_check_id") @db.Uuid
+  licenceId          String?             @map("licence_id") @db.Uuid
+  insuranceId        String?             @map("insurance_id") @db.Uuid
+  verifiedById       String              @map("verified_by_id") @db.Uuid
+  action             String              // SUBMITTED, VERIFIED, REJECTED, EXPIRED, RENEWED, ENTITY_MISMATCH_FLAGGED
+  previousStatus     String?             @map("previous_status")
+  newStatus          String              @map("new_status")
+  notes              String?
+  createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
+
+  complianceCheck    WorksComplianceCheck? @relation(fields: [complianceCheckId], references: [id], onDelete: Cascade)
+  licence            WorksLicence?        @relation(fields: [licenceId], references: [id], onDelete: Cascade)
+  insurance          WorksInsurance?      @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
+  verifiedBy         Profile              @relation("WorksVerificationEventBy", fields: [verifiedById], references: [id])
+
+  @@index([complianceCheckId])
+  @@index([licenceId])
+  @@index([insuranceId])
+  @@map("works_verification_events")
+}
+
+// ─── Works Module: Quotations & Evaluation ──────────────────────
+
+model WorksQuotation {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId                 String                  @map("rfq_id") @db.Uuid
+  contractorBusinessId  String                  @map("contractor_business_id") @db.Uuid
+  quotationNumber       String                  @map("quotation_number") @db.VarChar(30)
+  currentVersion        Int                     @default(1) @map("current_version")
+  subtotal              Decimal                 @db.Decimal(12, 2)
+  gstAmount             Decimal                 @default(0) @db.Decimal(12, 2) @map("gst_amount")
+  totalAmount           Decimal                 @db.Decimal(12, 2) @map("total_amount")
+  validUntil            DateTime?               @db.Timestamptz @map("valid_until")
+  estimatedDuration     Int?                    @map("estimated_duration") // days
+  methodology           String?
+  inclusions            String?
+  exclusions            String?
+  conditions            String?
+  status                String                  @default("DRAFT") // DRAFT, SUBMITTED, UNDER_REVIEW, SHORTLISTED, ACCEPTED, DECLINED, WITHDRAWN, SUPERSEDED
+  submittedAt           DateTime?               @db.Timestamptz @map("submitted_at")
+  createdAt             DateTime                @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime                @updatedAt @db.Timestamptz @map("updated_at")
+
+  rfq                   WorksRfq                @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  contractorBusiness    ContractorBusiness       @relation(fields: [contractorBusinessId], references: [id])
+  versions              WorksQuotationVersion[]
+  lineItems             WorksQuotationLineItem[]
+  evaluations           WorksEvaluation[]
+  recommendations       WorksRecommendation[]
+  approvalWorkflows     WorksApprovalWorkflow[]
+  contracts             WorksContract[]
+
+  @@unique([rfqId, contractorBusinessId])
+  @@index([rfqId, status])
+  @@map("works_quotations")
+}
+
+model WorksQuotationVersion {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quotationId     String          @map("quotation_id") @db.Uuid
+  versionNumber   Int             @map("version_number")
+  subtotal        Decimal         @db.Decimal(12, 2)
+  gstAmount       Decimal         @default(0) @db.Decimal(12, 2) @map("gst_amount")
+  totalAmount     Decimal         @db.Decimal(12, 2) @map("total_amount")
+  methodology     String?
+  inclusions      String?
+  exclusions      String?
+  conditions      String?
+  changeReason    String?         @map("change_reason")
+  createdAt       DateTime        @default(now()) @db.Timestamptz @map("created_at")
+
+  quotation       WorksQuotation  @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@unique([quotationId, versionNumber])
+  @@map("works_quotation_versions")
+}
+
+model WorksQuotationLineItem {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quotationId     String          @map("quotation_id") @db.Uuid
+  description     String
+  quantity        Decimal         @db.Decimal(10, 2)
+  unit            String?         @db.VarChar(50) // EACH, SQM, LM, HOUR, DAY, LOT, etc.
+  unitPrice       Decimal         @db.Decimal(12, 2) @map("unit_price")
+  totalPrice      Decimal         @db.Decimal(12, 2) @map("total_price")
+  gstAmount       Decimal         @default(0) @db.Decimal(12, 2) @map("gst_amount")
+  sortOrder       Int             @default(0) @map("sort_order")
+  createdAt       DateTime        @default(now()) @db.Timestamptz @map("created_at")
+
+  quotation       WorksQuotation  @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@map("works_quotation_line_items")
+}
+
+model WorksEvaluation {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId           String           @map("rfq_id") @db.Uuid
+  quotationId     String?          @map("quotation_id") @db.Uuid
+  evaluatorId     String           @map("evaluator_id") @db.Uuid
+  overallScore    Decimal?         @db.Decimal(5, 2) @map("overall_score")
+  comments        String?
+  evaluatedAt     DateTime         @default(now()) @db.Timestamptz @map("evaluated_at")
+  createdAt       DateTime         @default(now()) @db.Timestamptz @map("created_at")
+
+  rfq             WorksRfq         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  quotation       WorksQuotation?  @relation(fields: [quotationId], references: [id])
+  evaluator       Profile          @relation("WorksEvaluator", fields: [evaluatorId], references: [id])
+  criteria        WorksEvaluationCriterion[]
+
+  @@index([rfqId])
+  @@index([quotationId])
+  @@map("works_evaluations")
+}
+
+model WorksEvaluationCriterion {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evaluationId    String          @map("evaluation_id") @db.Uuid
+  criterionName   String          @map("criterion_name") @db.VarChar(200)
+  weight          Decimal         @db.Decimal(5, 2)
+  score           Decimal         @db.Decimal(5, 2)
+  weightedScore   Decimal         @db.Decimal(5, 2) @map("weighted_score")
+  comments        String?
+  createdAt       DateTime        @default(now()) @db.Timestamptz @map("created_at")
+
+  evaluation      WorksEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+  @@map("works_evaluation_criteria")
+}
+
+model WorksRecommendation {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId             String?         @map("rfq_id") @db.Uuid
+  quotationId       String          @map("quotation_id") @db.Uuid
+  recommendedById   String          @map("recommended_by_id") @db.Uuid
+  recommendation    String          // AWARD, REJECT, RE_TENDER, NEGOTIATE
+  justification     String
+  scopeVersionUsed  Int?            @map("scope_version_used")
+  quotationVersionUsed Int?         @map("quotation_version_used")
+  status            String          @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt         DateTime        @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime        @updatedAt @db.Timestamptz @map("updated_at")
+
+  quotation         WorksQuotation  @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  recommendedBy     Profile         @relation("WorksRecommendedBy", fields: [recommendedById], references: [id])
+
+  @@index([quotationId])
+  @@map("works_recommendations")
+}
+
+// ─── Works Module: Approvals ────────────────────────────────────
+
+model WorksApprovalWorkflow {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId        String               @map("scheme_id") @db.Uuid
+  entityType      String               @map("entity_type") // QUOTATION, VARIATION, INVOICE, PAYMENT
+  entityId        String               @map("entity_id") @db.Uuid
+  quotationId     String?              @map("quotation_id") @db.Uuid
+  approvalRouteId String?              @map("approval_route_id") @db.Uuid
+  totalAmount     Decimal              @db.Decimal(12, 2) @map("total_amount")
+  scopeVersionApproved Int?            @map("scope_version_approved")
+  quotationVersionApproved Int?        @map("quotation_version_approved")
+  status          String               @default("PENDING") // PENDING, APPROVED, REJECTED, INVALIDATED
+  invalidatedReason String?            @map("invalidated_reason")
+  createdAt       DateTime             @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime             @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme          Scheme               @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  quotation       WorksQuotation?      @relation(fields: [quotationId], references: [id])
+  approvalRoute   WorksApprovalRoute?  @relation(fields: [approvalRouteId], references: [id])
+  records         WorksApprovalRecord[]
+
+  @@index([schemeId, entityType])
+  @@index([entityId])
+  @@map("works_approval_workflows")
+}
+
+model WorksApprovalRecord {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workflowId      String                @map("workflow_id") @db.Uuid
+  approverId      String                @map("approver_id") @db.Uuid
+  decision        String                // APPROVED, REJECTED, DEFERRED
+  comments        String?
+  decidedAt       DateTime              @default(now()) @db.Timestamptz @map("decided_at")
+  createdAt       DateTime              @default(now()) @db.Timestamptz @map("created_at")
+
+  workflow        WorksApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  approver        Profile               @relation("WorksApprover", fields: [approverId], references: [id])
+
+  @@index([workflowId])
+  @@map("works_approval_records")
+}
+
+// ─── Works Module: Contracts & Delivery ─────────────────────────
+
+model WorksContract {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId             String                  @map("request_id") @db.Uuid
+  schemeId              String                  @map("scheme_id") @db.Uuid
+  quotationId           String?                 @map("quotation_id") @db.Uuid
+  contractorBusinessId  String                  @map("contractor_business_id") @db.Uuid
+  contractNumber        String                  @map("contract_number") @db.VarChar(30)
+  title                 String                  @db.VarChar(300)
+  description           String?
+  contractValue         Decimal                 @db.Decimal(12, 2) @map("contract_value")
+  gstAmount             Decimal                 @default(0) @db.Decimal(12, 2) @map("gst_amount")
+  totalValue            Decimal                 @db.Decimal(12, 2) @map("total_value")
+  approvedVariations    Decimal                 @default(0) @db.Decimal(12, 2) @map("approved_variations")
+  revisedContractValue  Decimal?                @db.Decimal(12, 2) @map("revised_contract_value")
+  startDate             DateTime?               @db.Date @map("start_date")
+  endDate               DateTime?               @db.Date @map("end_date")
+  defectsLiabilityEnd   DateTime?               @db.Date @map("defects_liability_end")
+  retentionPercentage   Decimal?                @db.Decimal(5, 2) @map("retention_percentage")
+  retentionAmount       Decimal?                @db.Decimal(12, 2) @map("retention_amount")
+  status                String                  @default("DRAFT") // DRAFT, UNDER_REVIEW, AWAITING_EXECUTION, EXECUTED, ACTIVE, COMPLETE, TERMINATED
+  signedById            String?                 @map("signed_by_id") @db.Uuid
+  signedAt              DateTime?               @db.Timestamptz @map("signed_at")
+  executedAt            DateTime?               @db.Timestamptz @map("executed_at")
+  completedAt           DateTime?               @db.Timestamptz @map("completed_at")
+  createdAt             DateTime                @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime                @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt             DateTime?               @db.Timestamptz @map("deleted_at")
+
+  request               WorksRequest            @relation(fields: [requestId], references: [id])
+  scheme                Scheme                  @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  quotation             WorksQuotation?         @relation(fields: [quotationId], references: [id])
+  contractorBusiness    ContractorBusiness       @relation(fields: [contractorBusinessId], references: [id])
+  signedBy              Profile?                @relation("WorksContractSignedBy", fields: [signedById], references: [id])
+  workOrders            WorksWorkOrder[]
+  variations            WorksVariation[]
+  invoices              WorksInvoice[]
+  documents             WorksDocument[]
+
+  @@unique([schemeId, contractNumber])
+  @@index([schemeId, status])
+  @@index([contractorBusinessId])
+  @@map("works_contracts")
+}
+
+model WorksWorkOrder {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractId            String                 @map("contract_id") @db.Uuid
+  schemeId              String                 @map("scheme_id") @db.Uuid
+  contractorBusinessId  String                 @map("contractor_business_id") @db.Uuid
+  workOrderNumber       String                 @map("work_order_number") @db.VarChar(30)
+  title                 String                 @db.VarChar(300)
+  description           String?
+  scheduledStart        DateTime?              @db.Date @map("scheduled_start")
+  scheduledEnd          DateTime?              @db.Date @map("scheduled_end")
+  actualStart           DateTime?              @db.Date @map("actual_start")
+  actualEnd             DateTime?              @db.Date @map("actual_end")
+  status                String                 @default("DRAFT") // DRAFT, AWAITING_ACKNOWLEDGEMENT, PRE_START_REVIEW, AUTHORISED, SCHEDULED, IN_PROGRESS, COMPLETION_REVIEW, COMPLETE
+  acknowledgedAt        DateTime?              @db.Timestamptz @map("acknowledged_at")
+  authorisedById        String?                @map("authorised_by_id") @db.Uuid
+  authorisedAt          DateTime?              @db.Timestamptz @map("authorised_at")
+  createdAt             DateTime               @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime               @updatedAt @db.Timestamptz @map("updated_at")
+
+  contract              WorksContract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  scheme                Scheme                 @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  contractorBusiness    ContractorBusiness      @relation(fields: [contractorBusinessId], references: [id])
+  authorisedBy          Profile?               @relation("WorksWorkOrderAuthorisedBy", fields: [authorisedById], references: [id])
+  milestones            WorksMilestone[]
+  siteVisits            WorksSiteVisit[]
+  progressReports       WorksProgressReport[]
+  inspections           WorksInspection[]
+  completionSubmissions WorksCompletionSubmission[]
+  complianceChecks      WorksComplianceCheck[]
+
+  @@unique([schemeId, workOrderNumber])
+  @@index([contractId])
+  @@index([schemeId, status])
+  @@map("works_work_orders")
+}
+
+model WorksMilestone {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId     String         @map("work_order_id") @db.Uuid
+  name            String         @db.VarChar(300)
+  description     String?
+  dueDate         DateTime?      @db.Date @map("due_date")
+  completedAt     DateTime?      @db.Timestamptz @map("completed_at")
+  paymentAmount   Decimal?       @db.Decimal(12, 2) @map("payment_amount")
+  paymentPercentage Decimal?     @db.Decimal(5, 2) @map("payment_percentage")
+  sortOrder       Int            @default(0) @map("sort_order")
+  status          String         @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, CERTIFIED, REJECTED
+  certifiedById   String?        @map("certified_by_id") @db.Uuid
+  certifiedAt     DateTime?      @db.Timestamptz @map("certified_at")
+  createdAt       DateTime       @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime       @updatedAt @db.Timestamptz @map("updated_at")
+
+  workOrder       WorksWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  certifiedBy     Profile?       @relation("WorksMilestoneCertifiedBy", fields: [certifiedById], references: [id])
+  invoices        WorksInvoice[]
+
+  @@index([workOrderId])
+  @@map("works_milestones")
+}
+
+model WorksSiteVisit {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId     String         @map("work_order_id") @db.Uuid
+  conductedById   String         @map("conducted_by_id") @db.Uuid
+  visitDate       DateTime       @db.Date @map("visit_date")
+  purpose         String?
+  findings        String?
+  weatherConditions String?      @map("weather_conditions")
+  attendees       String?
+  createdAt       DateTime       @default(now()) @db.Timestamptz @map("created_at")
+
+  workOrder       WorksWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  conductedBy     Profile        @relation("WorksSiteVisitConductedBy", fields: [conductedById], references: [id])
+
+  @@index([workOrderId])
+  @@map("works_site_visits")
+}
+
+model WorksProgressReport {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId     String         @map("work_order_id") @db.Uuid
+  reportDate      DateTime       @db.Date @map("report_date")
+  percentComplete Decimal        @db.Decimal(5, 2) @map("percent_complete")
+  summary         String
+  issues          String?
+  nextSteps       String?        @map("next_steps")
+  submittedById   String         @map("submitted_by_id") @db.Uuid
+  createdAt       DateTime       @default(now()) @db.Timestamptz @map("created_at")
+
+  workOrder       WorksWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  submittedBy     Profile        @relation("WorksProgressReportBy", fields: [submittedById], references: [id])
+
+  @@index([workOrderId])
+  @@map("works_progress_reports")
+}
+
+model WorksVariation {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractId      String        @map("contract_id") @db.Uuid
+  variationNumber Int           @map("variation_number")
+  title           String        @db.VarChar(300)
+  description     String
+  reason          String?
+  requestedById   String        @map("requested_by_id") @db.Uuid
+  costImpact      Decimal       @db.Decimal(12, 2) @map("cost_impact") // positive = increase, negative = decrease
+  timeImpact      Int?          @map("time_impact") // days
+  status          String        @default("DRAFT") // DRAFT, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, WITHDRAWN
+  approvedById    String?       @map("approved_by_id") @db.Uuid
+  approvedAt      DateTime?     @db.Timestamptz @map("approved_at")
+  createdAt       DateTime      @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime      @updatedAt @db.Timestamptz @map("updated_at")
+
+  contract        WorksContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  requestedBy     Profile       @relation("WorksVariationRequestedBy", fields: [requestedById], references: [id])
+  approvedBy      Profile?      @relation("WorksVariationApprovedBy", fields: [approvedById], references: [id])
+
+  @@unique([contractId, variationNumber])
+  @@index([contractId, status])
+  @@map("works_variations")
+}
+
+model WorksInspection {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId     String         @map("work_order_id") @db.Uuid
+  inspectorId     String         @map("inspector_id") @db.Uuid
+  inspectionDate  DateTime       @db.Date @map("inspection_date")
+  inspectionType  String         @map("inspection_type") // PRE_START, PROGRESS, COMPLETION, DEFECT_REINSPECTION
+  outcome         String?        // PASS, FAIL, CONDITIONAL
+  findings        String?
+  createdAt       DateTime       @default(now()) @db.Timestamptz @map("created_at")
+
+  workOrder       WorksWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  inspector       Profile        @relation("WorksInspector", fields: [inspectorId], references: [id])
+  defects         WorksDefect[]
+
+  @@index([workOrderId])
+  @@map("works_inspections")
+}
+
+model WorksDefect {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inspectionId    String          @map("inspection_id") @db.Uuid
+  description     String
+  location        String?         @db.VarChar(500)
+  severity        String          @default("MINOR") // MINOR, MAJOR, CRITICAL
+  rectificationDeadline DateTime? @db.Date @map("rectification_deadline")
+  status          String          @default("OPEN") // OPEN, ASSIGNED, RECTIFIED, VERIFIED, CLOSED
+  rectifiedAt     DateTime?       @db.Timestamptz @map("rectified_at")
+  verifiedById    String?         @map("verified_by_id") @db.Uuid
+  verifiedAt      DateTime?       @db.Timestamptz @map("verified_at")
+  createdAt       DateTime        @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime        @updatedAt @db.Timestamptz @map("updated_at")
+
+  inspection      WorksInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  verifiedBy      Profile?        @relation("WorksDefectVerifiedBy", fields: [verifiedById], references: [id])
+
+  @@index([inspectionId])
+  @@index([status])
+  @@map("works_defects")
+}
+
+model WorksCompletionSubmission {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workOrderId     String         @map("work_order_id") @db.Uuid
+  submittedById   String         @map("submitted_by_id") @db.Uuid
+  submissionType  String         @map("submission_type") // PRACTICAL_COMPLETION, FINAL_COMPLETION
+  summary         String?
+  warrantyInfo    String?        @map("warranty_info")
+  maintenanceInfo String?        @map("maintenance_info")
+  status          String         @default("SUBMITTED") // SUBMITTED, UNDER_REVIEW, ACCEPTED, REJECTED
+  reviewedById    String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt      DateTime?      @db.Timestamptz @map("reviewed_at")
+  reviewComments  String?        @map("review_comments")
+  submittedAt     DateTime       @default(now()) @db.Timestamptz @map("submitted_at")
+  createdAt       DateTime       @default(now()) @db.Timestamptz @map("created_at")
+
+  workOrder       WorksWorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  submittedBy     Profile        @relation("WorksCompletionSubmittedBy", fields: [submittedById], references: [id])
+  reviewedBy      Profile?       @relation("WorksCompletionReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([workOrderId])
+  @@map("works_completion_submissions")
+}
+
+// ─── Works Module: Invoices & Payments ──────────────────────────
+
+model WorksInvoice {
+  id                    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId             String?                  @map("request_id") @db.Uuid
+  contractId            String?                  @map("contract_id") @db.Uuid
+  milestoneId           String?                  @map("milestone_id") @db.Uuid
+  schemeId              String                   @map("scheme_id") @db.Uuid
+  contractorBusinessId  String                   @map("contractor_business_id") @db.Uuid
+  submittedById         String                   @map("submitted_by_id") @db.Uuid
+  invoiceNumber         String                   @map("invoice_number") @db.VarChar(50)
+  invoiceDate           DateTime                 @db.Date @map("invoice_date")
+  dateReceived          DateTime                 @db.Date @map("date_received")
+  dueDate               DateTime                 @db.Date @map("due_date")
+  claimedAmount         Decimal                  @db.Decimal(12, 2) @map("claimed_amount")
+  gstAmount             Decimal                  @default(0) @db.Decimal(12, 2) @map("gst_amount")
+  assessedAmount        Decimal?                 @db.Decimal(12, 2) @map("assessed_amount")
+  scheduledAmount       Decimal?                 @db.Decimal(12, 2) @map("scheduled_amount")
+  approvedAmount        Decimal?                 @db.Decimal(12, 2) @map("approved_amount")
+  paidAmount            Decimal                  @default(0) @db.Decimal(12, 2) @map("paid_amount")
+  variationReferences   String[]                 @map("variation_references")
+  isDuplicate           Boolean                  @default(false) @map("is_duplicate")
+  duplicateOfId         String?                  @map("duplicate_of_id") @db.Uuid
+  isStatutoryClaim      Boolean                  @default(false) @map("is_statutory_claim")
+  bankDetailChangeFlag  Boolean                  @default(false) @map("bank_detail_change_flag")
+  responseDeadline      DateTime?                @db.Timestamptz @map("response_deadline")
+  status                String                   @default("SUBMITTED") // SUBMITTED, UNDER_ASSESSMENT, FURTHER_INFORMATION, DISPUTED, APPROVED, PAYMENT_INSTRUCTED, PAID, RECONCILED
+  assessedById          String?                  @map("assessed_by_id") @db.Uuid
+  assessedAt            DateTime?                @db.Timestamptz @map("assessed_at")
+  assessmentNotes       String?                  @map("assessment_notes")
+  differenceReasons     String?                  @map("difference_reasons")
+  documentUrl           String?                  @map("document_url")
+  createdAt             DateTime                 @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime                 @updatedAt @db.Timestamptz @map("updated_at")
+
+  request               WorksRequest?            @relation(fields: [requestId], references: [id])
+  contract              WorksContract?           @relation(fields: [contractId], references: [id])
+  milestone             WorksMilestone?          @relation(fields: [milestoneId], references: [id])
+  scheme                Scheme                   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  contractorBusiness    ContractorBusiness        @relation(fields: [contractorBusinessId], references: [id])
+  submittedBy           Profile                  @relation("WorksInvoiceSubmittedBy", fields: [submittedById], references: [id])
+  assessedBy            Profile?                 @relation("WorksInvoiceAssessedBy", fields: [assessedById], references: [id])
+  duplicateOf           WorksInvoice?            @relation("WorksInvoiceDuplicate", fields: [duplicateOfId], references: [id])
+  duplicates            WorksInvoice[]           @relation("WorksInvoiceDuplicate")
+  paymentAssessments    WorksPaymentAssessment[]
+  paymentInstructions   WorksPaymentInstruction[]
+  documents             WorksDocument[]
+
+  @@index([schemeId, status])
+  @@index([contractorBusinessId])
+  @@index([contractId])
+  @@map("works_invoices")
+}
+
+model WorksPaymentAssessment {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId       String       @map("invoice_id") @db.Uuid
+  assessorId      String       @map("assessor_id") @db.Uuid
+  assessedAmount  Decimal      @db.Decimal(12, 2) @map("assessed_amount")
+  previousClaims  Decimal      @default(0) @db.Decimal(12, 2) @map("previous_claims")
+  previousPayments Decimal     @default(0) @db.Decimal(12, 2) @map("previous_payments")
+  thisClaimAmount Decimal      @db.Decimal(12, 2) @map("this_claim_amount")
+  comments        String?
+  assessedAt      DateTime     @default(now()) @db.Timestamptz @map("assessed_at")
+  createdAt       DateTime     @default(now()) @db.Timestamptz @map("created_at")
+
+  invoice         WorksInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  assessor        Profile      @relation("WorksPaymentAssessor", fields: [assessorId], references: [id])
+
+  @@index([invoiceId])
+  @@map("works_payment_assessments")
+}
+
+model WorksPaymentInstruction {
+  id                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId          String       @map("invoice_id") @db.Uuid
+  authorisedById     String       @map("authorised_by_id") @db.Uuid
+  approvedAmount     Decimal      @db.Decimal(12, 2) @map("approved_amount")
+  beneficiary        String       @db.VarChar(300)
+  bankDetailVersionId String?     @map("bank_detail_version_id") @db.Uuid
+  authorisedAt       DateTime     @default(now()) @db.Timestamptz @map("authorised_at")
+  status             String       @default("PENDING") // PENDING, EXPORTED, INVALIDATED
+  invalidatedReason  String?      @map("invalidated_reason")
+  exportedAt         DateTime?    @db.Timestamptz @map("exported_at")
+  createdAt          DateTime     @default(now()) @db.Timestamptz @map("created_at")
+
+  invoice            WorksInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  authorisedBy       Profile      @relation("WorksPaymentAuthorisedBy", fields: [authorisedById], references: [id])
+  bankDetailVersion  WorksBankDetailVersion? @relation(fields: [bankDetailVersionId], references: [id])
+  paymentRecords     WorksPaymentRecord[]
+
+  @@index([invoiceId])
+  @@map("works_payment_instructions")
+}
+
+model WorksPaymentRecord {
+  id                     String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentInstructionId   String                  @map("payment_instruction_id") @db.Uuid
+  externalReference      String?                 @map("external_reference") @db.VarChar(200)
+  paymentMethod          String                  @map("payment_method") // EFT, CHEQUE, BPAY, DIRECT_DEBIT
+  amount                 Decimal                 @db.Decimal(12, 2)
+  paymentDate            DateTime                @db.Date @map("payment_date")
+  recordedById           String                  @map("recorded_by_id") @db.Uuid
+  remittanceInfo         String?                 @map("remittance_info")
+  reconciliationStatus   String                  @default("UNRECONCILED") // UNRECONCILED, RECONCILED
+  reconciliationEvidence String?                 @map("reconciliation_evidence")
+  reconciledAt           DateTime?               @db.Timestamptz @map("reconciled_at")
+  reconciledById         String?                 @map("reconciled_by_id") @db.Uuid
+  createdAt              DateTime                @default(now()) @db.Timestamptz @map("created_at")
+
+  paymentInstruction     WorksPaymentInstruction @relation(fields: [paymentInstructionId], references: [id], onDelete: Cascade)
+  recordedBy             Profile                 @relation("WorksPaymentRecordedBy", fields: [recordedById], references: [id])
+  reconciledBy           Profile?                @relation("WorksPaymentReconciledBy", fields: [reconciledById], references: [id])
+
+  @@index([paymentInstructionId])
+  @@map("works_payment_records")
+}
+
+model WorksBankDetailVersion {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId  String                  @map("contractor_business_id") @db.Uuid
+  versionNumber         Int                     @map("version_number")
+  bsb                   String                  @db.VarChar(7)
+  accountNumber         String                  @map("account_number") @db.VarChar(20)
+  accountName           String                  @map("account_name") @db.VarChar(200)
+  bankName              String?                 @map("bank_name") @db.VarChar(200)
+  updatedById           String                  @map("updated_by_id") @db.Uuid
+  verifiedById          String?                 @map("verified_by_id") @db.Uuid
+  verificationMethod    String?                 @map("verification_method") // PHONE_CALLBACK, LETTER, IN_PERSON, OTHER
+  status                String                  @default("PENDING") // PENDING, VERIFIED, SUPERSEDED
+  verifiedAt            DateTime?               @db.Timestamptz @map("verified_at")
+  createdAt             DateTime                @default(now()) @db.Timestamptz @map("created_at")
+
+  contractorBusiness    ContractorBusiness      @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  updatedBy             Profile                 @relation("WorksBankDetailUpdatedBy", fields: [updatedById], references: [id])
+  verifiedBy            Profile?                @relation("WorksBankDetailVerifiedBy", fields: [verifiedById], references: [id])
+  paymentInstructions   WorksPaymentInstruction[]
+
+  @@unique([contractorBusinessId, versionNumber])
+  @@index([contractorBusinessId])
+  @@map("works_bank_detail_versions")
+}
+
+// ─── Works Module: Documents, Notifications & Audit ─────────────
+
+model WorksDocument {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId       String?       @map("request_id") @db.Uuid
+  contractId      String?       @map("contract_id") @db.Uuid
+  invoiceId       String?       @map("invoice_id") @db.Uuid
+  schemeId        String        @map("scheme_id") @db.Uuid
+  documentType    String        @map("document_type") // SCOPE, RFQ, QUOTATION, CONTRACT, WORK_ORDER, INVOICE, CERTIFICATE, COMPLIANCE, SITE_REPORT, VARIATION, COMPLETION, OTHER
+  title           String        @db.VarChar(300)
+  fileName        String        @map("file_name") @db.VarChar(500)
+  fileUrl         String        @map("file_url")
+  fileSize        Int?          @map("file_size")
+  mimeType        String?       @map("mime_type") @db.VarChar(100)
+  version         Int           @default(1)
+  uploadedById    String        @map("uploaded_by_id") @db.Uuid
+  accessLevel     String        @default("RESTRICTED") // PUBLIC, RESTRICTED, CONFIDENTIAL
+  retentionDate   DateTime?     @db.Date @map("retention_date")
+  createdAt       DateTime      @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt       DateTime?     @db.Timestamptz @map("deleted_at")
+
+  request         WorksRequest? @relation(fields: [requestId], references: [id])
+  contract        WorksContract? @relation(fields: [contractId], references: [id])
+  invoice         WorksInvoice? @relation(fields: [invoiceId], references: [id])
+  scheme          Scheme        @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  uploadedBy      Profile       @relation("WorksDocumentUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([schemeId, documentType])
+  @@index([requestId])
+  @@index([contractId])
+  @@map("works_documents")
+}
+
+model WorksNotification {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId       String?       @map("request_id") @db.Uuid
+  schemeId        String        @map("scheme_id") @db.Uuid
+  recipientId     String        @map("recipient_id") @db.Uuid
+  type            String        // REQUEST_SUBMITTED, REVIEW_REQUIRED, QUOTE_RECEIVED, APPROVAL_REQUIRED, WORK_STARTED, COMPLIANCE_EXPIRING, INVOICE_RECEIVED, PAYMENT_DUE, VARIATION_REQUESTED, DEFECT_FOUND, COMPLETION_SUBMITTED, BANK_DETAIL_CHANGED
+  title           String        @db.VarChar(300)
+  message         String
+  entityType      String?       @map("entity_type")
+  entityId        String?       @map("entity_id") @db.Uuid
+  isRead          Boolean       @default(false) @map("is_read")
+  readAt          DateTime?     @db.Timestamptz @map("read_at")
+  createdAt       DateTime      @default(now()) @db.Timestamptz @map("created_at")
+
+  request         WorksRequest? @relation(fields: [requestId], references: [id])
+  scheme          Scheme        @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  recipient       Profile       @relation("WorksNotificationRecipient", fields: [recipientId], references: [id])
+
+  @@index([recipientId, isRead])
+  @@index([schemeId])
+  @@map("works_notifications")
+}
+
+model WorksAuditEvent {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId       String?       @map("request_id") @db.Uuid
+  schemeId        String        @map("scheme_id") @db.Uuid
+  actorId         String        @map("actor_id") @db.Uuid
+  action          String        // CREATED, UPDATED, SUBMITTED, REVIEWED, APPROVED, REJECTED, ISSUED, CLOSED, SIGNED, VERIFIED, PAID, RECONCILED, DELEGATED, VARIED, COMPLETED, ARCHIVED
+  entityType      String        @map("entity_type") // WorksRequest, WorksScope, WorksRfq, WorksQuotation, WorksContract, WorksWorkOrder, WorksInvoice, WorksPayment, WorksVariation, WorksComplianceCheck, etc.
+  entityId        String        @map("entity_id") @db.Uuid
+  beforeValues    Json?         @map("before_values")
+  afterValues     Json?         @map("after_values")
+  approvalRef     String?       @map("approval_ref") @db.Uuid
+  documentRef     String?       @map("document_ref") @db.Uuid
+  ipAddress       String?       @map("ip_address") @db.VarChar(45)
+  metadata        Json?
+  createdAt       DateTime      @default(now()) @db.Timestamptz @map("created_at")
+
+  request         WorksRequest? @relation(fields: [requestId], references: [id])
+  scheme          Scheme        @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  actor           Profile       @relation("WorksAuditActor", fields: [actorId], references: [id])
+
+  @@index([schemeId, createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@map("works_audit_events")
 }

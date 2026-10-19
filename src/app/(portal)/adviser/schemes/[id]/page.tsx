@@ -87,6 +87,7 @@ export default async function SchemeDetailPage({
     { label: "Insurance", href: `/adviser/schemes/${id}/insurance/new` },
     { label: "Conversations", href: `/adviser/schemes/${id}/announcements/new` },
     { label: "Document", href: `/adviser/schemes/${id}?tab=documents` },
+    { label: "Works", href: `/adviser/schemes/${id}/works` },
     { label: "Work Order", href: `/adviser/schemes/${id}/work-orders/new` },
     { label: "Meetings", href: `/adviser/schemes/${id}/meetings/new` },
     { label: "Budget", href: `/adviser/schemes/${id}/funds/new` },

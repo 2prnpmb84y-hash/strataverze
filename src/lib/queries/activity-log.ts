@@ -77,7 +77,26 @@ export type ActivityAction =
   | "MATCHING_RULE_CREATED"
   | "MATCHING_RULE_UPDATED"
   | "MATCHING_RULE_DELETED"
-  | "AUTO_MATCH_RUN";
+  | "AUTO_MATCH_RUN"
+  // Works compliance and approval actions
+  | "COMPLIANCE_REQUIREMENT_CREATED"
+  | "COMPLIANCE_REQUIREMENT_UPDATED"
+  | "COMPLIANCE_REQUIREMENT_DEACTIVATED"
+  | "COMPLIANCE_CHECK_SUBMITTED"
+  | "COMPLIANCE_CHECK_VERIFIED"
+  | "COMPLIANCE_CHECK_REJECTED"
+  | "APPROVAL_ROUTE_CREATED"
+  | "APPROVAL_ROUTE_UPDATED"
+  | "DELEGATION_CREATED"
+  | "DELEGATION_REVOKED"
+  | "APPROVAL_APPROVED"
+  | "APPROVAL_REJECTED"
+  | "APPROVAL_DEFERRED"
+  // Works variation actions
+  | "VARIATION_CREATED"
+  | "VARIATION_SUBMITTED"
+  | "VARIATION_APPROVED"
+  | "VARIATION_REJECTED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -109,7 +128,14 @@ export type ActivityEntityType =
   | "FinancialDocument"
   | "FinancialPeriod"
   | "BudgetLine"
-  | "MatchingRule";
+  | "MatchingRule"
+  // Works compliance and approval entity types
+  | "ComplianceRequirement"
+  | "ComplianceCheck"
+  | "ApprovalRoute"
+  | "Delegation"
+  | "ApprovalWorkflow"
+  | "WorksVariation";
 
 type LogActivityData = {
   schemeId: string;
