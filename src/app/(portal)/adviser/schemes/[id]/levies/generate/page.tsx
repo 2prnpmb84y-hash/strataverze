@@ -25,7 +25,7 @@ export default async function GenerateLeviesPage({
   if (!isAdviser) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Generate Levies"
         description={`Bulk-generate levies for ${scheme.name}.`}

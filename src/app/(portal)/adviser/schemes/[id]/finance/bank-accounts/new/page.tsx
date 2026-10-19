@@ -24,7 +24,7 @@ export default async function NewBankAccountPage({
   if (!isAdviser) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="New Bank Account"
         backHref={`/adviser/schemes/${id}/finance/bank-accounts`}

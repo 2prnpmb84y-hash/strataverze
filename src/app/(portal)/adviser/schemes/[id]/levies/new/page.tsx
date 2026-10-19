@@ -24,7 +24,7 @@ export default async function NewLevyPage({
   if (!isAdviser) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Create Levy"
         description={`Create a new levy for ${scheme.name}. The total amount will be split across all registered lots based on their entitlement shares.`}

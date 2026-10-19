@@ -70,7 +70,7 @@ export default async function OwnerWorkOrderDetailPage({
   const createdDate = new Date(String(workOrder.createdAt));
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={workOrder.title}
         description={`Raised by ${raisedByName} on ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}

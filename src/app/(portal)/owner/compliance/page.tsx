@@ -16,7 +16,7 @@ export default async function OwnerCompliancePage({
   const access = await requireCommitteeAccess();
   if (!access) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         <PageHeader title="Compliance" description="You do not have committee access to view this page." />
       </div>
     );
@@ -42,7 +42,7 @@ export default async function OwnerCompliancePage({
   const { data: paginatedItems, meta } = paginateArray(items, page);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Compliance"
         description="Compliance obligations for your schemes."

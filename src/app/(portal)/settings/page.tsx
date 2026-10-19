@@ -29,7 +29,7 @@ export default async function SettingsPage() {
         description="Manage your profile and account preferences."
       />
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-6 max-w-3xl">
         <Card>
           <CardHeader
             title="Profile"

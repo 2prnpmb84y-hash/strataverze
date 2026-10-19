@@ -24,7 +24,7 @@ export default async function NewFundPage({
   if (!isAdviser) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="New Fund"
         description={`Add a fund to ${scheme.name}.`}

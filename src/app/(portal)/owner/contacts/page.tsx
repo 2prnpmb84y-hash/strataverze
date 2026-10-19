@@ -33,7 +33,7 @@ export default async function OwnerContactsPage() {
   const contacts = await getContactsForSchemes(schemeIds);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Contacts Directory"
         description="Contractors and service providers for your scheme."

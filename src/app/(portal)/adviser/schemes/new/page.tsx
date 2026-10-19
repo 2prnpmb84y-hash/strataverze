@@ -3,7 +3,7 @@ import { AddPropertyWizard } from "../add-property-wizard";
 
 export default function NewSchemePage() {
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Add Property"
         description="Register a new Owners Corporation."

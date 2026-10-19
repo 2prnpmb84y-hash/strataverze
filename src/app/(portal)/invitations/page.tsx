@@ -34,7 +34,7 @@ export default async function InvitationsPage() {
   };
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Invitations"
         description="Pending invitations to join schemes."

@@ -55,7 +55,7 @@ export default async function BylawDetailPage({
   const effectiveDate = new Date(String(bylaw.effectiveDate));
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={`By-law ${bylaw.bylawNumber}: ${bylaw.title}`}
         description={bylaw.scheme.name}

@@ -33,7 +33,7 @@ export default async function NewInvoicePage({
   ]);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="New Supplier Invoice"
         description="Create a new supplier invoice for this scheme."

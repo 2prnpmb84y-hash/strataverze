@@ -53,7 +53,7 @@ export default async function ComplianceDetailPage({
     : null;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={item.title}
         description={`${categoryLabels[item.category] ?? item.category} · Added ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}

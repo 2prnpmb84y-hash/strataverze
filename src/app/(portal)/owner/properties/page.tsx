@@ -59,7 +59,7 @@ export default async function OwnerPropertiesPage() {
   };
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-5xl">
       {/* Profile card */}
       <div className="flex items-center gap-4 mb-8">
         <div className="flex items-center justify-center w-14 h-14 rounded-full bg-turquoise text-white text-xl font-bold shrink-0">

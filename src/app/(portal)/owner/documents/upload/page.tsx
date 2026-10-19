@@ -10,7 +10,7 @@ export default async function OwnerDocumentUploadPage() {
 
   if (!access) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         <PageHeader
           title="Upload Document"
           description="You must be a committee member to upload documents."
@@ -22,7 +22,7 @@ export default async function OwnerDocumentUploadPage() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Upload Document"
         description="Upload a document for your scheme."

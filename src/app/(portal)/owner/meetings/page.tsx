@@ -29,7 +29,7 @@ export default async function OwnerMeetingsPage({
   const { data: paginatedMeetings, meta } = paginateArray(meetings, page);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="My Meetings"
         description="Meetings and governance for your schemes."

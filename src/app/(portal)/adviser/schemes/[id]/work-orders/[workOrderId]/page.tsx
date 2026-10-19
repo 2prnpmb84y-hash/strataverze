@@ -64,7 +64,7 @@ export default async function WorkOrderDetailPage({
   const isOpen = workOrder.status === "OPEN" || workOrder.status === "IN_PROGRESS";
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={workOrder.title}
         description={`Raised by ${raisedByName} on ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}

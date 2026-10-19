@@ -44,7 +44,7 @@ export default async function OwnerDocumentsPage({
   const { data: paginatedDocs, meta } = paginateArray(documents, page);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Documents"
         description="Documents and records for your schemes."

@@ -70,7 +70,7 @@ export default async function InsurancePolicyDetailPage({
   if (!policy || policy.schemeId !== id) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={`${policyTypeLabels[policy.policyType] ?? policy.policyType} Insurance`}
         description={policy.scheme.name}

@@ -47,7 +47,7 @@ export default async function OwnerInsurancePage() {
   const policies = await getInsuranceForSchemes(schemeIds);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Insurance Policies"
         description="View the insurance coverage for your scheme."

@@ -25,7 +25,7 @@ export default async function NewContactPage({
   if (!isAdviser) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="New Contact"
         description={scheme.name}

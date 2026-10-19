@@ -47,7 +47,7 @@ export default async function AnnouncementDetailPage({
     .join(" ") || announcement.author.email;
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={announcement.title}
         description={announcement.scheme.name}

@@ -17,7 +17,7 @@ export default async function OwnerGovernancePage({
   const access = await requireCommitteeAccess();
   if (!access) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-3xl">
         <PageHeader title="Governance" description="You do not have committee access to view this page." />
       </div>
     );
@@ -47,7 +47,7 @@ export default async function OwnerGovernancePage({
   const { data: paginatedMeetings, meta } = paginateArray(meetings, page);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Governance"
         description="Meetings, motions, and voting for your schemes."

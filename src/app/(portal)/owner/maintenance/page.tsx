@@ -44,7 +44,7 @@ export default async function OwnerMaintenancePage({
   const { data: paginatedOrders, meta } = paginateArray(workOrders, page);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Maintenance"
         description="Maintenance requests and work orders for your schemes."

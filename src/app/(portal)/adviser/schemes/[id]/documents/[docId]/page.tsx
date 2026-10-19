@@ -50,7 +50,7 @@ export default async function DocumentDetailPage({
   const uploadDate = new Date(String(document.createdAt));
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={document.title}
         description={`${categoryLabels[document.category] ?? document.category} · Uploaded ${uploadDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}

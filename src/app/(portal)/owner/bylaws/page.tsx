@@ -38,7 +38,7 @@ export default async function OwnerBylawsPage() {
   const bylaws = await getBylawsForSchemes(schemeIds);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="By-laws Register"
         description="View the by-laws governing your scheme."

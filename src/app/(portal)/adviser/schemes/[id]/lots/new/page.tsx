@@ -24,7 +24,7 @@ export default async function NewLotPage({
   if (!isAdviser) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Add Lot"
         description={`Add a new lot to ${scheme.name}.`}

@@ -39,7 +39,7 @@ export default async function FundDetailPage({
   const balance = Number(fund.balance);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={fund.name}
         description={`${fundTypeLabels[fund.fundType] ?? fund.fundType} · Created ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}

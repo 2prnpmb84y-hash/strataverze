@@ -27,7 +27,7 @@ export default async function NewAccountCodePage({
   const funds = await getFundsForScheme(id);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="New Account Code"
         backHref={`/adviser/schemes/${id}/finance/accounts`}

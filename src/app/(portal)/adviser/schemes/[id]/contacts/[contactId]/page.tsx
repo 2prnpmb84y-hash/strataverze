@@ -48,7 +48,7 @@ export default async function ContactDetailPage({
   if (!contact || contact.schemeId !== id) notFound();
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title={contact.name}
         description={contact.scheme.name}

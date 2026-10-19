@@ -20,7 +20,7 @@ export default async function NewOwnerMaintenancePage() {
   }));
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Report an Issue"
         description="Submit a maintenance request for your scheme."

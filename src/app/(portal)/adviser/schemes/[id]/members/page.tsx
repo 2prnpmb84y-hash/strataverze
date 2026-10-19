@@ -63,7 +63,7 @@ export default async function SchemeMembersPage({
   };
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Members"
         description={`Manage members and invitations for ${scheme.name}.`}

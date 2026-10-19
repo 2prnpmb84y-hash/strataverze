@@ -37,7 +37,7 @@ export default async function EditBankAccountPage({
   };
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Edit Bank Account"
         backHref={`/adviser/schemes/${id}/finance/bank-accounts`}

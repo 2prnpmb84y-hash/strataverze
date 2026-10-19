@@ -38,7 +38,7 @@ export default async function AdviserCompliancePage({
   const { data: paginatedItems, meta } = paginateArray(items, page);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="Compliance"
         description="Compliance tracking across all your managed schemes."
