@@ -6,21 +6,54 @@ import {
   getWorkOrdersForSupplier,
   getInvoicesBySupplier,
 } from "@/lib/queries/supplier";
+import {
+  getContractorBusinessForProfile,
+  getContractorOnboarding,
+  getContractorMembership,
+  getContractorLicences,
+  getContractorInsurances,
+} from "@/lib/queries/contractor";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { connection } from "next/server";
+
+function OnboardingStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; colour: string }> = {
+    DRAFT: { label: "In Progress", colour: "bg-amber-50 text-amber-700" },
+    SUBMITTED: { label: "Submitted", colour: "bg-blue-50 text-blue-700" },
+    INFORMATION_REQUIRED: { label: "Action Required", colour: "bg-orange-50 text-orange-700" },
+    REVIEWED: { label: "Approved", colour: "bg-emerald-50 text-emerald-700" },
+  };
+  const info = map[status] ?? map.DRAFT;
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${info.colour}`}>
+      {info.label}
+    </span>
+  );
+}
 
 export default async function SupplierDashboard() {
   await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const [openRequests, myQuotes, workOrders, invoices] = await Promise.all([
+  const [openRequests, myQuotes, workOrders, invoices, business] = await Promise.all([
     getOpenQuoteRequests(profile.id),
     getQuotesBySupplier(profile.id),
     getWorkOrdersForSupplier(profile.id),
     getInvoicesBySupplier(profile.id),
+    getContractorBusinessForProfile(profile.id),
   ]);
+
+  // Fetch contractor-specific data if registered
+  const [onboarding, membership, licences, insurances] = business
+    ? await Promise.all([
+        getContractorOnboarding(business.id),
+        getContractorMembership(business.id),
+        getContractorLicences(business.id),
+        getContractorInsurances(business.id),
+      ])
+    : [null, null, [], []];
 
   const activeWorkOrders = workOrders.filter(
     (wo) => wo.status === "AWARDED" || wo.status === "IN_PROGRESS",
@@ -63,6 +96,109 @@ export default async function SupplierDashboard() {
           accent={pendingInvoices.length > 0 ? "bg-warning" : "bg-supplier"}
         />
       </div>
+
+      {/* Contractor Status Banner */}
+      {!business && (
+        <Card className="mt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-ink">Contractor Registration</p>
+              <p className="text-xs text-ink-muted mt-0.5">
+                Register as a contractor to receive quote requests and manage compliance.
+              </p>
+            </div>
+            <Link
+              href="/supplier/onboarding"
+              className="shrink-0 bg-supplier text-white rounded-[var(--radius-card)] px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Get Started
+            </Link>
+          </div>
+        </Card>
+      )}
+
+      {business && onboarding && (
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Registration Status */}
+          <Card>
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">
+                Registration
+              </p>
+              <OnboardingStatusBadge status={String(onboarding.status ?? "DRAFT")} />
+            </div>
+            {String(onboarding.status) === "DRAFT" ? (
+              <Link
+                href="/supplier/onboarding"
+                className="text-sm font-medium text-supplier hover:underline"
+              >
+                Continue onboarding →
+              </Link>
+            ) : (
+              <p className="text-sm text-ink">
+                Step {String(onboarding.currentStep ?? 1)} of 8
+              </p>
+            )}
+          </Card>
+
+          {/* Compliance Status */}
+          <Card>
+            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">
+              Compliance
+            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-ink">
+                <span className="font-medium">{String(licences.length)}</span> licence{licences.length !== 1 ? "s" : ""}
+                {" · "}
+                <span className="font-medium">{String(insurances.length)}</span> polic{insurances.length !== 1 ? "ies" : "y"}
+              </p>
+              <Link
+                href="/supplier/compliance"
+                className="text-xs font-medium text-supplier hover:underline"
+              >
+                View details →
+              </Link>
+            </div>
+          </Card>
+
+          {/* Membership Status */}
+          <Card>
+            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">
+              Membership
+            </p>
+            {membership ? (
+              <div className="space-y-1">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    String(membership.subscriptionStatus) === "PROMOTIONAL_ACCEPTED" || String(membership.subscriptionStatus) === "ACTIVE_PAID"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {String(membership.subscriptionStatus) === "PROMOTIONAL_ACCEPTED"
+                    ? "Free Period"
+                    : String(membership.subscriptionStatus) === "ACTIVE_PAID"
+                      ? "Active"
+                      : String(membership.subscriptionStatus ?? "—").replace(/_/g, " ")}
+                </span>
+                <Link
+                  href="/supplier/membership"
+                  className="block text-xs font-medium text-supplier hover:underline"
+                >
+                  View details →
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href="/supplier/onboarding"
+                className="text-sm font-medium text-supplier hover:underline"
+              >
+                Activate membership →
+              </Link>
+            )}
+          </Card>
+        </div>
+      )}
 
       {/* Recent open quote requests */}
       <Card className="mt-8">

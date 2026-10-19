@@ -105,6 +105,12 @@ model Profile {
   worksDocuments                WorksDocument[]            @relation("WorksDocumentUploadedBy")
   worksNotifications            WorksNotification[]        @relation("WorksNotificationRecipient")
   worksAuditEvents              WorksAuditEvent[]          @relation("WorksAuditActor")
+  // Contractor Onboarding Module
+  abnLookups                    AbnLookupRecord[]          @relation("AbnLookupPerformedBy")
+  contractorDeclarations        ContractorDeclaration[]    @relation("ContractorDeclarationAcceptedBy")
+  contractorMembershipsAccepted ContractorMembership[]     @relation("ContractorMembershipAcceptedBy")
+  contractorReviewsAssigned     ContractorReviewItem[]     @relation("ContractorReviewAssignedTo")
+  contractorReviewsCompleted    ContractorReviewItem[]     @relation("ContractorReviewCompletedBy")
 
   @@map("profiles")
 }
@@ -1387,6 +1393,21 @@ model ContractorBusiness {
   status                String                    @default("PENDING") // PENDING, APPROVED, SUSPENDED, DEACTIVATED
   gstRegistered         Boolean                   @default(false) @map("gst_registered")
   notes                 String?
+  // Extended fields for contractor onboarding
+  businessStructure     String?                   @map("business_structure") @db.VarChar(100) // SOLE_TRADER, PARTNERSHIP, COMPANY, TRUST, OTHER
+  businessDescription   String?                   @map("business_description")
+  postalAddress         String?                   @map("postal_address")
+  suburb                String?                   @db.VarChar(100)
+  state                 String?                   @db.VarChar(3) @default("VIC")
+  postcode              String?                   @db.VarChar(4)
+  logoUrl               String?                   @map("logo_url")
+  specialistServices    String[]                  @map("specialist_services")
+  serviceRegions        String[]                  @map("service_regions")
+  usesSubcontractors    Boolean?                  @map("uses_subcontractors")
+  projectExamples       String?                   @map("project_examples")
+  quotingContactId      String?                   @map("quoting_contact_id") @db.Uuid
+  accountsContactId     String?                   @map("accounts_contact_id") @db.Uuid
+  afterHoursContactId   String?                   @map("after_hours_contact_id") @db.Uuid
   createdAt             DateTime                  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt             DateTime                  @updatedAt @db.Timestamptz @map("updated_at")
   deletedAt             DateTime?                 @db.Timestamptz @map("deleted_at")
@@ -1401,8 +1422,14 @@ model ContractorBusiness {
   invoices              WorksInvoice[]
   complianceChecks      WorksComplianceCheck[]
   bankDetailVersions    WorksBankDetailVersion[]
+  onboarding            ContractorOnboarding?
+  abnLookups            AbnLookupRecord[]
+  membership            ContractorMembership?
+  declarations          ContractorDeclaration[]
+  reviewItems           ContractorReviewItem[]
 
   @@index([status])
+  @@index([abn])
   @@map("contractor_businesses")
 }
 
@@ -1494,10 +1521,19 @@ model WorksLicence {
   issueDate             DateTime?          @db.Date @map("issue_date")
   expiryDate            DateTime?          @db.Date @map("expiry_date")
   conditions            String?
-  status                String             @default("UNVERIFIED") // UNVERIFIED, VERIFIED, EXPIRED, SUSPENDED, ENTITY_MISMATCH
+  // Extended fields for contractor onboarding
+  stateTerritory        String?            @map("state_territory") @db.VarChar(3) // NSW, VIC, QLD, SA, WA, TAS, NT, ACT
+  licenceClass          String?            @map("licence_class") @db.VarChar(200)
+  permittedWork         String?            @map("permitted_work")
+  relationshipToBusiness String?           @map("relationship_to_business") @db.VarChar(200) // HOLDER, NOMINEE, DIRECTOR, PARTNER, EMPLOYEE
+  nextReviewDate        DateTime?          @db.Date @map("next_review_date")
+  status                String             @default("UNVERIFIED") // UNVERIFIED, SUBMITTED_UNVERIFIED, UNDER_REVIEW, FURTHER_INFO_REQUIRED, VERIFIED, EXPIRED, SUSPENDED, REJECTED, ENTITY_MISMATCH
   documentUrl           String?            @map("document_url")
   verifiedById          String?            @map("verified_by_id") @db.Uuid
   verifiedAt            DateTime?          @db.Timestamptz @map("verified_at")
+  verificationSource    String?            @map("verification_source") @db.VarChar(300)
+  verificationOutcome   String?            @map("verification_outcome") @db.VarChar(100)
+  verificationNotes     String?            @map("verification_notes")
   createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
   updatedAt             DateTime           @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -1519,12 +1555,23 @@ model WorksInsurance {
   insuredName           String             @map("insured_name") @db.VarChar(300)
   insuredEntityName     String?            @map("insured_entity_name") @db.VarChar(300)
   coverageAmount        Decimal            @db.Decimal(14, 2) @map("coverage_amount")
+  coverageAmountBasis   String?            @map("coverage_amount_basis") @db.VarChar(200) // PER_OCCURRENCE, AGGREGATE, PER_PROJECT
+  coveredActivities     String?            @map("covered_activities")
+  exclusions            String?
   startDate             DateTime           @db.Date @map("start_date")
   expiryDate            DateTime           @db.Date @map("expiry_date")
-  status                String             @default("UNVERIFIED") // UNVERIFIED, VERIFIED, EXPIRED, ENTITY_MISMATCH, COVERAGE_INSUFFICIENT
+  // Extended fields for contractor onboarding
+  notApplicable         Boolean            @default(false) @map("not_applicable")
+  notApplicableReason   String?            @map("not_applicable_reason")
+  contractorComments    String?            @map("contractor_comments")
+  nextReviewDate        DateTime?          @db.Date @map("next_review_date")
+  status                String             @default("UNVERIFIED") // NOT_SUPPLIED, SUBMITTED_UNVERIFIED, UNDER_REVIEW, FURTHER_INFO_REQUIRED, VERIFIED, EXPIRED, REJECTED, NOT_APPLICABLE_REVIEWED, ENTITY_MISMATCH, COVERAGE_INSUFFICIENT
   documentUrl           String?            @map("document_url")
   verifiedById          String?            @map("verified_by_id") @db.Uuid
   verifiedAt            DateTime?          @db.Timestamptz @map("verified_at")
+  verificationSource    String?            @map("verification_source") @db.VarChar(300)
+  verificationOutcome   String?            @map("verification_outcome") @db.VarChar(100)
+  verificationNotes     String?            @map("verification_notes")
   createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
   updatedAt             DateTime           @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -2089,10 +2136,14 @@ model WorksBankDetailVersion {
   accountNumber         String                  @map("account_number") @db.VarChar(20)
   accountName           String                  @map("account_name") @db.VarChar(200)
   bankName              String?                 @map("bank_name") @db.VarChar(200)
+  remittanceEmail       String?                 @map("remittance_email") @db.VarChar(320)
+  entityDifferenceExplanation String?            @map("entity_difference_explanation")
+  supportingDocumentUrl String?                 @map("supporting_document_url")
   updatedById           String                  @map("updated_by_id") @db.Uuid
   verifiedById          String?                 @map("verified_by_id") @db.Uuid
   verificationMethod    String?                 @map("verification_method") // PHONE_CALLBACK, LETTER, IN_PERSON, OTHER
-  status                String                  @default("PENDING") // PENDING, VERIFIED, SUPERSEDED
+  status                String                  @default("PENDING") // NOT_PROVIDED, SUBMITTED_UNVERIFIED, VERIFICATION_PENDING, VERIFIED, CHANGE_PENDING, REJECTED, SUPERSEDED
+  rejectionReason       String?                 @map("rejection_reason")
   verifiedAt            DateTime?               @db.Timestamptz @map("verified_at")
   createdAt             DateTime                @default(now()) @db.Timestamptz @map("created_at")
 
@@ -2186,4 +2237,157 @@ model WorksAuditEvent {
   @@index([entityType, entityId])
   @@index([actorId])
   @@map("works_audit_events")
+}
+
+// ─── Contractor Onboarding Module ──────────────────────────────────
+
+model ContractorOnboarding {
+  id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId    String             @unique @map("contractor_business_id") @db.Uuid
+  status                  String             @default("DRAFT") // DRAFT, SUBMITTED, INFORMATION_REQUIRED, REVIEWED
+  currentStep             Int                @default(1) @map("current_step") // 1-8
+  // Per-step completion flags
+  stepAccountComplete     Boolean            @default(false) @map("step_account_complete")
+  stepBusinessComplete    Boolean            @default(false) @map("step_business_complete")
+  stepServicesComplete    Boolean            @default(false) @map("step_services_complete")
+  stepLicencesComplete    Boolean            @default(false) @map("step_licences_complete")
+  stepInsuranceComplete   Boolean            @default(false) @map("step_insurance_complete")
+  stepBankingComplete     Boolean            @default(false) @map("step_banking_complete")
+  stepMembershipComplete  Boolean            @default(false) @map("step_membership_complete")
+  stepReviewComplete      Boolean            @default(false) @map("step_review_complete")
+  submittedAt             DateTime?          @db.Timestamptz @map("submitted_at")
+  reviewedAt              DateTime?          @db.Timestamptz @map("reviewed_at")
+  reviewNotes             String?            @map("review_notes")
+  createdAt               DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt               DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  contractorBusiness      ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("contractor_onboardings")
+}
+
+model AbnLookupRecord {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId  String             @map("contractor_business_id") @db.Uuid
+  abn                   String             @db.VarChar(11)
+  // Returned fields from ABN Lookup
+  entityName            String?            @map("entity_name") @db.VarChar(500)
+  entityType            String?            @map("entity_type") @db.VarChar(200)
+  abnStatus             String?            @map("abn_status") @db.VarChar(50) // Active, Cancelled, etc.
+  abnStatusFromDate     DateTime?          @db.Date @map("abn_status_from_date")
+  gstStatus             String?            @map("gst_status") @db.VarChar(50)
+  gstStatusFromDate     DateTime?          @db.Date @map("gst_status_from_date")
+  businessNames         String[]           @map("business_names")
+  locationState         String?            @map("location_state") @db.VarChar(3)
+  locationPostcode      String?            @map("location_postcode") @db.VarChar(4)
+  // Lookup metadata
+  lookupStatus          String             @default("PENDING") @map("lookup_status") // NOT_CHECKED, LOOKUP_PENDING, ACTIVE_MATCHED, INACTIVE_REVIEW, DETAILS_REVIEW, LOOKUP_UNAVAILABLE
+  lookupTimestamp       DateTime           @db.Timestamptz @map("lookup_timestamp")
+  rawResponse           Json?              @map("raw_response")
+  errorMessage          String?            @map("error_message")
+  performedById         String?            @map("performed_by_id") @db.Uuid
+  createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
+
+  contractorBusiness    ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  performedBy           Profile?           @relation("AbnLookupPerformedBy", fields: [performedById], references: [id])
+
+  @@index([contractorBusinessId])
+  @@index([abn])
+  @@map("abn_lookup_records")
+}
+
+model ContractorMembership {
+  id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId    String             @unique @map("contractor_business_id") @db.Uuid
+  // Promotion tracking
+  promotionId             String?            @map("promotion_id") @db.VarChar(100) // e.g. "LAUNCH_2027"
+  promotionStart          DateTime?          @db.Timestamptz @map("promotion_start")
+  promotionEnd            DateTime?          @db.Timestamptz @map("promotion_end")
+  termsVersion            String?            @map("terms_version") @db.VarChar(50)
+  acceptedById            String?            @map("accepted_by_id") @db.Uuid
+  acceptedAt              DateTime?          @db.Timestamptz @map("accepted_at")
+  // Paid subscription
+  paidActivationStatus    String             @default("NOT_ACTIVATED") @map("paid_activation_status") // NOT_ACTIVATED, PENDING, ACTIVATED, FAILED
+  billingStart            DateTime?          @db.Timestamptz @map("billing_start")
+  subscriptionStatus      String             @default("PROMOTIONAL") // PROMOTIONAL, ACTIVATION_PENDING, PAID_ACTIVE, PAST_DUE, CANCELLED, EXPIRED
+  // Payment provider references
+  providerCustomerId      String?            @map("provider_customer_id") @db.VarChar(200)
+  providerSubscriptionId  String?            @map("provider_subscription_id") @db.VarChar(200)
+  providerPriceId         String?            @map("provider_price_id") @db.VarChar(200)
+  paymentMethodSummary    String?            @map("payment_method_summary") @db.VarChar(100) // e.g. "Visa ****1234"
+  // Billing cycle
+  currentPeriodStart      DateTime?          @db.Timestamptz @map("current_period_start")
+  currentPeriodEnd        DateTime?          @db.Timestamptz @map("current_period_end")
+  nextRenewalDate         DateTime?          @db.Timestamptz @map("next_renewal_date")
+  cancelledAt             DateTime?          @db.Timestamptz @map("cancelled_at")
+  cancellationEffective   DateTime?          @db.Timestamptz @map("cancellation_effective")
+  lastPaymentFailure      DateTime?          @db.Timestamptz @map("last_payment_failure")
+  lastPaymentFailureReason String?           @map("last_payment_failure_reason")
+  // Plan details
+  planName                String             @default("StrataVerze Contractor") @map("plan_name") @db.VarChar(200)
+  planCurrency            String             @default("AUD") @map("plan_currency") @db.VarChar(3)
+  planMonthlyPrice        Decimal            @default(65.00) @db.Decimal(10, 2) @map("plan_monthly_price")
+  planGstInclusive        Boolean            @default(true) @map("plan_gst_inclusive")
+  billingTimezone         String             @default("Australia/Sydney") @map("billing_timezone") @db.VarChar(100)
+  createdAt               DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt               DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  contractorBusiness      ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  acceptedBy              Profile?           @relation("ContractorMembershipAcceptedBy", fields: [acceptedById], references: [id])
+
+  @@index([subscriptionStatus])
+  @@map("contractor_memberships")
+}
+
+model ContractorDeclaration {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId  String             @map("contractor_business_id") @db.Uuid
+  declarationType       String             @map("declaration_type") // AUTHORITY_TO_REPRESENT, ACCURACY_OF_INFORMATION, OBLIGATION_TO_NOTIFY, PLATFORM_TERMS, PRIVACY_NOTICE, PROMOTIONAL_TERMS, MARKETING_CONSENT
+  documentVersion       String             @map("document_version") @db.VarChar(50)
+  accepted              Boolean            @default(false)
+  acceptedAt            DateTime?          @db.Timestamptz @map("accepted_at")
+  acceptedById          String?            @map("accepted_by_id") @db.Uuid
+  ipAddress             String?            @map("ip_address") @db.VarChar(45)
+  createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
+
+  contractorBusiness    ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  acceptedBy            Profile?           @relation("ContractorDeclarationAcceptedBy", fields: [acceptedById], references: [id])
+
+  @@index([contractorBusinessId])
+  @@index([declarationType])
+  @@map("contractor_declarations")
+}
+
+model ContractorReviewItem {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contractorBusinessId  String             @map("contractor_business_id") @db.Uuid
+  queueType             String             @map("queue_type") // NEW_APPLICATION, ABN_EXCEPTION, DUPLICATE_BUSINESS, LICENCE_REVIEW, INSURANCE_REVIEW, BANK_VERIFICATION, MISSING_INFORMATION, EXPIRING_DOCUMENT, PROMOTION_CONVERSION, BILLING_ISSUE
+  status                String             @default("PENDING") // PENDING, IN_PROGRESS, AWAITING_RESPONSE, APPROVED, REJECTED, DEFERRED
+  assignedToId          String?            @map("assigned_to_id") @db.Uuid
+  // What is being reviewed
+  entityType            String?            @map("entity_type") @db.VarChar(100) // ContractorBusiness, WorksLicence, WorksInsurance, WorksBankDetailVersion
+  entityId              String?            @map("entity_id") @db.Uuid
+  // Review details
+  priority              String             @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  notes                 String?
+  clarificationRequest  String?            @map("clarification_request")
+  clarificationResponse String?            @map("clarification_response")
+  evidence              String?            // URL or description of verification evidence
+  outcome               String?            @db.VarChar(100) // APPROVED, REJECTED, NEEDS_INFO, DEFERRED
+  outcomeNotes          String?            @map("outcome_notes")
+  completedById         String?            @map("completed_by_id") @db.Uuid
+  reviewDate            DateTime?          @db.Date @map("review_date")
+  completedAt           DateTime?          @db.Timestamptz @map("completed_at")
+  createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  contractorBusiness    ContractorBusiness @relation(fields: [contractorBusinessId], references: [id], onDelete: Cascade)
+  assignedTo            Profile?           @relation("ContractorReviewAssignedTo", fields: [assignedToId], references: [id])
+  completedBy           Profile?           @relation("ContractorReviewCompletedBy", fields: [completedById], references: [id])
+
+  @@index([contractorBusinessId])
+  @@index([queueType, status])
+  @@index([assignedToId])
+  @@map("contractor_review_items")
 }

@@ -16,6 +16,10 @@ import {
   ChevronsLeft,
   Truck,
   BarChart3,
+  UserPlus,
+  Shield,
+  CreditCard,
+  Settings,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -38,6 +42,7 @@ const adviserNav = [
   { label: "Schemes", href: "/adviser/schemes", icon: Building2 },
   { label: "Compliance", href: "/adviser/compliance", icon: CheckSquare },
   { label: "Suppliers", href: "/adviser/suppliers", icon: Truck },
+  { label: "Contractors", href: "/adviser/contractors", icon: UserPlus },
   { label: "Work Orders", href: "/adviser/work-orders", icon: Briefcase },
   { label: "Reporting", href: "/adviser/reporting", icon: BarChart3 },
   { label: "Documents", href: "/adviser/documents", icon: FileText },
@@ -45,10 +50,14 @@ const adviserNav = [
 
 const supplierNav = [
   { label: "Dashboard", href: "/supplier", icon: LayoutGrid },
+  { label: "Onboarding", href: "/supplier/onboarding", icon: UserPlus },
   { label: "Quote Requests", href: "/supplier/quotes", icon: ClipboardList },
   { label: "My Quotes", href: "/supplier/my-quotes", icon: FileText },
   { label: "Work Orders", href: "/supplier/work-orders", icon: Briefcase },
   { label: "Invoices", href: "/supplier/invoices", icon: ClipboardList },
+  { label: "Compliance", href: "/supplier/compliance", icon: Shield },
+  { label: "Membership", href: "/supplier/membership", icon: CreditCard },
+  { label: "Settings", href: "/supplier/settings", icon: Settings },
 ];
 
 const accountantNav = [

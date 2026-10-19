@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "abn_lookup_records": {
+      "model": "AbnLookupRecord",
+      "namespace": "public"
+    },
     "account_codes": {
       "model": "AccountCode",
       "namespace": "public"
@@ -46,6 +50,22 @@
     },
     "contractor_contacts": {
       "model": "ContractorContact",
+      "namespace": "public"
+    },
+    "contractor_declarations": {
+      "model": "ContractorDeclaration",
+      "namespace": "public"
+    },
+    "contractor_memberships": {
+      "model": "ContractorMembership",
+      "namespace": "public"
+    },
+    "contractor_onboardings": {
+      "model": "ContractorOnboarding",
+      "namespace": "public"
+    },
+    "contractor_review_items": {
+      "model": "ContractorReviewItem",
       "namespace": "public"
     },
     "documents": {
@@ -341,6 +361,254 @@
     "namespaces": {
       "public": {
         "models": {
+          "AbnLookupRecord": {
+            "fields": {
+              "abn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 11
+                  }
+                }
+              },
+              "abnStatus": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 50
+                  }
+                }
+              },
+              "abnStatusFromDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "businessNames": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "contractorBusinessId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "entityName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "entityType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "errorMessage": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstStatus": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 50
+                  }
+                }
+              },
+              "gstStatusFromDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "locationPostcode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 4
+                  }
+                }
+              },
+              "locationState": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 3
+                  }
+                }
+              },
+              "lookupStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "lookupTimestamp": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "performedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "rawResponse": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "contractorBusiness": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "contractorBusinessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorBusiness",
+                  "namespace": "public"
+                }
+              },
+              "performedBy": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "performedById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "abn": {
+                  "column": "abn"
+                },
+                "abnStatus": {
+                  "column": "abn_status"
+                },
+                "abnStatusFromDate": {
+                  "column": "abn_status_from_date"
+                },
+                "businessNames": {
+                  "column": "business_names"
+                },
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "entityName": {
+                  "column": "entity_name"
+                },
+                "entityType": {
+                  "column": "entity_type"
+                },
+                "errorMessage": {
+                  "column": "error_message"
+                },
+                "gstStatus": {
+                  "column": "gst_status"
+                },
+                "gstStatusFromDate": {
+                  "column": "gst_status_from_date"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "locationPostcode": {
+                  "column": "location_postcode"
+                },
+                "locationState": {
+                  "column": "location_state"
+                },
+                "lookupStatus": {
+                  "column": "lookup_status"
+                },
+                "lookupTimestamp": {
+                  "column": "lookup_timestamp"
+                },
+                "performedById": {
+                  "column": "performed_by_id"
+                },
+                "rawResponse": {
+                  "column": "raw_response"
+                }
+              },
+              "namespaceId": "public",
+              "table": "abn_lookup_records"
+            }
+          },
           "AccountCode": {
             "fields": {
               "accountSubType": {
@@ -1887,6 +2155,13 @@
                   }
                 }
               },
+              "accountsContactId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "acn": {
                 "nullable": true,
                 "type": {
@@ -1894,6 +2169,30 @@
                   "kind": "scalar",
                   "typeParams": {
                     "length": 9
+                  }
+                }
+              },
+              "afterHoursContactId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "businessDescription": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "businessStructure": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
                   }
                 }
               },
@@ -1945,6 +2244,13 @@
                   "kind": "scalar"
                 }
               },
+              "logoUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "notes": {
                 "nullable": true,
                 "type": {
@@ -1962,6 +2268,37 @@
                   }
                 }
               },
+              "postalAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "postcode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 4
+                  }
+                }
+              },
+              "projectExamples": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "quotingContactId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "registeredAddress": {
                 "nullable": true,
                 "type": {
@@ -1969,11 +2306,51 @@
                   "kind": "scalar"
                 }
               },
+              "serviceRegions": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "specialistServices": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "state": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 3
+                  }
+                }
+              },
               "status": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
+                }
+              },
+              "suburb": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
                 }
               },
               "tradeCategories": {
@@ -2003,6 +2380,13 @@
                   "kind": "scalar"
                 }
               },
+              "usesSubcontractors": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "website": {
                 "nullable": true,
                 "type": {
@@ -2015,6 +2399,21 @@
               }
             },
             "relations": {
+              "abnLookups": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "contractorBusinessId"
+                  ]
+                },
+                "to": {
+                  "model": "AbnLookupRecord",
+                  "namespace": "public"
+                }
+              },
               "bankDetailVersions": {
                 "cardinality": "1:N",
                 "on": {
@@ -2075,6 +2474,21 @@
                   "namespace": "public"
                 }
               },
+              "declarations": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "contractorBusinessId"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorDeclaration",
+                  "namespace": "public"
+                }
+              },
               "insurances": {
                 "cardinality": "1:N",
                 "on": {
@@ -2120,6 +2534,38 @@
                   "namespace": "public"
                 }
               },
+              "membership": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "contractorBusinessId"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorMembership",
+                  "namespace": "public"
+                }
+              },
+              "onboarding": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "contractorBusinessId"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorOnboarding",
+                  "namespace": "public"
+                }
+              },
               "quotations": {
                 "cardinality": "1:N",
                 "on": {
@@ -2132,6 +2578,21 @@
                 },
                 "to": {
                   "model": "WorksQuotation",
+                  "namespace": "public"
+                }
+              },
+              "reviewItems": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "contractorBusinessId"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorReviewItem",
                   "namespace": "public"
                 }
               },
@@ -2171,8 +2632,20 @@
                 "abn": {
                   "column": "abn"
                 },
+                "accountsContactId": {
+                  "column": "accounts_contact_id"
+                },
                 "acn": {
                   "column": "acn"
+                },
+                "afterHoursContactId": {
+                  "column": "after_hours_contact_id"
+                },
+                "businessDescription": {
+                  "column": "business_description"
+                },
+                "businessStructure": {
+                  "column": "business_structure"
                 },
                 "companyName": {
                   "column": "company_name"
@@ -2192,17 +2665,44 @@
                 "id": {
                   "column": "id"
                 },
+                "logoUrl": {
+                  "column": "logo_url"
+                },
                 "notes": {
                   "column": "notes"
                 },
                 "phone": {
                   "column": "phone"
                 },
+                "postalAddress": {
+                  "column": "postal_address"
+                },
+                "postcode": {
+                  "column": "postcode"
+                },
+                "projectExamples": {
+                  "column": "project_examples"
+                },
+                "quotingContactId": {
+                  "column": "quoting_contact_id"
+                },
                 "registeredAddress": {
                   "column": "registered_address"
                 },
+                "serviceRegions": {
+                  "column": "service_regions"
+                },
+                "specialistServices": {
+                  "column": "specialist_services"
+                },
+                "state": {
+                  "column": "state"
+                },
                 "status": {
                   "column": "status"
+                },
+                "suburb": {
+                  "column": "suburb"
                 },
                 "tradeCategories": {
                   "column": "trade_categories"
@@ -2212,6 +2712,9 @@
                 },
                 "updatedAt": {
                   "column": "updated_at"
+                },
+                "usesSubcontractors": {
+                  "column": "uses_subcontractors"
                 },
                 "website": {
                   "column": "website"
@@ -2398,6 +2901,965 @@
               },
               "namespaceId": "public",
               "table": "contractor_contacts"
+            }
+          },
+          "ContractorDeclaration": {
+            "fields": {
+              "accepted": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "acceptedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "acceptedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "contractorBusinessId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "declarationType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "documentVersion": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 50
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "ipAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 45
+                  }
+                }
+              }
+            },
+            "relations": {
+              "acceptedBy": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "acceptedById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "contractorBusiness": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "contractorBusinessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorBusiness",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accepted": {
+                  "column": "accepted"
+                },
+                "acceptedAt": {
+                  "column": "accepted_at"
+                },
+                "acceptedById": {
+                  "column": "accepted_by_id"
+                },
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "declarationType": {
+                  "column": "declaration_type"
+                },
+                "documentVersion": {
+                  "column": "document_version"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "ipAddress": {
+                  "column": "ip_address"
+                }
+              },
+              "namespaceId": "public",
+              "table": "contractor_declarations"
+            }
+          },
+          "ContractorMembership": {
+            "fields": {
+              "acceptedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "acceptedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "billingStart": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "billingTimezone": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "cancellationEffective": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "cancelledAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "contractorBusinessId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "currentPeriodEnd": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "currentPeriodStart": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastPaymentFailure": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastPaymentFailureReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "nextRenewalDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "paidActivationStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "paymentMethodSummary": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "planCurrency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 3
+                  }
+                }
+              },
+              "planGstInclusive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "planMonthlyPrice": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                }
+              },
+              "planName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "promotionEnd": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "promotionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "promotionStart": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "providerCustomerId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "providerPriceId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "providerSubscriptionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "subscriptionStatus": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "termsVersion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 50
+                  }
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "acceptedBy": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "acceptedById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "contractorBusiness": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "contractorBusinessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorBusiness",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "acceptedAt": {
+                  "column": "accepted_at"
+                },
+                "acceptedById": {
+                  "column": "accepted_by_id"
+                },
+                "billingStart": {
+                  "column": "billing_start"
+                },
+                "billingTimezone": {
+                  "column": "billing_timezone"
+                },
+                "cancellationEffective": {
+                  "column": "cancellation_effective"
+                },
+                "cancelledAt": {
+                  "column": "cancelled_at"
+                },
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "currentPeriodEnd": {
+                  "column": "current_period_end"
+                },
+                "currentPeriodStart": {
+                  "column": "current_period_start"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastPaymentFailure": {
+                  "column": "last_payment_failure"
+                },
+                "lastPaymentFailureReason": {
+                  "column": "last_payment_failure_reason"
+                },
+                "nextRenewalDate": {
+                  "column": "next_renewal_date"
+                },
+                "paidActivationStatus": {
+                  "column": "paid_activation_status"
+                },
+                "paymentMethodSummary": {
+                  "column": "payment_method_summary"
+                },
+                "planCurrency": {
+                  "column": "plan_currency"
+                },
+                "planGstInclusive": {
+                  "column": "plan_gst_inclusive"
+                },
+                "planMonthlyPrice": {
+                  "column": "plan_monthly_price"
+                },
+                "planName": {
+                  "column": "plan_name"
+                },
+                "promotionEnd": {
+                  "column": "promotion_end"
+                },
+                "promotionId": {
+                  "column": "promotion_id"
+                },
+                "promotionStart": {
+                  "column": "promotion_start"
+                },
+                "providerCustomerId": {
+                  "column": "provider_customer_id"
+                },
+                "providerPriceId": {
+                  "column": "provider_price_id"
+                },
+                "providerSubscriptionId": {
+                  "column": "provider_subscription_id"
+                },
+                "subscriptionStatus": {
+                  "column": "subscriptionStatus"
+                },
+                "termsVersion": {
+                  "column": "terms_version"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "contractor_memberships"
+            }
+          },
+          "ContractorOnboarding": {
+            "fields": {
+              "contractorBusinessId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "currentStep": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewNotes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepAccountComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepBankingComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepBusinessComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepInsuranceComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepLicencesComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepMembershipComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepReviewComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "stepServicesComplete": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "submittedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "contractorBusiness": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "contractorBusinessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorBusiness",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "currentStep": {
+                  "column": "current_step"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "reviewNotes": {
+                  "column": "review_notes"
+                },
+                "reviewedAt": {
+                  "column": "reviewed_at"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "stepAccountComplete": {
+                  "column": "step_account_complete"
+                },
+                "stepBankingComplete": {
+                  "column": "step_banking_complete"
+                },
+                "stepBusinessComplete": {
+                  "column": "step_business_complete"
+                },
+                "stepInsuranceComplete": {
+                  "column": "step_insurance_complete"
+                },
+                "stepLicencesComplete": {
+                  "column": "step_licences_complete"
+                },
+                "stepMembershipComplete": {
+                  "column": "step_membership_complete"
+                },
+                "stepReviewComplete": {
+                  "column": "step_review_complete"
+                },
+                "stepServicesComplete": {
+                  "column": "step_services_complete"
+                },
+                "submittedAt": {
+                  "column": "submitted_at"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "contractor_onboardings"
+            }
+          },
+          "ContractorReviewItem": {
+            "fields": {
+              "assignedToId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "clarificationRequest": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "clarificationResponse": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "completedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "completedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "contractorBusinessId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "entityId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "entityType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "evidence": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "notes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "outcome": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "outcomeNotes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "priority": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "queueType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reviewDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "assignedTo": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "assignedToId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "completedBy": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "completedById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "contractorBusiness": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "contractorBusinessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorBusiness",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "assignedToId": {
+                  "column": "assigned_to_id"
+                },
+                "clarificationRequest": {
+                  "column": "clarification_request"
+                },
+                "clarificationResponse": {
+                  "column": "clarification_response"
+                },
+                "completedAt": {
+                  "column": "completed_at"
+                },
+                "completedById": {
+                  "column": "completed_by_id"
+                },
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "entityId": {
+                  "column": "entity_id"
+                },
+                "entityType": {
+                  "column": "entity_type"
+                },
+                "evidence": {
+                  "column": "evidence"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "notes": {
+                  "column": "notes"
+                },
+                "outcome": {
+                  "column": "outcome"
+                },
+                "outcomeNotes": {
+                  "column": "outcome_notes"
+                },
+                "priority": {
+                  "column": "priority"
+                },
+                "queueType": {
+                  "column": "queue_type"
+                },
+                "reviewDate": {
+                  "column": "review_date"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "contractor_review_items"
             }
           },
           "Document": {
@@ -6556,6 +8018,21 @@
               }
             },
             "relations": {
+              "abnLookups": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "performedById"
+                  ]
+                },
+                "to": {
+                  "model": "AbnLookupRecord",
+                  "namespace": "public"
+                }
+              },
               "activityLogs": {
                 "cardinality": "1:N",
                 "on": {
@@ -6628,6 +8105,66 @@
                 },
                 "to": {
                   "model": "ContractorContact",
+                  "namespace": "public"
+                }
+              },
+              "contractorDeclarations": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "acceptedById"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorDeclaration",
+                  "namespace": "public"
+                }
+              },
+              "contractorMembershipsAccepted": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "acceptedById"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorMembership",
+                  "namespace": "public"
+                }
+              },
+              "contractorReviewsAssigned": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "assignedToId"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorReviewItem",
+                  "namespace": "public"
+                }
+              },
+              "contractorReviewsCompleted": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "completedById"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorReviewItem",
                   "namespace": "public"
                 }
               },
@@ -10900,6 +12437,13 @@
                   "kind": "scalar"
                 }
               },
+              "entityDifferenceExplanation": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -10907,8 +12451,32 @@
                   "kind": "scalar"
                 }
               },
+              "rejectionReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "remittanceEmail": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 320
+                  }
+                }
+              },
               "status": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "supportingDocumentUrl": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -11035,11 +12603,23 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "entityDifferenceExplanation": {
+                  "column": "entity_difference_explanation"
+                },
                 "id": {
                   "column": "id"
                 },
+                "rejectionReason": {
+                  "column": "rejection_reason"
+                },
+                "remittanceEmail": {
+                  "column": "remittance_email"
+                },
                 "status": {
                   "column": "status"
+                },
+                "supportingDocumentUrl": {
+                  "column": "supporting_document_url"
                 },
                 "updatedById": {
                   "column": "updated_by_id"
@@ -13389,6 +14969,13 @@
                   "kind": "scalar"
                 }
               },
+              "contractorComments": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "coverageAmount": {
                 "nullable": false,
                 "type": {
@@ -13400,6 +14987,23 @@
                   }
                 }
               },
+              "coverageAmountBasis": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "coveredActivities": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -13408,6 +15012,13 @@
                 }
               },
               "documentUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "exclusions": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -13458,6 +15069,27 @@
                   }
                 }
               },
+              "nextReviewDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "notApplicable": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "notApplicableReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "policyNumber": {
                 "nullable": false,
                 "type": {
@@ -13494,6 +15126,33 @@
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
+                }
+              },
+              "verificationNotes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationOutcome": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "verificationSource": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 300
+                  }
                 }
               },
               "verifiedAt": {
@@ -13565,14 +15224,26 @@
                 "contractorBusinessId": {
                   "column": "contractor_business_id"
                 },
+                "contractorComments": {
+                  "column": "contractor_comments"
+                },
                 "coverageAmount": {
                   "column": "coverage_amount"
+                },
+                "coverageAmountBasis": {
+                  "column": "coverage_amount_basis"
+                },
+                "coveredActivities": {
+                  "column": "covered_activities"
                 },
                 "createdAt": {
                   "column": "created_at"
                 },
                 "documentUrl": {
                   "column": "document_url"
+                },
+                "exclusions": {
+                  "column": "exclusions"
                 },
                 "expiryDate": {
                   "column": "expiry_date"
@@ -13589,6 +15260,15 @@
                 "insurer": {
                   "column": "insurer"
                 },
+                "nextReviewDate": {
+                  "column": "next_review_date"
+                },
+                "notApplicable": {
+                  "column": "not_applicable"
+                },
+                "notApplicableReason": {
+                  "column": "not_applicable_reason"
+                },
                 "policyNumber": {
                   "column": "policy_number"
                 },
@@ -13603,6 +15283,15 @@
                 },
                 "updatedAt": {
                   "column": "updated_at"
+                },
+                "verificationNotes": {
+                  "column": "verification_notes"
+                },
+                "verificationOutcome": {
+                  "column": "verification_outcome"
+                },
+                "verificationSource": {
+                  "column": "verification_source"
                 },
                 "verifiedAt": {
                   "column": "verified_at"
@@ -14236,6 +15925,16 @@
                   }
                 }
               },
+              "licenceClass": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
               "licenceNumber": {
                 "nullable": false,
                 "type": {
@@ -14256,6 +15955,40 @@
                   }
                 }
               },
+              "nextReviewDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "permittedWork": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "relationshipToBusiness": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 200
+                  }
+                }
+              },
+              "stateTerritory": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 3
+                  }
+                }
+              },
               "status": {
                 "nullable": false,
                 "type": {
@@ -14268,6 +16001,33 @@
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
+                }
+              },
+              "verificationNotes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationOutcome": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
+              "verificationSource": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 300
+                  }
                 }
               },
               "verifiedAt": {
@@ -14366,17 +16126,41 @@
                 "issuingAuthority": {
                   "column": "issuing_authority"
                 },
+                "licenceClass": {
+                  "column": "licence_class"
+                },
                 "licenceNumber": {
                   "column": "licence_number"
                 },
                 "licenceType": {
                   "column": "licence_type"
                 },
+                "nextReviewDate": {
+                  "column": "next_review_date"
+                },
+                "permittedWork": {
+                  "column": "permitted_work"
+                },
+                "relationshipToBusiness": {
+                  "column": "relationship_to_business"
+                },
+                "stateTerritory": {
+                  "column": "state_territory"
+                },
                 "status": {
                   "column": "status"
                 },
                 "updatedAt": {
                   "column": "updated_at"
+                },
+                "verificationNotes": {
+                  "column": "verification_notes"
+                },
+                "verificationOutcome": {
+                  "column": "verification_outcome"
+                },
+                "verificationSource": {
+                  "column": "verification_source"
                 },
                 "verifiedAt": {
                   "column": "verified_at"
@@ -18999,6 +20783,202 @@
             }
           },
           "table": {
+            "abn_lookup_records": {
+              "columns": {
+                "abn": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 11
+                  }
+                },
+                "abn_status": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 50
+                  }
+                },
+                "abn_status_from_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "business_names": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "noCheck": [
+                    "elementNotNull"
+                  ],
+                  "nullable": true
+                },
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "entity_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "entity_type": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "error_message": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "gst_status": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 50
+                  }
+                },
+                "gst_status_from_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "location_postcode": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 4
+                  }
+                },
+                "location_state": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 3
+                  }
+                },
+                "lookup_status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING"
+                  },
+                  "nullable": false
+                },
+                "lookup_timestamp": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "performed_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "raw_response": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "abn_lookup_records_contractor_business_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "contractor_business_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "abn_lookup_records"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_businesses"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "performed_by_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "abn_lookup_records"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "abn"
+                  ],
+                  "name": "abn_lookup_records_abn_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "contractor_business_id"
+                  ],
+                  "name": "abn_lookup_records_contractor_business_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "account_codes": {
               "columns": {
                 "account_sub_type": {
@@ -20217,12 +22197,35 @@
                     "length": 11
                   }
                 },
+                "accounts_contact_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "acn": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
                   "nullable": true,
                   "typeParams": {
                     "length": 9
+                  }
+                },
+                "after_hours_contact_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "business_description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "business_structure": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
                   }
                 },
                 "company_name": {
@@ -20273,6 +22276,11 @@
                   },
                   "nullable": false
                 },
+                "logo_url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "notes": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -20286,10 +22294,67 @@
                     "length": 20
                   }
                 },
+                "postal_address": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "postcode": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 4
+                  }
+                },
+                "project_examples": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "quoting_contact_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "registered_address": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
+                },
+                "service_regions": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "noCheck": [
+                    "elementNotNull"
+                  ],
+                  "nullable": true
+                },
+                "specialist_services": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "noCheck": [
+                    "elementNotNull"
+                  ],
+                  "nullable": true
+                },
+                "state": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "default": {
+                    "kind": "literal",
+                    "value": "VIC"
+                  },
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 3
+                  }
                 },
                 "status": {
                   "codecId": "pg/text@1",
@@ -20299,6 +22364,14 @@
                     "value": "PENDING"
                   },
                   "nullable": false
+                },
+                "suburb": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
                 },
                 "trade_categories": {
                   "codecId": "pg/text@1",
@@ -20324,6 +22397,11 @@
                   "dataType": "pg/timestamptz",
                   "nullable": false
                 },
+                "uses_subcontractors": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
+                },
                 "website": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
@@ -20335,6 +22413,13 @@
               },
               "foreignKeys": [],
               "indexes": [
+                {
+                  "columns": [
+                    "abn"
+                  ],
+                  "name": "contractor_businesses_abn_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "status"
@@ -20491,6 +22576,810 @@
                     "contractor_business_id"
                   ],
                   "name": "contractor_contacts_contractor_business_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "contractor_declarations": {
+              "columns": {
+                "accepted": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "accepted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "accepted_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "declaration_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "document_version": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 50
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "ip_address": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 45
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "contractor_declarations_contractor_business_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "contractor_business_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_declarations"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_businesses"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "accepted_by_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_declarations"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "contractor_business_id"
+                  ],
+                  "name": "contractor_declarations_contractor_business_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "declaration_type"
+                  ],
+                  "name": "contractor_declarations_declaration_type_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "contractor_memberships": {
+              "columns": {
+                "accepted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "accepted_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "billing_start": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "billing_timezone": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "default": {
+                    "kind": "literal",
+                    "value": "Australia/Sydney"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "cancellation_effective": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "cancelled_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "current_period_end": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "current_period_start": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "last_payment_failure": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "last_payment_failure_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "next_renewal_date": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "paid_activation_status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "NOT_ACTIVATED"
+                  },
+                  "nullable": false
+                },
+                "payment_method_summary": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "plan_currency": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "default": {
+                    "kind": "literal",
+                    "value": "AUD"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 3
+                  }
+                },
+                "plan_gst_inclusive": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "plan_monthly_price": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "65.00"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                },
+                "plan_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "default": {
+                    "kind": "literal",
+                    "value": "StrataVerze Contractor"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "promotion_end": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "promotion_id": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "promotion_start": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "provider_customer_id": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "provider_price_id": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "provider_subscription_id": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "subscriptionStatus": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PROMOTIONAL"
+                  },
+                  "nullable": false
+                },
+                "terms_version": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 50
+                  }
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "contractor_memberships_contractor_business_id_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "contractor_business_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_memberships"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_businesses"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "accepted_by_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_memberships"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "contractor_business_id"
+                  ],
+                  "name": "contractor_memberships_contractor_business_id_key",
+                  "unique": true
+                },
+                {
+                  "columns": [
+                    "subscriptionStatus"
+                  ],
+                  "name": "contractor_memberships_subscriptionStatus_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "contractor_onboardings": {
+              "columns": {
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "current_step": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "review_notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reviewed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "DRAFT"
+                  },
+                  "nullable": false
+                },
+                "step_account_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "step_banking_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "step_business_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "step_insurance_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "step_licences_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "step_membership_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "step_review_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "step_services_complete": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "submitted_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "contractor_onboardings_contractor_business_id_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "contractor_business_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_onboardings"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_businesses"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "contractor_business_id"
+                  ],
+                  "name": "contractor_onboardings_contractor_business_id_key",
+                  "unique": true
+                },
+                {
+                  "columns": [
+                    "status"
+                  ],
+                  "name": "contractor_onboardings_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "contractor_review_items": {
+              "columns": {
+                "assigned_to_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "clarification_request": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "clarification_response": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "completed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "completed_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "entity_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "entity_type": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "evidence": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "outcome": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "outcome_notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "priority": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "NORMAL"
+                  },
+                  "nullable": false
+                },
+                "queue_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "review_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "PENDING"
+                  },
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "contractor_review_items_contractor_business_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "contractor_business_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_review_items"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_businesses"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "contractor_review_items_assigned_to_id_idx"
+                  },
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "assigned_to_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_review_items"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "completed_by_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_review_items"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "assigned_to_id"
+                  ],
+                  "name": "contractor_review_items_assigned_to_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "contractor_business_id"
+                  ],
+                  "name": "contractor_review_items_contractor_business_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "queue_type",
+                    "status"
+                  ],
+                  "name": "contractor_review_items_queue_type_status_idx",
                   "unique": false
                 }
               ],
@@ -25897,6 +28786,11 @@
                   },
                   "nullable": false
                 },
+                "entity_difference_explanation": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -25906,6 +28800,19 @@
                   },
                   "nullable": false
                 },
+                "rejection_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "remittance_email": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 320
+                  }
+                },
                 "status": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -25914,6 +28821,11 @@
                     "value": "PENDING"
                   },
                   "nullable": false
+                },
+                "supporting_document_url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "updated_by_id": {
                   "codecId": "pg/uuid@1",
@@ -27941,6 +30853,11 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "contractor_comments": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "coverage_amount": {
                   "codecId": "pg/numeric@1",
                   "dataType": "pg/numeric",
@@ -27949,6 +30866,19 @@
                     "precision": 14,
                     "scale": 2
                   }
+                },
+                "coverage_amount_basis": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "covered_activities": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -27960,6 +30890,11 @@
                   "nullable": false
                 },
                 "document_url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "exclusions": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -28002,6 +30937,25 @@
                     "length": 300
                   }
                 },
+                "next_review_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "not_applicable": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "not_applicable_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "policy_number": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
@@ -28033,6 +30987,27 @@
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
                   "nullable": false
+                },
+                "verification_notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "verification_outcome": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "verification_source": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 300
+                  }
                 },
                 "verified_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -28587,6 +31562,14 @@
                     "length": 300
                   }
                 },
+                "licence_class": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
                 "licence_number": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
@@ -28603,6 +31586,32 @@
                     "length": 200
                   }
                 },
+                "next_review_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "permitted_work": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "relationship_to_business": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 200
+                  }
+                },
+                "state_territory": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 3
+                  }
+                },
                 "status": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -28616,6 +31625,27 @@
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
                   "nullable": false
+                },
+                "verification_notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "verification_outcome": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
+                "verification_source": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 300
+                  }
                 },
                 "verified_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -32300,10 +35330,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "849d28ee8c8b099b32cd4bb32013e7fecfa81c20fa436e0a8f55d6e91eb5186f"
+    "storageHash": "6c9caf74ee58eb790305af12117a329da573d046ab9aaf38bfa47edd9793549f"
   },
   "execution": {
-    "executionHash": "b1f03b5e7263f73edfaec1e4b8185daaf67e2e87d4632ba5d4e88465c24bbd92",
+    "executionHash": "da7567e18d8c8827ca3d6ff13481a0ba4e5f4e35e8d65135397db1a6ddf33d85",
     "mutations": {
       "defaults": [
         {
@@ -32422,6 +35452,51 @@
           },
           "ref": {
             "entry": "contractor_contacts",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "contractor_memberships",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "contractor_onboardings",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "contractor_review_items",
             "field": "updated_at",
             "namespace": "public"
           }
