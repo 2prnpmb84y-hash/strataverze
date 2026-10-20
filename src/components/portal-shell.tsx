@@ -191,9 +191,9 @@ export function PortalShell({
           <Image
             src="/brand/logo-horizontal-white.png"
             alt="StrataVerze"
-            width={120}
-            height={24}
-            className="h-6 w-auto"
+            width={160}
+            height={32}
+            className="h-8 w-auto"
             priority
           />
           <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white">

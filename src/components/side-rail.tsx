@@ -23,6 +23,24 @@ import {
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
+/*  Portal identity                                                   */
+/* ------------------------------------------------------------------ */
+
+const portalAccent: Record<string, string> = {
+  owner: "var(--color-owner)",
+  adviser: "var(--color-adviser)",
+  supplier: "var(--color-supplier)",
+  accountant: "var(--color-turquoise)",
+};
+
+const portalLabel: Record<string, string> = {
+  owner: "Owner Portal",
+  adviser: "Adviser Portal",
+  supplier: "Supplier Portal",
+  accountant: "Accountant Portal",
+};
+
+/* ------------------------------------------------------------------ */
 /*  Navigation configuration per portal                               */
 /* ------------------------------------------------------------------ */
 
@@ -120,24 +138,45 @@ export function SideRail({ portal }: { portal: string }) {
       </button>
 
       {/* Logo */}
-      <div className={`flex items-center justify-center px-3 pb-4 ${expanded ? "pt-1" : "pt-2"}`}>
+      <div className={`flex items-center justify-center px-3 pb-2 ${expanded ? "pt-1" : "pt-2"}`}>
         {expanded ? (
           <Image
             src="/brand/logo-horizontal-white.png"
             alt="StrataVerze"
-            width={160}
-            height={32}
-            className="h-8 w-auto"
+            width={200}
+            height={40}
+            className="h-10 w-auto"
             priority
           />
         ) : (
           <Image
             src="/brand/logo-mark-white.png"
             alt="StrataVerze"
-            width={32}
-            height={32}
-            className="h-8 w-8"
+            width={40}
+            height={40}
+            className="h-10 w-10"
             priority
+          />
+        )}
+      </div>
+
+      {/* Portal identity badge */}
+      <div className={`flex items-center justify-center px-3 pb-4 ${expanded ? "" : ""}`}>
+        {expanded ? (
+          <span className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1">
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: portalAccent[portal] ?? portalAccent.owner }}
+            />
+            <span className="text-xs font-medium text-white/90 whitespace-nowrap">
+              {portalLabel[portal] ?? "Owner Portal"}
+            </span>
+          </span>
+        ) : (
+          <span
+            className="w-3 h-3 rounded-full border-2 border-white/40"
+            style={{ backgroundColor: portalAccent[portal] ?? portalAccent.owner }}
+            title={portalLabel[portal] ?? "Owner Portal"}
           />
         )}
       </div>

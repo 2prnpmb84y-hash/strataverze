@@ -27,6 +27,14 @@ const accentByPortal: Record<string, string> = {
   accountant: "var(--color-turquoise)",
 };
 
+const portalLabel: Record<string, string> = {
+  owner: "Owner",
+  committee: "Committee",
+  adviser: "Adviser",
+  supplier: "Supplier",
+  accountant: "Accountant",
+};
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
@@ -92,10 +100,21 @@ export function TopBar({
       className="sticky top-0 z-30 flex items-center justify-between h-[80px] bg-white border-b border-line px-8"
       style={{ borderTop: `3px solid ${accent}` }}
     >
-      {/* Left: page title */}
-      <h1 className="text-xl font-bold font-heading text-ink truncate">
-        {pageTitle ?? ""}
-      </h1>
+      {/* Left: portal indicator + page title */}
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="flex items-center gap-1.5 shrink-0 rounded-full bg-muted px-2.5 py-1">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: accent }}
+          />
+          <span className="text-xs font-medium text-ink-muted whitespace-nowrap">
+            {portalLabel[portal] ?? "Owner"}
+          </span>
+        </span>
+        <h1 className="text-xl font-bold font-heading text-ink truncate">
+          {pageTitle ?? ""}
+        </h1>
+      </div>
 
       {/* Right: actions */}
       <div className="flex items-center gap-3">
