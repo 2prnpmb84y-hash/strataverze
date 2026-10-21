@@ -92,10 +92,10 @@ describe("validateFileUpload", () => {
   });
 
   describe("MIME type edge cases", () => {
-    it("accepts file with empty MIME type if extension is valid", () => {
+    it("rejects file with empty MIME type even if extension is valid", () => {
       const file = makeFile("document.pdf", "");
-      // Empty type string is falsy, so MIME check is skipped
-      expect(validateFileUpload(file)).toBeNull();
+      // Empty type string is falsy, so the MIME check rejects it
+      expect(validateFileUpload(file)).not.toBeNull();
     });
   });
 });
