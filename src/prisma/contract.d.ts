@@ -22,9 +22,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'eea15bdda9c67a52bc17a45176625c8a7259a43b678d164852975cfeef736a8b'>;
+  StorageHashBase<'31d53d0820b3e90cb7667c194b9e5e7fc7a0d551215da626d598bff527febb09'>;
 export type ExecutionHash =
-  ExecutionHashBase<'dccfba6c23e3bada4e0a450704584eddb002e75ed8141c6eb34960baf770a96a'>;
+  ExecutionHashBase<'b59632f0addeda5afa91776e2417f0876857b437242bd214a00d40d9bad1c9df'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -284,6 +284,21 @@ export type FieldOutputTypes = {
       readonly metadata: CodecTypes['pg/jsonb@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
     };
+    readonly AgendaItem: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly explanatoryNote: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['output'];
+      readonly motionLibraryEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['output'] | null;
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly resolutionCategory: CodecTypes['pg/text@1']['output'] | null;
+      readonly resolutionText: CodecTypes['pg/text@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly submitterId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly Announcement: {
       readonly authorId: CodecTypes['pg/uuid@1']['output'];
       readonly body: CodecTypes['pg/text@1']['output'];
@@ -297,6 +312,14 @@ export type FieldOutputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly AppliedRuleSet: {
+      readonly appliedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['output'];
+      readonly ruleSetState: CodecTypes['pg/text@1']['output'];
+      readonly ruleSetVersion: CodecTypes['pg/text@1']['output'];
+      readonly snapshot: CodecTypes['pg/jsonb@1']['output'];
     };
     readonly BankTransaction: {
       readonly amount: Numeric<12, 2>;
@@ -941,16 +964,63 @@ export type FieldOutputTypes = {
     };
     readonly Meeting: {
       readonly agenda: CodecTypes['pg/text@1']['output'] | null;
+      readonly cancelledReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly chairpersonId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly convenorId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly endTime: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly financialPeriodId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly format: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly joinDetails: CodecTypes['pg/text@1']['output'] | null;
+      readonly joinUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly location: CodecTypes['pg/text@1']['output'] | null;
       readonly meetingType: CodecTypes['pg/text@1']['output'];
       readonly minutesUrl: CodecTypes['pg/text@1']['output'] | null;
+      readonly openedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly quorumMet: CodecTypes['pg/bool@1']['output'] | null;
       readonly scheduledAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly startTime: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly status: CodecTypes['pg/text@1']['output'];
+      readonly timezone: CodecTypes['pg/text@1']['output'] | null;
       readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly MeetingEvent: {
+      readonly actorId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly eventType: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['output'];
+      readonly payload: CodecTypes['pg/jsonb@1']['output'] | null;
+    };
+    readonly MeetingRuleSet: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly effectiveFrom: CodecTypes['pg/date-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isActive: CodecTypes['pg/bool@1']['output'];
+      readonly minutesDeadlines: CodecTypes['pg/jsonb@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly noticePeriods: CodecTypes['pg/jsonb@1']['output'];
+      readonly quorumRules: CodecTypes['pg/jsonb@1']['output'];
+      readonly resolutionCategories: CodecTypes['pg/jsonb@1']['output'];
+      readonly retention: CodecTypes['pg/jsonb@1']['output'];
+      readonly state: CodecTypes['pg/text@1']['output'];
+      readonly version: CodecTypes['pg/text@1']['output'];
+    };
+    readonly MeetingTemplate: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isActive: CodecTypes['pg/bool@1']['output'];
+      readonly items: CodecTypes['pg/jsonb@1']['output'];
+      readonly meetingType: CodecTypes['pg/text@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly ruleSetVersion: CodecTypes['pg/text@1']['output'] | null;
+      readonly state: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly Motion: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -962,6 +1032,20 @@ export type FieldOutputTypes = {
       readonly raisedById: CodecTypes['pg/uuid@1']['output'];
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly MotionLibraryEntry: {
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly defaultResolutionCategory: CodecTypes['pg/text@1']['output'] | null;
+      readonly explanatoryNote: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isActive: CodecTypes['pg/bool@1']['output'];
+      readonly meetingType: CodecTypes['pg/text@1']['output'] | null;
+      readonly placeholders: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly resolutionText: CodecTypes['pg/text@1']['output'];
+      readonly state: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -1933,6 +2017,21 @@ export type FieldInputTypes = {
       readonly metadata: CodecTypes['pg/jsonb@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
     };
+    readonly AgendaItem: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly explanatoryNote: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['input'];
+      readonly motionLibraryEntryId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['input'] | null;
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly resolutionCategory: CodecTypes['pg/text@1']['input'] | null;
+      readonly resolutionText: CodecTypes['pg/text@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly submitterId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly Announcement: {
       readonly authorId: CodecTypes['pg/uuid@1']['input'];
       readonly body: CodecTypes['pg/text@1']['input'];
@@ -1946,6 +2045,14 @@ export type FieldInputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly AppliedRuleSet: {
+      readonly appliedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['input'];
+      readonly ruleSetState: CodecTypes['pg/text@1']['input'];
+      readonly ruleSetVersion: CodecTypes['pg/text@1']['input'];
+      readonly snapshot: CodecTypes['pg/jsonb@1']['input'];
     };
     readonly BankTransaction: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -2590,16 +2697,63 @@ export type FieldInputTypes = {
     };
     readonly Meeting: {
       readonly agenda: CodecTypes['pg/text@1']['input'] | null;
+      readonly cancelledReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly chairpersonId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly closedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly convenorId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly endTime: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly financialPeriodId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly format: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly joinDetails: CodecTypes['pg/text@1']['input'] | null;
+      readonly joinUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly location: CodecTypes['pg/text@1']['input'] | null;
       readonly meetingType: CodecTypes['pg/text@1']['input'];
       readonly minutesUrl: CodecTypes['pg/text@1']['input'] | null;
+      readonly openedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly quorumMet: CodecTypes['pg/bool@1']['input'] | null;
       readonly scheduledAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly startTime: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly status: CodecTypes['pg/text@1']['input'];
+      readonly timezone: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly MeetingEvent: {
+      readonly actorId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly eventType: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['input'];
+      readonly payload: CodecTypes['pg/jsonb@1']['input'] | null;
+    };
+    readonly MeetingRuleSet: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly effectiveFrom: CodecTypes['pg/date-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isActive: CodecTypes['pg/bool@1']['input'];
+      readonly minutesDeadlines: CodecTypes['pg/jsonb@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly noticePeriods: CodecTypes['pg/jsonb@1']['input'];
+      readonly quorumRules: CodecTypes['pg/jsonb@1']['input'];
+      readonly resolutionCategories: CodecTypes['pg/jsonb@1']['input'];
+      readonly retention: CodecTypes['pg/jsonb@1']['input'];
+      readonly state: CodecTypes['pg/text@1']['input'];
+      readonly version: CodecTypes['pg/text@1']['input'];
+    };
+    readonly MeetingTemplate: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isActive: CodecTypes['pg/bool@1']['input'];
+      readonly items: CodecTypes['pg/jsonb@1']['input'];
+      readonly meetingType: CodecTypes['pg/text@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly ruleSetVersion: CodecTypes['pg/text@1']['input'] | null;
+      readonly state: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly Motion: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -2611,6 +2765,20 @@ export type FieldInputTypes = {
       readonly raisedById: CodecTypes['pg/uuid@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly MotionLibraryEntry: {
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly defaultResolutionCategory: CodecTypes['pg/text@1']['input'] | null;
+      readonly explanatoryNote: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isActive: CodecTypes['pg/bool@1']['input'];
+      readonly meetingType: CodecTypes['pg/text@1']['input'] | null;
+      readonly placeholders: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly resolutionText: CodecTypes['pg/text@1']['input'];
+      readonly state: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -3582,6 +3750,21 @@ export type StorageColumnTypes = {
       readonly metadata: CodecTypes['pg/jsonb@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
     };
+    readonly agenda_items: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly explanatory_note: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['output'];
+      readonly motion_library_entry_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['output'] | null;
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly resolution_category: CodecTypes['pg/text@1']['output'] | null;
+      readonly resolution_text: CodecTypes['pg/text@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly submitter_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly announcements: {
       readonly author_id: CodecTypes['pg/uuid@1']['output'];
       readonly body: CodecTypes['pg/text@1']['output'];
@@ -3595,6 +3778,14 @@ export type StorageColumnTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly applied_rule_sets: {
+      readonly applied_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['output'];
+      readonly rule_set_state: CodecTypes['pg/text@1']['output'];
+      readonly rule_set_version: CodecTypes['pg/text@1']['output'];
+      readonly snapshot: CodecTypes['pg/jsonb@1']['output'];
     };
     readonly bank_transactions: {
       readonly amount: Numeric<12, 2>;
@@ -4237,18 +4428,79 @@ export type StorageColumnTypes = {
       readonly transaction_sign: CodecTypes['pg/text@1']['output'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly meeting_events: {
+      readonly actor_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly event_type: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['output'];
+      readonly payload: CodecTypes['pg/jsonb@1']['output'] | null;
+    };
+    readonly meeting_rule_sets: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly effective_from: CodecTypes['pg/date-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_active: CodecTypes['pg/bool@1']['output'];
+      readonly minutes_deadlines: CodecTypes['pg/jsonb@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly notice_periods: CodecTypes['pg/jsonb@1']['output'];
+      readonly quorum_rules: CodecTypes['pg/jsonb@1']['output'];
+      readonly resolution_categories: CodecTypes['pg/jsonb@1']['output'];
+      readonly retention: CodecTypes['pg/jsonb@1']['output'];
+      readonly state: CodecTypes['pg/text@1']['output'];
+      readonly version: CodecTypes['pg/text@1']['output'];
+    };
+    readonly meeting_templates: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_active: CodecTypes['pg/bool@1']['output'];
+      readonly items: CodecTypes['pg/jsonb@1']['output'];
+      readonly meeting_type: CodecTypes['pg/text@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'];
+      readonly rule_set_version: CodecTypes['pg/text@1']['output'] | null;
+      readonly state: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly meetings: {
       readonly agenda: CodecTypes['pg/text@1']['output'] | null;
+      readonly cancelled_reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly chairperson_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly closed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly convenor_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly end_time: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly financial_period_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly format: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly join_details: CodecTypes['pg/text@1']['output'] | null;
+      readonly join_url: CodecTypes['pg/text@1']['output'] | null;
       readonly location: CodecTypes['pg/text@1']['output'] | null;
       readonly meeting_type: CodecTypes['pg/text@1']['output'];
       readonly minutes_url: CodecTypes['pg/text@1']['output'] | null;
+      readonly opened_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly quorum_met: CodecTypes['pg/bool@1']['output'] | null;
       readonly scheduled_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly start_time: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly status: CodecTypes['pg/text@1']['output'];
+      readonly timezone: CodecTypes['pg/text@1']['output'] | null;
       readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly motion_library_entries: {
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly default_resolution_category: CodecTypes['pg/text@1']['output'] | null;
+      readonly explanatory_note: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_active: CodecTypes['pg/bool@1']['output'];
+      readonly meeting_type: CodecTypes['pg/text@1']['output'] | null;
+      readonly placeholders: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly resolution_text: CodecTypes['pg/text@1']['output'];
+      readonly state: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly motions: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -5231,6 +5483,21 @@ export type StorageColumnInputTypes = {
       readonly metadata: CodecTypes['pg/jsonb@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
     };
+    readonly agenda_items: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly explanatory_note: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['input'];
+      readonly motion_library_entry_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['input'] | null;
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly resolution_category: CodecTypes['pg/text@1']['input'] | null;
+      readonly resolution_text: CodecTypes['pg/text@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly submitter_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly announcements: {
       readonly author_id: CodecTypes['pg/uuid@1']['input'];
       readonly body: CodecTypes['pg/text@1']['input'];
@@ -5244,6 +5511,14 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly applied_rule_sets: {
+      readonly applied_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['input'];
+      readonly rule_set_state: CodecTypes['pg/text@1']['input'];
+      readonly rule_set_version: CodecTypes['pg/text@1']['input'];
+      readonly snapshot: CodecTypes['pg/jsonb@1']['input'];
     };
     readonly bank_transactions: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -5886,18 +6161,79 @@ export type StorageColumnInputTypes = {
       readonly transaction_sign: CodecTypes['pg/text@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly meeting_events: {
+      readonly actor_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly event_type: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['input'];
+      readonly payload: CodecTypes['pg/jsonb@1']['input'] | null;
+    };
+    readonly meeting_rule_sets: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly effective_from: CodecTypes['pg/date-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_active: CodecTypes['pg/bool@1']['input'];
+      readonly minutes_deadlines: CodecTypes['pg/jsonb@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly notice_periods: CodecTypes['pg/jsonb@1']['input'];
+      readonly quorum_rules: CodecTypes['pg/jsonb@1']['input'];
+      readonly resolution_categories: CodecTypes['pg/jsonb@1']['input'];
+      readonly retention: CodecTypes['pg/jsonb@1']['input'];
+      readonly state: CodecTypes['pg/text@1']['input'];
+      readonly version: CodecTypes['pg/text@1']['input'];
+    };
+    readonly meeting_templates: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_active: CodecTypes['pg/bool@1']['input'];
+      readonly items: CodecTypes['pg/jsonb@1']['input'];
+      readonly meeting_type: CodecTypes['pg/text@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'];
+      readonly rule_set_version: CodecTypes['pg/text@1']['input'] | null;
+      readonly state: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly meetings: {
       readonly agenda: CodecTypes['pg/text@1']['input'] | null;
+      readonly cancelled_reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly chairperson_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly closed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly convenor_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly end_time: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly financial_period_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly format: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly join_details: CodecTypes['pg/text@1']['input'] | null;
+      readonly join_url: CodecTypes['pg/text@1']['input'] | null;
       readonly location: CodecTypes['pg/text@1']['input'] | null;
       readonly meeting_type: CodecTypes['pg/text@1']['input'];
       readonly minutes_url: CodecTypes['pg/text@1']['input'] | null;
+      readonly opened_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly quorum_met: CodecTypes['pg/bool@1']['input'] | null;
       readonly scheduled_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly start_time: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly status: CodecTypes['pg/text@1']['input'];
+      readonly timezone: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly motion_library_entries: {
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly default_resolution_category: CodecTypes['pg/text@1']['input'] | null;
+      readonly explanatory_note: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_active: CodecTypes['pg/bool@1']['input'];
+      readonly meeting_type: CodecTypes['pg/text@1']['input'] | null;
+      readonly placeholders: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly resolution_text: CodecTypes['pg/text@1']['input'];
+      readonly state: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly motions: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -6901,6 +7237,23 @@ export namespace Models {
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'actor' | 'scheme';
   };
+  export type public_AgendaItem = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    explanatoryNote: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    meetingId: CodecTypes['pg/uuid@1']['output'];
+    motionLibraryEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+    outcome: CodecTypes['pg/text@1']['output'] | null;
+    position: CodecTypes['pg/int4@1']['output'];
+    resolutionCategory: CodecTypes['pg/text@1']['output'] | null;
+    resolutionText: CodecTypes['pg/text@1']['output'] | null;
+    status: CodecTypes['pg/text@1']['output'];
+    submitterId: CodecTypes['pg/uuid@1']['output'] | null;
+    title: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    meeting: public_Meeting;
+    readonly [RelationKeys]?: 'meeting';
+  };
   export type public_Announcement = {
     authorId: CodecTypes['pg/uuid@1']['output'];
     body: CodecTypes['pg/text@1']['output'];
@@ -6917,6 +7270,16 @@ export namespace Models {
     author: public_Profile;
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'author' | 'scheme';
+  };
+  export type public_AppliedRuleSet = {
+    appliedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    meetingId: CodecTypes['pg/uuid@1']['output'];
+    ruleSetState: CodecTypes['pg/text@1']['output'];
+    ruleSetVersion: CodecTypes['pg/text@1']['output'];
+    snapshot: CodecTypes['pg/jsonb@1']['output'];
+    meeting: public_Meeting;
+    readonly [RelationKeys]?: 'meeting';
   };
   export type public_BankTransaction = {
     amount: Numeric<12, 2>;
@@ -7777,19 +8140,73 @@ export namespace Models {
   };
   export type public_Meeting = {
     agenda: CodecTypes['pg/text@1']['output'] | null;
+    cancelledReason: CodecTypes['pg/text@1']['output'] | null;
+    chairpersonId: CodecTypes['pg/uuid@1']['output'] | null;
+    closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    convenorId: CodecTypes['pg/uuid@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    endTime: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    financialPeriodId: CodecTypes['pg/uuid@1']['output'] | null;
+    format: CodecTypes['pg/text@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
+    joinDetails: CodecTypes['pg/text@1']['output'] | null;
+    joinUrl: CodecTypes['pg/text@1']['output'] | null;
     location: CodecTypes['pg/text@1']['output'] | null;
     meetingType: CodecTypes['pg/text@1']['output'];
     minutesUrl: CodecTypes['pg/text@1']['output'] | null;
+    openedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    quorumMet: CodecTypes['pg/bool@1']['output'] | null;
     scheduledAt: CodecTypes['pg/timestamptz-string@1']['output'];
     schemeId: CodecTypes['pg/uuid@1']['output'];
+    startTime: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     status: CodecTypes['pg/text@1']['output'];
+    timezone: CodecTypes['pg/text@1']['output'] | null;
     title: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    agendaItems: public_AgendaItem[];
+    appliedRuleSet: public_AppliedRuleSet | null;
+    events: public_MeetingEvent[];
     motions: public_Motion[];
     scheme: public_Scheme;
-    readonly [RelationKeys]?: 'motions' | 'scheme';
+    readonly [RelationKeys]?: 'agendaItems' | 'appliedRuleSet' | 'events' | 'motions' | 'scheme';
+  };
+  export type public_MeetingEvent = {
+    actorId: CodecTypes['pg/uuid@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    eventType: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    meetingId: CodecTypes['pg/uuid@1']['output'];
+    payload: CodecTypes['pg/jsonb@1']['output'] | null;
+    meeting: public_Meeting;
+    readonly [RelationKeys]?: 'meeting';
+  };
+  export type public_MeetingRuleSet = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    effectiveFrom: CodecTypes['pg/date-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    isActive: CodecTypes['pg/bool@1']['output'];
+    minutesDeadlines: CodecTypes['pg/jsonb@1']['output'];
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    noticePeriods: CodecTypes['pg/jsonb@1']['output'];
+    quorumRules: CodecTypes['pg/jsonb@1']['output'];
+    resolutionCategories: CodecTypes['pg/jsonb@1']['output'];
+    retention: CodecTypes['pg/jsonb@1']['output'];
+    state: CodecTypes['pg/text@1']['output'];
+    version: CodecTypes['pg/text@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_MeetingTemplate = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    isActive: CodecTypes['pg/bool@1']['output'];
+    items: CodecTypes['pg/jsonb@1']['output'];
+    meetingType: CodecTypes['pg/text@1']['output'];
+    name: CodecTypes['pg/text@1']['output'];
+    ruleSetVersion: CodecTypes['pg/text@1']['output'] | null;
+    state: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    readonly [RelationKeys]?: never;
   };
   export type public_Motion = {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -7809,6 +8226,21 @@ export namespace Models {
     scheme: public_Scheme;
     votes: public_Vote[];
     readonly [RelationKeys]?: 'debtRecoveryCases' | 'meeting' | 'raisedBy' | 'scheme' | 'votes';
+  };
+  export type public_MotionLibraryEntry = {
+    category: CodecTypes['pg/text@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    defaultResolutionCategory: CodecTypes['pg/text@1']['output'] | null;
+    explanatoryNote: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    isActive: CodecTypes['pg/bool@1']['output'];
+    meetingType: CodecTypes['pg/text@1']['output'] | null;
+    placeholders: CodecTypes['pg/jsonb@1']['output'] | null;
+    resolutionText: CodecTypes['pg/text@1']['output'];
+    state: CodecTypes['pg/text@1']['output'];
+    title: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    readonly [RelationKeys]?: never;
   };
   export type public_Organisation = {
     abn: Varchar<11> | null;
@@ -9294,7 +9726,9 @@ export declare const models: {
     AbnLookupRecord: Models.public_AbnLookupRecord;
     AccountCode: Models.public_AccountCode;
     ActivityLog: Models.public_ActivityLog;
+    AgendaItem: Models.public_AgendaItem;
     Announcement: Models.public_Announcement;
+    AppliedRuleSet: Models.public_AppliedRuleSet;
     BankTransaction: Models.public_BankTransaction;
     BudgetLine: Models.public_BudgetLine;
     ByLaw: Models.public_ByLaw;
@@ -9333,7 +9767,11 @@ export declare const models: {
     LotTenant: Models.public_LotTenant;
     MatchingRule: Models.public_MatchingRule;
     Meeting: Models.public_Meeting;
+    MeetingEvent: Models.public_MeetingEvent;
+    MeetingRuleSet: Models.public_MeetingRuleSet;
+    MeetingTemplate: Models.public_MeetingTemplate;
     Motion: Models.public_Motion;
+    MotionLibraryEntry: Models.public_MotionLibraryEntry;
     Organisation: Models.public_Organisation;
     OrganisationMembership: Models.public_OrganisationMembership;
     PaymentPlan: Models.public_PaymentPlan;
@@ -9832,6 +10270,120 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly agenda_items: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly explanatory_note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly motion_library_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly outcome: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly position: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly resolution_category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resolution_text: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING'>;
+                  };
+                  readonly many: false;
+                };
+                readonly submitter_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'agenda_items_meeting_id_position_idx';
+                  readonly columns: readonly ['meeting_id', 'position'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'agenda_items';
+                    readonly columns: readonly ['meeting_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'meetings';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly announcements: {
               columns: {
                 readonly author_id: {
@@ -9952,6 +10504,74 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly applied_rule_sets: {
+              columns: {
+                readonly applied_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule_set_state: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule_set_version: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly snapshot: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'applied_rule_sets_meeting_id_key';
+                  readonly columns: readonly ['meeting_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'applied_rule_sets';
+                    readonly columns: readonly ['meeting_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'meetings';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -15395,11 +16015,275 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly meeting_events: {
+              columns: {
+                readonly actor_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly event_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly payload: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'meeting_events_meeting_id_created_at_idx';
+                  readonly columns: readonly ['meeting_id', 'created_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'meeting_events';
+                    readonly columns: readonly ['meeting_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'meetings';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly meeting_rule_sets: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly effective_from: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly minutes_deadlines: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notice_periods: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly quorum_rules: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly resolution_categories: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly retention: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly state: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly version: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'meeting_rule_sets_state_version_key';
+                  readonly columns: readonly ['state', 'version'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly meeting_templates: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly items: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly meeting_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule_set_version: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly state: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'meeting_templates_state_meeting_type_name_key';
+                  readonly columns: readonly ['state', 'meeting_type', 'name'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly meetings: {
               columns: {
                 readonly agenda: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cancelled_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly chairperson_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly closed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly convenor_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -15416,6 +16300,24 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly end_time: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly financial_period_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly format: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -15424,6 +16326,18 @@ type ContractBase = Omit<
                     readonly kind: 'function';
                     readonly expression: 'gen_random_uuid()';
                   };
+                  readonly many: false;
+                };
+                readonly join_details: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly join_url: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly location: {
@@ -15444,6 +16358,18 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly opened_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly quorum_met: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly scheduled_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -15456,6 +16382,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly start_time: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly status: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -15466,9 +16398,21 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly timezone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly title: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: false;
                   readonly many: false;
                 };
@@ -15490,6 +16434,95 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly motion_library_entries: {
+              columns: {
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly default_resolution_category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly explanatory_note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly meeting_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly placeholders: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resolution_text: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly state: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
             };
             readonly motions: {
               columns: {
@@ -23893,9 +24926,17 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ActivityLog';
     };
+    readonly agenda_items: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AgendaItem';
+    };
     readonly announcements: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Announcement';
+    };
+    readonly applied_rule_sets: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AppliedRuleSet';
     };
     readonly bank_transactions: {
       readonly namespace: 'public' & NamespaceId;
@@ -24018,7 +25059,23 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'MatchingRule';
     };
+    readonly meeting_events: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'MeetingEvent';
+    };
+    readonly meeting_rule_sets: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'MeetingRuleSet';
+    };
+    readonly meeting_templates: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'MeetingTemplate';
+    };
     readonly meetings: { readonly namespace: 'public' & NamespaceId; readonly model: 'Meeting' };
+    readonly motion_library_entries: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'MotionLibraryEntry';
+    };
     readonly motions: { readonly namespace: 'public' & NamespaceId; readonly model: 'Motion' };
     readonly organisation_memberships: {
       readonly namespace: 'public' & NamespaceId;
@@ -24652,6 +25709,101 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly AgendaItem: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly explanatoryNote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly motionLibraryEntryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly outcome: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly position: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly resolutionCategory: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly resolutionText: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly submitterId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly meeting: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Meeting';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['meetingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'agenda_items';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly explanatoryNote: { readonly column: 'explanatory_note' };
+                readonly id: { readonly column: 'id' };
+                readonly meetingId: { readonly column: 'meeting_id' };
+                readonly motionLibraryEntryId: { readonly column: 'motion_library_entry_id' };
+                readonly outcome: { readonly column: 'outcome' };
+                readonly position: { readonly column: 'position' };
+                readonly resolutionCategory: { readonly column: 'resolution_category' };
+                readonly resolutionText: { readonly column: 'resolution_text' };
+                readonly status: { readonly column: 'status' };
+                readonly submitterId: { readonly column: 'submitter_id' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
           readonly Announcement: {
             readonly fields: {
               readonly authorId: {
@@ -24760,6 +25912,63 @@ type ContractBase = Omit<
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly AppliedRuleSet: {
+            readonly fields: {
+              readonly appliedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ruleSetState: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ruleSetVersion: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly snapshot: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+            };
+            readonly relations: {
+              readonly meeting: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Meeting';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['meetingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'applied_rule_sets';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly appliedAt: { readonly column: 'applied_at' };
+                readonly id: { readonly column: 'id' };
+                readonly meetingId: { readonly column: 'meeting_id' };
+                readonly ruleSetState: { readonly column: 'rule_set_state' };
+                readonly ruleSetVersion: { readonly column: 'rule_set_version' };
+                readonly snapshot: { readonly column: 'snapshot' };
               };
             };
           };
@@ -30015,6 +31224,25 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly cancelledReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly chairpersonId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly closedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly convenorId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -30029,9 +31257,32 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly endTime: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly financialPeriodId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly format: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly joinDetails: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly joinUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly location: {
                 readonly nullable: true;
@@ -30045,6 +31296,17 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly openedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly quorumMet: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly scheduledAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -30056,16 +31318,68 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly startTime: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly status: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly timezone: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly title: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
             };
             readonly relations: {
+              readonly agendaItems: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AgendaItem';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['meetingId'];
+                };
+              };
+              readonly appliedRuleSet: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AppliedRuleSet';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['meetingId'];
+                };
+              };
+              readonly events: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'MeetingEvent';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['meetingId'];
+                };
+              };
               readonly motions: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -30095,16 +31409,223 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly agenda: { readonly column: 'agenda' };
+                readonly cancelledReason: { readonly column: 'cancelled_reason' };
+                readonly chairpersonId: { readonly column: 'chairperson_id' };
+                readonly closedAt: { readonly column: 'closed_at' };
+                readonly convenorId: { readonly column: 'convenor_id' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly deletedAt: { readonly column: 'deleted_at' };
+                readonly endTime: { readonly column: 'end_time' };
+                readonly financialPeriodId: { readonly column: 'financial_period_id' };
+                readonly format: { readonly column: 'format' };
                 readonly id: { readonly column: 'id' };
+                readonly joinDetails: { readonly column: 'join_details' };
+                readonly joinUrl: { readonly column: 'join_url' };
                 readonly location: { readonly column: 'location' };
                 readonly meetingType: { readonly column: 'meeting_type' };
                 readonly minutesUrl: { readonly column: 'minutes_url' };
+                readonly openedAt: { readonly column: 'opened_at' };
+                readonly quorumMet: { readonly column: 'quorum_met' };
                 readonly scheduledAt: { readonly column: 'scheduled_at' };
                 readonly schemeId: { readonly column: 'scheme_id' };
+                readonly startTime: { readonly column: 'start_time' };
                 readonly status: { readonly column: 'status' };
+                readonly timezone: { readonly column: 'timezone' };
                 readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly MeetingEvent: {
+            readonly fields: {
+              readonly actorId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly eventType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly payload: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+            };
+            readonly relations: {
+              readonly meeting: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Meeting';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['meetingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'meeting_events';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly actorId: { readonly column: 'actor_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly eventType: { readonly column: 'event_type' };
+                readonly id: { readonly column: 'id' };
+                readonly meetingId: { readonly column: 'meeting_id' };
+                readonly payload: { readonly column: 'payload' };
+              };
+            };
+          };
+          readonly MeetingRuleSet: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly effectiveFrom: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly minutesDeadlines: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly noticePeriods: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly quorumRules: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly resolutionCategories: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly retention: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly state: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly version: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'meeting_rule_sets';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly effectiveFrom: { readonly column: 'effective_from' };
+                readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'is_active' };
+                readonly minutesDeadlines: { readonly column: 'minutes_deadlines' };
+                readonly notes: { readonly column: 'notes' };
+                readonly noticePeriods: { readonly column: 'notice_periods' };
+                readonly quorumRules: { readonly column: 'quorum_rules' };
+                readonly resolutionCategories: { readonly column: 'resolution_categories' };
+                readonly retention: { readonly column: 'retention' };
+                readonly state: { readonly column: 'state' };
+                readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly MeetingTemplate: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly items: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly meetingType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ruleSetVersion: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly state: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'meeting_templates';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'is_active' };
+                readonly items: { readonly column: 'items' };
+                readonly meetingType: { readonly column: 'meeting_type' };
+                readonly name: { readonly column: 'name' };
+                readonly ruleSetVersion: { readonly column: 'rule_set_version' };
+                readonly state: { readonly column: 'state' };
+                readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
           };
@@ -30231,6 +31752,85 @@ type ContractBase = Omit<
                 readonly raisedById: { readonly column: 'raised_by_id' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly MotionLibraryEntry: {
+            readonly fields: {
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly defaultResolutionCategory: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly explanatoryNote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly meetingType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly placeholders: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly resolutionText: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly state: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'motion_library_entries';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly category: { readonly column: 'category' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly defaultResolutionCategory: {
+                  readonly column: 'default_resolution_category';
+                };
+                readonly explanatoryNote: { readonly column: 'explanatory_note' };
+                readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'is_active' };
+                readonly meetingType: { readonly column: 'meeting_type' };
+                readonly placeholders: { readonly column: 'placeholders' };
+                readonly resolutionText: { readonly column: 'resolution_text' };
+                readonly state: { readonly column: 'state' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
@@ -39457,6 +41057,15 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
+            readonly entry: 'agenda_items';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
             readonly entry: 'announcements';
             readonly field: 'updated_at';
             readonly namespace: 'public';
@@ -39683,6 +41292,33 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'matching_rules';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'meeting_templates';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'meetings';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'motion_library_entries';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };
