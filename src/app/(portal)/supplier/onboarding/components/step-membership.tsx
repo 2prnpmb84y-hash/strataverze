@@ -110,7 +110,7 @@ export function StepMembership({ business, membership, onNext, onBack }: StepMem
 
       {/* Inclusions */}
       <div className="mb-6">
-        <h4 className="text-sm font-semibold text-ink mb-3">What's Included</h4>
+        <h4 className="text-sm font-semibold text-ink mb-3">What&apos;s Included</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
           {MEMBERSHIP_INCLUSIONS.map((item) => (
             <div key={item} className="flex items-center gap-2">

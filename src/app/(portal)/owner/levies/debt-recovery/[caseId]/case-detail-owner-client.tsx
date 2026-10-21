@@ -348,7 +348,7 @@ export function CaseDetailOwnerClient({
             {debtCase.steps.map((step) => {
               const isActive = step.stepType === debtCase.currentStep;
               const isCompleted = step.status === "COMPLETED";
-              const isPast = step.stepOrder <
+              const _isPast = step.stepOrder <
                 (debtCase.steps.find(
                   (s) => s.stepType === debtCase.currentStep,
                 )?.stepOrder ?? 999);

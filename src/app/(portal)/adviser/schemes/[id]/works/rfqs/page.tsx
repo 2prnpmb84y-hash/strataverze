@@ -10,15 +10,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-function formatDate(date: Date | string | null): string {
-  if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function formatDateTime(date: Date | string | null): string {
   if (!date) return "—";
   return new Date(String(date)).toLocaleDateString("en-AU", {
@@ -27,6 +18,21 @@ function formatDateTime(date: Date | string | null): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function computeRfqMeta(rfqs: any[]) {
+  const nowMs = Date.now();
+  return rfqs.map((rfq) => {
+    const closingMs = new Date(rfq.closingDate).getTime();
+    return {
+      ...rfq,
+      isClosingSoon:
+        rfq.status === "OPEN" &&
+        closingMs > nowMs &&
+        closingMs - nowMs < 3 * 24 * 60 * 60 * 1000,
+    };
   });
 }
 
@@ -58,6 +64,7 @@ export default async function RfqsPage({
   if (!scheme) notFound();
 
   const rfqs = await getWorksRfqsForScheme(id, { status });
+  const rfqsWithMeta = computeRfqMeta(rfqs);
 
   return (
     <div className="space-y-6">
@@ -104,7 +111,7 @@ export default async function RfqsPage({
       </Card>
 
       {/* RFQs list */}
-      {rfqs.length === 0 ? (
+      {rfqsWithMeta.length === 0 ? (
         <EmptyState
           icon={
             <svg
@@ -140,11 +147,8 @@ export default async function RfqsPage({
         />
       ) : (
         <div className="flex flex-col gap-2">
-          {rfqs.map((rfq) => {
-            const isClosingSoon =
-              rfq.status === "OPEN" &&
-              new Date(rfq.closingDate) > new Date() &&
-              new Date(rfq.closingDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
+          {rfqsWithMeta.map((rfq) => {
+            const { isClosingSoon } = rfq;
 
             return (
               <Link

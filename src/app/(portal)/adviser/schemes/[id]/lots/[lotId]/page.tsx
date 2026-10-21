@@ -28,7 +28,6 @@ import { connection } from "next/server";
 import {
   FileText,
   Award,
-  Users,
 } from "lucide-react";
 
 export default async function LotDetailPage({
@@ -67,7 +66,7 @@ export default async function LotDetailPage({
     (ba: { isOperating: boolean; isActive: boolean }) => ba.isOperating && ba.isActive,
   ) ?? scheme.bankAccounts?.[0] ?? null;
 
-  const lotTypeLabel =
+  const _lotTypeLabel =
     lot.lotType.charAt(0) + lot.lotType.slice(1).toLowerCase();
 
   // Build owner display name

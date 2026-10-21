@@ -67,8 +67,10 @@ function ReviewAction({
 
   useEffect(() => {
     if (state.success) {
-      setOpen(false);
-      router.refresh();
+      queueMicrotask(() => {
+        setOpen(false);
+        router.refresh();
+      });
     }
   }, [state.success, router]);
 
@@ -202,8 +204,10 @@ function AssignAction({
 
   useEffect(() => {
     if (state.success) {
-      setOpen(false);
-      router.refresh();
+      queueMicrotask(() => {
+        setOpen(false);
+        router.refresh();
+      });
     }
   }, [state.success, router]);
 

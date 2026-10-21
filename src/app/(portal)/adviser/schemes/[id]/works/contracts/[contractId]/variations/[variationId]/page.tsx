@@ -21,15 +21,6 @@ function formatCurrency(value: number | string | null): string {
   }).format(num);
 }
 
-function formatDate(date: Date | string | null): string {
-  if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function formatDateTime(date: Date | string | null): string {
   if (!date) return "—";
   return new Date(String(date)).toLocaleDateString("en-AU", {

@@ -71,12 +71,14 @@ export default async function RfqDetailPage({
   const rfq = await getWorksRfqById(rfqId);
   if (!rfq) notFound();
 
+  const now = new Date();
+  const closingTime = new Date(rfq.closingDate).getTime();
   const isClosingSoon =
     rfq.status === "OPEN" &&
-    new Date(rfq.closingDate) > new Date() &&
-    new Date(rfq.closingDate).getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
+    closingTime > now.getTime() &&
+    closingTime - now.getTime() < 3 * 24 * 60 * 60 * 1000;
 
-  const isClosed = new Date(rfq.closingDate) < new Date();
+  const isClosed = closingTime < now.getTime();
 
   return (
     <div className="max-w-4xl space-y-6">

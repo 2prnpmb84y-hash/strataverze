@@ -17,7 +17,7 @@ export async function getWorksRequestsForScheme(
 ) {
   const { status, priority, limit = 200 } = options;
 
-  let query = db.orm.public.WorksRequest
+  const query = db.orm.public.WorksRequest
     .where((wr) => {
       let cond = and(wr.schemeId.eq(schemeId), wr.deletedAt.eq(null));
       if (status) cond = and(cond, wr.status.eq(status));
@@ -104,7 +104,7 @@ export async function getContractorBusinesses(
 
   const results = await db.orm.public.ContractorBusiness
     .where((cb) => {
-      let cond = cb.deletedAt.eq(null);
+      const cond = cb.deletedAt.eq(null);
       if (status) return and(cond, cb.status.eq(status));
       return cond;
     })
@@ -152,7 +152,7 @@ export async function getWorksRfqsForScheme(
 
   return db.orm.public.WorksRfq
     .where((rfq) => {
-      let cond = rfq.schemeId.eq(schemeId);
+      const cond = rfq.schemeId.eq(schemeId);
       if (status) return and(cond, rfq.status.eq(status));
       return cond;
     })
@@ -192,7 +192,7 @@ export async function getWorksContractsForScheme(
 
   return db.orm.public.WorksContract
     .where((c) => {
-      let cond = and(c.schemeId.eq(schemeId), c.deletedAt.eq(null));
+      const cond = and(c.schemeId.eq(schemeId), c.deletedAt.eq(null));
       if (status) return and(cond, c.status.eq(status));
       return cond;
     })
@@ -252,7 +252,7 @@ export async function getWorksWorkOrdersForScheme(
 
   return db.orm.public.WorksWorkOrder
     .where((wo) => {
-      let cond = wo.schemeId.eq(schemeId);
+      const cond = wo.schemeId.eq(schemeId);
       if (status) return and(cond, wo.status.eq(status));
       return cond;
     })
@@ -276,7 +276,7 @@ export async function getWorksInvoicesForScheme(
 
   return db.orm.public.WorksInvoice
     .where((inv) => {
-      let cond = inv.schemeId.eq(schemeId);
+      const cond = inv.schemeId.eq(schemeId);
       if (status) return and(cond, inv.status.eq(status));
       return cond;
     })
@@ -425,7 +425,7 @@ export async function getWorksAuditEvents(
 
   return db.orm.public.WorksAuditEvent
     .where((ae) => {
-      let cond = ae.schemeId.eq(schemeId);
+      const cond = ae.schemeId.eq(schemeId);
       if (entityType && entityId) return and(cond, ae.entityType.eq(entityType), ae.entityId.eq(entityId));
       if (entityType) return and(cond, ae.entityType.eq(entityType));
       if (entityId) return and(cond, ae.entityId.eq(entityId));

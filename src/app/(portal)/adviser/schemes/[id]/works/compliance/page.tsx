@@ -5,7 +5,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getComplianceRequirements } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 

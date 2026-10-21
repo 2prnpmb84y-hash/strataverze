@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { DeliveryModal } from "./delivery-modal";
 
 type DeliveryPref = {

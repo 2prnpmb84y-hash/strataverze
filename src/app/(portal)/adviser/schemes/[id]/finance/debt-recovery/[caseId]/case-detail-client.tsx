@@ -677,7 +677,7 @@ export function CaseDetailClient({
 function WizardStepContent({
   step,
   stepIndex,
-  totalSteps,
+  totalSteps: _totalSteps,
   isOnCurrentStep,
   isClosed,
   schemeId,
