@@ -1,4 +1,4 @@
-type ChipStatus = "default" | "success" | "warning" | "danger";
+export type ChipStatus = "default" | "success" | "warning" | "danger";
 
 const statusStyles: Record<ChipStatus, string> = {
   default: "bg-[#F1F5F9] text-ink-muted",

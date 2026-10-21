@@ -111,6 +111,9 @@ model Profile {
   contractorMembershipsAccepted ContractorMembership[]     @relation("ContractorMembershipAcceptedBy")
   contractorReviewsAssigned     ContractorReviewItem[]     @relation("ContractorReviewAssignedTo")
   contractorReviewsCompleted    ContractorReviewItem[]     @relation("ContractorReviewCompletedBy")
+  // Debt Recovery Module
+  debtRecoveryCasesAsOwner      DebtRecoveryCase[]         @relation("DebtRecoveryCaseOwner")
+  debtRecoveryCasesInitiated    DebtRecoveryCase[]         @relation("DebtRecoveryCaseInitiator")
 
   @@map("profiles")
 }
@@ -190,6 +193,9 @@ model Scheme {
   worksNotifications          WorksNotification[]
   worksAuditEvents            WorksAuditEvent[]
   worksComplianceRequirements WorksComplianceRequirement[]
+  // Debt Recovery Module
+  debtRecoveryCases           DebtRecoveryCase[]
+  debtRecoveryPaymentPlans    PaymentPlan[]
 
   @@map("schemes")
 }
@@ -236,6 +242,8 @@ model Lot {
   tenants            LotTenant[]
   deliveryPreferences LotDeliveryPreference[]
   debtCollection     LotDebtCollection?
+  debtRecoveryCases  DebtRecoveryCase[]
+  debtRecoveryPaymentPlans PaymentPlan[]
   proxies            LotProxy[]
   powersOfAttorney   LotPowerOfAttorney[]
   propertyManager    PropertyManager?
@@ -514,6 +522,7 @@ model Motion {
   meeting     Meeting? @relation(fields: [meetingId], references: [id])
   raisedBy    Profile  @relation(fields: [raisedById], references: [id])
   votes       Vote[]
+  debtRecoveryCases DebtRecoveryCase[]
 
   @@map("motions")
 }
@@ -2553,4 +2562,195 @@ model ContractorReviewItem {
   @@index([queueType, status])
   @@index([assignedToId])
   @@map("contractor_review_items")
+}
+
+// ─── Debt Recovery Module (NSW Levy Debt Recovery) ──────────────
+
+model DebtRecoveryCase {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId            String                @map("scheme_id") @db.Uuid
+  lotId               String                @map("lot_id") @db.Uuid
+  ownerId             String                @map("owner_id") @db.Uuid
+  caseNumber          String                @unique @map("case_number") @db.VarChar(30) // e.g. DR-2026-0001
+  // Debt summary
+  principalOwed       Decimal               @db.Decimal(12, 2) @map("principal_owed")
+  interestOwed        Decimal               @default(0) @db.Decimal(12, 2) @map("interest_owed")
+  costsOwed           Decimal               @default(0) @db.Decimal(12, 2) @map("costs_owed")
+  totalOwed           Decimal               @db.Decimal(12, 2) @map("total_owed")
+  // Status tracking
+  status              String                @default("OPEN") // OPEN, IN_PROGRESS, PAYMENT_PLAN, ON_HOLD, REFERRED_LEGAL, CLOSED_PAID, CLOSED_WRITTEN_OFF, CLOSED_SETTLED
+  currentStep         String                @default("LEDGER_VERIFICATION") @map("current_step")
+  // LEDGER_VERIFICATION, INITIAL_CONTACT, REMINDER_NOTICE, FINAL_NOTICE, HARDSHIP_REVIEW, COMMITTEE_REVIEW, LEGAL_REFERRAL, PROCEEDINGS, ENFORCEMENT, CLOSED
+  priority            String                @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  // Initiator
+  initiatedBy         String                @map("initiated_by") @db.Uuid
+  initiatedRole       String                @map("initiated_role") // COMMITTEE, ADVISER
+  // Authority and approvals
+  committeeApproval   Boolean               @default(false) @map("committee_approval")
+  approvalMotionId    String?               @map("approval_motion_id") @db.Uuid
+  approvalDate        DateTime?             @db.Date @map("approval_date")
+  // Legal tracking
+  solicitorRef        String?               @map("solicitor_ref") @db.VarChar(100)
+  solicitorName       String?               @map("solicitor_name") @db.VarChar(200)
+  courtFileNumber     String?               @map("court_file_number") @db.VarChar(50)
+  // Dispute and hardship
+  hasDispute          Boolean               @default(false) @map("has_dispute")
+  disputeDetails      String?               @map("dispute_details")
+  hasHardshipRequest  Boolean               @default(false) @map("has_hardship_request")
+  hardshipDetails     String?               @map("hardship_details")
+  // Exclusion
+  excludeFromRecovery Boolean               @default(false) @map("exclude_from_recovery")
+  exclusionReason     String?               @map("exclusion_reason")
+  // Metadata
+  notes               String?
+  closedAt            DateTime?             @db.Timestamptz @map("closed_at")
+  closedReason        String?               @map("closed_reason")
+  createdAt           DateTime              @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt           DateTime              @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme              Scheme                @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot                 Lot                   @relation(fields: [lotId], references: [id])
+  owner               Profile               @relation("DebtRecoveryCaseOwner", fields: [ownerId], references: [id])
+  initiator           Profile               @relation("DebtRecoveryCaseInitiator", fields: [initiatedBy], references: [id])
+  approvalMotion      Motion?               @relation(fields: [approvalMotionId], references: [id])
+  steps               DebtRecoveryStep[]
+  paymentPlan         PaymentPlan?
+  documents           DebtRecoveryDocument[]
+  activityLog         DebtRecoveryActivity[]
+
+  @@index([schemeId, status])
+  @@index([lotId])
+  @@index([ownerId])
+  @@map("debt_recovery_cases")
+}
+
+model DebtRecoveryStep {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  caseId            String             @map("case_id") @db.Uuid
+  stepType          String             @map("step_type")
+  // LEDGER_VERIFICATION, INITIAL_CONTACT, REMINDER_NOTICE, FINAL_NOTICE, HARDSHIP_REVIEW, COMMITTEE_REVIEW, LEGAL_REFERRAL, PROCEEDINGS, ENFORCEMENT, CLOSED
+  stepOrder         Int                @map("step_order")
+  status            String             @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, SKIPPED, BLOCKED
+  // Action details
+  actionRequired    String             @map("action_required") // Description of what must be done
+  legalBasis        String?            @map("legal_basis") // e.g. "s 83 SSMA 2015"
+  responsibleParty  String             @map("responsible_party") // COMMITTEE, ADVISER, SOLICITOR, TRIBUNAL
+  approvalRequired  Boolean            @default(false) @map("approval_required")
+  approvedBy        String?            @map("approved_by") @db.Uuid
+  approvedAt        DateTime?          @db.Timestamptz @map("approved_at")
+  // Timing
+  triggerCondition  String?            @map("trigger_condition") // e.g. "14 days after reminder"
+  dueDate           DateTime?          @db.Date @map("due_date")
+  completedAt       DateTime?          @db.Timestamptz @map("completed_at")
+  completedBy       String?            @map("completed_by") @db.Uuid
+  // Correspondence
+  noticeType        String?            @map("notice_type") // REMINDER, DEMAND, FINAL_DEMAND, STATUTORY_NOTICE
+  noticeSentAt      DateTime?          @db.Timestamptz @map("notice_sent_at")
+  noticeMethod      String?            @map("notice_method") // EMAIL, POST, REGISTERED_POST, PERSONAL_SERVICE
+  // Evidence and outcome
+  evidenceNotes     String?            @map("evidence_notes")
+  outcome           String?            // Description of what happened
+  notes             String?
+  createdAt         DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  case              DebtRecoveryCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, stepOrder])
+  @@map("debt_recovery_steps")
+}
+
+model PaymentPlan {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  caseId              String                @unique @map("case_id") @db.Uuid
+  schemeId            String                @map("scheme_id") @db.Uuid
+  lotId               String                @map("lot_id") @db.Uuid
+  // Plan terms
+  totalAmount         Decimal               @db.Decimal(12, 2) @map("total_amount")
+  instalmentAmount    Decimal               @db.Decimal(12, 2) @map("instalment_amount")
+  frequency           String                // WEEKLY, FORTNIGHTLY, MONTHLY
+  startDate           DateTime              @db.Date @map("start_date")
+  endDate             DateTime              @db.Date @map("end_date")
+  numberOfInstalments Int                   @map("number_of_instalments")
+  // Interest and ongoing levies
+  includesInterest    Boolean               @default(false) @map("includes_interest")
+  includesOngoing     Boolean               @default(false) @map("includes_ongoing") // includes ongoing levy contributions
+  interestWaived      Boolean               @default(false) @map("interest_waived")
+  // Status
+  status              String                @default("PROPOSED") // PROPOSED, ACTIVE, COMPLETED, DEFAULTED, CANCELLED
+  approvedBy          String?               @map("approved_by") @db.Uuid
+  approvedAt          DateTime?             @db.Timestamptz @map("approved_at")
+  defaultedAt         DateTime?             @db.Timestamptz @map("defaulted_at")
+  defaultReason       String?               @map("default_reason")
+  // Conditions
+  conditions          String?               // any special conditions
+  notes               String?
+  createdAt           DateTime              @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt           DateTime              @updatedAt @db.Timestamptz @map("updated_at")
+
+  case                DebtRecoveryCase      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  scheme              Scheme                @relation(fields: [schemeId], references: [id])
+  lot                 Lot                   @relation(fields: [lotId], references: [id])
+  instalments         PaymentPlanInstalment[]
+
+  @@index([schemeId])
+  @@index([lotId])
+  @@map("payment_plans")
+}
+
+model PaymentPlanInstalment {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planId            String       @map("plan_id") @db.Uuid
+  instalmentNumber  Int          @map("instalment_number")
+  dueDate           DateTime     @db.Date @map("due_date")
+  amount            Decimal      @db.Decimal(12, 2)
+  amountPaid        Decimal      @default(0) @db.Decimal(12, 2) @map("amount_paid")
+  status            String       @default("UPCOMING") // UPCOMING, DUE, PAID, OVERDUE, PARTIALLY_PAID
+  paidAt            DateTime?    @db.Timestamptz @map("paid_at")
+  notes             String?
+  createdAt         DateTime     @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime     @updatedAt @db.Timestamptz @map("updated_at")
+
+  plan              PaymentPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, instalmentNumber])
+  @@index([planId, status])
+  @@map("payment_plan_instalments")
+}
+
+model DebtRecoveryDocument {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  caseId            String             @map("case_id") @db.Uuid
+  documentType      String             @map("document_type")
+  // ARREARS_REMINDER, DEMAND_NOTICE, FINAL_DEMAND, STATUTORY_NOTICE, PAYMENT_PLAN_AGREEMENT, COMMITTEE_REPORT, SOLICITOR_REFERRAL, COURT_FILING, JUDGMENT, CORRESPONDENCE
+  title             String             @db.VarChar(300)
+  description       String?
+  fileUrl           String?            @map("file_url")
+  generatedContent  String?            @map("generated_content") // for draft letters/notices
+  isDraft           Boolean            @default(true) @map("is_draft")
+  issuedAt          DateTime?          @db.Timestamptz @map("issued_at")
+  createdBy         String             @map("created_by") @db.Uuid
+  createdAt         DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime           @updatedAt @db.Timestamptz @map("updated_at")
+
+  case              DebtRecoveryCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, documentType])
+  @@map("debt_recovery_documents")
+}
+
+model DebtRecoveryActivity {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  caseId            String             @map("case_id") @db.Uuid
+  activityType      String             @map("activity_type")
+  // CASE_OPENED, STEP_ADVANCED, NOTICE_SENT, PAYMENT_RECEIVED, PAYMENT_PLAN_CREATED, PAYMENT_PLAN_DEFAULTED, DISPUTE_RAISED, HARDSHIP_REQUEST, LEGAL_REFERRAL, CASE_CLOSED, NOTE_ADDED, DOCUMENT_ADDED, APPROVAL_GRANTED, STATUS_CHANGED
+  description       String
+  performedBy       String             @map("performed_by") @db.Uuid
+  metadata          Json?              // flexible JSON for extra context
+  createdAt         DateTime           @default(now()) @db.Timestamptz @map("created_at")
+
+  case              DebtRecoveryCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, createdAt])
+  @@map("debt_recovery_activities")
 }

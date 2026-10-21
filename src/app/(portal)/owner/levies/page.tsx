@@ -162,8 +162,11 @@ export default async function OwnerLeviesPage() {
         />
       </div>
 
-      {/* View statement link */}
-      <div className="flex justify-end">
+      {/* Action links */}
+      <div className="flex justify-end gap-3">
+        <Button variant="secondary" href="/owner/levies/debt-recovery">
+          Debt Recovery
+        </Button>
         <Button variant="secondary" href="/owner/levies/statement">
           View Statement
         </Button>
