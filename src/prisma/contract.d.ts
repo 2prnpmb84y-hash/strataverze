@@ -22,9 +22,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ff893bf3b20a619c9476c24d9228c4820f8d2f3c396b0c53fdc4dc1eae33fa7f'>;
+  StorageHashBase<'b2eb99487b61153cbd2243970cc13796c3bfec4bab759b3ab2dd77ebd12caaed'>;
 export type ExecutionHash =
-  ExecutionHashBase<'da7567e18d8c8827ca3d6ff13481a0ba4e5f4e35e8d65135397db1a6ddf33d85'>;
+  ExecutionHashBase<'4f1bf853f1b2ddc588f6db959c7bddb0ef364a8abf39efaf0ce0802ae04b0f39'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -734,13 +734,107 @@ export type FieldOutputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly Lot: {
+      readonly accessoryUnit: CodecTypes['pg/text@1']['output'] | null;
+      readonly crn: CodecTypes['pg/text@1']['output'] | null;
       readonly entitlement: CodecTypes['pg/int4@1']['output'];
       readonly floorArea: CodecTypes['pg/float8@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly lotNumber: CodecTypes['pg/text@1']['output'];
       readonly lotType: CodecTypes['pg/text@1']['output'];
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly streetName: CodecTypes['pg/text@1']['output'] | null;
+      readonly streetNo: CodecTypes['pg/text@1']['output'] | null;
+      readonly suburb: CodecTypes['pg/text@1']['output'] | null;
       readonly unitNumber: CodecTypes['pg/text@1']['output'] | null;
+      readonly uof: CodecTypes['pg/text@1']['output'] | null;
+    };
+    readonly LotDebtCollection: {
+      readonly buildingDebtCollection: CodecTypes['pg/bool@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly excludeFromCollection: CodecTypes['pg/bool@1']['output'];
+      readonly hasPaymentPlan: CodecTypes['pg/bool@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly legalAction: CodecTypes['pg/bool@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly repaymentPlan: CodecTypes['pg/bool@1']['output'];
+      readonly stage: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly LotDeliveryPreference: {
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deliveryMethod: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly recipientAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipientEmail: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipientName: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipientPostcode: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipientState: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipientSuburb: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipientType: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly LotDetail: {
+      readonly contactName: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isCommitteeMember: CodecTypes['pg/bool@1']['output'];
+      readonly lastSettled: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly ownerAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly ownerEmail: CodecTypes['pg/text@1']['output'] | null;
+      readonly ownerMobile: CodecTypes['pg/text@1']['output'] | null;
+      readonly ownerPhone: CodecTypes['pg/text@1']['output'] | null;
+      readonly paidToDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly LotPowerOfAttorney: {
+      readonly attorneyAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly attorneyEmail: CodecTypes['pg/text@1']['output'] | null;
+      readonly attorneyName: CodecTypes['pg/text@1']['output'];
+      readonly attorneyPhone: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly endDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isActive: CodecTypes['pg/bool@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly startDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly LotProxy: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isActive: CodecTypes['pg/bool@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly meetingDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly meetingTitle: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly proxyEmail: CodecTypes['pg/text@1']['output'] | null;
+      readonly proxyName: CodecTypes['pg/text@1']['output'];
+      readonly proxyPhone: CodecTypes['pg/text@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly LotTenant: {
+      readonly contactName: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly dateReceived: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly deliveryBy: CodecTypes['pg/text@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isFormalTenant: CodecTypes['pg/bool@1']['output'];
+      readonly isOwnerOccupier: CodecTypes['pg/bool@1']['output'];
+      readonly leaseExpiry: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly leaseStart: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly mobile: CodecTypes['pg/text@1']['output'] | null;
+      readonly name: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly salutation: CodecTypes['pg/text@1']['output'] | null;
+      readonly tenantNumber: CodecTypes['pg/int4@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly MatchingRule: {
       readonly autoPost: CodecTypes['pg/bool@1']['output'];
@@ -839,6 +933,19 @@ export type FieldOutputTypes = {
       readonly firstName: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly lastName: CodecTypes['pg/text@1']['output'];
+      readonly phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly PropertyManager: {
+      readonly address: CodecTypes['pg/text@1']['output'] | null;
+      readonly agentEmail: CodecTypes['pg/text@1']['output'] | null;
+      readonly agentName: CodecTypes['pg/text@1']['output'] | null;
+      readonly company: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly fax: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
       readonly phone: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -2158,13 +2265,107 @@ export type FieldInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly Lot: {
+      readonly accessoryUnit: CodecTypes['pg/text@1']['input'] | null;
+      readonly crn: CodecTypes['pg/text@1']['input'] | null;
       readonly entitlement: CodecTypes['pg/int4@1']['input'];
       readonly floorArea: CodecTypes['pg/float8@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly lotNumber: CodecTypes['pg/text@1']['input'];
       readonly lotType: CodecTypes['pg/text@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly streetName: CodecTypes['pg/text@1']['input'] | null;
+      readonly streetNo: CodecTypes['pg/text@1']['input'] | null;
+      readonly suburb: CodecTypes['pg/text@1']['input'] | null;
       readonly unitNumber: CodecTypes['pg/text@1']['input'] | null;
+      readonly uof: CodecTypes['pg/text@1']['input'] | null;
+    };
+    readonly LotDebtCollection: {
+      readonly buildingDebtCollection: CodecTypes['pg/bool@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly excludeFromCollection: CodecTypes['pg/bool@1']['input'];
+      readonly hasPaymentPlan: CodecTypes['pg/bool@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly legalAction: CodecTypes['pg/bool@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly repaymentPlan: CodecTypes['pg/bool@1']['input'];
+      readonly stage: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly LotDeliveryPreference: {
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deliveryMethod: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly recipientAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipientEmail: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipientName: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipientPostcode: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipientState: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipientSuburb: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipientType: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly LotDetail: {
+      readonly contactName: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isCommitteeMember: CodecTypes['pg/bool@1']['input'];
+      readonly lastSettled: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly ownerAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly ownerEmail: CodecTypes['pg/text@1']['input'] | null;
+      readonly ownerMobile: CodecTypes['pg/text@1']['input'] | null;
+      readonly ownerPhone: CodecTypes['pg/text@1']['input'] | null;
+      readonly paidToDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly LotPowerOfAttorney: {
+      readonly attorneyAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly attorneyEmail: CodecTypes['pg/text@1']['input'] | null;
+      readonly attorneyName: CodecTypes['pg/text@1']['input'];
+      readonly attorneyPhone: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly endDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isActive: CodecTypes['pg/bool@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly startDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly LotProxy: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isActive: CodecTypes['pg/bool@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly meetingDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly meetingTitle: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly proxyEmail: CodecTypes['pg/text@1']['input'] | null;
+      readonly proxyName: CodecTypes['pg/text@1']['input'];
+      readonly proxyPhone: CodecTypes['pg/text@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly LotTenant: {
+      readonly contactName: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly dateReceived: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly deliveryBy: CodecTypes['pg/text@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isFormalTenant: CodecTypes['pg/bool@1']['input'];
+      readonly isOwnerOccupier: CodecTypes['pg/bool@1']['input'];
+      readonly leaseExpiry: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly leaseStart: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly mobile: CodecTypes['pg/text@1']['input'] | null;
+      readonly name: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly salutation: CodecTypes['pg/text@1']['input'] | null;
+      readonly tenantNumber: CodecTypes['pg/int4@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly MatchingRule: {
       readonly autoPost: CodecTypes['pg/bool@1']['input'];
@@ -2263,6 +2464,19 @@ export type FieldInputTypes = {
       readonly firstName: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly lastName: CodecTypes['pg/text@1']['input'];
+      readonly phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly PropertyManager: {
+      readonly address: CodecTypes['pg/text@1']['input'] | null;
+      readonly agentEmail: CodecTypes['pg/text@1']['input'] | null;
+      readonly agentName: CodecTypes['pg/text@1']['input'] | null;
+      readonly company: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly fax: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
       readonly phone: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -3581,14 +3795,108 @@ export type StorageColumnTypes = {
       readonly total_lots: CodecTypes['pg/int4@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly lot_debt_collections: {
+      readonly building_debt_collection: CodecTypes['pg/bool@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly exclude_from_collection: CodecTypes['pg/bool@1']['output'];
+      readonly has_payment_plan: CodecTypes['pg/bool@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly legal_action: CodecTypes['pg/bool@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly repayment_plan: CodecTypes['pg/bool@1']['output'];
+      readonly stage: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly lot_delivery_preferences: {
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly delivery_method: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly recipient_address: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipient_email: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipient_name: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipient_postcode: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipient_state: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipient_suburb: CodecTypes['pg/text@1']['output'] | null;
+      readonly recipient_type: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly lot_details: {
+      readonly contact_name: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_committee_member: CodecTypes['pg/bool@1']['output'];
+      readonly last_settled: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly owner_address: CodecTypes['pg/text@1']['output'] | null;
+      readonly owner_email: CodecTypes['pg/text@1']['output'] | null;
+      readonly owner_mobile: CodecTypes['pg/text@1']['output'] | null;
+      readonly owner_phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly paid_to_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly lot_powers_of_attorney: {
+      readonly attorney_address: CodecTypes['pg/text@1']['output'] | null;
+      readonly attorney_email: CodecTypes['pg/text@1']['output'] | null;
+      readonly attorney_name: CodecTypes['pg/text@1']['output'];
+      readonly attorney_phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly end_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_active: CodecTypes['pg/bool@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly start_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly lot_proxies: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_active: CodecTypes['pg/bool@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly meeting_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly meeting_title: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly proxy_email: CodecTypes['pg/text@1']['output'] | null;
+      readonly proxy_name: CodecTypes['pg/text@1']['output'];
+      readonly proxy_phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly lot_tenants: {
+      readonly contact_name: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly date_received: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly delivery_by: CodecTypes['pg/text@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_formal_tenant: CodecTypes['pg/bool@1']['output'];
+      readonly is_owner_occupier: CodecTypes['pg/bool@1']['output'];
+      readonly lease_expiry: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly lease_start: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly mobile: CodecTypes['pg/text@1']['output'] | null;
+      readonly name: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly salutation: CodecTypes['pg/text@1']['output'] | null;
+      readonly tenant_number: CodecTypes['pg/int4@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly lots: {
+      readonly accessory_unit: CodecTypes['pg/text@1']['output'] | null;
+      readonly crn: CodecTypes['pg/text@1']['output'] | null;
       readonly entitlement: CodecTypes['pg/int4@1']['output'];
       readonly floor_area: CodecTypes['pg/float8@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly lot_number: CodecTypes['pg/text@1']['output'];
       readonly lot_type: CodecTypes['pg/text@1']['output'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly street_name: CodecTypes['pg/text@1']['output'] | null;
+      readonly street_no: CodecTypes['pg/text@1']['output'] | null;
+      readonly suburb: CodecTypes['pg/text@1']['output'] | null;
       readonly unit_number: CodecTypes['pg/text@1']['output'] | null;
+      readonly uof: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly matching_rules: {
       readonly auto_post: CodecTypes['pg/bool@1']['output'];
@@ -3687,6 +3995,19 @@ export type StorageColumnTypes = {
       readonly first_name: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly last_name: CodecTypes['pg/text@1']['output'];
+      readonly phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly property_managers: {
+      readonly address: CodecTypes['pg/text@1']['output'] | null;
+      readonly agent_email: CodecTypes['pg/text@1']['output'] | null;
+      readonly agent_name: CodecTypes['pg/text@1']['output'] | null;
+      readonly company: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly fax: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
       readonly phone: CodecTypes['pg/text@1']['output'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -5005,14 +5326,108 @@ export type StorageColumnInputTypes = {
       readonly total_lots: CodecTypes['pg/int4@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly lot_debt_collections: {
+      readonly building_debt_collection: CodecTypes['pg/bool@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly exclude_from_collection: CodecTypes['pg/bool@1']['input'];
+      readonly has_payment_plan: CodecTypes['pg/bool@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly legal_action: CodecTypes['pg/bool@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly repayment_plan: CodecTypes['pg/bool@1']['input'];
+      readonly stage: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly lot_delivery_preferences: {
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly delivery_method: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly recipient_address: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipient_email: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipient_name: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipient_postcode: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipient_state: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipient_suburb: CodecTypes['pg/text@1']['input'] | null;
+      readonly recipient_type: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly lot_details: {
+      readonly contact_name: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_committee_member: CodecTypes['pg/bool@1']['input'];
+      readonly last_settled: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly owner_address: CodecTypes['pg/text@1']['input'] | null;
+      readonly owner_email: CodecTypes['pg/text@1']['input'] | null;
+      readonly owner_mobile: CodecTypes['pg/text@1']['input'] | null;
+      readonly owner_phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly paid_to_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly lot_powers_of_attorney: {
+      readonly attorney_address: CodecTypes['pg/text@1']['input'] | null;
+      readonly attorney_email: CodecTypes['pg/text@1']['input'] | null;
+      readonly attorney_name: CodecTypes['pg/text@1']['input'];
+      readonly attorney_phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly end_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_active: CodecTypes['pg/bool@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly start_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly lot_proxies: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_active: CodecTypes['pg/bool@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly meeting_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly meeting_title: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly proxy_email: CodecTypes['pg/text@1']['input'] | null;
+      readonly proxy_name: CodecTypes['pg/text@1']['input'];
+      readonly proxy_phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly lot_tenants: {
+      readonly contact_name: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly date_received: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly delivery_by: CodecTypes['pg/text@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_formal_tenant: CodecTypes['pg/bool@1']['input'];
+      readonly is_owner_occupier: CodecTypes['pg/bool@1']['input'];
+      readonly lease_expiry: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly lease_start: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly mobile: CodecTypes['pg/text@1']['input'] | null;
+      readonly name: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly salutation: CodecTypes['pg/text@1']['input'] | null;
+      readonly tenant_number: CodecTypes['pg/int4@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly lots: {
+      readonly accessory_unit: CodecTypes['pg/text@1']['input'] | null;
+      readonly crn: CodecTypes['pg/text@1']['input'] | null;
       readonly entitlement: CodecTypes['pg/int4@1']['input'];
       readonly floor_area: CodecTypes['pg/float8@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly lot_number: CodecTypes['pg/text@1']['input'];
       readonly lot_type: CodecTypes['pg/text@1']['input'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly street_name: CodecTypes['pg/text@1']['input'] | null;
+      readonly street_no: CodecTypes['pg/text@1']['input'] | null;
+      readonly suburb: CodecTypes['pg/text@1']['input'] | null;
       readonly unit_number: CodecTypes['pg/text@1']['input'] | null;
+      readonly uof: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly matching_rules: {
       readonly auto_post: CodecTypes['pg/bool@1']['input'];
@@ -5111,6 +5526,19 @@ export type StorageColumnInputTypes = {
       readonly first_name: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly last_name: CodecTypes['pg/text@1']['input'];
+      readonly phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly property_managers: {
+      readonly address: CodecTypes['pg/text@1']['input'] | null;
+      readonly agent_email: CodecTypes['pg/text@1']['input'] | null;
+      readonly agent_name: CodecTypes['pg/text@1']['input'] | null;
+      readonly company: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly fax: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
       readonly phone: CodecTypes['pg/text@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -6595,28 +7023,148 @@ export namespace Models {
     readonly [RelationKeys]?: 'fund' | 'levyNotices' | 'scheme';
   };
   export type public_Lot = {
+    accessoryUnit: CodecTypes['pg/text@1']['output'] | null;
+    crn: CodecTypes['pg/text@1']['output'] | null;
     entitlement: CodecTypes['pg/int4@1']['output'];
     floorArea: CodecTypes['pg/float8@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
     lotNumber: CodecTypes['pg/text@1']['output'];
     lotType: CodecTypes['pg/text@1']['output'];
     schemeId: CodecTypes['pg/uuid@1']['output'];
+    streetName: CodecTypes['pg/text@1']['output'] | null;
+    streetNo: CodecTypes['pg/text@1']['output'] | null;
+    suburb: CodecTypes['pg/text@1']['output'] | null;
     unitNumber: CodecTypes['pg/text@1']['output'] | null;
+    uof: CodecTypes['pg/text@1']['output'] | null;
+    debtCollection: public_LotDebtCollection | null;
+    deliveryPreferences: public_LotDeliveryPreference[];
     financialDocuments: public_FinancialDocument[];
     invitations: public_Invitation[];
     journalLines: public_JournalLine[];
     levyItems: public_LevyItem[];
     levyNotices: public_LevyNotice[];
+    lotDetail: public_LotDetail | null;
     memberships: public_SchemeMembership[];
+    powersOfAttorney: public_LotPowerOfAttorney[];
+    propertyManager: public_PropertyManager | null;
+    proxies: public_LotProxy[];
     scheme: public_Scheme;
+    tenants: public_LotTenant[];
     readonly [RelationKeys]?:
+      | 'debtCollection'
+      | 'deliveryPreferences'
       | 'financialDocuments'
       | 'invitations'
       | 'journalLines'
       | 'levyItems'
       | 'levyNotices'
+      | 'lotDetail'
       | 'memberships'
-      | 'scheme';
+      | 'powersOfAttorney'
+      | 'propertyManager'
+      | 'proxies'
+      | 'scheme'
+      | 'tenants';
+  };
+  export type public_LotDebtCollection = {
+    buildingDebtCollection: CodecTypes['pg/bool@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    excludeFromCollection: CodecTypes['pg/bool@1']['output'];
+    hasPaymentPlan: CodecTypes['pg/bool@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    legalAction: CodecTypes['pg/bool@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    repaymentPlan: CodecTypes['pg/bool@1']['output'];
+    stage: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    lot: public_Lot;
+    readonly [RelationKeys]?: 'lot';
+  };
+  export type public_LotDeliveryPreference = {
+    category: CodecTypes['pg/text@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deliveryMethod: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    recipientAddress: CodecTypes['pg/text@1']['output'] | null;
+    recipientEmail: CodecTypes['pg/text@1']['output'] | null;
+    recipientName: CodecTypes['pg/text@1']['output'] | null;
+    recipientPostcode: CodecTypes['pg/text@1']['output'] | null;
+    recipientState: CodecTypes['pg/text@1']['output'] | null;
+    recipientSuburb: CodecTypes['pg/text@1']['output'] | null;
+    recipientType: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    lot: public_Lot;
+    readonly [RelationKeys]?: 'lot';
+  };
+  export type public_LotDetail = {
+    contactName: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    isCommitteeMember: CodecTypes['pg/bool@1']['output'];
+    lastSettled: CodecTypes['pg/date-string@1']['output'] | null;
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    ownerAddress: CodecTypes['pg/text@1']['output'] | null;
+    ownerEmail: CodecTypes['pg/text@1']['output'] | null;
+    ownerMobile: CodecTypes['pg/text@1']['output'] | null;
+    ownerPhone: CodecTypes['pg/text@1']['output'] | null;
+    paidToDate: CodecTypes['pg/date-string@1']['output'] | null;
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    lot: public_Lot;
+    readonly [RelationKeys]?: 'lot';
+  };
+  export type public_LotPowerOfAttorney = {
+    attorneyAddress: CodecTypes['pg/text@1']['output'] | null;
+    attorneyEmail: CodecTypes['pg/text@1']['output'] | null;
+    attorneyName: CodecTypes['pg/text@1']['output'];
+    attorneyPhone: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    endDate: CodecTypes['pg/date-string@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    isActive: CodecTypes['pg/bool@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    startDate: CodecTypes['pg/date-string@1']['output'] | null;
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    lot: public_Lot;
+    readonly [RelationKeys]?: 'lot';
+  };
+  export type public_LotProxy = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    isActive: CodecTypes['pg/bool@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    meetingDate: CodecTypes['pg/date-string@1']['output'] | null;
+    meetingTitle: CodecTypes['pg/text@1']['output'] | null;
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    proxyEmail: CodecTypes['pg/text@1']['output'] | null;
+    proxyName: CodecTypes['pg/text@1']['output'];
+    proxyPhone: CodecTypes['pg/text@1']['output'] | null;
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    lot: public_Lot;
+    readonly [RelationKeys]?: 'lot';
+  };
+  export type public_LotTenant = {
+    contactName: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    dateReceived: CodecTypes['pg/date-string@1']['output'] | null;
+    deliveryBy: CodecTypes['pg/text@1']['output'];
+    email: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    isFormalTenant: CodecTypes['pg/bool@1']['output'];
+    isOwnerOccupier: CodecTypes['pg/bool@1']['output'];
+    leaseExpiry: CodecTypes['pg/date-string@1']['output'] | null;
+    leaseStart: CodecTypes['pg/date-string@1']['output'] | null;
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    mobile: CodecTypes['pg/text@1']['output'] | null;
+    name: CodecTypes['pg/text@1']['output'] | null;
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    salutation: CodecTypes['pg/text@1']['output'] | null;
+    tenantNumber: CodecTypes['pg/int4@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    lot: public_Lot;
+    readonly [RelationKeys]?: 'lot';
   };
   export type public_MatchingRule = {
     autoPost: CodecTypes['pg/bool@1']['output'];
@@ -6865,6 +7413,21 @@ export namespace Models {
       | 'worksVariationsRequested'
       | 'worksVerificationEvents'
       | 'worksWorkOrdersAuthorised';
+  };
+  export type public_PropertyManager = {
+    address: CodecTypes['pg/text@1']['output'] | null;
+    agentEmail: CodecTypes['pg/text@1']['output'] | null;
+    agentName: CodecTypes['pg/text@1']['output'] | null;
+    company: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    email: CodecTypes['pg/text@1']['output'] | null;
+    fax: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    phone: CodecTypes['pg/text@1']['output'] | null;
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    lot: public_Lot;
+    readonly [RelationKeys]?: 'lot';
   };
   export type public_Quote = {
     amount: Numeric<12, 2>;
@@ -8123,12 +8686,19 @@ export declare const models: {
     LevyNotice: Models.public_LevyNotice;
     LevySchedule: Models.public_LevySchedule;
     Lot: Models.public_Lot;
+    LotDebtCollection: Models.public_LotDebtCollection;
+    LotDeliveryPreference: Models.public_LotDeliveryPreference;
+    LotDetail: Models.public_LotDetail;
+    LotPowerOfAttorney: Models.public_LotPowerOfAttorney;
+    LotProxy: Models.public_LotProxy;
+    LotTenant: Models.public_LotTenant;
     MatchingRule: Models.public_MatchingRule;
     Meeting: Models.public_Meeting;
     Motion: Models.public_Motion;
     Organisation: Models.public_Organisation;
     OrganisationMembership: Models.public_OrganisationMembership;
     Profile: Models.public_Profile;
+    PropertyManager: Models.public_PropertyManager;
     Quote: Models.public_Quote;
     QuoteRequest: Models.public_QuoteRequest;
     Scheme: Models.public_Scheme;
@@ -12478,8 +13048,728 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly lot_debt_collections: {
+              columns: {
+                readonly building_debt_collection: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly exclude_from_collection: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly has_payment_plan: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly legal_action: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly repayment_plan: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly stage: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'NONE'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'lot_debt_collections_lot_id_key';
+                  readonly columns: readonly ['lot_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lot_debt_collections';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly lot_delivery_preferences: {
+              columns: {
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly delivery_method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'EMAIL'>;
+                  };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly recipient_address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recipient_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recipient_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recipient_postcode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recipient_state: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recipient_suburb: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly recipient_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'OWNER'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'lot_delivery_preferences_lot_id_category_key';
+                  readonly columns: readonly ['lot_id', 'category'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lot_delivery_preferences';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly lot_details: {
+              columns: {
+                readonly contact_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_committee_member: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly last_settled: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly owner_address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_mobile: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly paid_to_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'lot_details_lot_id_key';
+                  readonly columns: readonly ['lot_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lot_details';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly lot_powers_of_attorney: {
+              columns: {
+                readonly attorney_address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly attorney_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly attorney_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly attorney_phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly end_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly start_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'lot_powers_of_attorney_lot_id_is_active_idx';
+                  readonly columns: readonly ['lot_id', 'is_active'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lot_powers_of_attorney';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly lot_proxies: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly meeting_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly meeting_title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly proxy_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly proxy_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly proxy_phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'lot_proxies_lot_id_is_active_idx';
+                  readonly columns: readonly ['lot_id', 'is_active'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lot_proxies';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly lot_tenants: {
+              columns: {
+                readonly contact_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly date_received: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly delivery_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'EMAIL'>;
+                  };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_formal_tenant: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly is_owner_occupier: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly lease_expiry: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lease_start: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly mobile: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly salutation: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly tenant_number: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'lot_tenants_lot_id_tenant_number_key';
+                  readonly columns: readonly ['lot_id', 'tenant_number'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lot_tenants';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly lots: {
               columns: {
+                readonly accessory_unit: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly crn: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly entitlement: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
@@ -12524,7 +13814,31 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly street_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly street_no: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly suburb: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly unit_number: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly uof: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -13269,6 +14583,104 @@ type ContractBase = Omit<
                 },
               ];
               foreignKeys: readonly [];
+            };
+            readonly property_managers: {
+              columns: {
+                readonly address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly agent_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly agent_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly company: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly fax: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'property_managers_lot_id_key';
+                  readonly columns: readonly ['lot_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'property_managers';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
             };
             readonly quote_requests: {
               columns: {
@@ -20905,6 +22317,30 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'LevySchedule';
     };
+    readonly lot_debt_collections: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LotDebtCollection';
+    };
+    readonly lot_delivery_preferences: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LotDeliveryPreference';
+    };
+    readonly lot_details: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LotDetail';
+    };
+    readonly lot_powers_of_attorney: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LotPowerOfAttorney';
+    };
+    readonly lot_proxies: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LotProxy';
+    };
+    readonly lot_tenants: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LotTenant';
+    };
     readonly lots: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
     readonly matching_rules: {
       readonly namespace: 'public' & NamespaceId;
@@ -20921,6 +22357,10 @@ type ContractBase = Omit<
       readonly model: 'Organisation';
     };
     readonly profiles: { readonly namespace: 'public' & NamespaceId; readonly model: 'Profile' };
+    readonly property_managers: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'PropertyManager';
+    };
     readonly quote_requests: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'QuoteRequest';
@@ -25276,6 +26716,14 @@ type ContractBase = Omit<
           };
           readonly Lot: {
             readonly fields: {
+              readonly accessoryUnit: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly crn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly entitlement: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -25300,12 +26748,51 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly streetName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly streetNo: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly suburb: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly unitNumber: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly uof: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
             };
             readonly relations: {
+              readonly debtCollection: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LotDebtCollection';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
+              readonly deliveryPreferences: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LotDeliveryPreference';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
               readonly financialDocuments: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -25361,10 +26848,56 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['lotId'];
                 };
               };
+              readonly lotDetail: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LotDetail';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
               readonly memberships: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'SchemeMembership';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
+              readonly powersOfAttorney: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LotPowerOfAttorney';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
+              readonly propertyManager: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PropertyManager';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
+              readonly proxies: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LotProxy';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -25384,18 +26917,577 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly tenants: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LotTenant';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'lots';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly accessoryUnit: { readonly column: 'accessory_unit' };
+                readonly crn: { readonly column: 'crn' };
                 readonly entitlement: { readonly column: 'entitlement' };
                 readonly floorArea: { readonly column: 'floor_area' };
                 readonly id: { readonly column: 'id' };
                 readonly lotNumber: { readonly column: 'lot_number' };
                 readonly lotType: { readonly column: 'lot_type' };
                 readonly schemeId: { readonly column: 'scheme_id' };
+                readonly streetName: { readonly column: 'street_name' };
+                readonly streetNo: { readonly column: 'street_no' };
+                readonly suburb: { readonly column: 'suburb' };
                 readonly unitNumber: { readonly column: 'unit_number' };
+                readonly uof: { readonly column: 'uof' };
+              };
+            };
+          };
+          readonly LotDebtCollection: {
+            readonly fields: {
+              readonly buildingDebtCollection: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly excludeFromCollection: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly hasPaymentPlan: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly legalAction: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly repaymentPlan: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly stage: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'lot_debt_collections';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly buildingDebtCollection: { readonly column: 'building_debt_collection' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly excludeFromCollection: { readonly column: 'exclude_from_collection' };
+                readonly hasPaymentPlan: { readonly column: 'has_payment_plan' };
+                readonly id: { readonly column: 'id' };
+                readonly legalAction: { readonly column: 'legal_action' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly notes: { readonly column: 'notes' };
+                readonly repaymentPlan: { readonly column: 'repayment_plan' };
+                readonly stage: { readonly column: 'stage' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly LotDeliveryPreference: {
+            readonly fields: {
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deliveryMethod: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly recipientAddress: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recipientEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recipientName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recipientPostcode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recipientState: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recipientSuburb: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recipientType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'lot_delivery_preferences';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly category: { readonly column: 'category' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly deliveryMethod: { readonly column: 'delivery_method' };
+                readonly id: { readonly column: 'id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly recipientAddress: { readonly column: 'recipient_address' };
+                readonly recipientEmail: { readonly column: 'recipient_email' };
+                readonly recipientName: { readonly column: 'recipient_name' };
+                readonly recipientPostcode: { readonly column: 'recipient_postcode' };
+                readonly recipientState: { readonly column: 'recipient_state' };
+                readonly recipientSuburb: { readonly column: 'recipient_suburb' };
+                readonly recipientType: { readonly column: 'recipient_type' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly LotDetail: {
+            readonly fields: {
+              readonly contactName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isCommitteeMember: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lastSettled: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ownerAddress: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerMobile: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerPhone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paidToDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'lot_details';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly contactName: { readonly column: 'contact_name' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly id: { readonly column: 'id' };
+                readonly isCommitteeMember: { readonly column: 'is_committee_member' };
+                readonly lastSettled: { readonly column: 'last_settled' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly ownerAddress: { readonly column: 'owner_address' };
+                readonly ownerEmail: { readonly column: 'owner_email' };
+                readonly ownerMobile: { readonly column: 'owner_mobile' };
+                readonly ownerPhone: { readonly column: 'owner_phone' };
+                readonly paidToDate: { readonly column: 'paid_to_date' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly LotPowerOfAttorney: {
+            readonly fields: {
+              readonly attorneyAddress: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly attorneyEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly attorneyName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly attorneyPhone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly endDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly startDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'lot_powers_of_attorney';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly attorneyAddress: { readonly column: 'attorney_address' };
+                readonly attorneyEmail: { readonly column: 'attorney_email' };
+                readonly attorneyName: { readonly column: 'attorney_name' };
+                readonly attorneyPhone: { readonly column: 'attorney_phone' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly endDate: { readonly column: 'end_date' };
+                readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'is_active' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly notes: { readonly column: 'notes' };
+                readonly startDate: { readonly column: 'start_date' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly LotProxy: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly meetingTitle: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly proxyEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly proxyName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly proxyPhone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'lot_proxies';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'is_active' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly meetingDate: { readonly column: 'meeting_date' };
+                readonly meetingTitle: { readonly column: 'meeting_title' };
+                readonly notes: { readonly column: 'notes' };
+                readonly proxyEmail: { readonly column: 'proxy_email' };
+                readonly proxyName: { readonly column: 'proxy_name' };
+                readonly proxyPhone: { readonly column: 'proxy_phone' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly LotTenant: {
+            readonly fields: {
+              readonly contactName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly dateReceived: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly deliveryBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly email: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isFormalTenant: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly isOwnerOccupier: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly leaseExpiry: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly leaseStart: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly mobile: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly salutation: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly tenantNumber: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'lot_tenants';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly contactName: { readonly column: 'contact_name' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly dateReceived: { readonly column: 'date_received' };
+                readonly deliveryBy: { readonly column: 'delivery_by' };
+                readonly email: { readonly column: 'email' };
+                readonly id: { readonly column: 'id' };
+                readonly isFormalTenant: { readonly column: 'is_formal_tenant' };
+                readonly isOwnerOccupier: { readonly column: 'is_owner_occupier' };
+                readonly leaseExpiry: { readonly column: 'lease_expiry' };
+                readonly leaseStart: { readonly column: 'lease_start' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly mobile: { readonly column: 'mobile' };
+                readonly name: { readonly column: 'name' };
+                readonly notes: { readonly column: 'notes' };
+                readonly salutation: { readonly column: 'salutation' };
+                readonly tenantNumber: { readonly column: 'tenant_number' };
+                readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
           };
@@ -26796,6 +28888,88 @@ type ContractBase = Omit<
                 readonly firstName: { readonly column: 'first_name' };
                 readonly id: { readonly column: 'id' };
                 readonly lastName: { readonly column: 'last_name' };
+                readonly phone: { readonly column: 'phone' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly PropertyManager: {
+            readonly fields: {
+              readonly address: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly agentEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly agentName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly company: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly email: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fax: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly phone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'property_managers';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly address: { readonly column: 'address' };
+                readonly agentEmail: { readonly column: 'agent_email' };
+                readonly agentName: { readonly column: 'agent_name' };
+                readonly company: { readonly column: 'company' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly email: { readonly column: 'email' };
+                readonly fax: { readonly column: 'fax' };
+                readonly id: { readonly column: 'id' };
+                readonly lotId: { readonly column: 'lot_id' };
                 readonly phone: { readonly column: 'phone' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
@@ -34765,6 +36939,60 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
+            readonly entry: 'lot_debt_collections';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'lot_delivery_preferences';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'lot_details';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'lot_powers_of_attorney';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'lot_proxies';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'lot_tenants';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
             readonly entry: 'matching_rules';
             readonly field: 'updated_at';
             readonly namespace: 'public';
@@ -34793,6 +37021,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'profiles';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'property_managers';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };

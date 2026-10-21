@@ -217,6 +217,14 @@ model Lot {
   floorArea          Float?              @map("floor_area")
   lotType            String              @default("RESIDENTIAL") @map("lot_type")
 
+  // Extended lot details (per Figma)
+  streetNo           String?             @map("street_no")
+  streetName         String?             @map("street_name")
+  suburb             String?
+  accessoryUnit      String?             @map("accessory_unit")
+  uof                String?             // Unit of Functionality
+  crn                String?             // Certificate Registration Number
+
   scheme             Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   memberships        SchemeMembership[]
   levyItems          LevyItem[]
@@ -224,9 +232,164 @@ model Lot {
   levyNotices        LevyNotice[]
   journalLines       JournalLine[]
   financialDocuments FinancialDocument[]
+  lotDetail          LotDetail?
+  tenants            LotTenant[]
+  deliveryPreferences LotDeliveryPreference[]
+  debtCollection     LotDebtCollection?
+  proxies            LotProxy[]
+  powersOfAttorney   LotPowerOfAttorney[]
+  propertyManager    PropertyManager?
 
   @@unique([schemeId, lotNumber])
   @@map("lots")
+}
+
+// ─── Lot Detail (extended owner/settlement info per lot) ─────────
+model LotDetail {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId             String    @unique @map("lot_id") @db.Uuid
+  // Owner contact (overrides profile defaults for this lot)
+  ownerPhone        String?   @map("owner_phone")
+  ownerMobile       String?   @map("owner_mobile")
+  contactName       String?   @map("contact_name")
+  ownerAddress      String?   @map("owner_address")
+  ownerEmail        String?   @map("owner_email")
+  isCommitteeMember Boolean   @default(false) @map("is_committee_member")
+  paidToDate        DateTime? @db.Date @map("paid_to_date")
+  lastSettled       DateTime? @db.Date @map("last_settled")
+  createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  lot               Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@map("lot_details")
+}
+
+// ─── Lot Tenancy ──────────────────────────────────────────────────
+model LotTenant {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId             String    @map("lot_id") @db.Uuid
+  tenantNumber      Int       @default(1) @map("tenant_number") // 1 or 2
+  isOwnerOccupier   Boolean   @default(false) @map("is_owner_occupier")
+  isFormalTenant    Boolean   @default(false) @map("is_formal_tenant")
+  dateReceived      DateTime? @db.Date @map("date_received")
+  deliveryBy        String    @default("EMAIL") @map("delivery_by") // EMAIL, POST
+  salutation        String?
+  name              String?
+  contactName       String?   @map("contact_name")
+  mobile            String?
+  email             String?
+  leaseStart        DateTime? @db.Date @map("lease_start")
+  leaseExpiry       DateTime? @db.Date @map("lease_expiry")
+  notes             String?
+  createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  lot               Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([lotId, tenantNumber])
+  @@map("lot_tenants")
+}
+
+// ─── Property Manager ────────────────────────────────────────────
+model PropertyManager {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId       String   @unique @map("lot_id") @db.Uuid
+  agentName   String?  @map("agent_name")
+  company     String?
+  address     String?
+  agentEmail  String?  @map("agent_email")
+  phone       String?
+  fax         String?
+  email       String?
+  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  lot         Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@map("property_managers")
+}
+
+// ─── Delivery Preferences ────────────────────────────────────────
+model LotDeliveryPreference {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId           String   @map("lot_id") @db.Uuid
+  category        String   // ANNUAL_NOTICES, MEETING_NOTICES, GENERAL_CORRESPONDENCE
+  deliveryMethod  String   @default("EMAIL") @map("delivery_method") // EMAIL, POST, SMS
+  recipientType   String   @default("OWNER") @map("recipient_type") // AGENT, OWNER, TENANT, OTHER
+  recipientName   String?  @map("recipient_name")
+  recipientEmail  String?  @map("recipient_email")
+  recipientAddress String? @map("recipient_address")
+  recipientSuburb  String? @map("recipient_suburb")
+  recipientState   String? @map("recipient_state")
+  recipientPostcode String? @map("recipient_postcode")
+  createdAt       DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  lot             Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([lotId, category])
+  @@map("lot_delivery_preferences")
+}
+
+// ─── Debt Collection ─────────────────────────────────────────────
+model LotDebtCollection {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId                   String   @unique @map("lot_id") @db.Uuid
+  stage                   String   @default("NONE") // NONE, REMINDER, NOTICE, LEGAL, JUDGMENT
+  notes                   String?
+  excludeFromCollection   Boolean  @default(false) @map("exclude_from_collection")
+  hasPaymentPlan          Boolean  @default(false) @map("has_payment_plan")
+  buildingDebtCollection  Boolean  @default(false) @map("building_debt_collection")
+  repaymentPlan           Boolean  @default(false) @map("repayment_plan")
+  legalAction             Boolean  @default(false) @map("legal_action")
+  createdAt               DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt               DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  lot                     Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@map("lot_debt_collections")
+}
+
+// ─── Power of Attorney ───────────────────────────────────────────
+model LotPowerOfAttorney {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId           String    @map("lot_id") @db.Uuid
+  attorneyName    String    @map("attorney_name")
+  attorneyEmail   String?   @map("attorney_email")
+  attorneyPhone   String?   @map("attorney_phone")
+  attorneyAddress String?   @map("attorney_address")
+  startDate       DateTime? @db.Date @map("start_date")
+  endDate         DateTime? @db.Date @map("end_date")
+  isActive        Boolean   @default(true) @map("is_active")
+  notes           String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  lot             Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([lotId, isActive])
+  @@map("lot_powers_of_attorney")
+}
+
+// ─── Proxy Voting ────────────────────────────────────────────────
+model LotProxy {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId         String    @map("lot_id") @db.Uuid
+  proxyName     String    @map("proxy_name")
+  proxyEmail    String?   @map("proxy_email")
+  proxyPhone    String?   @map("proxy_phone")
+  meetingDate   DateTime? @db.Date @map("meeting_date")
+  meetingTitle  String?   @map("meeting_title")
+  isActive      Boolean   @default(true) @map("is_active")
+  notes         String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  lot           Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([lotId, isActive])
+  @@map("lot_proxies")
 }
 
 model SchemeMembership {

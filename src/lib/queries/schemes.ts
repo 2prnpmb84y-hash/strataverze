@@ -81,6 +81,7 @@ export async function getSchemeById(schemeId: string) {
         .include("profile"),
     )
     .include("funds")
+    .include("bankAccounts")
     .include("images", (i) => i.orderBy((img) => img.sortOrder.asc()))
     .first({ id: schemeId });
 }

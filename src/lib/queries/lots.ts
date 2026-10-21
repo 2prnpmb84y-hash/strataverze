@@ -208,6 +208,12 @@ export async function getLotDetail(lotId: string) {
     entitlement: lot.entitlement,
     floorArea: lot.floorArea,
     lotType: lot.lotType,
+    streetNo: (lot as Record<string, unknown>).streetNo as string | null ?? null,
+    streetName: (lot as Record<string, unknown>).streetName as string | null ?? null,
+    suburb: (lot as Record<string, unknown>).suburb as string | null ?? null,
+    accessoryUnit: (lot as Record<string, unknown>).accessoryUnit as string | null ?? null,
+    uof: (lot as Record<string, unknown>).uof as string | null ?? null,
+    crn: (lot as Record<string, unknown>).crn as string | null ?? null,
     owners,
     isCommitteeMember: owners.some((o) => committeeMembers.includes(o.profileId)),
     financials: {

@@ -4,8 +4,16 @@ import { getLotDetail } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
+import {
+  getLotDetailExtended,
+  getTenantsForLot,
+  getPropertyManager,
+  getDeliveryPreferences,
+  getDebtCollection,
+} from "@/lib/queries/lot-workflows";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LotForm } from "../lot-form";
 import { DeleteLotButton } from "./delete-lot-button";
 import { formatLotLabel } from "@/lib/format";
@@ -13,7 +21,15 @@ import { OwnerAssignment } from "./owner-assignment";
 import { LotDetailTabs } from "./lot-detail-tabs";
 import { LotFinancials } from "./lot-financials";
 import { LotDocuments } from "./lot-documents";
+import { DebtCollectionSection } from "./debt-collection-section";
+import { TenancyDetails } from "./tenancy-details";
+import { LotActionButtons } from "./lot-action-buttons";
 import { connection } from "next/server";
+import {
+  FileText,
+  Award,
+  Users,
+} from "lucide-react";
 
 export default async function LotDetailPage({
   params,
@@ -34,12 +50,31 @@ export default async function LotDetailPage({
   if (!isAdviser) notFound();
 
   const lot = await getLotDetail(lotId);
+  const [lotDetailExt, tenants, propertyManager, deliveryPrefs, debtCollection, documents] =
+    await Promise.all([
+      getLotDetailExtended(lotId),
+      getTenantsForLot(lotId),
+      getPropertyManager(lotId),
+      getDeliveryPreferences(lotId),
+      getDebtCollection(lotId),
+      getDocumentsForScheme(id),
+    ]);
+
   if (!lot || lot.schemeId !== id) notFound();
 
-  const documents = await getDocumentsForScheme(id);
+  // Find the operating bank account for this scheme
+  const operatingAccount = scheme.bankAccounts?.find(
+    (ba: { isOperating: boolean; isActive: boolean }) => ba.isOperating && ba.isActive,
+  ) ?? scheme.bankAccounts?.[0] ?? null;
 
   const lotTypeLabel =
     lot.lotType.charAt(0) + lot.lotType.slice(1).toLowerCase();
+
+  // Build owner display name
+  const ownerName =
+    lot.owners.length > 0
+      ? `${lot.owners[0].firstName} ${lot.owners[0].lastName}`.trim()
+      : "No owner assigned";
 
   return (
     <div className="max-w-5xl">
@@ -50,132 +85,178 @@ export default async function LotDetailPage({
         backLabel="Strata Roll"
       />
 
+      {/* Action buttons row */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Button variant="secondary" className="text-xs h-9 px-4">
+          <FileText size={14} />
+          Strata Report
+        </Button>
+        <Button variant="secondary" className="text-xs h-9 px-4">
+          <Award size={14} />
+          Info Certificate
+        </Button>
+        <LotActionButtons schemeId={id} lotId={lotId} deliveryPrefs={deliveryPrefs} />
+      </div>
+
       <LotDetailTabs>
         {{
           /* ── Details tab ────────────────────────────────── */
           details: (
             <div className="space-y-6">
-              {/* Two-column layout: Lot info + Property details */}
+              {/* Bank Account / Reconciliation section */}
+              <Card>
+                <CardHeader title="Bank Account" />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <dl className="text-sm space-y-2">
+                      <DetailRow label="BSB" value={operatingAccount?.bsb ?? "—"} />
+                      <DetailRow label="Account" value={operatingAccount?.accountNumber ?? "—"} />
+                      {operatingAccount?.bankName && (
+                        <DetailRow label="Bank" value={operatingAccount.bankName} />
+                      )}
+                    </dl>
+                  </div>
+                  <div>
+                    <div className="h-32 flex items-center justify-center rounded-[var(--radius-card)] bg-muted text-xs text-ink-muted">
+                      Reconciliation chart coming soon
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* S/Plan details + Owner Information */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Lot information */}
+                {/* S/Plan Details */}
                 <Card>
-                  <CardHeader title="Lot Information" />
+                  <CardHeader title="S/Plan Details" />
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    <DetailRow label="Strata Plan" value={scheme.planNumber} />
-                    <DetailRow label="Lot Number" value={lot.lotNumber} />
+                    <DetailRow label="S/Plan" value={scheme.planNumber} />
+                    <DetailRow label="Lot" value={lot.lotNumber} />
                     <DetailRow
-                      label="Unit Number"
+                      label="Unit"
                       value={lot.unitNumber ?? "—"}
                     />
-                    <DetailRow label="Lot Type" value={lotTypeLabel} />
                     <DetailRow
-                      label="Unit of Entitlement"
-                      value={String(lot.entitlement)}
+                      label="Street No"
+                      value={lot.streetNo ?? "—"}
                     />
                     <DetailRow
-                      label="Floor Area"
+                      label="Street Name"
+                      value={lot.streetName ?? scheme.address ?? "—"}
+                    />
+                    <DetailRow
+                      label="Suburb"
+                      value={lot.suburb ?? scheme.suburb ?? "—"}
+                    />
+                    <DetailRow
+                      label="Accessory Unit"
+                      value={lot.accessoryUnit ?? "—"}
+                    />
+                    <DetailRow
+                      label="UOF"
+                      value={lot.uof ?? String(lot.entitlement)}
+                    />
+                    <DetailRow
+                      label="CRN"
+                      value={lot.crn ?? "—"}
+                    />
+                  </dl>
+                </Card>
+
+                {/* Owner Information */}
+                <Card>
+                  <CardHeader
+                    title="Owner Information"
+                    action={
+                      lotDetailExt?.isCommitteeMember ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-soft px-2.5 py-1 text-xs font-medium text-turquoise">
+                          <span className="h-1.5 w-1.5 rounded-full bg-turquoise" />
+                          Committee
+                        </span>
+                      ) : undefined
+                    }
+                  />
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                    <DetailRow label="Owner Name" value={ownerName} />
+                    <DetailRow
+                      label="Phone"
+                      value={lotDetailExt?.ownerPhone ?? lot.owners[0]?.phone ?? "—"}
+                    />
+                    <DetailRow
+                      label="Mobile"
+                      value={lotDetailExt?.ownerMobile ?? "—"}
+                    />
+                    <DetailRow
+                      label="Contact Name"
+                      value={lotDetailExt?.contactName ?? "—"}
+                    />
+                    <DetailRow
+                      label="Address"
+                      value={lotDetailExt?.ownerAddress ?? "—"}
+                    />
+                    <DetailRow
+                      label="Email"
+                      value={lotDetailExt?.ownerEmail ?? lot.owners[0]?.email ?? "—"}
+                    />
+                    {lotDetailExt?.isCommitteeMember !== undefined && (
+                      <DetailRow
+                        label="Committee Member"
+                        value={lotDetailExt.isCommitteeMember ? "Yes" : "No"}
+                      />
+                    )}
+                    <DetailRow
+                      label="Paid to Date"
                       value={
-                        lot.floorArea ? `${lot.floorArea} m²` : "—"
+                        lotDetailExt?.paidToDate
+                          ? new Date(lotDetailExt.paidToDate).toLocaleDateString("en-AU")
+                          : "—"
+                      }
+                    />
+                    <DetailRow
+                      label="Last Settled"
+                      value={
+                        lotDetailExt?.lastSettled
+                          ? new Date(lotDetailExt.lastSettled).toLocaleDateString("en-AU")
+                          : "—"
                       }
                     />
                   </dl>
-                </Card>
 
-                {/* Property address */}
-                <Card>
-                  <CardHeader title="Property Address" />
-                  <dl className="grid grid-cols-1 gap-y-3 text-sm">
-                    <DetailRow label="Street" value={scheme.address} />
-                    <DetailRow label="Suburb" value={scheme.suburb} />
-                    <DetailRow
-                      label="State / Postcode"
-                      value={`${scheme.state} ${scheme.postcode}`}
+                  {/* Action row: Change Owner, PoA, Proxy, Delivery */}
+                  <div className="mt-4 pt-4 border-t border-line">
+                    <OwnerAssignment
+                      schemeId={id}
+                      lotId={lotId}
+                      owners={lot.owners.map((o) => ({
+                        id: o.membershipId,
+                        profile: {
+                          id: o.profileId,
+                          firstName: o.firstName,
+                          lastName: o.lastName,
+                          email: o.email,
+                        },
+                      }))}
                     />
-                    {scheme.folio && (
-                      <DetailRow label="Folio" value={scheme.folio} />
-                    )}
-                  </dl>
+                  </div>
                 </Card>
               </div>
 
-              {/* Owner information */}
-              <Card>
-                <CardHeader
-                  title="Owner Information"
-                  description={
-                    lot.isCommitteeMember
-                      ? "Committee member"
-                      : undefined
-                  }
-                  action={
-                    lot.isCommitteeMember ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-soft px-2.5 py-1 text-xs font-medium text-turquoise">
-                        <span className="h-1.5 w-1.5 rounded-full bg-turquoise" />
-                        Committee
-                      </span>
-                    ) : undefined
-                  }
-                />
-                {lot.owners.length === 0 ? (
-                  <p className="text-sm text-ink-muted">
-                    No owners assigned to this lot.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {lot.owners.map((owner) => (
-                      <div
-                        key={owner.membershipId}
-                        className="rounded-[var(--radius-card)] border border-line p-4"
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                          <DetailRow
-                            label="Owner Name"
-                            value={
-                              `${owner.firstName} ${owner.lastName}`.trim() ||
-                              "—"
-                            }
-                          />
-                          <DetailRow label="Email" value={owner.email} />
-                          <DetailRow
-                            label="Phone"
-                            value={owner.phone ?? "—"}
-                          />
-                          <DetailRow
-                            label="Owner Since"
-                            value={new Date(
-                              owner.startDate,
-                            ).toLocaleDateString("en-AU", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            })}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Owner assignment */}
-                <div className="mt-6 pt-6 border-t border-line">
-                  <h3 className="text-sm font-medium text-ink mb-3">
-                    Manage Owners
-                  </h3>
-                  <OwnerAssignment
-                    schemeId={id}
-                    lotId={lotId}
-                    owners={lot.owners.map((o) => ({
-                      id: o.membershipId,
-                      profile: {
-                        id: o.profileId,
-                        firstName: o.firstName,
-                        lastName: o.lastName,
-                        email: o.email,
-                      },
-                    }))}
-                  />
-                </div>
-              </Card>
+              {/* Debt Collection */}
+              <DebtCollectionSection
+                schemeId={id}
+                lotId={lotId}
+                debtCollection={
+                  debtCollection
+                    ? {
+                        stage: debtCollection.stage,
+                        notes: debtCollection.notes,
+                        excludeFromCollection: debtCollection.excludeFromCollection,
+                        hasPaymentPlan: debtCollection.hasPaymentPlan,
+                        buildingDebtCollection: debtCollection.buildingDebtCollection,
+                      }
+                    : null
+                }
+              />
 
               {/* Financial snapshot */}
               <Card>
@@ -224,18 +305,54 @@ export default async function LotDetailPage({
             />
           ),
 
+          /* ── Tenancy tab ────────────────────────────────── */
+          tenancy: (
+            <TenancyDetails
+              schemeId={id}
+              lotId={lotId}
+              tenants={tenants.map((t) => ({
+                tenantNumber: Number(t.tenantNumber),
+                isOwnerOccupier: Boolean(t.isOwnerOccupier),
+                isFormalTenant: Boolean(t.isFormalTenant),
+                dateReceived: t.dateReceived ? String(t.dateReceived) : null,
+                deliveryBy: String(t.deliveryBy ?? "EMAIL"),
+                salutation: t.salutation as string | null,
+                name: t.name as string | null,
+                contactName: t.contactName as string | null,
+                mobile: t.mobile as string | null,
+                email: t.email as string | null,
+                leaseStart: t.leaseStart ? String(t.leaseStart) : null,
+                leaseExpiry: t.leaseExpiry ? String(t.leaseExpiry) : null,
+                notes: t.notes as string | null,
+              }))}
+              propertyManager={
+                propertyManager
+                  ? {
+                      agentName: propertyManager.agentName,
+                      company: propertyManager.company,
+                      address: propertyManager.address,
+                      agentEmail: propertyManager.agentEmail,
+                      phone: propertyManager.phone,
+                      fax: propertyManager.fax,
+                      email: propertyManager.email,
+                    }
+                  : null
+              }
+            />
+          ),
+
           /* ── Documents tab ──────────────────────────────── */
           documents: (
             <LotDocuments
               documents={await Promise.all(
                 documents.map(async (d) => ({
-                  id: d.id,
-                  title: d.title,
-                  category: d.category,
-                  fileName: d.fileName,
-                  fileSize: d.fileSize,
+                  id: String(d.id),
+                  title: String(d.title),
+                  category: String(d.category ?? ""),
+                  fileName: String(d.fileName ?? ""),
+                  fileSize: Number(d.fileSize ?? 0),
                   createdAt: String(d.createdAt),
-                  fileUrl: await resolveDocumentUrl(d.fileUrl),
+                  fileUrl: await resolveDocumentUrl(String(d.fileUrl)),
                 })),
               )}
             />
