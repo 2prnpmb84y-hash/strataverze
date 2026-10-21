@@ -8,9 +8,14 @@ function toTimestamp(value: string): TimestampString<3> {
   return value as unknown as TimestampString<3>;
 }
 
-/** Cast a number or string to the Prisma 8 Numeric branded type. */
+/** Cast a number or string to the Prisma 8 Numeric branded type (12,2). */
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
+}
+
+/** Cast to the wider Numeric(14,2) used for sums insured. */
+function toNumeric14(value: number | string): Numeric<14, 2> {
+  return String(value) as unknown as Numeric<14, 2>;
 }
 
 /**
@@ -109,7 +114,7 @@ export async function createInsurancePolicy(data: {
     insurer: data.insurer,
     broker: data.broker ?? null,
     brokerContact: data.brokerContact ?? null,
-    coverageAmount: toNumeric(data.coverageAmount),
+    coverageAmount: toNumeric14(data.coverageAmount),
     premium: toNumeric(data.premium),
     excessAmount: data.excessAmount !== undefined
       ? toNumeric(data.excessAmount)
@@ -150,7 +155,7 @@ export async function updateInsurancePolicy(
   if (data.brokerContact !== undefined)
     update.brokerContact = data.brokerContact;
   if (data.coverageAmount !== undefined)
-    update.coverageAmount = toNumeric(data.coverageAmount);
+    update.coverageAmount = toNumeric14(data.coverageAmount);
   if (data.premium !== undefined) update.premium = toNumeric(data.premium);
   if (data.excessAmount !== undefined)
     update.excessAmount =

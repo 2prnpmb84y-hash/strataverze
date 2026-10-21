@@ -22,9 +22,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1fc6578c556bc2222ed1b6058506568fcb02c1bf7e649d76518dc594d37afbbc'>;
+  StorageHashBase<'d1e3a90859c90a90ea3e3d8af4e87d18d4aba266a8f6025a801639ec775f0d1a'>;
 export type ExecutionHash =
-  ExecutionHashBase<'df435e6d20f02e3f54aaeab646a5bad68c24c0ab6b249c8ff4ebf56de93c775a'>;
+  ExecutionHashBase<'71b1309abd588b88d5092e3cff61a096a60c697a4e6b1e41889fe80f0f1160cf'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -706,24 +706,201 @@ export type FieldOutputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
-    readonly InsurancePolicy: {
-      readonly broker: CodecTypes['pg/text@1']['output'] | null;
-      readonly brokerContact: CodecTypes['pg/text@1']['output'] | null;
-      readonly coverageAmount: Numeric<12, 2>;
+    readonly InsuranceClaim: {
+      readonly approvedAmount: Numeric<14, 2> | null;
+      readonly assessorDetails: CodecTypes['pg/text@1']['output'] | null;
+      readonly assignedOwnerId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly claimNumber: CodecTypes['pg/text@1']['output'] | null;
+      readonly claimedAmount: Numeric<14, 2> | null;
+      readonly closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly commonProperty: CodecTypes['pg/bool@1']['output'] | null;
+      readonly contactEmail: CodecTypes['pg/text@1']['output'] | null;
+      readonly contactPhone: CodecTypes['pg/text@1']['output'] | null;
+      readonly contractorDetails: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly damageDetails: CodecTypes['pg/text@1']['output'] | null;
+      readonly decisionReason: CodecTypes['pg/text@1']['output'] | null;
       readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly endDate: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly discoveredDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly estimatedLoss: Numeric<14, 2> | null;
       readonly excessAmount: Numeric<12, 2> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
-      readonly insurer: CodecTypes['pg/text@1']['output'];
+      readonly immediateAction: CodecTypes['pg/text@1']['output'] | null;
+      readonly incidentCategory: CodecTypes['pg/text@1']['output'] | null;
+      readonly incidentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly incidentLocation: CodecTypes['pg/text@1']['output'] | null;
+      readonly incidentTime: CodecTypes['pg/text@1']['output'] | null;
+      readonly individualLot: CodecTypes['pg/bool@1']['output'] | null;
+      readonly insurerClaimRef: CodecTypes['pg/text@1']['output'] | null;
+      readonly lodgedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly lodgedById: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly lodgedChannel: CodecTypes['pg/text@1']['output'] | null;
+      readonly lodgedRecipient: CodecTypes['pg/text@1']['output'] | null;
+      readonly lodgedReference: CodecTypes['pg/text@1']['output'] | null;
+      readonly lotReference: CodecTypes['pg/text@1']['output'] | null;
+      readonly otherParties: CodecTypes['pg/text@1']['output'] | null;
+      readonly paidAmount: Numeric<14, 2> | null;
+      readonly policyId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly reporterName: CodecTypes['pg/text@1']['output'] | null;
+      readonly reporterType: CodecTypes['pg/text@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly settlementDetails: CodecTypes['pg/text@1']['output'] | null;
+      readonly smsUpdates: CodecTypes['pg/bool@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly InsuranceClaimEvent: {
+      readonly actorId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly claimId: CodecTypes['pg/uuid@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly eventType: CodecTypes['pg/text@1']['output'];
+      readonly fromStatus: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly note: CodecTypes['pg/text@1']['output'] | null;
+      readonly payload: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly toStatus: CodecTypes['pg/text@1']['output'] | null;
+    };
+    readonly InsuranceCoverageItem: {
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly conditions: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly excess: Numeric<12, 2> | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly policyId: CodecTypes['pg/uuid@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly sumInsured: Numeric<14, 2> | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly InsuranceDocument: {
+      readonly accessLevel: CodecTypes['pg/text@1']['output'];
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly claimId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly documentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly fileName: CodecTypes['pg/text@1']['output'];
+      readonly fileSize: CodecTypes['pg/int4@1']['output'] | null;
+      readonly fileUrl: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isCurrent: CodecTypes['pg/bool@1']['output'];
+      readonly mimeType: CodecTypes['pg/text@1']['output'] | null;
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly policyId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly renewalId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly supersedesId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly uploadedBy: CodecTypes['pg/uuid@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly InsurancePolicy: {
+      readonly additionalInsured: CodecTypes['pg/text@1']['output'] | null;
+      readonly broker: CodecTypes['pg/text@1']['output'] | null;
+      readonly brokerContact: CodecTypes['pg/text@1']['output'] | null;
+      readonly claimsContact: CodecTypes['pg/text@1']['output'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['output'] | null;
+      readonly contactEmail: CodecTypes['pg/text@1']['output'] | null;
+      readonly contactPerson: CodecTypes['pg/text@1']['output'] | null;
+      readonly contactPhone: CodecTypes['pg/text@1']['output'] | null;
+      readonly coverageAmount: Numeric<14, 2>;
+      readonly coverageSummary: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly currency: CodecTypes['pg/text@1']['output'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly endDate: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly endorsements: CodecTypes['pg/text@1']['output'] | null;
+      readonly excessAmount: Numeric<12, 2> | null;
+      readonly exclusions: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly insuredAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly insuredEntityName: CodecTypes['pg/text@1']['output'] | null;
+      readonly insurer: CodecTypes['pg/text@1']['output'];
+      readonly invoiceDocumentId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly paymentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly paymentDueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly paymentReference: CodecTypes['pg/text@1']['output'] | null;
+      readonly paymentStatus: CodecTypes['pg/text@1']['output'] | null;
       readonly policyNumber: CodecTypes['pg/text@1']['output'];
       readonly policyType: CodecTypes['pg/text@1']['output'];
       readonly premium: Numeric<12, 2>;
+      readonly referenceNumbers: CodecTypes['pg/text@1']['output'] | null;
       readonly renewalDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly startDate: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
+      readonly totalPremium: Numeric<12, 2> | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly InsurancePremiumLineItem: {
+      readonly amount: Numeric<12, 2>;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly kind: CodecTypes['pg/text@1']['output'];
+      readonly label: CodecTypes['pg/text@1']['output'];
+      readonly policyId: CodecTypes['pg/uuid@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly InsuranceRenewal: {
+      readonly approvedBy: CodecTypes['pg/text@1']['output'] | null;
+      readonly coverConfirmedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly declaration: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly declaredChanges: CodecTypes['pg/text@1']['output'] | null;
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly dueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly expiringPolicyId: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly notProceedingReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly outstandingInfo: CodecTypes['pg/text@1']['output'] | null;
+      readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly placementInstructions: CodecTypes['pg/text@1']['output'] | null;
+      readonly reminderLeadDays: CodecTypes['pg/int4@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly selectedQuoteId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly selectionRationale: CodecTypes['pg/text@1']['output'] | null;
+      readonly stage: CodecTypes['pg/text@1']['output'];
+      readonly successorPolicyId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly InsuranceRenewalQuote: {
+      readonly broker: CodecTypes['pg/text@1']['output'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['output'] | null;
+      readonly coverageLimits: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly endorsements: CodecTypes['pg/text@1']['output'] | null;
+      readonly excesses: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly exclusions: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly insurer: CodecTypes['pg/text@1']['output'];
+      readonly itemisedCharges: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly materialDifferences: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly periodEnd: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly periodStart: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly premium: Numeric<12, 2> | null;
+      readonly renewalId: CodecTypes['pg/uuid@1']['output'];
+      readonly sumInsured: Numeric<14, 2> | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly validUntil: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    };
+    readonly InsuranceTask: {
+      readonly assignedTo: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly claimId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly dueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly policyId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly renewalId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly Invitation: {
@@ -2501,24 +2678,201 @@ export type FieldInputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
-    readonly InsurancePolicy: {
-      readonly broker: CodecTypes['pg/text@1']['input'] | null;
-      readonly brokerContact: CodecTypes['pg/text@1']['input'] | null;
-      readonly coverageAmount: CodecTypes['pg/numeric@1']['input'];
+    readonly InsuranceClaim: {
+      readonly approvedAmount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly assessorDetails: CodecTypes['pg/text@1']['input'] | null;
+      readonly assignedOwnerId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly claimNumber: CodecTypes['pg/text@1']['input'] | null;
+      readonly claimedAmount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly closedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly commonProperty: CodecTypes['pg/bool@1']['input'] | null;
+      readonly contactEmail: CodecTypes['pg/text@1']['input'] | null;
+      readonly contactPhone: CodecTypes['pg/text@1']['input'] | null;
+      readonly contractorDetails: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly damageDetails: CodecTypes['pg/text@1']['input'] | null;
+      readonly decisionReason: CodecTypes['pg/text@1']['input'] | null;
       readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly endDate: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly discoveredDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly estimatedLoss: CodecTypes['pg/numeric@1']['input'] | null;
       readonly excessAmount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
-      readonly insurer: CodecTypes['pg/text@1']['input'];
+      readonly immediateAction: CodecTypes['pg/text@1']['input'] | null;
+      readonly incidentCategory: CodecTypes['pg/text@1']['input'] | null;
+      readonly incidentDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly incidentLocation: CodecTypes['pg/text@1']['input'] | null;
+      readonly incidentTime: CodecTypes['pg/text@1']['input'] | null;
+      readonly individualLot: CodecTypes['pg/bool@1']['input'] | null;
+      readonly insurerClaimRef: CodecTypes['pg/text@1']['input'] | null;
+      readonly lodgedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly lodgedById: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly lodgedChannel: CodecTypes['pg/text@1']['input'] | null;
+      readonly lodgedRecipient: CodecTypes['pg/text@1']['input'] | null;
+      readonly lodgedReference: CodecTypes['pg/text@1']['input'] | null;
+      readonly lotReference: CodecTypes['pg/text@1']['input'] | null;
+      readonly otherParties: CodecTypes['pg/text@1']['input'] | null;
+      readonly paidAmount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly policyId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly reporterName: CodecTypes['pg/text@1']['input'] | null;
+      readonly reporterType: CodecTypes['pg/text@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly settlementDetails: CodecTypes['pg/text@1']['input'] | null;
+      readonly smsUpdates: CodecTypes['pg/bool@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly InsuranceClaimEvent: {
+      readonly actorId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly claimId: CodecTypes['pg/uuid@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly eventType: CodecTypes['pg/text@1']['input'];
+      readonly fromStatus: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly note: CodecTypes['pg/text@1']['input'] | null;
+      readonly payload: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly toStatus: CodecTypes['pg/text@1']['input'] | null;
+    };
+    readonly InsuranceCoverageItem: {
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly conditions: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly excess: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly policyId: CodecTypes['pg/uuid@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly sumInsured: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly InsuranceDocument: {
+      readonly accessLevel: CodecTypes['pg/text@1']['input'];
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly claimId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly documentDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly fileName: CodecTypes['pg/text@1']['input'];
+      readonly fileSize: CodecTypes['pg/int4@1']['input'] | null;
+      readonly fileUrl: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isCurrent: CodecTypes['pg/bool@1']['input'];
+      readonly mimeType: CodecTypes['pg/text@1']['input'] | null;
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly policyId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly renewalId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly supersedesId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly uploadedBy: CodecTypes['pg/uuid@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly InsurancePolicy: {
+      readonly additionalInsured: CodecTypes['pg/text@1']['input'] | null;
+      readonly broker: CodecTypes['pg/text@1']['input'] | null;
+      readonly brokerContact: CodecTypes['pg/text@1']['input'] | null;
+      readonly claimsContact: CodecTypes['pg/text@1']['input'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['input'] | null;
+      readonly contactEmail: CodecTypes['pg/text@1']['input'] | null;
+      readonly contactPerson: CodecTypes['pg/text@1']['input'] | null;
+      readonly contactPhone: CodecTypes['pg/text@1']['input'] | null;
+      readonly coverageAmount: CodecTypes['pg/numeric@1']['input'];
+      readonly coverageSummary: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly currency: CodecTypes['pg/text@1']['input'];
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly endDate: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly endorsements: CodecTypes['pg/text@1']['input'] | null;
+      readonly excessAmount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly exclusions: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly insuredAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly insuredEntityName: CodecTypes['pg/text@1']['input'] | null;
+      readonly insurer: CodecTypes['pg/text@1']['input'];
+      readonly invoiceDocumentId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly paymentDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly paymentDueDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly paymentReference: CodecTypes['pg/text@1']['input'] | null;
+      readonly paymentStatus: CodecTypes['pg/text@1']['input'] | null;
       readonly policyNumber: CodecTypes['pg/text@1']['input'];
       readonly policyType: CodecTypes['pg/text@1']['input'];
       readonly premium: CodecTypes['pg/numeric@1']['input'];
+      readonly referenceNumbers: CodecTypes['pg/text@1']['input'] | null;
       readonly renewalDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly startDate: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
+      readonly totalPremium: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly InsurancePremiumLineItem: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly kind: CodecTypes['pg/text@1']['input'];
+      readonly label: CodecTypes['pg/text@1']['input'];
+      readonly policyId: CodecTypes['pg/uuid@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly InsuranceRenewal: {
+      readonly approvedBy: CodecTypes['pg/text@1']['input'] | null;
+      readonly coverConfirmedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly declaration: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly declaredChanges: CodecTypes['pg/text@1']['input'] | null;
+      readonly deletedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly dueDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly expiringPolicyId: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly notProceedingReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly outstandingInfo: CodecTypes['pg/text@1']['input'] | null;
+      readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly placementInstructions: CodecTypes['pg/text@1']['input'] | null;
+      readonly reminderLeadDays: CodecTypes['pg/int4@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly selectedQuoteId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly selectionRationale: CodecTypes['pg/text@1']['input'] | null;
+      readonly stage: CodecTypes['pg/text@1']['input'];
+      readonly successorPolicyId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly InsuranceRenewalQuote: {
+      readonly broker: CodecTypes['pg/text@1']['input'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['input'] | null;
+      readonly coverageLimits: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly endorsements: CodecTypes['pg/text@1']['input'] | null;
+      readonly excesses: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly exclusions: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly insurer: CodecTypes['pg/text@1']['input'];
+      readonly itemisedCharges: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly materialDifferences: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly periodEnd: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly periodStart: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly premium: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly renewalId: CodecTypes['pg/uuid@1']['input'];
+      readonly sumInsured: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly validUntil: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+    };
+    readonly InsuranceTask: {
+      readonly assignedTo: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly claimId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly completedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly dueDate: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly policyId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly renewalId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly Invitation: {
@@ -4296,24 +4650,201 @@ export type StorageColumnTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
-    readonly insurance_policies: {
-      readonly broker: CodecTypes['pg/text@1']['output'] | null;
-      readonly broker_contact: CodecTypes['pg/text@1']['output'] | null;
-      readonly coverage_amount: Numeric<12, 2>;
+    readonly insurance_claim_events: {
+      readonly actor_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly claim_id: CodecTypes['pg/uuid@1']['output'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly event_type: CodecTypes['pg/text@1']['output'];
+      readonly from_status: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly note: CodecTypes['pg/text@1']['output'] | null;
+      readonly payload: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly to_status: CodecTypes['pg/text@1']['output'] | null;
+    };
+    readonly insurance_claims: {
+      readonly approved_amount: Numeric<14, 2> | null;
+      readonly assessor_details: CodecTypes['pg/text@1']['output'] | null;
+      readonly assigned_owner_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly claim_number: CodecTypes['pg/text@1']['output'] | null;
+      readonly claimed_amount: Numeric<14, 2> | null;
+      readonly closed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly common_property: CodecTypes['pg/bool@1']['output'] | null;
+      readonly contact_email: CodecTypes['pg/text@1']['output'] | null;
+      readonly contact_phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly contractor_details: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly damage_details: CodecTypes['pg/text@1']['output'] | null;
+      readonly decision_reason: CodecTypes['pg/text@1']['output'] | null;
       readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
-      readonly end_date: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly discovered_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly estimated_loss: Numeric<14, 2> | null;
       readonly excess_amount: Numeric<12, 2> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
-      readonly insurer: CodecTypes['pg/text@1']['output'];
+      readonly immediate_action: CodecTypes['pg/text@1']['output'] | null;
+      readonly incident_category: CodecTypes['pg/text@1']['output'] | null;
+      readonly incident_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly incident_location: CodecTypes['pg/text@1']['output'] | null;
+      readonly incident_time: CodecTypes['pg/text@1']['output'] | null;
+      readonly individual_lot: CodecTypes['pg/bool@1']['output'] | null;
+      readonly insurer_claim_ref: CodecTypes['pg/text@1']['output'] | null;
+      readonly lodged_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly lodged_by_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly lodged_channel: CodecTypes['pg/text@1']['output'] | null;
+      readonly lodged_recipient: CodecTypes['pg/text@1']['output'] | null;
+      readonly lodged_reference: CodecTypes['pg/text@1']['output'] | null;
+      readonly lot_reference: CodecTypes['pg/text@1']['output'] | null;
+      readonly other_parties: CodecTypes['pg/text@1']['output'] | null;
+      readonly paid_amount: Numeric<14, 2> | null;
+      readonly policy_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly reporter_name: CodecTypes['pg/text@1']['output'] | null;
+      readonly reporter_type: CodecTypes['pg/text@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly settlement_details: CodecTypes['pg/text@1']['output'] | null;
+      readonly sms_updates: CodecTypes['pg/bool@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly insurance_coverage_items: {
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly conditions: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly excess: Numeric<12, 2> | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly policy_id: CodecTypes['pg/uuid@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+      readonly sum_insured: Numeric<14, 2> | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly insurance_documents: {
+      readonly access_level: CodecTypes['pg/text@1']['output'];
+      readonly category: CodecTypes['pg/text@1']['output'];
+      readonly claim_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly document_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly file_name: CodecTypes['pg/text@1']['output'];
+      readonly file_size: CodecTypes['pg/int4@1']['output'] | null;
+      readonly file_url: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_current: CodecTypes['pg/bool@1']['output'];
+      readonly mime_type: CodecTypes['pg/text@1']['output'] | null;
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly policy_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly renewal_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly supersedes_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly uploaded_by: CodecTypes['pg/uuid@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly insurance_policies: {
+      readonly additional_insured: CodecTypes['pg/text@1']['output'] | null;
+      readonly broker: CodecTypes['pg/text@1']['output'] | null;
+      readonly broker_contact: CodecTypes['pg/text@1']['output'] | null;
+      readonly claims_contact: CodecTypes['pg/text@1']['output'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['output'] | null;
+      readonly contact_email: CodecTypes['pg/text@1']['output'] | null;
+      readonly contact_person: CodecTypes['pg/text@1']['output'] | null;
+      readonly contact_phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly coverage_amount: Numeric<14, 2>;
+      readonly coverage_summary: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly currency: CodecTypes['pg/text@1']['output'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly end_date: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly endorsements: CodecTypes['pg/text@1']['output'] | null;
+      readonly excess_amount: Numeric<12, 2> | null;
+      readonly exclusions: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly insured_address: CodecTypes['pg/text@1']['output'] | null;
+      readonly insured_entity_name: CodecTypes['pg/text@1']['output'] | null;
+      readonly insurer: CodecTypes['pg/text@1']['output'];
+      readonly invoice_document_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly payment_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly payment_due_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly payment_reference: CodecTypes['pg/text@1']['output'] | null;
+      readonly payment_status: CodecTypes['pg/text@1']['output'] | null;
       readonly policy_number: CodecTypes['pg/text@1']['output'];
       readonly policy_type: CodecTypes['pg/text@1']['output'];
       readonly premium: Numeric<12, 2>;
+      readonly reference_numbers: CodecTypes['pg/text@1']['output'] | null;
       readonly renewal_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly start_date: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
+      readonly total_premium: Numeric<12, 2> | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly insurance_premium_line_items: {
+      readonly amount: Numeric<12, 2>;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly kind: CodecTypes['pg/text@1']['output'];
+      readonly label: CodecTypes['pg/text@1']['output'];
+      readonly policy_id: CodecTypes['pg/uuid@1']['output'];
+      readonly position: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly insurance_renewal_quotes: {
+      readonly broker: CodecTypes['pg/text@1']['output'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['output'] | null;
+      readonly coverage_limits: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly endorsements: CodecTypes['pg/text@1']['output'] | null;
+      readonly excesses: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly exclusions: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly insurer: CodecTypes['pg/text@1']['output'];
+      readonly itemised_charges: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly material_differences: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly period_end: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly period_start: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly premium: Numeric<12, 2> | null;
+      readonly renewal_id: CodecTypes['pg/uuid@1']['output'];
+      readonly sum_insured: Numeric<14, 2> | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly valid_until: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    };
+    readonly insurance_renewals: {
+      readonly approved_by: CodecTypes['pg/text@1']['output'] | null;
+      readonly cover_confirmed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly declaration: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly declared_changes: CodecTypes['pg/text@1']['output'] | null;
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly due_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly expiring_policy_id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly not_proceeding_reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly outstanding_info: CodecTypes['pg/text@1']['output'] | null;
+      readonly owner_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly placement_instructions: CodecTypes['pg/text@1']['output'] | null;
+      readonly reminder_lead_days: CodecTypes['pg/int4@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly selected_quote_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly selection_rationale: CodecTypes['pg/text@1']['output'] | null;
+      readonly stage: CodecTypes['pg/text@1']['output'];
+      readonly successor_policy_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly insurance_tasks: {
+      readonly assigned_to: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly claim_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly completed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly due_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly notes: CodecTypes['pg/text@1']['output'] | null;
+      readonly policy_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly renewal_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly invitations: {
@@ -6091,24 +6622,201 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
-    readonly insurance_policies: {
-      readonly broker: CodecTypes['pg/text@1']['input'] | null;
-      readonly broker_contact: CodecTypes['pg/text@1']['input'] | null;
-      readonly coverage_amount: CodecTypes['pg/numeric@1']['input'];
+    readonly insurance_claim_events: {
+      readonly actor_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly claim_id: CodecTypes['pg/uuid@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly event_type: CodecTypes['pg/text@1']['input'];
+      readonly from_status: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly note: CodecTypes['pg/text@1']['input'] | null;
+      readonly payload: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly to_status: CodecTypes['pg/text@1']['input'] | null;
+    };
+    readonly insurance_claims: {
+      readonly approved_amount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly assessor_details: CodecTypes['pg/text@1']['input'] | null;
+      readonly assigned_owner_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly claim_number: CodecTypes['pg/text@1']['input'] | null;
+      readonly claimed_amount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly closed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly common_property: CodecTypes['pg/bool@1']['input'] | null;
+      readonly contact_email: CodecTypes['pg/text@1']['input'] | null;
+      readonly contact_phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly contractor_details: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly damage_details: CodecTypes['pg/text@1']['input'] | null;
+      readonly decision_reason: CodecTypes['pg/text@1']['input'] | null;
       readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
-      readonly end_date: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly discovered_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly estimated_loss: CodecTypes['pg/numeric@1']['input'] | null;
       readonly excess_amount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
-      readonly insurer: CodecTypes['pg/text@1']['input'];
+      readonly immediate_action: CodecTypes['pg/text@1']['input'] | null;
+      readonly incident_category: CodecTypes['pg/text@1']['input'] | null;
+      readonly incident_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly incident_location: CodecTypes['pg/text@1']['input'] | null;
+      readonly incident_time: CodecTypes['pg/text@1']['input'] | null;
+      readonly individual_lot: CodecTypes['pg/bool@1']['input'] | null;
+      readonly insurer_claim_ref: CodecTypes['pg/text@1']['input'] | null;
+      readonly lodged_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly lodged_by_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly lodged_channel: CodecTypes['pg/text@1']['input'] | null;
+      readonly lodged_recipient: CodecTypes['pg/text@1']['input'] | null;
+      readonly lodged_reference: CodecTypes['pg/text@1']['input'] | null;
+      readonly lot_reference: CodecTypes['pg/text@1']['input'] | null;
+      readonly other_parties: CodecTypes['pg/text@1']['input'] | null;
+      readonly paid_amount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly policy_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly reporter_name: CodecTypes['pg/text@1']['input'] | null;
+      readonly reporter_type: CodecTypes['pg/text@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly settlement_details: CodecTypes['pg/text@1']['input'] | null;
+      readonly sms_updates: CodecTypes['pg/bool@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly insurance_coverage_items: {
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly conditions: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly excess: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly policy_id: CodecTypes['pg/uuid@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+      readonly sum_insured: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly insurance_documents: {
+      readonly access_level: CodecTypes['pg/text@1']['input'];
+      readonly category: CodecTypes['pg/text@1']['input'];
+      readonly claim_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly document_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly file_name: CodecTypes['pg/text@1']['input'];
+      readonly file_size: CodecTypes['pg/int4@1']['input'] | null;
+      readonly file_url: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_current: CodecTypes['pg/bool@1']['input'];
+      readonly mime_type: CodecTypes['pg/text@1']['input'] | null;
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly policy_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly renewal_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly supersedes_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly uploaded_by: CodecTypes['pg/uuid@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly insurance_policies: {
+      readonly additional_insured: CodecTypes['pg/text@1']['input'] | null;
+      readonly broker: CodecTypes['pg/text@1']['input'] | null;
+      readonly broker_contact: CodecTypes['pg/text@1']['input'] | null;
+      readonly claims_contact: CodecTypes['pg/text@1']['input'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['input'] | null;
+      readonly contact_email: CodecTypes['pg/text@1']['input'] | null;
+      readonly contact_person: CodecTypes['pg/text@1']['input'] | null;
+      readonly contact_phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly coverage_amount: CodecTypes['pg/numeric@1']['input'];
+      readonly coverage_summary: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly currency: CodecTypes['pg/text@1']['input'];
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly end_date: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly endorsements: CodecTypes['pg/text@1']['input'] | null;
+      readonly excess_amount: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly exclusions: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly insured_address: CodecTypes['pg/text@1']['input'] | null;
+      readonly insured_entity_name: CodecTypes['pg/text@1']['input'] | null;
+      readonly insurer: CodecTypes['pg/text@1']['input'];
+      readonly invoice_document_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly payment_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly payment_due_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly payment_reference: CodecTypes['pg/text@1']['input'] | null;
+      readonly payment_status: CodecTypes['pg/text@1']['input'] | null;
       readonly policy_number: CodecTypes['pg/text@1']['input'];
       readonly policy_type: CodecTypes['pg/text@1']['input'];
       readonly premium: CodecTypes['pg/numeric@1']['input'];
+      readonly reference_numbers: CodecTypes['pg/text@1']['input'] | null;
       readonly renewal_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly start_date: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
+      readonly total_premium: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly insurance_premium_line_items: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly kind: CodecTypes['pg/text@1']['input'];
+      readonly label: CodecTypes['pg/text@1']['input'];
+      readonly policy_id: CodecTypes['pg/uuid@1']['input'];
+      readonly position: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly insurance_renewal_quotes: {
+      readonly broker: CodecTypes['pg/text@1']['input'] | null;
+      readonly conditions: CodecTypes['pg/text@1']['input'] | null;
+      readonly coverage_limits: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly endorsements: CodecTypes['pg/text@1']['input'] | null;
+      readonly excesses: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly exclusions: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly insurer: CodecTypes['pg/text@1']['input'];
+      readonly itemised_charges: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly material_differences: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly period_end: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly period_start: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly premium: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly renewal_id: CodecTypes['pg/uuid@1']['input'];
+      readonly sum_insured: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly valid_until: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+    };
+    readonly insurance_renewals: {
+      readonly approved_by: CodecTypes['pg/text@1']['input'] | null;
+      readonly cover_confirmed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly declaration: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly declared_changes: CodecTypes['pg/text@1']['input'] | null;
+      readonly deleted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly due_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly expiring_policy_id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly not_proceeding_reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly outstanding_info: CodecTypes['pg/text@1']['input'] | null;
+      readonly owner_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly placement_instructions: CodecTypes['pg/text@1']['input'] | null;
+      readonly reminder_lead_days: CodecTypes['pg/int4@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly selected_quote_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly selection_rationale: CodecTypes['pg/text@1']['input'] | null;
+      readonly stage: CodecTypes['pg/text@1']['input'];
+      readonly successor_policy_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly insurance_tasks: {
+      readonly assigned_to: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly claim_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly completed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly due_date: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly notes: CodecTypes['pg/text@1']['input'] | null;
+      readonly policy_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly renewal_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly invitations: {
@@ -8045,27 +8753,249 @@ export namespace Models {
       | 'scheme'
       | 'supplierInvoices';
   };
-  export type public_InsurancePolicy = {
-    broker: CodecTypes['pg/text@1']['output'] | null;
-    brokerContact: CodecTypes['pg/text@1']['output'] | null;
-    coverageAmount: Numeric<12, 2>;
+  export type public_InsuranceClaim = {
+    approvedAmount: Numeric<14, 2> | null;
+    assessorDetails: CodecTypes['pg/text@1']['output'] | null;
+    assignedOwnerId: CodecTypes['pg/uuid@1']['output'] | null;
+    claimNumber: CodecTypes['pg/text@1']['output'] | null;
+    claimedAmount: Numeric<14, 2> | null;
+    closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    commonProperty: CodecTypes['pg/bool@1']['output'] | null;
+    contactEmail: CodecTypes['pg/text@1']['output'] | null;
+    contactPhone: CodecTypes['pg/text@1']['output'] | null;
+    contractorDetails: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    damageDetails: CodecTypes['pg/text@1']['output'] | null;
+    decisionReason: CodecTypes['pg/text@1']['output'] | null;
     deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
-    endDate: CodecTypes['pg/timestamptz-string@1']['output'];
+    description: CodecTypes['pg/text@1']['output'] | null;
+    discoveredDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    estimatedLoss: Numeric<14, 2> | null;
     excessAmount: Numeric<12, 2> | null;
     id: CodecTypes['pg/uuid@1']['output'];
-    insurer: CodecTypes['pg/text@1']['output'];
+    immediateAction: CodecTypes['pg/text@1']['output'] | null;
+    incidentCategory: CodecTypes['pg/text@1']['output'] | null;
+    incidentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    incidentLocation: CodecTypes['pg/text@1']['output'] | null;
+    incidentTime: CodecTypes['pg/text@1']['output'] | null;
+    individualLot: CodecTypes['pg/bool@1']['output'] | null;
+    insurerClaimRef: CodecTypes['pg/text@1']['output'] | null;
+    lodgedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    lodgedById: CodecTypes['pg/uuid@1']['output'] | null;
+    lodgedChannel: CodecTypes['pg/text@1']['output'] | null;
+    lodgedRecipient: CodecTypes['pg/text@1']['output'] | null;
+    lodgedReference: CodecTypes['pg/text@1']['output'] | null;
+    lotReference: CodecTypes['pg/text@1']['output'] | null;
+    otherParties: CodecTypes['pg/text@1']['output'] | null;
+    paidAmount: Numeric<14, 2> | null;
+    policyId: CodecTypes['pg/uuid@1']['output'] | null;
+    reporterName: CodecTypes['pg/text@1']['output'] | null;
+    reporterType: CodecTypes['pg/text@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    settlementDetails: CodecTypes['pg/text@1']['output'] | null;
+    smsUpdates: CodecTypes['pg/bool@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    title: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    documents: public_InsuranceDocument[];
+    events: public_InsuranceClaimEvent[];
+    policy: public_InsurancePolicy | null;
+    scheme: public_Scheme;
+    tasks: public_InsuranceTask[];
+    readonly [RelationKeys]?: 'documents' | 'events' | 'policy' | 'scheme' | 'tasks';
+  };
+  export type public_InsuranceClaimEvent = {
+    actorId: CodecTypes['pg/uuid@1']['output'] | null;
+    claimId: CodecTypes['pg/uuid@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    eventType: CodecTypes['pg/text@1']['output'];
+    fromStatus: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    note: CodecTypes['pg/text@1']['output'] | null;
+    payload: CodecTypes['pg/jsonb@1']['output'] | null;
+    toStatus: CodecTypes['pg/text@1']['output'] | null;
+    claim: public_InsuranceClaim;
+    readonly [RelationKeys]?: 'claim';
+  };
+  export type public_InsuranceCoverageItem = {
+    category: CodecTypes['pg/text@1']['output'];
+    conditions: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    description: CodecTypes['pg/text@1']['output'] | null;
+    excess: Numeric<12, 2> | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    policyId: CodecTypes['pg/uuid@1']['output'];
+    position: CodecTypes['pg/int4@1']['output'];
+    sumInsured: Numeric<14, 2> | null;
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    policy: public_InsurancePolicy;
+    readonly [RelationKeys]?: 'policy';
+  };
+  export type public_InsuranceDocument = {
+    accessLevel: CodecTypes['pg/text@1']['output'];
+    category: CodecTypes['pg/text@1']['output'];
+    claimId: CodecTypes['pg/uuid@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    documentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    fileName: CodecTypes['pg/text@1']['output'];
+    fileSize: CodecTypes['pg/int4@1']['output'] | null;
+    fileUrl: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    isCurrent: CodecTypes['pg/bool@1']['output'];
+    mimeType: CodecTypes['pg/text@1']['output'] | null;
     notes: CodecTypes['pg/text@1']['output'] | null;
+    policyId: CodecTypes['pg/uuid@1']['output'] | null;
+    renewalId: CodecTypes['pg/uuid@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    supersedesId: CodecTypes['pg/uuid@1']['output'] | null;
+    title: CodecTypes['pg/text@1']['output'];
+    uploadedBy: CodecTypes['pg/uuid@1']['output'];
+    version: CodecTypes['pg/int4@1']['output'];
+    claim: public_InsuranceClaim | null;
+    policy: public_InsurancePolicy | null;
+    renewal: public_InsuranceRenewal | null;
+    scheme: public_Scheme;
+    supersededBy: public_InsuranceDocument[];
+    supersedes: public_InsuranceDocument | null;
+    readonly [RelationKeys]?:
+      'claim' | 'policy' | 'renewal' | 'scheme' | 'supersededBy' | 'supersedes';
+  };
+  export type public_InsurancePolicy = {
+    additionalInsured: CodecTypes['pg/text@1']['output'] | null;
+    broker: CodecTypes['pg/text@1']['output'] | null;
+    brokerContact: CodecTypes['pg/text@1']['output'] | null;
+    claimsContact: CodecTypes['pg/text@1']['output'] | null;
+    conditions: CodecTypes['pg/text@1']['output'] | null;
+    contactEmail: CodecTypes['pg/text@1']['output'] | null;
+    contactPerson: CodecTypes['pg/text@1']['output'] | null;
+    contactPhone: CodecTypes['pg/text@1']['output'] | null;
+    coverageAmount: Numeric<14, 2>;
+    coverageSummary: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    currency: CodecTypes['pg/text@1']['output'];
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    endDate: CodecTypes['pg/timestamptz-string@1']['output'];
+    endorsements: CodecTypes['pg/text@1']['output'] | null;
+    excessAmount: Numeric<12, 2> | null;
+    exclusions: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    insuredAddress: CodecTypes['pg/text@1']['output'] | null;
+    insuredEntityName: CodecTypes['pg/text@1']['output'] | null;
+    insurer: CodecTypes['pg/text@1']['output'];
+    invoiceDocumentId: CodecTypes['pg/uuid@1']['output'] | null;
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    paymentDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    paymentDueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    paymentReference: CodecTypes['pg/text@1']['output'] | null;
+    paymentStatus: CodecTypes['pg/text@1']['output'] | null;
     policyNumber: CodecTypes['pg/text@1']['output'];
     policyType: CodecTypes['pg/text@1']['output'];
     premium: Numeric<12, 2>;
+    referenceNumbers: CodecTypes['pg/text@1']['output'] | null;
     renewalDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     startDate: CodecTypes['pg/timestamptz-string@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
+    totalPremium: Numeric<12, 2> | null;
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    claims: public_InsuranceClaim[];
+    coverageItems: public_InsuranceCoverageItem[];
+    documents: public_InsuranceDocument[];
+    premiumLineItems: public_InsurancePremiumLineItem[];
+    renewalSuccessor: public_InsuranceRenewal | null;
+    renewalsFrom: public_InsuranceRenewal[];
     scheme: public_Scheme;
-    readonly [RelationKeys]?: 'scheme';
+    readonly [RelationKeys]?:
+      | 'claims'
+      | 'coverageItems'
+      | 'documents'
+      | 'premiumLineItems'
+      | 'renewalSuccessor'
+      | 'renewalsFrom'
+      | 'scheme';
+  };
+  export type public_InsurancePremiumLineItem = {
+    amount: Numeric<12, 2>;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    kind: CodecTypes['pg/text@1']['output'];
+    label: CodecTypes['pg/text@1']['output'];
+    policyId: CodecTypes['pg/uuid@1']['output'];
+    position: CodecTypes['pg/int4@1']['output'];
+    policy: public_InsurancePolicy;
+    readonly [RelationKeys]?: 'policy';
+  };
+  export type public_InsuranceRenewal = {
+    approvedBy: CodecTypes['pg/text@1']['output'] | null;
+    coverConfirmedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    declaration: CodecTypes['pg/jsonb@1']['output'] | null;
+    declaredChanges: CodecTypes['pg/text@1']['output'] | null;
+    deletedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    dueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    expiringPolicyId: CodecTypes['pg/uuid@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    notProceedingReason: CodecTypes['pg/text@1']['output'] | null;
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    outstandingInfo: CodecTypes['pg/text@1']['output'] | null;
+    ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+    placementInstructions: CodecTypes['pg/text@1']['output'] | null;
+    reminderLeadDays: CodecTypes['pg/int4@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    selectedQuoteId: CodecTypes['pg/uuid@1']['output'] | null;
+    selectionRationale: CodecTypes['pg/text@1']['output'] | null;
+    stage: CodecTypes['pg/text@1']['output'];
+    successorPolicyId: CodecTypes['pg/uuid@1']['output'] | null;
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    documents: public_InsuranceDocument[];
+    expiringPolicy: public_InsurancePolicy;
+    quotes: public_InsuranceRenewalQuote[];
+    scheme: public_Scheme;
+    successorPolicy: public_InsurancePolicy | null;
+    readonly [RelationKeys]?:
+      'documents' | 'expiringPolicy' | 'quotes' | 'scheme' | 'successorPolicy';
+  };
+  export type public_InsuranceRenewalQuote = {
+    broker: CodecTypes['pg/text@1']['output'] | null;
+    conditions: CodecTypes['pg/text@1']['output'] | null;
+    coverageLimits: CodecTypes['pg/jsonb@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    endorsements: CodecTypes['pg/text@1']['output'] | null;
+    excesses: CodecTypes['pg/jsonb@1']['output'] | null;
+    exclusions: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    insurer: CodecTypes['pg/text@1']['output'];
+    itemisedCharges: CodecTypes['pg/jsonb@1']['output'] | null;
+    materialDifferences: CodecTypes['pg/text@1']['output'] | null;
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    periodEnd: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    periodStart: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    premium: Numeric<12, 2> | null;
+    renewalId: CodecTypes['pg/uuid@1']['output'];
+    sumInsured: Numeric<14, 2> | null;
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    validUntil: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    renewal: public_InsuranceRenewal;
+    readonly [RelationKeys]?: 'renewal';
+  };
+  export type public_InsuranceTask = {
+    assignedTo: CodecTypes['pg/uuid@1']['output'] | null;
+    claimId: CodecTypes['pg/uuid@1']['output'] | null;
+    completedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    dueDate: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    notes: CodecTypes['pg/text@1']['output'] | null;
+    policyId: CodecTypes['pg/uuid@1']['output'] | null;
+    renewalId: CodecTypes['pg/uuid@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    title: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    claim: public_InsuranceClaim | null;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'claim' | 'scheme';
   };
   export type public_Invitation = {
     acceptedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -8901,7 +9831,11 @@ export namespace Models {
     financialPeriods: public_FinancialPeriod[];
     funds: public_Fund[];
     images: public_SchemeImage[];
+    insuranceClaims: public_InsuranceClaim[];
+    insuranceDocuments: public_InsuranceDocument[];
     insurancePolicies: public_InsurancePolicy[];
+    insuranceRenewals: public_InsuranceRenewal[];
+    insuranceTasks: public_InsuranceTask[];
     invitations: public_Invitation[];
     invoices: public_Invoice[];
     journalEntries: public_JournalEntry[];
@@ -8948,7 +9882,11 @@ export namespace Models {
       | 'financialPeriods'
       | 'funds'
       | 'images'
+      | 'insuranceClaims'
+      | 'insuranceDocuments'
       | 'insurancePolicies'
+      | 'insuranceRenewals'
+      | 'insuranceTasks'
       | 'invitations'
       | 'invoices'
       | 'journalEntries'
@@ -10084,7 +11022,15 @@ export declare const models: {
     FinancialDocument: Models.public_FinancialDocument;
     FinancialPeriod: Models.public_FinancialPeriod;
     Fund: Models.public_Fund;
+    InsuranceClaim: Models.public_InsuranceClaim;
+    InsuranceClaimEvent: Models.public_InsuranceClaimEvent;
+    InsuranceCoverageItem: Models.public_InsuranceCoverageItem;
+    InsuranceDocument: Models.public_InsuranceDocument;
     InsurancePolicy: Models.public_InsurancePolicy;
+    InsurancePremiumLineItem: Models.public_InsurancePremiumLineItem;
+    InsuranceRenewal: Models.public_InsuranceRenewal;
+    InsuranceRenewalQuote: Models.public_InsuranceRenewalQuote;
+    InsuranceTask: Models.public_InsuranceTask;
     Invitation: Models.public_Invitation;
     Invoice: Models.public_Invoice;
     JournalEntry: Models.public_JournalEntry;
@@ -14194,25 +15140,18 @@ type ContractBase = Omit<
                 },
               ];
             };
-            readonly insurance_policies: {
+            readonly insurance_claim_events: {
               columns: {
-                readonly broker: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
+                readonly actor_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
-                readonly broker_contact: {
-                  readonly dataType: 'pg/text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                  readonly many: false;
-                };
-                readonly coverage_amount: {
-                  readonly dataType: 'pg/numeric';
-                  readonly codecId: 'pg/numeric@1';
+                readonly claim_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
-                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly created_at: {
@@ -14222,16 +15161,177 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly event_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly from_status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly payload: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly to_status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_claim_events_claim_id_idx';
+                  readonly columns: readonly ['claim_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_claim_events';
+                    readonly columns: readonly ['claim_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_claims';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_claims: {
+              columns: {
+                readonly approved_amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly assessor_details: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly assigned_owner_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly claim_number: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly claimed_amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly closed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly common_property: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contact_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contact_phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contractor_details: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly damage_details: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly decision_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly deleted_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
-                readonly end_date: {
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly discovered_date: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
-                  readonly nullable: false;
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly estimated_loss: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly excess_amount: {
@@ -14251,13 +15351,696 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly immediate_action: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly incident_category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly incident_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly incident_location: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly incident_time: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly individual_lot: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly insurer_claim_ref: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lodged_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lodged_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lodged_channel: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lodged_recipient: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lodged_reference: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_reference: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly other_parties: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly paid_amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly policy_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reporter_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reporter_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly settlement_details: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly sms_updates: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'DRAFT'>;
+                  };
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_claims_policy_id_idx';
+                  readonly columns: readonly ['policy_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'insurance_claims_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_claims';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_claims';
+                    readonly columns: readonly ['policy_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_policies';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_coverage_items: {
+              columns: {
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly conditions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly excess: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly policy_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly position: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+                readonly sum_insured: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_coverage_items_policy_id_idx';
+                  readonly columns: readonly ['policy_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_coverage_items';
+                    readonly columns: readonly ['policy_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_policies';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_documents: {
+              columns: {
+                readonly access_level: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'RESTRICTED'>;
+                  };
+                  readonly many: false;
+                };
+                readonly category: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly claim_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly document_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly file_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly file_size: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly file_url: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_current: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly mime_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly policy_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly renewal_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly supersedes_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly uploaded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly version: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_documents_claim_id_idx';
+                  readonly columns: readonly ['claim_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'insurance_documents_policy_id_idx';
+                  readonly columns: readonly ['policy_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'insurance_documents_renewal_id_idx';
+                  readonly columns: readonly ['renewal_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'insurance_documents_scheme_id_category_idx';
+                  readonly columns: readonly ['scheme_id', 'category'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_documents';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_documents';
+                    readonly columns: readonly ['policy_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_policies';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_documents';
+                    readonly columns: readonly ['claim_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_claims';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_documents';
+                    readonly columns: readonly ['renewal_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_renewals';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_documents';
+                    readonly columns: readonly ['supersedes_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_documents';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_policies: {
+              columns: {
+                readonly additional_insured: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly broker: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly broker_contact: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly claims_contact: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly conditions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contact_email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contact_person: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contact_phone: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly coverage_amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly coverage_summary: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly currency: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'AUD'>;
+                  };
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly end_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly endorsements: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly excess_amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly exclusions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly insured_address: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly insured_entity_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly insurer: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly invoice_document_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly payment_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly payment_due_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly payment_reference: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly payment_status: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -14280,6 +16063,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/numeric@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly reference_numbers: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly renewal_date: {
@@ -14308,6 +16097,13 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/text@1', 'ACTIVE'>;
                   };
+                  readonly many: false;
+                };
+                readonly total_premium: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly updated_at: {
@@ -14346,6 +16142,564 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_premium_line_items: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'BASE'>;
+                  };
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly policy_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly position: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_premium_line_items_policy_id_idx';
+                  readonly columns: readonly ['policy_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_premium_line_items';
+                    readonly columns: readonly ['policy_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_policies';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_renewal_quotes: {
+              columns: {
+                readonly broker: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly conditions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly coverage_limits: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly endorsements: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly excesses: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly exclusions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly insurer: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly itemised_charges: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly material_differences: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly period_end: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly period_start: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly premium: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly renewal_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly sum_insured: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly valid_until: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_renewal_quotes_renewal_id_idx';
+                  readonly columns: readonly ['renewal_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_renewal_quotes';
+                    readonly columns: readonly ['renewal_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_renewals';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_renewals: {
+              columns: {
+                readonly approved_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cover_confirmed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly declaration: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly declared_changes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly deleted_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly due_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly expiring_policy_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly not_proceeding_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly outstanding_info: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly placement_instructions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reminder_lead_days: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly selected_quote_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly selection_rationale: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly stage: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'NOT_STARTED'>;
+                  };
+                  readonly many: false;
+                };
+                readonly successor_policy_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_renewals_expiring_policy_id_idx';
+                  readonly columns: readonly ['expiring_policy_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'insurance_renewals_scheme_id_stage_idx';
+                  readonly columns: readonly ['scheme_id', 'stage'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'insurance_renewals_successor_policy_id_key';
+                  readonly columns: readonly ['successor_policy_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_renewals';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_renewals';
+                    readonly columns: readonly ['expiring_policy_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_policies';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_renewals';
+                    readonly columns: readonly ['successor_policy_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_policies';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly insurance_tasks: {
+              columns: {
+                readonly assigned_to: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly claim_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly completed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly due_date: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly policy_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly renewal_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'OPEN'>;
+                  };
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'insurance_tasks_claim_id_idx';
+                  readonly columns: readonly ['claim_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'insurance_tasks_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_tasks';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_tasks';
+                    readonly columns: readonly ['claim_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'insurance_claims';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -25871,9 +28225,41 @@ type ContractBase = Omit<
       readonly model: 'FinancialPeriod';
     };
     readonly funds: { readonly namespace: 'public' & NamespaceId; readonly model: 'Fund' };
+    readonly insurance_claim_events: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsuranceClaimEvent';
+    };
+    readonly insurance_claims: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsuranceClaim';
+    };
+    readonly insurance_coverage_items: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsuranceCoverageItem';
+    };
+    readonly insurance_documents: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsuranceDocument';
+    };
     readonly insurance_policies: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'InsurancePolicy';
+    };
+    readonly insurance_premium_line_items: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsurancePremiumLineItem';
+    };
+    readonly insurance_renewal_quotes: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsuranceRenewalQuote';
+    };
+    readonly insurance_renewals: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsuranceRenewal';
+    };
+    readonly insurance_tasks: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InsuranceTask';
     };
     readonly invitations: {
       readonly namespace: 'public' & NamespaceId;
@@ -30040,23 +32426,504 @@ type ContractBase = Omit<
               };
             };
           };
-          readonly InsurancePolicy: {
+          readonly InsuranceClaim: {
             readonly fields: {
-              readonly broker: {
+              readonly approvedAmount: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly assessorDetails: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly brokerContact: {
+              readonly assignedOwnerId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly claimNumber: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly coverageAmount: {
+              readonly claimedAmount: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly closedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly commonProperty: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly contactEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly contactPhone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly contractorDetails: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
                 readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly damageDetails: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly decisionReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly discoveredDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly estimatedLoss: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly excessAmount: {
+                readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/numeric@1';
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                 };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly immediateAction: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly incidentCategory: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly incidentDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly incidentLocation: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly incidentTime: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly individualLot: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly insurerClaimRef: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lodgedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly lodgedById: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lodgedChannel: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lodgedRecipient: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lodgedReference: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lotReference: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly otherParties: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paidAmount: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly policyId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly reporterName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reporterType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly settlementDetails: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly smsUpdates: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly documents: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceDocument';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['claimId'];
+                };
+              };
+              readonly events: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceClaimEvent';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['claimId'];
+                };
+              };
+              readonly policy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsurancePolicy';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['policyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly tasks: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceTask';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['claimId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_claims';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly approvedAmount: { readonly column: 'approved_amount' };
+                readonly assessorDetails: { readonly column: 'assessor_details' };
+                readonly assignedOwnerId: { readonly column: 'assigned_owner_id' };
+                readonly claimNumber: { readonly column: 'claim_number' };
+                readonly claimedAmount: { readonly column: 'claimed_amount' };
+                readonly closedAt: { readonly column: 'closed_at' };
+                readonly commonProperty: { readonly column: 'common_property' };
+                readonly contactEmail: { readonly column: 'contact_email' };
+                readonly contactPhone: { readonly column: 'contact_phone' };
+                readonly contractorDetails: { readonly column: 'contractor_details' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly damageDetails: { readonly column: 'damage_details' };
+                readonly decisionReason: { readonly column: 'decision_reason' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
+                readonly description: { readonly column: 'description' };
+                readonly discoveredDate: { readonly column: 'discovered_date' };
+                readonly estimatedLoss: { readonly column: 'estimated_loss' };
+                readonly excessAmount: { readonly column: 'excess_amount' };
+                readonly id: { readonly column: 'id' };
+                readonly immediateAction: { readonly column: 'immediate_action' };
+                readonly incidentCategory: { readonly column: 'incident_category' };
+                readonly incidentDate: { readonly column: 'incident_date' };
+                readonly incidentLocation: { readonly column: 'incident_location' };
+                readonly incidentTime: { readonly column: 'incident_time' };
+                readonly individualLot: { readonly column: 'individual_lot' };
+                readonly insurerClaimRef: { readonly column: 'insurer_claim_ref' };
+                readonly lodgedAt: { readonly column: 'lodged_at' };
+                readonly lodgedById: { readonly column: 'lodged_by_id' };
+                readonly lodgedChannel: { readonly column: 'lodged_channel' };
+                readonly lodgedRecipient: { readonly column: 'lodged_recipient' };
+                readonly lodgedReference: { readonly column: 'lodged_reference' };
+                readonly lotReference: { readonly column: 'lot_reference' };
+                readonly otherParties: { readonly column: 'other_parties' };
+                readonly paidAmount: { readonly column: 'paid_amount' };
+                readonly policyId: { readonly column: 'policy_id' };
+                readonly reporterName: { readonly column: 'reporter_name' };
+                readonly reporterType: { readonly column: 'reporter_type' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly settlementDetails: { readonly column: 'settlement_details' };
+                readonly smsUpdates: { readonly column: 'sms_updates' };
+                readonly status: { readonly column: 'status' };
+                readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly InsuranceClaimEvent: {
+            readonly fields: {
+              readonly actorId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly claimId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly eventType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fromStatus: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly note: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly payload: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly toStatus: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly claim: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceClaim';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['claimId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_claim_events';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly actorId: { readonly column: 'actor_id' };
+                readonly claimId: { readonly column: 'claim_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly eventType: { readonly column: 'event_type' };
+                readonly fromStatus: { readonly column: 'from_status' };
+                readonly id: { readonly column: 'id' };
+                readonly note: { readonly column: 'note' };
+                readonly payload: { readonly column: 'payload' };
+                readonly toStatus: { readonly column: 'to_status' };
+              };
+            };
+          };
+          readonly InsuranceCoverageItem: {
+            readonly fields: {
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly conditions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly excess: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly policyId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly position: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly sumInsured: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly policy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsurancePolicy';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['policyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_coverage_items';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly category: { readonly column: 'category' };
+                readonly conditions: { readonly column: 'conditions' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly description: { readonly column: 'description' };
+                readonly excess: { readonly column: 'excess' };
+                readonly id: { readonly column: 'id' };
+                readonly policyId: { readonly column: 'policy_id' };
+                readonly position: { readonly column: 'position' };
+                readonly sumInsured: { readonly column: 'sum_insured' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly InsuranceDocument: {
+            readonly fields: {
+              readonly accessLevel: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly category: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly claimId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly createdAt: {
                 readonly nullable: false;
@@ -30072,12 +32939,244 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly documentDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly fileName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fileSize: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly fileUrl: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isCurrent: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly mimeType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly policyId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly renewalId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly supersedesId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly uploadedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly version: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly claim: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceClaim';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['claimId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly policy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsurancePolicy';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['policyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly renewal: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceRenewal';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['renewalId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly supersededBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceDocument';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['supersedesId'];
+                };
+              };
+              readonly supersedes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceDocument';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['supersedesId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_documents';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly accessLevel: { readonly column: 'access_level' };
+                readonly category: { readonly column: 'category' };
+                readonly claimId: { readonly column: 'claim_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
+                readonly documentDate: { readonly column: 'document_date' };
+                readonly fileName: { readonly column: 'file_name' };
+                readonly fileSize: { readonly column: 'file_size' };
+                readonly fileUrl: { readonly column: 'file_url' };
+                readonly id: { readonly column: 'id' };
+                readonly isCurrent: { readonly column: 'is_current' };
+                readonly mimeType: { readonly column: 'mime_type' };
+                readonly notes: { readonly column: 'notes' };
+                readonly policyId: { readonly column: 'policy_id' };
+                readonly renewalId: { readonly column: 'renewal_id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly supersedesId: { readonly column: 'supersedes_id' };
+                readonly title: { readonly column: 'title' };
+                readonly uploadedBy: { readonly column: 'uploaded_by' };
+                readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly InsurancePolicy: {
+            readonly fields: {
+              readonly additionalInsured: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly broker: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly brokerContact: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly claimsContact: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly conditions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly contactEmail: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly contactPerson: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly contactPhone: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly coverageAmount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly coverageSummary: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly currency: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly endDate: {
                 readonly nullable: false;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
+              };
+              readonly endorsements: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly excessAmount: {
                 readonly nullable: true;
@@ -30087,15 +33186,53 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                 };
               };
+              readonly exclusions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly insuredAddress: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly insuredEntityName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly insurer: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly invoiceDocumentId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paymentDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly paymentDueDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly paymentReference: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paymentStatus: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
@@ -30114,6 +33251,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/numeric@1';
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                 };
+              };
+              readonly referenceNumbers: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly renewalDate: {
                 readonly nullable: true;
@@ -30137,6 +33278,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly totalPremium: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -30146,6 +33295,73 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly claims: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceClaim';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['policyId'];
+                };
+              };
+              readonly coverageItems: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceCoverageItem';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['policyId'];
+                };
+              };
+              readonly documents: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceDocument';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['policyId'];
+                };
+              };
+              readonly premiumLineItems: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsurancePremiumLineItem';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['policyId'];
+                };
+              };
+              readonly renewalSuccessor: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceRenewal';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['successorPolicyId'];
+                };
+              };
+              readonly renewalsFrom: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceRenewal';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['expiringPolicyId'];
+                };
+              };
               readonly scheme: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -30163,23 +33379,553 @@ type ContractBase = Omit<
               readonly table: 'insurance_policies';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly additionalInsured: { readonly column: 'additional_insured' };
                 readonly broker: { readonly column: 'broker' };
                 readonly brokerContact: { readonly column: 'broker_contact' };
+                readonly claimsContact: { readonly column: 'claims_contact' };
+                readonly conditions: { readonly column: 'conditions' };
+                readonly contactEmail: { readonly column: 'contact_email' };
+                readonly contactPerson: { readonly column: 'contact_person' };
+                readonly contactPhone: { readonly column: 'contact_phone' };
                 readonly coverageAmount: { readonly column: 'coverage_amount' };
+                readonly coverageSummary: { readonly column: 'coverage_summary' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly currency: { readonly column: 'currency' };
                 readonly deletedAt: { readonly column: 'deleted_at' };
                 readonly endDate: { readonly column: 'end_date' };
+                readonly endorsements: { readonly column: 'endorsements' };
                 readonly excessAmount: { readonly column: 'excess_amount' };
+                readonly exclusions: { readonly column: 'exclusions' };
                 readonly id: { readonly column: 'id' };
+                readonly insuredAddress: { readonly column: 'insured_address' };
+                readonly insuredEntityName: { readonly column: 'insured_entity_name' };
                 readonly insurer: { readonly column: 'insurer' };
+                readonly invoiceDocumentId: { readonly column: 'invoice_document_id' };
                 readonly notes: { readonly column: 'notes' };
+                readonly paymentDate: { readonly column: 'payment_date' };
+                readonly paymentDueDate: { readonly column: 'payment_due_date' };
+                readonly paymentReference: { readonly column: 'payment_reference' };
+                readonly paymentStatus: { readonly column: 'payment_status' };
                 readonly policyNumber: { readonly column: 'policy_number' };
                 readonly policyType: { readonly column: 'policy_type' };
                 readonly premium: { readonly column: 'premium' };
+                readonly referenceNumbers: { readonly column: 'reference_numbers' };
                 readonly renewalDate: { readonly column: 'renewal_date' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly startDate: { readonly column: 'start_date' };
                 readonly status: { readonly column: 'status' };
+                readonly totalPremium: { readonly column: 'total_premium' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly InsurancePremiumLineItem: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly label: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly policyId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly position: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly policy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsurancePolicy';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['policyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_premium_line_items';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly label: { readonly column: 'label' };
+                readonly policyId: { readonly column: 'policy_id' };
+                readonly position: { readonly column: 'position' };
+              };
+            };
+          };
+          readonly InsuranceRenewal: {
+            readonly fields: {
+              readonly approvedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly coverConfirmedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly declaration: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly declaredChanges: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly deletedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly dueDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly expiringPolicyId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly notProceedingReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly outstandingInfo: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly placementInstructions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reminderLeadDays: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly selectedQuoteId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly selectionRationale: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly stage: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly successorPolicyId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly documents: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceDocument';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['renewalId'];
+                };
+              };
+              readonly expiringPolicy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsurancePolicy';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['expiringPolicyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly quotes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceRenewalQuote';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['renewalId'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly successorPolicy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsurancePolicy';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['successorPolicyId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_renewals';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly approvedBy: { readonly column: 'approved_by' };
+                readonly coverConfirmedAt: { readonly column: 'cover_confirmed_at' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly declaration: { readonly column: 'declaration' };
+                readonly declaredChanges: { readonly column: 'declared_changes' };
+                readonly deletedAt: { readonly column: 'deleted_at' };
+                readonly dueDate: { readonly column: 'due_date' };
+                readonly expiringPolicyId: { readonly column: 'expiring_policy_id' };
+                readonly id: { readonly column: 'id' };
+                readonly notProceedingReason: { readonly column: 'not_proceeding_reason' };
+                readonly notes: { readonly column: 'notes' };
+                readonly outstandingInfo: { readonly column: 'outstanding_info' };
+                readonly ownerId: { readonly column: 'owner_id' };
+                readonly placementInstructions: { readonly column: 'placement_instructions' };
+                readonly reminderLeadDays: { readonly column: 'reminder_lead_days' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly selectedQuoteId: { readonly column: 'selected_quote_id' };
+                readonly selectionRationale: { readonly column: 'selection_rationale' };
+                readonly stage: { readonly column: 'stage' };
+                readonly successorPolicyId: { readonly column: 'successor_policy_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly InsuranceRenewalQuote: {
+            readonly fields: {
+              readonly broker: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly conditions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly coverageLimits: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly endorsements: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly excesses: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly exclusions: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly insurer: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly itemisedCharges: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly materialDifferences: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly periodEnd: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly periodStart: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly premium: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly renewalId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sumInsured: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 14; readonly scale: 2 };
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly validUntil: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly renewal: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceRenewal';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['renewalId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_renewal_quotes';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly broker: { readonly column: 'broker' };
+                readonly conditions: { readonly column: 'conditions' };
+                readonly coverageLimits: { readonly column: 'coverage_limits' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly endorsements: { readonly column: 'endorsements' };
+                readonly excesses: { readonly column: 'excesses' };
+                readonly exclusions: { readonly column: 'exclusions' };
+                readonly id: { readonly column: 'id' };
+                readonly insurer: { readonly column: 'insurer' };
+                readonly itemisedCharges: { readonly column: 'itemised_charges' };
+                readonly materialDifferences: { readonly column: 'material_differences' };
+                readonly notes: { readonly column: 'notes' };
+                readonly periodEnd: { readonly column: 'period_end' };
+                readonly periodStart: { readonly column: 'period_start' };
+                readonly premium: { readonly column: 'premium' };
+                readonly renewalId: { readonly column: 'renewal_id' };
+                readonly sumInsured: { readonly column: 'sum_insured' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+                readonly validUntil: { readonly column: 'valid_until' };
+              };
+            };
+          };
+          readonly InsuranceTask: {
+            readonly fields: {
+              readonly assignedTo: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly claimId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly completedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly dueDate: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly policyId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly renewalId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly claim: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceClaim';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['claimId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'insurance_tasks';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly assignedTo: { readonly column: 'assigned_to' };
+                readonly claimId: { readonly column: 'claim_id' };
+                readonly completedAt: { readonly column: 'completed_at' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly dueDate: { readonly column: 'due_date' };
+                readonly id: { readonly column: 'id' };
+                readonly notes: { readonly column: 'notes' };
+                readonly policyId: { readonly column: 'policy_id' };
+                readonly renewalId: { readonly column: 'renewal_id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly status: { readonly column: 'status' };
+                readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
@@ -35071,10 +38817,54 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly insuranceClaims: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceClaim';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly insuranceDocuments: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceDocument';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly insurancePolicies: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'InsurancePolicy';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly insuranceRenewals: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceRenewal';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly insuranceTasks: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'InsuranceTask';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -42543,7 +46333,52 @@ type ContractBase = Omit<
           readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
+            readonly entry: 'insurance_claims';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'insurance_coverage_items';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
             readonly entry: 'insurance_policies';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'insurance_renewal_quotes';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'insurance_renewals';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'insurance_tasks';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };

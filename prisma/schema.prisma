@@ -164,6 +164,10 @@ model Scheme {
   announcements       Announcement[]
   bylaws              ByLaw[]
   insurancePolicies   InsurancePolicy[]
+  insuranceClaims     InsuranceClaim[]
+  insuranceRenewals   InsuranceRenewal[]
+  insuranceDocuments  InsuranceDocument[]
+  insuranceTasks      InsuranceTask[]
   contacts            Contact[]
   quoteRequests       QuoteRequest[]
   invoices            Invoice[]
@@ -909,28 +913,297 @@ model InsurancePolicy {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId       String    @map("scheme_id") @db.Uuid
   policyNumber   String    @map("policy_number")
-  policyType     String    @map("policy_type") // BUILDING, PUBLIC_LIABILITY, WORKERS_COMP, OFFICE_BEARERS, FIDELITY_GUARANTEE, MACHINERY, VOLUNTARY_WORKERS, OTHER
+  policyType     String    @map("policy_type") // BUILDING, STRATA, PUBLIC_LIABILITY, WORKERS_COMP, OFFICE_BEARERS, FIDELITY_GUARANTEE, MACHINERY, VOLUNTARY_WORKERS, OTHER
   insurer        String
   broker         String?
   brokerContact  String?   @map("broker_contact")
-  coverageAmount Decimal   @map("coverage_amount") @db.Decimal(12, 2)
-  premium        Decimal   @db.Decimal(12, 2)
+  coverageAmount Decimal   @map("coverage_amount") @db.Decimal(14, 2) // headline sum insured; itemised cover lives in coverageItems
+  premium        Decimal   @db.Decimal(12, 2) // headline/base premium; itemised charges live in premiumLineItems
   excessAmount   Decimal?  @map("excess_amount") @db.Decimal(12, 2)
   startDate      DateTime  @db.Timestamptz @map("start_date")
   endDate        DateTime  @db.Timestamptz @map("end_date")
-  status         String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED, PENDING_RENEWAL
+  status         String    @default("ACTIVE") // DRAFT, UPCOMING, ACTIVE, EXPIRED, CANCELLED
   renewalDate    DateTime? @db.Timestamptz @map("renewal_date")
   notes          String?
+
+  // Insured entity / property
+  insuredEntityName String? @map("insured_entity_name")
+  insuredAddress    String? @map("insured_address")
+  additionalInsured String? @map("additional_insured")
+  // Broker / insurer contacts
+  contactPerson     String? @map("contact_person")
+  contactEmail      String? @map("contact_email")
+  contactPhone      String? @map("contact_phone")
+  claimsContact     String? @map("claims_contact")
+  referenceNumbers  String? @map("reference_numbers")
+  // Policy detail
+  coverageSummary   String? @map("coverage_summary")
+  exclusions        String?
+  conditions        String?
+  endorsements      String?
+  // Premium / payment
+  currency          String    @default("AUD")
+  totalPremium      Decimal?  @map("total_premium") @db.Decimal(12, 2) // computed from premiumLineItems when present
+  paymentDueDate    DateTime? @map("payment_due_date") @db.Timestamptz
+  paymentStatus     String?   @map("payment_status") // UNPAID, PART_PAID, PAID
+  paymentDate       DateTime? @map("payment_date") @db.Timestamptz
+  paymentReference  String?   @map("payment_reference")
+  invoiceDocumentId String?   @map("invoice_document_id") @db.Uuid
+
   createdAt      DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt      DateTime  @updatedAt @db.Timestamptz @map("updated_at")
   deletedAt      DateTime? @db.Timestamptz @map("deleted_at")
 
   scheme         Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  coverageItems    InsuranceCoverageItem[]
+  premiumLineItems InsurancePremiumLineItem[]
+  documents        InsuranceDocument[]
+  claims           InsuranceClaim[]
+  renewalsFrom     InsuranceRenewal[] @relation("RenewalExpiringPolicy")
+  renewalSuccessor InsuranceRenewal?  @relation("RenewalSuccessorPolicy")
 
   @@unique([schemeId, policyNumber])
   @@index([schemeId, status])
   @@index([schemeId, endDate])
   @@map("insurance_policies")
+}
+
+// Itemised cover within a policy (building, common contents, public liability, …)
+model InsuranceCoverageItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policyId    String   @map("policy_id") @db.Uuid
+  category    String   // BUILDING, COMMON_CONTENTS, PUBLIC_LIABILITY, OFFICE_BEARERS, MACHINERY_BREAKDOWN, FIDELITY_GUARANTEE, LOSS_OF_RENT, VOLUNTARY_WORKERS, FLOOD, CATASTROPHE, OTHER
+  description String?
+  sumInsured  Decimal? @map("sum_insured") @db.Decimal(14, 2)
+  excess      Decimal? @db.Decimal(12, 2)
+  conditions  String?  // conditions or sublimits
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  policy InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@map("insurance_coverage_items")
+}
+
+// Itemised premium charges (base, taxes, duties, levies, fees)
+model InsurancePremiumLineItem {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  policyId  String   @map("policy_id") @db.Uuid
+  label     String
+  kind      String   @default("BASE") // BASE, TAX, DUTY, LEVY, FEE, COMMISSION, OTHER
+  amount    Decimal  @db.Decimal(12, 2)
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  policy InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@map("insurance_premium_line_items")
+}
+
+// Policy / claim / renewal documents with version history. Never overwrites: a new
+// version supersedes the previous one, which is retained.
+model InsuranceDocument {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId    String   @map("scheme_id") @db.Uuid
+  policyId    String?  @map("policy_id") @db.Uuid
+  claimId     String?  @map("claim_id") @db.Uuid
+  renewalId   String?  @map("renewal_id") @db.Uuid
+  category    String   // POLICY_SCHEDULE, POLICY_WORDING_PDS, CERTIFICATE_OF_CURRENCY, ENDORSEMENT, PREMIUM_INVOICE, PAYMENT_RECEIPT, VALUATION_REPORT, BROKER_CORRESPONDENCE, CLAIM_EVIDENCE, RENEWAL_NOTICE, QUOTE, APPROVAL_EVIDENCE, OTHER
+  title       String
+  fileUrl     String   @map("file_url") // Supabase storage path, not a public URL
+  fileName    String   @map("file_name")
+  fileSize    Int?     @map("file_size")
+  mimeType    String?  @map("mime_type")
+  version     Int      @default(1)
+  supersedesId String? @map("supersedes_id") @db.Uuid
+  isCurrent   Boolean  @default(true) @map("is_current")
+  accessLevel String   @default("RESTRICTED") @map("access_level") // PUBLIC, RESTRICTED, CONFIDENTIAL
+  uploadedBy  String   @map("uploaded_by") @db.Uuid
+  documentDate DateTime? @db.Timestamptz @map("document_date")
+  notes       String?
+  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
+  deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
+
+  scheme    Scheme            @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  policy    InsurancePolicy?  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  claim     InsuranceClaim?   @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  renewal   InsuranceRenewal? @relation(fields: [renewalId], references: [id], onDelete: Cascade)
+  supersedes InsuranceDocument?  @relation("DocumentVersion", fields: [supersedesId], references: [id])
+  supersededBy InsuranceDocument[] @relation("DocumentVersion")
+
+  @@index([policyId])
+  @@index([claimId])
+  @@index([renewalId])
+  @@index([schemeId, category])
+  @@map("insurance_documents")
+}
+
+// An insurance claim lodged against a policy.
+model InsuranceClaim {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId        String    @map("scheme_id") @db.Uuid
+  policyId        String?   @map("policy_id") @db.Uuid
+  claimNumber     String?   @map("claim_number") // internal reference
+  title           String
+  incidentCategory String?  @map("incident_category")
+  incidentDate    DateTime? @db.Timestamptz @map("incident_date")
+  incidentTime    String?   @map("incident_time")
+  discoveredDate  DateTime? @db.Timestamptz @map("discovered_date")
+  incidentLocation String?  @map("incident_location")
+  lotReference    String?   @map("lot_reference")
+  commonProperty  Boolean?  @map("common_property")
+  individualLot   Boolean?  @map("individual_lot")
+  description     String?
+  damageDetails   String?   @map("damage_details")
+  immediateAction String?   @map("immediate_action")
+  estimatedLoss   Decimal?  @map("estimated_loss") @db.Decimal(14, 2)
+  // Reporter / contact
+  reporterType    String?   @map("reporter_type") // STRATA_MANAGER, LOT_OWNER
+  reporterName    String?   @map("reporter_name")
+  contactEmail    String?   @map("contact_email")
+  contactPhone    String?   @map("contact_phone")
+  smsUpdates      Boolean   @default(false) @map("sms_updates")
+  otherParties    String?   @map("other_parties")
+  insurerClaimRef String?   @map("insurer_claim_ref")
+  // Status / administration
+  status          String    @default("DRAFT") // DRAFT, SUBMITTED, ACKNOWLEDGED, UNDER_ASSESSMENT, FURTHER_INFO_REQUIRED, APPROVED, PARTIALLY_APPROVED, DECLINED, WITHDRAWN, CLOSED
+  assignedOwnerId String?   @map("assigned_owner_id") @db.Uuid
+  assessorDetails String?   @map("assessor_details")
+  contractorDetails String? @map("contractor_details")
+  claimedAmount   Decimal?  @map("claimed_amount") @db.Decimal(14, 2)
+  approvedAmount  Decimal?  @map("approved_amount") @db.Decimal(14, 2)
+  paidAmount      Decimal?  @map("paid_amount") @db.Decimal(14, 2)
+  excessAmount    Decimal?  @map("excess_amount") @db.Decimal(12, 2)
+  settlementDetails String? @map("settlement_details")
+  decisionReason  String?   @map("decision_reason")
+  // Lodgement (internal record vs actual submission)
+  lodgedAt        DateTime? @db.Timestamptz @map("lodged_at")
+  lodgedChannel   String?   @map("lodged_channel")
+  lodgedRecipient String?   @map("lodged_recipient")
+  lodgedReference String?   @map("lodged_reference")
+  lodgedById      String?   @map("lodged_by_id") @db.Uuid
+  closedAt        DateTime? @db.Timestamptz @map("closed_at")
+  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt       DateTime? @db.Timestamptz @map("deleted_at")
+
+  scheme    Scheme               @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  policy    InsurancePolicy?     @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  events    InsuranceClaimEvent[]
+  documents InsuranceDocument[]
+  tasks     InsuranceTask[]
+
+  @@index([schemeId, status])
+  @@index([policyId])
+  @@map("insurance_claims")
+}
+
+// Append-only timeline / status history for a claim.
+model InsuranceClaimEvent {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  claimId    String   @map("claim_id") @db.Uuid
+  eventType  String   @map("event_type") // CREATED, STATUS_CHANGED, LODGED, NOTE, DOCUMENT_ADDED, ASSIGNED, AMOUNT_UPDATED, TASK
+  fromStatus String?  @map("from_status")
+  toStatus   String?  @map("to_status")
+  note       String?
+  actorId    String?  @map("actor_id") @db.Uuid
+  payload    Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  claim InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@map("insurance_claim_events")
+}
+
+// A renewal workflow linked to an expiring policy.
+model InsuranceRenewal {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String    @map("scheme_id") @db.Uuid
+  expiringPolicyId   String    @map("expiring_policy_id") @db.Uuid
+  stage              String    @default("NOT_STARTED") // NOT_STARTED, INFORMATION_REQUIRED, QUOTES_REQUESTED, QUOTES_RECEIVED, UNDER_REVIEW, AWAITING_APPROVAL, PLACEMENT_REQUESTED, COVER_CONFIRMED, COMPLETED, NOT_PROCEEDING
+  ownerId            String?   @map("owner_id") @db.Uuid
+  dueDate            DateTime? @db.Timestamptz @map("due_date")
+  reminderLeadDays   Int?      @map("reminder_lead_days")
+  declaredChanges    String?   @map("declared_changes")
+  outstandingInfo    String?   @map("outstanding_info")
+  declaration        Json?     // pre-renewal declaration form snapshot
+  selectedQuoteId    String?   @map("selected_quote_id") @db.Uuid // resolved in code (no FK, avoids cycle)
+  selectionRationale String?   @map("selection_rationale")
+  approvedBy         String?   @map("approved_by")
+  placementInstructions String? @map("placement_instructions")
+  coverConfirmedAt   DateTime? @db.Timestamptz @map("cover_confirmed_at")
+  successorPolicyId  String?   @unique @map("successor_policy_id") @db.Uuid
+  notProceedingReason String?  @map("not_proceeding_reason")
+  notes              String?
+  createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+  deletedAt          DateTime? @db.Timestamptz @map("deleted_at")
+
+  scheme          Scheme          @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  expiringPolicy  InsurancePolicy @relation("RenewalExpiringPolicy", fields: [expiringPolicyId], references: [id], onDelete: Cascade)
+  successorPolicy InsurancePolicy? @relation("RenewalSuccessorPolicy", fields: [successorPolicyId], references: [id], onDelete: SetNull)
+  quotes          InsuranceRenewalQuote[]
+  documents       InsuranceDocument[]
+
+  @@index([schemeId, stage])
+  @@index([expiringPolicyId])
+  @@map("insurance_renewals")
+}
+
+// A renewal quote recorded for comparison.
+model InsuranceRenewalQuote {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  renewalId          String    @map("renewal_id") @db.Uuid
+  insurer            String
+  broker             String?
+  periodStart        DateTime? @db.Timestamptz @map("period_start")
+  periodEnd          DateTime? @db.Timestamptz @map("period_end")
+  premium            Decimal?  @db.Decimal(12, 2)
+  itemisedCharges    Json?     @map("itemised_charges")
+  sumInsured         Decimal?  @map("sum_insured") @db.Decimal(14, 2)
+  coverageLimits     Json?     @map("coverage_limits")
+  excesses           Json?
+  exclusions         String?
+  conditions         String?
+  endorsements       String?
+  materialDifferences String?  @map("material_differences")
+  validUntil         DateTime? @db.Timestamptz @map("valid_until")
+  notes              String?
+  createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  renewal InsuranceRenewal @relation(fields: [renewalId], references: [id], onDelete: Cascade)
+
+  @@index([renewalId])
+  @@map("insurance_renewal_quotes")
+}
+
+// Follow-up tasks / reminders for claims and renewals.
+model InsuranceTask {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId    String    @map("scheme_id") @db.Uuid
+  policyId    String?   @map("policy_id") @db.Uuid
+  claimId     String?   @map("claim_id") @db.Uuid
+  renewalId   String?   @map("renewal_id") @db.Uuid
+  title       String
+  dueDate     DateTime? @db.Timestamptz @map("due_date")
+  status      String    @default("OPEN") // OPEN, DONE, CANCELLED
+  assignedTo  String?   @map("assigned_to") @db.Uuid
+  notes       String?
+  completedAt DateTime? @db.Timestamptz @map("completed_at")
+  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme Scheme          @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  claim  InsuranceClaim? @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([schemeId, status])
+  @@index([claimId])
+  @@map("insurance_tasks")
 }
 
 // ─── Contacts / Contractor Directory ───────────────────────────
