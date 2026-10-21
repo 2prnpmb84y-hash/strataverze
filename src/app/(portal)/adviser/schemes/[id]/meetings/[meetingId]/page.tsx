@@ -10,12 +10,17 @@ import { DeleteMeetingButton } from "./delete-meeting-button";
 import { MeetingStatusButton } from "./meeting-status-button";
 import { MotionSection } from "./motion-section";
 import { AgendaSection } from "./agenda-section";
+import { NoticeSection } from "./notice-section";
 import { getAgendaItemsForMeeting } from "@/lib/queries/agenda";
+import { getNoticesForMeeting } from "@/lib/queries/notice";
 import {
   allowedCategoriesForMeetingType,
 } from "@/lib/meetings/agenda";
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { getMotionLibrary, getAgendaTemplate } from "@/lib/meetings/templates";
+import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
+import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
+import { canTransition } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
 
 export default async function MeetingDetailPage({
@@ -57,6 +62,37 @@ export default async function MeetingDetailPage({
     : false;
   const agendaEditable =
     meeting.status === "DRAFT" || meeting.status === "SCHEDULED";
+
+  // Notice context
+  const notices = await getNoticesForMeeting(meetingId);
+  const ruleSet = await getActiveRuleSet(scheme.state);
+  const startIso = String(meeting.startTime ?? meeting.scheduledAt);
+  const noticePeriod =
+    normalisedType != null
+      ? validateNoticePeriod(
+          ruleSet,
+          normalisedType as MeetingType,
+          new Date(),
+          new Date(startIso),
+        )
+      : null;
+  const recipientCount = scheme.memberships.filter(
+    (m) => m.profile?.email,
+  ).length;
+  const canIssueNotice =
+    agendaItems.length > 0 && canTransition(meeting.status, "NOTICE_ISSUED");
+  const noticeViews = notices.map((n) => ({
+    id: n.id,
+    version: n.version,
+    status: n.status,
+    issuedAt: String(n.issuedAt),
+    compliant: n.compliant,
+    recipients: n.recipients.map((r) => ({
+      name: r.name,
+      email: r.email,
+      deliveryOutcome: r.deliveryOutcome,
+    })),
+  }));
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
   const motionCount = meeting.motions.length;
@@ -136,6 +172,17 @@ export default async function MeetingDetailPage({
         allowedCategories={allowedCategories}
         canLoadTemplate={canLoadTemplate}
         editable={agendaEditable}
+      />
+
+      {/* Notice */}
+      <NoticeSection
+        schemeId={id}
+        meetingId={meetingId}
+        canIssue={canIssueNotice}
+        agendaItemCount={agendaItems.length}
+        recipientCount={recipientCount}
+        noticePeriod={noticePeriod}
+        notices={noticeViews}
       />
 
       {/* Motions */}

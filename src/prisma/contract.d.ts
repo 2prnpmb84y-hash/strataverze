@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'31d53d0820b3e90cb7667c194b9e5e7fc7a0d551215da626d598bff527febb09'>;
+  StorageHashBase<'1bb630d0229c7f64ca8d119abd251bf6987ecc4e860bf811cfe77a4eeacdde1b'>;
 export type ExecutionHash =
   ExecutionHashBase<'b59632f0addeda5afa91776e2417f0876857b437242bd214a00d40d9bad1c9df'>;
 export type ProfileHash =
@@ -1048,6 +1048,31 @@ export type FieldOutputTypes = {
       readonly state: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly Notice: {
+      readonly compliant: CodecTypes['pg/bool@1']['output'];
+      readonly content: CodecTypes['pg/jsonb@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly documentUrl: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly issuedById: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly meetingId: CodecTypes['pg/uuid@1']['output'];
+      readonly noticePeriodDays: CodecTypes['pg/int4@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly NoticeRecipient: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deliveryOutcome: CodecTypes['pg/text@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly method: CodecTypes['pg/text@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'] | null;
+      readonly noticeId: CodecTypes['pg/uuid@1']['output'];
+      readonly profileId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly sentAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     };
     readonly Organisation: {
       readonly abn: Varchar<11> | null;
@@ -2782,6 +2807,31 @@ export type FieldInputTypes = {
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly Notice: {
+      readonly compliant: CodecTypes['pg/bool@1']['input'];
+      readonly content: CodecTypes['pg/jsonb@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly documentUrl: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly issuedById: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly meetingId: CodecTypes['pg/uuid@1']['input'];
+      readonly noticePeriodDays: CodecTypes['pg/int4@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly NoticeRecipient: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deliveryOutcome: CodecTypes['pg/text@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly method: CodecTypes['pg/text@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'] | null;
+      readonly noticeId: CodecTypes['pg/uuid@1']['input'];
+      readonly profileId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly sentAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+    };
     readonly Organisation: {
       readonly abn: CodecTypes['sql/varchar@1']['input'] | null;
       readonly acn: CodecTypes['sql/varchar@1']['input'] | null;
@@ -4515,6 +4565,31 @@ export type StorageColumnTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly notice_recipients: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly delivery_outcome: CodecTypes['pg/text@1']['output'];
+      readonly email: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly method: CodecTypes['pg/text@1']['output'];
+      readonly name: CodecTypes['pg/text@1']['output'] | null;
+      readonly notice_id: CodecTypes['pg/uuid@1']['output'];
+      readonly profile_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly sent_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    };
+    readonly notices: {
+      readonly compliant: CodecTypes['pg/bool@1']['output'];
+      readonly content: CodecTypes['pg/jsonb@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly document_url: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly issued_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly issued_by_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly meeting_id: CodecTypes['pg/uuid@1']['output'];
+      readonly notice_period_days: CodecTypes['pg/int4@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly version: CodecTypes['pg/int4@1']['output'];
+    };
     readonly organisation_memberships: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly end_date: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -6247,6 +6322,31 @@ export type StorageColumnInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly notice_recipients: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly delivery_outcome: CodecTypes['pg/text@1']['input'];
+      readonly email: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly method: CodecTypes['pg/text@1']['input'];
+      readonly name: CodecTypes['pg/text@1']['input'] | null;
+      readonly notice_id: CodecTypes['pg/uuid@1']['input'];
+      readonly profile_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly sent_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+    };
+    readonly notices: {
+      readonly compliant: CodecTypes['pg/bool@1']['input'];
+      readonly content: CodecTypes['pg/jsonb@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly document_url: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly issued_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly issued_by_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly meeting_id: CodecTypes['pg/uuid@1']['input'];
+      readonly notice_period_days: CodecTypes['pg/int4@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly version: CodecTypes['pg/int4@1']['input'];
     };
     readonly organisation_memberships: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -8168,8 +8268,10 @@ export namespace Models {
     appliedRuleSet: public_AppliedRuleSet | null;
     events: public_MeetingEvent[];
     motions: public_Motion[];
+    notices: public_Notice[];
     scheme: public_Scheme;
-    readonly [RelationKeys]?: 'agendaItems' | 'appliedRuleSet' | 'events' | 'motions' | 'scheme';
+    readonly [RelationKeys]?:
+      'agendaItems' | 'appliedRuleSet' | 'events' | 'motions' | 'notices' | 'scheme';
   };
   export type public_MeetingEvent = {
     actorId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -8241,6 +8343,36 @@ export namespace Models {
     title: CodecTypes['pg/text@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     readonly [RelationKeys]?: never;
+  };
+  export type public_Notice = {
+    compliant: CodecTypes['pg/bool@1']['output'];
+    content: CodecTypes['pg/jsonb@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    documentUrl: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    issuedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    issuedById: CodecTypes['pg/uuid@1']['output'] | null;
+    meetingId: CodecTypes['pg/uuid@1']['output'];
+    noticePeriodDays: CodecTypes['pg/int4@1']['output'] | null;
+    status: CodecTypes['pg/text@1']['output'];
+    version: CodecTypes['pg/int4@1']['output'];
+    meeting: public_Meeting;
+    recipients: public_NoticeRecipient[];
+    readonly [RelationKeys]?: 'meeting' | 'recipients';
+  };
+  export type public_NoticeRecipient = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    deliveryOutcome: CodecTypes['pg/text@1']['output'];
+    email: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'] | null;
+    method: CodecTypes['pg/text@1']['output'];
+    name: CodecTypes['pg/text@1']['output'] | null;
+    noticeId: CodecTypes['pg/uuid@1']['output'];
+    profileId: CodecTypes['pg/uuid@1']['output'] | null;
+    sentAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    notice: public_Notice;
+    readonly [RelationKeys]?: 'notice';
   };
   export type public_Organisation = {
     abn: Varchar<11> | null;
@@ -9772,6 +9904,8 @@ export declare const models: {
     MeetingTemplate: Models.public_MeetingTemplate;
     Motion: Models.public_Motion;
     MotionLibraryEntry: Models.public_MotionLibraryEntry;
+    Notice: Models.public_Notice;
+    NoticeRecipient: Models.public_NoticeRecipient;
     Organisation: Models.public_Organisation;
     OrganisationMembership: Models.public_OrganisationMembership;
     PaymentPlan: Models.public_PaymentPlan;
@@ -16639,6 +16773,217 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly notice_recipients: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly delivery_outcome: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'PENDING'>;
+                  };
+                  readonly many: false;
+                };
+                readonly email: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'EMAIL'>;
+                  };
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly notice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly profile_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly sent_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'notice_recipients_notice_id_idx';
+                  readonly columns: readonly ['notice_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'notice_recipients';
+                    readonly columns: readonly ['notice_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'notices';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly notices: {
+              columns: {
+                readonly compliant: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly content: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly document_url: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly issued_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly issued_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notice_period_days: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'ISSUED'>;
+                  };
+                  readonly many: false;
+                };
+                readonly version: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'notices_meeting_id_version_idx';
+                  readonly columns: readonly ['meeting_id', 'version'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'notices';
+                    readonly columns: readonly ['meeting_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'meetings';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -25077,6 +25422,11 @@ type ContractBase = Omit<
       readonly model: 'MotionLibraryEntry';
     };
     readonly motions: { readonly namespace: 'public' & NamespaceId; readonly model: 'Motion' };
+    readonly notice_recipients: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'NoticeRecipient';
+    };
+    readonly notices: { readonly namespace: 'public' & NamespaceId; readonly model: 'Notice' };
     readonly organisation_memberships: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'OrganisationMembership';
@@ -31391,6 +31741,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['meetingId'];
                 };
               };
+              readonly notices: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Notice';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['meetingId'];
+                };
+              };
               readonly scheme: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -31833,6 +32194,182 @@ type ContractBase = Omit<
                 readonly state: { readonly column: 'state' };
                 readonly title: { readonly column: 'title' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly Notice: {
+            readonly fields: {
+              readonly compliant: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly content: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly documentUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly issuedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly issuedById: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly noticePeriodDays: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly version: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly meeting: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Meeting';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['meetingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly recipients: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NoticeRecipient';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['noticeId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'notices';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly compliant: { readonly column: 'compliant' };
+                readonly content: { readonly column: 'content' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly documentUrl: { readonly column: 'document_url' };
+                readonly id: { readonly column: 'id' };
+                readonly issuedAt: { readonly column: 'issued_at' };
+                readonly issuedById: { readonly column: 'issued_by_id' };
+                readonly meetingId: { readonly column: 'meeting_id' };
+                readonly noticePeriodDays: { readonly column: 'notice_period_days' };
+                readonly status: { readonly column: 'status' };
+                readonly version: { readonly column: 'version' };
+              };
+            };
+          };
+          readonly NoticeRecipient: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deliveryOutcome: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly email: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly method: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly name: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly noticeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly profileId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sentAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly notice: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Notice';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['noticeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'notice_recipients';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly deliveryOutcome: { readonly column: 'delivery_outcome' };
+                readonly email: { readonly column: 'email' };
+                readonly id: { readonly column: 'id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly method: { readonly column: 'method' };
+                readonly name: { readonly column: 'name' };
+                readonly noticeId: { readonly column: 'notice_id' };
+                readonly profileId: { readonly column: 'profile_id' };
+                readonly sentAt: { readonly column: 'sent_at' };
               };
             };
           };

@@ -521,8 +521,49 @@ model Meeting {
   agendaItems    AgendaItem[]
   events         MeetingEvent[]
   appliedRuleSet AppliedRuleSet?
+  notices        Notice[]
 
   @@map("meetings")
+}
+
+// A meeting notice issued to recipients. Re-issuing creates a new version.
+model Notice {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId        String   @map("meeting_id") @db.Uuid
+  version          Int      @default(1)
+  status           String   @default("ISSUED") // ISSUED, SUPERSEDED
+  issuedById       String?  @map("issued_by_id") @db.Uuid
+  issuedAt         DateTime @default(now()) @db.Timestamptz @map("issued_at")
+  noticePeriodDays Int?     @map("notice_period_days")
+  compliant        Boolean  @default(true)
+  content          Json
+  documentUrl      String?  @map("document_url")
+  createdAt        DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  meeting    Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  recipients NoticeRecipient[]
+
+  @@index([meetingId, version])
+  @@map("notices")
+}
+
+// A recorded recipient of a notice and the delivery outcome.
+model NoticeRecipient {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  noticeId        String    @map("notice_id") @db.Uuid
+  lotId           String?   @map("lot_id") @db.Uuid
+  profileId       String?   @map("profile_id") @db.Uuid
+  name            String?
+  email           String?
+  method          String    @default("EMAIL")
+  sentAt          DateTime? @db.Timestamptz @map("sent_at")
+  deliveryOutcome String    @default("PENDING") @map("delivery_outcome") // PENDING, SENT, DELIVERED, BOUNCED, SERVED
+  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  notice Notice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+
+  @@index([noticeId])
+  @@map("notice_recipients")
 }
 
 // Structured agenda item (replaces the single free-text agenda column going forward).
