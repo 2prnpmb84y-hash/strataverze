@@ -141,6 +141,7 @@ model Scheme {
   debtCollection      Boolean             @default(false) @map("debt_collection")
   // Financial management fields
   gstRegistered       Boolean             @default(false) @map("gst_registered")
+  preMeetingEvotingAdopted Boolean        @default(false) @map("pre_meeting_evoting_adopted") // body resolved to adopt pre-meeting e-voting (Reg cl 14)
   interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // % p.a. for overdue levies
   defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
   organisationId      String?             @map("organisation_id") @db.Uuid
@@ -523,8 +524,45 @@ model Meeting {
   appliedRuleSet AppliedRuleSet?
   notices        Notice[]
   minutes        Minutes[]
+  electronicBallot ElectronicBallot?
 
   @@map("meetings")
+}
+
+// A pre-meeting electronic ballot for a meeting (Reg cl 14-17).
+model ElectronicBallot {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId   String    @unique @map("meeting_id") @db.Uuid
+  status      String    @default("OPEN") // OPEN, CLOSED
+  opensAt     DateTime  @db.Timestamptz @map("opens_at")
+  closesAt    DateTime  @db.Timestamptz @map("closes_at")
+  createdById String?   @map("created_by_id") @db.Uuid
+  closedAt    DateTime? @db.Timestamptz @map("closed_at")
+  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  meeting Meeting          @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  votes   ElectronicVote[]
+
+  @@map("electronic_ballots")
+}
+
+// A single owner's electronic vote on an agenda item (secret-ballot capable).
+model ElectronicVote {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ballotId        String   @map("ballot_id") @db.Uuid
+  agendaItemId    String   @map("agenda_item_id") @db.Uuid
+  lotId           String?  @map("lot_id") @db.Uuid
+  profileId       String?  @map("profile_id") @db.Uuid
+  unitEntitlement Int      @default(0) @map("unit_entitlement")
+  voteValue       String   @map("vote_value") // FOR, AGAINST, ABSTAIN
+  isInformal      Boolean  @default(false) @map("is_informal")
+  castAt          DateTime @default(now()) @db.Timestamptz @map("cast_at")
+
+  ballot ElectronicBallot @relation(fields: [ballotId], references: [id], onDelete: Cascade)
+
+  @@unique([ballotId, agendaItemId, lotId])
+  @@index([ballotId, agendaItemId])
+  @@map("electronic_votes")
 }
 
 // Meeting minutes. WORKING and DRAFT precede the CONFIRMED official record.

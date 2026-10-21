@@ -13,9 +13,11 @@ import { AgendaSection } from "./agenda-section";
 import { NoticeSection } from "./notice-section";
 import { ConductSection } from "./conduct-section";
 import { MinutesSection } from "./minutes-section";
+import { EvotingSection } from "./evoting-section";
 import { getAgendaItemsForMeeting } from "@/lib/queries/agenda";
 import { getNoticesForMeeting } from "@/lib/queries/notice";
 import { getMinutesForMeeting } from "@/lib/queries/minutes";
+import { getBallotForMeeting } from "@/lib/queries/evoting";
 import { minutesDistributionDeadline } from "@/lib/meetings/minutes";
 import {
   allowedCategoriesForMeetingType,
@@ -139,6 +141,22 @@ export default async function MeetingDetailPage({
       }
     : null;
 
+  // E-voting context
+  const ballot = await getBallotForMeeting(meetingId);
+  const ballotView = ballot
+    ? {
+        status: ballot.status,
+        opensAt: String(ballot.opensAt),
+        closesAt: String(ballot.closesAt),
+        voteCount: ballot.votes.length,
+      }
+    : null;
+  const canOpenBallot =
+    scheme.preMeetingEvotingAdopted &&
+    agendaItems.length > 0 &&
+    (meeting.status === "NOTICE_ISSUED" || meeting.status === "DRAFT") &&
+    ballot == null;
+
   const scheduledDate = new Date(String(meeting.scheduledAt));
   const motionCount = meeting.motions.length;
 
@@ -228,6 +246,15 @@ export default async function MeetingDetailPage({
         recipientCount={recipientCount}
         noticePeriod={noticePeriod}
         notices={noticeViews}
+      />
+
+      {/* Pre-meeting electronic voting */}
+      <EvotingSection
+        schemeId={id}
+        meetingId={meetingId}
+        adopted={scheme.preMeetingEvotingAdopted}
+        canOpen={canOpenBallot}
+        ballot={ballotView}
       />
 
       {/* Conduct */}

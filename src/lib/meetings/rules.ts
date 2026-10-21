@@ -51,6 +51,13 @@ export interface MeetingRuleSet {
   quorumRules: Partial<Record<MeetingType, QuorumRule>>;
   resolutionCategories: Record<ResolutionCategory, ResolutionRule>;
   retention: { generalYears: number; secretBallotMonths: number };
+  /** Pre-meeting electronic voting (Reg cl 14-17). */
+  preMeetingEvoting: {
+    /** Ballot access must be given at least this many days before (cl 15). */
+    ballotOpenDaysBefore: number;
+    /** Ballot closes this many hours before the meeting, by meeting type (cl 17). */
+    ballotCloseHoursBefore: Partial<Record<MeetingType, number>>;
+  };
   notes?: string;
 }
 
@@ -82,6 +89,10 @@ export const NSW_RULE_SET: MeetingRuleSet = {
     },
   },
   retention: { generalYears: 7, secretBallotMonths: 13 },
+  preMeetingEvoting: {
+    ballotOpenDaysBefore: 7,
+    ballotCloseHoursBefore: { AGM: 24, EGM: 24, FIRST_AGM: 24, COMMITTEE: 0 },
+  },
   notes:
     "Seed rule set for NSW. Clause citations to be re-pinned to the live in-force consolidation before deadline logic is relied upon.",
 };

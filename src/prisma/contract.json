@@ -96,6 +96,14 @@
       "model": "Document",
       "namespace": "public"
     },
+    "electronic_ballots": {
+      "model": "ElectronicBallot",
+      "namespace": "public"
+    },
+    "electronic_votes": {
+      "model": "ElectronicVote",
+      "namespace": "public"
+    },
     "financial_documents": {
       "model": "FinancialDocument",
       "namespace": "public"
@@ -5412,6 +5420,247 @@
               "table": "documents"
             }
           },
+          "ElectronicBallot": {
+            "fields": {
+              "closedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "closesAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "meetingId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "opensAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "meeting": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "meetingId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Meeting",
+                  "namespace": "public"
+                }
+              },
+              "votes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "ballotId"
+                  ]
+                },
+                "to": {
+                  "model": "ElectronicVote",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "closedAt": {
+                  "column": "closed_at"
+                },
+                "closesAt": {
+                  "column": "closes_at"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "createdById": {
+                  "column": "created_by_id"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "meetingId": {
+                  "column": "meeting_id"
+                },
+                "opensAt": {
+                  "column": "opens_at"
+                },
+                "status": {
+                  "column": "status"
+                }
+              },
+              "namespaceId": "public",
+              "table": "electronic_ballots"
+            }
+          },
+          "ElectronicVote": {
+            "fields": {
+              "agendaItemId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "ballotId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "castAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isInformal": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "unitEntitlement": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "voteValue": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "ballot": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "ballotId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ElectronicBallot",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "agendaItemId": {
+                  "column": "agenda_item_id"
+                },
+                "ballotId": {
+                  "column": "ballot_id"
+                },
+                "castAt": {
+                  "column": "cast_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isInformal": {
+                  "column": "is_informal"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "profileId": {
+                  "column": "profile_id"
+                },
+                "unitEntitlement": {
+                  "column": "unit_entitlement"
+                },
+                "voteValue": {
+                  "column": "vote_value"
+                }
+              },
+              "namespaceId": "public",
+              "table": "electronic_votes"
+            }
+          },
           "FinancialDocument": {
             "fields": {
               "amount": {
@@ -9886,6 +10135,22 @@
                   "namespace": "public"
                 }
               },
+              "electronicBallot": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "meetingId"
+                  ]
+                },
+                "to": {
+                  "model": "ElectronicBallot",
+                  "namespace": "public"
+                }
+              },
               "events": {
                 "cardinality": "1:N",
                 "on": {
@@ -13648,6 +13913,13 @@
                   "kind": "scalar"
                 }
               },
+              "preMeetingEvotingAdopted": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "state": {
                 "nullable": false,
                 "type": {
@@ -14438,6 +14710,9 @@
                 },
                 "postcode": {
                   "column": "postcode"
+                },
+                "preMeetingEvotingAdopted": {
+                  "column": "pre_meeting_evoting_adopted"
                 },
                 "state": {
                   "column": "state"
@@ -28697,6 +28972,213 @@
               },
               "uniques": []
             },
+            "electronic_ballots": {
+              "columns": {
+                "closed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "closes_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "created_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "meeting_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "opens_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "OPEN"
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "electronic_ballots_meeting_id_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "meeting_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "electronic_ballots"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "meetings"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "meeting_id"
+                  ],
+                  "name": "electronic_ballots_meeting_id_key",
+                  "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "electronic_votes": {
+              "columns": {
+                "agenda_item_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "ballot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "cast_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "is_informal": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "profile_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "unit_entitlement": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nullable": false
+                },
+                "vote_value": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "electronic_votes_ballot_id_agenda_item_id_lot_id_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "ballot_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "electronic_votes"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "electronic_ballots"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "ballot_id",
+                    "agenda_item_id"
+                  ],
+                  "name": "electronic_votes_ballot_id_agenda_item_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "ballot_id",
+                    "agenda_item_id",
+                    "lot_id"
+                  ],
+                  "name": "electronic_votes_ballot_id_agenda_item_id_lot_id_key",
+                  "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "financial_documents": {
               "columns": {
                 "amount": {
@@ -34504,6 +34986,15 @@
                 "postcode": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": false
+                },
+                "pre_meeting_evoting_adopted": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
                   "nullable": false
                 },
                 "state": {
@@ -42513,7 +43004,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "412ef9e9d895ea7cdfaa36d0102b88a20dc0f784244cf48d50717d9006f808c0"
+    "storageHash": "1fc6578c556bc2222ed1b6058506568fcb02c1bf7e649d76518dc594d37afbbc"
   },
   "execution": {
     "executionHash": "df435e6d20f02e3f54aaeab646a5bad68c24c0ab6b249c8ff4ebf56de93c775a",

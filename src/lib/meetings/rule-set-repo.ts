@@ -26,6 +26,7 @@ type RuleSetRow = {
   quorumRules: unknown;
   resolutionCategories: unknown;
   retention: unknown;
+  preMeetingEvoting?: unknown;
   notes: string | null;
 };
 
@@ -42,6 +43,10 @@ function rowToRuleSet(row: RuleSetRow): MeetingRuleSet {
       ResolutionRule
     >,
     retention: row.retention as MeetingRuleSet["retention"],
+    // Fall back to the seed config when an older rule-set row lacks it.
+    preMeetingEvoting:
+      (row.preMeetingEvoting as MeetingRuleSet["preMeetingEvoting"]) ??
+      NSW_RULE_SET.preMeetingEvoting,
     notes: row.notes ?? undefined,
   };
 }

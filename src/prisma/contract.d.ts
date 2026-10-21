@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'412ef9e9d895ea7cdfaa36d0102b88a20dc0f784244cf48d50717d9006f808c0'>;
+  StorageHashBase<'1fc6578c556bc2222ed1b6058506568fcb02c1bf7e649d76518dc594d37afbbc'>;
 export type ExecutionHash =
   ExecutionHashBase<'df435e6d20f02e3f54aaeab646a5bad68c24c0ab6b249c8ff4ebf56de93c775a'>;
 export type ProfileHash =
@@ -633,6 +633,27 @@ export type FieldOutputTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly uploadedBy: CodecTypes['pg/uuid@1']['output'];
     };
+    readonly ElectronicBallot: {
+      readonly closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly closesAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdById: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['output'];
+      readonly opensAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+    };
+    readonly ElectronicVote: {
+      readonly agendaItemId: CodecTypes['pg/uuid@1']['output'];
+      readonly ballotId: CodecTypes['pg/uuid@1']['output'];
+      readonly castAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly isInformal: CodecTypes['pg/bool@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly profileId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly unitEntitlement: CodecTypes['pg/int4@1']['output'];
+      readonly voteValue: CodecTypes['pg/text@1']['output'];
+    };
     readonly FinancialDocument: {
       readonly amount: Numeric<12, 2> | null;
       readonly bankTransactionId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -1239,6 +1260,7 @@ export type FieldOutputTypes = {
       readonly paymentPlan: CodecTypes['pg/text@1']['output'] | null;
       readonly planNumber: CodecTypes['pg/text@1']['output'];
       readonly postcode: CodecTypes['pg/text@1']['output'];
+      readonly preMeetingEvotingAdopted: CodecTypes['pg/bool@1']['output'];
       readonly state: CodecTypes['pg/text@1']['output'];
       readonly suburb: CodecTypes['pg/text@1']['output'];
       readonly totalEntitlement: CodecTypes['pg/int4@1']['output'];
@@ -2406,6 +2428,27 @@ export type FieldInputTypes = {
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly uploadedBy: CodecTypes['pg/uuid@1']['input'];
     };
+    readonly ElectronicBallot: {
+      readonly closedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly closesAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdById: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meetingId: CodecTypes['pg/uuid@1']['input'];
+      readonly opensAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+    };
+    readonly ElectronicVote: {
+      readonly agendaItemId: CodecTypes['pg/uuid@1']['input'];
+      readonly ballotId: CodecTypes['pg/uuid@1']['input'];
+      readonly castAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly isInformal: CodecTypes['pg/bool@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly profileId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly unitEntitlement: CodecTypes['pg/int4@1']['input'];
+      readonly voteValue: CodecTypes['pg/text@1']['input'];
+    };
     readonly FinancialDocument: {
       readonly amount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly bankTransactionId: CodecTypes['pg/uuid@1']['input'] | null;
@@ -3012,6 +3055,7 @@ export type FieldInputTypes = {
       readonly paymentPlan: CodecTypes['pg/text@1']['input'] | null;
       readonly planNumber: CodecTypes['pg/text@1']['input'];
       readonly postcode: CodecTypes['pg/text@1']['input'];
+      readonly preMeetingEvotingAdopted: CodecTypes['pg/bool@1']['input'];
       readonly state: CodecTypes['pg/text@1']['input'];
       readonly suburb: CodecTypes['pg/text@1']['input'];
       readonly totalEntitlement: CodecTypes['pg/int4@1']['input'];
@@ -4179,6 +4223,27 @@ export type StorageColumnTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly uploaded_by: CodecTypes['pg/uuid@1']['output'];
     };
+    readonly electronic_ballots: {
+      readonly closed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly closes_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['output'];
+      readonly opens_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+    };
+    readonly electronic_votes: {
+      readonly agenda_item_id: CodecTypes['pg/uuid@1']['output'];
+      readonly ballot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly cast_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly is_informal: CodecTypes['pg/bool@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly profile_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly unit_entitlement: CodecTypes['pg/int4@1']['output'];
+      readonly vote_value: CodecTypes['pg/text@1']['output'];
+    };
     readonly financial_documents: {
       readonly amount: Numeric<12, 2> | null;
       readonly bank_transaction_id: CodecTypes['pg/uuid@1']['output'] | null;
@@ -4833,6 +4898,7 @@ export type StorageColumnTypes = {
       readonly payment_plan: CodecTypes['pg/text@1']['output'] | null;
       readonly plan_number: CodecTypes['pg/text@1']['output'];
       readonly postcode: CodecTypes['pg/text@1']['output'];
+      readonly pre_meeting_evoting_adopted: CodecTypes['pg/bool@1']['output'];
       readonly state: CodecTypes['pg/text@1']['output'];
       readonly suburb: CodecTypes['pg/text@1']['output'];
       readonly total_entitlement: CodecTypes['pg/int4@1']['output'];
@@ -5952,6 +6018,27 @@ export type StorageColumnInputTypes = {
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly uploaded_by: CodecTypes['pg/uuid@1']['input'];
     };
+    readonly electronic_ballots: {
+      readonly closed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly closes_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly meeting_id: CodecTypes['pg/uuid@1']['input'];
+      readonly opens_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+    };
+    readonly electronic_votes: {
+      readonly agenda_item_id: CodecTypes['pg/uuid@1']['input'];
+      readonly ballot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly cast_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly is_informal: CodecTypes['pg/bool@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly profile_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly unit_entitlement: CodecTypes['pg/int4@1']['input'];
+      readonly vote_value: CodecTypes['pg/text@1']['input'];
+    };
     readonly financial_documents: {
       readonly amount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly bank_transaction_id: CodecTypes['pg/uuid@1']['input'] | null;
@@ -6606,6 +6693,7 @@ export type StorageColumnInputTypes = {
       readonly payment_plan: CodecTypes['pg/text@1']['input'] | null;
       readonly plan_number: CodecTypes['pg/text@1']['input'];
       readonly postcode: CodecTypes['pg/text@1']['input'];
+      readonly pre_meeting_evoting_adopted: CodecTypes['pg/bool@1']['input'];
       readonly state: CodecTypes['pg/text@1']['input'];
       readonly suburb: CodecTypes['pg/text@1']['input'];
       readonly total_entitlement: CodecTypes['pg/int4@1']['input'];
@@ -7850,6 +7938,32 @@ export namespace Models {
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'scheme';
   };
+  export type public_ElectronicBallot = {
+    closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    closesAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdById: CodecTypes['pg/uuid@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    meetingId: CodecTypes['pg/uuid@1']['output'];
+    opensAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    meeting: public_Meeting;
+    votes: public_ElectronicVote[];
+    readonly [RelationKeys]?: 'meeting' | 'votes';
+  };
+  export type public_ElectronicVote = {
+    agendaItemId: CodecTypes['pg/uuid@1']['output'];
+    ballotId: CodecTypes['pg/uuid@1']['output'];
+    castAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    isInformal: CodecTypes['pg/bool@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'] | null;
+    profileId: CodecTypes['pg/uuid@1']['output'] | null;
+    unitEntitlement: CodecTypes['pg/int4@1']['output'];
+    voteValue: CodecTypes['pg/text@1']['output'];
+    ballot: public_ElectronicBallot;
+    readonly [RelationKeys]?: 'ballot';
+  };
   export type public_FinancialDocument = {
     amount: Numeric<12, 2> | null;
     bankTransactionId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -8326,13 +8440,21 @@ export namespace Models {
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     agendaItems: public_AgendaItem[];
     appliedRuleSet: public_AppliedRuleSet | null;
+    electronicBallot: public_ElectronicBallot | null;
     events: public_MeetingEvent[];
     minutes: public_Minutes[];
     motions: public_Motion[];
     notices: public_Notice[];
     scheme: public_Scheme;
     readonly [RelationKeys]?:
-      'agendaItems' | 'appliedRuleSet' | 'events' | 'minutes' | 'motions' | 'notices' | 'scheme';
+      | 'agendaItems'
+      | 'appliedRuleSet'
+      | 'electronicBallot'
+      | 'events'
+      | 'minutes'
+      | 'motions'
+      | 'notices'
+      | 'scheme';
   };
   export type public_MeetingEvent = {
     actorId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -8758,6 +8880,7 @@ export namespace Models {
     paymentPlan: CodecTypes['pg/text@1']['output'] | null;
     planNumber: CodecTypes['pg/text@1']['output'];
     postcode: CodecTypes['pg/text@1']['output'];
+    preMeetingEvotingAdopted: CodecTypes['pg/bool@1']['output'];
     state: CodecTypes['pg/text@1']['output'];
     suburb: CodecTypes['pg/text@1']['output'];
     totalEntitlement: CodecTypes['pg/int4@1']['output'];
@@ -9956,6 +10079,8 @@ export declare const models: {
     DebtRecoveryDocument: Models.public_DebtRecoveryDocument;
     DebtRecoveryStep: Models.public_DebtRecoveryStep;
     Document: Models.public_Document;
+    ElectronicBallot: Models.public_ElectronicBallot;
+    ElectronicVote: Models.public_ElectronicVote;
     FinancialDocument: Models.public_FinancialDocument;
     FinancialPeriod: Models.public_FinancialPeriod;
     Fund: Models.public_Fund;
@@ -13398,6 +13523,189 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly electronic_ballots: {
+              columns: {
+                readonly closed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly closes_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly opens_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'OPEN'>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'electronic_ballots_meeting_id_key';
+                  readonly columns: readonly ['meeting_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'electronic_ballots';
+                    readonly columns: readonly ['meeting_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'meetings';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly electronic_votes: {
+              columns: {
+                readonly agenda_item_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly ballot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly cast_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly is_informal: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly profile_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly unit_entitlement: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+                readonly vote_value: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'electronic_votes_ballot_id_agenda_item_id_idx';
+                  readonly columns: readonly ['ballot_id', 'agenda_item_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'electronic_votes_ballot_id_agenda_item_id_lot_id_key';
+                  readonly columns: readonly ['ballot_id', 'agenda_item_id', 'lot_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'electronic_votes';
+                    readonly columns: readonly ['ballot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'electronic_ballots';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -18626,6 +18934,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly pre_meeting_evoting_adopted: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly state: {
@@ -25536,6 +25854,14 @@ type ContractBase = Omit<
       readonly model: 'DebtRecoveryStep';
     };
     readonly documents: { readonly namespace: 'public' & NamespaceId; readonly model: 'Document' };
+    readonly electronic_ballots: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ElectronicBallot';
+    };
+    readonly electronic_votes: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ElectronicVote';
+    };
     readonly financial_documents: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'FinancialDocument';
@@ -29051,6 +29377,165 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ElectronicBallot: {
+            readonly fields: {
+              readonly closedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly closesAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdById: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly meetingId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly opensAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly meeting: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Meeting';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['meetingId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly votes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ElectronicVote';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['ballotId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'electronic_ballots';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly closedAt: { readonly column: 'closed_at' };
+                readonly closesAt: { readonly column: 'closes_at' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdById: { readonly column: 'created_by_id' };
+                readonly id: { readonly column: 'id' };
+                readonly meetingId: { readonly column: 'meeting_id' };
+                readonly opensAt: { readonly column: 'opens_at' };
+                readonly status: { readonly column: 'status' };
+              };
+            };
+          };
+          readonly ElectronicVote: {
+            readonly fields: {
+              readonly agendaItemId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ballotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly castAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly isInformal: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lotId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly profileId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly unitEntitlement: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly voteValue: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly ballot: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ElectronicBallot';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['ballotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'electronic_votes';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly agendaItemId: { readonly column: 'agenda_item_id' };
+                readonly ballotId: { readonly column: 'ballot_id' };
+                readonly castAt: { readonly column: 'cast_at' };
+                readonly id: { readonly column: 'id' };
+                readonly isInformal: { readonly column: 'is_informal' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly profileId: { readonly column: 'profile_id' };
+                readonly unitEntitlement: { readonly column: 'unit_entitlement' };
+                readonly voteValue: { readonly column: 'vote_value' };
+              };
+            };
+          };
           readonly FinancialDocument: {
             readonly fields: {
               readonly amount: {
@@ -31917,6 +32402,18 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['meetingId'];
                 };
               };
+              readonly electronicBallot: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ElectronicBallot';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['meetingId'];
+                };
+              };
               readonly events: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -34383,6 +34880,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly preMeetingEvotingAdopted: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly state: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -34931,6 +35432,9 @@ type ContractBase = Omit<
                 readonly paymentPlan: { readonly column: 'payment_plan' };
                 readonly planNumber: { readonly column: 'plan_number' };
                 readonly postcode: { readonly column: 'postcode' };
+                readonly preMeetingEvotingAdopted: {
+                  readonly column: 'pre_meeting_evoting_adopted';
+                };
                 readonly state: { readonly column: 'state' };
                 readonly suburb: { readonly column: 'suburb' };
                 readonly totalEntitlement: { readonly column: 'total_entitlement' };
