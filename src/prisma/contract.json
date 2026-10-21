@@ -192,6 +192,10 @@
       "model": "Meeting",
       "namespace": "public"
     },
+    "minutes": {
+      "model": "Minutes",
+      "namespace": "public"
+    },
     "motion_library_entries": {
       "model": "MotionLibraryEntry",
       "namespace": "public"
@@ -9897,6 +9901,21 @@
                   "namespace": "public"
                 }
               },
+              "minutes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "meetingId"
+                  ]
+                },
+                "to": {
+                  "model": "Minutes",
+                  "namespace": "public"
+                }
+              },
               "motions": {
                 "cardinality": "1:N",
                 "on": {
@@ -10344,6 +10363,164 @@
               },
               "namespaceId": "public",
               "table": "meeting_templates"
+            }
+          },
+          "Minutes": {
+            "fields": {
+              "confirmedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "confirmedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "content": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "distributedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "documentUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "meetingId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "preparedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "retentionUntil": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "state": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "version": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "meeting": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "meetingId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Meeting",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "confirmedAt": {
+                  "column": "confirmed_at"
+                },
+                "confirmedById": {
+                  "column": "confirmed_by_id"
+                },
+                "content": {
+                  "column": "content"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "distributedAt": {
+                  "column": "distributed_at"
+                },
+                "documentUrl": {
+                  "column": "document_url"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "meetingId": {
+                  "column": "meeting_id"
+                },
+                "preparedById": {
+                  "column": "prepared_by_id"
+                },
+                "retentionUntil": {
+                  "column": "retention_until"
+                },
+                "state": {
+                  "column": "state"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                },
+                "version": {
+                  "column": "version"
+                }
+              },
+              "namespaceId": "public",
+              "table": "minutes"
             }
           },
           "Motion": {
@@ -32154,6 +32331,130 @@
               },
               "uniques": []
             },
+            "minutes": {
+              "columns": {
+                "confirmed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "confirmed_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "content": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "distributed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "document_url": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "meeting_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "prepared_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "retention_until": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "state": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "DRAFT"
+                  },
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "version": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "minutes_meeting_id_version_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "meeting_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "minutes"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "meetings"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "meeting_id",
+                    "version"
+                  ],
+                  "name": "minutes_meeting_id_version_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "motion_library_entries": {
               "columns": {
                 "category": {
@@ -42212,10 +42513,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1bb630d0229c7f64ca8d119abd251bf6987ecc4e860bf811cfe77a4eeacdde1b"
+    "storageHash": "412ef9e9d895ea7cdfaa36d0102b88a20dc0f784244cf48d50717d9006f808c0"
   },
   "execution": {
-    "executionHash": "b59632f0addeda5afa91776e2417f0876857b437242bd214a00d40d9bad1c9df",
+    "executionHash": "df435e6d20f02e3f54aaeab646a5bad68c24c0ab6b249c8ff4ebf56de93c775a",
     "mutations": {
       "defaults": [
         {
@@ -42664,6 +42965,21 @@
           },
           "ref": {
             "entry": "meetings",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "minutes",
             "field": "updated_at",
             "namespace": "public"
           }

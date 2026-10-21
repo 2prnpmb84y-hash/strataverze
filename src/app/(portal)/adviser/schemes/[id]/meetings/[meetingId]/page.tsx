@@ -12,8 +12,11 @@ import { MotionSection } from "./motion-section";
 import { AgendaSection } from "./agenda-section";
 import { NoticeSection } from "./notice-section";
 import { ConductSection } from "./conduct-section";
+import { MinutesSection } from "./minutes-section";
 import { getAgendaItemsForMeeting } from "@/lib/queries/agenda";
 import { getNoticesForMeeting } from "@/lib/queries/notice";
+import { getMinutesForMeeting } from "@/lib/queries/minutes";
+import { minutesDistributionDeadline } from "@/lib/meetings/minutes";
 import {
   allowedCategoriesForMeetingType,
 } from "@/lib/meetings/agenda";
@@ -94,6 +97,47 @@ export default async function MeetingDetailPage({
       deliveryOutcome: r.deliveryOutcome,
     })),
   }));
+
+  // Minutes context
+  const minutesRows = await getMinutesForMeeting(meetingId);
+  const latestMinutes = minutesRows[0] ?? null;
+  const canAssembleMinutes =
+    meeting.status === "MINUTES_DRAFT" && latestMinutes == null;
+  const minutesBase = new Date(
+    String(meeting.closedAt ?? meeting.startTime ?? meeting.scheduledAt),
+  );
+  const minutesDue =
+    normalisedType != null
+      ? minutesDistributionDeadline(
+          ruleSet,
+          normalisedType as MeetingType,
+          minutesBase,
+        )
+      : null;
+  const minutesDeadlineView =
+    minutesDue != null
+      ? {
+          dueDate: minutesDue.toISOString(),
+          overdue:
+            new Date() > minutesDue && latestMinutes?.distributedAt == null,
+        }
+      : null;
+  const minutesView = latestMinutes
+    ? {
+        state: latestMinutes.state,
+        version: latestMinutes.version,
+        confirmedAt: latestMinutes.confirmedAt
+          ? String(latestMinutes.confirmedAt)
+          : null,
+        distributedAt: latestMinutes.distributedAt
+          ? String(latestMinutes.distributedAt)
+          : null,
+        retentionUntil: latestMinutes.retentionUntil
+          ? String(latestMinutes.retentionUntil)
+          : null,
+        content: (latestMinutes.content ?? {}) as Record<string, unknown>,
+      }
+    : null;
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
   const motionCount = meeting.motions.length;
@@ -199,6 +243,15 @@ export default async function MeetingDetailPage({
           title: a.title,
           outcome: a.outcome,
         }))}
+      />
+
+      {/* Minutes */}
+      <MinutesSection
+        schemeId={id}
+        meetingId={meetingId}
+        canAssemble={canAssembleMinutes}
+        minutes={minutesView}
+        deadline={minutesDeadlineView}
       />
 
       {/* Motions */}

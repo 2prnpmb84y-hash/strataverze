@@ -522,8 +522,31 @@ model Meeting {
   events         MeetingEvent[]
   appliedRuleSet AppliedRuleSet?
   notices        Notice[]
+  minutes        Minutes[]
 
   @@map("meetings")
+}
+
+// Meeting minutes. WORKING and DRAFT precede the CONFIRMED official record.
+model Minutes {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId      String    @map("meeting_id") @db.Uuid
+  version        Int       @default(1)
+  state          String    @default("DRAFT") // WORKING, DRAFT, CONFIRMED
+  content        Json
+  documentUrl    String?   @map("document_url")
+  preparedById   String?   @map("prepared_by_id") @db.Uuid
+  confirmedAt    DateTime? @db.Timestamptz @map("confirmed_at")
+  confirmedById  String?   @map("confirmed_by_id") @db.Uuid
+  distributedAt  DateTime? @db.Timestamptz @map("distributed_at")
+  retentionUntil DateTime? @db.Date @map("retention_until")
+  createdAt      DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, version])
+  @@map("minutes")
 }
 
 // A meeting notice issued to recipients. Re-issuing creates a new version.
