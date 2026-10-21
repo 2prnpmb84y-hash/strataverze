@@ -11,6 +11,7 @@ import { MeetingStatusButton } from "./meeting-status-button";
 import { MotionSection } from "./motion-section";
 import { AgendaSection } from "./agenda-section";
 import { NoticeSection } from "./notice-section";
+import { ConductSection } from "./conduct-section";
 import { getAgendaItemsForMeeting } from "@/lib/queries/agenda";
 import { getNoticesForMeeting } from "@/lib/queries/notice";
 import {
@@ -183,6 +184,21 @@ export default async function MeetingDetailPage({
         recipientCount={recipientCount}
         noticePeriod={noticePeriod}
         notices={noticeViews}
+      />
+
+      {/* Conduct */}
+      <ConductSection
+        schemeId={id}
+        meetingId={meetingId}
+        status={meeting.status}
+        openedAt={meeting.openedAt ? String(meeting.openedAt) : null}
+        closedAt={meeting.closedAt ? String(meeting.closedAt) : null}
+        items={agendaItems.map((a) => ({
+          id: a.id,
+          position: a.position,
+          title: a.title,
+          outcome: a.outcome,
+        }))}
       />
 
       {/* Motions */}

@@ -88,6 +88,8 @@ export async function updateMeeting(
     agenda: string | null;
     minutesUrl: string | null;
     status: string;
+    openedAt: string;
+    closedAt: string;
   }>,
 ) {
   const updateData: Record<string, unknown> = {};
@@ -98,6 +100,8 @@ export async function updateMeeting(
   if (data.agenda !== undefined) updateData.agenda = data.agenda;
   if (data.minutesUrl !== undefined) updateData.minutesUrl = data.minutesUrl;
   if (data.status !== undefined) updateData.status = data.status;
+  if (data.openedAt !== undefined) updateData.openedAt = toTimestamp(data.openedAt);
+  if (data.closedAt !== undefined) updateData.closedAt = toTimestamp(data.closedAt);
 
   return db.orm.public.Meeting.where({ id: meetingId }).update(updateData);
 }
