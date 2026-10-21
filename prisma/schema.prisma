@@ -141,6 +141,7 @@ model Scheme {
   debtCollection      Boolean             @default(false) @map("debt_collection")
   // Financial management fields
   gstRegistered       Boolean             @default(false) @map("gst_registered")
+  preMeetingEvotingAdopted Boolean        @default(false) @map("pre_meeting_evoting_adopted") // body resolved to adopt pre-meeting e-voting (Reg cl 14)
   interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // % p.a. for overdue levies
   defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
   organisationId      String?             @map("organisation_id") @db.Uuid
@@ -490,19 +491,244 @@ model Meeting {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId    String    @map("scheme_id") @db.Uuid
   title       String
-  meetingType String    @map("meeting_type") // AGM, SGM, COMMITTEE
+  meetingType String    @map("meeting_type") // AGM, EGM (legacy SGM), COMMITTEE, FIRST_AGM
   scheduledAt DateTime  @db.Timestamptz @map("scheduled_at")
   location    String?
-  agenda      String?
-  minutesUrl  String?   @map("minutes_url")
+  agenda      String?   // legacy free-text agenda; structured items live in AgendaItem
+  minutesUrl  String?   @map("minutes_url") // legacy minutes link; structured minutes come later
+  // Meeting-wizard status vocabulary (legacy default "SCHEDULED" retained for old rows):
+  // DRAFT, NOTICE_ISSUED, IN_PROGRESS, MINUTES_DRAFT, PUBLISHED, CANCELLED, ADJOURNED
   status      String    @default("SCHEDULED")
+  // Epic 0 setup fields (all nullable, additive)
+  timezone          String?   // IANA zone, e.g. Australia/Sydney
+  format            String?   // IN_PERSON, VIRTUAL, HYBRID
+  startTime         DateTime? @db.Timestamptz @map("start_time")
+  endTime           DateTime? @db.Timestamptz @map("end_time")
+  convenorId        String?   @map("convenor_id") @db.Uuid
+  chairpersonId     String?   @map("chairperson_id") @db.Uuid
+  financialPeriodId String?   @map("financial_period_id") @db.Uuid
+  joinUrl           String?   @map("join_url")
+  joinDetails       String?   @map("join_details")
+  cancelledReason   String?   @map("cancelled_reason")
+  openedAt          DateTime? @db.Timestamptz @map("opened_at")
+  closedAt          DateTime? @db.Timestamptz @map("closed_at")
+  quorumMet         Boolean?  @map("quorum_met")
   createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime  @updatedAt @db.Timestamptz @map("updated_at")
   deletedAt   DateTime? @db.Timestamptz @map("deleted_at")
 
-  scheme      Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  motions     Motion[]
+  scheme         Scheme          @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  motions        Motion[]
+  agendaItems    AgendaItem[]
+  events         MeetingEvent[]
+  appliedRuleSet AppliedRuleSet?
+  notices        Notice[]
+  minutes        Minutes[]
+  electronicBallot ElectronicBallot?
 
   @@map("meetings")
+}
+
+// A pre-meeting electronic ballot for a meeting (Reg cl 14-17).
+model ElectronicBallot {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId   String    @unique @map("meeting_id") @db.Uuid
+  status      String    @default("OPEN") // OPEN, CLOSED
+  opensAt     DateTime  @db.Timestamptz @map("opens_at")
+  closesAt    DateTime  @db.Timestamptz @map("closes_at")
+  createdById String?   @map("created_by_id") @db.Uuid
+  closedAt    DateTime? @db.Timestamptz @map("closed_at")
+  createdAt   DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  meeting Meeting          @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  votes   ElectronicVote[]
+
+  @@map("electronic_ballots")
+}
+
+// A single owner's electronic vote on an agenda item (secret-ballot capable).
+model ElectronicVote {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ballotId        String   @map("ballot_id") @db.Uuid
+  agendaItemId    String   @map("agenda_item_id") @db.Uuid
+  lotId           String?  @map("lot_id") @db.Uuid
+  profileId       String?  @map("profile_id") @db.Uuid
+  unitEntitlement Int      @default(0) @map("unit_entitlement")
+  voteValue       String   @map("vote_value") // FOR, AGAINST, ABSTAIN
+  isInformal      Boolean  @default(false) @map("is_informal")
+  castAt          DateTime @default(now()) @db.Timestamptz @map("cast_at")
+
+  ballot ElectronicBallot @relation(fields: [ballotId], references: [id], onDelete: Cascade)
+
+  @@unique([ballotId, agendaItemId, lotId])
+  @@index([ballotId, agendaItemId])
+  @@map("electronic_votes")
+}
+
+// Meeting minutes. WORKING and DRAFT precede the CONFIRMED official record.
+model Minutes {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId      String    @map("meeting_id") @db.Uuid
+  version        Int       @default(1)
+  state          String    @default("DRAFT") // WORKING, DRAFT, CONFIRMED
+  content        Json
+  documentUrl    String?   @map("document_url")
+  preparedById   String?   @map("prepared_by_id") @db.Uuid
+  confirmedAt    DateTime? @db.Timestamptz @map("confirmed_at")
+  confirmedById  String?   @map("confirmed_by_id") @db.Uuid
+  distributedAt  DateTime? @db.Timestamptz @map("distributed_at")
+  retentionUntil DateTime? @db.Date @map("retention_until")
+  createdAt      DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, version])
+  @@map("minutes")
+}
+
+// A meeting notice issued to recipients. Re-issuing creates a new version.
+model Notice {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId        String   @map("meeting_id") @db.Uuid
+  version          Int      @default(1)
+  status           String   @default("ISSUED") // ISSUED, SUPERSEDED
+  issuedById       String?  @map("issued_by_id") @db.Uuid
+  issuedAt         DateTime @default(now()) @db.Timestamptz @map("issued_at")
+  noticePeriodDays Int?     @map("notice_period_days")
+  compliant        Boolean  @default(true)
+  content          Json
+  documentUrl      String?  @map("document_url")
+  createdAt        DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  meeting    Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  recipients NoticeRecipient[]
+
+  @@index([meetingId, version])
+  @@map("notices")
+}
+
+// A recorded recipient of a notice and the delivery outcome.
+model NoticeRecipient {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  noticeId        String    @map("notice_id") @db.Uuid
+  lotId           String?   @map("lot_id") @db.Uuid
+  profileId       String?   @map("profile_id") @db.Uuid
+  name            String?
+  email           String?
+  method          String    @default("EMAIL")
+  sentAt          DateTime? @db.Timestamptz @map("sent_at")
+  deliveryOutcome String    @default("PENDING") @map("delivery_outcome") // PENDING, SENT, DELIVERED, BOUNCED, SERVED
+  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  notice Notice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+
+  @@index([noticeId])
+  @@map("notice_recipients")
+}
+
+// Structured agenda item (replaces the single free-text agenda column going forward).
+model AgendaItem {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId            String   @map("meeting_id") @db.Uuid
+  position             Int
+  title                String
+  resolutionText       String?  @map("resolution_text")
+  explanatoryNote      String?  @map("explanatory_note")
+  resolutionCategory   String?  @map("resolution_category") // ORDINARY, SPECIAL, UNANIMOUS, SUSTAINABILITY_INFRASTRUCTURE
+  submitterId          String?  @map("submitter_id") @db.Uuid
+  motionLibraryEntryId String?  @map("motion_library_entry_id") @db.Uuid
+  outcome              String?  // RESOLVED, MOTION_LOST, DEFERRED
+  status               String   @default("PENDING") // PENDING, CARRIED, LOST, DEFERRED
+  createdAt            DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt           DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, position])
+  @@map("agenda_items")
+}
+
+// Reusable agenda template for a meeting type and jurisdiction (rules-layer data).
+model MeetingTemplate {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  state           String   // NSW
+  meetingType     String   @map("meeting_type")
+  name            String
+  items           Json     // ordered mandatory items: [{title, resolutionText, explanatoryNote, resolutionCategory}]
+  ruleSetVersion  String?  @map("rule_set_version")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt       DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@unique([state, meetingType, name])
+  @@map("meeting_templates")
+}
+
+// Pre-written motion for the motion library (rules-layer data).
+model MotionLibraryEntry {
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  state                     String   // NSW
+  meetingType               String?  @map("meeting_type") // null = any
+  category                  String
+  title                     String
+  resolutionText            String   @map("resolution_text")
+  explanatoryNote           String?  @map("explanatory_note")
+  defaultResolutionCategory String?  @map("default_resolution_category")
+  placeholders              Json?    // token -> description
+  isActive                  Boolean  @default(true) @map("is_active")
+  createdAt                 DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt                 DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@map("motion_library_entries")
+}
+
+// Versioned jurisdiction rule set. Legislative deadlines and thresholds live here as data, not in code.
+model MeetingRuleSet {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  state                String   // NSW
+  version              String
+  effectiveFrom        DateTime @db.Date @map("effective_from")
+  noticePeriods        Json     @map("notice_periods")        // { AGM: 14, EGM: 7, COMMITTEE: 3, FIRST_AGM: 14 } days
+  minutesDeadlines     Json     @map("minutes_deadlines")     // { AGM: 7, EGM: 7, COMMITTEE: 7 } days
+  quorumRules          Json     @map("quorum_rules")
+  resolutionCategories Json     @map("resolution_categories")
+  retention            Json
+  notes                String?
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@unique([state, version])
+  @@map("meeting_rule_sets")
+}
+
+// Immutable snapshot of the rule set that governed a specific meeting.
+model AppliedRuleSet {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId       String   @unique @map("meeting_id") @db.Uuid
+  ruleSetState    String   @map("rule_set_state")
+  ruleSetVersion  String   @map("rule_set_version")
+  snapshot        Json
+  appliedAt       DateTime @default(now()) @db.Timestamptz @map("applied_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@map("applied_rule_sets")
+}
+
+// Append-only audit log of changes during a meeting.
+model MeetingEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId String   @map("meeting_id") @db.Uuid
+  actorId   String?  @map("actor_id") @db.Uuid
+  eventType String   @map("event_type")
+  payload   Json?
+  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, createdAt])
+  @@map("meeting_events")
 }
 
 model Motion {

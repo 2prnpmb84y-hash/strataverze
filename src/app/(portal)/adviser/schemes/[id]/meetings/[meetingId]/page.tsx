@@ -9,6 +9,24 @@ import { MeetingForm } from "../meeting-form";
 import { DeleteMeetingButton } from "./delete-meeting-button";
 import { MeetingStatusButton } from "./meeting-status-button";
 import { MotionSection } from "./motion-section";
+import { AgendaSection } from "./agenda-section";
+import { NoticeSection } from "./notice-section";
+import { ConductSection } from "./conduct-section";
+import { MinutesSection } from "./minutes-section";
+import { EvotingSection } from "./evoting-section";
+import { getAgendaItemsForMeeting } from "@/lib/queries/agenda";
+import { getNoticesForMeeting } from "@/lib/queries/notice";
+import { getMinutesForMeeting } from "@/lib/queries/minutes";
+import { getBallotForMeeting } from "@/lib/queries/evoting";
+import { minutesDistributionDeadline } from "@/lib/meetings/minutes";
+import {
+  allowedCategoriesForMeetingType,
+} from "@/lib/meetings/agenda";
+import { normaliseMeetingType } from "@/lib/meetings/setup";
+import { getMotionLibrary, getAgendaTemplate } from "@/lib/meetings/templates";
+import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
+import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
+import { canTransition } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
 
 export default async function MeetingDetailPage({
@@ -31,6 +49,113 @@ export default async function MeetingDetailPage({
 
   const meeting = await getMeetingById(meetingId);
   if (!meeting || meeting.schemeId !== id) notFound();
+
+  const agendaItems = await getAgendaItemsForMeeting(meetingId);
+  const normalisedType = normaliseMeetingType(meeting.meetingType);
+  const motionLibrary = getMotionLibrary(
+    scheme.state,
+    normalisedType ?? undefined,
+  ).map((m) => ({
+    key: m.key,
+    title: m.title,
+    defaultResolutionCategory: m.defaultResolutionCategory,
+  }));
+  const allowedCategories = allowedCategoriesForMeetingType(
+    meeting.meetingType,
+  );
+  const canLoadTemplate = normalisedType
+    ? getAgendaTemplate(scheme.state, normalisedType).length > 0
+    : false;
+  const agendaEditable =
+    meeting.status === "DRAFT" || meeting.status === "SCHEDULED";
+
+  // Notice context
+  const notices = await getNoticesForMeeting(meetingId);
+  const ruleSet = await getActiveRuleSet(scheme.state);
+  const startIso = String(meeting.startTime ?? meeting.scheduledAt);
+  const noticePeriod =
+    normalisedType != null
+      ? validateNoticePeriod(
+          ruleSet,
+          normalisedType as MeetingType,
+          new Date(),
+          new Date(startIso),
+        )
+      : null;
+  const recipientCount = scheme.memberships.filter(
+    (m) => m.profile?.email,
+  ).length;
+  const canIssueNotice =
+    agendaItems.length > 0 && canTransition(meeting.status, "NOTICE_ISSUED");
+  const noticeViews = notices.map((n) => ({
+    id: n.id,
+    version: n.version,
+    status: n.status,
+    issuedAt: String(n.issuedAt),
+    compliant: n.compliant,
+    recipients: n.recipients.map((r) => ({
+      name: r.name,
+      email: r.email,
+      deliveryOutcome: r.deliveryOutcome,
+    })),
+  }));
+
+  // Minutes context
+  const minutesRows = await getMinutesForMeeting(meetingId);
+  const latestMinutes = minutesRows[0] ?? null;
+  const canAssembleMinutes =
+    meeting.status === "MINUTES_DRAFT" && latestMinutes == null;
+  const minutesBase = new Date(
+    String(meeting.closedAt ?? meeting.startTime ?? meeting.scheduledAt),
+  );
+  const minutesDue =
+    normalisedType != null
+      ? minutesDistributionDeadline(
+          ruleSet,
+          normalisedType as MeetingType,
+          minutesBase,
+        )
+      : null;
+  const minutesDeadlineView =
+    minutesDue != null
+      ? {
+          dueDate: minutesDue.toISOString(),
+          overdue:
+            new Date() > minutesDue && latestMinutes?.distributedAt == null,
+        }
+      : null;
+  const minutesView = latestMinutes
+    ? {
+        state: latestMinutes.state,
+        version: latestMinutes.version,
+        confirmedAt: latestMinutes.confirmedAt
+          ? String(latestMinutes.confirmedAt)
+          : null,
+        distributedAt: latestMinutes.distributedAt
+          ? String(latestMinutes.distributedAt)
+          : null,
+        retentionUntil: latestMinutes.retentionUntil
+          ? String(latestMinutes.retentionUntil)
+          : null,
+        content: (latestMinutes.content ?? {}) as Record<string, unknown>,
+      }
+    : null;
+
+  // E-voting context
+  const ballot = await getBallotForMeeting(meetingId);
+  const ballotView = ballot
+    ? {
+        status: ballot.status,
+        opensAt: String(ballot.opensAt),
+        closesAt: String(ballot.closesAt),
+        voteCount: ballot.votes.length,
+      }
+    : null;
+  const canOpenBallot =
+    scheme.preMeetingEvotingAdopted &&
+    agendaItems.length > 0 &&
+    (meeting.status === "NOTICE_ISSUED" || meeting.status === "DRAFT") &&
+    ballot == null;
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
   const motionCount = meeting.motions.length;
@@ -93,6 +218,68 @@ export default async function MeetingDetailPage({
           </div>
         </Card>
       )}
+
+      {/* Structured agenda */}
+      <AgendaSection
+        schemeId={id}
+        meetingId={meetingId}
+        items={agendaItems.map((a) => ({
+          id: a.id,
+          position: a.position,
+          title: a.title,
+          resolutionText: a.resolutionText,
+          explanatoryNote: a.explanatoryNote,
+          resolutionCategory: a.resolutionCategory,
+        }))}
+        motionLibrary={motionLibrary}
+        allowedCategories={allowedCategories}
+        canLoadTemplate={canLoadTemplate}
+        editable={agendaEditable}
+      />
+
+      {/* Notice */}
+      <NoticeSection
+        schemeId={id}
+        meetingId={meetingId}
+        canIssue={canIssueNotice}
+        agendaItemCount={agendaItems.length}
+        recipientCount={recipientCount}
+        noticePeriod={noticePeriod}
+        notices={noticeViews}
+      />
+
+      {/* Pre-meeting electronic voting */}
+      <EvotingSection
+        schemeId={id}
+        meetingId={meetingId}
+        adopted={scheme.preMeetingEvotingAdopted}
+        canOpen={canOpenBallot}
+        ballot={ballotView}
+      />
+
+      {/* Conduct */}
+      <ConductSection
+        schemeId={id}
+        meetingId={meetingId}
+        status={meeting.status}
+        openedAt={meeting.openedAt ? String(meeting.openedAt) : null}
+        closedAt={meeting.closedAt ? String(meeting.closedAt) : null}
+        items={agendaItems.map((a) => ({
+          id: a.id,
+          position: a.position,
+          title: a.title,
+          outcome: a.outcome,
+        }))}
+      />
+
+      {/* Minutes */}
+      <MinutesSection
+        schemeId={id}
+        meetingId={meetingId}
+        canAssemble={canAssembleMinutes}
+        minutes={minutesView}
+        deadline={minutesDeadlineView}
+      />
 
       {/* Motions */}
       <MotionSection

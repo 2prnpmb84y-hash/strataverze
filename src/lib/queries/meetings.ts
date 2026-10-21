@@ -44,6 +44,16 @@ export async function createMeeting(data: {
   scheduledAt: string;
   location?: string;
   agenda?: string;
+  status?: string;
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
+  format?: string;
+  convenorId?: string;
+  chairpersonId?: string;
+  financialPeriodId?: string;
+  joinUrl?: string;
+  joinDetails?: string;
 }) {
   return db.orm.public.Meeting.create({
     schemeId: data.schemeId,
@@ -52,7 +62,16 @@ export async function createMeeting(data: {
     scheduledAt: toTimestamp(data.scheduledAt),
     location: data.location ?? null,
     agenda: data.agenda ?? null,
-    status: "SCHEDULED",
+    status: data.status ?? "SCHEDULED",
+    startTime: data.startTime ? toTimestamp(data.startTime) : null,
+    endTime: data.endTime ? toTimestamp(data.endTime) : null,
+    timezone: data.timezone ?? null,
+    format: data.format ?? null,
+    convenorId: data.convenorId ?? null,
+    chairpersonId: data.chairpersonId ?? null,
+    financialPeriodId: data.financialPeriodId ?? null,
+    joinUrl: data.joinUrl ?? null,
+    joinDetails: data.joinDetails ?? null,
   });
 }
 
@@ -69,6 +88,8 @@ export async function updateMeeting(
     agenda: string | null;
     minutesUrl: string | null;
     status: string;
+    openedAt: string;
+    closedAt: string;
   }>,
 ) {
   const updateData: Record<string, unknown> = {};
@@ -79,6 +100,8 @@ export async function updateMeeting(
   if (data.agenda !== undefined) updateData.agenda = data.agenda;
   if (data.minutesUrl !== undefined) updateData.minutesUrl = data.minutesUrl;
   if (data.status !== undefined) updateData.status = data.status;
+  if (data.openedAt !== undefined) updateData.openedAt = toTimestamp(data.openedAt);
+  if (data.closedAt !== undefined) updateData.closedAt = toTimestamp(data.closedAt);
 
   return db.orm.public.Meeting.where({ id: meetingId }).update(updateData);
 }

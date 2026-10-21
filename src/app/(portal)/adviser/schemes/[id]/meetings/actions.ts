@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import {
-  createMeeting,
   updateMeeting,
   deleteMeeting,
 } from "@/lib/queries/meetings";
@@ -15,15 +14,26 @@ import {
   castVote,
 } from "@/lib/queries/motions";
 import { logActivity } from "@/lib/queries/activity-log";
-import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
+import {
+  getSchemeNameById,
+  getMemberEmailsForScheme,
+  getSchemeById,
+} from "@/lib/queries/schemes";
 import { notifyMeetingScheduled } from "@/lib/notifications";
+import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
+import {
+  validateMeetingSetup,
+  createMeetingWithRuleSnapshot,
+  DEFAULT_TIMEZONE,
+  type MeetingSetupInput,
+} from "@/lib/meetings/setup";
 
 export type MeetingFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
 };
 
-const MEETING_TYPES = ["AGM", "SGM", "COMMITTEE"];
+const MEETING_TYPES = ["AGM", "EGM", "SGM", "COMMITTEE", "FIRST_AGM"];
 const MOTION_TYPES = ["ORDINARY", "SPECIAL", "UNANIMOUS"];
 
 function validateMeetingForm(formData: FormData) {
@@ -51,6 +61,12 @@ function validateMeetingForm(formData: FormData) {
   };
 }
 
+function toIso(value: FormDataEntryValue | null): string {
+  if (!value) return "";
+  const d = new Date(value as string);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
 export async function createMeetingAction(
   schemeId: string,
   _prev: MeetingFormState,
@@ -59,10 +75,32 @@ export async function createMeetingAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    const { errors, isValid, data } = validateMeetingForm(formData);
-    if (!isValid) return { fieldErrors: errors };
+    const scheme = await getSchemeById(schemeId);
+    if (!scheme) return { error: "Scheme not found." };
 
-    const meeting = await createMeeting({ ...data, schemeId });
+    const endRaw = formData.get("endTime");
+    const input: MeetingSetupInput = {
+      schemeId,
+      title: ((formData.get("title") as string) ?? "").trim(),
+      meetingType: (formData.get("meetingType") as string) ?? "AGM",
+      startTime: toIso(formData.get("scheduledAt")),
+      endTime: endRaw ? toIso(endRaw) : null,
+      timezone: (formData.get("timezone") as string) || DEFAULT_TIMEZONE,
+      format: (formData.get("format") as string) || null,
+      location: ((formData.get("location") as string) ?? "").trim() || null,
+      joinUrl: ((formData.get("joinUrl") as string) ?? "").trim() || null,
+      joinDetails:
+        ((formData.get("joinDetails") as string) ?? "").trim() || null,
+    };
+
+    const ruleSet = await getActiveRuleSet(scheme.state);
+    const { errors } = validateMeetingSetup(input, ruleSet);
+    if (Object.keys(errors).length > 0) return { fieldErrors: errors };
+
+    const meeting = await createMeetingWithRuleSnapshot(input, {
+      state: scheme.state,
+      actorId: profile.id,
+    });
 
     await logActivity({
       schemeId,
@@ -70,7 +108,7 @@ export async function createMeetingAction(
       action: "MEETING_SCHEDULED",
       entityType: "Meeting",
       entityId: meeting.id,
-      metadata: { title: data.title, meetingType: data.meetingType },
+      metadata: { title: input.title, meetingType: input.meetingType },
     });
 
     // Send email notification to all scheme members (non-blocking)
@@ -80,10 +118,10 @@ export async function createMeetingAction(
     notifyMeetingScheduled({
       recipientEmails: memberEmails,
       schemeName,
-      meetingTitle: data.title,
-      meetingType: data.meetingType,
-      scheduledAt: new Date(data.scheduledAt),
-      location: data.location,
+      meetingTitle: input.title,
+      meetingType: input.meetingType,
+      scheduledAt: new Date(input.startTime),
+      location: input.location ?? undefined,
       meetingId: meeting.id,
     }).catch(() => {});
 
