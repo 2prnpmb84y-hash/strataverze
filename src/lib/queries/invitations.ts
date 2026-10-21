@@ -78,10 +78,24 @@ export async function getInvitationById(invitationId: string) {
 export async function acceptInvitation(
   invitationId: string,
   profileId: string,
+  userEmail: string,
 ) {
   // Get the invitation details first (outside transaction is fine)
   const invitation = await db.orm.public.Invitation.first({ id: invitationId });
   if (!invitation) return { error: "Invitation not found." };
+
+  // Verify the current user's email matches the invitation recipient
+  if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
+    return { error: "This invitation was sent to a different email address." };
+  }
+
+  // Check invitation is still pending and not expired
+  if (invitation.status !== "PENDING") {
+    return { error: "This invitation is no longer pending." };
+  }
+  if (invitation.expiresAt && new Date(String(invitation.expiresAt)) < new Date()) {
+    return { error: "This invitation has expired." };
+  }
 
   // Check if membership already exists
   const existing = await db.orm.public.SchemeMembership

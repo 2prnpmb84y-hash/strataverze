@@ -57,6 +57,9 @@ export default async function OwnerStatementPage({
   }
 
   let statementLines: StatementLine[] = [];
+  // TODO(MEDIUM-07): Calculate opening balance from journal entries prior to
+  // the statement period start date. Currently hardcoded to 0 — accurate only
+  // when the statement covers the full history from scheme inception.
   const openingBalance = 0;
   let totalCharges = 0;
   let totalPayments = 0;

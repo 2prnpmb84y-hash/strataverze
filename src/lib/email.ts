@@ -19,7 +19,7 @@ type SendEmailParams = {
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
   if (!process.env.RESEND_API_KEY) {
     console.log(
-      `[email] Skipping email (no RESEND_API_KEY): to=${Array.isArray(to) ? to.join(", ") : to}, subject=${subject}`,
+      `[email] Skipping email (no RESEND_API_KEY): recipients=${Array.isArray(to) ? to.length : 1}, subject="${subject}"`,
     );
     return;
   }

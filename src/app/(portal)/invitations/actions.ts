@@ -33,7 +33,7 @@ export async function acceptInvitationAction(invitationId: string) {
       };
     }
 
-    const result = await acceptInvitation(invitationId, profile.id);
+    const result = await acceptInvitation(invitationId, profile.id, profileEmail);
     if (result.error) return { error: result.error };
 
     await logActivity({

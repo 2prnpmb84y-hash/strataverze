@@ -6,10 +6,24 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { authRateLimit } from "@/lib/auth/rate-limit";
 
+/** Basic email format check — prevents obviously invalid submissions. */
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
+}
+
 export async function login(formData: FormData) {
   const headersList = await headers();
   const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const email = String(formData.get("email"));
+  const email = String(formData.get("email")).trim().toLowerCase();
+
+  if (!isValidEmail(email)) {
+    redirect("/login?error=Please+enter+a+valid+email+address.");
+  }
+
+  const password = String(formData.get("password"));
+  if (!password || password.length < 6) {
+    redirect("/login?error=Please+enter+your+password.");
+  }
 
   const limit = authRateLimit(`login:${ip}:${email}`);
   if (!limit.success) {
@@ -20,7 +34,7 @@ export async function login(formData: FormData) {
 
   const data = {
     email,
-    password: String(formData.get("password")),
+    password,
   };
 
   const { error } = await supabase.auth.signInWithPassword(data);
@@ -63,7 +77,11 @@ function validatePassword(password: string): string | null {
 export async function signup(formData: FormData) {
   const headersList = await headers();
   const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const email = String(formData.get("email"));
+  const email = String(formData.get("email")).trim().toLowerCase();
+
+  if (!isValidEmail(email)) {
+    redirect("/login?error=Please+enter+a+valid+email+address.");
+  }
 
   const limit = authRateLimit(`signup:${ip}:${email}`);
   if (!limit.success) {

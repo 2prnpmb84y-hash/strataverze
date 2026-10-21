@@ -8,7 +8,7 @@ import { levyIssuedEmail } from "@/lib/email-templates/levy";
 import { meetingScheduledEmail } from "@/lib/email-templates/meeting";
 import { announcementPublishedEmail } from "@/lib/email-templates/announcement";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://strataverze.com.au";
+const APP_URL = process.env.APP_URL ?? "https://strataverze.com.au";
 
 // ─── Invitations ────────────────────────────────────────────────
 

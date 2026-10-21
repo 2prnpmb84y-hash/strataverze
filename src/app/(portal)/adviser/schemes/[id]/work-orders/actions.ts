@@ -86,7 +86,7 @@ export async function createWorkOrderAction(
       schemeName,
       raisedByName,
       priority,
-      portalPath: `/adviser/schemes/${schemeId}/work-orders`,
+      portalPath: "/owner/maintenance",
     }).catch(() => {});
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
@@ -188,7 +188,7 @@ export async function updateWorkOrderStatusAction(
         schemeName,
         status,
         updatedByName,
-        portalPath: `/adviser/schemes/${schemeId}/work-orders`,
+        portalPath: "/owner/maintenance",
       }).catch(() => {});
     }
 

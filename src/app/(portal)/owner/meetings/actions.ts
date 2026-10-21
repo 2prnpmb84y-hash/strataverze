@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
-import { castVote } from "@/lib/queries/motions";
+import { castVote, getMotionById } from "@/lib/queries/motions";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 export async function castVoteAction(motionId: string, voteValue: string) {
   let profile;
@@ -19,6 +21,26 @@ export async function castVoteAction(motionId: string, voteValue: string) {
   }
 
   try {
+    // Verify the motion exists and the voter has membership on its scheme
+    const motion = await getMotionById(motionId);
+    if (!motion) {
+      return { error: "Motion not found." };
+    }
+
+    const membership = await db.orm.public.SchemeMembership
+      .where((m) =>
+        and(
+          m.schemeId.eq(motion.schemeId),
+          m.profileId.eq(profile.id),
+          m.isActive.eq(true),
+        ),
+      )
+      .first();
+
+    if (!membership) {
+      return { error: "You do not have permission to vote on this motion." };
+    }
+
     await castVote({
       motionId,
       profileId: profile.id,

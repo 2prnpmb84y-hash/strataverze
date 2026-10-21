@@ -12,6 +12,8 @@ import {
   removeOwnerFromLot,
 } from "@/lib/queries/lots";
 import { logActivity } from "@/lib/queries/activity-log";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 export type LotFormState = {
   error?: string;
@@ -174,6 +176,21 @@ export async function removeOwnerAction(
 ) {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    // Verify the membership belongs to this scheme before removing
+    const target = await db.orm.public.SchemeMembership
+      .where((m) =>
+        and(
+          m.id.eq(membershipId),
+          m.schemeId.eq(schemeId),
+          m.lotId.eq(lotId),
+        ),
+      )
+      .first();
+
+    if (!target) {
+      return { error: "Membership not found on this scheme." };
+    }
 
     await removeOwnerFromLot(membershipId);
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);

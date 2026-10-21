@@ -13,6 +13,54 @@ function toTimestamp(value: string): TimestampString<3> {
 }
 
 /**
+ * Apportion a total amount across lots by entitlement using the
+ * largest-remainder method so that rounded cent values always sum
+ * exactly to `totalAmount`.
+ *
+ * 1. Floor each lot's share to the cent.
+ * 2. Calculate the shortfall (total minus sum of floored values).
+ * 3. Award one extra cent to the lots whose fractional remainders
+ *    are largest, until the shortfall is zero.
+ */
+function apportionByEntitlement(
+  lots: Array<{ id: string; entitlement: number }>,
+  totalEntitlement: number,
+  totalAmount: number,
+): Array<{ lotId: string; amount: number }> {
+  if (totalEntitlement <= 0 || lots.length === 0) {
+    return lots.map((lot) => ({ lotId: lot.id, amount: 0 }));
+  }
+
+  // Calculate exact shares in cents, then floor
+  const items = lots.map((lot) => {
+    const exactCents = (lot.entitlement / totalEntitlement) * totalAmount * 100;
+    const flooredCents = Math.floor(exactCents);
+    return {
+      lotId: lot.id,
+      flooredCents,
+      remainder: exactCents - flooredCents,
+    };
+  });
+
+  const totalCents = Math.round(totalAmount * 100);
+  const flooredSum = items.reduce((sum, i) => sum + i.flooredCents, 0);
+  let shortfall = totalCents - flooredSum;
+
+  // Sort by remainder descending; award one extra cent to each until shortfall is zero
+  const sorted = [...items].sort((a, b) => b.remainder - a.remainder);
+  for (const item of sorted) {
+    if (shortfall <= 0) break;
+    item.flooredCents += 1;
+    shortfall -= 1;
+  }
+
+  return items.map((i) => ({
+    lotId: i.lotId,
+    amount: i.flooredCents / 100,
+  }));
+}
+
+/**
  * Fetch all levies for a scheme, newest first.
  */
 export async function getLeviesForScheme(schemeId: string, limit = 200) {
@@ -56,6 +104,7 @@ export async function createLevy(data: {
     .all();
 
   const totalEntitlement = lots.reduce((sum, lot) => sum + lot.entitlement, 0);
+  const shares = apportionByEntitlement(lots, totalEntitlement, data.totalAmount);
 
   return db.transaction(async (tx) => {
     // Create the levy
@@ -69,17 +118,12 @@ export async function createLevy(data: {
       status: "DRAFT",
     });
 
-    // Create a line item per lot, proportional to entitlement
-    for (const lot of lots) {
-      const share = totalEntitlement > 0
-        ? (lot.entitlement / totalEntitlement) * data.totalAmount
-        : 0;
-      const amount = Math.round(share * 100) / 100; // round to cents
-
+    // Create a line item per lot using pre-apportioned amounts
+    for (const share of shares) {
       await tx.orm.public.LevyItem.create({
         levyId: levy.id,
-        lotId: lot.id,
-        amount: toNumeric(amount),
+        lotId: share.lotId,
+        amount: toNumeric(share.amount),
         paidAmount: toNumeric(0),
         status: "UNPAID",
       });
@@ -117,6 +161,8 @@ export async function createLeviesBatch(
     const createdLevies = [];
 
     for (const data of items) {
+      const shares = apportionByEntitlement(lots, totalEntitlement, data.totalAmount);
+
       const levy = await tx.orm.public.Levy.create({
         schemeId: data.schemeId,
         title: data.title,
@@ -127,15 +173,12 @@ export async function createLeviesBatch(
         status: "DRAFT",
       });
 
-      for (const lot of lots) {
-        const share = totalEntitlement > 0
-          ? (lot.entitlement / totalEntitlement) * data.totalAmount
-          : 0;
-        const amount = Math.round(share * 100) / 100;
+      for (const share of shares) {
+        const amount = share.amount;
 
         await tx.orm.public.LevyItem.create({
           levyId: levy.id,
-          lotId: lot.id,
+          lotId: share.lotId,
           amount: toNumeric(amount),
           paidAmount: toNumeric(0),
           status: "UNPAID",

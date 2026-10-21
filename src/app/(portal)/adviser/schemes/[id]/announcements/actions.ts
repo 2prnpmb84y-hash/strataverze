@@ -71,7 +71,7 @@ export async function createAnnouncementAction(
         body,
         priority,
         authorName,
-        portalPath: `/adviser/schemes/${schemeId}/announcements`,
+        portalPath: "/owner/announcements",
         announcementId: announcement.id,
       }).catch(() => {});
     }

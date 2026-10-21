@@ -2,14 +2,15 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Generate a short-lived signed URL for a document in Supabase Storage.
- * Falls back to the raw URL if signing fails (e.g. if the bucket is public).
+ * Throws if signing fails so that callers never silently fall back to a
+ * publicly accessible URL.
  *
  * @param storagePath - The path within the "documents" bucket
- * @param expiresIn  - Lifetime in seconds (default 60 = 1 minute)
+ * @param expiresIn  - Lifetime in seconds (default 3600 = 1 hour)
  */
 export async function getSignedDocumentUrl(
   storagePath: string,
-  expiresIn = 60,
+  expiresIn = 3600,
 ): Promise<string> {
   const supabase = await createClient();
 
@@ -18,11 +19,8 @@ export async function getSignedDocumentUrl(
     .createSignedUrl(storagePath, expiresIn);
 
   if (error || !data?.signedUrl) {
-    // Fall back to public URL if signing fails
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("documents").getPublicUrl(storagePath);
-    return publicUrl;
+    console.error("Failed to create signed URL for document:", storagePath, error?.message);
+    throw new Error("Could not generate a secure download link for this document.");
   }
 
   return data.signedUrl;
