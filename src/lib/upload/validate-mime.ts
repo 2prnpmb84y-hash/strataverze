@@ -59,7 +59,7 @@ export function validateFileUpload(file: File): string | null {
     return `File type ".${ext}" is not allowed. Accepted formats: PDF, Word, Excel, PowerPoint, text, CSV, and common image formats.`;
   }
 
-  if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
+  if (!file.type || !ALLOWED_MIME_TYPES.has(file.type)) {
     return "This file type is not permitted. Please upload a document or image file.";
   }
 

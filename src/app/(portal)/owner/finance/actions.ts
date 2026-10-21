@@ -21,6 +21,18 @@ function toNumeric(value: number): Numeric<12, 2> {
 
 type ActionState = { error?: string; success?: boolean; data?: Record<string, unknown> };
 
+/** Allowed MIME types for payment confirmation uploads. */
+const PAYMENT_ALLOWED_MIME = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/heic",
+]);
+
+/** Allowed file extensions for payment confirmation uploads. */
+const PAYMENT_ALLOWED_EXT = new Set(["pdf", "png", "jpg", "jpeg", "heic"]);
+
 /**
  * Upload a payment confirmation document for an owner's levy notice.
  */
@@ -41,6 +53,19 @@ export async function uploadPaymentConfirmationAction(
   try {
     const profile = await getCurrentProfile();
     if (!profile) return { error: "Not authenticated." };
+
+    // Server-side file validation
+    const ext = data.fileName.split(".").pop()?.toLowerCase() ?? "";
+    if (!PAYMENT_ALLOWED_EXT.has(ext)) {
+      return { error: `File type ".${ext}" is not allowed. Accepted: PDF, PNG, JPG, HEIC.` };
+    }
+    if (!data.mimeType || !PAYMENT_ALLOWED_MIME.has(data.mimeType)) {
+      return { error: "This file type is not permitted. Please upload a PDF or image file." };
+    }
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    if (data.fileSize > MAX_FILE_SIZE) {
+      return { error: "File size exceeds the 10 MB limit." };
+    }
 
     // Verify the owner belongs to this scheme
     const schemes = await getSchemesForOwner(profile.id);

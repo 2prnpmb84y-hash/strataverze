@@ -5,11 +5,37 @@ import { NextResponse, type NextRequest } from "next/server";
  * Next.js Proxy (formerly middleware) for StrataVerze.
  *
  * Responsibilities:
- * 1. Refresh the Supabase auth session on every matched request so
+ * 1. Set a per-request nonce-based Content-Security-Policy header.
+ * 2. Refresh the Supabase auth session on every matched request so
  *    server components always see a fresh token.
- * 2. Redirect unauthenticated visitors away from portal routes.
- * 3. Redirect authenticated visitors away from auth pages.
+ * 3. Redirect unauthenticated visitors away from portal routes.
+ * 4. Redirect authenticated visitors away from auth pages.
  */
+
+const SUPABASE_HOST = "vtqovzfywfrizjufsrmj.supabase.co";
+
+/**
+ * Build the Content-Security-Policy header value for a given nonce.
+ * In development mode, unsafe-eval is permitted for React dev tooling
+ * and unsafe-inline is added for styles that hot-reload injects.
+ */
+function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === "development";
+
+  const directives = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com${isDev ? " 'unsafe-inline'" : ""}`,
+    "font-src 'self' https://fonts.gstatic.com",
+    `img-src 'self' data: blob: https://${SUPABASE_HOST}`,
+    `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST}`,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ];
+
+  return directives.join("; ");
+}
 
 const protectedPrefixes = [
   "/owner",
@@ -29,6 +55,15 @@ const authRoutes = new Set([
 ]);
 
 export async function proxy(request: NextRequest) {
+  // Generate a per-request nonce for CSP
+  const nonce = crypto.randomUUID();
+  const cspHeaderValue = buildCsp(nonce);
+
+  // Set the nonce on the request so Next.js can auto-apply it to
+  // framework-injected scripts and styles.
+  request.headers.set("x-nonce", nonce);
+  request.headers.set("Content-Security-Policy", cspHeaderValue);
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -85,6 +120,10 @@ export async function proxy(request: NextRequest) {
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
+
+  // Apply CSP header to the response
+  supabaseResponse.headers.set("Content-Security-Policy", cspHeaderValue);
+  supabaseResponse.headers.set("x-nonce", nonce);
 
   return supabaseResponse;
 }
