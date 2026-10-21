@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { MeetingForm } from "../meeting-form";
+import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { connection } from "next/server";
 
 export default async function NewMeetingPage({
@@ -24,6 +25,8 @@ export default async function NewMeetingPage({
   );
   if (!isAdviser) notFound();
 
+  const ruleSet = await getActiveRuleSet(scheme.state);
+
   return (
     <div className="max-w-3xl">
       <PageHeader
@@ -33,7 +36,11 @@ export default async function NewMeetingPage({
         backLabel="Scheme"
       />
       <Card>
-        <MeetingForm mode="create" schemeId={id} />
+        <MeetingForm
+          mode="create"
+          schemeId={id}
+          noticePeriods={ruleSet.noticePeriods}
+        />
       </Card>
     </div>
   );
