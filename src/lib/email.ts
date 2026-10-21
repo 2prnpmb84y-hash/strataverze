@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiKey = process.env.RESEND_API_KEY;
+// Construct the client only when a key is present. Passing an undefined key to
+// the Resend constructor throws at module-evaluation time, which would crash
+// every server action that imports this module, not just email sending.
+const resend = apiKey ? new Resend(apiKey) : null;
 
 const FROM_ADDRESS =
   process.env.EMAIL_FROM ?? "StrataVerze <notifications@strataverze.com.au>";
@@ -13,11 +17,11 @@ type SendEmailParams = {
 
 /**
  * Send an email via Resend.
- * Fails silently in development when RESEND_API_KEY is not set
- * to avoid blocking server actions.
+ * Fails silently when RESEND_API_KEY is not set (development, or before the key
+ * is configured in production) so it never blocks a server action.
  */
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  if (!process.env.RESEND_API_KEY) {
+  if (!resend) {
     console.log(
       `[email] Skipping email (no RESEND_API_KEY): recipients=${Array.isArray(to) ? to.length : 1}, subject="${subject}"`,
     );
