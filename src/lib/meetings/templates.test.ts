@@ -3,6 +3,7 @@ import {
   getAgendaTemplate,
   getMotionLibrary,
   fillPlaceholders,
+  resolveAgendaTemplate,
   NSW_AGM_TEMPLATE,
 } from "./templates";
 
@@ -50,5 +51,19 @@ describe("fillPlaceholders", () => {
   it("uses a blank placeholder when no value is supplied", () => {
     const filled = fillPlaceholders("No. {{PLAN_NUMBER}}", {});
     expect(filled).not.toContain("{{PLAN_NUMBER}}");
+  });
+});
+
+describe("resolveAgendaTemplate", () => {
+  it("positions items from 1 and fills the plan number", () => {
+    const items = resolveAgendaTemplate("NSW", "AGM", { planNumber: "3782" });
+    expect(items[0].position).toBe(1);
+    expect(items[items.length - 1].position).toBe(items.length);
+    expect(items[0].resolutionText).toContain("3782");
+    expect(items[0].resolutionText).not.toContain("{{PLAN_NUMBER}}");
+  });
+
+  it("returns an empty list for a committee meeting", () => {
+    expect(resolveAgendaTemplate("NSW", "COMMITTEE", {})).toEqual([]);
   });
 });

@@ -9,6 +9,13 @@ import { MeetingForm } from "../meeting-form";
 import { DeleteMeetingButton } from "./delete-meeting-button";
 import { MeetingStatusButton } from "./meeting-status-button";
 import { MotionSection } from "./motion-section";
+import { AgendaSection } from "./agenda-section";
+import { getAgendaItemsForMeeting } from "@/lib/queries/agenda";
+import {
+  allowedCategoriesForMeetingType,
+} from "@/lib/meetings/agenda";
+import { normaliseMeetingType } from "@/lib/meetings/setup";
+import { getMotionLibrary, getAgendaTemplate } from "@/lib/meetings/templates";
 import { connection } from "next/server";
 
 export default async function MeetingDetailPage({
@@ -31,6 +38,25 @@ export default async function MeetingDetailPage({
 
   const meeting = await getMeetingById(meetingId);
   if (!meeting || meeting.schemeId !== id) notFound();
+
+  const agendaItems = await getAgendaItemsForMeeting(meetingId);
+  const normalisedType = normaliseMeetingType(meeting.meetingType);
+  const motionLibrary = getMotionLibrary(
+    scheme.state,
+    normalisedType ?? undefined,
+  ).map((m) => ({
+    key: m.key,
+    title: m.title,
+    defaultResolutionCategory: m.defaultResolutionCategory,
+  }));
+  const allowedCategories = allowedCategoriesForMeetingType(
+    meeting.meetingType,
+  );
+  const canLoadTemplate = normalisedType
+    ? getAgendaTemplate(scheme.state, normalisedType).length > 0
+    : false;
+  const agendaEditable =
+    meeting.status === "DRAFT" || meeting.status === "SCHEDULED";
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
   const motionCount = meeting.motions.length;
@@ -93,6 +119,24 @@ export default async function MeetingDetailPage({
           </div>
         </Card>
       )}
+
+      {/* Structured agenda */}
+      <AgendaSection
+        schemeId={id}
+        meetingId={meetingId}
+        items={agendaItems.map((a) => ({
+          id: a.id,
+          position: a.position,
+          title: a.title,
+          resolutionText: a.resolutionText,
+          explanatoryNote: a.explanatoryNote,
+          resolutionCategory: a.resolutionCategory,
+        }))}
+        motionLibrary={motionLibrary}
+        allowedCategories={allowedCategories}
+        canLoadTemplate={canLoadTemplate}
+        editable={agendaEditable}
+      />
 
       {/* Motions */}
       <MotionSection

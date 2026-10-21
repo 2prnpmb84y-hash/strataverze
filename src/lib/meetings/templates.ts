@@ -160,3 +160,39 @@ export function fillPlaceholders(
     .replace(/\{\{PLAN_NUMBER\}\}/g, values.planNumber ?? "________")
     .replace(/\{\{LAST_MEETING_DATE\}\}/g, values.lastMeetingDate ?? "__/__/____");
 }
+
+export interface ResolvedAgendaItem {
+  position: number;
+  title: string;
+  resolutionText: string;
+  explanatoryNote?: string;
+  resolutionCategory: ResolutionCategory;
+}
+
+/** The template for a meeting type, placeholders filled and positioned 1..n. */
+export function resolveAgendaTemplate(
+  state: string,
+  meetingType: MeetingType,
+  values: { planNumber?: string; lastMeetingDate?: string },
+): ResolvedAgendaItem[] {
+  return getAgendaTemplate(state, meetingType).map((item, i) => ({
+    position: i + 1,
+    title: item.title,
+    resolutionText: fillPlaceholders(item.resolutionText, values),
+    explanatoryNote: item.explanatoryNote,
+    resolutionCategory: item.resolutionCategory,
+  }));
+}
+
+/** A single motion-library entry resolved against scheme values. */
+export function resolveMotion(
+  entry: MotionLibraryEntry,
+  values: { planNumber?: string; lastMeetingDate?: string },
+) {
+  return {
+    title: entry.title,
+    resolutionText: fillPlaceholders(entry.resolutionText, values),
+    explanatoryNote: entry.explanatoryNote,
+    resolutionCategory: entry.defaultResolutionCategory,
+  };
+}
