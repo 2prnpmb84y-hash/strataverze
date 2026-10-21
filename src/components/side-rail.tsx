@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutGrid,
   Building2,
@@ -20,6 +21,8 @@ import {
   Shield,
   CreditCard,
   Settings,
+  Home,
+  Calculator,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -38,6 +41,13 @@ const portalLabel: Record<string, string> = {
   adviser: "Adviser Portal",
   supplier: "Supplier Portal",
   accountant: "Accountant Portal",
+};
+
+const portalIcon: Record<string, LucideIcon> = {
+  owner: Home,
+  adviser: Briefcase,
+  supplier: Shield,
+  accountant: Calculator,
 };
 
 /* ------------------------------------------------------------------ */
@@ -138,48 +148,59 @@ export function SideRail({ portal }: { portal: string }) {
       </button>
 
       {/* Logo */}
-      <div className={`flex items-center justify-center px-3 pb-2 ${expanded ? "pt-1" : "pt-2"}`}>
+      <div className={`flex items-center justify-center px-3 pb-3 ${expanded ? "pt-1" : "pt-2"}`}>
         {expanded ? (
           <Image
             src="/brand/logo-horizontal-white.png"
             alt="StrataVerze"
-            width={200}
-            height={40}
-            className="h-10 w-auto"
+            width={240}
+            height={48}
+            className="h-12 w-auto"
             priority
           />
         ) : (
           <Image
             src="/brand/logo-mark-white.png"
             alt="StrataVerze"
-            width={40}
-            height={40}
-            className="h-10 w-10"
+            width={36}
+            height={36}
+            className="h-9 w-9"
             priority
           />
         )}
       </div>
 
       {/* Portal identity badge */}
-      <div className={`flex items-center justify-center px-3 pb-4 ${expanded ? "" : ""}`}>
-        {expanded ? (
-          <span className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1">
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: portalAccent[portal] ?? portalAccent.owner }}
-            />
-            <span className="text-xs font-medium text-white/90 whitespace-nowrap">
-              {portalLabel[portal] ?? "Owner Portal"}
-            </span>
-          </span>
-        ) : (
-          <span
-            className="w-3 h-3 rounded-full border-2 border-white/40"
-            style={{ backgroundColor: portalAccent[portal] ?? portalAccent.owner }}
-            title={portalLabel[portal] ?? "Owner Portal"}
-          />
-        )}
-      </div>
+      {(() => {
+        const PortalIconComponent = portalIcon[portal] ?? Home;
+        const accent = portalAccent[portal] ?? portalAccent.owner;
+        const label = portalLabel[portal] ?? "Owner Portal";
+        return (
+          <div className="flex items-center justify-center px-3 pb-4">
+            {expanded ? (
+              <span className="flex items-center gap-2.5 rounded-lg bg-white/15 px-3 py-1.5 w-full">
+                <span
+                  className="flex items-center justify-center w-7 h-7 rounded-md shrink-0"
+                  style={{ backgroundColor: accent }}
+                >
+                  <PortalIconComponent size={16} strokeWidth={1.5} className="text-white" />
+                </span>
+                <span className="text-sm font-medium text-white whitespace-nowrap">
+                  {label}
+                </span>
+              </span>
+            ) : (
+              <span
+                className="flex items-center justify-center w-9 h-9 rounded-lg"
+                style={{ backgroundColor: accent }}
+                title={label}
+              >
+                <PortalIconComponent size={18} strokeWidth={1.5} className="text-white" />
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Navigation items */}
       <nav className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">

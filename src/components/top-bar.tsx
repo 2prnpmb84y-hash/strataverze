@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   Search,
   Bell,
@@ -10,6 +11,11 @@ import {
   LogOut,
   ChevronDown,
   User,
+  Home,
+  Briefcase,
+  Shield,
+  Calculator,
+  Users,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -33,6 +39,14 @@ const portalLabel: Record<string, string> = {
   adviser: "Adviser",
   supplier: "Supplier",
   accountant: "Accountant",
+};
+
+const portalIcon: Record<string, LucideIcon> = {
+  owner: Home,
+  committee: Users,
+  adviser: Briefcase,
+  supplier: Shield,
+  accountant: Calculator,
 };
 
 /* ------------------------------------------------------------------ */
@@ -101,20 +115,27 @@ export function TopBar({
       style={{ borderTop: `3px solid ${accent}` }}
     >
       {/* Left: portal indicator + page title */}
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="flex items-center gap-1.5 shrink-0 rounded-full bg-muted px-2.5 py-1">
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: accent }}
-          />
-          <span className="text-xs font-medium text-ink-muted whitespace-nowrap">
-            {portalLabel[portal] ?? "Owner"}
-          </span>
-        </span>
-        <h1 className="text-xl font-bold font-heading text-ink truncate">
-          {pageTitle ?? ""}
-        </h1>
-      </div>
+      {(() => {
+        const PortalIconComponent = portalIcon[portal] ?? Home;
+        return (
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="flex items-center gap-2 shrink-0 rounded-lg bg-muted px-2.5 py-1.5">
+              <span
+                className="flex items-center justify-center w-6 h-6 rounded-md"
+                style={{ backgroundColor: accent }}
+              >
+                <PortalIconComponent size={14} strokeWidth={1.5} className="text-white" />
+              </span>
+              <span className="text-sm font-medium text-ink whitespace-nowrap">
+                {portalLabel[portal] ?? "Owner"}
+              </span>
+            </span>
+            <h1 className="text-xl font-bold font-heading text-ink truncate">
+              {pageTitle ?? ""}
+            </h1>
+          </div>
+        );
+      })()}
 
       {/* Right: actions */}
       <div className="flex items-center gap-3">
