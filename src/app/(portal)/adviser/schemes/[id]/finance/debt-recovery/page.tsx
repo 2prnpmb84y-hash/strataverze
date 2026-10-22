@@ -68,8 +68,8 @@ export default async function DebtRecoveryPage({
       <PageHeader
         title="Debt Recovery"
         description="Manage levy debt recovery cases following the NSW Strata Schemes Management Act 2015"
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Back to scheme"
+        backHref={`/adviser/schemes/${id}/finance`}
+        backLabel="Financials"
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

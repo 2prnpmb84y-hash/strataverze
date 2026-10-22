@@ -32,8 +32,8 @@ export default async function NewMeetingPage({
       <PageHeader
         title="Schedule Meeting"
         description={`${scheme.name}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/meetings`}
+        backLabel="Meetings"
       />
       <Card>
         <MeetingForm

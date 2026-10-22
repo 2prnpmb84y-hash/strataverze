@@ -78,8 +78,6 @@ export default async function InsuranceOverviewPage({
       <PageHeader
         title="Insurance"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
         action={
           <Button href={`/adviser/schemes/${id}/insurance/new`} variant="primary">
             Add policy

@@ -57,8 +57,8 @@ export default async function ComplianceDetailPage({
       <PageHeader
         title={item.title}
         description={`${categoryLabels[item.category] ?? item.category} · Added ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/compliance`}
+        backLabel="Compliance"
       />
 
       {/* Status and details */}

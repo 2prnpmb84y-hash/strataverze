@@ -29,8 +29,8 @@ export default async function NewAnnouncementPage({
       <PageHeader
         title="New Announcement"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/announcements`}
+        backLabel="Announcements"
       />
       <Card>
         <AnnouncementForm schemeId={id} />

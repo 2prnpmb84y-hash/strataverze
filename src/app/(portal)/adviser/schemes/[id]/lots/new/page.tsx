@@ -28,8 +28,8 @@ export default async function NewLotPage({
       <PageHeader
         title="Add Lot"
         description={`Add a new lot to ${scheme.name}.`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel={scheme.name}
+        backHref={`/adviser/schemes/${id}/lots`}
+        backLabel="Lots / Owners"
       />
 
       <LotForm mode="create" schemeId={id} />

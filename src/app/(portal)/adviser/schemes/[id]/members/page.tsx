@@ -67,8 +67,8 @@ export default async function SchemeMembersPage({
       <PageHeader
         title="Members"
         description={`Manage members and invitations for ${scheme.name}.`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel={scheme.name}
+        backHref={`/adviser/schemes/${id}/governance`}
+        backLabel="Governance"
       />
 
       {/* Current Members */}

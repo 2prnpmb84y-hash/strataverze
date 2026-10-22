@@ -157,7 +157,7 @@ export async function deleteBylawAction(
 
     await deleteBylaw(bylawId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/bylaws`);
   } catch (err) {
     if (
       err &&

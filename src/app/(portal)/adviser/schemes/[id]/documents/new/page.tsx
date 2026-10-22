@@ -29,8 +29,8 @@ export default async function NewDocumentPage({
       <PageHeader
         title="Upload Document"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/documents`}
+        backLabel="Documents"
       />
       <Card>
         <DocumentUploadForm schemeId={id} />

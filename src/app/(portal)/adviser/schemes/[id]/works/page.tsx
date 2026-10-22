@@ -86,8 +86,8 @@ export default async function WorksDashboardPage({
       <PageHeader
         title="Works"
         description={`Procurement and works management for ${scheme.planNumber}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel={scheme.planNumber}
+        backHref={`/adviser/schemes/${id}/work-orders`}
+        backLabel="Work Orders"
         action={
           <Button href={`/adviser/schemes/${id}/works/new`}>
             New Request

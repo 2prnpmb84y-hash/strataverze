@@ -29,8 +29,8 @@ export default async function NewWorkOrderPage({
       <PageHeader
         title="New Work Order"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/work-orders`}
+        backLabel="Work Orders"
       />
       <Card>
         <WorkOrderCreateForm schemeId={id} />

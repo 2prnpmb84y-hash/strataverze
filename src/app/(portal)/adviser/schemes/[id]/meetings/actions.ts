@@ -172,7 +172,7 @@ export async function deleteMeetingAction(
 
     await deleteMeeting(meetingId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/meetings`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (

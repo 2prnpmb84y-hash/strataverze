@@ -54,8 +54,8 @@ export default async function DocumentDetailPage({
       <PageHeader
         title={document.title}
         description={`${categoryLabels[document.category] ?? document.category} · Uploaded ${uploadDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/documents`}
+        backLabel="Documents"
       />
 
       {/* File details */}

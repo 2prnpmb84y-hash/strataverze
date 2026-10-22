@@ -181,8 +181,8 @@ export default async function MeetingDetailPage({
       <PageHeader
         title={meeting.title}
         description={`${meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType} · ${scheduledDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} at ${scheduledDate.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/meetings`}
+        backLabel="Meetings"
       />
 
       {/* Status and quick stats */}

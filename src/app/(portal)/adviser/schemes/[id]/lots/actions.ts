@@ -74,7 +74,7 @@ export async function createLotAction(
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/lots`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (
@@ -117,7 +117,7 @@ export async function deleteLotAction(schemeId: string, lotId: string) {
 
     await deleteLot(lotId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/lots`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (

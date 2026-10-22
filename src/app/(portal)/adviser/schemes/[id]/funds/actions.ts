@@ -103,7 +103,7 @@ export async function deleteFundAction(schemeId: string, fundId: string) {
 
     await deleteFund(fundId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/finance`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (
