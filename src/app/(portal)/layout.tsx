@@ -43,6 +43,7 @@ export default async function PortalLayout({
       availablePortals={availablePortals}
       isCommitteeMember={isCommitteeMember}
       pendingInvitationCount={pendingInvitations.length}
+      isPlatformAdmin={profile?.isPlatformAdmin ?? false}
     >
       {children}
     </PortalShell>

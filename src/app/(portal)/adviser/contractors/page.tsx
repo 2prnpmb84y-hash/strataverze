@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import {
   getAllContractorBusinesses,
@@ -44,6 +45,8 @@ export default async function ContractorReviewPage(props: {
   await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
+  // Contractor review is StrataVerze staff work.
+  if (!profile.isPlatformAdmin) notFound();
 
   const searchParams = await props.searchParams;
   const statusFilter = searchParams.status ?? "";

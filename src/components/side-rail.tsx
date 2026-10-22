@@ -104,9 +104,12 @@ const navByPortal: Record<string, typeof ownerNav> = {
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
 
-export function SideRail({ portal }: { portal: string }) {
+export function SideRail({ portal, isPlatformAdmin = false }: { portal: string; isPlatformAdmin?: boolean }) {
   const pathname = usePathname();
-  const nav = navByPortal[portal] ?? ownerNav;
+  // Contractor review is StrataVerze staff work.
+  const nav = (navByPortal[portal] ?? ownerNav).filter(
+    (item) => isPlatformAdmin || item.href !== "/adviser/contractors",
+  );
 
   const [expanded, setExpanded] = useState(() => {
     if (typeof window === "undefined") return false;

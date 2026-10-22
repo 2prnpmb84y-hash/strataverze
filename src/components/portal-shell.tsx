@@ -148,9 +148,11 @@ export function PortalShell({
   availablePortals = [],
   isCommitteeMember = false,
   pendingInvitationCount = 0,
+  isPlatformAdmin = false,
   children,
 }: {
   user: User;
+  isPlatformAdmin?: boolean;
   availablePortals?: string[];
   isCommitteeMember?: boolean;
   pendingInvitationCount?: number;
@@ -182,7 +184,7 @@ export function PortalShell({
       </a>
 
       {/* Desktop side rail */}
-      <SideRail portal={portal} />
+      <SideRail portal={portal} isPlatformAdmin={isPlatformAdmin} />
 
       {/* Main column */}
       <div className="flex flex-col flex-1 min-w-0">

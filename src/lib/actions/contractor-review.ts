@@ -29,19 +29,14 @@ function toTimestamp(value: string): TimestampString<3> {
 // ─── Helpers ────────────────────────────────────────────────────
 
 /**
- * Contractor applications are reviewed by StrataVerze. Until a dedicated
- * review role exists, a platform admin or an active adviser may review.
- * Previously any signed-in user, including the contractor, could.
+ * Contractor applications are reviewed by StrataVerze staff only (platform
+ * admins). Previously any signed-in user, including the contractor, could.
  */
 async function requireAuth() {
   const { getCurrentProfile } = await import("@/lib/queries/profiles");
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Not authenticated.");
-  if (profile.isPlatformAdmin) return profile;
-  const adviser = await db.orm.public.SchemeMembership
-    .where((m) => and(m.profileId.eq(profile.id), m.role.eq("ADVISER"), m.isActive.eq(true)))
-    .first();
-  if (!adviser) throw new Error("Not authorised to review contractors.");
+  if (!profile.isPlatformAdmin) throw new Error("Not authorised to review contractors.");
   return profile;
 }
 
