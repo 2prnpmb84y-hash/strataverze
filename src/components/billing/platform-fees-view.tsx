@@ -133,7 +133,7 @@ export function PlatformFeesView({ data }: { data: PlatformFeesData }) {
       <Card>
         <CardHeader
           title="StrataVerze invoices"
-          description="One invoice a month, entered in the scheme's accounts as a supplier invoice."
+          description="One invoice a month, billed in advance for the subscription and due on issue. Each is entered in the scheme's accounts as a supplier invoice. Select a number for the PDF."
         />
         {invoices.length === 0 ? (
           <p className="text-sm text-ink-muted">No invoices have been issued.</p>
@@ -151,7 +151,16 @@ export function PlatformFeesView({ data }: { data: PlatformFeesData }) {
               <tbody className="divide-y divide-line">
                 {invoices.map((i) => (
                   <tr key={i.id}>
-                    <td className="py-2 pr-4">{i.invoiceNumber}</td>
+                    <td className="py-2 pr-4">
+                      <a
+                        href={`/api/platform-invoices/${i.id}/pdf`}
+                        target="_blank"
+                        rel="noopener"
+                        className="text-turquoise hover:underline"
+                      >
+                        {i.invoiceNumber}
+                      </a>
+                    </td>
                     <td className="py-2 pr-4">
                       {day(i.periodStart)} to {day(i.periodEnd)}
                     </td>

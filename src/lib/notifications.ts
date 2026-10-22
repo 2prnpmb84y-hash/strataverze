@@ -7,6 +7,7 @@ import {
 import { levyIssuedEmail } from "@/lib/email-templates/levy";
 import { meetingScheduledEmail } from "@/lib/email-templates/meeting";
 import { announcementPublishedEmail } from "@/lib/email-templates/announcement";
+import { platformInvoiceEmail } from "@/lib/email-templates/platform-invoice";
 
 const APP_URL = process.env.APP_URL ?? "https://strataverze.com.au";
 
@@ -141,4 +142,30 @@ export async function notifyAnnouncementPublished(params: {
     detailUrl: `${APP_URL}${params.portalPath}/${params.announcementId}`,
   });
   await sendEmail(email);
+}
+
+// ─── StrataVerze invoices ───────────────────────────────────────
+
+export async function notifyPlatformInvoiceIssued(params: {
+  recipientEmails: string[];
+  schemeName: string;
+  invoiceNumber: string;
+  monthLabel: string;
+  total: string;
+  promotional: boolean;
+  needsApproval: boolean;
+}) {
+  if (params.recipientEmails.length === 0) return;
+  await sendEmail(
+    platformInvoiceEmail({
+      to: params.recipientEmails,
+      schemeName: params.schemeName,
+      invoiceNumber: params.invoiceNumber,
+      monthLabel: params.monthLabel,
+      total: params.total,
+      promotional: params.promotional,
+      needsApproval: params.needsApproval,
+      detailUrl: `${APP_URL}/owner/finance/platform-fees`,
+    }),
+  );
 }

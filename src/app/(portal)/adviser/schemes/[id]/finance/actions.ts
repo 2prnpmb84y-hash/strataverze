@@ -68,6 +68,7 @@ import {
 import { getSchemeById } from "@/lib/queries/schemes";
 import { captureUsageFee } from "@/lib/billing/capture";
 import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
+import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
   checkPlan,
@@ -1317,6 +1318,9 @@ export async function approveInvoiceAction(
       "COMMITTEE",
     ]);
 
+    const target = await getSupplierInvoiceById(invoiceId);
+    if (!target || target.schemeId !== schemeId) return { error: "Invoice not found." };
+
     await approveInvoice(invoiceId, profile.id);
 
     // ── Auto journal entry: DR Expense, CR Accounts Payable ──
@@ -1427,6 +1431,7 @@ export async function recordInvoicePaymentAction(
 
     // Fetch invoice details before recording payment
     const invoice = await getSupplierInvoiceById(invoiceId);
+    if (!invoice || invoice.schemeId !== schemeId) return { error: "Invoice not found." };
 
     await recordInvoicePayment(invoiceId, amount, { paymentDate, actorId: profile.id, feeConfirmedCents });
 
@@ -1497,6 +1502,15 @@ export async function cancelInvoiceAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    const target = await getSupplierInvoiceById(invoiceId);
+    if (!target || target.schemeId !== schemeId) return { error: "Invoice not found." };
+    if (isStrataVerzeSupplier(target.supplierId)) {
+      return {
+        error:
+          "A StrataVerze invoice cannot be cancelled here. Leave it unapproved and contact StrataVerze if you dispute it.",
+      };
+    }
 
     await cancelInvoice(invoiceId);
 
