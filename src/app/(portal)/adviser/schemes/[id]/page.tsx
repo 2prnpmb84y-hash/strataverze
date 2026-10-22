@@ -84,7 +84,7 @@ export default async function SchemeDetailPage({
     { label: "Lots / Owners", href: `/adviser/schemes/${id}?tab=lots` },
     { label: "Financials", href: `/adviser/schemes/${id}/finance` },
     { label: "Compliance", href: `/adviser/schemes/${id}/compliance/new` },
-    { label: "Insurance", href: `/adviser/schemes/${id}/insurance/new` },
+    { label: "Insurance", href: `/adviser/schemes/${id}/insurance` },
     { label: "Conversations", href: `/adviser/schemes/${id}/announcements/new` },
     { label: "Document", href: `/adviser/schemes/${id}?tab=documents` },
     { label: "Works", href: `/adviser/schemes/${id}/works` },
@@ -770,8 +770,8 @@ export default async function SchemeDetailPage({
               : `${insurancePolicies.length} polic${insurancePolicies.length === 1 ? "y" : "ies"} on file.`
           }
           action={
-            <Button href={`/adviser/schemes/${id}/insurance/new`} variant="secondary">
-              New Policy
+            <Button href={`/adviser/schemes/${id}/insurance`} variant="secondary">
+              Manage insurance
             </Button>
           }
         />

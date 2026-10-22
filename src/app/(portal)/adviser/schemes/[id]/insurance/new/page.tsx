@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
 import { InsurancePolicyForm } from "../insurance-form";
 import { connection } from "next/server";
 
@@ -27,15 +26,12 @@ export default async function NewInsurancePolicyPage({
   return (
     <div className="max-w-3xl">
       <PageHeader
-        title="New Insurance Policy"
+        title="New insurance policy"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/insurance`}
+        backLabel="Insurance"
       />
-      <Card>
-        <CardHeader title="Policy Details" />
-        <InsurancePolicyForm schemeId={id} />
-      </Card>
+      <InsurancePolicyForm schemeId={id} />
     </div>
   );
 }

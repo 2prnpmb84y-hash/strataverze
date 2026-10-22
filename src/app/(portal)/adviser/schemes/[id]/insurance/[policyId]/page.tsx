@@ -1,60 +1,59 @@
 import { notFound } from "next/navigation";
-import { getInsurancePolicyById } from "@/lib/queries/insurance";
+import Link from "next/link";
+import { getPolicyWithItems } from "@/lib/queries/insurance";
+import { getPolicyDocumentsWithHistory } from "@/lib/queries/insurance-documents";
+import { getActiveRenewalForPolicy } from "@/lib/queries/insurance-renewals";
+import { getAuditTrail, formatActionLabel } from "@/lib/queries/activity-log";
+import { InsuranceDocumentsSection } from "./documents-section";
+import { StartRenewalButton } from "./start-renewal-button";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
+import { StatusChip } from "@/components/ui/status-chip";
 import { InsurancePolicyEditForm } from "../insurance-form";
+import type {
+  CoverageRow,
+  PremiumRow,
+} from "../insurance-form";
 import { DeleteInsuranceButton } from "./delete-insurance-button";
+import {
+  POLICY_TYPE_LABELS,
+  COVERAGE_CATEGORY_LABELS,
+  PREMIUM_KIND_LABELS,
+} from "@/lib/insurance/constants";
+import { formatMoney } from "@/lib/insurance/premium";
+import { derivePolicyStatus, daysUntilExpiry } from "@/lib/insurance/status";
 import { connection } from "next/server";
 
-const policyTypeLabels: Record<string, string> = {
-  BUILDING: "Building",
-  PUBLIC_LIABILITY: "Public Liability",
-  WORKERS_COMP: "Workers Compensation",
-  OFFICE_BEARERS: "Office Bearers",
-  FIDELITY_GUARANTEE: "Fidelity Guarantee",
-  MACHINERY: "Machinery Breakdown",
-  VOLUNTARY_WORKERS: "Voluntary Workers",
-  OTHER: "Other",
-};
-
-const statusLabels: Record<string, string> = {
-  ACTIVE: "Active",
-  EXPIRED: "Expired",
-  CANCELLED: "Cancelled",
-  PENDING_RENEWAL: "Pending Renewal",
-};
-
-const statusStyles: Record<string, string> = {
-  ACTIVE: "bg-green-100 text-green-700",
-  EXPIRED: "bg-red-100 text-red-700",
-  CANCELLED: "bg-gray-100 text-gray-700",
-  PENDING_RENEWAL: "bg-amber-100 text-amber-700",
-};
-
-function formatCurrency(value: string | number): string {
-  return Number(value).toLocaleString("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  });
-}
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString("en-AU", {
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-AU", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
 }
 
+function dateForInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
+}
+
 export default async function InsurancePolicyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; policyId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await connection();
   const { id, policyId } = await params;
+  const sp = await searchParams;
+  const continuityFlag =
+    typeof sp.continuity === "string" ? sp.continuity : null;
+  const continuityDays = typeof sp.days === "string" ? sp.days : null;
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -66,131 +65,338 @@ export default async function InsurancePolicyDetailPage({
   );
   if (!isAdviser) notFound();
 
-  const policy = await getInsurancePolicyById(policyId);
+  const policy = await getPolicyWithItems(policyId);
   if (!policy || policy.schemeId !== id) notFound();
+
+  const coverageItems = policy.coverageItems ?? [];
+  const premiumLineItems = policy.premiumLineItems ?? [];
+  const documents = await getPolicyDocumentsWithHistory(policyId);
+  const activeRenewal = await getActiveRenewalForPolicy(policyId);
+  const auditTrail = await getAuditTrail(
+    id,
+    { entityType: "InsurancePolicy" },
+    { page: 1, pageSize: 50 },
+  );
+  const policyActivity = auditTrail.data
+    .filter((r) => r.entityId === policyId)
+    .slice(0, 8);
+
+  const effectiveStatus = derivePolicyStatus(
+    {
+      startDate: new Date(String(policy.startDate)),
+      endDate: new Date(String(policy.endDate)),
+      status: policy.status,
+    },
+  );
+  const untilExpiry = daysUntilExpiry(new Date(String(policy.endDate)));
+
+  const defaults = {
+    policyNumber: policy.policyNumber,
+    policyType: policy.policyType,
+    status: policy.status,
+    insurer: policy.insurer,
+    broker: policy.broker ?? "",
+    brokerContact: policy.brokerContact ?? "",
+    insuredEntityName: policy.insuredEntityName ?? "",
+    insuredAddress: policy.insuredAddress ?? "",
+    additionalInsured: policy.additionalInsured ?? "",
+    contactPerson: policy.contactPerson ?? "",
+    contactEmail: policy.contactEmail ?? "",
+    contactPhone: policy.contactPhone ?? "",
+    claimsContact: policy.claimsContact ?? "",
+    referenceNumbers: policy.referenceNumbers ?? "",
+    coverageAmount: String(policy.coverageAmount),
+    premium: String(policy.premium),
+    excessAmount: policy.excessAmount ? String(policy.excessAmount) : "",
+    startDate: dateForInput(String(policy.startDate)),
+    endDate: dateForInput(String(policy.endDate)),
+    renewalDate: dateForInput(
+      policy.renewalDate ? String(policy.renewalDate) : null,
+    ),
+    currency: policy.currency ?? "AUD",
+    paymentDueDate: dateForInput(
+      policy.paymentDueDate ? String(policy.paymentDueDate) : null,
+    ),
+    paymentStatus: policy.paymentStatus ?? "",
+    paymentDate: dateForInput(
+      policy.paymentDate ? String(policy.paymentDate) : null,
+    ),
+    paymentReference: policy.paymentReference ?? "",
+    coverageSummary: policy.coverageSummary ?? "",
+    exclusions: policy.exclusions ?? "",
+    conditions: policy.conditions ?? "",
+    endorsements: policy.endorsements ?? "",
+    notes: policy.notes ?? "",
+    coverageItems: coverageItems.map(
+      (c): CoverageRow => ({
+        category: c.category,
+        description: c.description ?? "",
+        sumInsured: c.sumInsured != null ? String(c.sumInsured) : "",
+        excess: c.excess != null ? String(c.excess) : "",
+        conditions: c.conditions ?? "",
+      }),
+    ),
+    premiumLineItems: premiumLineItems.map(
+      (p): PremiumRow => ({
+        label: p.label,
+        kind: p.kind,
+        amount: String(p.amount),
+      }),
+    ),
+  };
 
   return (
     <div className="max-w-3xl">
       <PageHeader
-        title={`${policyTypeLabels[policy.policyType] ?? policy.policyType} Insurance`}
-        description={policy.scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        title={`${POLICY_TYPE_LABELS[policy.policyType] ?? policy.policyType} insurance`}
+        description={`${policy.scheme.name} · Policy ${policy.policyNumber}`}
+        backHref={`/adviser/schemes/${id}/insurance`}
+        backLabel="Insurance"
       />
 
-      {/* Policy summary */}
+      {continuityFlag && continuityFlag !== "CONTIGUOUS" && (
+        <div className="mb-6 rounded-[var(--radius-card)] bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+          This policy was created from a renewal with a {continuityDays}-day{" "}
+          {continuityFlag.toLowerCase()} against the previous policy. Confirm the
+          cover dates are correct.
+        </div>
+      )}
+
+      {/* Summary */}
       <Card className="mb-6">
         <div className="flex flex-wrap items-center gap-3 text-sm text-ink-muted mb-4">
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyles[policy.status] ?? "bg-gray-100 text-gray-700"}`}
-          >
-            {statusLabels[policy.status] ?? policy.status}
-          </span>
-          <span>·</span>
-          <span>Policy #{policy.policyNumber}</span>
+          <StatusChip status={effectiveStatus} />
           <span>·</span>
           <span>{policy.insurer}</span>
+          {policy.broker ? (
+            <>
+              <span>·</span>
+              <span>Broker: {policy.broker}</span>
+            </>
+          ) : null}
+          {effectiveStatus === "ACTIVE" && untilExpiry >= 0 ? (
+            <>
+              <span>·</span>
+              <span>{untilExpiry} days to expiry</span>
+            </>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-xs text-ink-muted">Coverage</p>
-            <p className="font-medium text-ink">
-              {formatCurrency(String(policy.coverageAmount))}
+            <p className="text-xs text-ink-muted">Sum insured</p>
+            <p className="font-medium text-ink tabular-nums">
+              {formatMoney(String(policy.coverageAmount), policy.currency ?? "AUD")}
             </p>
           </div>
           <div>
             <p className="text-xs text-ink-muted">Premium</p>
-            <p className="font-medium text-ink">
-              {formatCurrency(String(policy.premium))}
+            <p className="font-medium text-ink tabular-nums">
+              {formatMoney(
+                policy.totalPremium != null
+                  ? String(policy.totalPremium)
+                  : String(policy.premium),
+                policy.currency ?? "AUD",
+              )}
             </p>
           </div>
           {policy.excessAmount ? (
             <div>
-              <p className="text-xs text-ink-muted">Excess</p>
-              <p className="font-medium text-ink">
-                {formatCurrency(String(policy.excessAmount))}
+              <p className="text-xs text-ink-muted">Default excess</p>
+              <p className="font-medium text-ink tabular-nums">
+                {formatMoney(String(policy.excessAmount), policy.currency ?? "AUD")}
               </p>
             </div>
           ) : null}
           <div>
-            <p className="text-xs text-ink-muted">Start Date</p>
+            <p className="text-xs text-ink-muted">Period</p>
             <p className="font-medium text-ink">
-              {formatDate(String(policy.startDate))}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-ink-muted">End Date</p>
-            <p className="font-medium text-ink">
+              {formatDate(String(policy.startDate))} to{" "}
               {formatDate(String(policy.endDate))}
             </p>
           </div>
           {policy.renewalDate ? (
             <div>
-              <p className="text-xs text-ink-muted">Renewal Date</p>
+              <p className="text-xs text-ink-muted">Renewal date</p>
               <p className="font-medium text-ink">
                 {formatDate(String(policy.renewalDate))}
               </p>
             </div>
           ) : null}
-          {policy.broker ? (
+          {policy.paymentStatus ? (
             <div>
-              <p className="text-xs text-ink-muted">Broker</p>
-              <p className="font-medium text-ink">{policy.broker}</p>
-              {policy.brokerContact ? (
-                <p className="text-xs text-ink-muted mt-0.5">
-                  {policy.brokerContact}
-                </p>
-              ) : null}
+              <p className="text-xs text-ink-muted">Payment</p>
+              <p className="font-medium text-ink">
+                {policy.paymentStatus.charAt(0) +
+                  policy.paymentStatus.slice(1).toLowerCase().replace("_", " ")}
+              </p>
             </div>
           ) : null}
         </div>
-
-        {policy.notes ? (
-          <div className="mt-4 rounded-[var(--radius-card)] bg-muted px-4 py-3">
-            <p className="text-xs font-medium text-ink-muted mb-1">
-              Notes
-            </p>
-            <p className="text-sm text-ink whitespace-pre-wrap">
-              {policy.notes}
-            </p>
-          </div>
-        ) : null}
       </Card>
+
+      {/* Coverage items */}
+      {coverageItems.length > 0 ? (
+        <Card className="mb-6">
+          <CardHeader title="Coverage" />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-ink-muted border-b border-line">
+                  <th className="py-2 pr-4 font-medium">Category</th>
+                  <th className="py-2 pr-4 font-medium">Description</th>
+                  <th className="py-2 pr-4 font-medium text-right">Sum insured</th>
+                  <th className="py-2 font-medium text-right">Excess</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coverageItems.map((c) => (
+                  <tr key={c.id} className="border-b border-line/60">
+                    <td className="py-2 pr-4 text-ink">
+                      {COVERAGE_CATEGORY_LABELS[c.category] ?? c.category}
+                    </td>
+                    <td className="py-2 pr-4 text-ink-muted">{c.description ?? ""}</td>
+                    <td className="py-2 pr-4 text-ink text-right tabular-nums">
+                      {c.sumInsured != null ? formatMoney(String(c.sumInsured)) : ""}
+                    </td>
+                    <td className="py-2 text-ink text-right tabular-nums">
+                      {c.excess != null ? formatMoney(String(c.excess)) : ""}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      ) : null}
+
+      {/* Premium line items */}
+      {premiumLineItems.length > 0 ? (
+        <Card className="mb-6">
+          <CardHeader title="Premium breakdown" />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody>
+                {premiumLineItems.map((p) => (
+                  <tr key={p.id} className="border-b border-line/60">
+                    <td className="py-2 pr-4 text-ink">{p.label}</td>
+                    <td className="py-2 pr-4 text-ink-muted">
+                      {PREMIUM_KIND_LABELS[p.kind] ?? p.kind}
+                    </td>
+                    <td className="py-2 text-ink text-right tabular-nums">
+                      {formatMoney(String(p.amount))}
+                    </td>
+                  </tr>
+                ))}
+                {policy.totalPremium != null ? (
+                  <tr className="font-semibold">
+                    <td className="py-2 pr-4 text-ink">Total payable</td>
+                    <td></td>
+                    <td className="py-2 text-ink text-right tabular-nums">
+                      {formatMoney(String(policy.totalPremium))}
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      ) : null}
+
+      {/* Detail */}
+      {policy.coverageSummary ||
+      policy.exclusions ||
+      policy.conditions ||
+      policy.endorsements ||
+      policy.notes ? (
+        <Card className="mb-6">
+          <CardHeader title="Policy detail" />
+          <div className="space-y-3 text-sm">
+            {([
+              ["Coverage summary", policy.coverageSummary],
+              ["Key exclusions", policy.exclusions],
+              ["Conditions", policy.conditions],
+              ["Endorsements", policy.endorsements],
+              ["Internal notes", policy.notes],
+            ] as const).map(([label, value]) =>
+              value ? (
+                <div key={label}>
+                  <p className="text-xs font-medium text-ink-muted">{label}</p>
+                  <p className="text-ink whitespace-pre-wrap">{value}</p>
+                </div>
+              ) : null,
+            )}
+          </div>
+        </Card>
+      ) : null}
+
+      {/* Renewal */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Renewal"
+          description="Prepare the renewal, compare quotes and place the successor policy."
+        />
+        {activeRenewal ? (
+          <Link
+            href={`/adviser/schemes/${id}/insurance/renewals/${activeRenewal.id}`}
+            className="text-sm text-turquoise hover:underline"
+          >
+            Continue the in-progress renewal →
+          </Link>
+        ) : (
+          <StartRenewalButton schemeId={id} policyId={policyId} />
+        )}
+      </Card>
+
+      {/* Documents */}
+      <InsuranceDocumentsSection
+        schemeId={id}
+        policyId={policyId}
+        documents={documents}
+      />
 
       {/* Edit form */}
       <Card className="mb-6">
-        <CardHeader title="Edit Policy" />
+        <CardHeader title="Edit policy" />
         <InsurancePolicyEditForm
           schemeId={id}
           policyId={policyId}
-          defaults={{
-            policyNumber: policy.policyNumber,
-            policyType: policy.policyType,
-            insurer: policy.insurer,
-            broker: policy.broker,
-            brokerContact: policy.brokerContact,
-            coverageAmount: String(policy.coverageAmount),
-            premium: String(policy.premium),
-            excessAmount: policy.excessAmount
-              ? String(policy.excessAmount)
-              : null,
-            startDate: String(policy.startDate),
-            endDate: String(policy.endDate),
-            status: policy.status,
-            renewalDate: policy.renewalDate
-              ? String(policy.renewalDate)
-              : null,
-            notes: policy.notes,
-          }}
+          defaults={defaults}
         />
       </Card>
+
+      {/* Activity / audit */}
+      {policyActivity.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader
+            title="Policy activity"
+            description="Material changes to this policy record."
+          />
+          <ol className="space-y-2">
+            {policyActivity.map((a) => (
+              <li key={a.id} className="flex gap-3 text-sm">
+                <span className="text-xs text-ink-muted whitespace-nowrap w-24 shrink-0">
+                  {new Date(a.createdAt).toLocaleDateString("en-AU", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="text-ink">
+                  <span className="font-medium">{formatActionLabel(a.action)}</span>
+                  <span className="text-ink-muted"> · {a.actorName}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
 
       {/* Danger zone */}
       <Card className="border-red-200">
         <CardHeader
-          title="Danger Zone"
-          description="This action cannot be undone."
+          title="Danger zone"
+          description="Archiving a policy hides it from active views. It can be restored by support."
         />
         <DeleteInsuranceButton schemeId={id} policyId={policyId} />
       </Card>
