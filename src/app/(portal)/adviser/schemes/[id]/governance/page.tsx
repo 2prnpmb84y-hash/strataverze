@@ -1,13 +1,11 @@
 import { connection } from "next/server";
+import { getBylawsForScheme } from "@/lib/queries/bylaws";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { BylawsCard } from "../_sections/bylaws-card";
 import { requireAdviserScheme } from "../_sections/require-adviser-scheme";
 
-/**
- * Governance section. Placeholder until the governance workflows are built.
- * Scheme membership (owners, committee, advisers) is already managed under
- * Members, so that stays reachable from here.
- */
+/** Governance pill: the by-laws register and scheme membership. */
 export default async function GovernanceSectionPage({
   params,
 }: {
@@ -18,8 +16,11 @@ export default async function GovernanceSectionPage({
   const scheme = await requireAdviserScheme(id);
   if (!scheme) return null;
 
+  const bylaws = await getBylawsForScheme(id);
+
   return (
     <div>
+      <BylawsCard id={id} bylaws={bylaws} />
       <Card className="mb-6">
         <CardHeader
           title="Members"
@@ -29,12 +30,6 @@ export default async function GovernanceSectionPage({
               Manage Members
             </Button>
           }
-        />
-      </Card>
-      <Card className="mb-6">
-        <CardHeader
-          title="Governance"
-          description="This section is not built yet. Further governance tools will appear here."
         />
       </Card>
     </div>

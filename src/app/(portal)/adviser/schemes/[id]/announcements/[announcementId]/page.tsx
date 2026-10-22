@@ -52,7 +52,7 @@ export default async function AnnouncementDetailPage({
         title={announcement.title}
         description={announcement.scheme.name}
         backHref={`/adviser/schemes/${id}/announcements`}
-        backLabel="Announcements"
+        backLabel="Conversations"
       />
 
       {/* Meta info */}

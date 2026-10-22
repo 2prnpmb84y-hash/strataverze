@@ -77,7 +77,7 @@ export async function generateLeviesAction(
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}/levies`);
+    redirect(`/adviser/schemes/${schemeId}/finance`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (

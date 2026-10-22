@@ -135,16 +135,24 @@ export function SchemeDetailHeader({
         ))}
       </dl>
 
-      {/* 4. Section navigation */}
-      <nav aria-label="Scheme sections" className="flex flex-wrap gap-2.5">
-        {navButtons.map((btn) => {
-          const isActive = activeHref
-            ? activeHref === btn.href
-            : isNavItemActive(btn, pathname);
+      {/* 4. Section navigation: peach section row, then mint row with plus icons */}
+      <nav aria-label="Scheme sections" className="flex flex-col gap-3">
+        {(["section", "action"] as const).map((tone) => {
+          const row = navButtons.filter((btn) => (btn.tone ?? "section") === tone);
+          if (row.length === 0) return null;
           return (
-            <Pill key={btn.label} variant="nav" selected={isActive} href={btn.href}>
-              {btn.label}
-            </Pill>
+            <div key={tone} className="flex flex-wrap gap-3">
+              {row.map((btn) => {
+                const isActive = activeHref
+                  ? activeHref === btn.href
+                  : isNavItemActive(btn, pathname);
+                return (
+                  <Pill key={btn.label} variant={tone} selected={isActive} href={btn.href}>
+                    {btn.label}
+                  </Pill>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
@@ -172,9 +180,13 @@ export function SchemeDetailHeaderSkeleton() {
           <div key={i} className="h-[66px] rounded-[var(--radius-card)] bg-line/60" />
         ))}
       </div>
-      <div className="flex flex-wrap gap-2.5">
-        {Array.from({ length: 13 }).map((_, i) => (
-          <div key={i} className="h-10 w-28 rounded-full bg-line/60" />
+      <div className="flex flex-col gap-3">
+        {[6, 3].map((count, r) => (
+          <div key={r} className="flex flex-wrap gap-3">
+            {Array.from({ length: count }).map((_, i) => (
+              <div key={i} className="h-10 w-[150px] rounded-full bg-line/60" />
+            ))}
+          </div>
         ))}
       </div>
     </div>

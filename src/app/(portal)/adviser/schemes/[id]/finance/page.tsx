@@ -12,6 +12,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { connection } from "next/server";
 import { FundsCard } from "../_sections/funds-card";
+import { LeviesCard } from "../_sections/levies-card";
+import { getLeviesForScheme } from "@/lib/queries/levies";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -38,6 +40,7 @@ export default async function FinanceDashboardPage({
     journalEntries,
     overdueLevies,
     overdueInvoices,
+    levies,
   ] = await Promise.all([
     getFundsForScheme(id),
     getBankAccountsForScheme(id),
@@ -47,6 +50,7 @@ export default async function FinanceDashboardPage({
     getJournalEntriesForScheme(id, undefined, 10),
     getOverdueLevyNotices(id, 100),
     getOverdueInvoices(id),
+    getLeviesForScheme(id),
   ]);
 
   const adminFund = funds.find((f) => f.fundType === "ADMINISTRATIVE");
@@ -95,6 +99,9 @@ export default async function FinanceDashboardPage({
 
       {/* Funds (moved here from the scheme main page so Financials covers them) */}
       <FundsCard id={id} funds={funds} className="" />
+
+      {/* Levies (nested under Financials) */}
+      <LeviesCard id={id} levies={levies} className="" />
 
       {/* Setup checklist — shown if chart of accounts is not yet seeded */}
       {!hasChartOfAccounts && (

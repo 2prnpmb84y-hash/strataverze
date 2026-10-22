@@ -39,6 +39,12 @@
   --color-ink-muted: #64748B;
   --color-line: #E2E8F0;
   --color-turquoise: #00D4BF;
+  /* Scheme navigation pills (sampled from the scheme design) */
+  --color-pill-peach: #FFD18B;
+  --color-pill-peach-line: #FFE3B9;
+  --color-pill-peach-soft: #FFF1DC;
+  --color-pill-mint-line: #B9F3E9;
+  --color-pill-mint-soft: #DCF9F4;
   --radius-card: 12px;
   --radius-pill: 9999px;
 

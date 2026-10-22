@@ -1,35 +1,62 @@
 /**
  * Scheme section navigation (pure, no React).
  *
- * The single source of truth for the persistent scheme navigation. The order and
- * labels follow the approved scheme design and must not be reordered without
- * sign-off.
+ * The single source of truth for the persistent scheme navigation. The order,
+ * labels and colours follow the approved scheme design and must not be changed
+ * without sign-off.
  */
+
+export type SchemeNavTone = "section" | "action";
 
 export interface SchemeNavItem {
   label: string;
   href: string;
   /** Extra path prefixes that should also mark this item active. */
   match?: string[];
+  /**
+   * Pill style from the design: "section" is the peach row, "action" is the
+   * mint row with the plus icon. Defaults to "section".
+   */
+  tone?: SchemeNavTone;
 }
 
-/** The 13 adviser scheme sections, in the approved order. */
+/**
+ * The 9 adviser scheme pills, in the approved order and with the design's
+ * labels. Sections without their own pill are nested so the right pill stays
+ * active: Contacts under Lots / Owners, Levies and Funds under Financials,
+ * Notifications under Conversations, Works under Work Order, and By-laws and
+ * Members under Governance.
+ */
 export function adviserSchemeNav(schemeId: string): SchemeNavItem[] {
   const base = `/adviser/schemes/${schemeId}`;
   return [
-    { label: "Lots / Owners", href: `${base}/lots` },
-    { label: "Levies", href: `${base}/levies` },
-    { label: "Financials", href: `${base}/finance`, match: [`${base}/funds`] },
+    { label: "Lots / Owners", href: `${base}/lots`, match: [`${base}/contacts`] },
+    {
+      label: "Financials",
+      href: `${base}/finance`,
+      match: [`${base}/levies`, `${base}/funds`],
+    },
     { label: "Compliance", href: `${base}/compliance` },
     { label: "Insurance", href: `${base}/insurance` },
-    { label: "Documents", href: `${base}/documents` },
-    { label: "Work Orders", href: `${base}/work-orders`, match: [`${base}/works`] },
-    { label: "Meetings", href: `${base}/meetings` },
-    { label: "By-laws", href: `${base}/bylaws` },
-    { label: "Contacts", href: `${base}/contacts` },
-    { label: "Announcements", href: `${base}/announcements` },
-    { label: "Governance", href: `${base}/governance`, match: [`${base}/members`] },
-    { label: "Notifications", href: `${base}/notifications` },
+    {
+      label: "Conversations",
+      href: `${base}/announcements`,
+      match: [`${base}/notifications`],
+    },
+    { label: "Document", href: `${base}/documents` },
+    {
+      label: "Work Order",
+      href: `${base}/work-orders`,
+      match: [`${base}/works`],
+      tone: "action",
+    },
+    { label: "Meetings", href: `${base}/meetings`, tone: "action" },
+    {
+      label: "Governance",
+      href: `${base}/governance`,
+      match: [`${base}/bylaws`, `${base}/members`],
+      tone: "action",
+    },
   ];
 }
 

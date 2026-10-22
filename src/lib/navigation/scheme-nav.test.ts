@@ -14,21 +14,24 @@ const activeFor = (path: string) =>
   nav.filter((n) => isNavItemActive(n, path)).map((n) => n.label);
 
 describe("adviserSchemeNav", () => {
-  it("lists the 13 approved sections in the approved order", () => {
+  it("lists the 9 approved pills in the approved order", () => {
     expect(nav.map((n) => n.label)).toEqual([
       "Lots / Owners",
-      "Levies",
       "Financials",
       "Compliance",
       "Insurance",
-      "Documents",
-      "Work Orders",
+      "Conversations",
+      "Document",
+      "Work Order",
       "Meetings",
-      "By-laws",
-      "Contacts",
-      "Announcements",
       "Governance",
-      "Notifications",
+    ]);
+  });
+
+  it("puts the first six in the peach row and the last three in the mint row", () => {
+    expect(nav.map((n) => n.tone ?? "section")).toEqual([
+      "section", "section", "section", "section", "section", "section",
+      "action", "action", "action",
     ]);
   });
 
@@ -48,16 +51,30 @@ describe("isNavItemActive", () => {
     expect(activeFor(`/adviser/schemes/${ID}/lots/123`)).toEqual(["Lots / Owners"]);
   });
 
-  it("marks exactly one section active for nested modules", () => {
-    expect(activeFor(`/adviser/schemes/${ID}/works/rfqs`)).toEqual(["Work Orders"]);
-    expect(activeFor(`/adviser/schemes/${ID}/funds/f1`)).toEqual(["Financials"]);
-    expect(activeFor(`/adviser/schemes/${ID}/members`)).toEqual(["Governance"]);
-    expect(activeFor(`/adviser/schemes/${ID}/finance/levies`)).toEqual(["Financials"]);
+  it("marks exactly one pill active for nested sections", () => {
+    const cases: [string, string][] = [
+      ["works/rfqs", "Work Order"],
+      ["funds/f1", "Financials"],
+      ["levies", "Financials"],
+      ["levies/l1", "Financials"],
+      ["finance/levies", "Financials"],
+      ["contacts", "Lots / Owners"],
+      ["contacts/new", "Lots / Owners"],
+      ["announcements/a1", "Conversations"],
+      ["notifications", "Conversations"],
+      ["bylaws", "Governance"],
+      ["bylaws/b1", "Governance"],
+      ["members", "Governance"],
+      ["documents/d1", "Document"],
+    ];
+    for (const [path, label] of cases) {
+      expect(activeFor(`/adviser/schemes/${ID}/${path}`)).toEqual([label]);
+    }
   });
 
   it("does not confuse sections that share a prefix", () => {
     // /works must not activate a hypothetical /work-orders match by prefix alone
-    expect(isNavItemActive(item("Work Orders"), `/adviser/schemes/${ID}/work-orders-x`)).toBe(false);
+    expect(isNavItemActive(item("Work Order"), `/adviser/schemes/${ID}/work-orders-x`)).toBe(false);
   });
 });
 

@@ -1,19 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { CirclePlus } from "lucide-react";
 
-type PillVariant = "nav" | "create";
+type PillVariant = "section" | "action";
 
 /**
- * Rounded pill used for scheme section navigation.
- *  - "nav": outlined turquoise, uppercase (the scheme navigation). Selected is filled.
- *  - "create": mint outline with a plus icon.
+ * Rounded pill used for the scheme section navigation, styled to the design:
+ *  - "section": peach outline. Selected is filled peach.
+ *  - "action": mint outline with a circled plus icon. Selected is filled mint.
+ * All pills share one width so the rows line up as in the design.
  * Links use next/link so section changes are in-app navigations, not reloads.
  */
 export function Pill({
   children,
-  variant = "nav",
+  variant = "section",
   selected = false,
   onClick,
   href,
@@ -27,40 +28,35 @@ export function Pill({
   className?: string;
 }) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-full h-10 px-6 transition-colors border-[1.5px] whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-turquoise focus-visible:ring-offset-2";
+    "inline-flex items-center justify-center gap-2 rounded-full h-10 min-w-[150px] px-5 border-2 text-sm text-ink whitespace-nowrap transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/40 focus-visible:ring-offset-2";
 
   const variants: Record<PillVariant, string> = {
-    nav: selected
-      ? "bg-turquoise border-turquoise text-white text-[13px] font-medium uppercase tracking-[0.06em]"
-      : "bg-white border-turquoise text-turquoise text-[13px] font-medium uppercase tracking-[0.06em] hover:bg-turquoise/10",
-    create: selected
-      ? "bg-mint-soft border-mint text-ink text-sm font-medium"
-      : "bg-white border-mint text-ink text-sm font-medium hover:bg-mint-soft/30",
+    section: selected
+      ? "bg-pill-peach border-pill-peach font-medium"
+      : "bg-white border-pill-peach-line hover:bg-pill-peach-soft",
+    action: selected
+      ? "bg-pill-mint-line border-pill-mint-line font-medium"
+      : "bg-white border-pill-mint-line hover:bg-pill-mint-soft",
   };
 
   const cls = `${base} ${variants[variant]} ${className}`;
+  const icon =
+    variant === "action" ? (
+      <CirclePlus size={16} strokeWidth={1.75} aria-hidden="true" className="shrink-0" />
+    ) : null;
 
   if (href) {
     return (
-      <Link
-        href={href}
-        className={cls}
-        aria-current={selected ? "page" : undefined}
-      >
-        {variant === "create" && <Plus size={16} strokeWidth={2} />}
+      <Link href={href} className={cls} aria-current={selected ? "page" : undefined}>
+        {icon}
         {children}
       </Link>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cls}
-      aria-pressed={selected}
-    >
-      {variant === "create" && <Plus size={16} strokeWidth={2} />}
+    <button type="button" onClick={onClick} className={cls} aria-pressed={selected}>
+      {icon}
       {children}
     </button>
   );

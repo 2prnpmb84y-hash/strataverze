@@ -5,13 +5,14 @@ import type { getLeviesForScheme } from "@/lib/queries/levies";
 
 /** Moved unchanged from the scheme main page so it can also back its section page. */
 export function LeviesCard({
-  id, levies,
+  id, levies, className = "mb-6",
 }: {
   id: string;
   levies: Awaited<ReturnType<typeof getLeviesForScheme>>;
+  className?: string;
 }) {
   return (
-    <Card className="mb-6">
+    <Card className={className}>
       <CardHeader
         title="Levies"
         description={
