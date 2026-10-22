@@ -52,6 +52,17 @@ export default async function InsuranceOverviewPage({
   const openRenewals = renewals.filter(
     (r) => r.stage !== "COMPLETED" && r.stage !== "NOT_PROCEEDING",
   );
+  const renewingPolicyIds = new Set(openRenewals.map((r) => r.expiringPolicyId));
+  const dueForRenewal = policies.filter((p) => {
+    if (renewingPolicyIds.has(p.id)) return false;
+    const status = derivePolicyStatus({
+      startDate: new Date(String(p.startDate)),
+      endDate: new Date(String(p.endDate)),
+      status: p.status,
+    });
+    if (status !== "ACTIVE") return false;
+    return daysUntilExpiry(new Date(String(p.endDate))) <= 60;
+  });
 
   const active = policies.filter((p) => {
     const s = derivePolicyStatus({
@@ -75,6 +86,30 @@ export default async function InsuranceOverviewPage({
           </Button>
         }
       />
+
+      {/* Renewal reminders (surfaced in-app; no scheduler required) */}
+      {dueForRenewal.length > 0 && (
+        <div className="mb-6 rounded-[var(--radius-card)] bg-amber-50 border border-amber-200 px-4 py-3">
+          <p className="text-sm font-medium text-amber-900 mb-1">
+            {dueForRenewal.length}{" "}
+            {dueForRenewal.length === 1 ? "policy is" : "policies are"} due for
+            renewal within 60 days
+          </p>
+          <ul className="text-sm text-amber-800 space-y-0.5">
+            {dueForRenewal.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/adviser/schemes/${id}/insurance/${p.id}`}
+                  className="hover:underline"
+                >
+                  {POLICY_TYPE_LABELS[p.policyType] ?? p.policyType} · {p.insurer} ·
+                  expires {formatDate(String(p.endDate))}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Policies */}
       {policies.length === 0 ? (

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField, TextareaField } from "@/components/ui/form-field";
+import { UnsavedGuard } from "@/components/ui/unsaved-guard";
 import {
   createClaimAction,
   updateClaimAction,
@@ -133,6 +134,7 @@ function ClaimFormInner({
 
   return (
     <form action={formAction} className="space-y-5">
+      <UnsavedGuard />
       {state.error ? (
         <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
