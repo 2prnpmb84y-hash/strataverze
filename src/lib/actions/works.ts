@@ -1,6 +1,13 @@
 "use server";
 
 import { feeErrorMessage } from "@/lib/billing/disclosure";
+import { headers } from "next/headers";
+import {
+  PaymentControlError,
+  authoriseWorksInvoice,
+  checkInvoiceControl,
+  worksInvoiceControls,
+} from "@/lib/finance/invoice-approval";
 import { captureUsageFee } from "@/lib/billing/capture";
 import { isExecutedContractStatus } from "@/lib/billing/hook-codes";
 import { revalidatePath } from "next/cache";
@@ -1018,9 +1025,15 @@ export async function assessWorksInvoice(
       "ADVISER",
       "ACCOUNTANT",
     ]);
+    const existing = await db.orm.public.WorksInvoice.where((i) => i.id.eq(invoiceId)).first();
+    if (!existing || existing.schemeId !== schemeId) return { error: "Invoice not found." };
+    if (await hasAuthorisations(invoiceId)) {
+      return { error: "This invoice already has approvals, so it cannot be reassessed." };
+    }
 
     await db.transaction(async (tx) => {
-      // Update invoice
+      // Assessing prepares the invoice for approval. The assessor can never
+      // approve it; the treasurer or a payment authoriser does (payment policy).
       await tx.orm.public.WorksInvoice
         .where((i) => i.id.eq(invoiceId))
         .update({
@@ -1029,7 +1042,7 @@ export async function assessWorksInvoice(
           assessedAt: toTimestamp(new Date().toISOString()),
           assessmentNotes,
           differenceReasons,
-          status: "APPROVED",
+          status: "AWAITING_AUTHORISATION",
         });
 
       // Create payment assessment record
@@ -1094,10 +1107,31 @@ export async function authoriseWorksPayment(
   if (!beneficiary) return { error: "Beneficiary is required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "ADVISER",
-    ]);
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+
+    // Payment controls: the invoice must be approved, and the bank details used
+    // must be verified.
+    const controls = await worksInvoiceControls(invoiceId);
+    if (!controls || controls.invoice.schemeId !== schemeId) return { error: "Invoice not found." };
+    const sod = await checkInvoiceControl(schemeId, "RECORD_PAYMENT", profile.id, controls.forControls);
+    if (sod.result === "blocked") return { error: sod.reason };
+    if (bankDetailVersionId) {
+      const bank = await db.orm.public.WorksBankDetailVersion.where((b) => b.id.eq(bankDetailVersionId)).first();
+      if (!bank || bank.contractorBusinessId !== controls.invoice.contractorBusinessId) {
+        return { error: "Those bank details do not belong to this contractor." };
+      }
+      if (bank.status !== "VERIFIED") return { error: "The contractor's bank details have not been verified. Verify them before paying." };
+    }
+    if (sod.result === "exception") {
+      await logActivity({
+        schemeId,
+        actorId: profile.id,
+        action: "PAYMENT_CONTROL_EXCEPTION",
+        entityType: "WorksInvoice",
+        entityId: invoiceId,
+        metadata: { control: "SEGREGATION_OF_DUTIES", reason: sod.reason },
+      });
+    }
 
     await db.transaction(async (tx) => {
       await tx.orm.public.WorksPaymentInstruction.create({
@@ -2224,5 +2258,27 @@ export async function updateWorksWorkOrder(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update work order." };
+  }
+}
+
+async function hasAuthorisations(worksInvoiceId: string) {
+  const row = await db.orm.public.PaymentAuthorisation.where((a) => a.worksInvoiceId.eq(worksInvoiceId)).first();
+  return !!row;
+}
+
+/** Approve an assessed works invoice for payment (one of up to two approvals). */
+export async function approveWorksInvoiceAction(schemeId: string, invoiceId: string): Promise<ActionResult> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "PAYMENT_AUTHORISER"]);
+    const ip = (await headers()).get("x-forwarded-for");
+    const outcome = await authoriseWorksInvoice({ schemeId, worksInvoiceId: invoiceId, actorId: profile.id, ip });
+    revalidatePath(`/adviser/schemes/${schemeId}/works/invoices/${invoiceId}`);
+    revalidatePath("/owner/finance/approvals");
+    return outcome.complete ? OK : { success: true, error: null };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof PaymentControlError) return { error: err.message };
+    console.error("approveWorksInvoiceAction error:", err);
+    return { error: "Failed to approve the invoice." };
   }
 }

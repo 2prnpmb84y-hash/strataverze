@@ -8,6 +8,10 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { getInvoiceControlView } from "@/lib/finance/control-view";
+import { ApprovalPanel } from "@/components/finance/approval-panel";
+import { ApproveButton } from "@/components/finance/approve-button";
+import { approveWorksInvoiceAction } from "@/lib/actions/works";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -41,6 +45,7 @@ const statusLabel: Record<string, string> = {
   SUBMITTED: "Submitted",
   UNDER_ASSESSMENT: "Under Assessment",
   FURTHER_INFORMATION: "Further Information",
+  AWAITING_AUTHORISATION: "Awaiting Approval",
   APPROVED: "Approved",
   PARTIALLY_APPROVED: "Partially Approved",
   REJECTED: "Rejected",
@@ -67,7 +72,15 @@ export default async function InvoiceDetailPage({
   if (!scheme) notFound();
 
   const invoice = await getWorksInvoiceById(invoiceId);
-  if (!invoice) notFound();
+  if (!invoice || invoice.schemeId !== id) notFound();
+
+  const controls = ["AWAITING_AUTHORISATION", "APPROVED", "PAYMENT_INSTRUCTED", "PAID"].includes(invoice.status)
+    ? await getInvoiceControlView(id, { worksInvoiceId: invoiceId }, profile.id)
+    : null;
+  async function approveAction() {
+    "use server";
+    return approveWorksInvoiceAction(id, invoiceId);
+  }
 
   const isOverdue =
     !["PAID", "RECONCILED", "VOIDED", "DUPLICATE"].includes(invoice.status) &&
@@ -114,6 +127,21 @@ export default async function InvoiceDetailPage({
           </div>
         }
       />
+
+      {controls && (
+        <Card>
+          <CardHeader title="Approval for payment" />
+          <div className="px-5 pb-5 space-y-4">
+            <ApprovalPanel view={controls} status={invoice.status} />
+            {invoice.status === "AWAITING_AUTHORISATION" && (
+              <ApproveButton
+                action={approveAction}
+                blockedReason={controls.approve.result === "blocked" ? controls.approve.reason : null}
+              />
+            )}
+          </div>
+        </Card>
+      )}
 
       <div className="flex items-center gap-3">
         <StatusChip

@@ -7,6 +7,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { InvoiceActions } from "./invoice-actions";
 import { transactionFeeTable } from "@/lib/billing/capture";
 import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
+import { getInvoiceControlView } from "@/lib/finance/control-view";
+import { ApprovalPanel } from "@/components/finance/approval-panel";
 import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
@@ -79,6 +81,13 @@ export default async function InvoiceDetailPage({
   if (!invoice || invoice.schemeId !== id) notFound();
 
   const status = String(invoice.status);
+  const controls = await getInvoiceControlView(id, { supplierInvoiceId: invoiceId }, profile.id);
+  const paymentBlocked =
+    controls?.bank.blocked
+      ? controls.bank.message
+      : controls?.payment.result === "blocked"
+        ? controls.payment.reason
+        : null;
   const dueDate = invoice.dueDate ? new Date(String(invoice.dueDate)) : null;
   const isOverdue =
     dueDate &&
@@ -179,6 +188,16 @@ export default async function InvoiceDetailPage({
         </div>
       </Card>
 
+      {/* Payment controls */}
+      {controls && status !== "CANCELLED" && (
+        <Card>
+          <CardHeader title="Approval" />
+          <div className="px-6 pb-6">
+            <ApprovalPanel view={controls} status={status} />
+          </div>
+        </Card>
+      )}
+
       {/* Actions */}
       {status !== "PAID" && status !== "CANCELLED" && (
         <Card>
@@ -189,6 +208,9 @@ export default async function InvoiceDetailPage({
               invoiceId={invoiceId}
               currentStatus={status}
               feeTable={isStrataVerzeSupplier(invoice.supplierId) ? null : await transactionFeeTable()}
+              approveBlockedReason={controls?.approve.result === "blocked" ? controls.approve.reason : null}
+              paymentBlockedReason={paymentBlocked}
+              cancelDisabled={isStrataVerzeSupplier(invoice.supplierId)}
             />
           </div>
         </Card>

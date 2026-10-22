@@ -2,7 +2,7 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 
-export type PortalRole = "OWNER" | "COMMITTEE" | "ADVISER" | "SUPPLIER" | "ACCOUNTANT";
+export type PortalRole = "OWNER" | "COMMITTEE" | "ADVISER" | "SUPPLIER" | "ACCOUNTANT" | "PAYMENT_AUTHORISER";
 
 /**
  * Verify the current user is authenticated and has an active membership
@@ -19,7 +19,9 @@ export async function requireSchemeMembership(
     throw new AuthorisationError("You must be signed in.");
   }
 
-  const membership = await db.orm.public.SchemeMembership
+  // A person can hold several roles on one scheme (owner and committee, say),
+  // so look for any active membership with an allowed role.
+  const memberships = await db.orm.public.SchemeMembership
     .where((m) =>
       and(
         m.schemeId.eq(schemeId),
@@ -27,9 +29,11 @@ export async function requireSchemeMembership(
         m.isActive.eq(true),
       ),
     )
-    .first();
+    .limit(20)
+    .all();
+  const membership = memberships.find((m) => allowedRoles.includes(m.role as PortalRole));
 
-  if (!membership || !allowedRoles.includes(membership.role as PortalRole)) {
+  if (!membership) {
     throw new AuthorisationError(
       "You do not have permission to perform this action.",
     );

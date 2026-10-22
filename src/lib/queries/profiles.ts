@@ -156,7 +156,8 @@ export async function getAvailablePortals(profileId: string) {
   for (const role of roles) {
     const key = role.toLowerCase();
     // COMMITTEE members use the owner portal with extra features
-    if (key === "committee" || key === "owner") {
+    // Committee members and payment authorisers use the owner portal.
+    if (key === "committee" || key === "owner" || key === "payment_authoriser") {
       if (!portals.includes("owner")) portals.push("owner");
     } else {
       if (!portals.includes(key)) portals.push(key);

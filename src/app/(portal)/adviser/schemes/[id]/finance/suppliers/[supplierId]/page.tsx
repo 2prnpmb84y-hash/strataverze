@@ -6,6 +6,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
+import { getApprovalMembers, getBankDetailVersions, getPaymentSettings } from "@/lib/queries/payment-controls";
+import { canVerifyBankChange, checkBankDetailsForPayment } from "@/lib/finance/payment-controls";
+import { BankChangeForm, VerifyBankChangeForm } from "./bank-detail-controls";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -90,7 +93,22 @@ export default async function SupplierDetailPage({
   if (!isAdviser) notFound();
 
   const supplier = await getFinancialSupplierById(supplierId);
-  if (!supplier) notFound();
+  if (!supplier || supplier.schemeId !== id) notFound();
+
+  // Bank detail change control.
+  const [versions, settings, members] = await Promise.all([
+    getBankDetailVersions(supplierId),
+    getPaymentSettings(id),
+    getApprovalMembers(id),
+  ]);
+  const latestVersion = versions[0] ?? null;
+  const bankDecision = checkBankDetailsForPayment(latestVersion, new Date().toISOString(), settings.coolingOffDays);
+  const verifyCheck = latestVersion ? canVerifyBankChange(latestVersion, profile.id) : null;
+  const needsVerification = latestVersion && (latestVersion.status === "PENDING" || bankDecision.result === "blocked");
+  const verifySlot = needsVerification && verifyCheck?.ok ? verifyCheck.slot : null;
+  const memberName = (pid: string) => members.find((m) => m.profileId === pid)?.name ?? "a former member";
+  const when = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" });
 
   const invoices = supplier.supplierInvoices ?? [];
 
@@ -127,6 +145,42 @@ export default async function SupplierDetailPage({
             value={`${String(supplier.paymentTerms ?? 30)} days`}
           />
         </dl>
+        <div className="px-6 pb-6 space-y-4">
+          {bankDecision.result === "blocked" && (
+            <p className="rounded-[var(--radius-card)] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              Payments blocked. {bankDecision.reason}
+            </p>
+          )}
+          {latestVersion && verifySlot && (
+            <div className="rounded-[var(--radius-card)] border border-line p-4 space-y-2">
+              <p className="text-sm text-ink">
+                Changed by {memberName(latestVersion.changedById)} on {when(latestVersion.changedAt)}
+                {latestVersion.previousAccountNumber
+                  ? ` (was BSB ${maskBsb(latestVersion.previousBsb)}, account ${maskAccountNumber(latestVersion.previousAccountNumber)})`
+                  : ""}
+                .
+              </p>
+              <VerifyBankChangeForm schemeId={id} versionId={latestVersion.id} slot={verifySlot} />
+            </div>
+          )}
+          <BankChangeForm schemeId={id} supplierId={supplierId} />
+          {versions.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-2">Bank detail history</h3>
+              <ul className="space-y-1 text-sm text-ink-muted">
+                {versions.map((v) => (
+                  <li key={v.id}>
+                    {when(v.changedAt)}: changed by {memberName(v.changedById)} to account {maskAccountNumber(v.newAccountNumber)}.{" "}
+                    {v.status === "PENDING" && "Not yet verified."}
+                    {v.status === "REJECTED" && `Rejected: ${v.rejectionReason ?? ""}`}
+                    {v.status === "VERIFIED" &&
+                      `Verified by ${memberName(v.verifiedById ?? "")}${v.secondVerifiedById ? ` and ${memberName(v.secondVerifiedById)}` : ""}.`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* Status */}

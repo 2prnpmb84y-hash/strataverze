@@ -12,7 +12,7 @@ vi.mock("@/prisma/db", () => ({
       public: {
         SchemeMembership: {
           where: vi.fn(() => ({
-            first: vi.fn(),
+            limit: vi.fn(() => ({ all: vi.fn() })),
           })),
         },
       },
@@ -40,7 +40,7 @@ describe("AuthorisationError", () => {
 
 describe("requireSchemeMembership", () => {
   let getCurrentProfile: ReturnType<typeof vi.fn>;
-  let membershipFirst: ReturnType<typeof vi.fn>;
+  let membershipAll: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -49,9 +49,9 @@ describe("requireSchemeMembership", () => {
     getCurrentProfile = profilesModule.getCurrentProfile as ReturnType<typeof vi.fn>;
 
     const dbModule = await import("@/prisma/db");
-    membershipFirst = vi.fn();
+    membershipAll = vi.fn();
     (dbModule.db.orm.public.SchemeMembership.where as ReturnType<typeof vi.fn>).mockReturnValue({
-      first: membershipFirst,
+      limit: () => ({ all: membershipAll }),
     });
   });
 
@@ -71,7 +71,7 @@ describe("requireSchemeMembership", () => {
 
   it("throws AuthorisationError when user has no membership", async () => {
     getCurrentProfile.mockResolvedValue({ id: "profile-1" });
-    membershipFirst.mockResolvedValue(null);
+    membershipAll.mockResolvedValue([]);
 
     const { requireSchemeMembership } = await import("./require-membership");
 
@@ -82,12 +82,12 @@ describe("requireSchemeMembership", () => {
 
   it("throws AuthorisationError when user has wrong role", async () => {
     getCurrentProfile.mockResolvedValue({ id: "profile-1" });
-    membershipFirst.mockResolvedValue({
+    membershipAll.mockResolvedValue([{
       schemeId: "scheme-1",
       profileId: "profile-1",
       role: "OWNER",
       isActive: true,
-    });
+    }]);
 
     const { requireSchemeMembership } = await import("./require-membership");
 
@@ -106,7 +106,7 @@ describe("requireSchemeMembership", () => {
     };
 
     getCurrentProfile.mockResolvedValue(mockProfile);
-    membershipFirst.mockResolvedValue(mockMembership);
+    membershipAll.mockResolvedValue([mockMembership]);
 
     const { requireSchemeMembership } = await import("./require-membership");
 
@@ -125,7 +125,7 @@ describe("requireSchemeMembership", () => {
     };
 
     getCurrentProfile.mockResolvedValue(mockProfile);
-    membershipFirst.mockResolvedValue(mockMembership);
+    membershipAll.mockResolvedValue([mockMembership]);
 
     const { requireSchemeMembership } = await import("./require-membership");
 
@@ -135,6 +135,19 @@ describe("requireSchemeMembership", () => {
       "ADVISER",
     ]);
     expect(result.membership.role).toBe("COMMITTEE");
+  });
+
+  it("finds the allowed role when a person holds several roles on the scheme", async () => {
+    getCurrentProfile.mockResolvedValue({ id: "profile-1" });
+    membershipAll.mockResolvedValue([
+      { schemeId: "scheme-1", profileId: "profile-1", role: "OWNER", isActive: true },
+      { schemeId: "scheme-1", profileId: "profile-1", role: "ADVISER", isActive: true },
+    ]);
+
+    const { requireSchemeMembership } = await import("./require-membership");
+
+    const result = await requireSchemeMembership("scheme-1", ["ADVISER"]);
+    expect(result.membership.role).toBe("ADVISER");
   });
 });
 
@@ -165,4 +178,5 @@ describe("requireAuth", () => {
     const result = await requireAuth();
     expect(result).toBe(mockProfile);
   });
+
 });

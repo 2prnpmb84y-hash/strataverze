@@ -113,9 +113,14 @@ export default async function OwnerFinancePage() {
         title="Finance"
         description="Your levy contributions and fund balances."
         action={
-          <Button variant="secondary" href="/owner/finance/platform-fees">
-            StrataVerze Fees
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" href="/owner/finance/approvals">
+              Payment Approvals
+            </Button>
+            <Button variant="secondary" href="/owner/finance/platform-fees">
+              StrataVerze Fees
+            </Button>
+          </div>
         }
       />
 

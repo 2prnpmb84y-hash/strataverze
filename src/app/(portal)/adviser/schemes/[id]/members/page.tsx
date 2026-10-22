@@ -7,6 +7,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { InviteForm } from "./invite-form";
 import { RevokeButton } from "./revoke-button";
 import { connection } from "next/server";
+import { TreasurerToggle } from "@/components/finance/treasurer-toggle";
 
 export default async function SchemeMembersPage({
   params,
@@ -174,11 +175,14 @@ export default async function SchemeMembersPage({
                         {m.profile.email}
                       </p>
                     </div>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleStyle[m.role]}`}
-                    >
-                      {roleLabel[m.role]}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <TreasurerToggle schemeId={id} membershipId={m.id} isTreasurer={m.isTreasurer} />
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${roleStyle[m.role]}`}
+                      >
+                        {roleLabel[m.role]}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
