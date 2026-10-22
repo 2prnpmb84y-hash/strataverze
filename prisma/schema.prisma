@@ -35,6 +35,8 @@ model Profile {
   firstName     String             @map("first_name")
   lastName      String             @map("last_name")
   phone         String?
+  /// StrataVerze staff. Not a scheme role: platform admins see platform billing across schemes.
+  isPlatformAdmin Boolean          @default(false) @map("is_platform_admin")
   avatarUrl     String?            @map("avatar_url")
   createdAt     DateTime           @default(now()) @db.Timestamptz @map("created_at")
   updatedAt     DateTime           @updatedAt @db.Timestamptz @map("updated_at")
@@ -3240,4 +3242,111 @@ model DebtRecoveryActivity {
 
   @@index([caseId, createdAt])
   @@map("debt_recovery_activities")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLATFORM BILLING (StrataVerze charges to schemes, suppliers and developers)
+// ═══════════════════════════════════════════════════════════════
+
+/// Every StrataVerze price, with effective dates. Prices are flat amounts,
+/// never percentages. Banded rows share a code and carry inclusive band bounds
+/// (cents for money bands, lots for lot bands). Amounts exclude GST unless
+/// gstInclusive is true.
+model PlatformPriceBook {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                 String
+  variant              String?
+  description          String
+  amount               Decimal?  @db.Decimal(12, 2)
+  gstInclusive         Boolean   @default(false) @map("gst_inclusive")
+  unit                 String // PER_EVENT, PER_MONTH, PER_YEAR, PER_SEAT_MONTH, PER_STEP, PER_NOTICE
+  payerType            String    @map("payer_type") // OC, OWNER_VIA_OC, REQUESTING_PARTY, INCOMING_OWNER, DEVELOPER, SUPPLIER
+  effectiveFrom        DateTime  @db.Date @map("effective_from")
+  effectiveTo          DateTime? @db.Date @map("effective_to")
+  isActive             Boolean   @default(true) @map("is_active")
+  recoverableFromOwner Boolean   @default(false) @map("recoverable_from_owner")
+  bandMin              Int?      @map("band_min")
+  bandMax              Int?      @map("band_max")
+  notes                String?
+  createdAt            DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt            DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@index([code, isActive])
+  @@map("platform_price_book")
+}
+
+/// A scheme's StrataVerze subscription. Tier comes from the active lot count
+/// at the start of each billing period.
+model SchemeSubscription {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId              String    @unique @map("scheme_id") @db.Uuid
+  tier                  String // SMALL, MEDIUM, LARGE, ENTERPRISE
+  monthlyPrice          Decimal?  @db.Decimal(12, 2) @map("monthly_price") // ex GST; null = manual quote
+  status                String    @default("PROMOTIONAL") // PROMOTIONAL, ACTIVE, PAST_DUE, CANCELLED
+  promotionEnd          DateTime? @db.Date @map("promotion_end")
+  currentPeriodStart    DateTime? @db.Date @map("current_period_start")
+  currentPeriodEnd      DateTime? @db.Date @map("current_period_end")
+  lotCountAtPeriodStart Int?      @map("lot_count_at_period_start")
+  createdAt             DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt             DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@map("scheme_subscriptions")
+}
+
+/// One StrataVerze charge arising from an action in a scheme. Never deleted:
+/// reversing the source creates a REVERSED event that points at the original.
+model PlatformFeeEvent {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId            String    @map("scheme_id") @db.Uuid
+  code                String
+  variant             String?
+  description         String
+  sourceType          String    @map("source_type")
+  sourceId            String    @map("source_id")
+  quantity            Int       @default(1)
+  amountExGst         Decimal   @db.Decimal(12, 2) @map("amount_ex_gst") // negative on a reversal
+  gstAmount           Decimal   @db.Decimal(12, 2) @map("gst_amount")
+  payerType           String    @map("payer_type")
+  payerProfileId      String?   @map("payer_profile_id") @db.Uuid
+  recoverableFromOwner Boolean  @default(false) @map("recoverable_from_owner")
+  status              String    @default("ACCRUED") // ACCRUED, INVOICED, EXTRACTED, WAIVED, REVERSED
+  reversalOfId        String?   @map("reversal_of_id") @db.Uuid
+  disclosureShownToId String?   @map("disclosure_shown_to_id") @db.Uuid
+  disclosureShownAt   DateTime? @db.Timestamptz @map("disclosure_shown_at")
+  disclosedAmount     Decimal?  @db.Decimal(12, 2) @map("disclosed_amount") // incl GST, as shown
+  createdById         String?   @map("created_by_id") @db.Uuid
+  providerItemId      String?   @map("provider_item_id")
+  invoiceId           String?   @map("invoice_id") @db.Uuid
+  journalEntryId      String?   @map("journal_entry_id") @db.Uuid
+  idempotencyKey      String    @unique @map("idempotency_key")
+  occurredAt          DateTime  @default(now()) @db.Timestamptz @map("occurred_at")
+  createdAt           DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt           DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@index([schemeId, status])
+  @@index([schemeId, occurredAt])
+  @@index([sourceType, sourceId])
+  @@map("platform_fee_events")
+}
+
+/// StrataVerze's monthly invoice to a scheme. Recorded in the scheme's own
+/// ledger as a supplier invoice so it is approved and paid like any other.
+model PlatformInvoice {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId          String    @map("scheme_id") @db.Uuid
+  invoiceNumber     String    @unique @map("invoice_number")
+  periodStart       DateTime  @db.Date @map("period_start")
+  periodEnd         DateTime  @db.Date @map("period_end")
+  subtotal          Decimal   @db.Decimal(12, 2)
+  gst               Decimal   @db.Decimal(12, 2)
+  total             Decimal   @db.Decimal(12, 2)
+  status            String    @default("DRAFT") // DRAFT, ISSUED, APPROVED, PAID, CANCELLED
+  supplierInvoiceId String?   @map("supplier_invoice_id") @db.Uuid
+  pdfDocumentId     String?   @map("pdf_document_id") @db.Uuid
+  issuedAt          DateTime? @db.Timestamptz @map("issued_at")
+  createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt         DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@unique([schemeId, periodStart])
+  @@map("platform_invoices")
 }

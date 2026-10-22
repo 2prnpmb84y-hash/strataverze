@@ -66,6 +66,7 @@ import {
   getNextNoticeNumber,
 } from "@/lib/queries/levy-schedules";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { captureUsageFee } from "@/lib/billing/capture";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
   checkPlan,
@@ -1003,6 +1004,46 @@ export async function createSpecialLevyAction(
   }
 }
 
+/**
+ * Record that the year-end pack (financial statements, GST summary, audit
+ * trail export and committee pack) has been generated for a financial year.
+ * Charges the StrataVerze year-end pack fee once per scheme per year, in the
+ * same transaction as the record.
+ */
+export async function generateYearEndPackAction(
+  schemeId: string,
+  financialYear: number,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!Number.isInteger(financialYear) || financialYear < 2000) {
+      return { error: "Choose a financial year." };
+    }
+    await db.transaction(async (tx) => {
+      await captureUsageFee(tx.orm, {
+        schemeId,
+        code: "YEAR_END_PACK",
+        sourceType: "YearEndPack",
+        sourceId: `${schemeId}_FY${financialYear}`,
+        actorId: profile.id,
+      });
+    });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "YEAR_END_PACK_GENERATED",
+      entityType: "Scheme",
+      entityId: schemeId,
+      metadata: { financialYear },
+    });
+    revalidatePath(financePath(schemeId, "/reports"));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to generate the year-end pack." };
+  }
+}
+
 /** Form wrapper for recording a payment against one notice. */
 export async function recordLevyPaymentFormAction(
   schemeId: string,
@@ -1374,7 +1415,7 @@ export async function recordInvoicePaymentAction(
     // Fetch invoice details before recording payment
     const invoice = await getSupplierInvoiceById(invoiceId);
 
-    await recordInvoicePayment(invoiceId, amount);
+    await recordInvoicePayment(invoiceId, amount, { paymentDate, actorId: profile.id });
 
     // ── Auto journal entry: DR Accounts Payable, CR Bank ──
     if (invoice) {

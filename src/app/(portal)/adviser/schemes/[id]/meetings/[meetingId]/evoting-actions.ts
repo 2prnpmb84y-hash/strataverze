@@ -25,6 +25,9 @@ import { resolveOutcome } from "@/lib/meetings/conduct";
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { recordMeetingEvent } from "@/lib/meetings/events";
 
+import { db } from "@/prisma/db";
+import { captureUsageFee } from "@/lib/billing/capture";
+
 export type EvotingActionState = { error?: string; ok?: boolean };
 
 function revalidate(schemeId: string, meetingId: string) {
@@ -58,11 +61,23 @@ export async function openBallotAction(
     const start = new Date(String(meeting.startTime ?? meeting.scheduledAt));
     const window = computeBallotWindow(ruleSet, type, start);
 
-    await createBallot({
-      meetingId,
-      opensAt: window.opensAt.toISOString(),
-      closesAt: window.closesAt.toISOString(),
-      createdById: profile.id,
+    await db.transaction(async (tx) => {
+      const ballot = await createBallot(
+        {
+          meetingId,
+          opensAt: window.opensAt.toISOString(),
+          closesAt: window.closesAt.toISOString(),
+          createdById: profile.id,
+        },
+        tx.orm,
+      );
+      await captureUsageFee(tx.orm, {
+        schemeId,
+        code: "BALLOT",
+        sourceType: "ElectronicBallot",
+        sourceId: ballot.id,
+        actorId: profile.id,
+      });
     });
     await recordMeetingEvent({
       meetingId,

@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { captureUsageFee } from "@/lib/billing/capture";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
@@ -121,13 +122,25 @@ export async function acceptInvitation(
         acceptedAt: toTimestamp(new Date().toISOString()),
       });
 
-    await tx.orm.public.SchemeMembership.create({
+    const membership = await tx.orm.public.SchemeMembership.create({
       schemeId: invitation.schemeId,
       profileId,
       role: invitation.role,
       lotId: invitation.lotId ?? null,
       isActive: true,
     });
+
+    // An external accountant or auditor seat is a StrataVerze charge per seat
+    // per month; the first month is recorded when the seat becomes active.
+    if (invitation.role === "ACCOUNTANT") {
+      await captureUsageFee(tx.orm, {
+        schemeId: invitation.schemeId,
+        code: "ACCOUNTANT_SEAT",
+        sourceType: "AccountantSeatMonth",
+        sourceId: `${membership.id}_${new Date().toISOString().slice(0, 7)}`,
+        actorId: invitation.invitedById ?? null,
+      });
+    }
   });
 
   return { success: true };

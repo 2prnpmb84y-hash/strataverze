@@ -8,8 +8,8 @@ export interface CreateBallotData {
   createdById?: string | null;
 }
 
-export async function createBallot(data: CreateBallotData) {
-  return db.orm.public.ElectronicBallot.create({
+export async function createBallot(data: CreateBallotData, orm: typeof db.orm = db.orm) {
+  return orm.public.ElectronicBallot.create({
     meetingId: data.meetingId,
     status: "OPEN",
     opensAt: data.opensAt as never,
