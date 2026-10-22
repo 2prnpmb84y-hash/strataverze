@@ -152,7 +152,6 @@ model Scheme {
   lots                Lot[]
   memberships         SchemeMembership[]
   images              SchemeImage[]
-  levies              Levy[]
   motions             Motion[]
   meetings            Meeting[]
   documents           Document[]
@@ -238,7 +237,6 @@ model Lot {
 
   scheme             Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   memberships        SchemeMembership[]
-  levyItems          LevyItem[]
   invitations        Invitation[]
   levyNotices        LevyNotice[]
   journalLines       JournalLine[]
@@ -454,42 +452,6 @@ model Fund {
 }
 
 // Legacy levy model — retained for backward compatibility during migration
-model Levy {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId    String     @map("scheme_id") @db.Uuid
-  title       String
-  description String?
-  totalAmount Decimal    @map("total_amount") @db.Decimal(12, 2)
-  dueDate     DateTime   @db.Timestamptz @map("due_date")
-  levyType    String     @map("levy_type") // ORDINARY, SPECIAL
-  status      String     @default("DRAFT")
-  createdAt   DateTime   @default(now()) @db.Timestamptz @map("created_at")
-  updatedAt   DateTime   @updatedAt @db.Timestamptz @map("updated_at")
-  deletedAt   DateTime?  @db.Timestamptz @map("deleted_at")
-
-  scheme      Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-  items       LevyItem[]
-
-  @@map("levies")
-}
-
-model LevyItem {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  levyId     String    @map("levy_id") @db.Uuid
-  lotId      String    @map("lot_id") @db.Uuid
-  amount     Decimal   @db.Decimal(12, 2)
-  paidAmount Decimal   @default(0) @map("paid_amount") @db.Decimal(12, 2)
-  status     String    @default("UNPAID")
-  paidAt     DateTime? @db.Timestamptz @map("paid_at")
-  deletedAt  DateTime? @db.Timestamptz @map("deleted_at")
-
-  levy       Levy      @relation(fields: [levyId], references: [id], onDelete: Cascade)
-  lot        Lot       @relation(fields: [lotId], references: [id])
-
-  @@unique([levyId, lotId])
-  @@map("levy_items")
-}
-
 // ─── Governance Engine ───────────────────────────────────────────
 model Meeting {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
