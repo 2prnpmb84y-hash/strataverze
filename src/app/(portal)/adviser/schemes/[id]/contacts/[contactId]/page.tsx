@@ -52,8 +52,8 @@ export default async function ContactDetailPage({
       <PageHeader
         title={contact.name}
         description={contact.scheme.name}
-        backHref={`/adviser/schemes/${id}/contacts`}
-        backLabel="Contacts"
+        backHref={`/adviser/schemes/${id}/lots`}
+        backLabel="Lots / Owners"
       />
 
       {/* Contact summary */}

@@ -30,7 +30,7 @@ export default async function NewAnnouncementPage({
         title="New Announcement"
         description={scheme.name}
         backHref={`/adviser/schemes/${id}/announcements`}
-        backLabel="Announcements"
+        backLabel="Conversations"
       />
       <Card>
         <AnnouncementForm schemeId={id} />

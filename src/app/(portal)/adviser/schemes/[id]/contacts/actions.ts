@@ -161,7 +161,7 @@ export async function deleteContactAction(
 
     await deleteContact(contactId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}/contacts`);
+    redirect(`/adviser/schemes/${schemeId}/lots`);
   } catch (err) {
     if (
       err &&
