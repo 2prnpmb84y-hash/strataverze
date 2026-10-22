@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
+import { ContractorBillingNote } from "@/components/billing/contractor-billing-note";
 
 function formatDate(date: Date | string | null): string {
   if (!date) return "—";
@@ -72,6 +73,8 @@ export default async function ContractorDetailPage({
           </span>
         )}
       </div>
+
+      <ContractorBillingNote />
 
       {/* Business details */}
       <Card>

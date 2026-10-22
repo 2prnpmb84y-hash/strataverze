@@ -1,5 +1,6 @@
 "use server";
 
+import { contractorPlanPrice } from "@/lib/billing/contractor-fees";
 import { revalidatePath } from "next/cache";
 import {
   requireAuth,
@@ -684,6 +685,7 @@ export async function acceptDeclarations(
       .first();
 
     if (!existingMembership) {
+      const plan = await contractorPlanPrice();
       await db.orm.public.ContractorMembership.create({
         contractorBusinessId,
         promotionId: toVarchar<100>("LAUNCH_2027"),
@@ -694,7 +696,8 @@ export async function acceptDeclarations(
         acceptedAt: toTimestamp(now),
         subscriptionStatus: "PROMOTIONAL",
         paidActivationStatus: "NOT_ACTIVATED",
-        planMonthlyPrice: toNumeric<10, 2>("65.00"),
+        // Price from the price book; the column default applies if it is missing.
+        ...(plan ? { planMonthlyPrice: toNumeric<10, 2>(String(plan.cents / 100)), planGstInclusive: plan.gstInclusive } : {}),
       });
     }
 

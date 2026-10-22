@@ -1,5 +1,7 @@
 "use server";
 
+import { COMPLIANCE_FEE_DECLARATION, complianceFeeVersion, contractorPlanPrice, quoteComplianceFee } from "@/lib/billing/contractor-fees";
+import { confirmedCentsFrom, feeErrorMessage, resolveDisclosure } from "@/lib/billing/disclosure";
 import { revalidatePath } from "next/cache";
 import {
   requireAuth,
@@ -700,6 +702,11 @@ export async function acceptMembership(
 
     await requireContractorOwnership(profile.id, contractorId);
 
+    // The contractor must confirm the annual compliance verification charge.
+    const complianceQuote = await quoteComplianceFee();
+    const complianceDisclosure = resolveDisclosure(complianceQuote, confirmedCentsFrom(formData), profile.id);
+    const plan = await contractorPlanPrice();
+
     const now = new Date().toISOString();
     const promotionEnd = "2027-03-31T23:59:59+11:00";
 
@@ -729,9 +736,22 @@ export async function acceptMembership(
         subscriptionStatus: "PROMOTIONAL",
         planName: toVarchar<200>("StrataVerze Contractor"),
         planCurrency: toVarchar<3>("AUD"),
-        planMonthlyPrice: toNumeric<10, 2>(65.0),
-        planGstInclusive: true,
+        ...(plan
+          ? { planMonthlyPrice: toNumeric<10, 2>(plan.cents / 100), planGstInclusive: plan.gstInclusive }
+          : {}),
         billingTimezone: toVarchar<100>("Australia/Sydney"),
+      });
+    }
+
+    // Keep the contractor's confirmation of the compliance verification charge.
+    if (complianceDisclosure) {
+      await db.orm.public.ContractorDeclaration.create({
+        contractorBusinessId: contractorId,
+        declarationType: COMPLIANCE_FEE_DECLARATION,
+        documentVersion: toVarchar<50>(complianceFeeVersion(complianceDisclosure.amountCents)),
+        accepted: true,
+        acceptedAt: toTimestamp(complianceDisclosure.shownAt),
+        acceptedById: profile.id,
       });
     }
 
@@ -744,6 +764,8 @@ export async function acceptMembership(
     return OK;
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return { error: "Failed to accept membership terms." };
   }
 }

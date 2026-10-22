@@ -16,6 +16,7 @@ import {
 } from "@/lib/queries/contractor";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ReviewActionsPanel } from "./review-actions";
+import { ContractorBillingNote } from "@/components/billing/contractor-billing-note";
 
 /* ------------------------------------------------------------------ */
 /*  Status badge helpers                                               */
@@ -495,6 +496,8 @@ export default async function ContractorDetailPage({
           </div>
         )}
       </Card>
+
+      <ContractorBillingNote promotionEnd={membership?.promotionEnd ? String(membership.promotionEnd) : null} />
 
       {/* Membership */}
       <Card className="mb-6">

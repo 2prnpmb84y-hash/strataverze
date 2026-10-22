@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
+import { chargeComplianceVerification } from "@/lib/billing/contractor-fees";
 import type {
   TimestampString,
   Varchar,
@@ -27,11 +28,29 @@ function toTimestamp(value: string): TimestampString<3> {
 
 // ─── Helpers ────────────────────────────────────────────────────
 
+/**
+ * Contractor applications are reviewed by StrataVerze. Until a dedicated
+ * review role exists, a platform admin or an active adviser may review.
+ * Previously any signed-in user, including the contractor, could.
+ */
 async function requireAuth() {
   const { getCurrentProfile } = await import("@/lib/queries/profiles");
   const profile = await getCurrentProfile();
   if (!profile) throw new Error("Not authenticated.");
+  if (profile.isPlatformAdmin) return profile;
+  const adviser = await db.orm.public.SchemeMembership
+    .where((m) => and(m.profileId.eq(profile.id), m.role.eq("ADVISER"), m.isActive.eq(true)))
+    .first();
+  if (!adviser) throw new Error("Not authorised to review contractors.");
   return profile;
+}
+
+/** Whether the reviewer is a contact of the contractor they are reviewing. */
+async function isOwnContractor(profileId: string, contractorId: string) {
+  const contact = await db.orm.public.ContractorContact
+    .where((c) => and(c.profileId.eq(profileId), c.contractorBusinessId.eq(contractorId)))
+    .first();
+  return !!contact;
 }
 
 // ─── Approve Contractor Application ─────────────────────────────
@@ -46,13 +65,18 @@ export async function approveContractor(
     const notes = (formData.get("notes") as string)?.trim() || null;
 
     if (!contractorId) return { error: "Contractor ID is required." };
+    if (await isOwnContractor(profile.id, contractorId)) {
+      return { error: "You cannot approve your own business." };
+    }
 
-    // Update business status
-    await db.orm.public.ContractorBusiness
-      .where({ id: contractorId })
-      .update({
-        status: "APPROVED",
-      });
+    // Approval and the first compliance verification charge together.
+    // The charge is only raised if the contractor confirmed it.
+    await db.transaction(async (tx) => {
+      await tx.orm.public.ContractorBusiness
+        .where({ id: contractorId })
+        .update({ status: "APPROVED" });
+      await chargeComplianceVerification(tx.orm, { contractorBusinessId: contractorId, year: 1, actorId: profile.id });
+    });
 
     // Update onboarding status
     await db.orm.public.ContractorOnboarding
@@ -85,7 +109,8 @@ export async function approveContractor(
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
     return { error: "Failed to approve contractor." };
   }
 }
@@ -140,7 +165,8 @@ export async function rejectContractor(
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
     return { error: "Failed to reject contractor." };
   }
 }
@@ -178,7 +204,8 @@ export async function requestClarification(
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
     return { error: "Failed to request clarification." };
   }
 }
@@ -204,7 +231,8 @@ export async function suspendContractor(
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
     return { error: "Failed to suspend contractor." };
   }
 }
@@ -236,7 +264,8 @@ export async function resolveReviewItem(
 
     revalidatePath("/adviser/contractors");
     return { success: true, error: null };
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
     return { error: "Failed to resolve review item." };
   }
 }

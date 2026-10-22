@@ -10,7 +10,8 @@ export type FeeEventStatus = "ACCRUED" | "INVOICED" | "EXTRACTED" | "WAIVED" | "
 
 export interface FeeEventRecord {
   id: string;
-  schemeId: string;
+  /** Null for a charge to a contractor business. */
+  schemeId: string | null;
   code: string;
   variant: string | null;
   description: string;

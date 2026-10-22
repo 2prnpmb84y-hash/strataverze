@@ -6,9 +6,11 @@ import {
   getContractorMembership,
 } from "@/lib/queries/contractor";
 import { Card, CardHeader } from "@/components/ui/card";
+import { formatAud, toCents } from "@/lib/billing/money";
 
 const MEMBERSHIP_STATUS_MAP: Record<string, { label: string; colour: string }> = {
   NOT_STARTED: { label: "Not Started", colour: "bg-gray-100 text-gray-700" },
+  PROMOTIONAL: { label: "Free Period", colour: "bg-emerald-50 text-emerald-700" },
   PROMOTIONAL_ACCEPTED: { label: "Free Period", colour: "bg-emerald-50 text-emerald-700" },
   ACTIVE_PAID: { label: "Active", colour: "bg-emerald-50 text-emerald-700" },
   PAST_DUE: { label: "Past Due", colour: "bg-amber-50 text-amber-700" },
@@ -79,9 +81,19 @@ export default async function MembershipPage() {
 
   const status = (membership.subscriptionStatus as string) ?? "NOT_STARTED";
   const statusInfo = MEMBERSHIP_STATUS_MAP[status] ?? MEMBERSHIP_STATUS_MAP.NOT_STARTED;
-  const isPromotional = status === "PROMOTIONAL_ACCEPTED";
-  const billingStartDate = "1 April 2027";
-  const monthlyFee = "$65.00";
+  // Memberships are created as PROMOTIONAL; older screens used PROMOTIONAL_ACCEPTED.
+  const isPromotional = status === "PROMOTIONAL" || status === "PROMOTIONAL_ACCEPTED";
+  // The day after the promotion ends, in Sydney.
+  const billingStartDate = membership.promotionEnd
+    ? new Date(new Date(String(membership.promotionEnd)).getTime() + 1000).toLocaleDateString("en-AU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Australia/Sydney",
+      })
+    : "the end of the promotion";
+  const monthlyFee = formatAud(toCents(String(membership.planMonthlyPrice)));
+  const gstText = membership.planGstInclusive ? "including GST" : "plus GST";
 
   return (
     <div className="max-w-3xl">
@@ -124,7 +136,7 @@ export default async function MembershipPage() {
               </div>
               <div>
                 <dt className="text-ink-muted">Monthly Fee (from {billingStartDate})</dt>
-                <dd className="text-ink font-medium mt-0.5">{monthlyFee} AUD + GST</dd>
+                <dd className="text-ink font-medium mt-0.5">{monthlyFee} AUD {gstText}</dd>
               </div>
             </>
           )}
@@ -132,7 +144,7 @@ export default async function MembershipPage() {
             <>
               <div>
                 <dt className="text-ink-muted">Monthly Fee</dt>
-                <dd className="text-ink font-medium mt-0.5">{monthlyFee} AUD + GST</dd>
+                <dd className="text-ink font-medium mt-0.5">{monthlyFee} AUD {gstText}</dd>
               </div>
               {membership.nextRenewalDate && (
                 <div>
