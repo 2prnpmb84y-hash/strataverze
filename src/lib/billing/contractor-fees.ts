@@ -156,3 +156,26 @@ export async function getContractorFeeEvents(contractorBusinessId: string) {
     .limit(200)
     .all();
 }
+
+/**
+ * Whether a contractor still needs to confirm today's compliance verification
+ * price: they accepted the membership terms but never confirmed this amount
+ * (for example, they joined before the charge existed, or the price changed).
+ */
+export async function complianceConfirmationNeeded(contractorBusinessId: string): Promise<FeeQuote | null> {
+  const [quote, membership] = await Promise.all([
+    quoteComplianceFee(),
+    db.orm.public.ContractorMembership.where((m) => m.contractorBusinessId.eq(contractorBusinessId)).first(),
+  ]);
+  if (!quote || !membership?.acceptedAt) return null;
+  const disclosure = await complianceDisclosure(db.orm, contractorBusinessId);
+  return disclosure && disclosure.amountCents === quote.totalCents ? null : quote;
+}
+
+/** Year 1 has not been charged yet for this contractor. */
+export async function firstComplianceChargeMissing(orm: Orm, contractorBusinessId: string): Promise<boolean> {
+  const existing = await orm.public.PlatformFeeEvent
+    .where((e) => and(e.contractorBusinessId.eq(contractorBusinessId), e.code.eq("COMPLIANCE_VERIFICATION")))
+    .first();
+  return !existing;
+}
