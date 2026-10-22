@@ -139,6 +139,7 @@ const accountantNav = [
 ];
 
 const adminMobileNav = [
+  { label: "Revenue", href: "/admin/revenue" },
   { label: "Referral income", href: "/admin/referral-income" },
   { label: "Contractors", href: "/adviser/contractors" },
 ];

@@ -7,6 +7,13 @@ import { connection } from "next/server";
 
 const reports = [
   {
+    key: "platform-charges",
+    title: "Platform Charges",
+    description:
+      "StrataVerze charges by fee type and month, StrataVerze invoices and their status, and the scheme's cost per lot per year.",
+    href: "/platform-charges",
+  },
+  {
     key: "levy-register",
     title: "Levy Register",
     description:
