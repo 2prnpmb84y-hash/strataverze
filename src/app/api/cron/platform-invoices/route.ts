@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { notifyIssuedInvoices, runMonthlyInvoices } from "@/lib/billing/invoice-run";
 import { sydneyMonth } from "@/lib/billing/invoice";
 import { accrueComplianceRenewals } from "@/lib/billing/contractor-fees";
+import { strataVerzeGstRegistered } from "@/lib/billing/strataverze-supplier";
 
 /**
  * Monthly StrataVerze invoicing and yearly contractor compliance renewals,
@@ -21,6 +22,10 @@ export async function GET(request: NextRequest) {
   // Yearly contractor compliance verification renewals (only while capture is on).
   const renewals = await accrueComplianceRenewals();
 
+  // StrataVerze prices add GST, so nothing is invoiced until it is registered.
+  if (process.env.PLATFORM_INVOICING === "on" && !strataVerzeGstRegistered()) {
+    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "StrataVerze is not registered for GST (STRATAVERZE_GST_REGISTERED)" });
+  }
   if (process.env.PLATFORM_INVOICING !== "on") {
     return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "PLATFORM_INVOICING is not on" });
   }

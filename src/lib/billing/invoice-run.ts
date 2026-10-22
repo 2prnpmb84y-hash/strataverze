@@ -26,10 +26,23 @@ const varchar = <N extends number>(v: string) => v as unknown as Varchar<N>;
 const isoDay = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? "").slice(0, 10));
 const isoTime = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? ""));
 
-/** Create the platform-wide StrataVerze supplier if it does not exist. */
+/** Create the platform-wide StrataVerze supplier, or bring its details up to date. */
 export async function ensureStrataVerzeSupplier(orm: Orm = db.orm) {
   const existing = await orm.public.Supplier.where((s) => s.id.eq(STRATAVERZE_SUPPLIER_ID)).first();
-  if (existing) return existing;
+  if (existing) {
+    if (
+      existing.companyName !== STRATAVERZE_SUPPLIER.companyName ||
+      (existing.abn ?? null) !== STRATAVERZE_SUPPLIER.abn ||
+      existing.gstRegistered !== STRATAVERZE_SUPPLIER.gstRegistered
+    ) {
+      await orm.public.Supplier.where((s) => s.id.eq(STRATAVERZE_SUPPLIER_ID)).update({
+        companyName: varchar<200>(STRATAVERZE_SUPPLIER.companyName),
+        abn: STRATAVERZE_SUPPLIER.abn ? varchar<11>(STRATAVERZE_SUPPLIER.abn) : null,
+        gstRegistered: STRATAVERZE_SUPPLIER.gstRegistered,
+      });
+    }
+    return existing;
+  }
   return orm.public.Supplier.create({
     id: STRATAVERZE_SUPPLIER_ID,
     schemeId: null,
