@@ -128,11 +128,19 @@ export default async function InsuranceOverviewPage({
         <CardHeader
           title="Claims"
           description="Insurance claims lodged for this scheme."
+          action={
+            <Button
+              href={`/adviser/schemes/${id}/insurance/claims/new`}
+              variant="secondary"
+            >
+              Lodge a claim
+            </Button>
+          }
         />
         {claims.length === 0 ? (
           <p className="text-sm text-ink-muted">
-            No claims recorded. Claim lodgement and tracking is part of the claims
-            workflow.
+            No claims recorded yet. Lodge a claim to capture the incident, attach
+            evidence and track it through to settlement.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -149,7 +157,14 @@ export default async function InsuranceOverviewPage({
               <tbody>
                 {claims.map((c) => (
                   <tr key={c.id} className="border-b border-line/60">
-                    <td className="py-2 pr-4 text-ink">{c.title}</td>
+                    <td className="py-2 pr-4 text-ink">
+                      <Link
+                        href={`/adviser/schemes/${id}/insurance/claims/${c.id}`}
+                        className="text-turquoise hover:underline"
+                      >
+                        {c.title}
+                      </Link>
+                    </td>
                     <td className="py-2 pr-4 text-ink-muted">
                       {c.claimNumber ?? c.insurerClaimRef ?? "—"}
                     </td>
