@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
-import { castBallotVoteAction } from "@/app/(portal)/owner/meetings/actions";
+import { castBallotVoteAction } from "@/app/(portal)/owner/(scheme)/meetings/actions";
 
 const VOTES = ["FOR", "AGAINST", "ABSTAIN"] as const;
 
