@@ -108,11 +108,16 @@ export interface AuthorisationRow {
 }
 
 export async function getAuthorisations(
-  target: { supplierInvoiceId: string } | { worksInvoiceId: string },
+  target: { supplierInvoiceId: string } | { worksInvoiceId: string } | { ownerCreditRefundId: string },
   orm: Orm = db.orm,
 ): Promise<AuthorisationRow[]> {
   const rows =
-    "supplierInvoiceId" in target
+    "ownerCreditRefundId" in target
+      ? await orm.public.PaymentAuthorisation.where((a) => a.ownerCreditRefundId.eq(target.ownerCreditRefundId))
+          .orderBy((a) => a.sequence.asc())
+          .limit(10)
+          .all()
+      : "supplierInvoiceId" in target
       ? await orm.public.PaymentAuthorisation.where((a) => a.supplierInvoiceId.eq(target.supplierInvoiceId))
           .orderBy((a) => a.sequence.asc())
           .limit(10)

@@ -70,9 +70,37 @@ export function IssueNoticesForm({
     issueScheduleNoticesAction.bind(null, schemeId, scheduleId),
     {},
   );
+  const missing = Array.isArray(state.data?.missing) ? (state.data.missing as { code: string; message: string }[]) : [];
   return (
     <form action={formAction} className="space-y-4">
       <Message state={state} />
+      {missing.length > 0 && (
+        <div className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">Each notice must state the following before it can be issued:</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {missing.map((m) => (
+              <li key={`${m.code}-${m.message}`}>{m.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {state.success && (
+        <p className="text-sm text-green-700">
+          Notices issued.
+          {typeof state.data?.emailed === "number" ? ` ${state.data.emailed} emailed to owners.` : ""}
+          {typeof state.data?.creditApplied === "number" && state.data.creditApplied > 0
+            ? ` $${state.data.creditApplied.toFixed(2)} of owner credit applied.`
+            : ""}
+        </p>
+      )}
+      {isSpecial && (
+        <label className="flex items-start gap-2 text-sm text-ink">
+          <input type="checkbox" name="urgentSpecialLevy" className="mt-1" />
+          <span>
+            This is an urgent special levy for emergency repairs. The minimum notice to pay is 14 days instead of 30.
+          </span>
+        </label>
+      )}
       {!isSpecial && (
         <FormField
           label="First instalment due"
@@ -113,6 +141,8 @@ export function RecordPaymentForm({
   const today = new Date().toISOString().slice(0, 10);
   const [amount, setAmount] = useState(balance);
   const [feeConfirmed, setFeeConfirmed] = useState(false);
+  const [creditConfirmed, setCreditConfirmed] = useState(false);
+  const excess = Math.max(0, Math.round((amount - balance) * 100) / 100);
   const fee = useTransactionFeeView(feeTable, isSpecialLevy ? "SPECIAL_LEVY_RECEIPT" : "LEVY_RECEIPT", amount);
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-2">
@@ -123,7 +153,6 @@ export function RecordPaymentForm({
           type="number"
           step="0.01"
           min="0.01"
-          max={balance}
           defaultValue={balance.toFixed(2)}
           onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
           required
@@ -142,9 +171,24 @@ export function RecordPaymentForm({
           className="rounded-[var(--radius-card)] border border-line bg-white px-2 py-1.5 text-sm text-ink"
         />
       </label>
-      <Button type="submit" variant="secondary" disabled={pending || (!!fee && !feeConfirmed)}>
+      <Button type="submit" variant="secondary" disabled={pending || (!!fee && !feeConfirmed) || (excess > 0 && !creditConfirmed)}>
         {pending ? "Saving..." : "Record payment"}
       </Button>
+      {excess > 0 && (
+        <label className="flex w-full items-start gap-2 text-xs text-ink">
+          <input
+            type="checkbox"
+            name="confirmOverpayment"
+            checked={creditConfirmed}
+            onChange={(e) => setCreditConfirmed(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            This is ${excess.toFixed(2)} more than the notice owes. Hold the extra as the owner&apos;s credit for this lot. It
+            can be applied to the next notice or refunded with approval.
+          </span>
+        </label>
+      )}
       {fee && (
         <div className="w-full">
           <FeeDisclosure
@@ -157,7 +201,14 @@ export function RecordPaymentForm({
         </div>
       )}
       {state.error && <p role="alert" className="w-full text-xs text-red-600">{state.error}</p>}
-      {state.success && <p className="w-full text-xs text-green-700">Payment recorded.</p>}
+      {state.success && (
+        <p className="w-full text-xs text-green-700">
+          Payment recorded.
+          {typeof state.data?.creditHeld === "number" && state.data.creditHeld > 0
+            ? ` $${state.data.creditHeld.toFixed(2)} is held as the owner's credit.`
+            : ""}
+        </p>
+      )}
     </form>
   );
 }

@@ -118,7 +118,17 @@ export type ActivityAction =
   | "VARIATION_CREATED"
   | "VARIATION_SUBMITTED"
   | "VARIATION_APPROVED"
-  | "VARIATION_REJECTED";
+  | "VARIATION_REJECTED"
+  // Owner credits and statutory interest
+  | "OWNER_CREDIT_RECEIVED"
+  | "OWNER_CREDIT_APPLIED"
+  | "OWNER_CREDIT_REFUND_REQUESTED"
+  | "OWNER_CREDIT_REFUND_AUTHORISED"
+  | "OWNER_CREDIT_REFUND_PAID"
+  | "OWNER_CREDIT_REFUND_CANCELLED"
+  | "OWNER_CREDIT_SETTING_CHANGED"
+  | "INTEREST_SETTING_CHANGED"
+  | "LEVY_NOTICES_EMAILED";
 
 export type ActivityEntityType =
   | "Levy"
@@ -156,6 +166,7 @@ export type ActivityEntityType =
   | "MatchingRule"
   | "SchemePaymentPolicy"
   | "WorksInvoice"
+  | "OwnerCreditRefund"
   // Works compliance and approval entity types
   | "ComplianceRequirement"
   | "ComplianceCheck"

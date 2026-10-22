@@ -14,6 +14,12 @@ import {
   type ControlDecision,
 } from "./payment-controls";
 import { supplierInvoiceControls, worksInvoiceControls } from "./invoice-approval";
+import { refundControls } from "./owner-credits";
+
+async function refundAsInvoice(refundId: string) {
+  const r = await refundControls(refundId);
+  return r ? { invoice: r.refund, auths: r.auths, forControls: r.forControls } : null;
+}
 
 const METHOD_LABELS: Record<string, string> = {
   CALLBACK: "a call back to a known number",
@@ -37,11 +43,15 @@ export interface InvoiceControlView {
 
 export async function getInvoiceControlView(
   schemeId: string,
-  target: { supplierInvoiceId: string } | { worksInvoiceId: string },
+  target: { supplierInvoiceId: string } | { worksInvoiceId: string } | { ownerCreditRefundId: string },
   viewerId: string,
 ): Promise<InvoiceControlView | null> {
   const loaded =
-    "supplierInvoiceId" in target ? await supplierInvoiceControls(target.supplierInvoiceId) : await worksInvoiceControls(target.worksInvoiceId);
+    "supplierInvoiceId" in target
+      ? await supplierInvoiceControls(target.supplierInvoiceId)
+      : "worksInvoiceId" in target
+        ? await worksInvoiceControls(target.worksInvoiceId)
+        : await refundAsInvoice(target.ownerCreditRefundId);
   if (!loaded || loaded.invoice.schemeId !== schemeId) return null;
   const [settings, members] = await Promise.all([getPaymentSettings(schemeId), getApprovalMembers(schemeId)]);
   const eligible = eligibleApprovers(members, settings.policy);
@@ -73,7 +83,7 @@ export async function getInvoiceControlView(
     approvals: loaded.auths.map((a) => ({ name: name(a.approverId), role: a.role, approvedAt: a.approvedAt, isException: a.isException })),
     required,
     thresholdText:
-      threshold === 0 ? "Every invoice needs two approvers." : `Invoices over ${formatAud(threshold)} need two approvers.`,
+      threshold === 0 ? "Every payment needs two approvers." : `Payments over ${formatAud(threshold)} need two approvers.`,
     exception,
     approve: checkSegregation("APPROVE", viewerId, loaded.forControls, ctx),
     payment: checkSegregation("RECORD_PAYMENT", viewerId, loaded.forControls, ctx),

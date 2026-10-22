@@ -8,6 +8,9 @@ import {
   getNextEntryNumber,
 } from "./journal-entries";
 import { logActivity } from "./activity-log";
+import { fromCents } from "@/lib/billing/money";
+import { STATUTORY_INTEREST } from "@/config/statutory";
+import { getSchemeInterestSetting, statutoryInterestForScheme, sydneyToday } from "@/lib/finance/interest-setting";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric<P extends number = 12, S extends number = 2>(
@@ -24,54 +27,24 @@ function toTimestamp(value: string): TimestampString<3> {
 // ─── Interest Calculation ────────────────────────────────────────
 
 /**
- * Calculate simple interest for a single overdue levy notice.
- *
- * Formula: interest = (balanceOutstanding * annualRate / 100 * daysOverdue) / 365
- *
- * Returns the calculated interest amount rounded to 2 decimal places.
- */
-export function calculateInterestForNotice(
-  balanceOutstanding: number,
-  dueDate: string | Date,
-  annualRatePercent: number,
-  asAtDate?: Date,
-): number {
-  if (annualRatePercent <= 0 || balanceOutstanding <= 0) return 0;
-
-  const due = new Date(String(dueDate));
-  const now = asAtDate ?? new Date();
-  const diffMs = now.getTime() - due.getTime();
-  const daysOverdue = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-
-  if (daysOverdue <= 0) return 0;
-
-  const interest =
-    (balanceOutstanding * (annualRatePercent / 100) * daysOverdue) / 365;
-
-  return Math.round(interest * 100) / 100;
-}
-
-/**
- * Fetch overdue levy notices for a scheme with calculated interest amounts.
- * Includes the scheme's interest rate and computes per-notice interest.
+ * Overdue levy notices for a scheme with statutory interest owed to date
+ * (SSMA 2015 s 85: simple interest at 10% a year on the unpaid levy, none if
+ * paid within one month of the due date). See src/config/statutory.ts.
  */
 export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
   try {
-    // Get the scheme's interest rate
-    const scheme = await db.orm.public.Scheme
-      .where((s) => s.id.eq(schemeId))
-      .first();
+    const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+    const setting = await getSchemeInterestSetting(schemeId);
+    const asAt = sydneyToday();
+    const interest = await statutoryInterestForScheme(schemeId, asAt);
+    const byNotice = new Map(interest.map((i) => [i.noticeId, i]));
 
-    const annualRate = Number(scheme?.interestRate ?? 0);
-
-    // Fetch overdue notices
-    const today = new Date().toISOString().split("T")[0];
     const notices = await db.orm.public.LevyNotice
       .where((ln) =>
         and(
           ln.schemeId.eq(schemeId),
-          or(ln.status.eq("ISSUED"), ln.status.eq("PARTIALLY_PAID")),
-          ln.dueDate.lt(toTimestamp(today)),
+          or(ln.status.eq("ISSUED"), ln.status.eq("PARTIALLY_PAID"), ln.status.eq("OVERDUE")),
+          ln.dueDate.lt(toTimestamp(asAt)),
         ),
       )
       .include("lot")
@@ -80,42 +53,30 @@ export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
       .limit(500)
       .all();
 
-    const now = new Date();
-
+    const dayMs = 86_400_000;
     const noticesWithInterest = notices.map((notice) => {
-      const balance = Number(notice.balanceOutstanding);
-      const dueDate = String(notice.dueDate);
-      const due = new Date(dueDate);
-      const diffMs = now.getTime() - due.getTime();
-      const daysOverdue = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-      const calculatedInterest = calculateInterestForNotice(
-        balance,
-        dueDate,
-        annualRate,
-        now,
-      );
-      const previouslyCharged = Number(notice.interestCharged ?? 0);
-      const additionalInterest = Math.max(
-        0,
-        Math.round((calculatedInterest - previouslyCharged) * 100) / 100,
-      );
-
+      const i = byNotice.get(notice.id);
+      const due = String(notice.dueDate).slice(0, 10);
+      const daysOverdue = Math.max(0, Math.round((Date.parse(`${asAt}T00:00:00Z`) - Date.parse(`${due}T00:00:00Z`)) / dayMs));
       return {
         ...notice,
         daysOverdue,
-        calculatedInterest,
-        previouslyCharged,
-        additionalInterest,
+        graceEnds: i?.graceEnds ?? null,
+        interestReason: i?.reason ?? "NOT_YET_DUE",
+        calculatedInterest: fromCents(i?.interestCents ?? 0),
+        previouslyCharged: fromCents(i?.previouslyChargedCents ?? 0),
+        additionalInterest: fromCents(i?.additionalCents ?? 0),
       };
     });
 
     return {
       notices: noticesWithInterest,
-      annualRate,
+      annualRate: setting.mode === "NO_INTEREST" ? 0 : STATUTORY_INTEREST.annualRatePercent,
+      mode: setting.mode,
       schemeName: scheme ? String(scheme.name) : "",
     };
-  } catch {
-    // Table may not exist yet
+  } catch (err) {
+    console.error("[interest] Failed to calculate interest:", err);
     return null;
   }
 }
@@ -135,6 +96,8 @@ export async function chargeInterest(data: {
   noticeId: string;
   interestAmount: number;
   actorId: string;
+  /** Set by the batch, which has just worked out the statutory interest for each notice. */
+  alreadyVerified?: boolean;
 }) {
   const { schemeId, noticeId, interestAmount, actorId } = data;
 
@@ -148,8 +111,18 @@ export async function chargeInterest(data: {
     .include("fund")
     .first();
 
-  if (!notice) {
+  if (!notice || notice.schemeId !== schemeId) {
     throw new Error("Levy notice not found.");
+  }
+
+  // Never charge more than the statutory interest owed to date.
+  const owed = data.alreadyVerified
+    ? { additionalCents: Math.round(interestAmount * 100) }
+    : (await statutoryInterestForScheme(schemeId)).find((i) => i.noticeId === noticeId);
+  if (!owed || Math.round(interestAmount * 100) > owed.additionalCents) {
+    throw new Error(
+      `No more than $${fromCents(owed?.additionalCents ?? 0).toFixed(2)} of interest is owed on this notice to date.`,
+    );
   }
 
   const currentInterest = Number(notice.interestCharged ?? 0);
@@ -258,11 +231,11 @@ export async function chargeInterestBatch(data: {
   if (!result) {
     return { charged: 0, totalInterest: 0, results: [] };
   }
-  const { notices, annualRate } = result;
+  const { notices, mode } = result;
 
-  if (annualRate <= 0) {
+  if (mode === "NO_INTEREST") {
     throw new Error(
-      "No interest rate configured for this scheme. Set an interest rate in scheme settings first.",
+      "The owners corporation has resolved that contributions bear no interest, so none can be charged.",
     );
   }
 
@@ -281,6 +254,7 @@ export async function chargeInterestBatch(data: {
       noticeId: notice.id,
       interestAmount: notice.additionalInterest,
       actorId,
+      alreadyVerified: true,
     });
     results.push(chargeResult);
     totalInterest += notice.additionalInterest;

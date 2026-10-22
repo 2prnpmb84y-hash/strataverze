@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'08598f3dc282166c32134ab8200efc8d73785a2d362651f00f8c2258f89af124'>;
+  StorageHashBase<'63003cc8e44f28fae8d51e030cef5fcdb4c27686c8cdb5fb499bb3fa7cd8a79f'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1347,6 +1347,51 @@ export type FieldOutputTypes = {
         | 'AUDITOR';
       readonly startDate: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly OwnerCreditBalance: {
+      readonly balance: Numeric<12, 2>;
+      readonly fundId: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly OwnerCreditRefund: {
+      readonly accountNumber: Varchar<20>;
+      readonly amount: Numeric<12, 2>;
+      readonly bsb: Varchar<7>;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly fundId: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly paidAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly paidBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly payeeName: Varchar<200>;
+      readonly preparedById: CodecTypes['pg/uuid@1']['output'];
+      readonly reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly verificationMethod: CodecTypes['pg/text@1']['output'];
+    };
+    readonly OwnerCreditTransaction: {
+      readonly amount: Numeric<12, 2>;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly effectiveDate: CodecTypes['pg/date-string@1']['output'];
+      readonly fundId: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly levyNoticeId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly levyPaymentId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly note: CodecTypes['pg/text@1']['output'] | null;
+      readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly refundId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly type: CodecTypes['pg/text@1']['output'];
+    };
     readonly PaymentAuthorisation: {
       readonly approvedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly approverId: CodecTypes['pg/uuid@1']['output'];
@@ -1355,6 +1400,7 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly ipHash: CodecTypes['pg/text@1']['output'] | null;
       readonly isException: CodecTypes['pg/bool@1']['output'];
+      readonly ownerCreditRefundId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly sequence: CodecTypes['pg/int4@1']['output'];
@@ -1532,6 +1578,7 @@ export type FieldOutputTypes = {
       readonly abnNumber: CodecTypes['pg/text@1']['output'] | null;
       readonly address: CodecTypes['pg/text@1']['output'];
       readonly allInclusiveFees: CodecTypes['pg/bool@1']['output'];
+      readonly autoApplyOwnerCredit: CodecTypes['pg/bool@1']['output'];
       readonly buildingClass: CodecTypes['pg/text@1']['output'] | null;
       readonly buildingSubType: CodecTypes['pg/text@1']['output'] | null;
       readonly buildingType: CodecTypes['pg/text@1']['output'] | null;
@@ -1542,7 +1589,12 @@ export type FieldOutputTypes = {
       readonly folio: CodecTypes['pg/text@1']['output'] | null;
       readonly gstRegistered: CodecTypes['pg/bool@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interestMode: CodecTypes['pg/text@1']['output'];
       readonly interestRate: Numeric<5, 2> | null;
+      readonly interestResolutionMeetingId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly interestResolutionMotionId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly interestResolutionRecordedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly interestResolutionRecordedBy: CodecTypes['pg/uuid@1']['output'] | null;
       readonly isActive: CodecTypes['pg/bool@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly organisationId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -3487,6 +3539,51 @@ export type FieldInputTypes = {
         | 'AUDITOR';
       readonly startDate: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly OwnerCreditBalance: {
+      readonly balance: CodecTypes['pg/numeric@1']['input'];
+      readonly fundId: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly OwnerCreditRefund: {
+      readonly accountNumber: CodecTypes['sql/varchar@1']['input'];
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly bsb: CodecTypes['sql/varchar@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly fundId: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly paidAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly paidBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly payeeName: CodecTypes['sql/varchar@1']['input'];
+      readonly preparedById: CodecTypes['pg/uuid@1']['input'];
+      readonly reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly verificationMethod: CodecTypes['pg/text@1']['input'];
+    };
+    readonly OwnerCreditTransaction: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly effectiveDate: CodecTypes['pg/date-string@1']['input'];
+      readonly fundId: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly levyNoticeId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly levyPaymentId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly note: CodecTypes['pg/text@1']['input'] | null;
+      readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly refundId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly type: CodecTypes['pg/text@1']['input'];
+    };
     readonly PaymentAuthorisation: {
       readonly approvedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly approverId: CodecTypes['pg/uuid@1']['input'];
@@ -3495,6 +3592,7 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly ipHash: CodecTypes['pg/text@1']['input'] | null;
       readonly isException: CodecTypes['pg/bool@1']['input'];
+      readonly ownerCreditRefundId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly sequence: CodecTypes['pg/int4@1']['input'];
@@ -3672,6 +3770,7 @@ export type FieldInputTypes = {
       readonly abnNumber: CodecTypes['pg/text@1']['input'] | null;
       readonly address: CodecTypes['pg/text@1']['input'];
       readonly allInclusiveFees: CodecTypes['pg/bool@1']['input'];
+      readonly autoApplyOwnerCredit: CodecTypes['pg/bool@1']['input'];
       readonly buildingClass: CodecTypes['pg/text@1']['input'] | null;
       readonly buildingSubType: CodecTypes['pg/text@1']['input'] | null;
       readonly buildingType: CodecTypes['pg/text@1']['input'] | null;
@@ -3682,7 +3781,12 @@ export type FieldInputTypes = {
       readonly folio: CodecTypes['pg/text@1']['input'] | null;
       readonly gstRegistered: CodecTypes['pg/bool@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interestMode: CodecTypes['pg/text@1']['input'];
       readonly interestRate: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly interestResolutionMeetingId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly interestResolutionMotionId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly interestResolutionRecordedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly interestResolutionRecordedBy: CodecTypes['pg/uuid@1']['input'] | null;
       readonly isActive: CodecTypes['pg/bool@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly organisationId: CodecTypes['pg/uuid@1']['input'] | null;
@@ -5627,6 +5731,51 @@ export type StorageColumnTypes = {
       readonly trading_name: Varchar<300> | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly owner_credit_balances: {
+      readonly balance: Numeric<12, 2>;
+      readonly fund_id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly owner_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly owner_credit_refunds: {
+      readonly account_number: Varchar<20>;
+      readonly amount: Numeric<12, 2>;
+      readonly bsb: Varchar<7>;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly fund_id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly owner_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly paid_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly paid_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly payee_name: Varchar<200>;
+      readonly prepared_by_id: CodecTypes['pg/uuid@1']['output'];
+      readonly reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly verification_method: CodecTypes['pg/text@1']['output'];
+    };
+    readonly owner_credit_transactions: {
+      readonly amount: Numeric<12, 2>;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly effective_date: CodecTypes['pg/date-string@1']['output'];
+      readonly fund_id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly levy_notice_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly levy_payment_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly note: CodecTypes['pg/text@1']['output'] | null;
+      readonly owner_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly refund_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly type: CodecTypes['pg/text@1']['output'];
+    };
     readonly payment_authorisations: {
       readonly approved_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly approver_id: CodecTypes['pg/uuid@1']['output'];
@@ -5635,6 +5784,7 @@ export type StorageColumnTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly ip_hash: CodecTypes['pg/text@1']['output'] | null;
       readonly is_exception: CodecTypes['pg/bool@1']['output'];
+      readonly owner_credit_refund_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly sequence: CodecTypes['pg/int4@1']['output'];
@@ -5893,6 +6043,7 @@ export type StorageColumnTypes = {
       readonly abn_number: CodecTypes['pg/text@1']['output'] | null;
       readonly address: CodecTypes['pg/text@1']['output'];
       readonly all_inclusive_fees: CodecTypes['pg/bool@1']['output'];
+      readonly auto_apply_owner_credit: CodecTypes['pg/bool@1']['output'];
       readonly building_class: CodecTypes['pg/text@1']['output'] | null;
       readonly building_sub_type: CodecTypes['pg/text@1']['output'] | null;
       readonly building_type: CodecTypes['pg/text@1']['output'] | null;
@@ -5903,7 +6054,13 @@ export type StorageColumnTypes = {
       readonly folio: CodecTypes['pg/text@1']['output'] | null;
       readonly gst_registered: CodecTypes['pg/bool@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly interest_mode: CodecTypes['pg/text@1']['output'];
       readonly interest_rate: Numeric<5, 2> | null;
+      readonly interest_resolution_meeting_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly interest_resolution_motion_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly interest_resolution_recorded_at:
+        CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly interest_resolution_recorded_by: CodecTypes['pg/uuid@1']['output'] | null;
       readonly is_active: CodecTypes['pg/bool@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly organisation_id: CodecTypes['pg/uuid@1']['output'] | null;
@@ -7767,6 +7924,51 @@ export type StorageColumnInputTypes = {
       readonly trading_name: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly owner_credit_balances: {
+      readonly balance: CodecTypes['pg/numeric@1']['input'];
+      readonly fund_id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly owner_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly owner_credit_refunds: {
+      readonly account_number: CodecTypes['sql/varchar@1']['input'];
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly bsb: CodecTypes['sql/varchar@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly fund_id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly owner_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly paid_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly paid_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly payee_name: CodecTypes['sql/varchar@1']['input'];
+      readonly prepared_by_id: CodecTypes['pg/uuid@1']['input'];
+      readonly reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly verification_method: CodecTypes['pg/text@1']['input'];
+    };
+    readonly owner_credit_transactions: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly effective_date: CodecTypes['pg/date-string@1']['input'];
+      readonly fund_id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly levy_notice_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly levy_payment_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly note: CodecTypes['pg/text@1']['input'] | null;
+      readonly owner_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly refund_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly type: CodecTypes['pg/text@1']['input'];
+    };
     readonly payment_authorisations: {
       readonly approved_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly approver_id: CodecTypes['pg/uuid@1']['input'];
@@ -7775,6 +7977,7 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly ip_hash: CodecTypes['pg/text@1']['input'] | null;
       readonly is_exception: CodecTypes['pg/bool@1']['input'];
+      readonly owner_credit_refund_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly sequence: CodecTypes['pg/int4@1']['input'];
@@ -8033,6 +8236,7 @@ export type StorageColumnInputTypes = {
       readonly abn_number: CodecTypes['pg/text@1']['input'] | null;
       readonly address: CodecTypes['pg/text@1']['input'];
       readonly all_inclusive_fees: CodecTypes['pg/bool@1']['input'];
+      readonly auto_apply_owner_credit: CodecTypes['pg/bool@1']['input'];
       readonly building_class: CodecTypes['pg/text@1']['input'] | null;
       readonly building_sub_type: CodecTypes['pg/text@1']['input'] | null;
       readonly building_type: CodecTypes['pg/text@1']['input'] | null;
@@ -8043,7 +8247,13 @@ export type StorageColumnInputTypes = {
       readonly folio: CodecTypes['pg/text@1']['input'] | null;
       readonly gst_registered: CodecTypes['pg/bool@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly interest_mode: CodecTypes['pg/text@1']['input'];
       readonly interest_rate: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly interest_resolution_meeting_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly interest_resolution_motion_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly interest_resolution_recorded_at:
+        CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly interest_resolution_recorded_by: CodecTypes['pg/uuid@1']['input'] | null;
       readonly is_active: CodecTypes['pg/bool@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly organisation_id: CodecTypes['pg/uuid@1']['input'] | null;
@@ -10248,6 +10458,54 @@ export namespace Models {
     profile: public_Profile;
     readonly [RelationKeys]?: 'organisation' | 'profile';
   };
+  export type public_OwnerCreditBalance = {
+    balance: Numeric<12, 2>;
+    fundId: CodecTypes['pg/uuid@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_OwnerCreditRefund = {
+    accountNumber: Varchar<20>;
+    amount: Numeric<12, 2>;
+    bsb: Varchar<7>;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    fundId: CodecTypes['pg/uuid@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+    paidAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    paidBy: CodecTypes['pg/uuid@1']['output'] | null;
+    payeeName: Varchar<200>;
+    preparedById: CodecTypes['pg/uuid@1']['output'];
+    reason: CodecTypes['pg/text@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    verificationMethod: CodecTypes['pg/text@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_OwnerCreditTransaction = {
+    amount: Numeric<12, 2>;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+    effectiveDate: CodecTypes['pg/date-string@1']['output'];
+    fundId: CodecTypes['pg/uuid@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+    levyNoticeId: CodecTypes['pg/uuid@1']['output'] | null;
+    levyPaymentId: CodecTypes['pg/uuid@1']['output'] | null;
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    note: CodecTypes['pg/text@1']['output'] | null;
+    ownerId: CodecTypes['pg/uuid@1']['output'] | null;
+    refundId: CodecTypes['pg/uuid@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    type: CodecTypes['pg/text@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_PaymentAuthorisation = {
     approvedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     approverId: CodecTypes['pg/uuid@1']['output'];
@@ -10256,6 +10514,7 @@ export namespace Models {
     id: CodecTypes['pg/uuid@1']['output'];
     ipHash: CodecTypes['pg/text@1']['output'] | null;
     isException: CodecTypes['pg/bool@1']['output'];
+    ownerCreditRefundId: CodecTypes['pg/uuid@1']['output'] | null;
     role: CodecTypes['pg/text@1']['output'];
     schemeId: CodecTypes['pg/uuid@1']['output'];
     sequence: CodecTypes['pg/int4@1']['output'];
@@ -10580,6 +10839,7 @@ export namespace Models {
     abnNumber: CodecTypes['pg/text@1']['output'] | null;
     address: CodecTypes['pg/text@1']['output'];
     allInclusiveFees: CodecTypes['pg/bool@1']['output'];
+    autoApplyOwnerCredit: CodecTypes['pg/bool@1']['output'];
     buildingClass: CodecTypes['pg/text@1']['output'] | null;
     buildingSubType: CodecTypes['pg/text@1']['output'] | null;
     buildingType: CodecTypes['pg/text@1']['output'] | null;
@@ -10590,7 +10850,12 @@ export namespace Models {
     folio: CodecTypes['pg/text@1']['output'] | null;
     gstRegistered: CodecTypes['pg/bool@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
+    interestMode: CodecTypes['pg/text@1']['output'];
     interestRate: Numeric<5, 2> | null;
+    interestResolutionMeetingId: CodecTypes['pg/uuid@1']['output'] | null;
+    interestResolutionMotionId: CodecTypes['pg/uuid@1']['output'] | null;
+    interestResolutionRecordedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    interestResolutionRecordedBy: CodecTypes['pg/uuid@1']['output'] | null;
     isActive: CodecTypes['pg/bool@1']['output'];
     name: CodecTypes['pg/text@1']['output'];
     organisationId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -11904,6 +12169,9 @@ export declare const models: {
     NoticeRecipient: Models.public_NoticeRecipient;
     Organisation: Models.public_Organisation;
     OrganisationMembership: Models.public_OrganisationMembership;
+    OwnerCreditBalance: Models.public_OwnerCreditBalance;
+    OwnerCreditRefund: Models.public_OwnerCreditRefund;
+    OwnerCreditTransaction: Models.public_OwnerCreditTransaction;
     PaymentAuthorisation: Models.public_PaymentAuthorisation;
     PaymentPlan: Models.public_PaymentPlan;
     PaymentPlanInstalment: Models.public_PaymentPlanInstalment;
@@ -21043,6 +21311,316 @@ type ContractBase = Omit<
               indexes: readonly [];
               foreignKeys: readonly [];
             };
+            readonly owner_credit_balances: {
+              columns: {
+                readonly balance: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/numeric@1', '0'>;
+                  };
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly fund_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly owner_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'owner_credit_balances_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'owner_credit_balances_scheme_id_lot_id_fund_id_key';
+                  readonly columns: readonly ['scheme_id', 'lot_id', 'fund_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly owner_credit_refunds: {
+              columns: {
+                readonly account_number: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 20 };
+                  readonly many: false;
+                };
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly bsb: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 7 };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly fund_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly owner_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly paid_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly paid_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly payee_name: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 200 };
+                  readonly many: false;
+                };
+                readonly prepared_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'AWAITING_APPROVAL'>;
+                  };
+                  readonly many: false;
+                };
+                readonly verification_method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'owner_credit_refunds_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly owner_credit_transactions: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly effective_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly fund_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly levy_notice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly levy_payment_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly refund_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'owner_credit_transactions_scheme_id_lot_id_idx';
+                  readonly columns: readonly ['scheme_id', 'lot_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly payment_authorisations: {
               columns: {
                 readonly approved_at: {
@@ -21095,6 +21673,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', false>;
                   };
+                  readonly many: false;
+                };
+                readonly owner_credit_refund_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly role: {
@@ -23059,6 +23643,16 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly auto_apply_owner_credit: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
                 readonly building_class: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -23136,11 +23730,45 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly interest_mode: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'STATUTORY'>;
+                  };
+                  readonly many: false;
+                };
                 readonly interest_rate: {
                   readonly dataType: 'pg/numeric';
                   readonly codecId: 'pg/numeric@1';
                   readonly nullable: true;
                   readonly typeParams: { readonly precision: 5; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly interest_resolution_meeting_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly interest_resolution_motion_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly interest_resolution_recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly interest_resolution_recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly is_active: {
@@ -30403,6 +31031,18 @@ type ContractBase = Omit<
     readonly organisations: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Organisation';
+    };
+    readonly owner_credit_balances: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'OwnerCreditBalance';
+    };
+    readonly owner_credit_refunds: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'OwnerCreditRefund';
+    };
+    readonly owner_credit_transactions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'OwnerCreditTransaction';
     };
     readonly payment_authorisations: {
       readonly namespace: 'public' & NamespaceId;
@@ -39354,6 +39994,270 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly OwnerCreditBalance: {
+            readonly fields: {
+              readonly balance: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly fundId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ownerId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'owner_credit_balances';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly balance: { readonly column: 'balance' };
+                readonly fundId: { readonly column: 'fund_id' };
+                readonly id: { readonly column: 'id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly ownerId: { readonly column: 'owner_id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly OwnerCreditRefund: {
+            readonly fields: {
+              readonly accountNumber: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 20 };
+                };
+              };
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly bsb: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 7 };
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly fundId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly journalEntryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ownerId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly paidAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly paidBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly payeeName: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 200 };
+                };
+              };
+              readonly preparedById: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly reason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly verificationMethod: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'owner_credit_refunds';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly accountNumber: { readonly column: 'account_number' };
+                readonly amount: { readonly column: 'amount' };
+                readonly bsb: { readonly column: 'bsb' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly fundId: { readonly column: 'fund_id' };
+                readonly id: { readonly column: 'id' };
+                readonly journalEntryId: { readonly column: 'journal_entry_id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly ownerId: { readonly column: 'owner_id' };
+                readonly paidAt: { readonly column: 'paid_at' };
+                readonly paidBy: { readonly column: 'paid_by' };
+                readonly payeeName: { readonly column: 'payee_name' };
+                readonly preparedById: { readonly column: 'prepared_by_id' };
+                readonly reason: { readonly column: 'reason' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly status: { readonly column: 'status' };
+                readonly verificationMethod: { readonly column: 'verification_method' };
+              };
+            };
+          };
+          readonly OwnerCreditTransaction: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly effectiveDate: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly fundId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly journalEntryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly levyNoticeId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly levyPaymentId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly note: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly refundId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'owner_credit_transactions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly effectiveDate: { readonly column: 'effective_date' };
+                readonly fundId: { readonly column: 'fund_id' };
+                readonly id: { readonly column: 'id' };
+                readonly journalEntryId: { readonly column: 'journal_entry_id' };
+                readonly levyNoticeId: { readonly column: 'levy_notice_id' };
+                readonly levyPaymentId: { readonly column: 'levy_payment_id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly note: { readonly column: 'note' };
+                readonly ownerId: { readonly column: 'owner_id' };
+                readonly refundId: { readonly column: 'refund_id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly type: { readonly column: 'type' };
+              };
+            };
+          };
           readonly PaymentAuthorisation: {
             readonly fields: {
               readonly approvedAt: {
@@ -39390,6 +40294,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly ownerCreditRefundId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly role: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -39423,6 +40331,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly ipHash: { readonly column: 'ip_hash' };
                 readonly isException: { readonly column: 'is_exception' };
+                readonly ownerCreditRefundId: { readonly column: 'owner_credit_refund_id' };
                 readonly role: { readonly column: 'role' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly sequence: { readonly column: 'sequence' };
@@ -41250,6 +42159,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly autoApplyOwnerCredit: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly buildingClass: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -41293,6 +42206,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly interestMode: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly interestRate: {
                 readonly nullable: true;
                 readonly type: {
@@ -41300,6 +42217,25 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/numeric@1';
                   readonly typeParams: { readonly precision: 5; readonly scale: 2 };
                 };
+              };
+              readonly interestResolutionMeetingId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly interestResolutionMotionId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly interestResolutionRecordedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly interestResolutionRecordedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly isActive: {
                 readonly nullable: false;
@@ -41896,6 +42832,7 @@ type ContractBase = Omit<
                 readonly abnNumber: { readonly column: 'abn_number' };
                 readonly address: { readonly column: 'address' };
                 readonly allInclusiveFees: { readonly column: 'all_inclusive_fees' };
+                readonly autoApplyOwnerCredit: { readonly column: 'auto_apply_owner_credit' };
                 readonly buildingClass: { readonly column: 'building_class' };
                 readonly buildingSubType: { readonly column: 'building_sub_type' };
                 readonly buildingType: { readonly column: 'building_type' };
@@ -41906,7 +42843,20 @@ type ContractBase = Omit<
                 readonly folio: { readonly column: 'folio' };
                 readonly gstRegistered: { readonly column: 'gst_registered' };
                 readonly id: { readonly column: 'id' };
+                readonly interestMode: { readonly column: 'interest_mode' };
                 readonly interestRate: { readonly column: 'interest_rate' };
+                readonly interestResolutionMeetingId: {
+                  readonly column: 'interest_resolution_meeting_id';
+                };
+                readonly interestResolutionMotionId: {
+                  readonly column: 'interest_resolution_motion_id';
+                };
+                readonly interestResolutionRecordedAt: {
+                  readonly column: 'interest_resolution_recorded_at';
+                };
+                readonly interestResolutionRecordedBy: {
+                  readonly column: 'interest_resolution_recorded_by';
+                };
                 readonly isActive: { readonly column: 'is_active' };
                 readonly name: { readonly column: 'name' };
                 readonly organisationId: { readonly column: 'organisation_id' };

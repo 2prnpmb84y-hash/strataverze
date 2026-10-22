@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { OwnerStatementClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/owner-statement/owner-statement-client";
 import { getIssuedLevyNoticesForLot, getLevyPaymentsForNotices } from "@/lib/queries/levy-schedules";
 import { buildStatement } from "@/lib/levies/levy-ledger";
+import { getCreditMovements } from "@/lib/finance/owner-credits";
 import { connection } from "next/server";
 import { formatLotLabel } from "@/lib/format";
 
@@ -98,7 +99,8 @@ export default async function OwnerStatementPage({
 
     const notices = await getIssuedLevyNoticesForLot(id, selectedOption.id);
     const payments = await getLevyPaymentsForNotices(notices.map((n) => n.id));
-    const statement = buildStatement(notices, payments, { startDate, endDate });
+    const credits = await getCreditMovements(id, selectedOption.id);
+    const statement = buildStatement(notices, payments, { startDate, endDate }, credits);
     statementLines = statement.lines;
     openingBalance = statement.openingBalance;
     totalCharges = statement.totalCharges;

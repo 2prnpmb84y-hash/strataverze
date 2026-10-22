@@ -17,6 +17,8 @@ import { ApproveButton } from "@/components/finance/approve-button";
 import { TreasurerToggle } from "@/components/finance/treasurer-toggle";
 import { VerifyBankChangeForm } from "@/app/(portal)/adviser/schemes/[id]/finance/suppliers/[supplierId]/bank-detail-controls";
 import { ownerApproveSupplierInvoiceAction } from "./approve-actions";
+import { getOwnerCreditRefunds } from "@/lib/finance/owner-credits";
+import { approveOwnerCreditRefundAction } from "@/lib/actions/owner-credits";
 import { PaymentPolicyForm } from "./policy-form";
 
 const dollars = (cents: number) => (cents / 100).toFixed(2);
@@ -61,13 +63,18 @@ export default async function OwnerApprovalsPage() {
     );
   }
 
-  const [settings, members, supplierInvoices, worksInvoices, suppliers] = await Promise.all([
+  const [settings, members, supplierInvoices, worksInvoices, suppliers, refunds, lots] = await Promise.all([
     getPaymentSettings(schemeId),
     getApprovalMembers(schemeId),
     getInvoicesAwaitingApproval([schemeId]),
     getWorksInvoicesAwaitingApproval([schemeId]),
     db.orm.public.Supplier.where((s) => s.schemeId.eq(schemeId)).limit(1000).all(),
+    getOwnerCreditRefunds([schemeId], ["AWAITING_APPROVAL"]),
+    db.orm.public.Lot.where((l) => l.schemeId.eq(schemeId)).limit(5000).all(),
   ]);
+  const refundViews = await Promise.all(
+    refunds.map(async (r) => ({ refund: r, view: await getInvoiceControlView(schemeId, { ownerCreditRefundId: r.id }, profile.id) })),
+  );
   const eligible = eligibleApprovers(members, settings.policy);
   const supplierViews = await Promise.all(
     supplierInvoices.map(async (i) => ({ invoice: i, view: await getInvoiceControlView(schemeId, { supplierInvoiceId: i.id }, profile.id) })),
@@ -95,8 +102,8 @@ export default async function OwnerApprovalsPage() {
       )}
 
       <Card>
-        <CardHeader title="Invoices waiting for approval" />
-        {supplierViews.length + worksViews.length === 0 ? (
+        <CardHeader title="Payments waiting for approval" />
+        {supplierViews.length + worksViews.length + refundViews.length === 0 ? (
           <p className="text-sm text-ink-muted">Nothing is waiting for approval.</p>
         ) : (
           <ul className="divide-y divide-line">
@@ -135,6 +142,37 @@ export default async function OwnerApprovalsPage() {
                   </div>
                   {view && <ApprovalPanel view={view} status={invoice.status} />}
                   {view && <ApproveButton action={approve} blockedReason={view.approve.result === "blocked" ? view.approve.reason : null} />}
+                </li>
+              );
+            })}
+            {refundViews.map(({ refund, view }) => {
+              async function approve() {
+                "use server";
+                return approveOwnerCreditRefundAction(schemeId!, refund.id);
+              }
+              return (
+                <li key={refund.id} className="py-4 space-y-3">
+                  <div className="flex flex-wrap justify-between gap-2 text-sm">
+                    <span className="font-medium text-ink">
+                      Refund of owner credit, lot {String(lots.find((l) => l.id === refund.lotId)?.lotNumber ?? "?")}, to {refund.payeeName}
+                    </span>
+                    <span className="tabular-nums font-semibold">{formatAud(toCents(String(refund.amount)))}</span>
+                  </div>
+                  <p className="text-sm text-ink-muted">
+                    BSB {refund.bsb}, account ending {String(refund.accountNumber).slice(-4)}.{" "}
+                    {refund.verificationMethod === "CALLBACK"
+                      ? "Confirmed by a call to the owner on a known number."
+                      : "Confirmed by a bank document from the owner."}
+                    {refund.reason ? ` Reason: ${refund.reason}` : ""}
+                  </p>
+                  {view && <ApprovalPanel view={view} status={refund.status} />}
+                  {view && (
+                    <ApproveButton
+                      action={approve}
+                      label="Approve refund"
+                      blockedReason={view.approve.result === "blocked" ? view.approve.reason : null}
+                    />
+                  )}
                 </li>
               );
             })}

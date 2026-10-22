@@ -88,7 +88,7 @@ export const STATUS_STYLES: Record<string, string> = {
 export interface StatementLine {
   id: string;
   date: string;
-  type: "Levy" | "Interest" | "Payment";
+  type: "Levy" | "Interest" | "Payment" | "Refund";
   description: string;
   charge: number;
   payment: number;
@@ -113,12 +113,29 @@ export interface Statement {
  * amount paid that the receipts do not account for is shown as one payment on
  * the date the notice was paid in full (or last updated).
  */
+export interface LedgerCreditMovement {
+  id: string;
+  type: string; // OVERPAYMENT, APPLIED, REFUNDED, ADJUSTED
+  amount: unknown;
+  /** The date the movement took effect (payment date, application date, refund date). */
+  effectiveDate: unknown;
+  levyPaymentId?: string | null;
+}
+
+/**
+ * Owner credit on a statement: the part of a payment held as credit is a
+ * payment (taking the balance below zero), credit later applied to a notice is
+ * not money received again so it is not shown twice, and a refund of credit
+ * is a charge. A negative closing balance is the owner's credit.
+ */
 export function buildStatement(
   notices: LedgerNotice[],
   payments: LedgerPayment[],
   range: { startDate?: string; endDate?: string } = {},
+  credits: LedgerCreditMovement[] = [],
 ): Statement {
   const entries: Omit<StatementLine, "balance">[] = [];
+  const appliedReceipts = new Set(credits.filter((c) => c.type === "APPLIED" && c.levyPaymentId).map((c) => c.levyPaymentId!));
   for (const n of notices) {
     if (String(n.status) === "DRAFT") continue;
     const due = toIsoDay(n.dueDate);
@@ -133,6 +150,8 @@ export function buildStatement(
     }
     const own = payments.filter((p) => p.levyNoticeId === n.id);
     for (const p of own) {
+      // Credit applied to this notice was already shown when it was received.
+      if (appliedReceipts.has(p.id)) continue;
       const ref = p.reference ? ` (${String(p.reference)})` : "";
       entries.push({ id: `pay-${p.id}`, date: toIsoDay(p.paymentDate), type: "Payment", description: `Payment for ${n.noticeNumber}${ref}`, charge: 0, payment: num(p.amount) });
     }
@@ -143,7 +162,18 @@ export function buildStatement(
     }
   }
 
-  const order = { Levy: 0, Interest: 1, Payment: 2 } as const;
+  for (const c of credits) {
+    const date = toIsoDay(c.effectiveDate);
+    const amount = num(c.amount);
+    if (c.type === "OVERPAYMENT") {
+      entries.push({ id: `credit-${c.id}`, date, type: "Payment", description: "Payment held as credit", charge: 0, payment: amount });
+    } else if (c.type === "ADJUSTED") {
+      entries.push({ id: `credit-${c.id}`, date, type: "Payment", description: "Credit adjustment", charge: 0, payment: amount });
+    } else if (c.type === "REFUNDED") {
+      entries.push({ id: `credit-${c.id}`, date, type: "Refund", description: "Credit refunded", charge: amount, payment: 0 });
+    }
+  }
+  const order = { Levy: 0, Interest: 1, Payment: 2, Refund: 3 } as const;
   entries.sort((a, b) => a.date.localeCompare(b.date) || order[a.type] - order[b.type]);
 
   let opening = 0;

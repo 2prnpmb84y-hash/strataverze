@@ -144,7 +144,15 @@ model Scheme {
   // Financial management fields
   gstRegistered       Boolean             @default(false) @map("gst_registered")
   preMeetingEvotingAdopted Boolean        @default(false) @map("pre_meeting_evoting_adopted") // body resolved to adopt pre-meeting e-voting (Reg cl 14)
-  interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // % p.a. for overdue levies
+  interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // Deprecated: interest follows SSMA s 85 (see interestMode)
+  /// STATUTORY (SSMA 2015 s 85: 10% simple, one month grace) or NO_INTEREST by recorded resolution (s 85(3)).
+  interestMode        String              @default("STATUTORY") @map("interest_mode")
+  interestResolutionMeetingId String?     @map("interest_resolution_meeting_id") @db.Uuid
+  interestResolutionMotionId  String?     @map("interest_resolution_motion_id") @db.Uuid
+  interestResolutionRecordedBy String?    @map("interest_resolution_recorded_by") @db.Uuid
+  interestResolutionRecordedAt DateTime?  @db.Timestamptz @map("interest_resolution_recorded_at")
+  /// Apply an owner's credit (overpayment) to their next levy notice automatically.
+  autoApplyOwnerCredit Boolean            @default(true) @map("auto_apply_owner_credit")
   defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
   organisationId      String?             @map("organisation_id") @db.Uuid
   createdAt           DateTime            @default(now()) @db.Timestamptz @map("created_at")
@@ -3450,6 +3458,7 @@ model PaymentAuthorisation {
   schemeId          String   @map("scheme_id") @db.Uuid
   supplierInvoiceId String?  @map("supplier_invoice_id") @db.Uuid
   worksInvoiceId    String?  @map("works_invoice_id") @db.Uuid
+  ownerCreditRefundId String? @map("owner_credit_refund_id") @db.Uuid
   approverId        String   @map("approver_id") @db.Uuid
   role              String
   approvedAt        DateTime @default(now()) @db.Timestamptz @map("approved_at")
@@ -3488,4 +3497,68 @@ model SupplierBankDetailVersion {
 
   @@index([supplierId, changedAt])
   @@map("supplier_bank_detail_versions")
+}
+
+/// An owner's credit for a lot in one fund (levies paid in advance or overpaid).
+/// Kept per fund because the administrative and capital works funds are separate.
+model OwnerCreditBalance {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId  String   @map("scheme_id") @db.Uuid
+  lotId     String   @map("lot_id") @db.Uuid
+  fundId    String   @map("fund_id") @db.Uuid
+  ownerId   String?  @map("owner_id") @db.Uuid
+  balance   Decimal  @default(0) @db.Decimal(12, 2)
+  updatedAt DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@unique([schemeId, lotId, fundId])
+  @@index([schemeId])
+  @@map("owner_credit_balances")
+}
+
+/// One movement on an owner's credit: OVERPAYMENT, APPLIED, REFUNDED or ADJUSTED.
+/// Amount is always positive; the type gives the direction.
+model OwnerCreditTransaction {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId       String   @map("scheme_id") @db.Uuid
+  lotId          String   @map("lot_id") @db.Uuid
+  fundId         String   @map("fund_id") @db.Uuid
+  ownerId        String?  @map("owner_id") @db.Uuid
+  type           String
+  amount         Decimal  @db.Decimal(12, 2)
+  levyNoticeId   String?  @map("levy_notice_id") @db.Uuid
+  levyPaymentId  String?  @map("levy_payment_id") @db.Uuid
+  refundId       String?  @map("refund_id") @db.Uuid
+  journalEntryId String?  @map("journal_entry_id") @db.Uuid
+  /// The date the movement took effect: payment date, application date or refund date.
+  effectiveDate  DateTime @db.Date @map("effective_date")
+  note           String?
+  createdBy      String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@index([schemeId, lotId])
+  @@map("owner_credit_transactions")
+}
+
+/// A refund of an owner's credit. Approved under the scheme payment policy like a supplier payment.
+model OwnerCreditRefund {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String    @map("scheme_id") @db.Uuid
+  lotId              String    @map("lot_id") @db.Uuid
+  fundId             String    @map("fund_id") @db.Uuid
+  ownerId            String?   @map("owner_id") @db.Uuid
+  amount             Decimal   @db.Decimal(12, 2)
+  payeeName          String    @map("payee_name") @db.VarChar(200)
+  bsb                String    @db.VarChar(7)
+  accountNumber      String    @map("account_number") @db.VarChar(20)
+  verificationMethod String    @map("verification_method")
+  reason             String?
+  status             String    @default("AWAITING_APPROVAL")
+  preparedById       String    @map("prepared_by_id") @db.Uuid
+  paidAt             DateTime? @db.Timestamptz @map("paid_at")
+  paidBy             String?   @map("paid_by") @db.Uuid
+  journalEntryId     String?   @map("journal_entry_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  @@index([schemeId, status])
+  @@map("owner_credit_refunds")
 }
