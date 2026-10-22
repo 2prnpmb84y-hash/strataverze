@@ -40,7 +40,7 @@ export default async function PortalLayout({
   return (
     <PortalShell
       user={user}
-      availablePortals={availablePortals}
+      availablePortals={profile?.isPlatformAdmin ? [...availablePortals, "admin"] : availablePortals}
       isCommitteeMember={isCommitteeMember}
       pendingInvitationCount={pendingInvitations.length}
       isPlatformAdmin={profile?.isPlatformAdmin ?? false}

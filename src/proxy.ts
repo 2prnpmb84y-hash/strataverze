@@ -47,6 +47,7 @@ const protectedPrefixes = [
   "/supplier",
   "/settings",
   "/invitations",
+  "/admin",
 ];
 
 const authRoutes = new Set([

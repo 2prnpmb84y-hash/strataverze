@@ -5,6 +5,7 @@ import { formatAud, splitGst } from "@/lib/billing/money";
 import { groupFeeSchedule } from "@/lib/billing/fee-schedule";
 import { PAYER_LABELS } from "@/lib/billing/disclosure";
 import type { PlatformFeesData } from "@/lib/queries/platform-billing";
+import { ReferralIncomeDisclosure } from "./referral-income-disclosure";
 
 const TIER_LABELS: Record<string, string> = {
   SMALL: "Small",
@@ -175,6 +176,20 @@ export function PlatformFeesView({ data }: { data: PlatformFeesData }) {
           </div>
         )}
       </Card>
+
+      {data.referralIncome && (
+        <Card>
+          <CardHeader
+            title="Referral income"
+            description="Commission insurance partners paid StrataVerze on this scheme's policies. StrataVerze does not quote, compare or place insurance."
+          />
+          {data.referralIncome.length === 0 ? (
+            <p className="text-sm text-ink-muted">StrataVerze has received no referral income on this scheme.</p>
+          ) : (
+            <ReferralIncomeDisclosure rows={data.referralIncome} title="Received by StrataVerze" />
+          )}
+        </Card>
+      )}
 
       <Card>
         <div id="fee-schedule" className="scroll-mt-24" />

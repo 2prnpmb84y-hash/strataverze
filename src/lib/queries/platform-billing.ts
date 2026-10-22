@@ -1,4 +1,6 @@
 import { db } from "@/prisma/db";
+import { referralIncomeEnabled } from "@/lib/billing/referral";
+import { getReferralIncomeForScheme, type ReferralIncomeRow } from "@/lib/queries/referral-income";
 import { toCents } from "@/lib/billing/money";
 import { billingCaptureEnabled, loadPriceBook, transactionFeeMode } from "@/lib/billing/capture";
 import { feeSchedule, feeTotals, type FeeScheduleRow, type FeeTotals } from "@/lib/billing/fee-schedule";
@@ -46,6 +48,8 @@ export interface PlatformFeesData {
   events: PlatformFeeEventRow[];
   invoices: PlatformInvoiceRow[];
   schedule: FeeScheduleRow[];
+  /** Null while the referral income feature is switched off. */
+  referralIncome: ReferralIncomeRow[] | null;
 }
 
 /** Everything the scheme's StrataVerze fees page shows. Caller checks access. */
@@ -111,6 +115,7 @@ export async function getPlatformFeesData(schemeId: string, lotCount: number): P
       status: i.status,
     })),
     schedule: feeSchedule(priceBook, today, { transactionFeeMode: transactionFeeMode() }),
+    referralIncome: referralIncomeEnabled() ? await getReferralIncomeForScheme(schemeId) : null,
   };
 }
 

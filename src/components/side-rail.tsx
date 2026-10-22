@@ -34,6 +34,7 @@ const portalAccent: Record<string, string> = {
   adviser: "var(--color-adviser)",
   supplier: "var(--color-supplier)",
   accountant: "var(--color-turquoise)",
+  admin: "var(--color-turquoise)",
 };
 
 const portalLabel: Record<string, string> = {
@@ -41,6 +42,7 @@ const portalLabel: Record<string, string> = {
   adviser: "Adviser Portal",
   supplier: "Supplier Portal",
   accountant: "Accountant Portal",
+  admin: "StrataVerze Admin",
 };
 
 const portalIcon: Record<string, LucideIcon> = {
@@ -48,6 +50,7 @@ const portalIcon: Record<string, LucideIcon> = {
   adviser: Briefcase,
   supplier: Shield,
   accountant: Calculator,
+  admin: Settings,
 };
 
 /* ------------------------------------------------------------------ */
@@ -93,7 +96,13 @@ const accountantNav = [
   { label: "Schemes", href: "/accountant/schemes", icon: Building2 },
 ];
 
+const adminNav = [
+  { label: "Referral income", href: "/admin/referral-income", icon: CreditCard },
+  { label: "Contractors", href: "/adviser/contractors", icon: UserPlus },
+];
+
 const navByPortal: Record<string, typeof ownerNav> = {
+  admin: adminNav,
   owner: ownerNav,
   adviser: adviserNav,
   supplier: supplierNav,
