@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { issueNoticeAction } from "./notice-actions";
+import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
+import type { FeeView } from "@/lib/billing/disclosure";
 
 export interface NoticeRecipientView {
   name: string | null;
@@ -28,6 +30,7 @@ export function NoticeSection({
   recipientCount,
   noticePeriod,
   notices,
+  fee = null,
 }: {
   schemeId: string;
   meetingId: string;
@@ -36,14 +39,26 @@ export function NoticeSection({
   recipientCount: number;
   noticePeriod: { requiredDays: number | null; actualDays: number; compliant: boolean } | null;
   notices: NoticeView[];
+  /** The StrataVerze fee issuing this notice will attract, if any. */
+  fee?: FeeView | null;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const feeConfirmation = useFeeConfirmation(fee);
+  const disclosure = (
+    <FeeDisclosure
+      fee={fee}
+      scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
+      confirmed={feeConfirmation.confirmed}
+      onConfirmedChange={feeConfirmation.setConfirmed}
+      idSuffix={`-${meetingId}`}
+    />
+  );
 
   function issue() {
     setError(null);
     start(async () => {
-      const result = await issueNoticeAction(schemeId, meetingId);
+      const result = await issueNoticeAction(schemeId, meetingId, feeConfirmation.confirmedCents);
       if (result?.error) setError(result.error);
     });
   }
@@ -88,7 +103,8 @@ export function NoticeSection({
                 The notice will be issued to <strong>{recipientCount}</strong>{" "}
                 recipient{recipientCount === 1 ? "" : "s"} from the scheme roll.
               </p>
-              <Button type="button" disabled={!canIssue || pending} onClick={issue}>
+              {canIssue && disclosure}
+              <Button type="button" disabled={!canIssue || pending || !feeConfirmation.ready} onClick={issue}>
                 {pending ? "Issuing..." : "Issue notice"}
               </Button>
             </>
@@ -135,10 +151,11 @@ export function NoticeSection({
             </ul>
           </div>
 
+          {canIssue && disclosure}
           <Button
             type="button"
             variant="secondary"
-            disabled={!canIssue || pending}
+            disabled={!canIssue || pending || !feeConfirmation.ready}
             onClick={issue}
           >
             {pending ? "Re-issuing..." : "Issue revised notice"}

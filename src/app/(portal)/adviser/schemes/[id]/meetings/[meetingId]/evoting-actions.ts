@@ -27,6 +27,7 @@ import { recordMeetingEvent } from "@/lib/meetings/events";
 
 import { db } from "@/prisma/db";
 import { captureUsageFee } from "@/lib/billing/capture";
+import { feeErrorMessage } from "@/lib/billing/disclosure";
 
 export type EvotingActionState = { error?: string; ok?: boolean };
 
@@ -37,6 +38,7 @@ function revalidate(schemeId: string, meetingId: string) {
 export async function openBallotAction(
   schemeId: string,
   meetingId: string,
+  feeConfirmedCents: number | null = null,
 ): Promise<EvotingActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
@@ -77,6 +79,7 @@ export async function openBallotAction(
         sourceType: "ElectronicBallot",
         sourceId: ballot.id,
         actorId: profile.id,
+        confirmedCents: feeConfirmedCents,
       });
     });
     await recordMeetingEvent({
@@ -92,6 +95,8 @@ export async function openBallotAction(
     return { ok: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return { error: "Failed to open the ballot." };
   }
 }

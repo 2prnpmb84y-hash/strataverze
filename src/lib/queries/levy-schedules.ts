@@ -340,7 +340,13 @@ export async function issueLevyNotice(noticeId: string) {
 export async function recordLevyPayment(
   noticeId: string,
   paymentAmount: number,
-  details: { paymentDate: string; reference?: string | null; recordedBy?: string | null } = {
+  details: {
+    paymentDate: string;
+    reference?: string | null;
+    recordedBy?: string | null;
+    /** The StrataVerze fee (incl. GST, cents) the user confirmed, if any. */
+    feeConfirmedCents?: number | null;
+  } = {
     paymentDate: new Date().toISOString().slice(0, 10),
   },
 ) {
@@ -381,6 +387,7 @@ export async function recordLevyPayment(
       sourceType: "LevyPayment",
       sourceId: receipt.id,
       actorId: details.recordedBy ?? null,
+      confirmedCents: details.feeConfirmedCents ?? null,
       date: details.paymentDate,
     });
 

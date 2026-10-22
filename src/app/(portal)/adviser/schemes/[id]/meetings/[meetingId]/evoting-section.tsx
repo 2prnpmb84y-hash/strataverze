@@ -8,6 +8,8 @@ import {
   closeBallotAction,
   type EvotingActionState,
 } from "./evoting-actions";
+import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
+import type { FeeView } from "@/lib/billing/disclosure";
 
 export interface BallotView {
   status: string;
@@ -22,14 +24,18 @@ export function EvotingSection({
   adopted,
   canOpen,
   ballot,
+  fee = null,
 }: {
   schemeId: string;
   meetingId: string;
   adopted: boolean;
   canOpen: boolean;
   ballot: BallotView | null;
+  /** The StrataVerze fee for opening a ballot, if any. */
+  fee?: FeeView | null;
 }) {
   const [pending, start] = useTransition();
+  const feeConfirmation = useFeeConfirmation(fee);
   const [error, setError] = useState<string | null>(null);
 
   function run(fn: () => Promise<EvotingActionState>) {
@@ -65,10 +71,19 @@ export function EvotingSection({
             Owners will be able to vote from 7 days before the meeting until the
             close (24 hours before, or at the meeting for a committee meeting).
           </p>
+          {canOpen && (
+            <FeeDisclosure
+              fee={fee}
+              scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
+              confirmed={feeConfirmation.confirmed}
+              onConfirmedChange={feeConfirmation.setConfirmed}
+              idSuffix={`-${meetingId}`}
+            />
+          )}
           <Button
             type="button"
-            disabled={!canOpen || pending}
-            onClick={() => run(() => openBallotAction(schemeId, meetingId))}
+            disabled={!canOpen || pending || !feeConfirmation.ready}
+            onClick={() => run(() => openBallotAction(schemeId, meetingId, feeConfirmation.confirmedCents))}
           >
             {pending ? "Opening..." : "Open ballot"}
           </Button>

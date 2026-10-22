@@ -308,7 +308,7 @@ export async function approveInvoice(invoiceId: string, approvedBy: string) {
 export async function recordInvoicePayment(
   invoiceId: string,
   paymentAmount: number,
-  details: { paymentDate?: string; actorId?: string | null } = {},
+  details: { paymentDate?: string; actorId?: string | null; feeConfirmedCents?: number | null } = {},
 ) {
   return db.transaction(async (tx) => {
     const invoice = await tx.orm.public.SupplierInvoice
@@ -343,6 +343,7 @@ export async function recordInvoicePayment(
       sourceType: "SupplierInvoicePayment",
       sourceId: `${invoiceId}_${Math.round(newAmountPaid * 100)}`,
       actorId: details.actorId ?? null,
+      confirmedCents: details.feeConfirmedCents ?? null,
       date: details.paymentDate,
     });
 

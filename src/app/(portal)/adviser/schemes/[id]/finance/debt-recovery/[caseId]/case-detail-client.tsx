@@ -6,6 +6,9 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusChip } from "@/components/ui/status-chip";
+import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
+import type { FeeView } from "@/lib/billing/disclosure";
+import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
 
 type ChipStatus = "default" | "success" | "warning" | "danger";
 import {
@@ -182,6 +185,7 @@ export function CaseDetailClient({
   instalments,
   documents,
   activities,
+  recoveryFees = {},
 }: {
   schemeId: string;
   lotNumber: string;
@@ -193,6 +197,8 @@ export function CaseDetailClient({
   instalments: Instalment[];
   documents: Document[];
   activities: Activity[];
+  /** StrataVerze recovery fees by price variant (REMINDER, FINAL_NOTICE, REFERRAL, PAYMENT_PLAN). */
+  recoveryFees?: Record<string, FeeView | null>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -371,6 +377,7 @@ export function CaseDetailClient({
               setSuccess={setSuccess}
               clearMessages={clearMessages}
               router={router}
+              fee={recoveryFees[recoveryFeeVariant(activeStep.stepType) ?? ""] ?? null}
             />
           )}
 
@@ -633,6 +640,7 @@ export function CaseDetailClient({
               setSuccess={setSuccess}
               clearMessages={clearMessages}
               router={router}
+              fee={recoveryFees.PAYMENT_PLAN ?? null}
             />
           )}
 
@@ -688,6 +696,7 @@ function WizardStepContent({
   setSuccess,
   clearMessages,
   router,
+  fee = null,
 }: {
   step: Step;
   stepIndex: number;
@@ -702,10 +711,12 @@ function WizardStepContent({
   setSuccess: (v: string | null) => void;
   clearMessages: () => void;
   router: ReturnType<typeof useRouter>;
+  fee?: FeeView | null;
 }) {
   const [outcome, setOutcome] = useState("");
   const [evidenceNotes, setEvidenceNotes] = useState("");
   const [noticeMethod, setNoticeMethod] = useState("");
+  const feeConfirmation = useFeeConfirmation(fee);
 
   const isCompleted = step.status === "COMPLETED";
   const canComplete = isOnCurrentStep && !isClosed && !isCompleted;
@@ -717,6 +728,9 @@ function WizardStepContent({
     formData.set("evidenceNotes", evidenceNotes);
     formData.set("noticeMethod", noticeMethod);
     formData.set("stepType", step.stepType);
+    if (feeConfirmation.confirmedCents != null) {
+      formData.set("feeConfirmedCents", String(feeConfirmation.confirmedCents));
+    }
 
     startTransition(async () => {
       const result = await completeDebtRecoveryStepAction(
@@ -928,11 +942,18 @@ function WizardStepContent({
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise"
               />
             </div>
+            <FeeDisclosure
+              fee={fee}
+              scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
+              confirmed={feeConfirmation.confirmed}
+              onConfirmedChange={feeConfirmation.setConfirmed}
+              idSuffix={`-${step.id}`}
+            />
             <div className="flex justify-end">
               <Button
                 variant="primary"
                 onClick={handleCompleteStep}
-                disabled={isPending}
+                disabled={isPending || !feeConfirmation.ready}
               >
                 {isPending
                   ? "Saving..."
@@ -972,6 +993,7 @@ function PaymentPlanPanel({
   setSuccess,
   clearMessages,
   router,
+  fee = null,
 }: {
   schemeId: string;
   caseId: string;
@@ -986,8 +1008,10 @@ function PaymentPlanPanel({
   setSuccess: (v: string | null) => void;
   clearMessages: () => void;
   router: ReturnType<typeof useRouter>;
+  fee?: FeeView | null;
 }) {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const feeConfirmation = useFeeConfirmation(fee);
 
   function handleCreatePlan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -1212,7 +1236,14 @@ function PaymentPlanPanel({
           >
             Cancel
           </Button>
-          <Button variant="primary" type="submit" disabled={isPending}>
+          <FeeDisclosure
+            fee={fee}
+            scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
+            confirmed={feeConfirmation.confirmed}
+            onConfirmedChange={feeConfirmation.setConfirmed}
+            idSuffix="-plan"
+          />
+          <Button variant="primary" type="submit" disabled={isPending || !feeConfirmation.ready}>
             {isPending ? "Creating..." : "Create"}
           </Button>
         </div>

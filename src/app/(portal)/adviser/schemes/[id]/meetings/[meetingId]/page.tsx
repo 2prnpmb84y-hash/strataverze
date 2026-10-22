@@ -28,6 +28,8 @@ import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
 import { canTransition } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
+import { hasFeeEvent, previewUsageFee } from "@/lib/billing/capture";
+import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
 
 export default async function MeetingDetailPage({
   params,
@@ -52,6 +54,16 @@ export default async function MeetingDetailPage({
 
   const agendaItems = await getAgendaItemsForMeeting(meetingId);
   const normalisedType = normaliseMeetingType(meeting.meetingType);
+
+  // The StrataVerze fee for issuing the notice: each adjourned general
+  // meeting notice, or the first notice of an EGM. Matches issueNoticeAction.
+  const chargeAdjournment = meeting.status === "ADJOURNED" && normalisedType !== "COMMITTEE";
+  const chargeMeeting =
+    !chargeAdjournment &&
+    isChargeableMeetingType(normalisedType) &&
+    !(await hasFeeEvent({ code: "MEETING_EGM", sourceType: "Meeting", sourceId: meetingId }));
+  const noticeFee =
+    chargeAdjournment || chargeMeeting ? await previewUsageFee({ code: "MEETING_EGM" }) : null;
   const motionLibrary = getMotionLibrary(
     scheme.state,
     normalisedType ?? undefined,
@@ -246,6 +258,7 @@ export default async function MeetingDetailPage({
         recipientCount={recipientCount}
         noticePeriod={noticePeriod}
         notices={noticeViews}
+        fee={noticeFee}
       />
 
       {/* Pre-meeting electronic voting */}
@@ -255,6 +268,7 @@ export default async function MeetingDetailPage({
         adopted={scheme.preMeetingEvotingAdopted}
         canOpen={canOpenBallot}
         ballot={ballotView}
+        fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" })}
       />
 
       {/* Conduct */}

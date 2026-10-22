@@ -67,6 +67,7 @@ import {
 } from "@/lib/queries/levy-schedules";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { captureUsageFee } from "@/lib/billing/capture";
+import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
   checkPlan,
@@ -1013,6 +1014,7 @@ export async function createSpecialLevyAction(
 export async function generateYearEndPackAction(
   schemeId: string,
   financialYear: number,
+  feeConfirmedCents: number | null = null,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
@@ -1026,6 +1028,7 @@ export async function generateYearEndPackAction(
         sourceType: "YearEndPack",
         sourceId: `${schemeId}_FY${financialYear}`,
         actorId: profile.id,
+        confirmedCents: feeConfirmedCents,
       });
     });
     await logActivity({
@@ -1040,6 +1043,8 @@ export async function generateYearEndPackAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return { error: "Failed to generate the year-end pack." };
   }
 }
@@ -1055,7 +1060,13 @@ export async function recordLevyPaymentFormAction(
   const paymentDate = String(formData.get("paymentDate") ?? "").trim();
   const notice = await db.orm.public.LevyNotice.where((ln) => ln.id.eq(levyNoticeId)).first();
   if (!notice || notice.schemeId !== schemeId) return { error: "Levy notice not found." };
-  const result = await recordLevyPaymentAction(schemeId, levyNoticeId, amount, paymentDate);
+  const result = await recordLevyPaymentAction(
+    schemeId,
+    levyNoticeId,
+    amount,
+    paymentDate,
+    confirmedCentsFrom(formData),
+  );
   if (result.success) {
     revalidatePath(financePath(schemeId, `/levies/${notice.levyScheduleId}`));
   }
@@ -1067,6 +1078,7 @@ export async function recordLevyPaymentAction(
   levyNoticeId: string,
   amount: number,
   paymentDate: string,
+  feeConfirmedCents: number | null = null,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
@@ -1089,7 +1101,7 @@ export async function recordLevyPaymentAction(
       .include("fund")
       .first();
 
-    await recordLevyPayment(levyNoticeId, amount, { paymentDate, recordedBy: profile.id });
+    await recordLevyPayment(levyNoticeId, amount, { paymentDate, recordedBy: profile.id, feeConfirmedCents });
 
     // ── Auto journal entry: DR Bank, CR Levies Receivable ──
     if (notice) {
@@ -1405,6 +1417,7 @@ export async function recordInvoicePaymentAction(
   amount: number,
   paymentDate: string,
   _paymentReference?: string,
+  feeConfirmedCents: number | null = null,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
@@ -1415,7 +1428,7 @@ export async function recordInvoicePaymentAction(
     // Fetch invoice details before recording payment
     const invoice = await getSupplierInvoiceById(invoiceId);
 
-    await recordInvoicePayment(invoiceId, amount, { paymentDate, actorId: profile.id });
+    await recordInvoicePayment(invoiceId, amount, { paymentDate, actorId: profile.id, feeConfirmedCents });
 
     // ── Auto journal entry: DR Accounts Payable, CR Bank ──
     if (invoice) {

@@ -1,5 +1,6 @@
 "use server";
 
+import { feeErrorMessage } from "@/lib/billing/disclosure";
 import { captureUsageFee } from "@/lib/billing/capture";
 import { isExecutedContractStatus } from "@/lib/billing/hook-codes";
 import { revalidatePath } from "next/cache";
@@ -1946,6 +1947,7 @@ export async function submitWorksVariation(
 export async function approveWorksVariation(
   variationId: string,
   schemeId: string,
+  feeConfirmedCents: number | null = null,
 ): Promise<ActionResult> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, [
@@ -1978,6 +1980,7 @@ export async function approveWorksVariation(
         sourceType: "WorksVariation",
         sourceId: variationId,
         actorId: profile.id,
+        confirmedCents: feeConfirmedCents,
       });
     });
 
@@ -2018,6 +2021,8 @@ export async function approveWorksVariation(
     return OK;
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return { error: "Failed to approve variation." };
   }
 }
@@ -2062,6 +2067,7 @@ export async function rejectWorksVariation(
 export async function executeWorksContract(
   contractId: string,
   schemeId: string,
+  feeConfirmedCents: number | null = null,
 ): Promise<ActionResult> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
@@ -2070,8 +2076,8 @@ export async function executeWorksContract(
       .first();
     if (!contract || contract.schemeId !== schemeId) return { error: "Contract not found." };
     if (isExecutedContractStatus(contract.status)) return { error: "This contract is already executed." };
-    if (["COMPLETE", "TERMINATED"].includes(String(contract.status))) {
-      return { error: `A ${String(contract.status).toLowerCase()} contract cannot be executed.` };
+    if (!["DRAFT", "PENDING_SIGNATURE"].includes(String(contract.status))) {
+      return { error: "Only a draft contract or one awaiting signature can be recorded as executed." };
     }
 
     const now = new Date().toISOString();
@@ -2091,6 +2097,7 @@ export async function executeWorksContract(
         sourceType: "WorksContract",
         sourceId: contractId,
         actorId: profile.id,
+        confirmedCents: feeConfirmedCents,
       });
     });
 
@@ -2106,6 +2113,8 @@ export async function executeWorksContract(
     return OK;
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return { error: "Failed to record execution." };
   }
 }

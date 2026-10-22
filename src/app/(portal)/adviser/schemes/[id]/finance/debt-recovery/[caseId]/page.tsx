@@ -7,6 +7,7 @@ import {
   getInstalmentsForPlan,
 } from "@/lib/queries/debt-recovery";
 import { CaseDetailClient } from "./case-detail-client";
+import { previewRecoveryFees } from "@/lib/billing/capture";
 
 export default async function DebtRecoveryCaseDetailPage({
   params,
@@ -64,6 +65,7 @@ export default async function DebtRecoveryCaseDetailPage({
 
   return (
     <CaseDetailClient
+      recoveryFees={await previewRecoveryFees()}
       schemeId={id}
       lotNumber={lot ? String(lot.lotNumber) : "—"}
       unitNumber={lot?.unitNumber ?? null}

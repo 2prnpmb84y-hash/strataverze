@@ -8,6 +8,9 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { executeWorksContract } from "@/lib/actions/works";
+import { FeeActionButton } from "@/components/billing/fee-action-button";
+import { previewUsageFee } from "@/lib/billing/capture";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -65,7 +68,20 @@ export default async function ContractDetailPage({
   if (!scheme) notFound();
 
   const contract = await getWorksContractById(contractId);
-  if (!contract) notFound();
+  if (!contract || contract.schemeId !== id) notFound();
+
+  const canExecute = contract.status === "DRAFT" || contract.status === "PENDING_SIGNATURE";
+  const executionFee = canExecute
+    ? await previewUsageFee({
+        code: "WORKS_CONTRACT",
+        bandValue: Math.round(Number(contract.contractValue) * 100),
+      })
+    : null;
+
+  async function executeAction(feeConfirmedCents: number | null) {
+    "use server";
+    return executeWorksContract(contractId, id, feeConfirmedCents);
+  }
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -89,6 +105,24 @@ export default async function ContractDetailPage({
           status={statusLabel[contract.status] ?? contract.status}
         />
       </div>
+
+      {canExecute && (
+        <Card>
+          <CardHeader
+            title="Record execution"
+            description="Record that the owners corporation has signed this contract."
+          />
+          <FeeActionButton
+            fee={executionFee}
+            scheduleHref={`/adviser/schemes/${id}/finance/platform-fees#fee-schedule`}
+            label="Record contract as executed"
+            pendingLabel="Recording..."
+            successMessage="Contract recorded as executed."
+            action={executeAction}
+            idSuffix={`-${contractId}`}
+          />
+        </Card>
+      )}
 
       {/* Contract details */}
       <Card>

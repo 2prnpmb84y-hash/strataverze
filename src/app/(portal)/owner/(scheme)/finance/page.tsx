@@ -112,6 +112,11 @@ export default async function OwnerFinancePage() {
       <PageHeader
         title="Finance"
         description="Your levy contributions and fund balances."
+        action={
+          <Button variant="secondary" href="/owner/finance/platform-fees">
+            StrataVerze Fees
+          </Button>
+        }
       />
 
       {/* Upload payment button */}
