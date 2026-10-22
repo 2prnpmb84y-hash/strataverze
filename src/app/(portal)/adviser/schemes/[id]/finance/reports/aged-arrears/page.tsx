@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getLeviesForScheme } from "@/lib/queries/levies";
+import { getIssuedLevyNoticesForScheme } from "@/lib/queries/levy-schedules";
+import { agedArrears } from "@/lib/levies/levy-ledger";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -44,56 +45,34 @@ export default async function AgedArrearsPage({
   );
   if (!isAdviser) notFound();
 
-  const levies = await getLeviesForScheme(id);
+  const notices = await getIssuedLevyNoticesForScheme(id);
   const now = new Date();
+  const lotInfo = new Map(
+    notices.map((n) => [
+      n.lotId,
+      {
+        lotNumber: n.lot?.lotNumber ? String(n.lot.lotNumber) : "0",
+        unitNumber: n.lot?.unitNumber ? String(n.lot.unitNumber) : null,
+      },
+    ]),
+  );
 
-  // Aggregate outstanding amounts by lot and age bracket
-  const lotMap = new Map<string, ArrearRow>();
-
-  for (const levy of levies) {
-    if (String(levy.status) === "DRAFT") continue; // Skip draft levies
-
-    const dueDate = new Date(String(levy.dueDate));
-    const daysPastDue = Math.floor(
-      (now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
-    );
-
-    for (const item of levy.items) {
-      const balance = Number(item.amount) - Number(item.paidAmount);
-      if (balance <= 0.005) continue; // Skip fully paid
-
-      const lotId = item.lotId;
-      const lot = item.lot;
-
-      if (!lotMap.has(lotId)) {
-        lotMap.set(lotId, {
-          lotNumber: lot?.lotNumber ? String(lot.lotNumber) : "0",
-          unitNumber: lot?.unitNumber ? String(lot.unitNumber) : null,
-          current: 0,
-          days30: 0,
-          days60: 0,
-          days90: 0,
-          days90Plus: 0,
-          total: 0,
-        });
-      }
-
-      const row = lotMap.get(lotId)!;
-      row.total += balance;
-
-      if (daysPastDue <= 0) {
-        row.current += balance;
-      } else if (daysPastDue <= 30) {
-        row.days30 += balance;
-      } else if (daysPastDue <= 60) {
-        row.days60 += balance;
-      } else if (daysPastDue <= 90) {
-        row.days90 += balance;
-      } else {
-        row.days90Plus += balance;
-      }
-    }
-  }
+  // Outstanding balances by lot, bucketed by days past the due date
+  const lotMap = new Map<string, ArrearRow>(
+    agedArrears(notices, now.toISOString().slice(0, 10)).map((r) => [
+      r.lotId,
+      {
+        lotNumber: lotInfo.get(r.lotId)?.lotNumber ?? "0",
+        unitNumber: lotInfo.get(r.lotId)?.unitNumber ?? null,
+        current: r.current,
+        days30: r.days30,
+        days60: r.days60,
+        days90: r.days90,
+        days90Plus: r.days90Plus,
+        total: r.total,
+      },
+    ]),
+  );
 
   const rows = Array.from(lotMap.values()).sort((a, b) =>
     a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true }),

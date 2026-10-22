@@ -211,7 +211,7 @@ export default async function LevyScheduleDetailPage({
                       <th scope="col" className="py-2 font-medium">Lot</th>
                       <th scope="col" className="py-2 font-medium text-right">Unit entitlement</th>
                       <th scope="col" className="py-2 font-medium">Owner on platform</th>
-                      {!isSpecial && <th scope="col" className="py-2 font-medium text-right">Per instalment</th>}
+                      {!isSpecial && <th scope="col" className="py-2 font-medium text-right">First instalment</th>}
                       <th scope="col" className="py-2 font-medium text-right">Total</th>
                     </tr>
                   </thead>

@@ -1048,7 +1048,7 @@ export async function recordLevyPaymentAction(
       .include("fund")
       .first();
 
-    await recordLevyPayment(levyNoticeId, amount);
+    await recordLevyPayment(levyNoticeId, amount, { paymentDate, recordedBy: profile.id });
 
     // ── Auto journal entry: DR Bank, CR Levies Receivable ──
     if (notice) {

@@ -210,12 +210,14 @@ export async function getSchemeNotificationCounts(
   if (schemeIds.length === 0) return new Map<string, { pendingLevies: number; activeWorkOrders: number; upcomingMeetings: number }>();
 
   const [levies, workOrders, meetings] = await Promise.all([
-    db.orm.public.Levy
-      .where((l) => l.schemeId.in(schemeIds))
-      .where((l) => l.status.eq("ISSUED"))
-      .include("items")
-      .limit(1000)
-      .all(),
+    ownerLotIds.size > 0
+      ? db.orm.public.LevyNotice
+          .where((ln) => ln.schemeId.in(schemeIds))
+          .where((ln) => ln.lotId.in([...ownerLotIds]))
+          .where((ln) => ln.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]))
+          .limit(2000)
+          .all()
+      : Promise.resolve([]),
     db.orm.public.WorkOrder
       .where((wo) => wo.schemeId.in(schemeIds))
       .where((wo) => wo.status.in(["OPEN", "IN_PROGRESS"]))
@@ -234,14 +236,10 @@ export async function getSchemeNotificationCounts(
     counts.set(id, { pendingLevies: 0, activeWorkOrders: 0, upcomingMeetings: 0 });
   }
 
-  // Count levies with unpaid items belonging to the owner's lots
-  for (const levy of levies) {
-    const entry = counts.get(levy.schemeId);
-    if (!entry) continue;
-    const hasUnpaid = levy.items.some(
-      (item) => ownerLotIds.has(item.lotId) && item.status !== "PAID",
-    );
-    if (hasUnpaid) entry.pendingLevies++;
+  // Count unpaid levy notices on the owner's lots
+  for (const notice of levies) {
+    const entry = counts.get(notice.schemeId);
+    if (entry && Number(notice.balanceOutstanding ?? 0) > 0) entry.pendingLevies++;
   }
 
   // Count active work orders per scheme

@@ -4,7 +4,9 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
-import { getLeviesForSchemes } from "@/lib/queries/levies";
+import { getLevyNoticesForLots } from "@/lib/queries/levies";
+import { effectiveStatus, noticeLabel } from "@/lib/levies/levy-ledger";
+import { toIsoDay } from "@/lib/levies/notice-plan";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FinancialCard } from "@/components/ui/financial-card";
@@ -51,30 +53,23 @@ export default async function OwnerDashboard() {
   const [meetings, workOrders, levies, financialSummary] = await Promise.all([
     getUpcomingMeetingsForOwner(schemeIds),
     getWorkOrdersForSchemes(schemeIds),
-    getLeviesForSchemes(schemeIds),
+    getLevyNoticesForLots([...ownerLotIds]),
     getDashboardFinancialSummary(selectedSchemeId),
   ]);
 
   const upcomingMeetings = meetings.filter((m) => m.status === "SCHEDULED");
 
-  // Calculate outstanding levy balance for owner's lots
-  const issuedLevies = levies.filter((l) => l.status === "ISSUED");
-  let outstandingBalance = 0;
-  let unpaidCount = 0;
-  let overdueCount = 0;
-  const now = new Date();
-  for (const levy of issuedLevies) {
-    for (const item of levy.items) {
-      if (ownerLotIds.has(item.lotId) && item.status !== "PAID") {
-        const owed = Number(item.amount) - Number(item.paidAmount);
-        outstandingBalance += owed;
-        unpaidCount++;
-        if (new Date(String(levy.dueDate)) < now) {
-          overdueCount++;
-        }
-      }
-    }
-  }
+  // Outstanding levy balance on the owner's lots in this scheme
+  const today = new Date().toISOString().slice(0, 10);
+  const unpaid = levies.filter(
+    (n) =>
+      n.schemeId === selectedSchemeId &&
+      String(n.status) !== "DRAFT" &&
+      Number(n.balanceOutstanding ?? 0) > 0,
+  );
+  const outstandingBalance = unpaid.reduce((s, n) => s + Number(n.balanceOutstanding ?? 0), 0);
+  const unpaidCount = unpaid.length;
+  const overdueCount = unpaid.filter((n) => effectiveStatus(n, today) === "OVERDUE").length;
 
   const recentWorkOrders = workOrders.slice(0, 5);
 
@@ -198,46 +193,33 @@ export default async function OwnerDashboard() {
             }
           />
           <div className="flex flex-col gap-2">
-            {issuedLevies
-              .filter((levy) =>
-                levy.items.some(
-                  (item) =>
-                    ownerLotIds.has(item.lotId) && item.status !== "PAID",
-                ),
-              )
+            {[...unpaid]
+              .sort((x, y) => toIsoDay(x.dueDate).localeCompare(toIsoDay(y.dueDate)))
               .slice(0, 3)
-              .map((levy) => {
-                const ownerItems = levy.items.filter(
-                  (item) =>
-                    ownerLotIds.has(item.lotId) && item.status !== "PAID",
-                );
-                const totalOwed = ownerItems.reduce(
-                  (sum, item) =>
-                    sum + (Number(item.amount) - Number(item.paidAmount)),
-                  0,
-                );
-                const dueDate = new Date(String(levy.dueDate));
-
+              .map((notice) => {
+                const owed = Number(notice.balanceOutstanding ?? 0);
+                const dueDate = new Date(`${toIsoDay(notice.dueDate)}T00:00:00`);
                 return (
                   <div
-                    key={levy.id}
+                    key={notice.id}
                     className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
                   >
                     <div className="flex items-start justify-between gap-3 mb-1">
                       <p className="text-sm font-medium text-ink">
-                        {levy.title}
+                        {noticeLabel(notice)}
                       </p>
-                      <span className="text-sm font-semibold text-ink">
-                        ${totalOwed.toLocaleString("en-AU", { minimumFractionDigits: 2 })}
+                      <span className="text-sm font-semibold text-ink tabular-nums">
+                        ${owed.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <p className="text-xs text-ink-muted">
-                      Due{" "}
+                      {String(notice.noticeNumber)} · Due{" "}
                       {dueDate.toLocaleDateString("en-AU", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
                       })}
+                      {effectiveStatus(notice, today) === "OVERDUE" ? " · Overdue" : ""}
                     </p>
                   </div>
                 );

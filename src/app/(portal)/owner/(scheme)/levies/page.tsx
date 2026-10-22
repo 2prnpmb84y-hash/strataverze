@@ -3,7 +3,9 @@ import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
-import { getLevyNoticesForLots, getLevyItemsForLot } from "@/lib/queries/levies";
+import { getLevyNoticesForLots } from "@/lib/queries/levies";
+import { effectiveStatus, noticeLabel, STATUS_LABELS, STATUS_STYLES } from "@/lib/levies/levy-ledger";
+import { toIsoDay } from "@/lib/levies/notice-plan";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatLotLabel } from "@/lib/format";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -18,15 +20,6 @@ function formatCurrency(value: number): string {
   }
   return `$${value.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-
-const statusStyle: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  ISSUED: "bg-blue-100 text-blue-700",
-  PAID: "bg-green-100 text-green-700",
-  OVERDUE: "bg-red-100 text-red-700",
-  PARTIAL: "bg-amber-100 text-amber-700",
-  UNPAID: "bg-amber-100 text-amber-700",
-};
 
 export default async function OwnerLeviesPage() {
   await connection();
@@ -58,9 +51,10 @@ export default async function OwnerLeviesPage() {
     ]),
   );
 
-  // Try LevyNotice first, fall back to LevyItem
-  const notices = await getLevyNoticesForLots(lotIds);
-  const useNotices = notices.length > 0;
+  const notices = (await getLevyNoticesForLots(lotIds)).filter(
+    (n) => String(n.status) !== "DRAFT",
+  );
+  const today = new Date().toISOString().slice(0, 10);
 
   interface DisplayItem {
     id: string;
@@ -68,6 +62,7 @@ export default async function OwnerLeviesPage() {
     lotLabel: string;
     schemeId: string;
     title: string;
+    noticeNumber: string;
     fundName: string;
     dueDate: string;
     status: string;
@@ -77,56 +72,24 @@ export default async function OwnerLeviesPage() {
     interestCharged: number;
   }
 
-  const displayItems: DisplayItem[] = [];
-
-  if (useNotices) {
-    for (const notice of notices) {
-      const due = Number(notice.amountDue ?? 0);
-      const paid = Number(notice.amountPaid ?? 0);
-      const balance = Number(notice.balanceOutstanding ?? 0);
-      const interest = Number(notice.interestCharged ?? 0);
-      const entry = lotEntries.find((e) => e.lotId === notice.lotId);
-
-      displayItems.push({
-        id: notice.id,
-        lotId: notice.lotId ?? "",
-        lotLabel: lotLabels.get(notice.lotId ?? "") ?? "",
-        schemeId: entry?.schemeId ?? notice.schemeId,
-        title: `Levy ${String(notice.noticeNumber)}`,
-        fundName: notice.fund ? String(notice.fund.name) : "",
-        dueDate: String(notice.dueDate),
-        status: String(notice.status).toUpperCase(),
-        amountDue: due,
-        amountPaid: paid,
-        balance,
-        interestCharged: interest,
-      });
-    }
-  } else {
-    const allItemArrays = await Promise.all(
-      lotIds.map((lotId) => getLevyItemsForLot(lotId)),
-    );
-    for (const item of allItemArrays.flat()) {
-      const amount = Number(item.amount);
-      const paid = Number(item.paidAmount);
-      const entry = lotEntries.find((e) => e.lotId === item.lotId);
-
-      displayItems.push({
-        id: item.id,
-        lotId: item.lotId,
-        lotLabel: lotLabels.get(item.lotId) ?? "",
-        schemeId: entry?.schemeId ?? item.levy.schemeId,
-        title: String(item.levy.title),
-        fundName: "",
-        dueDate: String(item.levy.dueDate),
-        status: String(item.status),
-        amountDue: amount,
-        amountPaid: paid,
-        balance: amount - paid,
-        interestCharged: 0,
-      });
-    }
-  }
+  const displayItems: DisplayItem[] = notices.map((notice) => {
+    const entry = lotEntries.find((e) => e.lotId === notice.lotId);
+    return {
+      id: notice.id,
+      lotId: notice.lotId,
+      lotLabel: lotLabels.get(notice.lotId) ?? "",
+      schemeId: entry?.schemeId ?? notice.schemeId,
+      title: noticeLabel(notice),
+      noticeNumber: String(notice.noticeNumber),
+      fundName: notice.fund ? String(notice.fund.name) : "",
+      dueDate: toIsoDay(notice.dueDate),
+      status: effectiveStatus(notice, today),
+      amountDue: Number(notice.amountDue ?? 0) + Number(notice.interestCharged ?? 0),
+      amountPaid: Number(notice.amountPaid ?? 0),
+      balance: Number(notice.balanceOutstanding ?? 0),
+      interestCharged: Number(notice.interestCharged ?? 0),
+    };
+  });
 
   // Sort newest first
   displayItems.sort(
@@ -136,7 +99,7 @@ export default async function OwnerLeviesPage() {
   // Summary totals
   const totalDue = displayItems.reduce((s, i) => s + i.amountDue, 0);
   const totalPaid = displayItems.reduce((s, i) => s + i.amountPaid, 0);
-  const totalOutstanding = totalDue - totalPaid;
+  const totalOutstanding = displayItems.reduce((s, i) => s + i.balance, 0);
 
   const outstanding = displayItems.filter((i) => i.balance > 0);
   const paid = displayItems.filter((i) => i.balance <= 0 && i.amountDue > 0);
@@ -214,11 +177,12 @@ export default async function OwnerLeviesPage() {
                           <p className="font-medium text-ink">
                             {item.title}
                           </p>
-                          {item.fundName && (
-                            <p className="text-xs text-ink-muted">
-                              {item.fundName}
-                            </p>
-                          )}
+                          <p className="text-xs text-ink-muted">
+                            {item.noticeNumber}
+                            {item.interestCharged > 0
+                              ? ` · includes ${formatCurrency(item.interestCharged)} interest`
+                              : ""}
+                          </p>
                         </td>
                         <td className="px-4 py-2 text-ink">
                           {item.lotLabel}
@@ -241,10 +205,9 @@ export default async function OwnerLeviesPage() {
                         </td>
                         <td className="px-6 py-2 text-right">
                           <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyle[item.status] ?? "bg-gray-100 text-gray-700"}`}
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status] ?? "bg-gray-100 text-gray-700"}`}
                           >
-                            {item.status.charAt(0) +
-                              item.status.slice(1).toLowerCase()}
+                            {STATUS_LABELS[item.status] ?? item.status}
                           </span>
                         </td>
                       </tr>
@@ -278,7 +241,7 @@ export default async function OwnerLeviesPage() {
             </Card>
           )}
 
-          {/* Paid */}
+          {/* Paid in full */}
           {paid.length > 0 && (
             <Card>
               <CardHeader
@@ -299,8 +262,8 @@ export default async function OwnerLeviesPage() {
                         </p>
                         <p className="text-xs text-ink-muted">
                           {item.lotLabel}
-                          {item.fundName ? ` · ${item.fundName}` : ""}
-                          {" · Paid · "}
+                          {` · ${item.noticeNumber}`}
+                          {" · Due "}
                           {dueDate.toLocaleDateString("en-AU", {
                             day: "numeric",
                             month: "short",

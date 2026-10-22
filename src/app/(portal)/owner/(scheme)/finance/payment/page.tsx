@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots } from "@/lib/queries/levies";
+import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
+import { noticeLabel } from "@/lib/levies/levy-ledger";
 import { PageHeader } from "@/components/ui/page-header";
 import { PaymentUploadForm } from "./payment-upload-form";
 import { connection } from "next/server";
@@ -11,7 +14,10 @@ export default async function PaymentUploadPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const schemes = await getSchemesForOwner(profile.id);
+  const schemes = scopeToSelectedScheme(
+    await getSchemesForOwner(profile.id),
+    await getSelectedSchemeId(),
+  );
   if (schemes.length === 0) notFound();
 
   // Collect outstanding levy notices for the owner
@@ -29,16 +35,13 @@ export default async function PaymentUploadPage() {
 
   const outstandingNotices = notices
     .filter(
-      (n) =>
-        n.status === "ISSUED" ||
-        n.status === "OVERDUE" ||
-        n.status === "PARTIALLY_PAID",
+      (n) => String(n.status) !== "DRAFT" && Number(n.balanceOutstanding ?? 0) > 0,
     )
     .map((n) => {
       const entry = lotEntries.find((e) => e.lotId === n.lotId);
       return {
         id: n.id,
-        label: `${String(n.noticeNumber)} - $${Number(n.balanceOutstanding ?? 0).toFixed(2)} outstanding`,
+        label: `${String(n.noticeNumber)} · ${noticeLabel(n)} · $${Number(n.balanceOutstanding ?? 0).toFixed(2)} outstanding`,
         schemeId: entry?.schemeId ?? n.schemeId,
         schemeName: entry?.schemeName ?? "",
       };
