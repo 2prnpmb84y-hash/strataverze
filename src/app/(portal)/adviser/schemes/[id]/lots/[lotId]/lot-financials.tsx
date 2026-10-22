@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { STATUS_LABELS, STATUS_STYLES } from "@/lib/levies/levy-ledger";
 
 type LevyHistoryItem = {
   id: string;
@@ -39,16 +40,11 @@ function formatDate(dateStr: string) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const colours: Record<string, string> = {
-    PAID: "bg-green-100 text-green-700",
-    PARTIAL: "bg-amber-100 text-amber-700",
-    UNPAID: "bg-red-100 text-red-700",
-    OVERDUE: "bg-red-100 text-red-700",
-  };
-  const cls = colours[status] ?? "bg-muted text-ink-muted";
   return (
-    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>
-      {status.charAt(0) + status.slice(1).toLowerCase()}
+    <span
+      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[status] ?? "bg-muted text-ink-muted"}`}
+    >
+      {STATUS_LABELS[status] ?? status}
     </span>
   );
 }

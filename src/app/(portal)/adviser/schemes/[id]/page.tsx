@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getLotsForScheme } from "@/lib/queries/lots";
-import { getLeviesForScheme } from "@/lib/queries/levies";
+import { getLevySchedulesForScheme } from "@/lib/queries/levy-schedules";
 import { getMeetingsForScheme } from "@/lib/queries/meetings";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { getWorkOrdersForScheme } from "@/lib/queries/work-orders";
@@ -75,7 +75,7 @@ export default async function SchemeDetailPage({
     activities,
   ] = await Promise.all([
     getLotsForScheme(id),
-    getLeviesForScheme(id),
+    getLevySchedulesForScheme(id),
     getMeetingsForScheme(id),
     getDocumentsForScheme(id),
     getWorkOrdersForScheme(id),
@@ -92,7 +92,7 @@ export default async function SchemeDetailPage({
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={scheme.funds} />
       <LotsCard id={id} lots={lots} totalLots={scheme.totalLots} />
-      <LeviesCard id={id} levies={levies} />
+      <LeviesCard id={id} schedules={levies} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} />
       <WorkOrdersCard id={id} workOrders={workOrders} />
