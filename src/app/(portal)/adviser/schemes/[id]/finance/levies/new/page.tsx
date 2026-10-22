@@ -36,6 +36,8 @@ export default async function NewLevySchedulePage({
       <LevyScheduleForm
         schemeId={id}
         funds={funds.map((f) => ({ id: String(f.id), name: String(f.name) }))}
+        totalLots={scheme.totalLots}
+        totalEntitlement={scheme.totalEntitlement}
       />
     </div>
   );

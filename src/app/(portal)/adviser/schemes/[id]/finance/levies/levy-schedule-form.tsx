@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { createLevyScheduleAction, ActionState } from "../actions";
@@ -15,14 +16,23 @@ const FREQUENCY_OPTIONS = [
 interface LevyScheduleFormProps {
   schemeId: string;
   funds: { id: string; name: string }[];
+  /** The scheme's totals from the strata plan, used as defaults. */
+  totalLots?: number;
+  totalEntitlement?: number;
 }
 
-export function LevyScheduleForm({ schemeId, funds }: LevyScheduleFormProps) {
+export function LevyScheduleForm({ schemeId, funds, totalLots, totalEntitlement }: LevyScheduleFormProps) {
+  const router = useRouter();
   const action = createLevyScheduleAction.bind(null, schemeId);
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     action,
     {},
   );
+
+  useEffect(() => {
+    const newId = state.success ? (state.data?.id as string | undefined) : undefined;
+    if (newId) router.push(`/adviser/schemes/${schemeId}/finance/levies/${newId}`);
+  }, [state, router, schemeId]);
 
   const fundOptions = [
     { value: "", label: "Select a fund..." },
@@ -83,6 +93,7 @@ export function LevyScheduleForm({ schemeId, funds }: LevyScheduleFormProps) {
           type="number"
           required
           placeholder="e.g. 24"
+          defaultValue={totalLots}
           helpText="Number of lots in the scheme"
           error={state.fieldErrors?.totalLots}
         />
@@ -93,7 +104,8 @@ export function LevyScheduleForm({ schemeId, funds }: LevyScheduleFormProps) {
           type="number"
           required
           placeholder="e.g. 100"
-          helpText="Sum of all lot entitlements (unit entitlements)"
+          defaultValue={totalEntitlement}
+          helpText="Aggregate unit entitlement in the strata plan"
           error={state.fieldErrors?.totalEntitlement}
         />
       </div>

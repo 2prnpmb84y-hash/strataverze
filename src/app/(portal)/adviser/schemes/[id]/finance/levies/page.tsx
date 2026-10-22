@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import Link from "next/link";
 import { connection } from "next/server";
+import { FREQUENCY_LABELS } from "@/lib/levies/notice-plan";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -13,6 +14,13 @@ function formatCurrency(value: number | string | null): string {
     currency: "AUD",
   }).format(num);
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  APPROVED: "Approved",
+  ACTIVE: "Issued",
+  SUPERSEDED: "Superseded",
+};
 
 const statusStyles: Record<string, string> = {
   DRAFT: "bg-zinc-100 text-zinc-600",
@@ -34,7 +42,9 @@ export default async function LevySchedulesPage({
     getOverdueLevyNotices(id),
   ]);
 
-  const activeSchedules = schedules.filter((s) => s.status === "ACTIVE");
+  const activeSchedules = schedules.filter(
+    (s) => s.status === "ACTIVE" && s.levyType !== "SPECIAL",
+  );
   const totalBudgeted = activeSchedules.reduce(
     (sum, s) => sum + Number(s.budgetAmount ?? 0),
     0
@@ -45,14 +55,22 @@ export default async function LevySchedulesPage({
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-ink">
-          Levy Schedules
+          Levies
         </h1>
-        <Button
-          variant="primary"
-          href={`/adviser/schemes/${id}/finance/levies/new`}
-        >
-          Create Levy Schedule
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            href={`/adviser/schemes/${id}/finance/levies/special/new`}
+          >
+            Raise Special Levy
+          </Button>
+          <Button
+            variant="primary"
+            href={`/adviser/schemes/${id}/finance/levies/new`}
+          >
+            Create Levy Schedule
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -90,10 +108,15 @@ export default async function LevySchedulesPage({
                 <div className="flex items-center gap-4">
                   <div>
                     <h3 className="text-lg font-medium text-ink">
-                      {schedule.financialYear}
+                      {schedule.levyType === "SPECIAL"
+                        ? `Special levy: ${String(schedule.title ?? "Untitled")}`
+                        : `FY ${schedule.financialYear} budget levy`}
                     </h3>
                     <p className="text-sm text-ink-muted">
-                      {schedule.fund.name} &middot; {schedule.frequency}
+                      {schedule.fund.name} &middot;{" "}
+                      {schedule.levyType === "SPECIAL"
+                        ? "One-off"
+                        : (FREQUENCY_LABELS[String(schedule.frequency)] ?? schedule.frequency)}
                     </p>
                   </div>
                   <span
@@ -101,13 +124,13 @@ export default async function LevySchedulesPage({
                       statusStyles[schedule.status] ?? ""
                     }`}
                   >
-                    {schedule.status}
+                    {STATUS_LABELS[String(schedule.status)] ?? schedule.status}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="text-sm text-ink-muted">Budget</p>
+                    <p className="text-sm text-ink-muted">Amount</p>
                     <p className="text-lg font-semibold text-ink">
                       {formatCurrency(schedule.budgetAmount)}
                     </p>
@@ -115,7 +138,7 @@ export default async function LevySchedulesPage({
                   <div className="text-right">
                     <p className="text-sm text-ink-muted">Notices</p>
                     <p className="text-sm font-medium text-ink">
-                      {schedule.levyNotices.length} / {schedule.totalLots}
+                      {schedule.levyNotices.length}
                     </p>
                   </div>
                 </div>

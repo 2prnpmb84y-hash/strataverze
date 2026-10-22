@@ -2,22 +2,41 @@ import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getLevyScheduleById } from "@/lib/queries/levy-schedules";
+import { loadPlanLots } from "@/lib/levies/load-plan-lots";
+import {
+  FREQUENCY_LABELS,
+  INSTALMENTS_PER_YEAR,
+  checkPlan,
+  financialYearStart,
+  fromCents,
+  planNotices,
+  toCents,
+  toIsoDay,
+  type LevyFrequency,
+} from "@/lib/levies/notice-plan";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  ApproveScheduleForm,
+  IssueNoticesForm,
+  RecordPaymentForm,
+} from "./schedule-actions";
 import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
-  const num = Number(value ?? 0);
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(num);
+  return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(
+    Number(value ?? 0),
+  );
 }
 
-function formatDate(date: string | Date | null): string {
+function formatDate(date: string | Date | null | undefined): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU");
+  return new Date(String(date)).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 const statusStyles: Record<string, string> = {
@@ -27,25 +46,35 @@ const statusStyles: Record<string, string> = {
   SUPERSEDED: "bg-amber-100 text-amber-700",
 };
 
-const noticeStatusStyles: Record<string, string> = {
-  PENDING: "bg-zinc-100 text-zinc-600",
-  ISSUED: "bg-blue-100 text-blue-700",
-  PAID: "bg-green-100 text-green-700",
-  OVERDUE: "bg-red-100 text-red-700",
+const statusLabels: Record<string, string> = {
+  DRAFT: "Draft",
+  APPROVED: "Approved",
+  ACTIVE: "Issued",
+  SUPERSEDED: "Superseded",
 };
 
-function DetailItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
+const noticeStatusStyles: Record<string, string> = {
+  DRAFT: "bg-zinc-100 text-zinc-600",
+  ISSUED: "bg-blue-100 text-blue-700",
+  PARTIALLY_PAID: "bg-amber-100 text-amber-700",
+  PAID: "bg-green-100 text-green-700",
+  OVERDUE: "bg-red-100 text-red-700",
+  WRITTEN_OFF: "bg-zinc-100 text-zinc-600",
+};
+
+const noticeStatusLabels: Record<string, string> = {
+  DRAFT: "Draft",
+  ISSUED: "Issued",
+  PARTIALLY_PAID: "Part paid",
+  PAID: "Paid",
+  OVERDUE: "Overdue",
+  WRITTEN_OFF: "Written off",
+};
+
+function DetailItem({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">
-        {label}
-      </dt>
+      <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">{label}</dt>
       <dd className="mt-1 text-sm text-ink">{value || "—"}</dd>
     </div>
   );
@@ -70,168 +99,211 @@ export default async function LevyScheduleDetailPage({
   if (!isAdviser) notFound();
 
   const schedule = await getLevyScheduleById(scheduleId);
-  if (!schedule) notFound();
+  if (!schedule || schedule.schemeId !== id) notFound();
 
   const status = String(schedule.status);
-  const notices = schedule.levyNotices ?? [];
+  const isSpecial = schedule.levyType === "SPECIAL";
+  const frequency = (isSpecial ? "ONE_OFF" : schedule.frequency) as LevyFrequency;
+  const notices = [...(schedule.levyNotices ?? [])].sort(
+    (a, b) => String(a.noticeNumber).localeCompare(String(b.noticeNumber)),
+  );
 
-  const totalNoticeAmount = notices.reduce(
-    (sum, n) => sum + Number(n.amountDue ?? 0),
-    0,
-  );
-  const totalPaid = notices.reduce(
-    (sum, n) => sum + Number(n.amountPaid ?? 0),
-    0,
-  );
+  const totalLevied = notices.reduce((s, n) => s + Number(n.amountDue ?? 0), 0);
+  const totalPaid = notices.reduce((s, n) => s + Number(n.amountPaid ?? 0), 0);
+
+  // Preview of the notices this schedule will raise (before issue).
+  const fyStart = financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
+  const lots = status === "APPROVED" && notices.length === 0 ? await loadPlanLots(id) : [];
+  const totalCents = toCents(String(schedule.budgetAmount));
+  const planIssues =
+    status === "APPROVED" && notices.length === 0
+      ? checkPlan({ lots, totalEntitlement: Number(schedule.totalEntitlement), totalCents })
+      : [];
+  const preview =
+    status === "APPROVED" && notices.length === 0 && planIssues.length === 0
+      ? planNotices({
+          lots,
+          totalCents,
+          frequency,
+          periodStart: isSpecial ? toIsoDay(schedule.approvedAt ?? schedule.dueDate) : fyStart,
+          firstDueDate: isSpecial ? toIsoDay(schedule.dueDate) : fyStart,
+        })
+      : [];
+  const previewByLot = lots.map((lot) => {
+    const own = preview.filter((n) => n.lotId === lot.lotId);
+    return {
+      lot,
+      instalment: own[0]?.amountCents ?? 0,
+      total: own.reduce((s, n) => s + n.amountCents, 0),
+    };
+  });
+
+  const title = isSpecial
+    ? `Special levy: ${String(schedule.title ?? "Untitled")}`
+    : `FY ${String(schedule.financialYear)} levy schedule`;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`FY ${String(schedule.financialYear)} Levy Schedule`}
+        title={title}
+        description={isSpecial ? (schedule.description ? String(schedule.description) : undefined) : undefined}
         backHref={`/adviser/schemes/${id}/finance/levies`}
-        backLabel="Levy Schedules"
+        backLabel="Levies"
       />
 
-      {/* Status badge */}
       <div className="flex flex-wrap items-center gap-3">
         <span
-          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-            statusStyles[status] ?? "bg-zinc-100 text-zinc-600"
-          }`}
+          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${statusStyles[status] ?? "bg-zinc-100 text-zinc-600"}`}
         >
-          {status}
+          {statusLabels[status] ?? status}
         </span>
+        <span className="text-xs text-ink-muted">{isSpecial ? "Special levy" : "Budget levy"}</span>
       </div>
 
-      {/* Schedule details */}
       <Card>
-        <CardHeader title="Schedule Details" />
+        <CardHeader title="Details" />
         <dl className="grid grid-cols-1 gap-4 px-6 pb-6 sm:grid-cols-2 lg:grid-cols-3">
-          <DetailItem
-            label="Fund"
-            value={schedule.fund ? String(schedule.fund.name) : null}
-          />
-          <DetailItem
-            label="Financial Year"
-            value={String(schedule.financialYear)}
-          />
-          <DetailItem
-            label="Frequency"
-            value={String(schedule.frequency)}
-          />
-          <DetailItem
-            label="Budget Amount"
-            value={formatCurrency(schedule.budgetAmount)}
-          />
-          <DetailItem
-            label="Total Lots"
-            value={String(schedule.totalLots)}
-          />
-          <DetailItem
-            label="Total Entitlement"
-            value={String(schedule.totalEntitlement)}
-          />
-          <DetailItem
-            label="Approved At"
-            value={formatDate(schedule.approvedAt)}
-          />
-          <DetailItem
-            label="Approved By"
-            value={schedule.approvedBy ? String(schedule.approvedBy) : null}
-          />
+          <DetailItem label="Fund" value={schedule.fund ? String(schedule.fund.name) : null} />
+          {isSpecial ? (
+            <DetailItem label="Due date" value={formatDate(schedule.dueDate)} />
+          ) : (
+            <DetailItem label="Financial year" value={`Starts ${formatDate(fyStart)}`} />
+          )}
+          <DetailItem label="Frequency" value={FREQUENCY_LABELS[frequency] ?? frequency} />
+          <DetailItem label={isSpecial ? "Amount" : "Budget amount"} value={formatCurrency(schedule.budgetAmount)} />
+          <DetailItem label="Total lots" value={String(schedule.totalLots)} />
+          <DetailItem label="Total unit entitlement" value={String(Number(schedule.totalEntitlement))} />
+          <DetailItem label="Resolution date" value={formatDate(schedule.approvedAt)} />
         </dl>
       </Card>
 
-      {/* Financial summary */}
-      <Card>
-        <CardHeader title="Financial Summary" />
-        <div className="px-6 pb-6">
-          <div className="space-y-3">
+      {status === "DRAFT" && (
+        <Card>
+          <CardHeader
+            title="1. Record approval"
+            description="Contributions are set by the owners corporation at a general meeting. Record the resolution before notices are issued."
+          />
+          <div className="px-6 pb-6">
+            <ApproveScheduleForm schemeId={id} scheduleId={scheduleId} />
+          </div>
+        </Card>
+      )}
+
+      {status === "APPROVED" && notices.length === 0 && (
+        <Card>
+          <CardHeader
+            title="2. Issue notices"
+            description={`One notice per lot${isSpecial ? "" : ` for each of the ${INSTALMENTS_PER_YEAR[frequency]} instalments`}, in proportion to unit entitlement. Amounts are rounded to the cent so they add up exactly to ${formatCurrency(schedule.budgetAmount)}.`}
+          />
+          <div className="px-6 pb-6 space-y-4">
+            {planIssues.length > 0 && (
+              <div role="alert" className="rounded-[var(--radius-card)] bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 space-y-1">
+                {planIssues.map((issue) => (
+                  <p key={issue.kind}>{issue.message}</p>
+                ))}
+              </div>
+            )}
+            {previewByLot.length > 0 && planIssues.length === 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-muted">
+                      <th scope="col" className="py-2 font-medium">Lot</th>
+                      <th scope="col" className="py-2 font-medium text-right">Unit entitlement</th>
+                      <th scope="col" className="py-2 font-medium">Owner on platform</th>
+                      {!isSpecial && <th scope="col" className="py-2 font-medium text-right">Per instalment</th>}
+                      <th scope="col" className="py-2 font-medium text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {previewByLot.map(({ lot, instalment, total }) => (
+                      <tr key={lot.lotId}>
+                        <td className="py-2 text-ink">Lot {lot.lotNumber}</td>
+                        <td className="py-2 text-right tabular-nums">{lot.entitlement}</td>
+                        <td className="py-2 text-ink-muted">{lot.ownerId ? "Yes" : "No"}</td>
+                        {!isSpecial && <td className="py-2 text-right tabular-nums">{formatCurrency(fromCents(instalment))}</td>}
+                        <td className="py-2 text-right tabular-nums">{formatCurrency(fromCents(total))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <IssueNoticesForm
+              schemeId={id}
+              scheduleId={scheduleId}
+              isSpecial={isSpecial}
+              defaultFirstDueDate={fyStart}
+              noticeCount={preview.length}
+              blocked={planIssues.length > 0}
+            />
+          </div>
+        </Card>
+      )}
+
+      {notices.length > 0 && (
+        <Card>
+          <CardHeader title="Summary" />
+          <div className="px-6 pb-6 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-ink-muted">Total Levied</span>
-              <span className="text-ink">
-                {formatCurrency(totalNoticeAmount)}
-              </span>
+              <span className="text-ink-muted">Total levied</span>
+              <span className="text-ink tabular-nums">{formatCurrency(totalLevied)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-ink-muted">Total Paid</span>
-              <span className="text-ink">
-                {formatCurrency(totalPaid)}
-              </span>
+              <span className="text-ink-muted">Total paid</span>
+              <span className="text-ink tabular-nums">{formatCurrency(totalPaid)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold border-t border-line pt-3">
               <span className="text-ink">Outstanding</span>
-              <span className="text-ink">
-                {formatCurrency(totalNoticeAmount - totalPaid)}
-              </span>
+              <span className="text-ink tabular-nums">{formatCurrency(totalLevied - totalPaid)}</span>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
-      {/* Levy notices */}
       <Card>
         <CardHeader
-          title="Levy Notices"
+          title="Levy notices"
           description={`${notices.length} notice${notices.length !== 1 ? "s" : ""}`}
         />
-
         {notices.length === 0 ? (
           <div className="px-6 pb-6">
             <EmptyState
-              title="No levy notices"
-              description="No levy notices have been generated for this schedule yet."
+              title="No levy notices yet"
+              description={status === "DRAFT" ? "Record approval, then issue the notices." : "Issue the notices above."}
             />
           </div>
         ) : (
-          <>
-            {/* Table header */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_100px_100px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
-              <div>Lot</div>
-              <div className="text-right">Amount</div>
-              <div>Due Date</div>
-              <div className="text-right">Paid</div>
-              <div className="text-right">Status</div>
-            </div>
-
-            <div className="divide-y divide-line">
-              {notices.map((notice, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_100px_100px] gap-2 sm:gap-4 px-6 py-3 items-center"
-                >
-                  <div className="text-sm text-ink font-medium">
-                    {notice.lot
-                      ? String(
-                          notice.lot.unitNumber ?? notice.lot.lotNumber ?? "—",
-                        )
-                      : "—"}
+          <div className="divide-y divide-line">
+            {notices.map((notice) => {
+              const noticeStatus = String(notice.status);
+              const balance = Number(notice.balanceOutstanding ?? 0);
+              const payable = ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(noticeStatus) && balance > 0;
+              return (
+                <div key={notice.id} className="px-6 py-3 space-y-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-[90px_1fr_110px_110px_110px_100px] gap-2 sm:gap-4 items-center text-sm">
+                    <div className="text-ink-muted tabular-nums">{String(notice.noticeNumber)}</div>
+                    <div className="text-ink font-medium">
+                      {notice.lot ? `Lot ${String(notice.lot.lotNumber)}` : "—"}
+                    </div>
+                    <div className="text-ink-muted">Due {formatDate(notice.dueDate)}</div>
+                    <div className="text-ink text-right tabular-nums">{formatCurrency(notice.amountDue)}</div>
+                    <div className="text-ink text-right tabular-nums">
+                      {Number(notice.amountPaid) > 0 ? `Paid ${formatCurrency(notice.amountPaid)}` : "—"}
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${noticeStatusStyles[noticeStatus] ?? "bg-zinc-100 text-zinc-600"}`}
+                      >
+                        {noticeStatusLabels[noticeStatus] ?? noticeStatus}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-sm text-ink text-right tabular-nums">
-                    {formatCurrency(notice.amountDue)}
-                  </div>
-                  <div className="text-sm text-ink-muted">
-                    {formatDate(notice.dueDate)}
-                  </div>
-                  <div className="text-sm text-ink text-right tabular-nums">
-                    {notice.amountPaid
-                      ? formatCurrency(notice.amountPaid)
-                      : "—"}
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        noticeStatusStyles[String(notice.status)] ??
-                        "bg-zinc-100 text-zinc-600"
-                      }`}
-                    >
-                      {String(notice.status)}
-                    </span>
-                  </div>
+                  {payable && <RecordPaymentForm schemeId={id} noticeId={notice.id} balance={balance} />}
                 </div>
-              ))}
-            </div>
-          </>
+              );
+            })}
+          </div>
         )}
       </Card>
     </div>
