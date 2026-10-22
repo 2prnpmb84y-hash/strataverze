@@ -21,7 +21,7 @@ describe("money inputs", () => {
     const offenders: string[] = [];
     for (const file of tsxFiles("src")) {
       const src = readFileSync(file, "utf8");
-      for (const m of src.matchAll(/<FormField\b[^>]*?type="number"[^>]*?\/>/gs)) {
+      for (const m of src.matchAll(/<FormField\b[^>]*?type="number"[^>]*?\/>/g)) {
         const label = m[0].match(/label=\{?"([^"]+)"/)?.[1] ?? "";
         if (MONEY.test(label) && !/step=/.test(m[0])) offenders.push(`${file}: ${label}`);
       }
