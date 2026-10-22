@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   adviserSchemeNav,
+  ownerSchemeNav,
   isNavItemActive,
   formatBuildingClass,
   formatEnumLabel,
@@ -75,6 +76,39 @@ describe("isNavItemActive", () => {
   it("does not confuse sections that share a prefix", () => {
     // /works must not activate a hypothetical /work-orders match by prefix alone
     expect(isNavItemActive(item("Work Order"), `/adviser/schemes/${ID}/work-orders-x`)).toBe(false);
+  });
+});
+
+describe("ownerSchemeNav", () => {
+  const owner = ownerSchemeNav({ isCommittee: false });
+  const committee = ownerSchemeNav({ isCommittee: true });
+  const ownerActive = (path: string) =>
+    owner.filter((n) => isNavItemActive(n, path)).map((n) => n.label);
+
+  it("uses the same 9 pills, order and rows as the adviser view", () => {
+    expect(owner.map((n) => n.label)).toEqual(nav.map((n) => n.label));
+    expect(owner.map((n) => n.tone ?? "section")).toEqual(nav.map((n) => n.tone ?? "section"));
+  });
+
+  it("sends Governance to the committee area or the by-laws", () => {
+    expect(committee.find((n) => n.label === "Governance")!.href).toBe("/owner/governance");
+    expect(owner.find((n) => n.label === "Governance")!.href).toBe("/owner/bylaws");
+  });
+
+  it("marks the parent pill active for nested owner pages", () => {
+    const cases: [string, string][] = [
+      ["/owner/scheme", "Lots / Owners"],
+      ["/owner/contacts", "Lots / Owners"],
+      ["/owner/levies/statement", "Financials"],
+      ["/owner/finance/payment", "Financials"],
+      ["/owner/notifications", "Conversations"],
+      ["/owner/works", "Work Order"],
+      ["/owner/maintenance/w1", "Work Order"],
+      ["/owner/governance/new", "Governance"],
+      ["/owner/bylaws", "Governance"],
+    ];
+    for (const [path, label] of cases) expect(ownerActive(path)).toEqual([label]);
+    expect(ownerActive("/owner/dashboard")).toEqual([]);
   });
 });
 

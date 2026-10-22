@@ -60,6 +60,40 @@ export function adviserSchemeNav(schemeId: string): SchemeNavItem[] {
   ];
 }
 
+/**
+ * The same 9 pills for the owner portal. Owner routes are not scheme-scoped in
+ * the URL; the selected scheme comes from the owner's scheme choice.
+ * Governance opens the committee area for committee members and the by-laws
+ * for other owners. Compliance shows its own committee-only message.
+ */
+export function ownerSchemeNav({ isCommittee }: { isCommittee: boolean }): SchemeNavItem[] {
+  return [
+    { label: "Lots / Owners", href: "/owner/scheme", match: ["/owner/contacts"] },
+    { label: "Financials", href: "/owner/finance", match: ["/owner/levies"] },
+    { label: "Compliance", href: "/owner/compliance" },
+    { label: "Insurance", href: "/owner/insurance" },
+    {
+      label: "Conversations",
+      href: "/owner/announcements",
+      match: ["/owner/notifications"],
+    },
+    { label: "Document", href: "/owner/documents" },
+    {
+      label: "Work Order",
+      href: "/owner/maintenance",
+      match: ["/owner/works"],
+      tone: "action",
+    },
+    { label: "Meetings", href: "/owner/meetings", tone: "action" },
+    {
+      label: "Governance",
+      href: isCommittee ? "/owner/governance" : "/owner/bylaws",
+      match: ["/owner/governance", "/owner/bylaws"],
+      tone: "action",
+    },
+  ];
+}
+
 function isUnder(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }

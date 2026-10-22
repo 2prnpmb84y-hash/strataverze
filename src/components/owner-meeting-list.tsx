@@ -6,7 +6,7 @@ import { FilterSelect } from "@/components/ui/filter-select";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
-import { VoteButtons } from "@/app/(portal)/owner/meetings/vote-buttons";
+import { VoteButtons } from "@/app/(portal)/owner/(scheme)/meetings/vote-buttons";
 
 const meetingTypeLabels: Record<string, string> = {
   AGM: "AGM",
