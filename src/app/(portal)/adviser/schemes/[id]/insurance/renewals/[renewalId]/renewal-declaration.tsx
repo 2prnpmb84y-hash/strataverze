@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField, TextareaField } from "@/components/ui/form-field";
+import { UnsavedGuard } from "@/components/ui/unsaved-guard";
 import { saveDeclarationAction, type RenewalFormState } from "../actions";
 
 const yesNo = [
@@ -125,6 +126,7 @@ export function RenewalDeclaration({
         description="Strata insurance pre-renewal declaration. Saved as a snapshot against this renewal."
       />
       <form action={action} className="space-y-4">
+        <UnsavedGuard />
         {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 
         {/* 1. Insured details */}
