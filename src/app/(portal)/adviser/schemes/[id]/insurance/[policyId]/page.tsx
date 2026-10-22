@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPolicyWithItems } from "@/lib/queries/insurance";
+import { getPolicyDocumentsWithHistory } from "@/lib/queries/insurance-documents";
+import { InsuranceDocumentsSection } from "./documents-section";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
@@ -58,6 +60,7 @@ export default async function InsurancePolicyDetailPage({
 
   const coverageItems = policy.coverageItems ?? [];
   const premiumLineItems = policy.premiumLineItems ?? [];
+  const documents = await getPolicyDocumentsWithHistory(policyId);
 
   const effectiveStatus = derivePolicyStatus(
     {
@@ -299,6 +302,13 @@ export default async function InsurancePolicyDetailPage({
           </div>
         </Card>
       ) : null}
+
+      {/* Documents */}
+      <InsuranceDocumentsSection
+        schemeId={id}
+        policyId={policyId}
+        documents={documents}
+      />
 
       {/* Edit form */}
       <Card className="mb-6">
