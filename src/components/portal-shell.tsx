@@ -32,6 +32,11 @@ const portalConfig = {
     shortLabel: "Accountant",
     colour: "bg-turquoise",
   },
+  admin: {
+    label: "StrataVerze Admin",
+    shortLabel: "Admin",
+    colour: "bg-turquoise",
+  },
 } as const;
 
 type PortalKey = keyof typeof portalConfig;
@@ -133,7 +138,13 @@ const accountantNav = [
   { label: "Schemes", href: "/accountant/schemes" },
 ];
 
+const adminMobileNav = [
+  { label: "Referral income", href: "/admin/referral-income" },
+  { label: "Contractors", href: "/adviser/contractors" },
+];
+
 const mobileNavByPortal: Record<string, typeof ownerBaseNav> = {
+  admin: adminMobileNav,
   adviser: adviserNav,
   supplier: supplierNav,
   accountant: accountantNav,

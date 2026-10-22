@@ -16,6 +16,9 @@ import {
 } from "@/lib/insurance/status";
 import { detectContinuity } from "@/lib/insurance/renewal";
 import { connection } from "next/server";
+import { referralIncomeEnabled } from "@/lib/billing/referral";
+import { getReferralIncomeForPolicies } from "@/lib/queries/referral-income";
+import { ReferralIncomeDisclosure } from "@/components/billing/referral-income-disclosure";
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -52,6 +55,10 @@ export default async function RenewalDetailPage({
   if (!renewal || renewal.schemeId !== id) notFound();
 
   const expiring = renewal.expiringPolicy;
+  // Commission StrataVerze received on the expiring or renewed policy.
+  const referralIncome = referralIncomeEnabled()
+    ? await getReferralIncomeForPolicies([renewal.expiringPolicyId, renewal.successorPolicyId ?? ""])
+    : [];
   const quotes: QuoteView[] = (renewal.quotes ?? []).map((q) => ({
     id: q.id,
     insurer: q.insurer,
@@ -125,6 +132,8 @@ export default async function RenewalDetailPage({
           </div>
         </Card>
       )}
+
+      <ReferralIncomeDisclosure rows={referralIncome} title="StrataVerze referral income on this policy" />
 
       {/* Completed summary */}
       {isComplete && (
