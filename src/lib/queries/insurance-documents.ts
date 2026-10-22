@@ -1,6 +1,10 @@
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import {
+  buildDocumentViews,
+  type PolicyDocumentView,
+} from "@/lib/insurance/documents";
 
 function toTimestamp(value: string): TimestampString<3> {
   return value as unknown as TimestampString<3>;
@@ -82,30 +86,10 @@ export async function softDeleteInsuranceDocument(documentId: string) {
     .update({ deletedAt: toTimestamp(new Date().toISOString()), isCurrent: false });
 }
 
-export interface DocumentVersionView {
-  id: string;
-  version: number;
-  fileName: string;
-  fileUrl: string;
-  fileSize: number | null;
-  mimeType: string | null;
-  uploadedAt: string;
-  documentDate: string | null;
-}
-
-export interface PolicyDocumentView {
-  id: string;
-  category: string;
-  title: string;
-  fileName: string;
-  fileUrl: string;
-  fileSize: number | null;
-  mimeType: string | null;
-  version: number;
-  uploadedAt: string;
-  notes: string | null;
-  versions: DocumentVersionView[];
-}
+export type {
+  DocumentVersionView,
+  PolicyDocumentView,
+} from "@/lib/insurance/documents";
 
 /**
  * Current documents for a policy, each with its full version history. A version
@@ -115,44 +99,21 @@ export async function getPolicyDocumentsWithHistory(
   policyId: string,
 ): Promise<PolicyDocumentView[]> {
   const rows = await getPolicyDocuments(policyId);
-  const byId = new Map(rows.map((r) => [r.id, r]));
-
-  const toVersion = (r: (typeof rows)[number]): DocumentVersionView => ({
-    id: r.id,
-    version: r.version,
-    fileName: r.fileName,
-    fileUrl: r.fileUrl,
-    fileSize: r.fileSize ?? null,
-    mimeType: r.mimeType ?? null,
-    uploadedAt: String(r.createdAt),
-    documentDate: r.documentDate ? String(r.documentDate) : null,
-  });
-
-  return rows
-    .filter((r) => r.isCurrent)
-    .map((head) => {
-      // Walk back through supersededId to collect older versions.
-      const chain: DocumentVersionView[] = [toVersion(head)];
-      let cursor = head.supersedesId ? byId.get(head.supersedesId) : undefined;
-      let guard = 0;
-      while (cursor && guard < 50) {
-        chain.push(toVersion(cursor));
-        cursor = cursor.supersedesId ? byId.get(cursor.supersedesId) : undefined;
-        guard++;
-      }
-      return {
-        id: head.id,
-        category: head.category,
-        title: head.title,
-        fileName: head.fileName,
-        fileUrl: head.fileUrl,
-        fileSize: head.fileSize ?? null,
-        mimeType: head.mimeType ?? null,
-        version: head.version,
-        uploadedAt: String(head.createdAt),
-        notes: head.notes ?? null,
-        versions: chain,
-      };
-    })
-    .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  return buildDocumentViews(
+    rows.map((r) => ({
+      id: r.id,
+      category: r.category,
+      title: r.title,
+      fileName: r.fileName,
+      fileUrl: r.fileUrl,
+      fileSize: r.fileSize ?? null,
+      mimeType: r.mimeType ?? null,
+      version: r.version,
+      isCurrent: r.isCurrent,
+      supersedesId: r.supersedesId ?? null,
+      notes: r.notes ?? null,
+      createdAt: String(r.createdAt),
+      documentDate: r.documentDate ? String(r.documentDate) : null,
+    })),
+  );
 }
