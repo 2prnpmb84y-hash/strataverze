@@ -119,6 +119,8 @@ export default async function ContractorDetailPage({
   await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
+  // Contractor review is StrataVerze staff work.
+  if (!profile.isPlatformAdmin) notFound();
 
   const { id } = await params;
 

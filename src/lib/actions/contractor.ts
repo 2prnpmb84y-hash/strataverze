@@ -4,6 +4,7 @@ import { contractorPlanPrice } from "@/lib/billing/contractor-fees";
 import { revalidatePath } from "next/cache";
 import {
   requireAuth,
+  requirePlatformAdmin,
   AuthorisationError,
 } from "@/lib/auth/require-membership";
 import { db } from "@/prisma/db";
@@ -812,7 +813,7 @@ export async function reviewContractorApplication(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await requireAuth();
+    const profile = await requirePlatformAdmin();
 
     const reviewItemId = formData.get("reviewItemId") as string;
     const outcome = formData.get("outcome") as string;
@@ -884,7 +885,7 @@ export async function assignReviewer(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    await requireAuth();
+    await requirePlatformAdmin();
 
     const reviewItemId = formData.get("reviewItemId") as string;
     const assignToId = formData.get("assignToId") as string;
@@ -914,7 +915,7 @@ export async function requestClarification(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    await requireAuth();
+    await requirePlatformAdmin();
 
     const reviewItemId = formData.get("reviewItemId") as string;
     const clarificationRequest = formData.get("clarificationRequest") as string;

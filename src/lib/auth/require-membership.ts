@@ -50,6 +50,18 @@ export async function requireAuth() {
 }
 
 /**
+ * Verify the current user is a StrataVerze platform admin (staff). Used for
+ * platform-wide work such as reviewing contractor applications.
+ */
+export async function requirePlatformAdmin() {
+  const profile = await requireAuth();
+  if (!profile.isPlatformAdmin) {
+    throw new AuthorisationError("Only StrataVerze staff can do this.");
+  }
+  return profile;
+}
+
+/**
  * Custom error class so callers can distinguish auth failures from
  * unexpected errors without inspecting message strings.
  */
