@@ -27,7 +27,9 @@ ALTER TABLE "platform_fee_events" ADD CONSTRAINT "platform_fee_events_payer_scop
   CHECK ("scheme_id" IS NOT NULL OR "contractor_business_id" IS NOT NULL);
 
 -- ─── 3. Who can read contractor billing ─────────────────────────────────────
--- Active contacts of the contractor business, or a platform admin.
+-- Active contacts of the contractor business (the existing
+-- is_contractor_contact helper from the contractor RLS migration), or a
+-- platform admin.
 CREATE OR REPLACE FUNCTION public.can_view_contractor_billing(p_contractor_business_id uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -35,14 +37,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT public.is_platform_admin() OR EXISTS (
-    SELECT 1
-    FROM contractor_contacts cc
-    JOIN profiles p ON p.id = cc.profile_id
-    WHERE cc.contractor_business_id = p_contractor_business_id
-      AND p.auth_id = auth.uid()
-      AND cc.status = 'ACTIVE'
-  );
+  SELECT public.is_platform_admin() OR public.is_contractor_contact(p_contractor_business_id);
 $$;
 
 DROP POLICY IF EXISTS "platform_fee_events_select" ON "platform_fee_events";
