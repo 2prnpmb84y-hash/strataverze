@@ -1,6 +1,22 @@
 /**
- * StaticMap — renders an OpenStreetMap embed for a given address.
- * Falls back to a "View on Google Maps" link when JavaScript is disabled.
+ * Builds the map embed URL for an address.
+ *
+ * With NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY set, this uses the official Google
+ * Maps Embed API (place mode), which Google documents as free with unlimited
+ * usage. Without a key it falls back to the keyless maps.google.com embed,
+ * which works today but is not a documented Google API and could stop working.
+ */
+export function mapEmbedUrl(address: string, apiKey?: string): string {
+  const q = encodeURIComponent(address);
+  if (apiKey) {
+    return `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(apiKey)}&q=${q}`;
+  }
+  return `https://maps.google.com/maps?q=${q}&z=16&output=embed`;
+}
+
+/**
+ * StaticMap renders an embedded map for a given address, with a
+ * "View on Maps" link that opens Google Maps in a new tab.
  */
 export function StaticMap({
   address,
@@ -11,16 +27,19 @@ export function StaticMap({
 }) {
   const encoded = encodeURIComponent(address);
   const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-  const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=&layer=mapnik&marker=&query=${encoded}`;
+  const embedUrl = mapEmbedUrl(
+    address,
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY || undefined,
+  );
 
   return (
     <div className={`relative overflow-hidden rounded-[var(--radius-card)] bg-muted ${className}`}>
       <iframe
         title={`Map of ${address}`}
-        src={osmEmbedUrl}
+        src={embedUrl}
         className="w-full h-full border-0"
         loading="lazy"
-        referrerPolicy="no-referrer"
+        referrerPolicy="strict-origin-when-cross-origin"
       />
       <a
         href={googleMapsUrl}

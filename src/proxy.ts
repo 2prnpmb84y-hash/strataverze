@@ -29,6 +29,8 @@ function buildCsp(nonce: string): string {
     "font-src 'self' https://fonts.gstatic.com",
     `img-src 'self' data: blob: https://${SUPABASE_HOST}`,
     `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST}`,
+    // Scheme map embeds (see components/ui/static-map.tsx)
+    "frame-src https://www.google.com https://maps.google.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
