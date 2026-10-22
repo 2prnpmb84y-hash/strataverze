@@ -1544,7 +1544,11 @@ model LevySchedule {
   fundId           String       @map("fund_id") @db.Uuid
   financialYear    Int          @map("financial_year")
   budgetAmount     Decimal      @db.Decimal(12, 2) @map("budget_amount")
-  frequency        String // QUARTERLY, MONTHLY, HALF_YEARLY, ANNUALLY
+  frequency        String // QUARTERLY, MONTHLY, HALF_YEARLY, ANNUALLY, ONE_OFF (special levies)
+  levyType         String       @default("ORDINARY") @map("levy_type") // ORDINARY (budget), SPECIAL
+  title            String?
+  description      String?
+  dueDate          DateTime?    @db.Date @map("due_date") // special levies: the single due date
   totalLots        Int          @map("total_lots")
   totalEntitlement Decimal      @db.Decimal(10, 2) @map("total_entitlement")
   status           String       @default("DRAFT") // DRAFT, APPROVED, ACTIVE, SUPERSEDED
@@ -1566,7 +1570,7 @@ model LevyNotice {
   schemeId           String              @map("scheme_id") @db.Uuid
   levyScheduleId     String              @map("levy_schedule_id") @db.Uuid
   lotId              String              @map("lot_id") @db.Uuid
-  ownerId            String              @map("owner_id") @db.Uuid
+  ownerId            String?             @map("owner_id") @db.Uuid // owner profile when the lot has one
   fundId             String              @map("fund_id") @db.Uuid
   noticeNumber       String              @map("notice_number") @db.VarChar(20)
   periodStart        DateTime            @db.Date @map("period_start")

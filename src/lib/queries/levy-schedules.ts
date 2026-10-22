@@ -71,6 +71,12 @@ export async function createLevySchedule(data: {
   frequency: string;
   totalLots: number;
   totalEntitlement: number;
+  levyType?: "ORDINARY" | "SPECIAL";
+  title?: string | null;
+  description?: string | null;
+  dueDate?: string | null;
+  /** Record approval at creation (special levies are raised by resolution). */
+  approval?: { approvedBy: string; approvedAt: string };
 }) {
   return db.orm.public.LevySchedule.create({
     schemeId: data.schemeId,
@@ -80,40 +86,41 @@ export async function createLevySchedule(data: {
     frequency: data.frequency,
     totalLots: data.totalLots,
     totalEntitlement: toNumeric<10, 2>(data.totalEntitlement),
-    status: "DRAFT",
+    levyType: data.levyType ?? "ORDINARY",
+    title: data.title ?? null,
+    description: data.description ?? null,
+    dueDate: data.dueDate ? toTimestamp(data.dueDate) : null,
+    status: data.approval ? "APPROVED" : "DRAFT",
+    approvedAt: data.approval ? toTimestamp(data.approval.approvedAt) : null,
+    approvedBy: data.approval?.approvedBy ?? null,
   });
 }
 
 /**
- * Approve a levy schedule — sets status to APPROVED with timestamp and approver.
+ * Record approval of a levy schedule (the owners corporation's resolution).
+ * `approvedAt` is the resolution date; defaults to now.
  */
-export async function approveLevySchedule(scheduleId: string, approvedBy: string) {
-  try {
-    return db.orm.public.LevySchedule
-      .where({ id: scheduleId })
-      .update({
-        status: "APPROVED",
-        approvedAt: toTimestamp(new Date().toISOString()),
-        approvedBy,
-      });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+export async function approveLevySchedule(
+  scheduleId: string,
+  approvedBy: string,
+  approvedAt: string = new Date().toISOString(),
+) {
+  return db.orm.public.LevySchedule
+    .where({ id: scheduleId })
+    .update({
+      status: "APPROVED",
+      approvedAt: toTimestamp(approvedAt),
+      approvedBy,
+    });
 }
 
 /**
  * Activate a levy schedule — sets status to ACTIVE.
  */
 export async function activateLevySchedule(scheduleId: string) {
-  try {
-    return db.orm.public.LevySchedule
-      .where({ id: scheduleId })
-      .update({ status: "ACTIVE" });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+  return db.orm.public.LevySchedule
+    .where({ id: scheduleId })
+    .update({ status: "ACTIVE" });
 }
 
 /**
@@ -242,7 +249,7 @@ export async function createLevyNotice(data: {
   schemeId: string;
   levyScheduleId: string;
   lotId: string;
-  ownerId: string;
+  ownerId: string | null;
   fundId: string;
   noticeNumber: string;
   periodStart: string;
@@ -276,7 +283,7 @@ export async function createLevyNoticesBatch(
     schemeId: string;
     levyScheduleId: string;
     lotId: string;
-    ownerId: string;
+    ownerId: string | null;
     fundId: string;
     noticeNumber: string;
     periodStart: string;

@@ -60,7 +60,22 @@ import {
   createLevyNoticesBatch,
   issueLevyNotice,
   recordLevyPayment,
+  approveLevySchedule,
+  activateLevySchedule,
+  getLevyScheduleById,
+  getNextNoticeNumber,
 } from "@/lib/queries/levy-schedules";
+import { getSchemeById } from "@/lib/queries/schemes";
+import { loadPlanLots } from "@/lib/levies/load-plan-lots";
+import {
+  checkPlan,
+  financialYearStart,
+  fromCents,
+  planNotices,
+  toCents,
+  toIsoDay,
+  type LevyFrequency,
+} from "@/lib/levies/notice-plan";
 
 // ── Supplier invoices ─────────────────────────────────────────
 import {
@@ -744,111 +759,266 @@ export async function createLevyScheduleAction(
   }
 }
 
-export async function issueLevyNoticesAction(
+/** DR Levies Receivable, CR Levy Income for notices raised against a fund. */
+async function postLevyRaisedJournal(args: {
+  schemeId: string;
+  fundId: string;
+  scheduleId: string;
+  totalAmount: number;
+  noticeCount: number;
+  profileId: string;
+}) {
+  if (args.totalAmount <= 0) return;
+  const fund = await db.orm.public.Fund.where((f) => f.id.eq(args.fundId)).first();
+  const fundType = (fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
+  const receivableAccount = await getSystemAccountBySubType(args.schemeId, "ACCOUNTS_RECEIVABLE", fundType);
+  const incomeAccount = await getSystemAccountBySubType(args.schemeId, "LEVY_INCOME", fundType);
+  if (!receivableAccount || !incomeAccount) return;
+
+  const entryNumber = await getNextEntryNumber(args.schemeId);
+  const today = new Date().toISOString().split("T")[0];
+  const entry = await createJournalEntry({
+    schemeId: args.schemeId,
+    entryNumber,
+    transactionDate: today,
+    description: `Levy notices issued — ${args.noticeCount} notice(s), ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
+    entryType: "AUTO",
+    sourceType: "LEVY_RAISED",
+    sourceId: args.scheduleId,
+    createdBy: args.profileId,
+    lines: [
+      { accountCodeId: receivableAccount.id, fundId: args.fundId, debit: args.totalAmount, description: "Levies receivable raised" },
+      { accountCodeId: incomeAccount.id, fundId: args.fundId, credit: args.totalAmount, description: "Levy income recognised" },
+    ],
+  });
+  await postJournalEntry(entry.id, args.profileId);
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Load a schedule and confirm it belongs to the scheme. */
+async function loadScheduleForScheme(schemeId: string, scheduleId: string) {
+  const schedule = await getLevyScheduleById(scheduleId);
+  if (!schedule || schedule.schemeId !== schemeId) return null;
+  return schedule;
+}
+
+/**
+ * Record the owners corporation's approval of a budget levy schedule.
+ * The resolution date is the date of the general meeting that set the levies.
+ */
+export async function approveLevyScheduleAction(
   schemeId: string,
-  data: {
-    levyScheduleId: string;
-    fundId: string;
-    notices: Array<{
-      lotId: string;
-      ownerId: string;
-      noticeNumber: string;
-      amountDue: number;
-      dueDate: string;
-      periodStart: string;
-      periodEnd: string;
-    }>;
-  },
+  scheduleId: string,
+  _prev: ActionState,
+  formData: FormData,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const resolutionDate = String(formData.get("resolutionDate") ?? "").trim();
+    if (!ISO_DATE.test(resolutionDate)) {
+      return { fieldErrors: { resolutionDate: "Enter the date the levies were resolved." } };
+    }
+    const schedule = await loadScheduleForScheme(schemeId, scheduleId);
+    if (!schedule) return { error: "Levy schedule not found." };
+    if (schedule.status !== "DRAFT") return { error: "Only a draft schedule can be approved." };
 
-    if (!data.notices || data.notices.length === 0) {
-      return { error: "No levy notices to issue." };
+    await approveLevySchedule(scheduleId, profile.id, resolutionDate);
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LEVY_SCHEDULE_APPROVED",
+      entityType: "LevySchedule",
+      entityId: scheduleId,
+      metadata: { resolutionDate },
+    });
+    revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to record approval." };
+  }
+}
+
+/**
+ * Issue the notices for an approved schedule: one per lot per instalment, in
+ * proportion to unit entitlement. Amounts are worked out here, never taken
+ * from the browser.
+ */
+export async function issueScheduleNoticesAction(
+  schemeId: string,
+  scheduleId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const schedule = await loadScheduleForScheme(schemeId, scheduleId);
+    if (!schedule) return { error: "Levy schedule not found." };
+    if (schedule.status !== "APPROVED") {
+      return { error: "Record the owners corporation's approval before issuing notices." };
+    }
+    if ((schedule.levyNotices ?? []).length > 0) {
+      return { error: "Notices have already been issued for this schedule." };
     }
 
-    const notices = await createLevyNoticesBatch(
-      data.notices.map((n) => ({
-        ...n,
+    const isSpecial = schedule.levyType === "SPECIAL";
+    const firstDueDate = isSpecial
+      ? toIsoDay(schedule.dueDate)
+      : String(formData.get("firstDueDate") ?? "").trim();
+    if (!ISO_DATE.test(firstDueDate)) {
+      return { fieldErrors: { firstDueDate: "Enter the due date of the first instalment." } };
+    }
+
+    const scheme = await getSchemeById(schemeId);
+    if (!scheme) return { error: "Scheme not found." };
+    const lots = await loadPlanLots(schemeId);
+    const totalCents = toCents(String(schedule.budgetAmount));
+    const issues = checkPlan({
+      lots,
+      totalEntitlement: Number(schedule.totalEntitlement),
+      totalCents,
+    });
+    if (issues.length > 0) return { error: issues.map((i) => i.message).join(" ") };
+
+    const periodStart = isSpecial
+      ? toIsoDay(schedule.approvedAt) || firstDueDate
+      : financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
+    const plan = planNotices({
+      lots,
+      totalCents,
+      frequency: (isSpecial ? "ONE_OFF" : schedule.frequency) as LevyFrequency,
+      periodStart,
+      firstDueDate,
+    });
+
+    const first = await getNextNoticeNumber(schemeId);
+    let seq = parseInt(first.replace(/\D/g, ""), 10) || 1;
+    const created = await createLevyNoticesBatch(
+      plan.map((n) => ({
         schemeId,
-        levyScheduleId: data.levyScheduleId,
-        fundId: data.fundId,
+        levyScheduleId: scheduleId,
+        lotId: n.lotId,
+        ownerId: n.ownerId,
+        fundId: schedule.fundId,
+        noticeNumber: `LN-${String(seq++).padStart(4, "0")}`,
+        periodStart: n.periodStart,
+        periodEnd: n.periodEnd,
+        dueDate: n.dueDate,
+        amountDue: fromCents(n.amountCents),
       })),
     );
+    for (const notice of created) await issueLevyNotice(notice.id);
+    await activateLevySchedule(scheduleId);
 
-    // Mark each notice as ISSUED with timestamp
-    for (const notice of notices) {
-      await issueLevyNotice(notice.id);
-    }
-
-    // ── Auto journal entry: DR Levies Receivable, CR Levy Income ──
-    const totalAmount = data.notices.reduce((sum, n) => sum + n.amountDue, 0);
-    if (totalAmount > 0) {
-      // Determine fund type from the fund record
-      const fund = await db.orm.public.Fund
-        .where((f) => f.id.eq(data.fundId))
-        .first();
-      const fundType = (fund?.fundType ?? "ADMINISTRATIVE") as
-        | "ADMINISTRATIVE"
-        | "CAPITAL_WORKS";
-
-      const receivableAccount = await getSystemAccountBySubType(
-        schemeId,
-        "ACCOUNTS_RECEIVABLE",
-        fundType,
-      );
-      const incomeAccount = await getSystemAccountBySubType(
-        schemeId,
-        "LEVY_INCOME",
-        fundType,
-      );
-
-      if (receivableAccount && incomeAccount) {
-        const entryNumber = await getNextEntryNumber(schemeId);
-        const today = new Date().toISOString().split("T")[0];
-        const entry = await createJournalEntry({
-          schemeId,
-          entryNumber,
-          transactionDate: today,
-          description: `Levy notices issued — ${notices.length} notice(s), ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
-          entryType: "AUTO",
-          sourceType: "LEVY_RAISED",
-          sourceId: data.levyScheduleId,
-          createdBy: profile.id,
-          lines: [
-            {
-              accountCodeId: receivableAccount.id,
-              fundId: data.fundId,
-              debit: totalAmount,
-              description: "Levies receivable raised",
-            },
-            {
-              accountCodeId: incomeAccount.id,
-              fundId: data.fundId,
-              credit: totalAmount,
-              description: "Levy income recognised",
-            },
-          ],
-        });
-        await postJournalEntry(entry.id, profile.id);
-      }
-    }
+    await postLevyRaisedJournal({
+      schemeId,
+      fundId: schedule.fundId,
+      scheduleId,
+      totalAmount: fromCents(totalCents),
+      noticeCount: created.length,
+      profileId: profile.id,
+    });
 
     await logActivity({
       schemeId,
       actorId: profile.id,
       action: "LEVY_NOTICES_ISSUED",
-      entityType: "LevyNotice",
-      entityId: data.levyScheduleId,
-      metadata: { count: notices.length },
+      entityType: "LevySchedule",
+      entityId: scheduleId,
+      metadata: { count: created.length, total: fromCents(totalCents), firstDueDate },
     });
 
-    revalidatePath(financePath(schemeId));
-    return { success: true, data: { count: notices.length } };
+    revalidatePath(financePath(schemeId, "/levies"));
+    revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
+    return { success: true, data: { count: created.length } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to issue levy notices." };
   }
+}
+
+/**
+ * Raise a special levy: a one-off contribution resolved by the owners
+ * corporation, levied on every lot by unit entitlement.
+ */
+export async function createSpecialLevyAction(
+  schemeId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const fundId = String(formData.get("fundId") ?? "").trim();
+    const title = String(formData.get("title") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim() || null;
+    const amount = Number(formData.get("amount") || 0);
+    const resolutionDate = String(formData.get("resolutionDate") ?? "").trim();
+    const dueDate = String(formData.get("dueDate") ?? "").trim();
+
+    const fieldErrors: Record<string, string> = {};
+    if (!fundId) fieldErrors.fundId = "Fund is required.";
+    if (!title) fieldErrors.title = "Give the special levy a title.";
+    if (!(amount > 0)) fieldErrors.amount = "Amount must be greater than zero.";
+    if (!ISO_DATE.test(resolutionDate)) fieldErrors.resolutionDate = "Enter the resolution date.";
+    if (!ISO_DATE.test(dueDate)) fieldErrors.dueDate = "Enter the due date.";
+    else if (ISO_DATE.test(resolutionDate) && dueDate < resolutionDate) {
+      fieldErrors.dueDate = "The due date cannot be before the resolution date.";
+    }
+    if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
+
+    const scheme = await getSchemeById(schemeId);
+    if (!scheme) return { error: "Scheme not found." };
+    if (!scheme.funds.some((f) => f.id === fundId)) return { fieldErrors: { fundId: "Choose a fund of this scheme." } };
+
+    const schedule = await createLevySchedule({
+      schemeId,
+      fundId,
+      financialYear: Number(dueDate.slice(0, 4)),
+      budgetAmount: amount,
+      frequency: "ONE_OFF",
+      totalLots: scheme.totalLots,
+      totalEntitlement: scheme.totalEntitlement,
+      levyType: "SPECIAL",
+      title,
+      description,
+      dueDate,
+      approval: { approvedBy: profile.id, approvedAt: resolutionDate },
+    });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "SPECIAL_LEVY_CREATED",
+      entityType: "LevySchedule",
+      entityId: schedule.id,
+      metadata: { title, amount, dueDate },
+    });
+
+    revalidatePath(financePath(schemeId, "/levies"));
+    return { success: true, data: { id: schedule.id } };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to create the special levy." };
+  }
+}
+
+/** Form wrapper for recording a payment against one notice. */
+export async function recordLevyPaymentFormAction(
+  schemeId: string,
+  levyNoticeId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const amount = Number(formData.get("amount") || 0);
+  const paymentDate = String(formData.get("paymentDate") ?? "").trim();
+  const notice = await db.orm.public.LevyNotice.where((ln) => ln.id.eq(levyNoticeId)).first();
+  if (!notice || notice.schemeId !== schemeId) return { error: "Levy notice not found." };
+  const result = await recordLevyPaymentAction(schemeId, levyNoticeId, amount, paymentDate);
+  if (result.success) {
+    revalidatePath(financePath(schemeId, `/levies/${notice.levyScheduleId}`));
+  }
+  return result;
 }
 
 export async function recordLevyPaymentAction(

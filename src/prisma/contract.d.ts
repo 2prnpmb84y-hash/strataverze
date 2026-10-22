@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d1e3a90859c90a90ea3e3d8af4e87d18d4aba266a8f6025a801639ec775f0d1a'>;
+  StorageHashBase<'27b9f03f1e80d9a872812a091f674d7417b1ca5a8c6238f43b21e46cc791caa4'>;
 export type ExecutionHash =
   ExecutionHashBase<'71b1309abd588b88d5092e3cff61a096a60c697a4e6b1e41889fe80f0f1160cf'>;
 export type ProfileHash =
@@ -1012,7 +1012,7 @@ export type FieldOutputTypes = {
       readonly levyScheduleId: CodecTypes['pg/uuid@1']['output'];
       readonly lotId: CodecTypes['pg/uuid@1']['output'];
       readonly noticeNumber: Varchar<20>;
-      readonly ownerId: CodecTypes['pg/uuid@1']['output'];
+      readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly periodEnd: CodecTypes['pg/date-string@1']['output'];
       readonly periodStart: CodecTypes['pg/date-string@1']['output'];
@@ -1025,12 +1025,16 @@ export type FieldOutputTypes = {
       readonly approvedBy: CodecTypes['pg/uuid@1']['output'] | null;
       readonly budgetAmount: Numeric<12, 2>;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly dueDate: CodecTypes['pg/date-string@1']['output'] | null;
       readonly financialYear: CodecTypes['pg/int4@1']['output'];
       readonly frequency: CodecTypes['pg/text@1']['output'];
       readonly fundId: CodecTypes['pg/uuid@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly levyType: CodecTypes['pg/text@1']['output'];
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'] | null;
       readonly totalEntitlement: Numeric<10, 2>;
       readonly totalLots: CodecTypes['pg/int4@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -2984,7 +2988,7 @@ export type FieldInputTypes = {
       readonly levyScheduleId: CodecTypes['pg/uuid@1']['input'];
       readonly lotId: CodecTypes['pg/uuid@1']['input'];
       readonly noticeNumber: CodecTypes['sql/varchar@1']['input'];
-      readonly ownerId: CodecTypes['pg/uuid@1']['input'];
+      readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly periodEnd: CodecTypes['pg/date-string@1']['input'];
       readonly periodStart: CodecTypes['pg/date-string@1']['input'];
@@ -2997,12 +3001,16 @@ export type FieldInputTypes = {
       readonly approvedBy: CodecTypes['pg/uuid@1']['input'] | null;
       readonly budgetAmount: CodecTypes['pg/numeric@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly dueDate: CodecTypes['pg/date-string@1']['input'] | null;
       readonly financialYear: CodecTypes['pg/int4@1']['input'];
       readonly frequency: CodecTypes['pg/text@1']['input'];
       readonly fundId: CodecTypes['pg/uuid@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly levyType: CodecTypes['pg/text@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'] | null;
       readonly totalEntitlement: CodecTypes['pg/numeric@1']['input'];
       readonly totalLots: CodecTypes['pg/int4@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -4956,7 +4964,7 @@ export type StorageColumnTypes = {
       readonly levy_schedule_id: CodecTypes['pg/uuid@1']['output'];
       readonly lot_id: CodecTypes['pg/uuid@1']['output'];
       readonly notice_number: Varchar<20>;
-      readonly owner_id: CodecTypes['pg/uuid@1']['output'];
+      readonly owner_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly period_end: CodecTypes['pg/date-string@1']['output'];
       readonly period_start: CodecTypes['pg/date-string@1']['output'];
@@ -4969,12 +4977,16 @@ export type StorageColumnTypes = {
       readonly approved_by: CodecTypes['pg/uuid@1']['output'] | null;
       readonly budget_amount: Numeric<12, 2>;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly due_date: CodecTypes['pg/date-string@1']['output'] | null;
       readonly financial_year: CodecTypes['pg/int4@1']['output'];
       readonly frequency: CodecTypes['pg/text@1']['output'];
       readonly fund_id: CodecTypes['pg/uuid@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly levy_type: CodecTypes['pg/text@1']['output'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
+      readonly title: CodecTypes['pg/text@1']['output'] | null;
       readonly total_entitlement: Numeric<10, 2>;
       readonly total_lots: CodecTypes['pg/int4@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -6928,7 +6940,7 @@ export type StorageColumnInputTypes = {
       readonly levy_schedule_id: CodecTypes['pg/uuid@1']['input'];
       readonly lot_id: CodecTypes['pg/uuid@1']['input'];
       readonly notice_number: CodecTypes['sql/varchar@1']['input'];
-      readonly owner_id: CodecTypes['pg/uuid@1']['input'];
+      readonly owner_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly period_end: CodecTypes['pg/date-string@1']['input'];
       readonly period_start: CodecTypes['pg/date-string@1']['input'];
@@ -6941,12 +6953,16 @@ export type StorageColumnInputTypes = {
       readonly approved_by: CodecTypes['pg/uuid@1']['input'] | null;
       readonly budget_amount: CodecTypes['pg/numeric@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly due_date: CodecTypes['pg/date-string@1']['input'] | null;
       readonly financial_year: CodecTypes['pg/int4@1']['input'];
       readonly frequency: CodecTypes['pg/text@1']['input'];
       readonly fund_id: CodecTypes['pg/uuid@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly levy_type: CodecTypes['pg/text@1']['input'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
+      readonly title: CodecTypes['pg/text@1']['input'] | null;
       readonly total_entitlement: CodecTypes['pg/numeric@1']['input'];
       readonly total_lots: CodecTypes['pg/int4@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -9134,7 +9150,7 @@ export namespace Models {
     levyScheduleId: CodecTypes['pg/uuid@1']['output'];
     lotId: CodecTypes['pg/uuid@1']['output'];
     noticeNumber: Varchar<20>;
-    ownerId: CodecTypes['pg/uuid@1']['output'];
+    ownerId: CodecTypes['pg/uuid@1']['output'] | null;
     paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     periodEnd: CodecTypes['pg/date-string@1']['output'];
     periodStart: CodecTypes['pg/date-string@1']['output'];
@@ -9153,12 +9169,16 @@ export namespace Models {
     approvedBy: CodecTypes['pg/uuid@1']['output'] | null;
     budgetAmount: Numeric<12, 2>;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    description: CodecTypes['pg/text@1']['output'] | null;
+    dueDate: CodecTypes['pg/date-string@1']['output'] | null;
     financialYear: CodecTypes['pg/int4@1']['output'];
     frequency: CodecTypes['pg/text@1']['output'];
     fundId: CodecTypes['pg/uuid@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
+    levyType: CodecTypes['pg/text@1']['output'];
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
+    title: CodecTypes['pg/text@1']['output'] | null;
     totalEntitlement: Numeric<10, 2>;
     totalLots: CodecTypes['pg/int4@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -17623,7 +17643,7 @@ type ContractBase = Omit<
                 readonly owner_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
-                  readonly nullable: false;
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly paid_in_full_at: {
@@ -17770,6 +17790,18 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly due_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly financial_year: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
@@ -17798,6 +17830,16 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly levy_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'ORDINARY'>;
+                  };
+                  readonly many: false;
+                };
                 readonly scheme_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -17812,6 +17854,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/text@1', 'DRAFT'>;
                   };
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly total_entitlement: {
@@ -34764,7 +34812,7 @@ type ContractBase = Omit<
                 };
               };
               readonly ownerId: {
-                readonly nullable: false;
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly paidInFullAt: {
@@ -34907,6 +34955,14 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly description: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly dueDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
               readonly financialYear: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -34923,12 +34979,20 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly levyType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly status: {
                 readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly totalEntitlement: {
@@ -34993,12 +35057,16 @@ type ContractBase = Omit<
                 readonly approvedBy: { readonly column: 'approved_by' };
                 readonly budgetAmount: { readonly column: 'budget_amount' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly description: { readonly column: 'description' };
+                readonly dueDate: { readonly column: 'due_date' };
                 readonly financialYear: { readonly column: 'financial_year' };
                 readonly frequency: { readonly column: 'frequency' };
                 readonly fundId: { readonly column: 'fund_id' };
                 readonly id: { readonly column: 'id' };
+                readonly levyType: { readonly column: 'levy_type' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
+                readonly title: { readonly column: 'title' };
                 readonly totalEntitlement: { readonly column: 'total_entitlement' };
                 readonly totalLots: { readonly column: 'total_lots' };
                 readonly updatedAt: { readonly column: 'updated_at' };

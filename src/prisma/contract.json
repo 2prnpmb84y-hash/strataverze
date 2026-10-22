@@ -10140,7 +10140,7 @@
                 }
               },
               "ownerId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
@@ -10368,6 +10368,20 @@
                   "kind": "scalar"
                 }
               },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "dueDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
               "financialYear": {
                 "nullable": false,
                 "type": {
@@ -10396,6 +10410,13 @@
                   "kind": "scalar"
                 }
               },
+              "levyType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -10405,6 +10426,13 @@
               },
               "status": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -10499,6 +10527,12 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "description": {
+                  "column": "description"
+                },
+                "dueDate": {
+                  "column": "due_date"
+                },
                 "financialYear": {
                   "column": "financial_year"
                 },
@@ -10511,11 +10545,17 @@
                 "id": {
                   "column": "id"
                 },
+                "levyType": {
+                  "column": "levy_type"
+                },
                 "schemeId": {
                   "column": "scheme_id"
                 },
                 "status": {
                   "column": "status"
+                },
+                "title": {
+                  "column": "title"
                 },
                 "totalEntitlement": {
                   "column": "total_entitlement"
@@ -34792,7 +34832,7 @@
                 "owner_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
-                  "nullable": false
+                  "nullable": true
                 },
                 "paid_in_full_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -34979,6 +35019,16 @@
                   },
                   "nullable": false
                 },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "due_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
                 "financial_year": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -35003,6 +35053,15 @@
                   },
                   "nullable": false
                 },
+                "levy_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "ORDINARY"
+                  },
+                  "nullable": false
+                },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -35016,6 +35075,11 @@
                     "value": "DRAFT"
                   },
                   "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "total_entitlement": {
                   "codecId": "pg/numeric@1",
@@ -46794,7 +46858,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d1e3a90859c90a90ea3e3d8af4e87d18d4aba266a8f6025a801639ec775f0d1a"
+    "storageHash": "27b9f03f1e80d9a872812a091f674d7417b1ca5a8c6238f43b21e46cc791caa4"
   },
   "execution": {
     "executionHash": "71b1309abd588b88d5092e3cff61a096a60c697a4e6b1e41889fe80f0f1160cf",
