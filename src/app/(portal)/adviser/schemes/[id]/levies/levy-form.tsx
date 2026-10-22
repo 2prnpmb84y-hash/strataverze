@@ -62,6 +62,7 @@ export function LevyForm({
           label="Total Amount ($)"
           name="totalAmount"
           type="number"
+          step="0.01"
           required
           defaultValue={defaults?.totalAmount}
           placeholder="10000.00"

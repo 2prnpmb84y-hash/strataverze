@@ -71,6 +71,7 @@ export function FundForm({
           label="Balance"
           name="balance"
           type="number"
+          step="0.01"
           defaultValue={defaults?.balance ?? 0}
           placeholder="0.00"
           error={state.fieldErrors?.balance}

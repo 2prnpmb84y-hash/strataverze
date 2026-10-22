@@ -79,6 +79,7 @@ export function VariationForm({
           label="Cost Impact ($)"
           name="costImpact"
           type="number"
+          step="0.01"
           required
           placeholder="0.00"
           helpText="Use negative for cost reductions"

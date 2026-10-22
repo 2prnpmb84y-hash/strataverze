@@ -80,6 +80,7 @@ export function LevyScheduleForm({ schemeId, funds, totalLots, totalEntitlement 
         label="Budget Amount ($)"
         name="budgetAmount"
         type="number"
+        step="0.01"
         required
         placeholder="0.00"
         helpText="Total budget for this levy schedule"

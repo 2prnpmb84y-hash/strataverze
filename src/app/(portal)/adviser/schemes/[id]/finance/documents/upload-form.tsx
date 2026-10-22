@@ -198,6 +198,7 @@ export function FinancialDocumentUploadForm({
         label="Amount"
         name="amount"
         type="number"
+        step="0.01"
         placeholder="0.00"
         helpText="The monetary amount on the document, if applicable."
       />

@@ -132,6 +132,7 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
                 label="Payment Amount"
                 name="paymentAmount"
                 type="number"
+                step="0.01"
                 required
                 placeholder="0.00"
               />

@@ -226,6 +226,7 @@ export function PaymentUploadForm({
           label="Amount Paid"
           name="amount"
           type="number"
+          step="0.01"
           placeholder="0.00"
           helpText="The amount transferred."
         />

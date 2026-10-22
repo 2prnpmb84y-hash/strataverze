@@ -247,6 +247,7 @@ export function StepInsurance({ business, insurances, onNext, onBack }: StepInsu
                   label="Cover limit ($)"
                   name="coverageAmount"
                   type="number"
+                  step="0.01"
                   required
                   defaultValue={(editingInsurance?.coverageAmount as string) ?? ""}
                   placeholder="e.g. 20000000"

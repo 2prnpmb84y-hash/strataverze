@@ -376,6 +376,7 @@ export function BudgetClient({
                         <td className="py-2 pr-4">
                           <input
                             type="number"
+                            step="0.01"
                             value={editAmount}
                             onChange={(e) => setEditAmount(e.target.value)}
                             className="w-full rounded border border-line bg-white px-2 py-1 text-right text-sm tabular-nums text-ink"
