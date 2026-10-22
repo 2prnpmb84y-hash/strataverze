@@ -220,8 +220,9 @@ export async function updateDebtRecoveryStep(
     notes?: string | null;
     dueDate?: string | null;
   },
+  orm: typeof db.orm = db.orm,
 ) {
-  return db.orm.public.DebtRecoveryStep
+  return orm.public.DebtRecoveryStep
     .where({ id: stepId })
     .update(data);
 }
@@ -253,8 +254,8 @@ export async function createPaymentPlan(data: {
   interestWaived?: boolean;
   conditions?: string;
   notes?: string;
-}) {
-  return db.orm.public.PaymentPlan.create({
+}, orm: typeof db.orm = db.orm) {
+  return orm.public.PaymentPlan.create({
     ...data,
     totalAmount: toNumeric(data.totalAmount),
     instalmentAmount: toNumeric(data.instalmentAmount),

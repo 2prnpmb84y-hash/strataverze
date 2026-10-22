@@ -91,6 +91,7 @@ export async function updateMeeting(
     openedAt: string;
     closedAt: string;
   }>,
+  orm: typeof db.orm = db.orm,
 ) {
   const updateData: Record<string, unknown> = {};
   if (data.title !== undefined) updateData.title = data.title;
@@ -103,7 +104,7 @@ export async function updateMeeting(
   if (data.openedAt !== undefined) updateData.openedAt = toTimestamp(data.openedAt);
   if (data.closedAt !== undefined) updateData.closedAt = toTimestamp(data.closedAt);
 
-  return db.orm.public.Meeting.where({ id: meetingId }).update(updateData);
+  return orm.public.Meeting.where({ id: meetingId }).update(updateData);
 }
 
 /**

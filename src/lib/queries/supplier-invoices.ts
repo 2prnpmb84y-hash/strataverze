@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { captureTransactionFee } from "@/lib/billing/capture";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 
@@ -307,28 +308,46 @@ export async function approveInvoice(invoiceId: string, approvedBy: string) {
 export async function recordInvoicePayment(
   invoiceId: string,
   paymentAmount: number,
+  details: { paymentDate?: string; actorId?: string | null } = {},
 ) {
-  const invoice = await db.orm.public.SupplierInvoice
-    .where((si) => si.id.eq(invoiceId))
-    .first();
+  return db.transaction(async (tx) => {
+    const invoice = await tx.orm.public.SupplierInvoice
+      .where((si) => si.id.eq(invoiceId))
+      .first();
 
-  if (!invoice) {
-    throw new Error(`Supplier invoice not found: ${invoiceId}`);
-  }
+    if (!invoice) {
+      throw new Error(`Supplier invoice not found: ${invoiceId}`);
+    }
 
-  const currentPaid = Number(invoice.amountPaid);
-  const total = Number(invoice.totalAmount);
-  const newAmountPaid = currentPaid + paymentAmount;
-  const newBalance = total - newAmountPaid;
-  const newStatus = newBalance <= 0 ? "PAID" : "PARTIALLY_PAID";
+    const currentPaid = Number(invoice.amountPaid);
+    const total = Number(invoice.totalAmount);
+    const newAmountPaid = Math.round((currentPaid + paymentAmount) * 100) / 100;
+    const newBalance = total - newAmountPaid;
+    const newStatus = newBalance <= 0 ? "PAID" : "PARTIALLY_PAID";
 
-  return db.orm.public.SupplierInvoice
-    .where({ id: invoiceId })
-    .update({
-      amountPaid: toNumeric(newAmountPaid),
-      balanceOutstanding: toNumeric(Math.max(newBalance, 0)),
-      status: newStatus,
+    const updated = await tx.orm.public.SupplierInvoice
+      .where({ id: invoiceId })
+      .update({
+        amountPaid: toNumeric(newAmountPaid),
+        balanceOutstanding: toNumeric(Math.max(newBalance, 0)),
+        status: newStatus,
+      });
+
+    // StrataVerze transaction service fee on the disbursement, in the same
+    // transaction. Each payment is identified by the invoice and the running
+    // total it brings the invoice to.
+    await captureTransactionFee(tx.orm, {
+      schemeId: invoice.schemeId,
+      movement: "SUPPLIER_DISBURSEMENT",
+      paymentCents: Math.round(paymentAmount * 100),
+      sourceType: "SupplierInvoicePayment",
+      sourceId: `${invoiceId}_${Math.round(newAmountPaid * 100)}`,
+      actorId: details.actorId ?? null,
+      date: details.paymentDate,
     });
+
+    return updated;
+  });
 }
 
 /**

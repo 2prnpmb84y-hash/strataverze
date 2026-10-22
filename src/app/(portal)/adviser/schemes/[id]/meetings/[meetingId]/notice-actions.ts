@@ -26,6 +26,10 @@ import { recordMeetingEvent } from "@/lib/meetings/events";
 import { canTransition } from "@/lib/meetings/lifecycle";
 import { notifyMeetingScheduled } from "@/lib/notifications";
 
+import { db } from "@/prisma/db";
+import { captureUsageFee } from "@/lib/billing/capture";
+import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
+
 export type NoticeActionState = { error?: string; ok?: boolean };
 
 export async function issueNoticeAction(
@@ -118,7 +122,31 @@ export async function issueNoticeAction(
       });
     }
 
-    await updateMeeting(meetingId, { status: "NOTICE_ISSUED" });
+    // Issue the meeting and record any StrataVerze meeting fee together.
+    // EGMs are charged once per meeting; re-issuing the notice of an
+    // adjourned general meeting is charged per adjournment. AGMs and committee
+    // meetings are covered by the subscription.
+    const wasAdjourned = meeting.status === "ADJOURNED";
+    await db.transaction(async (tx) => {
+      await updateMeeting(meetingId, { status: "NOTICE_ISSUED" }, tx.orm);
+      if (wasAdjourned && type !== "COMMITTEE") {
+        await captureUsageFee(tx.orm, {
+          schemeId,
+          code: "MEETING_EGM",
+          sourceType: "MeetingAdjournmentNotice",
+          sourceId: notice.id,
+          actorId: profile.id,
+        });
+      } else if (isChargeableMeetingType(type)) {
+        await captureUsageFee(tx.orm, {
+          schemeId,
+          code: "MEETING_EGM",
+          sourceType: "Meeting",
+          sourceId: meetingId,
+          actorId: profile.id,
+        });
+      }
+    });
     await recordMeetingEvent({
       meetingId,
       actorId: profile.id,

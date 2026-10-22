@@ -1,5 +1,7 @@
 "use server";
 
+import { captureUsageFee } from "@/lib/billing/capture";
+import { isExecutedContractStatus } from "@/lib/billing/hook-codes";
 import { revalidatePath } from "next/cache";
 import {
   requireSchemeMembership,
@@ -1955,23 +1957,39 @@ export async function approveWorksVariation(
       .first();
     if (!variation) return { error: "Variation not found." };
 
-    await db.orm.public.WorksVariation
-      .where((v) => v.id.eq(variationId))
-      .update({
-        status: "APPROVED",
-        approvedById: profile.id,
-        approvedAt: toTimestamp(new Date().toISOString()),
+    const parent = await db.orm.public.WorksContract
+      .where((c) => c.id.eq(variation.contractId))
+      .first();
+    if (!parent || parent.schemeId !== schemeId) return { error: "Variation not found." };
+    if (variation.status === "APPROVED") return { error: "This variation is already approved." };
+
+    // Approval and the StrataVerze variation fee together.
+    await db.transaction(async (tx) => {
+      await tx.orm.public.WorksVariation
+        .where((v) => v.id.eq(variationId))
+        .update({
+          status: "APPROVED",
+          approvedById: profile.id,
+          approvedAt: toTimestamp(new Date().toISOString()),
+        });
+      await captureUsageFee(tx.orm, {
+        schemeId,
+        code: "WORKS_VARIATION",
+        sourceType: "WorksVariation",
+        sourceId: variationId,
+        actorId: profile.id,
       });
+    });
 
     // Recalculate parent contract approved variations total
     const approvedVariations = await db.orm.public.WorksVariation
       .where((v) => and(v.contractId.eq(variation.contractId), v.status.eq("APPROVED")))
       .all();
 
-    // Include the just-approved one
+    // The query above already includes the variation just approved.
     const totalApproved = approvedVariations.reduce(
       (sum, v) => sum + Number(v.costImpact),
-      Number(variation.costImpact),
+      0,
     );
 
     const contract = await db.orm.public.WorksContract
@@ -2033,6 +2051,62 @@ export async function rejectWorksVariation(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to reject variation." };
+  }
+}
+
+/**
+ * Record that a works contract has been executed (signed by the owners
+ * corporation). Charges the StrataVerze works contract fee, a flat amount by
+ * contract value band (never a percentage), in the same transaction.
+ */
+export async function executeWorksContract(
+  contractId: string,
+  schemeId: string,
+): Promise<ActionResult> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const contract = await db.orm.public.WorksContract
+      .where((c) => c.id.eq(contractId))
+      .first();
+    if (!contract || contract.schemeId !== schemeId) return { error: "Contract not found." };
+    if (isExecutedContractStatus(contract.status)) return { error: "This contract is already executed." };
+    if (["COMPLETE", "TERMINATED"].includes(String(contract.status))) {
+      return { error: `A ${String(contract.status).toLowerCase()} contract cannot be executed.` };
+    }
+
+    const now = new Date().toISOString();
+    await db.transaction(async (tx) => {
+      await tx.orm.public.WorksContract
+        .where((c) => c.id.eq(contractId))
+        .update({
+          status: "EXECUTED",
+          signedById: profile.id,
+          signedAt: toTimestamp(now),
+          executedAt: toTimestamp(now),
+        });
+      await captureUsageFee(tx.orm, {
+        schemeId,
+        code: "WORKS_CONTRACT",
+        bandValue: Math.round(Number(contract.contractValue) * 100),
+        sourceType: "WorksContract",
+        sourceId: contractId,
+        actorId: profile.id,
+      });
+    });
+
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "WORK_ORDER_STATUS_UPDATED",
+      entityType: "WorkOrder",
+      metadata: { contractId, status: "EXECUTED", module: "works_contract" },
+    });
+
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return OK;
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to record execution." };
   }
 }
 

@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { db } from "@/prisma/db";
+import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { captureUsageFee } from "@/lib/billing/capture";
+import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
 import {
   createDebtRecoveryCase,
   updateDebtRecoveryCase,
@@ -154,21 +158,49 @@ export async function completeDebtRecoveryStepAction(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE"]);
 
     const outcome = formData.get("outcome") as string;
     const evidenceNotes = formData.get("evidenceNotes") as string;
     const noticeMethod = formData.get("noticeMethod") as string;
 
-    await updateDebtRecoveryStep(stepId, {
-      status: "COMPLETED",
-      completedAt: new Date().toISOString(),
-      completedBy: profile.id,
-      outcome: outcome || null,
-      evidenceNotes: evidenceNotes || null,
-      noticeMethod: noticeMethod || null,
-      noticeSentAt: noticeMethod ? new Date().toISOString() : null,
+    // The step must belong to this case, and the case to this scheme.
+    const [step, caseRow] = await Promise.all([
+      db.orm.public.DebtRecoveryStep.where({ id: stepId }).first(),
+      getDebtRecoveryCaseById(caseId),
+    ]);
+    if (!step || step.caseId !== caseId || !caseRow || caseRow.schemeId !== schemeId) {
+      return { error: "Step not found" };
+    }
+    if (step.status === "COMPLETED") return { error: "This step is already complete" };
+
+    await db.transaction(async (tx) => {
+      await updateDebtRecoveryStep(
+        stepId,
+        {
+          status: "COMPLETED",
+          completedAt: new Date().toISOString(),
+          completedBy: profile.id,
+          outcome: outcome || null,
+          evidenceNotes: evidenceNotes || null,
+          noticeMethod: noticeMethod || null,
+          noticeSentAt: noticeMethod ? new Date().toISOString() : null,
+        },
+        tx.orm,
+      );
+      // StrataVerze recovery step fee, recoverable from the defaulting owner.
+      const variant = recoveryFeeVariant(step.stepType);
+      if (variant) {
+        await captureUsageFee(tx.orm, {
+          schemeId,
+          code: "RECOVERY_STEP",
+          variant,
+          sourceType: "DebtRecoveryStep",
+          sourceId: stepId,
+          actorId: profile.id,
+          payerProfileId: caseRow.ownerId ?? null,
+        });
+      }
     });
 
     // Find the next step and activate it
@@ -197,6 +229,7 @@ export async function completeDebtRecoveryStepAction(
 
     return { success: true };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to complete step:", err);
     return { error: "Failed to complete step" };
   }
@@ -247,8 +280,11 @@ export async function createPaymentPlanAction(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const caseRow = await getDebtRecoveryCaseById(caseId);
+    if (!caseRow || caseRow.schemeId !== schemeId || caseRow.lotId !== lotId) {
+      return { error: "Case not found" };
+    }
 
     const totalAmount = parseFloat(formData.get("totalAmount") as string);
     const instalmentAmount = parseFloat(formData.get("instalmentAmount") as string);
@@ -270,20 +306,36 @@ export async function createPaymentPlanAction(
     const freqDays = frequency === "WEEKLY" ? 7 : frequency === "FORTNIGHTLY" ? 14 : 30;
     end.setDate(end.getDate() + freqDays * numberOfInstalments);
 
-    const plan = await createPaymentPlan({
-      caseId,
-      schemeId,
-      lotId,
-      totalAmount,
-      instalmentAmount,
-      frequency,
-      startDate,
-      endDate: end.toISOString().split("T")[0],
-      numberOfInstalments,
-      includesInterest,
-      includesOngoing,
-      interestWaived,
-      conditions: conditions || undefined,
+    const plan = await db.transaction(async (tx) => {
+      const created = await createPaymentPlan(
+        {
+          caseId,
+          schemeId,
+          lotId,
+          totalAmount,
+          instalmentAmount,
+          frequency,
+          startDate,
+          endDate: end.toISOString().split("T")[0],
+          numberOfInstalments,
+          includesInterest,
+          includesOngoing,
+          interestWaived,
+          conditions: conditions || undefined,
+        },
+        tx.orm,
+      );
+      // StrataVerze payment plan set-up fee, recoverable from the owner.
+      await captureUsageFee(tx.orm, {
+        schemeId,
+        code: "RECOVERY_STEP",
+        variant: "PAYMENT_PLAN",
+        sourceType: "PaymentPlan",
+        sourceId: created.id,
+        actorId: profile.id,
+        payerProfileId: caseRow.ownerId ?? null,
+      });
+      return created;
     });
 
     // Create instalment records
@@ -312,6 +364,7 @@ export async function createPaymentPlanAction(
 
     return { success: true, id: plan.id };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to create payment plan:", err);
     return { error: "Failed to create payment plan" };
   }

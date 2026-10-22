@@ -1,5 +1,7 @@
 "use server";
 
+import { db } from "@/prisma/db";
+import { captureUsageFee } from "@/lib/billing/capture";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
@@ -243,14 +245,28 @@ export async function lodgeClaimAction(
       return { error: "Only a draft claim can be recorded as lodged." };
 
     const lodgedAt = isoOrNull(str(formData, "lodgedAt")) ?? new Date().toISOString();
-    await recordClaimLodgement(claimId, {
-      lodgedAt,
-      lodgedChannel: optStr(formData, "lodgedChannel"),
-      lodgedRecipient: optStr(formData, "lodgedRecipient"),
-      lodgedReference: optStr(formData, "lodgedReference"),
-      lodgedById: profile.id,
+    // Lodgement, status change and the StrataVerze claim handling fee together.
+    await db.transaction(async (tx) => {
+      await recordClaimLodgement(
+        claimId,
+        {
+          lodgedAt,
+          lodgedChannel: optStr(formData, "lodgedChannel"),
+          lodgedRecipient: optStr(formData, "lodgedRecipient"),
+          lodgedReference: optStr(formData, "lodgedReference"),
+          lodgedById: profile.id,
+        },
+        tx.orm,
+      );
+      await setClaimStatus(claimId, "SUBMITTED", {}, tx.orm);
+      await captureUsageFee(tx.orm, {
+        schemeId,
+        code: "CLAIM_HANDLING",
+        sourceType: "InsuranceClaim",
+        sourceId: claimId,
+        actorId: profile.id,
+      });
     });
-    await setClaimStatus(claimId, "SUBMITTED");
     await recordClaimEvent({
       claimId,
       eventType: "LODGED",

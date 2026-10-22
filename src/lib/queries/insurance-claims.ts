@@ -145,11 +145,12 @@ export async function setClaimStatus(
   claimId: string,
   status: string,
   opts: { closedAt?: string | null } = {},
+  orm: typeof db.orm = db.orm,
 ) {
   const u: Record<string, unknown> = { status };
   if (opts.closedAt !== undefined)
     u.closedAt = opts.closedAt ? toTimestamp(opts.closedAt) : null;
-  return db.orm.public.InsuranceClaim.where({ id: claimId }).update(u);
+  return orm.public.InsuranceClaim.where({ id: claimId }).update(u);
 }
 
 export interface LodgeClaimData {
@@ -160,8 +161,12 @@ export interface LodgeClaimData {
   lodgedById: string;
 }
 
-export async function recordClaimLodgement(claimId: string, data: LodgeClaimData) {
-  return db.orm.public.InsuranceClaim.where({ id: claimId }).update({
+export async function recordClaimLodgement(
+  claimId: string,
+  data: LodgeClaimData,
+  orm: typeof db.orm = db.orm,
+) {
+  return orm.public.InsuranceClaim.where({ id: claimId }).update({
     lodgedAt: toTimestamp(data.lodgedAt),
     lodgedChannel: data.lodgedChannel ?? null,
     lodgedRecipient: data.lodgedRecipient ?? null,

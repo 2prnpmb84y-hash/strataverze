@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { captureTransactionFee } from "@/lib/billing/capture";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 
@@ -344,7 +345,9 @@ export async function recordLevyPayment(
   },
 ) {
   return db.transaction(async (tx) => {
-    const notice = await tx.orm.public.LevyNotice.where({ id: noticeId }).first();
+    const notice = await tx.orm.public.LevyNotice.where({ id: noticeId })
+      .include("levySchedule")
+      .first();
     if (!notice) throw new Error(`Levy notice not found: ${noticeId}`);
 
     const owed = Number(notice.amountDue) + Number(notice.interestCharged ?? 0);
@@ -352,7 +355,7 @@ export async function recordLevyPayment(
     const newBalance = Math.max(0, Math.round((owed - newPaid) * 100) / 100);
     const isPaidInFull = newBalance <= 0;
 
-    await tx.orm.public.LevyPayment.create({
+    const receipt = await tx.orm.public.LevyPayment.create({
       schemeId: notice.schemeId,
       levyNoticeId: noticeId,
       lotId: notice.lotId,
@@ -368,6 +371,18 @@ export async function recordLevyPayment(
       status: isPaidInFull ? "PAID" : "PARTIALLY_PAID",
     };
     if (isPaidInFull) updateData.paidInFullAt = toTimestamp(new Date().toISOString());
+
+    // StrataVerze transaction service fee, charged to the scheme (never added
+    // to the owner's notice). Same transaction as the receipt.
+    await captureTransactionFee(tx.orm, {
+      schemeId: notice.schemeId,
+      movement: notice.levySchedule?.levyType === "SPECIAL" ? "SPECIAL_LEVY_RECEIPT" : "LEVY_RECEIPT",
+      paymentCents: Math.round(paymentAmount * 100),
+      sourceType: "LevyPayment",
+      sourceId: receipt.id,
+      actorId: details.recordedBy ?? null,
+      date: details.paymentDate,
+    });
 
     return tx.orm.public.LevyNotice.where({ id: noticeId }).update(updateData);
   });

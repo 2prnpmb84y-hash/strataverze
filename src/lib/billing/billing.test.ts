@@ -174,3 +174,27 @@ describe("idempotency keys", () => {
     expect(() => feeIdempotencyKey({ code: "TXN_FEE", sourceType: "LevyPayment", sourceId: "" })).toThrow();
   });
 });
+
+import { isChargeableMeetingType, isExecutedContractStatus, recoveryFeeVariant } from "./hook-codes";
+
+describe("hook codes", () => {
+  it("prices the recovery steps the brief lists and no others", () => {
+    expect(recoveryFeeVariant("REMINDER_NOTICE")).toBe("REMINDER");
+    expect(recoveryFeeVariant("FINAL_NOTICE")).toBe("FINAL_NOTICE");
+    expect(recoveryFeeVariant("LEGAL_REFERRAL")).toBe("REFERRAL");
+    expect(recoveryFeeVariant("LEDGER_VERIFICATION")).toBeNull();
+    expect(recoveryFeeVariant("HARDSHIP_REVIEW")).toBeNull();
+  });
+
+  it("charges EGMs but not AGMs or committee meetings", () => {
+    expect(isChargeableMeetingType("EGM")).toBe(true);
+    expect(isChargeableMeetingType("SGM")).toBe(true);
+    expect(isChargeableMeetingType("AGM")).toBe(false);
+    expect(isChargeableMeetingType("COMMITTEE")).toBe(false);
+  });
+
+  it("knows when a contract is executed", () => {
+    expect(isExecutedContractStatus("EXECUTED")).toBe(true);
+    expect(isExecutedContractStatus("DRAFT")).toBe(false);
+  });
+});
