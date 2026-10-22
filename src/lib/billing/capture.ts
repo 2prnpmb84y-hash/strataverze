@@ -20,6 +20,7 @@ import {
 } from "./fee-engine";
 import { resolveDisclosure, toFeeView, type FeeView } from "./disclosure";
 import { platformFeeProvider } from "./fee-provider";
+import { strataVerzeGstRegistered } from "./strataverze-supplier";
 import {
   recordFeeEvent,
   reverseFeeEvent,
@@ -38,8 +39,18 @@ const isoDay = (v: unknown) => {
   return String(v ?? "").slice(0, 10);
 };
 
+/**
+ * Whether StrataVerze charges are recorded. Needs PLATFORM_BILLING_CAPTURE=on
+ * and StrataVerze to be registered for GST (every price adds GST), so a
+ * charge can never be raised before the registration takes effect.
+ */
 export function billingCaptureEnabled(): boolean {
-  return process.env.PLATFORM_BILLING_CAPTURE === "on";
+  if (process.env.PLATFORM_BILLING_CAPTURE !== "on") return false;
+  if (!strataVerzeGstRegistered()) {
+    console.warn("[billing] PLATFORM_BILLING_CAPTURE is on but STRATAVERZE_GST_REGISTERED is not, so no charges are recorded.");
+    return false;
+  }
+  return true;
 }
 
 export function transactionFeeMode(): TransactionFeeMode {

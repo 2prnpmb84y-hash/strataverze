@@ -4,7 +4,7 @@
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { formatAud } from "./money";
-import { STRATAVERZE_SUPPLIER } from "./strataverze-supplier";
+import { STRATAVERZE_SUPPLIER, formatAbn } from "./strataverze-supplier";
 
 export interface InvoicePdfInput {
   invoiceNumber: string;
@@ -81,14 +81,16 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
   };
 
   // Header
+  // A tax invoice needs the supplier's ABN and GST registration.
   const hasAbn = !!STRATAVERZE_SUPPLIER.abn;
-  text(hasAbn ? "Tax invoice" : "Invoice", MARGIN, 20, bold);
+  const isTaxInvoice = hasAbn && STRATAVERZE_SUPPLIER.gstRegistered;
+  text(isTaxInvoice ? "Tax invoice" : "Invoice", MARGIN, 20, bold);
   right(input.invoiceNumber, A4.width - MARGIN, 12, bold);
   y -= 22;
-  text("StrataVerze", MARGIN, 11, bold);
+  text(STRATAVERZE_SUPPLIER.companyName, MARGIN, 11, bold);
   right(`Issued ${day(input.issuedAt)}`, A4.width - MARGIN, 10, regular, MUTED);
   y -= 14;
-  text(hasAbn ? `ABN ${STRATAVERZE_SUPPLIER.abn}` : "ABN to be confirmed", MARGIN, 9, regular, MUTED);
+  text(hasAbn ? `ABN ${formatAbn(STRATAVERZE_SUPPLIER.abn!)}` : "ABN to be confirmed", MARGIN, 9, regular, MUTED);
   right("Due on issue", A4.width - MARGIN, 10, regular, MUTED);
   y -= 30;
 
@@ -162,6 +164,7 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
     "This invoice is entered in the scheme's accounts as a supplier invoice for approval and payment in the usual way.",
   ];
   if (!hasAbn) notes.push("This is not a tax invoice until StrataVerze's ABN is shown.");
+  else if (!STRATAVERZE_SUPPLIER.gstRegistered) notes.push("StrataVerze Pty Ltd is not registered for GST, so this is not a tax invoice.");
   for (const n of notes) {
     for (const w of wrap(n, regular, 8.5, A4.width - MARGIN * 2)) {
       text(w, MARGIN, 8.5, regular, MUTED);
