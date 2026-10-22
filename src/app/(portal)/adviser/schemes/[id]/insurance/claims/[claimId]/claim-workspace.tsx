@@ -18,6 +18,8 @@ import {
 } from "../actions";
 import { CLAIM_STATUS_LABELS } from "@/lib/insurance/constants";
 import { formatMoney } from "@/lib/insurance/premium";
+import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
+import type { FeeView } from "@/lib/billing/disclosure";
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -56,6 +58,7 @@ export function ClaimWorkspace({
   lodged,
   management,
   evidence,
+  lodgementFee = null,
 }: {
   schemeId: string;
   claimId: string;
@@ -69,8 +72,11 @@ export function ClaimWorkspace({
   } | null;
   management: ManagementDefaults;
   evidence: EvidenceDoc[];
+  /** The StrataVerze claim handling fee, if any. */
+  lodgementFee?: FeeView | null;
 }) {
   const router = useRouter();
+  const lodgeFee = useFeeConfirmation(lodgementFee);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -192,7 +198,14 @@ export function ClaimWorkspace({
               <FormField label="Channel" name="lodgedChannel" placeholder="e.g. Broker portal, email" />
               <FormField label="Reference" name="lodgedReference" />
             </div>
-            <Button type="submit" variant="primary" disabled={lodgePending}>
+            <FeeDisclosure
+              fee={lodgementFee}
+              scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
+              confirmed={lodgeFee.confirmed}
+              onConfirmedChange={lodgeFee.setConfirmed}
+              idSuffix={`-${claimId}`}
+            />
+            <Button type="submit" variant="primary" disabled={lodgePending || !lodgeFee.ready}>
               {lodgePending ? "Recording..." : "Record lodgement"}
             </Button>
           </form>

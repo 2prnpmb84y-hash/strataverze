@@ -23,6 +23,7 @@ import {
   RecordPaymentForm,
 } from "./schedule-actions";
 import { connection } from "next/server";
+import { transactionFeeTable } from "@/lib/billing/capture";
 
 function formatCurrency(value: number | string | null): string {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(
@@ -103,6 +104,7 @@ export default async function LevyScheduleDetailPage({
 
   const status = String(schedule.status);
   const isSpecial = schedule.levyType === "SPECIAL";
+  const feeTable = await transactionFeeTable();
   const frequency = (isSpecial ? "ONE_OFF" : schedule.frequency) as LevyFrequency;
   const notices = [...(schedule.levyNotices ?? [])].sort(
     (a, b) => String(a.noticeNumber).localeCompare(String(b.noticeNumber)),
@@ -299,7 +301,13 @@ export default async function LevyScheduleDetailPage({
                       </span>
                     </div>
                   </div>
-                  {payable && <RecordPaymentForm schemeId={id} noticeId={notice.id} balance={balance} />}
+                  {payable && <RecordPaymentForm
+                      schemeId={id}
+                      noticeId={notice.id}
+                      balance={balance}
+                      isSpecialLevy={isSpecial}
+                      feeTable={feeTable}
+                    />}
                 </div>
               );
             })}

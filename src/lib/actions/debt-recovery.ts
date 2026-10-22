@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { db } from "@/prisma/db";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
 import { captureUsageFee } from "@/lib/billing/capture";
 import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
 import {
@@ -199,6 +200,7 @@ export async function completeDebtRecoveryStepAction(
           sourceId: stepId,
           actorId: profile.id,
           payerProfileId: caseRow.ownerId ?? null,
+          confirmedCents: confirmedCentsFrom(formData),
         });
       }
     });
@@ -230,6 +232,8 @@ export async function completeDebtRecoveryStepAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     console.error("Failed to complete step:", err);
     return { error: "Failed to complete step" };
   }
@@ -334,6 +338,7 @@ export async function createPaymentPlanAction(
         sourceId: created.id,
         actorId: profile.id,
         payerProfileId: caseRow.ownerId ?? null,
+        confirmedCents: confirmedCentsFrom(formData),
       });
       return created;
     });
@@ -365,6 +370,8 @@ export async function createPaymentPlanAction(
     return { success: true, id: plan.id };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     console.error("Failed to create payment plan:", err);
     return { error: "Failed to create payment plan" };
   }

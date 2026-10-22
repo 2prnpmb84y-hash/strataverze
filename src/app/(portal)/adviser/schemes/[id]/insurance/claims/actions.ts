@@ -2,6 +2,7 @@
 
 import { db } from "@/prisma/db";
 import { captureUsageFee } from "@/lib/billing/capture";
+import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
@@ -265,6 +266,7 @@ export async function lodgeClaimAction(
         sourceType: "InsuranceClaim",
         sourceId: claimId,
         actorId: profile.id,
+        confirmedCents: confirmedCentsFrom(formData),
       });
     });
     await recordClaimEvent({
@@ -286,6 +288,8 @@ export async function lodgeClaimAction(
     return {};
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return { error: "Failed to record lodgement." };
   }
 }

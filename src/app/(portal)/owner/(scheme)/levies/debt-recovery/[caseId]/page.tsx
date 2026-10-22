@@ -8,6 +8,7 @@ import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { PageHeader } from "@/components/ui/page-header";
 import { connection } from "next/server";
 import { CaseDetailOwnerClient } from "./case-detail-owner-client";
+import { previewRecoveryFees } from "@/lib/billing/capture";
 
 export default async function OwnerCaseDetailPage({
   params,
@@ -135,6 +136,7 @@ export default async function OwnerCaseDetailPage({
       <CaseDetailOwnerClient
         debtCase={serialised}
         isCommittee={isCommittee}
+        recoveryFees={isCommittee ? await previewRecoveryFees() : {}}
       />
     </div>
   );

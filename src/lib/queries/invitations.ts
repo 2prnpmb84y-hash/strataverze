@@ -1,5 +1,6 @@
 import { db } from "@/prisma/db";
-import { captureUsageFee } from "@/lib/billing/capture";
+import { captureUsageFee, quoteUsageFee } from "@/lib/billing/capture";
+import type { Disclosure } from "@/lib/billing/fee-ledger";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
@@ -113,6 +114,11 @@ export async function acceptInvitation(
     return { error: "You already have this role on this scheme." };
   }
 
+  // The accountant seat fee the adviser confirmed when inviting. A seat is
+  // only charged if that confirmation exists and matches today's price.
+  const seatDisclosure =
+    invitation.role === "ACCOUNTANT" ? await confirmedSeatDisclosure(invitationId) : null;
+
   // Wrap the status update and membership creation in a transaction
   await db.transaction(async (tx) => {
     await tx.orm.public.Invitation
@@ -132,13 +138,14 @@ export async function acceptInvitation(
 
     // An external accountant or auditor seat is a StrataVerze charge per seat
     // per month; the first month is recorded when the seat becomes active.
-    if (invitation.role === "ACCOUNTANT") {
+    if (seatDisclosure) {
       await captureUsageFee(tx.orm, {
         schemeId: invitation.schemeId,
         code: "ACCOUNTANT_SEAT",
         sourceType: "AccountantSeatMonth",
         sourceId: `${membership.id}_${new Date().toISOString().slice(0, 7)}`,
         actorId: invitation.invitedById ?? null,
+        disclosure: seatDisclosure,
       });
     }
   });
@@ -164,4 +171,22 @@ export async function revokeInvitation(invitationId: string) {
       and(i.id.eq(invitationId), i.status.eq("PENDING")),
     )
     .update({ status: "EXPIRED" });
+}
+
+/**
+ * The accountant seat fee disclosure recorded when the invitation was sent,
+ * if it still matches the current price. Null means the seat is not charged.
+ */
+async function confirmedSeatDisclosure(invitationId: string): Promise<Disclosure | null> {
+  const quote = await quoteUsageFee({ code: "ACCOUNTANT_SEAT" });
+  if (!quote) return null;
+  const sent = await db.orm.public.ActivityLog
+    .where((a) => and(a.entityType.eq("Invitation"), a.entityId.eq(invitationId), a.action.eq("INVITATION_SENT")))
+    .orderBy((a) => a.createdAt.desc())
+    .first();
+  const meta = (sent?.metadata ?? null) as { feeDisclosure?: Partial<Disclosure> & { code?: string } } | null;
+  const d = meta?.feeDisclosure;
+  if (!d || d.code !== "ACCOUNTANT_SEAT" || !d.shownToId || !d.shownAt) return null;
+  if (d.amountCents !== quote.totalCents) return null;
+  return { shownToId: d.shownToId, shownAt: d.shownAt, amountCents: d.amountCents };
 }

@@ -1,7 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  FeeDisclosure,
+  useTransactionFeeView,
+  type TransactionFeeTable,
+} from "@/components/billing/fee-disclosure";
 import { FormField } from "@/components/ui/form-field";
 import {
   approveLevyScheduleAction,
@@ -91,16 +96,24 @@ export function RecordPaymentForm({
   schemeId,
   noticeId,
   balance,
+  isSpecialLevy = false,
+  feeTable = null,
 }: {
   schemeId: string;
   noticeId: string;
   balance: number;
+  isSpecialLevy?: boolean;
+  /** StrataVerze transaction fee rows, or null when no fee is charged. */
+  feeTable?: TransactionFeeTable | null;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     recordLevyPaymentFormAction.bind(null, schemeId, noticeId),
     {},
   );
   const today = new Date().toISOString().slice(0, 10);
+  const [amount, setAmount] = useState(balance);
+  const [feeConfirmed, setFeeConfirmed] = useState(false);
+  const fee = useTransactionFeeView(feeTable, isSpecialLevy ? "SPECIAL_LEVY_RECEIPT" : "LEVY_RECEIPT", amount);
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-2">
       <label className="text-xs text-ink-muted">
@@ -112,6 +125,7 @@ export function RecordPaymentForm({
           min="0.01"
           max={balance}
           defaultValue={balance.toFixed(2)}
+          onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
           required
           aria-label="Payment amount"
           className="w-28 rounded-[var(--radius-card)] border border-line bg-white px-2 py-1.5 text-sm text-ink tabular-nums"
@@ -128,9 +142,20 @@ export function RecordPaymentForm({
           className="rounded-[var(--radius-card)] border border-line bg-white px-2 py-1.5 text-sm text-ink"
         />
       </label>
-      <Button type="submit" variant="secondary" disabled={pending}>
+      <Button type="submit" variant="secondary" disabled={pending || (!!fee && !feeConfirmed)}>
         {pending ? "Saving..." : "Record payment"}
       </Button>
+      {fee && (
+        <div className="w-full">
+          <FeeDisclosure
+            fee={fee}
+            scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
+            confirmed={feeConfirmed}
+            onConfirmedChange={setFeeConfirmed}
+            idSuffix={`-${noticeId}`}
+          />
+        </div>
+      )}
       {state.error && <p role="alert" className="w-full text-xs text-red-600">{state.error}</p>}
       {state.success && <p className="w-full text-xs text-green-700">Payment recorded.</p>}
     </form>

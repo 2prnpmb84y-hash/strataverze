@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
+import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
+import type { FeeView } from "@/lib/billing/disclosure";
+import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
 import {
   completeDebtRecoveryStepAction,
   addDebtRecoveryNoteAction,
@@ -158,11 +161,18 @@ function formatDate(dateStr: string): string {
 export function CaseDetailOwnerClient({
   debtCase,
   isCommittee,
+  recoveryFees = {},
 }: {
   debtCase: DebtRecoveryCase;
   isCommittee: boolean;
+  /** StrataVerze recovery fees by price variant, shown before a step is completed. */
+  recoveryFees?: Record<string, FeeView | null>;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [feeStepId, setFeeStepId] = useState<string | null>(null);
+  const feeStep = debtCase.steps.find((s) => s.id === feeStepId) ?? null;
+  const pendingFee = feeStep ? recoveryFees[recoveryFeeVariant(feeStep.stepType) ?? ""] ?? null : null;
+  const feeConfirmation = useFeeConfirmation(pendingFee);
   const [error, setError] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
 
@@ -175,11 +185,18 @@ export function CaseDetailOwnerClient({
   /* ── Handlers (committee only) ─────────────────────── */
 
   function handleCompleteStep(step: Step) {
+    const fee = recoveryFees[recoveryFeeVariant(step.stepType) ?? ""] ?? null;
+    // Show the fee first; complete once it is confirmed.
+    if (fee && (feeStepId !== step.id || !feeConfirmation.confirmed)) {
+      setFeeStepId(step.id);
+      return;
+    }
     startTransition(async () => {
       setError(null);
       const fd = new FormData();
       fd.set("stepType", step.stepType);
       fd.set("outcome", "Completed");
+      if (fee) fd.set("feeConfirmedCents", String(fee.totalCents));
       const result = await completeDebtRecoveryStepAction(
         step.id,
         debtCase.id,
@@ -430,11 +447,20 @@ export function CaseDetailOwnerClient({
 
                     {/* Committee can complete active steps */}
                     {isCommittee && isActive && !isClosed && (
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-2">
+                        {feeStepId === step.id && (
+                          <FeeDisclosure
+                            fee={pendingFee}
+                            scheduleHref="/owner/finance/platform-fees#fee-schedule"
+                            confirmed={feeConfirmation.confirmed}
+                            onConfirmedChange={feeConfirmation.setConfirmed}
+                            idSuffix={`-${step.id}`}
+                          />
+                        )}
                         <Button
                           variant="primary"
                           onClick={() => handleCompleteStep(step)}
-                          disabled={isPending}
+                          disabled={isPending || (feeStepId === step.id && !feeConfirmation.ready)}
                         >
                           {isPending ? "Processing..." : "Mark Complete"}
                         </Button>

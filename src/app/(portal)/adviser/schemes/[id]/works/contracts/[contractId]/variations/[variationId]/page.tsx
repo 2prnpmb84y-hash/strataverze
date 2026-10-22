@@ -12,6 +12,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { FeeActionButton } from "@/components/billing/fee-action-button";
+import { previewUsageFee } from "@/lib/billing/capture";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -58,10 +60,12 @@ export default async function VariationDetailPage({
     await submitWorksVariation(variationId, id);
   }
 
-  async function approveAction() {
+  async function approveAction(feeConfirmedCents: number | null) {
     "use server";
-    await approveWorksVariation(variationId, id);
+    return approveWorksVariation(variationId, id, feeConfirmedCents);
   }
+  const approvalFee =
+    variation.status === "SUBMITTED" ? await previewUsageFee({ code: "WORKS_VARIATION" }) : null;
 
   async function rejectAction() {
     "use server";
@@ -89,10 +93,15 @@ export default async function VariationDetailPage({
       )}
 
       {variation.status === "SUBMITTED" && (
-        <div className="flex items-center gap-3">
-          <form action={approveAction}>
-            <Button type="submit">Approve</Button>
-          </form>
+        <div className="flex items-start gap-3 flex-wrap">
+          <FeeActionButton
+            fee={approvalFee}
+            scheduleHref={`/adviser/schemes/${id}/finance/platform-fees#fee-schedule`}
+            label="Approve"
+            pendingLabel="Approving..."
+            action={approveAction}
+            idSuffix={`-${variationId}`}
+          />
           <form action={rejectAction}>
             <Button type="submit" variant="danger">
               Reject

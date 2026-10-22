@@ -27,7 +27,8 @@ import { canTransition } from "@/lib/meetings/lifecycle";
 import { notifyMeetingScheduled } from "@/lib/notifications";
 
 import { db } from "@/prisma/db";
-import { captureUsageFee } from "@/lib/billing/capture";
+import { assertUsageFeeConfirmed, captureUsageFee, hasFeeEvent } from "@/lib/billing/capture";
+import { feeErrorMessage } from "@/lib/billing/disclosure";
 import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
 
 export type NoticeActionState = { error?: string; ok?: boolean };
@@ -35,6 +36,7 @@ export type NoticeActionState = { error?: string; ok?: boolean };
 export async function issueNoticeAction(
   schemeId: string,
   meetingId: string,
+  feeConfirmedCents: number | null = null,
 ): Promise<NoticeActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
@@ -58,6 +60,18 @@ export async function issueNoticeAction(
       };
 
     const type = normaliseMeetingType(meeting.meetingType) as MeetingType | null;
+
+    // Check the StrataVerze meeting fee was confirmed before writing anything.
+    const wasAdjourned = meeting.status === "ADJOURNED";
+    const chargeAdjournment = wasAdjourned && type !== "COMMITTEE";
+    const chargeMeeting = !chargeAdjournment && isChargeableMeetingType(type);
+    if (
+      chargeAdjournment ||
+      (chargeMeeting &&
+        !(await hasFeeEvent({ code: "MEETING_EGM", sourceType: "Meeting", sourceId: meetingId })))
+    ) {
+      await assertUsageFeeConfirmed({ code: "MEETING_EGM", confirmedCents: feeConfirmedCents, actorId: profile.id });
+    }
     const startIso = String(meeting.startTime ?? meeting.scheduledAt);
     const ruleSet = await getActiveRuleSet(scheme.state);
     const validation = type
@@ -126,24 +140,25 @@ export async function issueNoticeAction(
     // EGMs are charged once per meeting; re-issuing the notice of an
     // adjourned general meeting is charged per adjournment. AGMs and committee
     // meetings are covered by the subscription.
-    const wasAdjourned = meeting.status === "ADJOURNED";
     await db.transaction(async (tx) => {
       await updateMeeting(meetingId, { status: "NOTICE_ISSUED" }, tx.orm);
-      if (wasAdjourned && type !== "COMMITTEE") {
+      if (chargeAdjournment) {
         await captureUsageFee(tx.orm, {
           schemeId,
           code: "MEETING_EGM",
           sourceType: "MeetingAdjournmentNotice",
           sourceId: notice.id,
           actorId: profile.id,
+          confirmedCents: feeConfirmedCents,
         });
-      } else if (isChargeableMeetingType(type)) {
+      } else if (chargeMeeting) {
         await captureUsageFee(tx.orm, {
           schemeId,
           code: "MEETING_EGM",
           sourceType: "Meeting",
           sourceId: meetingId,
           actorId: profile.id,
+          confirmedCents: feeConfirmedCents,
         });
       }
     });
@@ -175,6 +190,8 @@ export async function issueNoticeAction(
     return { ok: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return { error: "Failed to issue the notice. Please try again." };
   }
 }

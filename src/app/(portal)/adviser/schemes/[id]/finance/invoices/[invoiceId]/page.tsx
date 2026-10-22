@@ -5,6 +5,7 @@ import { getSupplierInvoiceById } from "@/lib/queries/supplier-invoices";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InvoiceActions } from "./invoice-actions";
+import { transactionFeeTable } from "@/lib/billing/capture";
 import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
@@ -186,6 +187,7 @@ export default async function InvoiceDetailPage({
               schemeId={id}
               invoiceId={invoiceId}
               currentStatus={status}
+              feeTable={await transactionFeeTable()}
             />
           </div>
         </Card>

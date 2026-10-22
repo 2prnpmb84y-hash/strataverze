@@ -9,6 +9,8 @@ import {
 import { logActivity } from "@/lib/queries/activity-log";
 import { getSchemeNameById } from "@/lib/queries/schemes";
 import { notifyInvitation } from "@/lib/notifications";
+import { quoteUsageFee } from "@/lib/billing/capture";
+import { confirmedCentsFrom, feeErrorMessage, resolveDisclosure } from "@/lib/billing/disclosure";
 
 export type InvitationFormState = {
   error?: string;
@@ -39,6 +41,14 @@ export async function sendInvitationAction(
 
     if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
+    // An accountant seat is a monthly StrataVerze charge. The adviser confirms
+    // it here; the confirmation is kept with the invitation and used when the
+    // seat becomes active on acceptance.
+    const seatFee = role === "ACCOUNTANT" ? await quoteUsageFee({ code: "ACCOUNTANT_SEAT" }) : null;
+    const feeDisclosure = seatFee
+      ? { code: seatFee.code, ...resolveDisclosure(seatFee, confirmedCentsFrom(formData), profile.id)! }
+      : null;
+
     // Set expiry to 30 days from now
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
@@ -57,7 +67,7 @@ export async function sendInvitationAction(
       action: "INVITATION_SENT",
       entityType: "Invitation",
       entityId: invitation.id,
-      metadata: { email, role },
+      metadata: feeDisclosure ? { email, role, feeDisclosure } : { email, role },
     });
 
     // Send email notification (non-blocking)
@@ -79,6 +89,8 @@ export async function sendInvitationAction(
     return { success: `Invitation sent to ${email}.` };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
     return {
       error:
         "Failed to send invitation. This person may already have a pending invitation for this role.",

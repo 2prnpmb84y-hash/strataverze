@@ -20,6 +20,7 @@ const tabs = [
   { key: "reports", label: "Reports", href: "/reports" },
   { key: "documents", label: "Documents", href: "/documents" },
   { key: "migration", label: "Migration", href: "/migration" },
+  { key: "platform-fees", label: "StrataVerze Fees", href: "/platform-fees" },
 ] as const;
 
 export function FinanceTabs({ schemeId }: { schemeId: string }) {

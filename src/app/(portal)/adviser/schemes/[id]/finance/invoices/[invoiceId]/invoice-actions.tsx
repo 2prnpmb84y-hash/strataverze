@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import {
+  FeeDisclosure,
+  useTransactionFeeView,
+  type TransactionFeeTable,
+} from "@/components/billing/fee-disclosure";
+import {
   approveInvoiceAction,
   recordInvoicePaymentAction,
   cancelInvoiceAction,
@@ -14,14 +19,19 @@ interface Props {
   schemeId: string;
   invoiceId: string;
   currentStatus: string;
+  /** StrataVerze transaction fee rows, or null when no fee is charged. */
+  feeTable?: TransactionFeeTable | null;
 }
 
-export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
+export function InvoiceActions({ schemeId, invoiceId, currentStatus, feeTable = null }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [feeConfirmed, setFeeConfirmed] = useState(false);
+  const fee = useTransactionFeeView(feeTable, "SUPPLIER_DISBURSEMENT", paymentAmount);
 
   async function handleApprove() {
     setError(undefined);
@@ -42,6 +52,10 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
     const amount = parseFloat(form.get("paymentAmount") as string);
     const paymentDate = form.get("paymentDate") as string;
     const paymentReference = (form.get("paymentReference") as string)?.trim() || undefined;
+    if (fee && !feeConfirmed) {
+      setError("Please confirm the StrataVerze fee before recording the payment.");
+      return;
+    }
 
     startTransition(async () => {
       const result = await recordInvoicePaymentAction(
@@ -50,6 +64,7 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
         amount,
         paymentDate,
         paymentReference,
+        fee && feeConfirmed ? fee.totalCents : null,
       );
       if (result.error) {
         setError(result.error);
@@ -135,6 +150,7 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
                 step="0.01"
                 required
                 placeholder="0.00"
+                onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
               />
               <FormField
                 label="Payment Date"
@@ -148,6 +164,12 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus }: Props) {
               name="paymentReference"
               type="text"
               placeholder="e.g. EFT-12345"
+            />
+            <FeeDisclosure
+              fee={fee}
+              scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
+              confirmed={feeConfirmed}
+              onConfirmedChange={setFeeConfirmed}
             />
             <div className="flex gap-3">
               <Button type="submit" variant="primary" disabled={isPending}>
