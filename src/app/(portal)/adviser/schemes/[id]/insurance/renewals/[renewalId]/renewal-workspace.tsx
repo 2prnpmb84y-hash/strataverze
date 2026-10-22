@@ -5,11 +5,11 @@ import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FormField, SelectField, TextareaField } from "@/components/ui/form-field";
+import { FormField, TextareaField } from "@/components/ui/form-field";
 import { StatusChip } from "@/components/ui/status-chip";
+import { RenewalDeclaration } from "./renewal-declaration";
 import {
   updateRenewalPrepAction,
-  saveDeclarationAction,
   changeRenewalStageAction,
   addQuoteAction,
   deleteQuoteAction,
@@ -50,23 +50,6 @@ export interface QuoteView {
   materialDifferences: string | null;
   validUntil: string | null;
 }
-
-const yesNoOptions = [
-  { value: "", label: "—" },
-  { value: "YES", label: "Yes" },
-  { value: "NO", label: "No" },
-];
-
-const DECLARATION_QUESTIONS: { key: string; label: string }[] = [
-  { key: "q_rewired", label: "Rewired or replumbed in the last 20 years?" },
-  { key: "q_hazards", label: "Any known hazards or defects?" },
-  { key: "q_council_orders", label: "Any unresolved Council Orders?" },
-  { key: "q_ncat", label: "Any outstanding NCAT or legal proceedings?" },
-  { key: "q_office_bearers", label: "Any circumstances leading to an Office Bearers claim?" },
-  { key: "q_commercial_change", label: "Change in commercial occupants in the past 12 months?" },
-  { key: "q_asbestos_eps", label: "Remedial works, asbestos or EPS to disclose?" },
-  { key: "q_declined", label: "Ever declined or had special terms imposed?" },
-];
 
 export function RenewalWorkspace({
   schemeId,
@@ -118,10 +101,6 @@ export function RenewalWorkspace({
 
   const [prepState, prepAction, prepPending] = useActionState<RenewalFormState, FormData>(
     updateRenewalPrepAction.bind(null, schemeId, renewalId),
-    {},
-  );
-  const [declState, declAction, declPending] = useActionState<RenewalFormState, FormData>(
-    saveDeclarationAction.bind(null, schemeId, renewalId),
     {},
   );
   const [quoteState, quoteAction, quotePending] = useActionState<RenewalFormState, FormData>(
@@ -206,55 +185,11 @@ export function RenewalWorkspace({
           </Card>
 
           {/* Pre-renewal declaration */}
-          <Card>
-            <CardHeader
-              title="Pre-renewal declaration"
-              description="Property, construction and the standard declaration questions. Saved as a snapshot against this renewal."
-            />
-            <form action={declAction} className="space-y-4">
-              {declState.error && <p className="text-sm text-red-600">{declState.error}</p>}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <FormField label="No. of units" name="units" type="number" defaultValue={declaration.units ?? ""} />
-                <FormField label="Year built" name="yearBuilt" type="number" defaultValue={declaration.yearBuilt ?? ""} />
-                <FormField label="No. of storeys" name="storeys" type="number" defaultValue={declaration.storeys ?? ""} />
-                <FormField label="No. of lifts" name="lifts" type="number" defaultValue={declaration.lifts ?? ""} />
-                <FormField label="Residential units" name="residentialUnits" type="number" defaultValue={declaration.residentialUnits ?? ""} />
-                <FormField label="Commercial units" name="commercialUnits" type="number" defaultValue={declaration.commercialUnits ?? ""} />
-                <FormField label="Basements" name="basements" type="number" defaultValue={declaration.basements ?? ""} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <FormField label="Walls" name="walls" defaultValue={declaration.walls ?? ""} placeholder="e.g. Brick, concrete" />
-                <FormField label="Floor" name="floor" defaultValue={declaration.floor ?? ""} placeholder="e.g. Concrete slab" />
-                <FormField label="Roof" name="roof" defaultValue={declaration.roof ?? ""} placeholder="e.g. Concrete, tiles" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <SelectField label="Sprinkler system" name="sprinkler" defaultValue={declaration.sprinkler ?? ""} options={[{ value: "", label: "—" }, { value: "FULLY", label: "Fully" }, { value: "BASEMENT", label: "Basement only" }, { value: "EXTERNAL", label: "External wall" }, { value: "NONE", label: "None" }]} />
-                <SelectField label="Smoke detectors" name="smokeDetectors" defaultValue={declaration.smokeDetectors ?? ""} options={yesNoOptions} />
-                <SelectField label="Fire hydrant" name="hydrant" defaultValue={declaration.hydrant ?? ""} options={yesNoOptions} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-                <SelectField label="EPS / aluminium composite panelling" name="eps" defaultValue={declaration.eps ?? ""} options={yesNoOptions} />
-                <FormField label="If yes, type and location of cladding" name="epsDetails" defaultValue={declaration.epsDetails ?? ""} />
-              </div>
-
-              <div className="space-y-2">
-                {DECLARATION_QUESTIONS.map((q) => (
-                  <div key={q.key} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                    <span className="sm:col-span-6 text-sm text-ink">{q.label}</span>
-                    <div className="sm:col-span-2">
-                      <SelectField label="" name={q.key} defaultValue={declaration[q.key] ?? ""} options={yesNoOptions} />
-                    </div>
-                    <div className="sm:col-span-4">
-                      <FormField label="" name={`${q.key}_comment`} defaultValue={declaration[`${q.key}_comment`] ?? ""} placeholder="Comment" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Button type="submit" variant="primary" disabled={declPending}>
-                {declPending ? "Saving..." : "Save declaration"}
-              </Button>
-            </form>
-          </Card>
+          <RenewalDeclaration
+            schemeId={schemeId}
+            renewalId={renewalId}
+            declaration={declaration}
+          />
 
           {/* Quotes */}
           <Card>
