@@ -164,6 +164,7 @@ export function ContractForm({
           label="Contract Value ($)"
           name="contractValue"
           type="number"
+          step="0.01"
           required
           value={contractValue}
           onChange={handleContractValueChange}
@@ -175,6 +176,7 @@ export function ContractForm({
           label="GST Amount ($)"
           name="gstAmount"
           type="number"
+          step="0.01"
           value={gstAmount}
           onChange={handleGstChange}
           placeholder="0.00"
@@ -184,6 +186,7 @@ export function ContractForm({
           label="Total Value ($)"
           name="totalValue"
           type="number"
+          step="0.01"
           required
           value={totalValue}
           placeholder="0.00"
@@ -211,6 +214,7 @@ export function ContractForm({
         label="Retention Percentage (%)"
         name="retentionPercentage"
         type="number"
+        step="0.01"
         defaultValue={contract?.retentionPercentage ?? ""}
         placeholder="e.g. 5"
         helpText="Percentage of contract value retained until defects liability period ends"

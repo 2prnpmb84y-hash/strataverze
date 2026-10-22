@@ -10,6 +10,8 @@ export function FormField({
   helpText,
   className = "",
   onChange,
+  step,
+  min,
 }: {
   label: string;
   name: string;
@@ -22,6 +24,9 @@ export function FormField({
   helpText?: string;
   className?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Number inputs: allowed increment, e.g. "0.01" for dollars and cents. */
+  step?: string;
+  min?: string;
 }) {
   return (
     <div className={className}>
@@ -41,6 +46,8 @@ export function FormField({
         value={value}
         placeholder={placeholder}
         onChange={onChange}
+        step={step}
+        min={min}
         className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
       />
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}

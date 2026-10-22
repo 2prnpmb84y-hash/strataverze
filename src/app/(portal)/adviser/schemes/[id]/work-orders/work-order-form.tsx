@@ -100,6 +100,7 @@ export function WorkOrderCreateForm({
           label="Estimated Cost ($)"
           name="estimatedCost"
           type="number"
+          step="0.01"
           placeholder="0.00"
           error={state.fieldErrors?.estimatedCost}
         />
@@ -203,6 +204,7 @@ export function WorkOrderEditForm({
           label="Estimated Cost ($)"
           name="estimatedCost"
           type="number"
+          step="0.01"
           defaultValue={defaults.estimatedCost ?? ""}
           placeholder="0.00"
         />

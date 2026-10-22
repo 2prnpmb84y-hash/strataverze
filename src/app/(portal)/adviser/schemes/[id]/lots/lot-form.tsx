@@ -90,6 +90,7 @@ export function LotForm({
             label="Floor Area (m²)"
             name="floorArea"
             type="number"
+            step="0.01"
             defaultValue={defaults?.floorArea ?? ""}
             placeholder="e.g. 85"
             helpText="Optional"

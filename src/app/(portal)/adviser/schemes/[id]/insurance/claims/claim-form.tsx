@@ -228,7 +228,7 @@ function ClaimFormInner({
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextareaField label="Immediate action taken" name="immediateAction" rows={2} defaultValue={defaults.immediateAction} />
-            <FormField label="Estimated loss ($)" name="estimatedLoss" type="number" defaultValue={defaults.estimatedLoss} />
+            <FormField label="Estimated loss ($)" name="estimatedLoss" type="number" step="0.01" defaultValue={defaults.estimatedLoss} />
           </div>
           <TextareaField
             label="Additional information / other parties"

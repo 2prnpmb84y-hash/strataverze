@@ -88,6 +88,7 @@ export function DelegationForm({
         label="Maximum Amount ($)"
         name="maxAmount"
         type="number"
+        step="0.01"
         placeholder="e.g. 10000"
         helpText="Leave empty for unlimited authority"
       />

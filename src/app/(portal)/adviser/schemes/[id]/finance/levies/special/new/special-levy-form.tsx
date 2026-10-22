@@ -54,6 +54,7 @@ export function SpecialLevyForm({
         label="Total amount ($)"
         name="amount"
         type="number"
+        step="0.01"
         required
         placeholder="0.00"
         helpText="Levied on every lot in proportion to unit entitlement."

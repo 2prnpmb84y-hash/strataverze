@@ -299,8 +299,8 @@ export function RenewalWorkspace({
                   <FormField label="Broker" name="broker" />
                   <FormField label="Period start" name="periodStart" type="date" />
                   <FormField label="Period end" name="periodEnd" type="date" />
-                  <FormField label="Premium ($)" name="premium" type="number" />
-                  <FormField label="Sum insured ($)" name="sumInsured" type="number" />
+                  <FormField label="Premium ($)" name="premium" type="number" step="0.01" />
+                  <FormField label="Sum insured ($)" name="sumInsured" type="number" step="0.01" />
                   <FormField label="Valid until" name="validUntil" type="date" />
                   <FormField label="Excesses" name="excesses" />
                 </div>

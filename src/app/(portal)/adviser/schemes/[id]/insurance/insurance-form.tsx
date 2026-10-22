@@ -343,6 +343,7 @@ function PolicyFormInner({
             label="Headline sum insured ($)"
             name="coverageAmount"
             type="number"
+            step="0.01"
             required
             defaultValue={defaults.coverageAmount}
             placeholder="e.g. 25000000"
@@ -352,6 +353,7 @@ function PolicyFormInner({
             label="Default excess ($)"
             name="excessAmount"
             type="number"
+            step="0.01"
             defaultValue={defaults.excessAmount}
             error={state.fieldErrors?.excessAmount}
           />
@@ -399,6 +401,7 @@ function PolicyFormInner({
                   <input
                     className={inputClass}
                     type="number"
+                    step="0.01"
                     value={row.sumInsured}
                     onChange={(e) =>
                       setCoverage((c) =>
@@ -412,6 +415,7 @@ function PolicyFormInner({
                   <input
                     className={inputClass}
                     type="number"
+                    step="0.01"
                     value={row.excess}
                     onChange={(e) =>
                       setCoverage((c) =>
@@ -449,6 +453,7 @@ function PolicyFormInner({
             label="Base premium ($)"
             name="premium"
             type="number"
+            step="0.01"
             required
             defaultValue={defaults.premium}
             placeholder="e.g. 42000"
@@ -506,6 +511,7 @@ function PolicyFormInner({
                   <input
                     className={inputClass}
                     type="number"
+                    step="0.01"
                     value={row.amount}
                     onChange={(e) =>
                       setPremium((p) =>

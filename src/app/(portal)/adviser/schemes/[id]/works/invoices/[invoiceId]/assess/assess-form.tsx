@@ -67,6 +67,7 @@ export function AssessForm({
         label="Assessed Amount ($)"
         name="assessedAmount"
         type="number"
+        step="0.01"
         required
         defaultValue={claimedAmount}
         placeholder="0.00"

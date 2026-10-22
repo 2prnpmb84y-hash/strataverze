@@ -82,6 +82,7 @@ export function RecordPaymentForm({
         label="Amount ($)"
         name="amount"
         type="number"
+        step="0.01"
         required
         placeholder="0.00"
         defaultValue={

@@ -102,6 +102,7 @@ export function WorksRequestForm({
           label="Estimated Cost"
           name="estimatedCost"
           type="number"
+          step="0.01"
           placeholder="0.00"
           helpText="Rough estimate in AUD"
         />

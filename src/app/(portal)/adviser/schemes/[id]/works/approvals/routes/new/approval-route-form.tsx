@@ -91,6 +91,7 @@ export function ApprovalRouteForm({
           label="Minimum Amount ($)"
           name="minAmount"
           type="number"
+          step="0.01"
           defaultValue={route?.minAmount ?? ""}
           placeholder="e.g. 0"
           helpText="Leave empty for no minimum threshold"
@@ -100,6 +101,7 @@ export function ApprovalRouteForm({
           label="Maximum Amount ($)"
           name="maxAmount"
           type="number"
+          step="0.01"
           defaultValue={route?.maxAmount ?? ""}
           placeholder="e.g. 50000"
           helpText="Leave empty for no maximum threshold"

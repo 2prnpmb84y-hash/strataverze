@@ -223,6 +223,7 @@ export function RenewalDeclaration({
               <input
                 className="w-40 rounded-[var(--radius-card)] border border-line bg-white px-3 py-1.5 text-sm text-right tabular-nums"
                 type="number"
+                step="0.01"
                 name={`limit_${k}`}
                 placeholder="$"
                 defaultValue={dollar(`limit_${k}`)}

@@ -184,6 +184,7 @@ export function InvoiceForm({
           label="Claimed Amount ($)"
           name="claimedAmount"
           type="number"
+          step="0.01"
           required
           placeholder="0.00"
           value={claimedAmount}

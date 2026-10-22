@@ -59,6 +59,7 @@ export function PaymentForm({
         label="Approved Amount ($)"
         name="approvedAmount"
         type="number"
+        step="0.01"
         required
         defaultValue={approvedAmount}
         placeholder="0.00"

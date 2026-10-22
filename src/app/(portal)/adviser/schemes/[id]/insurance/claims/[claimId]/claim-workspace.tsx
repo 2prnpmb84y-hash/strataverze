@@ -264,10 +264,10 @@ export function ClaimWorkspace({
             <FormField label="Contractor details" name="contractorDetails" defaultValue={management.contractorDetails} />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <FormField label="Claimed ($)" name="claimedAmount" type="number" defaultValue={management.claimedAmount} />
-            <FormField label="Approved ($)" name="approvedAmount" type="number" defaultValue={management.approvedAmount} />
-            <FormField label="Paid ($)" name="paidAmount" type="number" defaultValue={management.paidAmount} />
-            <FormField label="Excess ($)" name="excessAmount" type="number" defaultValue={management.excessAmount} />
+            <FormField label="Claimed ($)" name="claimedAmount" type="number" step="0.01" defaultValue={management.claimedAmount} />
+            <FormField label="Approved ($)" name="approvedAmount" type="number" step="0.01" defaultValue={management.approvedAmount} />
+            <FormField label="Paid ($)" name="paidAmount" type="number" step="0.01" defaultValue={management.paidAmount} />
+            <FormField label="Excess ($)" name="excessAmount" type="number" step="0.01" defaultValue={management.excessAmount} />
           </div>
           <TextareaField label="Settlement details" name="settlementDetails" rows={2} defaultValue={management.settlementDetails} />
           <TextareaField label="Decision / closure reason" name="decisionReason" rows={2} defaultValue={management.decisionReason} />
