@@ -19,6 +19,7 @@ import {
   feeIdempotencyKey,
 } from "./fee-engine";
 import { resolveDisclosure, toFeeView, type FeeView } from "./disclosure";
+import { platformFeeProvider } from "./fee-provider";
 import {
   recordFeeEvent,
   reverseFeeEvent,
@@ -242,7 +243,16 @@ export async function captureTransactionFee(
   const store = ormFeeEventStore(orm);
   const existing = await existingEvent(store, quote, input);
   if (existing) return existing;
-  return recordFeeEvent(store, { ...input, quote, disclosure: disclosureFor(input, quote) });
+  // The provider decides how the fee is settled (accrued today, Zai later).
+  return platformFeeProvider().recordTransactionFee(store, {
+    schemeId: input.schemeId,
+    quote,
+    sourceType: input.sourceType,
+    sourceId: input.sourceId,
+    payerProfileId: input.payerProfileId ?? null,
+    actorId: input.actorId ?? null,
+    disclosure: disclosureFor(input, quote),
+  });
 }
 
 /** Record a usage fee (no-op when the fee is switched off in the price book). */
