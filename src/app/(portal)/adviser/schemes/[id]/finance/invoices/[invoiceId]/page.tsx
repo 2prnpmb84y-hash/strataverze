@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InvoiceActions } from "./invoice-actions";
 import { transactionFeeTable } from "@/lib/billing/capture";
+import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
 import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
@@ -75,7 +76,7 @@ export default async function InvoiceDetailPage({
   if (!isAdviser) notFound();
 
   const invoice = await getSupplierInvoiceById(invoiceId);
-  if (!invoice) notFound();
+  if (!invoice || invoice.schemeId !== id) notFound();
 
   const status = String(invoice.status);
   const dueDate = invoice.dueDate ? new Date(String(invoice.dueDate)) : null;
@@ -187,7 +188,7 @@ export default async function InvoiceDetailPage({
               schemeId={id}
               invoiceId={invoiceId}
               currentStatus={status}
-              feeTable={await transactionFeeTable()}
+              feeTable={isStrataVerzeSupplier(invoice.supplierId) ? null : await transactionFeeTable()}
             />
           </div>
         </Card>

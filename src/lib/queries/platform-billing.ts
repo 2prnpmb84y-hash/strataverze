@@ -113,3 +113,49 @@ export async function getPlatformFeesData(schemeId: string, lotCount: number): P
     schedule: feeSchedule(priceBook, today, { transactionFeeMode: transactionFeeMode() }),
   };
 }
+
+/** A StrataVerze invoice with its lines, for the PDF and detail views. */
+export async function getPlatformInvoiceWithLines(invoiceId: string) {
+  const invoice = await db.orm.public.PlatformInvoice.where((i) => i.id.eq(invoiceId)).first();
+  if (!invoice) return null;
+  const [scheme, events] = await Promise.all([
+    db.orm.public.Scheme.where((s) => s.id.eq(invoice.schemeId)).first(),
+    db.orm.public.PlatformFeeEvent.where((e) => e.invoiceId.eq(invoiceId))
+      .orderBy((e) => e.occurredAt.asc())
+      .limit(5000)
+      .all(),
+  ]);
+  if (!scheme) return null;
+  // Subscription first, then its promotional credit, then fees in date order.
+  const rank = (code: string) => (code.startsWith("SUBSCRIPTION_") ? 0 : code === "PROMOTIONAL_CREDIT" ? 1 : 2);
+  const lines = events
+    .map((e) => ({
+      code: e.code,
+      description: e.status === "REVERSED" ? `Reversal: ${e.description}` : e.description,
+      exGstCents: toCents(String(e.amountExGst)),
+      gstCents: toCents(String(e.gstAmount)),
+      occurredAt: isoTime(e.occurredAt),
+    }))
+    .sort((a, b) => rank(a.code) - rank(b.code) || a.occurredAt.localeCompare(b.occurredAt));
+  return {
+    id: invoice.id,
+    schemeId: invoice.schemeId,
+    invoiceNumber: invoice.invoiceNumber,
+    issuedAt: invoice.issuedAt ? isoTime(invoice.issuedAt) : isoTime(invoice.createdAt),
+    periodStart: isoDay(invoice.periodStart),
+    periodEnd: isoDay(invoice.periodEnd),
+    status: invoice.status,
+    scheme: {
+      name: scheme.name,
+      planNumber: scheme.planNumber ?? null,
+      address: scheme.address ?? null,
+      suburb: scheme.suburb ?? null,
+      state: scheme.state ?? null,
+      postcode: scheme.postcode ?? null,
+    },
+    lines,
+    subtotalCents: toCents(String(invoice.subtotal)),
+    gstCents: toCents(String(invoice.gst)),
+    totalCents: toCents(String(invoice.total)),
+  };
+}

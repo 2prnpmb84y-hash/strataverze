@@ -1,4 +1,6 @@
 import { db } from "@/prisma/db";
+import { syncPlatformInvoiceStatus } from "@/lib/billing/invoice-run";
+import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
 import { captureTransactionFee } from "@/lib/billing/capture";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
@@ -288,13 +290,15 @@ export async function submitForApproval(invoiceId: string) {
  */
 export async function approveInvoice(invoiceId: string, approvedBy: string) {
   try {
-    return db.orm.public.SupplierInvoice
+    const updated = await db.orm.public.SupplierInvoice
       .where({ id: invoiceId })
       .update({
         status: "APPROVED",
         approvedBy,
         approvedAt: toTimestamp(new Date().toISOString()),
       });
+    await syncPlatformInvoiceStatus(invoiceId, "APPROVED");
+    return updated;
   } catch {
     // Table may not exist yet
     return [];
@@ -333,10 +337,14 @@ export async function recordInvoicePayment(
         status: newStatus,
       });
 
+    // A StrataVerze invoice paid in the ledger moves its platform invoice on.
+    await syncPlatformInvoiceStatus(invoiceId, newStatus, tx.orm);
+
     // StrataVerze transaction service fee on the disbursement, in the same
     // transaction. Each payment is identified by the invoice and the running
-    // total it brings the invoice to.
-    await captureTransactionFee(tx.orm, {
+    // total it brings the invoice to. Paying StrataVerze's own invoice is
+    // never charged a fee.
+    if (!isStrataVerzeSupplier(invoice.supplierId)) await captureTransactionFee(tx.orm, {
       schemeId: invoice.schemeId,
       movement: "SUPPLIER_DISBURSEMENT",
       paymentCents: Math.round(paymentAmount * 100),
