@@ -412,6 +412,8 @@ model SchemeMembership {
   lotId     String?    @map("lot_id") @db.Uuid
   role      PortalRole
   isActive  Boolean    @default(true) @map("is_active")
+  /// Committee member who is the treasurer (an eligible payment approver).
+  isTreasurer Boolean  @default(false) @map("is_treasurer")
   startDate DateTime   @default(now()) @db.Timestamptz @map("start_date")
   endDate   DateTime?  @db.Timestamptz @map("end_date")
   createdAt DateTime   @default(now()) @db.Timestamptz @map("created_at")
@@ -1631,6 +1633,8 @@ model SupplierInvoice {
   approvedBy         String?             @map("approved_by") @db.Uuid
   approvedAt         DateTime?           @db.Timestamptz @map("approved_at")
   journalEntryId     String?             @map("journal_entry_id") @db.Uuid
+  /// Who entered the invoice. They can never approve it.
+  preparedById       String?             @map("prepared_by_id") @db.Uuid
   createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
   updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -3422,4 +3426,66 @@ model CreditRateCard {
 
   @@index([code, isActive])
   @@map("credit_rate_cards")
+}
+
+/// A scheme's rules for approving disbursements.
+model SchemePaymentPolicy {
+  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId                   String   @unique @map("scheme_id") @db.Uuid
+  singleApproverLimit        Decimal  @default(0) @db.Decimal(12, 2) @map("single_approver_limit")
+  requireSecondApproverAbove Decimal? @db.Decimal(12, 2) @map("require_second_approver_above")
+  allowSelfApproval          Boolean  @default(false) @map("allow_self_approval")
+  allowAdviserApproval       Boolean  @default(false) @map("allow_adviser_approval")
+  bankChangeCoolingOffDays   Int      @default(5) @map("bank_change_cooling_off_days")
+  updatedBy                  String?  @map("updated_by") @db.Uuid
+  createdAt                  DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt                  DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@map("scheme_payment_policies")
+}
+
+/// One approval of a supplier or works invoice for payment.
+model PaymentAuthorisation {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId          String   @map("scheme_id") @db.Uuid
+  supplierInvoiceId String?  @map("supplier_invoice_id") @db.Uuid
+  worksInvoiceId    String?  @map("works_invoice_id") @db.Uuid
+  approverId        String   @map("approver_id") @db.Uuid
+  role              String
+  approvedAt        DateTime @default(now()) @db.Timestamptz @map("approved_at")
+  ipHash            String?  @map("ip_hash")
+  sequence          Int
+  isException       Boolean  @default(false) @map("is_exception")
+  exceptionReason   String?  @map("exception_reason")
+  createdAt         DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@index([schemeId])
+  @@map("payment_authorisations")
+}
+
+/// A change to a finance supplier's bank details, verified by someone else before payment.
+model SupplierBankDetailVersion {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supplierId               String    @map("supplier_id") @db.Uuid
+  schemeId                 String?   @map("scheme_id") @db.Uuid
+  previousBsb              String?   @map("previous_bsb") @db.VarChar(7)
+  previousAccountNumber    String?   @map("previous_account_number") @db.VarChar(20)
+  previousAccountName      String?   @map("previous_account_name") @db.VarChar(200)
+  newBsb                   String?   @map("new_bsb") @db.VarChar(7)
+  newAccountNumber         String?   @map("new_account_number") @db.VarChar(20)
+  newAccountName           String?   @map("new_account_name") @db.VarChar(200)
+  changedBy                String    @map("changed_by") @db.Uuid
+  changedAt                DateTime  @default(now()) @db.Timestamptz @map("changed_at")
+  verifiedBy               String?   @map("verified_by") @db.Uuid
+  verifiedAt               DateTime? @db.Timestamptz @map("verified_at")
+  verificationMethod       String?   @map("verification_method") // CALLBACK, SUPPLIER_PORTAL_CONFIRMED, DOCUMENT
+  secondVerifiedBy         String?   @map("second_verified_by") @db.Uuid
+  secondVerifiedAt         DateTime? @db.Timestamptz @map("second_verified_at")
+  secondVerificationMethod String?   @map("second_verification_method")
+  status                   String    @default("PENDING") // PENDING, VERIFIED, REJECTED
+  rejectionReason          String?   @map("rejection_reason")
+  createdAt                DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  @@index([supplierId, changedAt])
+  @@map("supplier_bank_detail_versions")
 }

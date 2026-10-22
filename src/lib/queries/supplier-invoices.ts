@@ -217,6 +217,7 @@ export async function createSupplierInvoice(data: {
   fundId: string;
   accountCodeId: string;
   description: string;
+  preparedById?: string | null;
 }) {
   return db.orm.public.SupplierInvoice.create({
     schemeId: data.schemeId,
@@ -233,6 +234,7 @@ export async function createSupplierInvoice(data: {
     accountCodeId: data.accountCodeId,
     description: toVarchar<500>(data.description),
     status: "DRAFT",
+    preparedById: data.preparedById ?? null,
   });
 }
 

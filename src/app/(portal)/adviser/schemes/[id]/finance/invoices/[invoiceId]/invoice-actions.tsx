@@ -21,9 +21,24 @@ interface Props {
   currentStatus: string;
   /** StrataVerze transaction fee rows, or null when no fee is charged. */
   feeTable?: TransactionFeeTable | null;
+  /** Whether payment controls let the viewer approve, and why not. */
+  approveBlockedReason?: string | null;
+  /** Whether payment controls let the viewer record payment, and why not. */
+  paymentBlockedReason?: string | null;
+  /** True when a StrataVerze invoice, which cannot be cancelled here. */
+  cancelDisabled?: boolean;
 }
 
-export function InvoiceActions({ schemeId, invoiceId, currentStatus, feeTable = null }: Props) {
+export function InvoiceActions({
+  schemeId,
+  invoiceId,
+  currentStatus,
+  feeTable = null,
+  approveBlockedReason = null,
+  paymentBlockedReason = null,
+  cancelDisabled = false,
+}: Props) {
+  const [notice, setNotice] = useState<string>();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
@@ -41,6 +56,8 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus, feeTable = 
         setError(result.error);
         return;
       }
+      const message = (result.data as { message?: string } | undefined)?.message;
+      if (message) setNotice(message);
       router.refresh();
     });
   }
@@ -103,12 +120,18 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus, feeTable = 
         </div>
       )}
 
+      {notice && (
+        <div className="rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+          {notice}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-3">
         {canApprove && (
           <Button
             variant="primary"
             onClick={handleApprove}
-            disabled={isPending}
+            disabled={isPending || !!approveBlockedReason}
           >
             {isPending ? "Approving..." : "Approve Invoice"}
           </Button>
@@ -118,13 +141,13 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus, feeTable = 
           <Button
             variant="primary"
             onClick={() => setShowPaymentForm(true)}
-            disabled={isPending || showPaymentForm}
+            disabled={isPending || showPaymentForm || !!paymentBlockedReason}
           >
             Record Payment
           </Button>
         )}
 
-        {canCancel && (
+        {canCancel && !cancelDisabled && (
           <Button
             variant="danger"
             onClick={() => setShowCancelConfirm(true)}
@@ -134,6 +157,9 @@ export function InvoiceActions({ schemeId, invoiceId, currentStatus, feeTable = 
           </Button>
         )}
       </div>
+
+      {canApprove && approveBlockedReason && <p className="text-sm text-ink-muted">{approveBlockedReason}</p>}
+      {canRecordPayment && paymentBlockedReason && <p className="text-sm text-ink-muted">{paymentBlockedReason}</p>}
 
       {/* Payment form */}
       {showPaymentForm && (

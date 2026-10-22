@@ -69,6 +69,15 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { captureUsageFee } from "@/lib/billing/capture";
 import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
 import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
+import { headers } from "next/headers";
+import {
+  PaymentControlError,
+  authoriseSupplierInvoice,
+  checkInvoiceControl,
+  supplierInvoiceControls,
+} from "@/lib/finance/invoice-approval";
+import { checkBankDetailsForPayment } from "@/lib/finance/payment-controls";
+import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
   checkPlan,
@@ -84,7 +93,6 @@ import {
 import {
   createFinancialSupplier,
   createSupplierInvoice,
-  approveInvoice,
   recordInvoicePayment,
   cancelInvoice,
   getSupplierInvoiceById,
@@ -1214,6 +1222,17 @@ export async function createFinancialSupplierAction(
       paymentTerms,
     });
 
+    // New bank details must be verified by someone else before any payment.
+    if (bankBsb || bankAccountNumber) {
+      await recordBankDetailChange(db.orm, {
+        supplierId: supplier.id,
+        schemeId,
+        previous: { bsb: null, accountNumber: null, accountName: null },
+        next: { bsb: bankBsb ?? null, accountNumber: bankAccountNumber ?? null, accountName: bankAccountName ?? null },
+        changedBy: profile.id,
+      });
+    }
+
     await logActivity({
       schemeId,
       actorId: profile.id,
@@ -1284,6 +1303,7 @@ export async function createSupplierInvoiceAction(
       description: data.description,
       accountCodeId: data.accountCodeId,
       fundId: data.fundId,
+      preparedById: profile.id,
     });
 
     await logActivity({
@@ -1313,104 +1333,24 @@ export async function approveInvoiceAction(
   invoiceId: string,
 ): Promise<ActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-    ]);
-
-    const target = await getSupplierInvoiceById(invoiceId);
-    if (!target || target.schemeId !== schemeId) return { error: "Invoice not found." };
-
-    await approveInvoice(invoiceId, profile.id);
-
-    // ── Auto journal entry: DR Expense, CR Accounts Payable ──
-    const invoice = await getSupplierInvoiceById(invoiceId);
-    if (invoice && Number(invoice.totalAmount) > 0) {
-      const totalAmount = Number(invoice.totalAmount);
-      const gstAmount = Number(invoice.gstAmount ?? 0);
-      const netAmount = totalAmount - gstAmount;
-
-      const payableAccount = await getSystemAccountBySubType(
-        schemeId,
-        "ACCOUNTS_PAYABLE",
-      );
-
-      if (payableAccount && invoice.accountCodeId) {
-        const entryNumber = await getNextEntryNumber(schemeId);
-        const today = new Date().toISOString().split("T")[0];
-
-        const lines: Array<{
-          accountCodeId: string;
-          fundId: string;
-          debit?: number;
-          credit?: number;
-          description?: string;
-          supplierId?: string;
-        }> = [
-          {
-            accountCodeId: invoice.accountCodeId,
-            fundId: invoice.fundId,
-            debit: netAmount,
-            description: `Expense — invoice ${String(invoice.invoiceNumber)}`,
-            supplierId: invoice.supplierId,
-          },
-        ];
-
-        // If GST was charged, debit the GST Paid account
-        if (gstAmount > 0) {
-          const gstPaidAccount = await getSystemAccountBySubType(
-            schemeId,
-            "GST_PAID",
-          );
-          if (gstPaidAccount) {
-            lines.push({
-              accountCodeId: gstPaidAccount.id,
-              fundId: invoice.fundId,
-              debit: gstAmount,
-              description: "GST on supplier invoice",
-            });
-          } else {
-            // No GST account seeded — debit full amount to expense
-            lines[0].debit = totalAmount;
-          }
-        }
-
-        lines.push({
-          accountCodeId: payableAccount.id,
-          fundId: invoice.fundId,
-          credit: totalAmount,
-          description: `Accounts payable — invoice ${String(invoice.invoiceNumber)}`,
-          supplierId: invoice.supplierId,
-        });
-
-        const entry = await createJournalEntry({
-          schemeId,
-          entryNumber,
-          transactionDate: today,
-          description: `Invoice approved — ${String(invoice.invoiceNumber)} (${invoice.supplier?.companyName ?? "supplier"})`,
-          entryType: "AUTO",
-          sourceType: "INVOICE",
-          sourceId: invoiceId,
-          createdBy: profile.id,
-          lines,
-        });
-        await postJournalEntry(entry.id, profile.id);
-      }
-    }
-
-    await logActivity({
-      schemeId,
-      actorId: profile.id,
-      action: "SUPPLIER_INVOICE_APPROVED",
-      entityType: "SupplierInvoice",
-      entityId: invoiceId,
-      metadata: {},
-    });
-
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "PAYMENT_AUTHORISER"]);
+    const ip = (await headers()).get("x-forwarded-for");
+    const outcome = await authoriseSupplierInvoice({ schemeId, invoiceId, actorId: profile.id, ip });
     revalidatePath(financePath(schemeId));
-    return { success: true };
+    revalidatePath(financePath(schemeId, `/invoices/${invoiceId}`));
+    return {
+      success: true,
+      data: {
+        complete: outcome.complete,
+        message: outcome.complete
+          ? "Invoice approved."
+          : `Approval ${outcome.approvals} of ${outcome.required} recorded. A second approver is needed.`,
+      },
+    };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof PaymentControlError) return { error: err.message };
+    console.error("approveInvoiceAction error:", err);
     return { error: "Failed to approve invoice." };
   }
 }
@@ -1432,6 +1372,28 @@ export async function recordInvoicePaymentAction(
     // Fetch invoice details before recording payment
     const invoice = await getSupplierInvoiceById(invoiceId);
     if (!invoice || invoice.schemeId !== schemeId) return { error: "Invoice not found." };
+
+    // Payment controls: approved, segregation of duties, verified bank details.
+    const controls = await supplierInvoiceControls(invoiceId);
+    const sod = controls ? await checkInvoiceControl(schemeId, "RECORD_PAYMENT", profile.id, controls.forControls) : null;
+    if (!sod || sod.result === "blocked") return { error: sod?.reason ?? "Invoice not found." };
+    const settings = await getPaymentSettings(schemeId);
+    const bank = checkBankDetailsForPayment(
+      await getLatestBankDetailVersion(invoice.supplierId),
+      new Date().toISOString(),
+      settings.coolingOffDays,
+    );
+    if (bank.result === "blocked") return { error: bank.reason };
+    if (sod.result === "exception") {
+      await logActivity({
+        schemeId,
+        actorId: profile.id,
+        action: "PAYMENT_CONTROL_EXCEPTION",
+        entityType: "SupplierInvoice",
+        entityId: invoiceId,
+        metadata: { control: "SEGREGATION_OF_DUTIES", reason: sod.reason },
+      });
+    }
 
     await recordInvoicePayment(invoiceId, amount, { paymentDate, actorId: profile.id, feeConfirmedCents });
 
