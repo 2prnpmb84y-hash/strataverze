@@ -57,8 +57,8 @@ export default async function LevyDetailPage({
       <PageHeader
         title={levy.title}
         description={`${levy.levyType === "ORDINARY" ? "Ordinary" : "Special"} levy · Due ${dueDateStr}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel={scheme.name}
+        backHref={`/adviser/schemes/${id}/levies`}
+        backLabel="Levies"
       />
 
       {/* Status and stats */}

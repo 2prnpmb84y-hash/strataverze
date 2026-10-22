@@ -28,8 +28,8 @@ export default async function NewFundPage({
       <PageHeader
         title="New Fund"
         description={`Add a fund to ${scheme.name}.`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/finance`}
+        backLabel="Financials"
       />
 
       <FundForm schemeId={id} mode="create" />

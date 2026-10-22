@@ -28,8 +28,8 @@ export default async function NewLevyPage({
       <PageHeader
         title="Create Levy"
         description={`Create a new levy for ${scheme.name}. The total amount will be split across all registered lots based on their entitlement shares.`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel={scheme.name}
+        backHref={`/adviser/schemes/${id}/levies`}
+        backLabel="Levies"
       />
 
       <LevyForm mode="create" schemeId={id} />

@@ -11,6 +11,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { connection } from "next/server";
+import { FundsCard } from "../_sections/funds-card";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -91,6 +92,9 @@ export default async function FinanceDashboardPage({
           accent={overdueInvoices.length > 0 ? "bg-red-500" : "bg-zinc-300"}
         />
       </div>
+
+      {/* Funds (moved here from the scheme main page so Financials covers them) */}
+      <FundsCard id={id} funds={funds} className="" />
 
       {/* Setup checklist — shown if chart of accounts is not yet seeded */}
       {!hasChartOfAccounts && (

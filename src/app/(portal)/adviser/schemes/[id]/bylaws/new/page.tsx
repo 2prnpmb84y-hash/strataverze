@@ -29,8 +29,8 @@ export default async function NewBylawPage({
       <PageHeader
         title="New By-law"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/bylaws`}
+        backLabel="By-laws"
       />
       <Card>
         <CardHeader title="By-law Details" />

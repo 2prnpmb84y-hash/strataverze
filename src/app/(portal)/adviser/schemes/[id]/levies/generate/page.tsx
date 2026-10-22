@@ -29,8 +29,8 @@ export default async function GenerateLeviesPage({
       <PageHeader
         title="Generate Levies"
         description={`Bulk-generate levies for ${scheme.name}.`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel={scheme.name}
+        backHref={`/adviser/schemes/${id}/levies`}
+        backLabel="Levies"
       />
 
       <Card>

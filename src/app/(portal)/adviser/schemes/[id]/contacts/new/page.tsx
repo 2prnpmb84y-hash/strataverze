@@ -29,8 +29,8 @@ export default async function NewContactPage({
       <PageHeader
         title="New Contact"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/contacts`}
+        backLabel="Contacts"
       />
       <Card>
         <CardHeader title="Contact Details" />

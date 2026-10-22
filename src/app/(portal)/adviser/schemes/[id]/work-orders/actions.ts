@@ -210,7 +210,7 @@ export async function deleteWorkOrderAction(
 
     await deleteWorkOrder(workOrderId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/work-orders`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (

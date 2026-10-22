@@ -155,7 +155,7 @@ export async function deleteComplianceAction(
     await deleteComplianceItem(itemId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     revalidatePath("/adviser/compliance");
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/compliance`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (

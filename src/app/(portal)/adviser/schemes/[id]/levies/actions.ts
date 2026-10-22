@@ -115,7 +115,7 @@ export async function deleteLevyAction(schemeId: string, levyId: string) {
 
     await deleteLevy(levyId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/levies`);
   } catch (err) {
     if (
       err &&

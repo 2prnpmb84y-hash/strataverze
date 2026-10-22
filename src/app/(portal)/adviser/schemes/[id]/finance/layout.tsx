@@ -24,13 +24,8 @@ export default async function FinanceLayout({
   if (!isAdviser) notFound();
 
   return (
-    <div className="max-w-5xl">
-      <PageHeader
-        title="Financial Management"
-        description={`${scheme.planNumber} — ${scheme.address}, ${scheme.suburb}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
-      />
+    <div>
+      <PageHeader title="Financial Management" />
       <FinanceTabs schemeId={id} />
       {children}
     </div>

@@ -51,8 +51,8 @@ export default async function AnnouncementDetailPage({
       <PageHeader
         title={announcement.title}
         description={announcement.scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/announcements`}
+        backLabel="Announcements"
       />
 
       {/* Meta info */}

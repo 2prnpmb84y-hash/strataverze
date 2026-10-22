@@ -68,8 +68,8 @@ export default async function WorkOrderDetailPage({
       <PageHeader
         title={workOrder.title}
         description={`Raised by ${raisedByName} on ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/work-orders`}
+        backLabel="Work Orders"
       />
 
       {/* Quick stats */}

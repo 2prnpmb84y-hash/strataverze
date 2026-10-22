@@ -43,8 +43,8 @@ export default async function FundDetailPage({
       <PageHeader
         title={fund.name}
         description={`${fundTypeLabels[fund.fundType] ?? fund.fundType} · Created ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/finance`}
+        backLabel="Financials"
       />
 
       {/* Fund details */}

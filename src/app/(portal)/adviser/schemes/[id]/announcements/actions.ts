@@ -140,7 +140,7 @@ export async function deleteAnnouncementAction(
 
     await deleteAnnouncement(announcementId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
-    redirect(`/adviser/schemes/${schemeId}`);
+    redirect(`/adviser/schemes/${schemeId}/announcements`);
   } catch (err) {
     if (
       err &&

@@ -59,8 +59,8 @@ export default async function BylawDetailPage({
       <PageHeader
         title={`By-law ${bylaw.bylawNumber}: ${bylaw.title}`}
         description={bylaw.scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/bylaws`}
+        backLabel="By-laws"
       />
 
       {/* Meta info */}

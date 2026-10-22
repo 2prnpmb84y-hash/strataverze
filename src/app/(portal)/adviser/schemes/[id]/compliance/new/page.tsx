@@ -29,8 +29,8 @@ export default async function NewComplianceItemPage({
       <PageHeader
         title="New Compliance Item"
         description={scheme.name}
-        backHref={`/adviser/schemes/${id}`}
-        backLabel="Scheme"
+        backHref={`/adviser/schemes/${id}/compliance`}
+        backLabel="Compliance"
       />
       <Card>
         <ComplianceCreateForm schemeId={id} />

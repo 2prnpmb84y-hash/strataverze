@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ImageGallery } from "@/components/ui/image-gallery";
 import { StaticMap } from "@/components/ui/static-map";
 import { Pill } from "@/components/ui/pill";
+import { isNavItemActive, type SchemeNavItem } from "@/lib/navigation/scheme-nav";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -15,33 +17,31 @@ type SchemeImage = {
   caption?: string | null;
 };
 
-type NavButton = {
-  label: string;
-  href: string;
-};
-
 type PropertyDetail = {
   label: string;
   value: string | number | null | undefined;
 };
 
 export type SchemeDetailHeaderProps = {
-  /** Back navigation */
+  /** Back navigation (the chevron) */
   backHref: string;
   backLabel?: string;
-  /** Plan number shown as the main title */
+  /** Plan number, shown in the badge, e.g. "SP 12345" */
   planNumber: string;
-  /** Full address line: e.g. "7 Bortfield Drive, Chiswick, 2046" */
+  /** Address heading, e.g. "42 Harbour Street, Sydney NSW 2000" */
   addressLine: string;
-  /** Full address for the map embed (including state) */
+  /** Address used for the map embed */
   fullAddress: string;
-  /** Property details shown in the grid */
+  /** Scheme facts, shown as cards in one row */
   details: PropertyDetail[];
-  /** Images for the photo carousel */
+  /** Images for the photo area */
   images: SchemeImage[];
-  /** Navigation pill buttons */
-  navButtons: NavButton[];
-  /** Href of the currently active nav button (gets solid fill) */
+  /** Section navigation pills, in display order */
+  navButtons: SchemeNavItem[];
+  /**
+   * Force the active pill by href. When omitted, the active pill is worked out
+   * from the current URL, so it stays correct on every page within the scheme.
+   */
   activeHref?: string;
 };
 
@@ -51,13 +51,7 @@ export type SchemeDetailHeaderProps = {
 
 function BackChevron() {
   return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      className="shrink-0"
-    >
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden="true">
       <path
         d="M15 18L9 12l6-6"
         stroke="currentColor"
@@ -70,38 +64,12 @@ function BackChevron() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Pin icon for address                                               */
-/* ------------------------------------------------------------------ */
-
-function PinIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      className="shrink-0 text-ink-muted"
-    >
-      <path
-        d="M8 1.5A4.25 4.25 0 0 0 3.75 5.75C3.75 9.125 8 14.5 8 14.5s4.25-5.375 4.25-8.75A4.25 4.25 0 0 0 8 1.5Z"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx="8"
-        cy="5.75"
-        r="1.5"
-        stroke="currentColor"
-        strokeWidth="1.25"
-      />
-    </svg>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Component                                                          */
+/*  Layout follows the approved scheme design:                         */
+/*  1. back chevron + plan number badge + address heading              */
+/*  2. photo area and map, side by side                                */
+/*  3. five scheme fact cards in one row                               */
+/*  4. section navigation pills                                        */
 /* ------------------------------------------------------------------ */
 
 export function SchemeDetailHeader({
@@ -115,79 +83,99 @@ export function SchemeDetailHeader({
   navButtons,
   activeHref,
 }: SchemeDetailHeaderProps) {
+  const pathname = usePathname() ?? "";
+
   return (
     <div className="mb-6">
-      {/* ---- Header row: back arrow + plan number (left) | address (right) ---- */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-        <div className="flex items-center gap-1.5">
-          <Link
-            href={backHref}
-            className="inline-flex items-center text-ink hover:text-turquoise transition-colors"
-            aria-label={backLabel}
-          >
-            <BackChevron />
-          </Link>
-          <h1 className="text-lg font-semibold font-heading text-ink">
+      {/* 1. Back chevron + plan number badge + address heading */}
+      <div className="flex items-center gap-4 mb-5">
+        <Link
+          href={backHref}
+          className="inline-flex items-center text-ink-muted hover:text-turquoise transition-colors"
+          aria-label={backLabel}
+        >
+          <BackChevron />
+        </Link>
+        <div className="min-w-0">
+          <span className="inline-flex items-center rounded-full bg-turquoise/15 px-2.5 py-0.5 text-xs font-medium text-ink">
             {planNumber}
+          </span>
+          <h1 className="mt-1.5 text-xl font-semibold font-heading text-ink">
+            {addressLine}
           </h1>
         </div>
-
-        {/* Address field in the header row */}
-        <div className="flex items-center gap-2 rounded-[var(--radius-card)] border border-line bg-white px-3 py-2">
-          <PinIcon />
-          <span className="text-sm text-ink">{addressLine}</span>
-        </div>
       </div>
 
-      {/* ---- Two-column layout: photo (left) + details & map (right) ---- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-        {/* Left column: Photo carousel */}
+      {/* 2. Photo area and map, side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
         <ImageGallery
           images={images}
-          className="aspect-[4/3] w-full rounded-[var(--radius-card)] overflow-hidden"
+          className="h-64 w-full rounded-[var(--radius-card)] overflow-hidden"
         />
-
-        {/* Right column: Details grid + map */}
-        <div className="flex flex-col gap-4">
-          {/* Property details grid */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-            {details.map((detail) => (
-              <div key={detail.label} className="flex items-center justify-between gap-2">
-                <span className="text-sm text-ink-muted whitespace-nowrap">
-                  {detail.label}
-                </span>
-                <span className="text-sm font-medium text-ink rounded-[var(--radius-card)] border border-line px-3 py-1 bg-white min-w-[3rem] text-center">
-                  {detail.value ?? "—"}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Embedded map */}
-          <StaticMap
-            address={fullAddress}
-            className="flex-1 min-h-[140px] rounded-[var(--radius-card)] overflow-hidden"
-          />
-        </div>
+        <StaticMap
+          address={fullAddress}
+          className="h-64 w-full rounded-[var(--radius-card)] overflow-hidden"
+        />
       </div>
 
-      {/* ---- Navigation pills using Pill component ---- */}
-      <div className="border-t-2 border-gold-line pt-4">
-        <div className="flex flex-wrap gap-2.5">
-          {navButtons.map((btn) => {
-            const isActive = activeHref === btn.href;
-            return (
-              <Pill
-                key={btn.label}
-                variant="nav"
-                selected={isActive}
-                href={btn.href}
-              >
-                {btn.label}
-              </Pill>
-            );
-          })}
+      {/* 3. Scheme facts, one card each */}
+      <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+        {details.map((detail) => (
+          <div
+            key={detail.label}
+            className="rounded-[var(--radius-card)] border border-line bg-white px-4 py-3"
+          >
+            <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-muted">
+              {detail.label}
+            </dt>
+            <dd className="mt-1 text-sm font-medium text-ink">
+              {detail.value ?? "—"}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {/* 4. Section navigation */}
+      <nav aria-label="Scheme sections" className="flex flex-wrap gap-2.5">
+        {navButtons.map((btn) => {
+          const isActive = activeHref
+            ? activeHref === btn.href
+            : isNavItemActive(btn, pathname);
+          return (
+            <Pill key={btn.label} variant="nav" selected={isActive} href={btn.href}>
+              {btn.label}
+            </Pill>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
+/** Same footprint as the header, shown while scheme data streams in. */
+export function SchemeDetailHeaderSkeleton() {
+  return (
+    <div className="mb-6 animate-pulse" aria-hidden="true">
+      <div className="flex items-center gap-4 mb-5">
+        <div className="h-6 w-6 rounded bg-line" />
+        <div>
+          <div className="h-5 w-20 rounded-full bg-line" />
+          <div className="mt-2 h-6 w-72 rounded bg-line" />
         </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        <div className="h-64 rounded-[var(--radius-card)] bg-line/60" />
+        <div className="h-64 rounded-[var(--radius-card)] bg-line/60" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-[66px] rounded-[var(--radius-card)] bg-line/60" />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2.5">
+        {Array.from({ length: 13 }).map((_, i) => (
+          <div key={i} className="h-10 w-28 rounded-full bg-line/60" />
+        ))}
       </div>
     </div>
   );

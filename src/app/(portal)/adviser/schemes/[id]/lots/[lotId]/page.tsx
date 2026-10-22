@@ -80,7 +80,7 @@ export default async function LotDetailPage({
       <PageHeader
         title={`${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` / Unit ${lot.unitNumber}` : ""}`}
         description={`${scheme.name} · ${scheme.planNumber}`}
-        backHref={`/adviser/schemes/${id}?tab=lots`}
+        backHref={`/adviser/schemes/${id}/lots`}
         backLabel="Strata Roll"
       />
 
