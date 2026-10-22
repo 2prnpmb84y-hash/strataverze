@@ -1,6 +1,13 @@
 "use server";
 
-import { COMPLIANCE_FEE_DECLARATION, complianceFeeVersion, contractorPlanPrice, quoteComplianceFee } from "@/lib/billing/contractor-fees";
+import {
+  COMPLIANCE_FEE_DECLARATION,
+  chargeComplianceVerification,
+  complianceFeeVersion,
+  contractorPlanPrice,
+  firstComplianceChargeMissing,
+  quoteComplianceFee,
+} from "@/lib/billing/contractor-fees";
 import { confirmedCentsFrom, feeErrorMessage, resolveDisclosure } from "@/lib/billing/disclosure";
 import { revalidatePath } from "next/cache";
 import {
@@ -767,6 +774,53 @@ export async function acceptMembership(
     const feeError = feeErrorMessage(err);
     if (feeError) return { error: feeError };
     return { error: "Failed to accept membership terms." };
+  }
+}
+
+// ─── 11b. Confirm the compliance verification charge ───────────
+
+/**
+ * For contractors who accepted the membership terms before the annual
+ * compliance verification charge existed, or since its price changed.
+ * Records their confirmation. An approved contractor who was never charged
+ * is charged the first year now, as the confirmation describes.
+ */
+export async function confirmComplianceFee(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    const profile = await requireAuth();
+    const contractorId = formData.get("contractorId") as string;
+    if (!contractorId) return { error: "Contractor ID is required." };
+    await requireContractorOwnership(profile.id, contractorId);
+
+    const quote = await quoteComplianceFee();
+    const disclosure = resolveDisclosure(quote, confirmedCentsFrom(formData), profile.id);
+    if (!disclosure) return OK;
+
+    const business = await db.orm.public.ContractorBusiness.where((b) => b.id.eq(contractorId)).first();
+    await db.transaction(async (tx) => {
+      await tx.orm.public.ContractorDeclaration.create({
+        contractorBusinessId: contractorId,
+        declarationType: COMPLIANCE_FEE_DECLARATION,
+        documentVersion: toVarchar<50>(complianceFeeVersion(disclosure.amountCents)),
+        accepted: true,
+        acceptedAt: toTimestamp(disclosure.shownAt),
+        acceptedById: profile.id,
+      });
+      if (business?.status === "APPROVED" && (await firstComplianceChargeMissing(tx.orm, contractorId))) {
+        await chargeComplianceVerification(tx.orm, { contractorBusinessId: contractorId, year: 1, actorId: profile.id });
+      }
+    });
+
+    revalidatePath("/supplier", "layout");
+    return OK;
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    const feeError = feeErrorMessage(err);
+    if (feeError) return { error: feeError };
+    return { error: "Failed to record your confirmation." };
   }
 }
 
