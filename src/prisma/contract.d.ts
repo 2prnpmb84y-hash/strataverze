@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'27b9f03f1e80d9a872812a091f674d7417b1ca5a8c6238f43b21e46cc791caa4'>;
+  StorageHashBase<'babf31dfb8a59b722a2be61bd060ffffdabbfcdb1882c0564eab56d15b69ffd6'>;
 export type ExecutionHash =
   ExecutionHashBase<'71b1309abd588b88d5092e3cff61a096a60c697a4e6b1e41889fe80f0f1160cf'>;
 export type ProfileHash =
@@ -1019,6 +1019,17 @@ export type FieldOutputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly LevyPayment: {
+      readonly amount: Numeric<12, 2>;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly levyNoticeId: CodecTypes['pg/uuid@1']['output'];
+      readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly paymentDate: CodecTypes['pg/date-string@1']['output'];
+      readonly recordedBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly reference: CodecTypes['pg/text@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
     };
     readonly LevySchedule: {
       readonly approvedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -2996,6 +3007,17 @@ export type FieldInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly LevyPayment: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly levyNoticeId: CodecTypes['pg/uuid@1']['input'];
+      readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly paymentDate: CodecTypes['pg/date-string@1']['input'];
+      readonly recordedBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly reference: CodecTypes['pg/text@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+    };
     readonly LevySchedule: {
       readonly approvedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly approvedBy: CodecTypes['pg/uuid@1']['input'] | null;
@@ -4972,6 +4994,17 @@ export type StorageColumnTypes = {
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly levy_payments: {
+      readonly amount: Numeric<12, 2>;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly levy_notice_id: CodecTypes['pg/uuid@1']['output'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly payment_date: CodecTypes['pg/date-string@1']['output'];
+      readonly recorded_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly reference: CodecTypes['pg/text@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+    };
     readonly levy_schedules: {
       readonly approved_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly approved_by: CodecTypes['pg/uuid@1']['output'] | null;
@@ -6947,6 +6980,17 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly levy_payments: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly levy_notice_id: CodecTypes['pg/uuid@1']['input'];
+      readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly payment_date: CodecTypes['pg/date-string@1']['input'];
+      readonly recorded_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly reference: CodecTypes['pg/text@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
     };
     readonly levy_schedules: {
       readonly approved_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
@@ -9161,8 +9205,23 @@ export namespace Models {
     fund: public_Fund;
     levySchedule: public_LevySchedule;
     lot: public_Lot;
+    payments: public_LevyPayment[];
     scheme: public_Scheme;
-    readonly [RelationKeys]?: 'financialDocuments' | 'fund' | 'levySchedule' | 'lot' | 'scheme';
+    readonly [RelationKeys]?:
+      'financialDocuments' | 'fund' | 'levySchedule' | 'lot' | 'payments' | 'scheme';
+  };
+  export type public_LevyPayment = {
+    amount: Numeric<12, 2>;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    levyNoticeId: CodecTypes['pg/uuid@1']['output'];
+    lotId: CodecTypes['pg/uuid@1']['output'];
+    paymentDate: CodecTypes['pg/date-string@1']['output'];
+    recordedBy: CodecTypes['pg/uuid@1']['output'] | null;
+    reference: CodecTypes['pg/text@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    levyNotice: public_LevyNotice;
+    readonly [RelationKeys]?: 'levyNotice';
   };
   export type public_LevySchedule = {
     approvedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -11058,6 +11117,7 @@ export declare const models: {
     Levy: Models.public_Levy;
     LevyItem: Models.public_LevyItem;
     LevyNotice: Models.public_LevyNotice;
+    LevyPayment: Models.public_LevyPayment;
     LevySchedule: Models.public_LevySchedule;
     Lot: Models.public_Lot;
     LotDebtCollection: Models.public_LotDebtCollection;
@@ -17757,6 +17817,103 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'funds';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly levy_payments: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly levy_notice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly payment_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reference: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'levy_payments_levy_notice_id_idx';
+                  readonly columns: readonly ['levy_notice_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'levy_payments_lot_id_idx';
+                  readonly columns: readonly ['lot_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'levy_payments_scheme_id_payment_date_idx';
+                  readonly columns: readonly ['scheme_id', 'payment_date'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'levy_payments';
+                    readonly columns: readonly ['levy_notice_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'levy_notices';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -28328,6 +28485,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'LevyNotice';
     };
+    readonly levy_payments: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'LevyPayment';
+    };
     readonly levy_schedules: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'LevySchedule';
@@ -34888,6 +35049,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly payments: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LevyPayment';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['levyNoticeId'];
+                };
+              };
               readonly scheme: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -34924,6 +35096,82 @@ type ContractBase = Omit<
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly LevyPayment: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly levyNoticeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly paymentDate: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly recordedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly reference: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly levyNotice: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'LevyNotice';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['levyNoticeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'levy_payments';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly id: { readonly column: 'id' };
+                readonly levyNoticeId: { readonly column: 'levy_notice_id' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly paymentDate: { readonly column: 'payment_date' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly reference: { readonly column: 'reference' };
+                readonly schemeId: { readonly column: 'scheme_id' };
               };
             };
           };

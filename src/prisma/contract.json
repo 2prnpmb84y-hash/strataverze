@@ -180,6 +180,10 @@
       "model": "LevyNotice",
       "namespace": "public"
     },
+    "levy_payments": {
+      "model": "LevyPayment",
+      "namespace": "public"
+    },
     "levy_schedules": {
       "model": "LevySchedule",
       "namespace": "public"
@@ -10253,6 +10257,21 @@
                   "namespace": "public"
                 }
               },
+              "payments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "levyNoticeId"
+                  ]
+                },
+                "to": {
+                  "model": "LevyPayment",
+                  "namespace": "public"
+                }
+              },
               "scheme": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -10332,6 +10351,128 @@
               },
               "namespaceId": "public",
               "table": "levy_notices"
+            }
+          },
+          "LevyPayment": {
+            "fields": {
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "levyNoticeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "paymentDate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "reference": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "levyNotice": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "levyNoticeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "LevyNotice",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "levyNoticeId": {
+                  "column": "levy_notice_id"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "paymentDate": {
+                  "column": "payment_date"
+                },
+                "recordedBy": {
+                  "column": "recorded_by"
+                },
+                "reference": {
+                  "column": "reference"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "levy_payments"
             }
           },
           "LevySchedule": {
@@ -34989,6 +35130,120 @@
               },
               "uniques": []
             },
+            "levy_payments": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "levy_notice_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "payment_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "reference": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "levy_payments_levy_notice_id_idx"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "levy_notice_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_payments"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "levy_notices"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "levy_notice_id"
+                  ],
+                  "name": "levy_payments_levy_notice_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "lot_id"
+                  ],
+                  "name": "levy_payments_lot_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "payment_date"
+                  ],
+                  "name": "levy_payments_scheme_id_payment_date_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "levy_schedules": {
               "columns": {
                 "approved_at": {
@@ -46858,7 +47113,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "27b9f03f1e80d9a872812a091f674d7417b1ca5a8c6238f43b21e46cc791caa4"
+    "storageHash": "babf31dfb8a59b722a2be61bd060ffffdabbfcdb1882c0564eab56d15b69ffd6"
   },
   "execution": {
     "executionHash": "71b1309abd588b88d5092e3cff61a096a60c697a4e6b1e41889fe80f0f1160cf",

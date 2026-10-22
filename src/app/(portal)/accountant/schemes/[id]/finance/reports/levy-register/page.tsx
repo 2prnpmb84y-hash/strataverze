@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getLeviesForScheme } from "@/lib/queries/levies";
+import { getIssuedLevyNoticesForScheme } from "@/lib/queries/levy-schedules";
+import { levyRegister, STATUS_LABELS } from "@/lib/levies/levy-ledger";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -32,7 +33,10 @@ export default async function AccountantLevyRegisterPage({
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
-  const levies = await getLeviesForScheme(id);
+  const levies = levyRegister(
+    await getIssuedLevyNoticesForScheme(id),
+    new Date().toISOString().slice(0, 10),
+  );
 
   // Calculate totals
   let totalRaised = 0;
@@ -42,11 +46,9 @@ export default async function AccountantLevyRegisterPage({
 
   for (const levy of levies) {
     for (const item of levy.items) {
-      const amount = Number(item.amount);
-      const paid = Number(item.paidAmount);
-      totalRaised += amount;
-      totalPaid += paid;
-      totalOutstanding += amount - paid;
+      totalRaised += item.amount;
+      totalPaid += item.paidAmount;
+      totalOutstanding += item.balance;
       itemCount++;
     }
   }
@@ -93,15 +95,15 @@ export default async function AccountantLevyRegisterPage({
           {levies.map((levy) => (
             <Card key={levy.id}>
               <CardHeader
-                title={String(levy.title)}
-                description={`${levy.levyType} levy | Due: ${formatDate(String(levy.dueDate))} | Status: ${String(levy.status)}`}
+                title={levy.title}
+                description={`${levy.levyType} levy | First due: ${formatDate(levy.dueDate)} | ${levy.items.length} notice${levy.items.length === 1 ? "" : "s"}`}
               />
 
               {/* Table header */}
               <div className="hidden sm:grid sm:grid-cols-[80px_80px_1fr_100px_100px_100px_90px] gap-4 px-6 pb-2 text-xs font-medium text-ink-muted uppercase tracking-wide border-b border-line">
                 <div>Lot</div>
                 <div>Unit</div>
-                <div>Owner</div>
+                <div>Notice</div>
                 <div className="text-right">Amount</div>
                 <div className="text-right">Paid</div>
                 <div className="text-right">Balance</div>
@@ -111,16 +113,16 @@ export default async function AccountantLevyRegisterPage({
               <div className="divide-y divide-line">
                 {levy.items
                   .sort((a, b) =>
-                    (String(a.lot?.lotNumber ?? "")).localeCompare(
-                      String(b.lot?.lotNumber ?? ""),
+                    (a.lot?.lotNumber ?? "").localeCompare(
+                      b.lot?.lotNumber ?? "",
                       undefined,
                       { numeric: true },
-                    ),
+                    ) || a.label.localeCompare(b.label),
                   )
                   .map((item) => {
-                    const amount = Number(item.amount);
-                    const paid = Number(item.paidAmount);
-                    const balance = amount - paid;
+                    const amount = item.amount;
+                    const paid = item.paidAmount;
+                    const balance = item.balance;
 
                     return (
                       <div
@@ -134,7 +136,7 @@ export default async function AccountantLevyRegisterPage({
                           {item.lot?.unitNumber ? String(item.lot.unitNumber) : "—"}
                         </div>
                         <div className="text-sm text-ink">
-                          Lot {item.lot?.lotNumber}
+                          {item.label}
                         </div>
                         <div className="text-sm text-right tabular-nums text-ink">
                           {formatCurrency(amount)}
@@ -159,7 +161,7 @@ export default async function AccountantLevyRegisterPage({
                                   : "bg-amber-100 text-amber-700"
                             }`}
                           >
-                            {String(item.status)}
+                            {STATUS_LABELS[item.status] ?? item.status}
                           </span>
                         </div>
                       </div>
@@ -174,20 +176,16 @@ export default async function AccountantLevyRegisterPage({
                     Levy Total
                   </div>
                   <div className="text-sm text-right tabular-nums font-semibold text-ink">
-                    {formatCurrency(Number(levy.totalAmount))}
+                    {formatCurrency(levy.totalAmount)}
                   </div>
                   <div className="text-sm text-right tabular-nums font-semibold text-green-600">
                     {formatCurrency(
-                      levy.items.reduce((s, i) => s + Number(i.paidAmount), 0),
+                      levy.items.reduce((s, i) => s + i.paidAmount, 0),
                     )}
                   </div>
                   <div className="text-sm text-right tabular-nums font-semibold text-ink">
                     {formatCurrency(
-                      Number(levy.totalAmount) -
-                        levy.items.reduce(
-                          (s, i) => s + Number(i.paidAmount),
-                          0,
-                        ),
+                      levy.items.reduce((s, i) => s + i.balance, 0),
                     )}
                   </div>
                   <div />

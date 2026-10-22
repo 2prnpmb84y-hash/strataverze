@@ -1591,12 +1591,34 @@ model LevyNotice {
   lot                Lot                 @relation(fields: [lotId], references: [id])
   fund               Fund                @relation(fields: [fundId], references: [id])
   financialDocuments FinancialDocument[]
+  payments           LevyPayment[]
 
   @@unique([schemeId, noticeNumber])
   @@index([schemeId, status])
   @@index([lotId, status])
   @@index([ownerId])
   @@map("levy_notices")
+}
+
+/// One payment received against a levy notice (the receipt record behind
+/// LevyNotice.amountPaid), so statements can show each payment and its date.
+model LevyPayment {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId     String     @map("scheme_id") @db.Uuid
+  levyNoticeId String     @map("levy_notice_id") @db.Uuid
+  lotId        String     @map("lot_id") @db.Uuid
+  amount       Decimal    @db.Decimal(12, 2)
+  paymentDate  DateTime   @db.Date @map("payment_date")
+  reference    String?
+  recordedBy   String?    @map("recorded_by") @db.Uuid
+  createdAt    DateTime   @default(now()) @db.Timestamptz @map("created_at")
+
+  levyNotice   LevyNotice @relation(fields: [levyNoticeId], references: [id], onDelete: Cascade)
+
+  @@index([levyNoticeId])
+  @@index([schemeId, paymentDate])
+  @@index([lotId])
+  @@map("levy_payments")
 }
 
 model Supplier {

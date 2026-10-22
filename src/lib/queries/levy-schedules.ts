@@ -332,38 +332,82 @@ export async function issueLevyNotice(noticeId: string) {
 }
 
 /**
- * Record a payment against a levy notice.
- * Adds the payment amount to amountPaid, recalculates balanceOutstanding,
- * and updates status to PARTIALLY_PAID or PAID accordingly.
+ * Record a payment against a levy notice: writes a receipt row (levy_payments)
+ * and updates the notice's running totals in one transaction.
+ * The balance includes any interest charged on the notice.
  */
-export async function recordLevyPayment(noticeId: string, paymentAmount: number) {
-  const notice = await db.orm.public.LevyNotice
-    .where({ id: noticeId })
-    .first();
+export async function recordLevyPayment(
+  noticeId: string,
+  paymentAmount: number,
+  details: { paymentDate: string; reference?: string | null; recordedBy?: string | null } = {
+    paymentDate: new Date().toISOString().slice(0, 10),
+  },
+) {
+  return db.transaction(async (tx) => {
+    const notice = await tx.orm.public.LevyNotice.where({ id: noticeId }).first();
+    if (!notice) throw new Error(`Levy notice not found: ${noticeId}`);
 
-  if (!notice) {
-    throw new Error(`Levy notice not found: ${noticeId}`);
-  }
+    const owed = Number(notice.amountDue) + Number(notice.interestCharged ?? 0);
+    const newPaid = Math.round((Number(notice.amountPaid) + paymentAmount) * 100) / 100;
+    const newBalance = Math.max(0, Math.round((owed - newPaid) * 100) / 100);
+    const isPaidInFull = newBalance <= 0;
 
-  const currentPaid = Number(notice.amountPaid);
-  const totalDue = Number(notice.amountDue);
-  const newPaid = currentPaid + paymentAmount;
-  const newBalance = totalDue - newPaid;
-  const isPaidInFull = newBalance <= 0;
+    await tx.orm.public.LevyPayment.create({
+      schemeId: notice.schemeId,
+      levyNoticeId: noticeId,
+      lotId: notice.lotId,
+      amount: toNumeric(paymentAmount),
+      paymentDate: toTimestamp(details.paymentDate),
+      reference: details.reference ?? null,
+      recordedBy: details.recordedBy ?? null,
+    });
 
-  const updateData: Record<string, unknown> = {
-    amountPaid: toNumeric(newPaid),
-    balanceOutstanding: toNumeric(Math.max(0, newBalance)),
-    status: isPaidInFull ? "PAID" : "PARTIALLY_PAID",
-  };
+    const updateData: Record<string, unknown> = {
+      amountPaid: toNumeric(newPaid),
+      balanceOutstanding: toNumeric(newBalance),
+      status: isPaidInFull ? "PAID" : "PARTIALLY_PAID",
+    };
+    if (isPaidInFull) updateData.paidInFullAt = toTimestamp(new Date().toISOString());
 
-  if (isPaidInFull) {
-    updateData.paidInFullAt = toTimestamp(new Date().toISOString());
-  }
+    return tx.orm.public.LevyNotice.where({ id: noticeId }).update(updateData);
+  });
+}
 
+/** Payments received against the given notices, oldest first. */
+export async function getLevyPaymentsForNotices(noticeIds: string[]) {
+  if (noticeIds.length === 0) return [];
+  return db.orm.public.LevyPayment
+    .where((p) => p.levyNoticeId.in(noticeIds))
+    .orderBy((p) => p.paymentDate.asc())
+    .all();
+}
+
+/**
+ * Issued levy notices for a scheme (drafts excluded), with lot, fund and
+ * schedule, for reports.
+ */
+export async function getIssuedLevyNoticesForScheme(schemeId: string, limit = 5000) {
   return db.orm.public.LevyNotice
-    .where({ id: noticeId })
-    .update(updateData);
+    .where((ln) => and(ln.schemeId.eq(schemeId), ln.status.neq("DRAFT")))
+    .include("lot")
+    .include("fund")
+    .include("levySchedule")
+    .orderBy((ln) => ln.dueDate.asc())
+    .limit(limit)
+    .all();
+}
+
+/** Issued levy notices for a lot within a scheme, with fund and schedule. */
+export async function getIssuedLevyNoticesForLot(schemeId: string, lotId: string, limit = 2000) {
+  return db.orm.public.LevyNotice
+    .where((ln) =>
+      and(ln.schemeId.eq(schemeId), ln.lotId.eq(lotId), ln.status.neq("DRAFT")),
+    )
+    .include("fund")
+    .include("levySchedule")
+    .orderBy((ln) => ln.dueDate.asc())
+    .limit(limit)
+    .all();
 }
 
 /**

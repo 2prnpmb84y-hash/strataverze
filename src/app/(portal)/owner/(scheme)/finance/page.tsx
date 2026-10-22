@@ -2,7 +2,9 @@ import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
-import { getLevyNoticesForLots, getLevyItemsForLot } from "@/lib/queries/levies";
+import { getLevyNoticesForLots } from "@/lib/queries/levies";
+import { effectiveStatus, noticeLabel, noticeTotals, STATUS_LABELS, STATUS_STYLES } from "@/lib/levies/levy-ledger";
+import { toIsoDay } from "@/lib/levies/notice-plan";
 import { getFundsForSchemes } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -17,14 +19,6 @@ function formatCurrency(value: number): string {
   }
   return `$${value.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-
-const statusStyle: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  ISSUED: "bg-blue-100 text-blue-700",
-  PAID: "bg-green-100 text-green-700",
-  OVERDUE: "bg-red-100 text-red-700",
-  PARTIAL: "bg-amber-100 text-amber-700",
-};
 
 export default async function OwnerFinancePage() {
   await connection();
@@ -72,10 +66,12 @@ export default async function OwnerFinancePage() {
     getFundsForSchemes(schemeIds),
   ]);
 
-  // If no levy notices, fall back to levy items
-  const useNotices = notices.length > 0;
-  let totalDue = 0;
-  let totalPaid = 0;
+  const issued = notices.filter((n) => String(n.status) !== "DRAFT");
+  const today = new Date().toISOString().slice(0, 10);
+  const totals = noticeTotals(issued);
+  const totalDue = totals.levied;
+  const totalPaid = totals.paid;
+  const totalOutstanding = totals.outstanding;
 
   interface DisplayLevy {
     id: string;
@@ -90,78 +86,26 @@ export default async function OwnerFinancePage() {
     interestCharged: number;
   }
 
-  const displayLevies: DisplayLevy[] = [];
+  const displayLevies: DisplayLevy[] = issued.map((notice) => {
+    const entry = lotEntries.find((e) => e.lotId === notice.lotId);
+    return {
+      id: notice.id,
+      title: `${noticeLabel(notice)} (${String(notice.noticeNumber)})`,
+      dueDate: toIsoDay(notice.dueDate),
+      fundName: notice.fund ? String(notice.fund.name) : "",
+      status: effectiveStatus(notice, today),
+      schemeId: entry?.schemeId ?? notice.schemeId,
+      amountDue: Number(notice.amountDue ?? 0) + Number(notice.interestCharged ?? 0),
+      amountPaid: Number(notice.amountPaid ?? 0),
+      balance: Number(notice.balanceOutstanding ?? 0),
+      interestCharged: Number(notice.interestCharged ?? 0),
+    };
+  });
 
-  if (useNotices) {
-    for (const notice of notices) {
-      const due = Number(notice.amountDue ?? 0);
-      const paid = Number(notice.amountPaid ?? 0);
-      const balance = Number(notice.balanceOutstanding ?? 0);
-      const interest = Number(notice.interestCharged ?? 0);
-      totalDue += due;
-      totalPaid += paid;
-
-      // Find the scheme for this notice
-      const entry = lotEntries.find((e) => e.lotId === notice.lotId);
-      const schemeId = entry?.schemeId ?? notice.schemeId;
-
-      displayLevies.push({
-        id: notice.id,
-        title: `Levy ${String(notice.noticeNumber)}`,
-        dueDate: String(notice.dueDate),
-        fundName: notice.fund ? String(notice.fund.name) : "",
-        status: String(notice.status).toUpperCase(),
-        schemeId,
-        amountDue: due,
-        amountPaid: paid,
-        balance,
-        interestCharged: interest,
-      });
-    }
-  } else {
-    // Fallback to LevyItem model
-    const allItemArrays = await Promise.all(
-      lotIds.map((lotId) => getLevyItemsForLot(lotId)),
-    );
-    const items = allItemArrays.flat();
-
-    for (const item of items) {
-      const amount = Number(item.amount);
-      const paid = Number(item.paidAmount);
-      totalDue += amount;
-      totalPaid += paid;
-
-      const entry = lotEntries.find((e) => e.lotId === item.lotId);
-      const schemeId = entry?.schemeId ?? item.levy.schemeId;
-
-      displayLevies.push({
-        id: item.id,
-        title: String(item.levy.title),
-        dueDate: String(item.levy.dueDate),
-        fundName: "",
-        status: String(item.status),
-        schemeId,
-        amountDue: amount,
-        amountPaid: paid,
-        balance: amount - paid,
-        interestCharged: 0,
-      });
-    }
-  }
-
-  const totalOutstanding = totalDue - totalPaid;
   const totalInterest = displayLevies.reduce((s, l) => s + l.interestCharged, 0);
 
-  const outstandingLevies = displayLevies.filter(
-    (l) =>
-      l.status === "ISSUED" ||
-      l.status === "OVERDUE" ||
-      l.status === "PARTIAL" ||
-      l.balance > 0,
-  );
-  const paidLevies = displayLevies.filter(
-    (l) => l.status === "PAID" || (l.balance <= 0 && l.amountDue > 0),
-  );
+  const outstandingLevies = displayLevies.filter((l) => l.balance > 0);
+  const paidLevies = displayLevies.filter((l) => l.balance <= 0 && l.amountDue > 0);
 
   return (
     <div className="space-y-6">
@@ -274,12 +218,9 @@ export default async function OwnerFinancePage() {
                           {levy.title}
                         </p>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${statusStyle[levy.status] ?? "bg-gray-100 text-gray-700"}`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLES[levy.status] ?? "bg-gray-100 text-gray-700"}`}
                         >
-                          {levy.status === "OVERDUE"
-                            ? "Overdue"
-                            : levy.status.charAt(0) +
-                              levy.status.slice(1).toLowerCase()}
+                          {STATUS_LABELS[levy.status] ?? levy.status}
                         </span>
                       </div>
                       <p className="text-xs text-ink-muted mb-1">
