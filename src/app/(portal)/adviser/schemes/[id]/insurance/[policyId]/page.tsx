@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getPolicyWithItems } from "@/lib/queries/insurance";
 import { getPolicyDocumentsWithHistory } from "@/lib/queries/insurance-documents";
 import { getActiveRenewalForPolicy } from "@/lib/queries/insurance-renewals";
+import { getAuditTrail, formatActionLabel } from "@/lib/queries/activity-log";
 import { InsuranceDocumentsSection } from "./documents-section";
 import { StartRenewalButton } from "./start-renewal-button";
 import { getSchemeById } from "@/lib/queries/schemes";
@@ -71,6 +72,14 @@ export default async function InsurancePolicyDetailPage({
   const premiumLineItems = policy.premiumLineItems ?? [];
   const documents = await getPolicyDocumentsWithHistory(policyId);
   const activeRenewal = await getActiveRenewalForPolicy(policyId);
+  const auditTrail = await getAuditTrail(
+    id,
+    { entityType: "InsurancePolicy" },
+    { page: 1, pageSize: 50 },
+  );
+  const policyActivity = auditTrail.data
+    .filter((r) => r.entityId === policyId)
+    .slice(0, 8);
 
   const effectiveStatus = derivePolicyStatus(
     {
@@ -355,6 +364,33 @@ export default async function InsurancePolicyDetailPage({
           defaults={defaults}
         />
       </Card>
+
+      {/* Activity / audit */}
+      {policyActivity.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader
+            title="Policy activity"
+            description="Material changes to this policy record."
+          />
+          <ol className="space-y-2">
+            {policyActivity.map((a) => (
+              <li key={a.id} className="flex gap-3 text-sm">
+                <span className="text-xs text-ink-muted whitespace-nowrap w-24 shrink-0">
+                  {new Date(a.createdAt).toLocaleDateString("en-AU", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="text-ink">
+                  <span className="font-medium">{formatActionLabel(a.action)}</span>
+                  <span className="text-ink-muted"> · {a.actorName}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
 
       {/* Danger zone */}
       <Card className="border-red-200">
