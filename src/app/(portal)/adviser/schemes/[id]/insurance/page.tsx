@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import {
   POLICY_TYPE_LABELS,
   CLAIM_STATUS_LABELS,
+  RENEWAL_STAGE_LABELS,
 } from "@/lib/insurance/constants";
 import { formatMoney } from "@/lib/insurance/premium";
 import { derivePolicyStatus, daysUntilExpiry } from "@/lib/insurance/status";
@@ -43,7 +44,14 @@ export default async function InsuranceOverviewPage({
   );
   if (!isAdviser) notFound();
 
-  const { policies, claims } = await getInsuranceOverview(id);
+  const { policies, claims, renewals } = await getInsuranceOverview(id);
+  const policyLabel = (pid: string | null | undefined) => {
+    const p = policies.find((x) => x.id === pid);
+    return p ? `${p.insurer} · ${p.policyNumber}` : "Policy";
+  };
+  const openRenewals = renewals.filter(
+    (r) => r.stage !== "COMPLETED" && r.stage !== "NOT_PROCEEDING",
+  );
 
   const active = policies.filter((p) => {
     const s = derivePolicyStatus({
@@ -186,6 +194,33 @@ export default async function InsuranceOverviewPage({
           </div>
         )}
       </Card>
+
+      {/* Renewals */}
+      {openRenewals.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader
+            title="Renewals in progress"
+            description="Active renewal workflows for this scheme."
+          />
+          <ul className="space-y-2">
+            {openRenewals.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/adviser/schemes/${id}/insurance/renewals/${r.id}`}
+                  className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line p-3 hover:border-turquoise transition-colors"
+                >
+                  <span className="text-sm text-ink">
+                    {policyLabel(r.expiringPolicyId)}
+                  </span>
+                  <StatusChip
+                    status={RENEWAL_STAGE_LABELS[r.stage] ?? r.stage}
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {active.length > 0 && (
         <p className="text-xs text-ink-muted">

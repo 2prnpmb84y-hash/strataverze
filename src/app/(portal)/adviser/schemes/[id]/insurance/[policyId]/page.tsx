@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getPolicyWithItems } from "@/lib/queries/insurance";
 import { getPolicyDocumentsWithHistory } from "@/lib/queries/insurance-documents";
+import { getActiveRenewalForPolicy } from "@/lib/queries/insurance-renewals";
 import { InsuranceDocumentsSection } from "./documents-section";
+import { StartRenewalButton } from "./start-renewal-button";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
@@ -39,11 +42,17 @@ function dateForInput(iso: string | null | undefined): string {
 
 export default async function InsurancePolicyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; policyId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await connection();
   const { id, policyId } = await params;
+  const sp = await searchParams;
+  const continuityFlag =
+    typeof sp.continuity === "string" ? sp.continuity : null;
+  const continuityDays = typeof sp.days === "string" ? sp.days : null;
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -61,6 +70,7 @@ export default async function InsurancePolicyDetailPage({
   const coverageItems = policy.coverageItems ?? [];
   const premiumLineItems = policy.premiumLineItems ?? [];
   const documents = await getPolicyDocumentsWithHistory(policyId);
+  const activeRenewal = await getActiveRenewalForPolicy(policyId);
 
   const effectiveStatus = derivePolicyStatus(
     {
@@ -134,6 +144,14 @@ export default async function InsurancePolicyDetailPage({
         backHref={`/adviser/schemes/${id}/insurance`}
         backLabel="Insurance"
       />
+
+      {continuityFlag && continuityFlag !== "CONTIGUOUS" && (
+        <div className="mb-6 rounded-[var(--radius-card)] bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+          This policy was created from a renewal with a {continuityDays}-day{" "}
+          {continuityFlag.toLowerCase()} against the previous policy. Confirm the
+          cover dates are correct.
+        </div>
+      )}
 
       {/* Summary */}
       <Card className="mb-6">
@@ -302,6 +320,24 @@ export default async function InsurancePolicyDetailPage({
           </div>
         </Card>
       ) : null}
+
+      {/* Renewal */}
+      <Card className="mb-6">
+        <CardHeader
+          title="Renewal"
+          description="Prepare the renewal, compare quotes and place the successor policy."
+        />
+        {activeRenewal ? (
+          <Link
+            href={`/adviser/schemes/${id}/insurance/renewals/${activeRenewal.id}`}
+            className="text-sm text-turquoise hover:underline"
+          >
+            Continue the in-progress renewal →
+          </Link>
+        ) : (
+          <StartRenewalButton schemeId={id} policyId={policyId} />
+        )}
+      </Card>
 
       {/* Documents */}
       <InsuranceDocumentsSection
