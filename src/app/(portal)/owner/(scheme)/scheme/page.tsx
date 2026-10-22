@@ -75,9 +75,19 @@ export default async function OwnerSchemePage() {
                       Lot Number
                     </p>
                     <p className="text-sm font-medium text-ink">
-                      {myLot.unitNumber}
+                      {myLot.lotNumber}
                     </p>
                   </div>
+                  {myLot.unitNumber && (
+                    <div>
+                      <p className="text-xs text-ink-muted uppercase tracking-wide mb-0.5">
+                        Unit Number
+                      </p>
+                      <p className="text-sm font-medium text-ink">
+                        {myLot.unitNumber}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-ink-muted uppercase tracking-wide mb-0.5">
                       Entitlement
