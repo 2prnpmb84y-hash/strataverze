@@ -4,10 +4,21 @@ import { useActionState } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { CheckboxField } from "@/components/ui/form-field";
 import { acceptMembership } from "@/lib/actions/contractor-onboarding";
+import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
+import type { FeeView } from "@/lib/billing/disclosure";
+import { formatAud } from "@/lib/billing/money";
+
+/** Contractor prices from the StrataVerze price book. */
+export interface MembershipPricing {
+  planCents: number | null;
+  planGstInclusive: boolean;
+  complianceFee: FeeView | null;
+}
 
 interface StepMembershipProps {
   business: Record<string, unknown> | null;
   membership: Record<string, unknown> | null;
+  pricing: MembershipPricing;
   onNext: () => void;
   onBack: () => void;
 }
@@ -27,8 +38,13 @@ const MEMBERSHIP_INCLUSIONS = [
   "Payment status visibility",
 ];
 
-export function StepMembership({ business, membership, onNext, onBack }: StepMembershipProps) {
+export function StepMembership({ business, membership, pricing, onNext, onBack }: StepMembershipProps) {
   const hasAccepted = membership?.promotionStart != null;
+  const complianceConfirmation = useFeeConfirmation(pricing.complianceFee);
+  const planPrice =
+    pricing.planCents == null
+      ? "to be confirmed"
+      : `${formatAud(pricing.planCents)} AUD a month ${pricing.planGstInclusive ? "including" : "plus"} GST`;
 
   const [state, formAction, isPending] = useActionState(
     async (_prev: { error: string | null }, formData: FormData) => {
@@ -76,7 +92,7 @@ export function StepMembership({ business, membership, onNext, onBack }: StepMem
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-ink-muted">Future price</span>
-            <span className="text-ink font-medium">$65.00 AUD/month (proposed GST-inclusive)</span>
+            <span className="text-ink font-medium">{planPrice}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-ink-muted">Paid availability</span>
@@ -153,6 +169,22 @@ export function StepMembership({ business, membership, onNext, onBack }: StepMem
             />
           </div>
 
+          {pricing.complianceFee && (
+            <div className="mb-4">
+              <FeeDisclosure
+                fee={{
+                  ...pricing.complianceFee,
+                  explanation:
+                    "StrataVerze checks your licences, insurance and ABN. This annual charge is raised when your application is approved and then each year while you are a member.",
+                }}
+                scheduleHref="/supplier/settings#strataverze-billing"
+                confirmed={complianceConfirmation.confirmed}
+                onConfirmedChange={complianceConfirmation.setConfirmed}
+                idSuffix="-compliance"
+              />
+            </div>
+          )}
+
           <div className="flex justify-between pt-2">
             <button
               type="button"
@@ -163,7 +195,7 @@ export function StepMembership({ business, membership, onNext, onBack }: StepMem
             </button>
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || !complianceConfirmation.ready}
               className="bg-supplier text-white rounded-[var(--radius-card)] px-6 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {isPending ? "Accepting..." : "Accept & Continue"}

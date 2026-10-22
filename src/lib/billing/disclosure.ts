@@ -36,6 +36,8 @@ export const EXPLANATIONS: Record<string, string> = {
   PAPER_NOTICE: "The mail house cost plus StrataVerze's flat margin for a paper notice.",
   DEVELOPER_SETUP: "StrataVerze's flat set-up fee for a new scheme, paid by the developer.",
   EDUCATION: "StrataVerze's annual committee education subscription.",
+  COMPLIANCE_VERIFICATION: "StrataVerze checks the contractor's licences, insurance and ABN once a year. Paid by the contractor.",
+  SUPPLIER_PLAN: "The flat monthly StrataVerze Contractor plan. Paid by the contractor, never by the scheme.",
 };
 
 export const PAYER_LABELS: Record<string, string> = {

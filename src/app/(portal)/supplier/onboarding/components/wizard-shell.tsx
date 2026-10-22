@@ -7,7 +7,7 @@ import { StepServices } from "./step-services";
 import { StepLicences } from "./step-licences";
 import { StepInsurance } from "./step-insurance";
 import { StepBanking } from "./step-banking";
-import { StepMembership } from "./step-membership";
+import { StepMembership, type MembershipPricing } from "./step-membership";
 import { StepReview } from "./step-review";
 
 const STEPS = [
@@ -32,6 +32,7 @@ export interface WizardShellProps {
   declarations: Record<string, unknown>[];
   abnLookups: Record<string, unknown>[];
   profile: Record<string, unknown>;
+  pricing: MembershipPricing;
 }
 
 export function WizardShell({
@@ -45,6 +46,7 @@ export function WizardShell({
   declarations,
   abnLookups,
   profile,
+  pricing,
 }: WizardShellProps) {
   const [currentStep, setCurrentStep] = useState(initialStep);
 
@@ -187,6 +189,7 @@ export function WizardShell({
           <StepMembership
             business={business}
             membership={membership}
+            pricing={pricing}
             onNext={goNext}
             onBack={goBack}
           />

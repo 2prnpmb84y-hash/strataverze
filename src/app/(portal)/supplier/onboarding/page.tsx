@@ -11,6 +11,8 @@ import {
   getAbnLookupHistory,
 } from "@/lib/queries/contractor";
 import { WizardShell } from "./components/wizard-shell";
+import { contractorPlanPrice, quoteComplianceFee } from "@/lib/billing/contractor-fees";
+import { toFeeView } from "@/lib/billing/disclosure";
 
 export default async function OnboardingPage() {
   await connection();
@@ -18,6 +20,12 @@ export default async function OnboardingPage() {
   if (!profile) return null;
 
   const business = await getContractorBusinessForProfile(profile.id);
+  const [plan, complianceQuote] = await Promise.all([contractorPlanPrice(), quoteComplianceFee()]);
+  const pricing = {
+    planCents: plan?.cents ?? null,
+    planGstInclusive: plan?.gstInclusive ?? true,
+    complianceFee: complianceQuote ? toFeeView(complianceQuote) : null,
+  };
 
   if (!business) {
     // No business yet: show step 1 with registration form
@@ -33,6 +41,7 @@ export default async function OnboardingPage() {
         declarations={[]}
         abnLookups={[]}
         profile={profile}
+        pricing={pricing}
       />
     );
   }
@@ -71,6 +80,7 @@ export default async function OnboardingPage() {
       declarations={declarations}
       abnLookups={abnLookups}
       profile={profile}
+      pricing={pricing}
     />
   );
 }

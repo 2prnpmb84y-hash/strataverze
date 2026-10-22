@@ -2988,7 +2988,7 @@ model ContractorMembership {
   // Plan details
   planName                String             @default("StrataVerze Contractor") @map("plan_name") @db.VarChar(200)
   planCurrency            String             @default("AUD") @map("plan_currency") @db.VarChar(3)
-  planMonthlyPrice        Decimal            @default(65.00) @db.Decimal(10, 2) @map("plan_monthly_price")
+  planMonthlyPrice        Decimal            @default(8.00) @db.Decimal(10, 2) @map("plan_monthly_price")
   planGstInclusive        Boolean            @default(true) @map("plan_gst_inclusive")
   billingTimezone         String             @default("Australia/Sydney") @map("billing_timezone") @db.VarChar(100)
   createdAt               DateTime           @default(now()) @db.Timestamptz @map("created_at")
@@ -3297,7 +3297,10 @@ model SchemeSubscription {
 /// reversing the source creates a REVERSED event that points at the original.
 model PlatformFeeEvent {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schemeId            String    @map("scheme_id") @db.Uuid
+  /// The scheme charged, or null for a charge to a contractor business.
+  schemeId            String?   @map("scheme_id") @db.Uuid
+  /// The contractor business charged, for supplier charges.
+  contractorBusinessId String?  @map("contractor_business_id") @db.Uuid
   code                String
   variant             String?
   description         String
@@ -3326,6 +3329,7 @@ model PlatformFeeEvent {
   @@index([schemeId, status])
   @@index([schemeId, occurredAt])
   @@index([sourceType, sourceId])
+  @@index([contractorBusinessId, occurredAt])
   @@map("platform_fee_events")
 }
 

@@ -4,8 +4,8 @@ import { validatePriceBook, type PriceBookEntry } from "./price-book";
 import { toCents } from "./money";
 
 /** Parse the seeded price book rows out of the platform billing migration. */
-function seededRows(): PriceBookEntry[] {
-  const sql = readFileSync("prisma/migrations/20261022_platform_billing.sql", "utf8");
+function seededRows(file = "prisma/migrations/20261022_platform_billing.sql"): PriceBookEntry[] {
+  const sql = readFileSync(file, "utf8");
   const block = sql.slice(sql.indexOf("SELECT v.* FROM (VALUES"), sql.indexOf(") AS v("));
   const rows = block.split("\n").filter((l) => l.trim().startsWith("("));
   return rows.map((line) => {
@@ -62,5 +62,23 @@ describe("seeded price book", () => {
 
   it("excludes GST on every seeded price", () => {
     expect(rows.every((r) => !r.gstInclusive)).toBe(true);
+  });
+});
+
+describe("supplier billing seed", () => {
+  const supplierRows = seededRows("prisma/migrations/20261022_supplier_billing.sql");
+
+  it("seeds the $8 contractor plan, GST inclusive", () => {
+    const plan = supplierRows.find((r) => r.code === "SUPPLIER_PLAN");
+    expect(plan).toMatchObject({ amountCents: 800, gstInclusive: true, unit: "PER_MONTH", payerType: "SUPPLIER", isActive: true });
+  });
+
+  it("seeds the $49 annual compliance verification charge, GST exclusive", () => {
+    const fee = supplierRows.find((r) => r.code === "COMPLIANCE_VERIFICATION");
+    expect(fee).toMatchObject({ amountCents: 4900, gstInclusive: false, unit: "PER_YEAR", payerType: "SUPPLIER", isActive: true });
+  });
+
+  it("forms a valid price book with the Stage 1 rows", () => {
+    expect(validatePriceBook([...seededRows(), ...supplierRows])).toEqual([]);
   });
 });

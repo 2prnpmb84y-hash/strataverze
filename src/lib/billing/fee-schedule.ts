@@ -48,6 +48,8 @@ const GROUP_BY_CODE: Record<string, FeeGroup> = {
   S182_INSPECTION: "Paid by others",
   TRANSFER: "Paid by others",
   DEVELOPER_SETUP: "Paid by others",
+  SUPPLIER_PLAN: "Paid by others",
+  COMPLIANCE_VERIFICATION: "Paid by others",
 };
 
 export const UNIT_LABELS: Record<PriceUnit, string> = {

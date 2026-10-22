@@ -14368,6 +14368,13 @@
                   "kind": "scalar"
                 }
               },
+              "contractorBusinessId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -14503,7 +14510,7 @@
                 }
               },
               "schemeId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
@@ -14553,6 +14560,9 @@
                 },
                 "code": {
                   "column": "code"
+                },
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
                 },
                 "createdAt": {
                   "column": "created_at"
@@ -30462,7 +30472,7 @@
                   "dataType": "pg/numeric",
                   "default": {
                     "kind": "literal",
-                    "value": "65.00"
+                    "value": "8.00"
                   },
                   "nullable": false,
                   "typeParams": {
@@ -38368,6 +38378,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -38489,7 +38504,7 @@
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
-                  "nullable": false
+                  "nullable": true
                 },
                 "source_id": {
                   "codecId": "pg/text@1",
@@ -38523,6 +38538,14 @@
               },
               "foreignKeys": [],
               "indexes": [
+                {
+                  "columns": [
+                    "contractor_business_id",
+                    "occurred_at"
+                  ],
+                  "name": "platform_fee_events_contractor_business_id_occurred_at_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "idempotency_key"
@@ -47907,7 +47930,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d78f97cdf7e72619c2b575b8633c2ffe5d60343c9265a69a63aef309dbadbb5e"
+    "storageHash": "a06b3184dc05368ef5deaf0bfd7840e489ceb956873eaee2d426cdbcfd93d51b"
   },
   "execution": {
     "executionHash": "0c91e95282971e4ddb95c44fc5ab48631150a2319e6654d585b41ce1ea593679",

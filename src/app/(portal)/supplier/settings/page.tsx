@@ -6,6 +6,7 @@ import {
   getContractorContacts,
 } from "@/lib/queries/contractor";
 import { Card, CardHeader } from "@/components/ui/card";
+import { SupplierBillingSummary } from "@/components/billing/supplier-billing-summary";
 
 export default async function SettingsPage() {
   await connection();
@@ -43,6 +44,8 @@ export default async function SettingsPage() {
       <p className="text-sm text-ink-muted mb-8">
         Manage your contractor business settings.
       </p>
+
+      <SupplierBillingSummary contractorBusinessId={business.id} />
 
       {/* Business Information */}
       <Card className="mb-6">

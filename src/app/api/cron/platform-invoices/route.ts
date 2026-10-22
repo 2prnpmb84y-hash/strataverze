@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { notifyIssuedInvoices, runMonthlyInvoices } from "@/lib/billing/invoice-run";
 import { sydneyMonth } from "@/lib/billing/invoice";
+import { accrueComplianceRenewals } from "@/lib/billing/contractor-fees";
 
 /**
- * Monthly StrataVerze invoicing, called by Vercel Cron (see vercel.json).
+ * Monthly StrataVerze invoicing and yearly contractor compliance renewals,
+ * called by Vercel Cron (see vercel.json).
  *
  * Runs daily and invoices the current Sydney month for any scheme not yet
  * invoiced, so a missed or repeated cron call does no harm. Switched off
@@ -16,8 +18,11 @@ export async function GET(request: NextRequest) {
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
+  // Yearly contractor compliance verification renewals (only while capture is on).
+  const renewals = await accrueComplianceRenewals();
+
   if (process.env.PLATFORM_INVOICING !== "on") {
-    return NextResponse.json({ skipped: "PLATFORM_INVOICING is not on" });
+    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "PLATFORM_INVOICING is not on" });
   }
 
   const requested = request.nextUrl.searchParams.get("month");
@@ -31,6 +36,7 @@ export async function GET(request: NextRequest) {
   const count = (o: string) => results.filter((r) => r.outcome === o).length;
   return NextResponse.json({
     month,
+    complianceRenewals: renewals.charged,
     issued: count("ISSUED"),
     alreadyInvoiced: count("ALREADY_INVOICED"),
     skipped: results.filter((r) => r.outcome === "SKIPPED"),

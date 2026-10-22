@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d78f97cdf7e72619c2b575b8633c2ffe5d60343c9265a69a63aef309dbadbb5e'>;
+  StorageHashBase<'a06b3184dc05368ef5deaf0bfd7840e489ceb956873eaee2d426cdbcfd93d51b'>;
 export type ExecutionHash =
   ExecutionHashBase<'0c91e95282971e4ddb95c44fc5ab48631150a2319e6654d585b41ce1ea593679'>;
 export type ProfileHash =
@@ -1360,6 +1360,7 @@ export type FieldOutputTypes = {
     readonly PlatformFeeEvent: {
       readonly amountExGst: Numeric<12, 2>;
       readonly code: CodecTypes['pg/text@1']['output'];
+      readonly contractorBusinessId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly createdById: CodecTypes['pg/uuid@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'];
@@ -1378,7 +1379,7 @@ export type FieldOutputTypes = {
       readonly quantity: CodecTypes['pg/int4@1']['output'];
       readonly recoverableFromOwner: CodecTypes['pg/bool@1']['output'];
       readonly reversalOfId: CodecTypes['pg/uuid@1']['output'] | null;
-      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly sourceId: CodecTypes['pg/text@1']['output'];
       readonly sourceType: CodecTypes['pg/text@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
@@ -3401,6 +3402,7 @@ export type FieldInputTypes = {
     readonly PlatformFeeEvent: {
       readonly amountExGst: CodecTypes['pg/numeric@1']['input'];
       readonly code: CodecTypes['pg/text@1']['input'];
+      readonly contractorBusinessId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly createdById: CodecTypes['pg/uuid@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'];
@@ -3419,7 +3421,7 @@ export type FieldInputTypes = {
       readonly quantity: CodecTypes['pg/int4@1']['input'];
       readonly recoverableFromOwner: CodecTypes['pg/bool@1']['input'];
       readonly reversalOfId: CodecTypes['pg/uuid@1']['input'] | null;
-      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly sourceId: CodecTypes['pg/text@1']['input'];
       readonly sourceType: CodecTypes['pg/text@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
@@ -5442,6 +5444,7 @@ export type StorageColumnTypes = {
     readonly platform_fee_events: {
       readonly amount_ex_gst: Numeric<12, 2>;
       readonly code: CodecTypes['pg/text@1']['output'];
+      readonly contractor_business_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly created_by_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'];
@@ -5460,7 +5463,7 @@ export type StorageColumnTypes = {
       readonly quantity: CodecTypes['pg/int4@1']['output'];
       readonly recoverable_from_owner: CodecTypes['pg/bool@1']['output'];
       readonly reversal_of_id: CodecTypes['pg/uuid@1']['output'] | null;
-      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly source_id: CodecTypes['pg/text@1']['output'];
       readonly source_type: CodecTypes['pg/text@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
@@ -7483,6 +7486,7 @@ export type StorageColumnInputTypes = {
     readonly platform_fee_events: {
       readonly amount_ex_gst: CodecTypes['pg/numeric@1']['input'];
       readonly code: CodecTypes['pg/text@1']['input'];
+      readonly contractor_business_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly created_by_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'];
@@ -7501,7 +7505,7 @@ export type StorageColumnInputTypes = {
       readonly quantity: CodecTypes['pg/int4@1']['input'];
       readonly recoverable_from_owner: CodecTypes['pg/bool@1']['input'];
       readonly reversal_of_id: CodecTypes['pg/uuid@1']['input'] | null;
-      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly source_id: CodecTypes['pg/text@1']['input'];
       readonly source_type: CodecTypes['pg/text@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
@@ -9870,6 +9874,7 @@ export namespace Models {
   export type public_PlatformFeeEvent = {
     amountExGst: Numeric<12, 2>;
     code: CodecTypes['pg/text@1']['output'];
+    contractorBusinessId: CodecTypes['pg/uuid@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     createdById: CodecTypes['pg/uuid@1']['output'] | null;
     description: CodecTypes['pg/text@1']['output'];
@@ -9888,7 +9893,7 @@ export namespace Models {
     quantity: CodecTypes['pg/int4@1']['output'];
     recoverableFromOwner: CodecTypes['pg/bool@1']['output'];
     reversalOfId: CodecTypes['pg/uuid@1']['output'] | null;
-    schemeId: CodecTypes['pg/uuid@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'] | null;
     sourceId: CodecTypes['pg/text@1']['output'];
     sourceType: CodecTypes['pg/text@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
@@ -13504,7 +13509,7 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/numeric@1', '65.00'>;
+                    readonly value: DefaultLiteralValue<'pg/numeric@1', '8.00'>;
                   };
                   readonly typeParams: { readonly precision: 10; readonly scale: 2 };
                   readonly many: false;
@@ -20687,6 +20692,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly contractor_business_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly created_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -20814,7 +20825,7 @@ type ContractBase = Omit<
                 readonly scheme_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
-                  readonly nullable: false;
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly source_id: {
@@ -20855,6 +20866,11 @@ type ContractBase = Omit<
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
               indexes: readonly [
+                {
+                  readonly name: 'platform_fee_events_contractor_business_id_occurred_at_idx';
+                  readonly columns: readonly ['contractor_business_id', 'occurred_at'];
+                  readonly unique: false;
+                },
                 {
                   readonly name: 'platform_fee_events_idempotency_key_key';
                   readonly columns: readonly ['idempotency_key'];
@@ -38247,6 +38263,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly contractorBusinessId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -38337,7 +38357,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly schemeId: {
-                readonly nullable: false;
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly sourceId: {
@@ -38371,6 +38391,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly amountExGst: { readonly column: 'amount_ex_gst' };
                 readonly code: { readonly column: 'code' };
+                readonly contractorBusinessId: { readonly column: 'contractor_business_id' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly createdById: { readonly column: 'created_by_id' };
                 readonly description: { readonly column: 'description' };

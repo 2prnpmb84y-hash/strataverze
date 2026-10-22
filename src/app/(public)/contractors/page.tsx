@@ -205,7 +205,7 @@ export default function ContractorLandingPage() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <span className="text-gray-500">Future price</span>
                 <span className="text-right font-medium text-[#0A0F1C]">
-                  $65.00/month (incl. GST)
+                  $8.00/month (incl. GST)
                 </span>
                 <span className="text-gray-500">Paid availability</span>
                 <span className="text-right font-medium text-[#0A0F1C]">
@@ -214,6 +214,10 @@ export default function ContractorLandingPage() {
                 <span className="text-gray-500">Billing</span>
                 <span className="text-right font-medium text-[#0A0F1C]">
                   Month-to-month (no minimum)
+                </span>
+                <span className="text-gray-500">Compliance verification</span>
+                <span className="text-right font-medium text-[#0A0F1C]">
+                  $53.90/year (incl. GST)
                 </span>
               </div>
             </div>
