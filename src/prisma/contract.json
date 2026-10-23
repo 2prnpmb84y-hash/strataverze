@@ -352,6 +352,10 @@
       "model": "Quote",
       "namespace": "public"
     },
+    "rate_limit_hits": {
+      "model": "RateLimitHit",
+      "namespace": "public"
+    },
     "referral_income": {
       "model": "ReferralIncome",
       "namespace": "public"
@@ -18712,6 +18716,47 @@
               },
               "namespaceId": "public",
               "table": "quote_requests"
+            }
+          },
+          "RateLimitHit": {
+            "fields": {
+              "hitAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "keyHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "hitAt": {
+                  "column": "hit_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "keyHash": {
+                  "column": "key_hash"
+                }
+              },
+              "namespaceId": "public",
+              "table": "rate_limit_hits"
             }
           },
           "ReferralIncome": {
@@ -44401,6 +44446,50 @@
               },
               "uniques": []
             },
+            "rate_limit_hits": {
+              "columns": {
+                "hit_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "key_hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "key_hash",
+                    "hit_at"
+                  ],
+                  "name": "rate_limit_hits_key_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "referral_income": {
               "columns": {
                 "amount": {
@@ -54062,7 +54151,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "13a7635bbcd429c6e48f3d886f02174be2a98d2cca01aadbaef323d0b573cd4f"
+    "storageHash": "2ff14fd8da549a8902ad9e74a8cedb5a8e7a0d99dc4a8fdbc996cbf452c1156e"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

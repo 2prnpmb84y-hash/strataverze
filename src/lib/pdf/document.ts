@@ -1,3 +1,4 @@
+import { logError } from "@/lib/log";
 /**
  * PDF layout for StrataVerze documents (server side, no browser). Pages are
  * A4, set in Inter (the brand typeface for legal documents) with the scheme
@@ -74,7 +75,7 @@ async function fontBytes() {
     const u8 = (b: Buffer) => new Uint8Array(b.buffer, b.byteOffset, b.byteLength).slice();
     cachedFontBytes = { regular: u8(regular), semibold: u8(semibold), bold: u8(bold) };
   } catch (err) {
-    console.error("[pdf] Inter fonts not found, using Helvetica:", err);
+    logError("[pdf] Inter fonts not found, using Helvetica:", err);
     cachedFontBytes = null;
   }
   return cachedFontBytes;

@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
@@ -20,14 +21,14 @@ export async function adoptStatutoryPackAction(schemeId: string, financialYear: 
     try {
       await generateStatutoryPackPdf({ schemeId, financialYear, actorId: profile.id });
     } catch (err) {
-      console.error("[statutory] Could not store the PDF of the adopted statements:", err);
+      logError("[statutory] Could not store the PDF of the adopted statements:", err);
     }
     revalidatePath(path(schemeId));
     revalidatePath(`/adviser/schemes/${schemeId}/finance/documents`);
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError || err instanceof StatutoryPackError) return { error: err.message };
-    console.error("adoptStatutoryPackAction", err);
+    logError("adoptStatutoryPackAction", err);
     return { error: "Failed to record the adoption." };
   }
 }

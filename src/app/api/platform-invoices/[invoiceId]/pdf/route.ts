@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { NO_STORE } from "@/lib/http/no-store";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -13,11 +14,11 @@ import { renderInvoicePdf } from "@/lib/billing/invoice-pdf";
  */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ invoiceId: string }> }) {
   const profile = await getCurrentProfile();
-  if (!profile) return new NextResponse("Sign in to view this invoice.", { status: 401 });
+  if (!profile) return new NextResponse("Sign in to view this invoice.", { status: 401, headers: NO_STORE });
 
   const { invoiceId } = await params;
   const invoice = await getPlatformInvoiceWithLines(invoiceId);
-  if (!invoice) return new NextResponse("Not found", { status: 404 });
+  if (!invoice) return new NextResponse("Not found", { status: 404, headers: NO_STORE });
 
   const memberships = await db.orm.public.SchemeMembership
     .where((m) => m.profileId.eq(profile.id))
@@ -34,7 +35,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       reason: "cannot see this building's billing",
     });
     // Same response as a missing invoice, so ids cannot be probed.
-    return new NextResponse("Not found", { status: 404 });
+    return new NextResponse("Not found", { status: 404, headers: NO_STORE });
   }
 
   await recordSecurityEventLater({

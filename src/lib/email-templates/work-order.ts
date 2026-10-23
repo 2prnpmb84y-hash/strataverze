@@ -1,4 +1,5 @@
 import { emailLayout, emailButton } from "./layout";
+import { html, plainSubject } from "./html";
 
 type WorkOrderNotificationParams = {
   recipientEmail: string;
@@ -28,7 +29,7 @@ export function workOrderStatusEmail(params: WorkOrderNotificationParams) {
           ? "#ef4444"
           : "#f59e0b";
 
-  const content = `
+  const content = html`
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       Work Order Updated
     </h1>
@@ -55,7 +56,7 @@ export function workOrderStatusEmail(params: WorkOrderNotificationParams) {
 
   return {
     to: params.recipientEmail,
-    subject: `Work order "${params.workOrderTitle}" is now ${statusLabel}`,
+    subject: plainSubject(`Work order "${params.workOrderTitle}" is now ${statusLabel}`),
     html: emailLayout(content),
   };
 }
@@ -70,7 +71,7 @@ type WorkOrderCreatedParams = {
 };
 
 export function workOrderCreatedEmail(params: WorkOrderCreatedParams) {
-  const content = `
+  const content = html`
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       New Work Order
     </h1>
@@ -96,7 +97,7 @@ export function workOrderCreatedEmail(params: WorkOrderCreatedParams) {
 
   return {
     to: params.recipientEmails,
-    subject: `New work order: ${params.workOrderTitle}`,
+    subject: plainSubject(`New work order: ${params.workOrderTitle}`),
     html: emailLayout(content),
   };
 }

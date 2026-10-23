@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { and } from "@prisma/orm-postgres/orm-client";
@@ -166,7 +167,7 @@ export async function initiateDebtRecoveryAction(
     return { success: true, id: newCase.id };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("Failed to initiate debt recovery:", err);
+    logError("Failed to initiate debt recovery:", err);
     return { error: "Failed to initiate debt recovery case" };
   }
 }
@@ -228,7 +229,7 @@ export async function updateDebtRecoveryCaseAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("Failed to update debt recovery case:", err);
+    logError("Failed to update debt recovery case:", err);
     return { error: "Failed to update case" };
   }
 }
@@ -319,7 +320,7 @@ export async function completeDebtRecoveryStepAction(
     if (err instanceof AuthorisationError) return { error: err.message };
     const feeError = feeErrorMessage(err);
     if (feeError) return { error: feeError };
-    console.error("Failed to complete step:", err);
+    logError("Failed to complete step:", err);
     return { error: "Failed to complete step" };
   }
 }
@@ -360,7 +361,7 @@ export async function closeDebtRecoveryCaseAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("Failed to close case:", err);
+    logError("Failed to close case:", err);
     return { error: "Failed to close case" };
   }
 }
@@ -464,7 +465,7 @@ export async function createPaymentPlanAction(
     if (err instanceof AuthorisationError) return { error: err.message };
     const feeError = feeErrorMessage(err);
     if (feeError) return { error: feeError };
-    console.error("Failed to create payment plan:", err);
+    logError("Failed to create payment plan:", err);
     return { error: "Failed to create payment plan" };
   }
 }
@@ -535,7 +536,7 @@ export async function recordInstalmentPaymentAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("Failed to record payment:", err);
+    logError("Failed to record payment:", err);
     return { error: "Failed to record payment" };
   }
 }
@@ -565,7 +566,7 @@ export async function addDebtRecoveryNoteAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("Failed to add note:", err);
+    logError("Failed to add note:", err);
     return { error: "Failed to add note" };
   }
 }
@@ -607,7 +608,7 @@ export async function generateNoticeDocumentAction(
     return { success: true, id: doc.id };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("Failed to generate document:", err);
+    logError("Failed to generate document:", err);
     return { error: "Failed to generate document" };
   }
 }

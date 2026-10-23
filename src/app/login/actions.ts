@@ -5,7 +5,7 @@ import { validatePassword } from "@/lib/auth/password-policy";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { authRateLimit } from "@/lib/auth/rate-limit";
+import { hitRateLimits } from "@/lib/auth/rate-limit-db";
 import { decodeJwtPayload } from "@/lib/auth/mfa-policy";
 import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
 
@@ -34,8 +34,14 @@ export async function login(formData: FormData) {
     redirect("/login?error=Please+enter+your+password.");
   }
 
-  const limit = authRateLimit(`login:${ip}:${email}`);
-  if (!limit.success) {
+  // Per address and account, per account, and per address, across every
+  // server instance (S7, SEC-020).
+  const allowed = await hitRateLimits([
+    ["signIn", `${ip}|${email}`],
+    ["signInAccount", email],
+    ["signInAddress", ip],
+  ]);
+  if (!allowed) {
     await recordSecurityEventLater({
       action: "auth.sign_in",
       outcome: "denied",
@@ -97,8 +103,12 @@ export async function signup(formData: FormData) {
     redirect("/login?error=Please+enter+a+valid+email+address.");
   }
 
-  const limit = authRateLimit(`signup:${ip}:${email}`);
-  if (!limit.success) {
+  const allowed = await hitRateLimits([
+    ["signUp", `${ip}|${email}`],
+    ["signUpAddress", ip],
+  ]);
+  if (!allowed) {
+    await recordSecurityEventLater({ action: "auth.sign_up", outcome: "denied", reason: "too many attempts", metadata: { subject: auditHash(email) } });
     redirect("/login?error=Too+many+attempts.+Please+try+again+later.");
   }
 

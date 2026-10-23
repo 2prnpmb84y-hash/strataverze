@@ -1,7 +1,6 @@
 import { emailLayout, emailButton } from "./layout";
+import { html, plainSubject } from "./html";
 
-const escape = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function platformInvoiceEmail(params: {
   to: string[];
@@ -13,21 +12,21 @@ export function platformInvoiceEmail(params: {
   needsApproval: boolean;
   detailUrl: string;
 }) {
-  const scheme = escape(params.schemeName);
-  const content = `
+  const scheme = params.schemeName;
+  const content = html`
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
-      StrataVerze invoice ${escape(params.invoiceNumber)}
+      StrataVerze invoice ${params.invoiceNumber}
     </h1>
     <p style="margin:0 0 20px;font-size:15px;color:#1A202C;line-height:1.6;">
-      StrataVerze has issued its invoice to <strong>${scheme}</strong> for ${escape(params.monthLabel)}.
+      StrataVerze has issued its invoice to <strong>${scheme}</strong> for ${params.monthLabel}.
       It covers the subscription for the month and any StrataVerze fees from the month before.
     </p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;width:100%;">
       <tr>
         <td style="padding:12px 16px;background-color:#F8FAFB;border-radius:8px;">
           <p style="margin:0 0 4px;font-size:13px;color:#64748B;">Total including GST</p>
-          <p style="margin:0;font-size:22px;color:#1a1a2e;font-weight:700;">${escape(params.total)}</p>
-          ${params.promotional ? '<p style="margin:8px 0 0;font-size:13px;color:#64748B;">The subscription is credited during the promotional period.</p>' : ""}
+          <p style="margin:0;font-size:22px;color:#1a1a2e;font-weight:700;">${params.total}</p>
+          ${params.promotional ? html`<p style="margin:8px 0 0;font-size:13px;color:#64748B;">The subscription is credited during the promotional period.</p>` : ""}
         </td>
       </tr>
     </table>
@@ -42,7 +41,7 @@ export function platformInvoiceEmail(params: {
   `;
   return {
     to: params.to,
-    subject: `StrataVerze invoice ${params.invoiceNumber} for ${params.schemeName}: ${params.total}`,
+    subject: plainSubject(`StrataVerze invoice ${params.invoiceNumber} for ${params.schemeName}: ${params.total}`),
     html: emailLayout(content),
   };
 }

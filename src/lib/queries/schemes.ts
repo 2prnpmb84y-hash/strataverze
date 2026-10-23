@@ -1,3 +1,4 @@
+import { logError } from "@/lib/log";
 import { defaultAccountingBasis } from "@/config/statutory";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
@@ -166,7 +167,7 @@ export async function createScheme(
   try {
     await seedDefaultChartOfAccounts(created.id);
   } catch (err) {
-    console.error("[schemes] Could not seed the chart of accounts:", err);
+    logError("[schemes] Could not seed the chart of accounts:", err);
   }
   return created;
 }

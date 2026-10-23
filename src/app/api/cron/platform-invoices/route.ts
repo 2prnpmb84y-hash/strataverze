@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { NO_STORE } from "@/lib/http/no-store";
+import { bearerMatches } from "@/lib/auth/secret-compare";
 import { notifyIssuedInvoices, runMonthlyInvoices } from "@/lib/billing/invoice-run";
 import { sydneyMonth } from "@/lib/billing/invoice";
 import { accrueComplianceRenewals } from "@/lib/billing/contractor-fees";
@@ -18,8 +20,9 @@ export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
-    return new NextResponse("Unauthorized", { status: 401 });
+  // Constant-time comparison (S7, SEC-027).
+  if (!bearerMatches(request.headers.get("authorization"), secret)) {
+    return new NextResponse("Unauthorized", { status: 401, headers: NO_STORE });
   }
   // Uploads never used, once their signed link has expired (S3). A failure
   // here must not stop invoicing.
@@ -35,10 +38,10 @@ export async function GET(request: NextRequest) {
 
   // StrataVerze prices add GST, so nothing is invoiced until it is registered.
   if (process.env.PLATFORM_INVOICING === "on" && !strataVerzeGstRegistered()) {
-    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "StrataVerze is not registered for GST (STRATAVERZE_GST_REGISTERED)" });
+    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "StrataVerze is not registered for GST (STRATAVERZE_GST_REGISTERED)" }, { headers: NO_STORE });
   }
   if (process.env.PLATFORM_INVOICING !== "on") {
-    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "PLATFORM_INVOICING is not on" });
+    return NextResponse.json({ complianceRenewals: renewals.charged, invoicing: "PLATFORM_INVOICING is not on" }, { headers: NO_STORE });
   }
 
   const requested = request.nextUrl.searchParams.get("month");
@@ -56,5 +59,5 @@ export async function GET(request: NextRequest) {
     issued: count("ISSUED"),
     alreadyInvoiced: count("ALREADY_INVOICED"),
     skipped: results.filter((r) => r.outcome === "SKIPPED"),
-  });
+  }, { headers: NO_STORE });
 }

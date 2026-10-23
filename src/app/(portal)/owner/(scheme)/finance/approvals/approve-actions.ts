@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { headers } from "next/headers";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
@@ -18,7 +19,7 @@ export async function ownerApproveSupplierInvoiceAction(schemeId: string, invoic
     return { success: true as const };
   } catch (err) {
     if (err instanceof AuthorisationError || err instanceof PaymentControlError) return { error: err.message };
-    console.error("ownerApproveSupplierInvoiceAction error:", err);
+    logError("ownerApproveSupplierInvoiceAction error:", err);
     return { error: "Failed to approve the invoice." };
   }
 }

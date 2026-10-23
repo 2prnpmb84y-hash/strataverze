@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
@@ -22,7 +23,7 @@ const method = (v: FormDataEntryValue | null): ContributionMethod => (String(v) 
 
 function failure(err: unknown, fallback: string): PlanActionState {
   if (err instanceof AuthorisationError || err instanceof CapitalWorksPlanError) return { error: err.message };
-  console.error(fallback, err);
+  logError(fallback, err);
   return { error: fallback };
 }
 

@@ -7,7 +7,7 @@ import { getCurrentSession } from "@/lib/auth/current-session";
 import { getMfaStatus, requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { AuthorisationError } from "@/lib/auth/errors";
 import { MAX_TOTP_FACTORS, safeNextPath } from "@/lib/auth/mfa-policy";
-import { rateLimit } from "@/lib/auth/rate-limit";
+import { hitRateLimit } from "@/lib/auth/rate-limit-db";
 import { grantFactorEnrolment, grantFactorRemoval } from "@/lib/auth/mfa-grants";
 import { recordSecurityEvent, type SecurityOutcome } from "@/lib/audit/security-audit";
 
@@ -61,9 +61,12 @@ async function authoriseSelf() {
   return session;
 }
 
-/** Five code attempts per 15 minutes per user, on top of Supabase's own limits. */
-function codeAttemptAllowed(userId: string): boolean {
-  return rateLimit(`mfa-verify:${userId}`, 5, 15 * 60 * 1000).success;
+/**
+ * Five code attempts per 15 minutes per user, across every server instance
+ * (S7), on top of Supabase's own limits.
+ */
+function codeAttemptAllowed(userId: string): Promise<boolean> {
+  return hitRateLimit("mfaVerify", userId);
 }
 
 function cleanCode(raw: string): string {
@@ -146,7 +149,7 @@ export async function confirmTotpEnrolmentAction(factorId: string, rawCode: stri
       throw err;
     }
   }
-  if (!codeAttemptAllowed(session.user.id)) {
+  if (!(await codeAttemptAllowed(session.user.id))) {
     await mfaEvent(session, "mfa.enrol", "denied", { factorId, reason: "too many attempts" });
     return { error: "Too many attempts. Wait 15 minutes and try again." };
   }
@@ -173,7 +176,7 @@ export async function verifyTotpAction(factorId: string, rawCode: string, next?:
   const code = cleanCode(rawCode);
   if (!CODE.test(code)) return { error: "Enter the 6-digit code from your authenticator app." };
   if (!session.verifiedFactors.some((f) => f.id === factorId)) return { error: "Choose one of your authenticators." };
-  if (!codeAttemptAllowed(session.user.id)) {
+  if (!(await codeAttemptAllowed(session.user.id))) {
     await mfaEvent(session, "mfa.verify", "denied", { factorId, reason: "too many attempts" });
     return { error: "Too many attempts. Wait 15 minutes and try again." };
   }

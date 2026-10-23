@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
@@ -68,7 +69,7 @@ export async function recordReferralIncomeAction(_prev: ReferralFormState, formD
     return { success: `Recorded ${partnerName} for ${scheme.name}.` };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("recordReferralIncomeAction error:", err);
+    logError("recordReferralIncomeAction error:", err);
     return { error: "Failed to record the referral income." };
   }
 }

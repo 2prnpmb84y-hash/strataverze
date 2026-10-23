@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
@@ -105,12 +106,10 @@ export async function processMigrationAction(
     if (err instanceof AuthorisationError) {
       return { error: err.message };
     }
-    console.error("Migration import error:", err);
+    logError("Migration import error:", err);
     return {
-      error:
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred during import.",
+      // Database and library messages stay in the server log (S7, SEC-025).
+      error: "An unexpected error occurred during import.",
     };
   }
 }
@@ -165,12 +164,10 @@ export async function validateMigrationAction(
     if (err instanceof AuthorisationError) {
       return { error: err.message };
     }
-    console.error("Migration validation error:", err);
+    logError("Migration validation error:", err);
     return {
-      error:
-        err instanceof Error
-          ? err.message
-          : "An unexpected error occurred during validation.",
+      // Database and library messages stay in the server log (S7, SEC-025).
+      error: "An unexpected error occurred during validation.",
     };
   }
 }
@@ -179,7 +176,7 @@ export async function validateMigrationAction(
 
 function cutoverError(err: unknown): ActionState {
   if (err instanceof AuthorisationError || err instanceof CutoverError) return { error: err.message };
-  console.error("Cutover error:", err);
+  logError("Cutover error:", err);
   return { error: err instanceof Error ? err.message : "Something went wrong with the cutover." };
 }
 

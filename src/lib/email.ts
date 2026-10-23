@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { plainSubject } from "@/lib/email-templates/html";
 
 const apiKey = process.env.RESEND_API_KEY;
 // Construct the client only when a key is present. Passing an undefined key to
@@ -27,9 +28,8 @@ type SendEmailParams = {
  */
 export async function sendEmail({ to, subject, html, attachments }: SendEmailParams): Promise<boolean> {
   if (!resend) {
-    console.log(
-      `[email] Skipping email (no RESEND_API_KEY): recipients=${Array.isArray(to) ? to.length : 1}, subject="${subject}"`,
-    );
+    // The subject can name people or buildings, so it is not logged (S7, SEC-026).
+    console.log(`[email] Skipping email (no RESEND_API_KEY): recipients=${Array.isArray(to) ? to.length : 1}`);
     return false;
   }
 
@@ -37,17 +37,17 @@ export async function sendEmail({ to, subject, html, attachments }: SendEmailPar
     const result = await resend.emails.send({
       from: FROM_ADDRESS,
       to: Array.isArray(to) ? to : [to],
-      subject,
+      subject: plainSubject(subject),
       html,
       ...(attachments?.length ? { attachments } : {}),
     });
     if (result.error) {
-      console.error("[email] Resend rejected the email:", result.error.message);
+      console.error("[email] Resend rejected the email:", result.error.name ?? "error");
       return false;
     }
     return true;
   } catch (error) {
-    console.error("[email] Failed to send email:", error);
+    console.error("[email] Failed to send email:", error instanceof Error ? error.name : "error");
     return false;
   }
 }

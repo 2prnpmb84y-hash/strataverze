@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { headers } from "next/headers";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
@@ -22,7 +23,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function failure(err: unknown, fallback: string): CreditActionState {
   if (err instanceof AuthorisationError || err instanceof PaymentControlError) return { error: err.message };
-  console.error(fallback, err);
+  logError(fallback, err);
   return { error: fallback };
 }
 

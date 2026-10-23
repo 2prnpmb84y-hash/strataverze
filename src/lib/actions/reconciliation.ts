@@ -22,8 +22,9 @@ function failure(err: unknown, fallback: string): ReconciliationActionResult {
   if (err instanceof AuthorisationError || err instanceof ReconciliationError || err instanceof FeeConfirmationError) {
     return { error: err.message };
   }
-  console.error(fallback, err);
-  return { error: err instanceof Error ? err.message : fallback };
+  // Database and library messages stay in the server log (S7, SEC-025).
+  console.error(fallback, err instanceof Error ? err.name : "error");
+  return { error: fallback };
 }
 
 const toCentsList = (rows: { id: string; amount: number }[]) =>

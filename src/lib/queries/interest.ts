@@ -1,3 +1,4 @@
+import { logError } from "@/lib/log";
 import { db } from "@/prisma/db";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -76,7 +77,7 @@ export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
       schemeName: scheme ? String(scheme.name) : "",
     };
   } catch (err) {
-    console.error("[interest] Failed to calculate interest:", err);
+    logError("[interest] Failed to calculate interest:", err);
     return null;
   }
 }

@@ -1,3 +1,4 @@
+import { logError } from "@/lib/log";
 /**
  * Gather what each levy notice will state, check it against the content
  * rules, and send the notices (server side).
@@ -118,7 +119,7 @@ export async function sendIssuedNotices(input: {
           const pdf = await generateLevyNoticePdf(n.noticeId, input.issuerId);
           if (pdf) attachments = [{ filename: pdf.fileName, content: Buffer.from(pdf.bytes), contentType: "application/pdf" }];
         } catch (err) {
-          console.error("[levy-notices] Could not attach the PDF:", err);
+          logError("[levy-notices] Could not attach the PDF:", err);
         }
       }
       const ok = await sendEmail({
@@ -146,7 +147,7 @@ export async function sendIssuedNotices(input: {
       if (ok) sent += 1;
     }
   } catch (err) {
-    console.error("[levy-notices] Failed to send notices:", err);
+    logError("[levy-notices] Failed to send notices:", err);
   }
   return sent;
 }

@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { siteUrl } from "@/lib/site-url";
@@ -180,7 +181,7 @@ export async function uploadPaymentConfirmationAction(
           );
         }
       } catch (err) {
-        console.error("Could not email advisers about a possible duplicate:", err);
+        logError("Could not email advisers about a possible duplicate:", err);
       }
     }
 

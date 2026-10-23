@@ -5,6 +5,7 @@ import { canSeeDocument } from "@/lib/documents/visibility";
 import { db } from "@/prisma/db";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { hitRateLimit } from "@/lib/auth/rate-limit-db";
 import {
   MAX_PER_TYPE,
   MAX_QUERY_LENGTH,
@@ -41,6 +42,8 @@ export async function globalSearch(
 
   const profile = await getCurrentProfile();
   if (!profile) return [];
+  // Search is typed as you go; 60 a minute is plenty for a person (S7).
+  if (!(await hitRateLimit("search", profile.id))) return [];
 
   const memberships = await db.orm.public.SchemeMembership
     .where((m) => and(m.profileId.eq(profile.id), m.isActive.eq(true)))
