@@ -86,8 +86,36 @@ export function keyFinancialInformation(input: {
 }
 
 /** Whether the accounts must be audited (SSMA 2015 s 95). See AUDIT_THRESHOLD. */
-export function auditRequired(input: { lots: number; annualBudgetCents: number; lotsMoreThan: number; annualBudgetMoreThanCents: number }) {
+export function auditRequired(input: { lots: number; leviesRaisedCents: number; lotsMoreThan: number; leviesRaisedMoreThanCents: number }) {
   const byLots = input.lots > input.lotsMoreThan;
-  const byBudget = input.annualBudgetCents > input.annualBudgetMoreThanCents;
+  const byBudget = input.leviesRaisedCents > input.leviesRaisedMoreThanCents;
   return { required: byLots || byBudget, byLots, byBudget };
+}
+
+/**
+ * Total levies raised for a financial year, for the audit test. Each lot
+ * pays its share (unit entitlement over total entitlement) of the amount the
+ * owners corporation resolved to raise, so the scheme total is that amount:
+ * the approved or active levy schedules for the year (ordinary and special).
+ *
+ * Fund by fund, the larger of the schedules and the notices actually issued
+ * for the year is taken, so a schedule replaced part way through the year,
+ * or levies raised outside a schedule, are not missed.
+ */
+export function leviesRaisedForYear(input: {
+  schedules: Array<{ fundId: string; status: string; budgetAmountCents: number }>;
+  notices: Array<{ fundId: string; amountDueCents: number }>;
+}): { totalCents: number; byFund: Record<string, number> } {
+  const fromSchedules: Record<string, number> = {};
+  for (const s of input.schedules) {
+    if (s.status !== "APPROVED" && s.status !== "ACTIVE") continue;
+    fromSchedules[s.fundId] = (fromSchedules[s.fundId] ?? 0) + s.budgetAmountCents;
+  }
+  const fromNotices: Record<string, number> = {};
+  for (const n of input.notices) fromNotices[n.fundId] = (fromNotices[n.fundId] ?? 0) + n.amountDueCents;
+  const byFund: Record<string, number> = {};
+  for (const fundId of new Set([...Object.keys(fromSchedules), ...Object.keys(fromNotices)])) {
+    byFund[fundId] = Math.max(fromSchedules[fundId] ?? 0, fromNotices[fundId] ?? 0);
+  }
+  return { totalCents: Object.values(byFund).reduce((a, b) => a + b, 0), byFund };
 }

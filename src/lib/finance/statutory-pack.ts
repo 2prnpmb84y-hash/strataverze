@@ -7,6 +7,7 @@
  */
 import { createHash } from "node:crypto";
 import { db } from "@/prisma/db";
+import { formatAud } from "@/lib/billing/money";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { toCents } from "@/lib/billing/money";
@@ -15,7 +16,7 @@ import { toBasisEntries } from "@/lib/queries/reports";
 import { logActivity } from "@/lib/queries/activity-log";
 import { AUDIT_THRESHOLD, CAPITAL_WORKS_PLAN, KEY_FINANCIAL_INFORMATION, STATUTORY_INTEREST } from "@/config/statutory";
 import { levyIncomeAccountPicker, recognisedIncomeExpense, incomeExpenseTotals, type AccountingBasis, type RecognisedLine } from "./accounting-basis";
-import { auditRequired, keyFinancialInformation, unpaidAt, type KeyFinancialInformation } from "./key-financial-information";
+import { auditRequired, keyFinancialInformation, leviesRaisedForYear, unpaidAt, type KeyFinancialInformation } from "./key-financial-information";
 import { currentBudgetLines } from "./budgets";
 import { getAdoptedPlan, isCapitalWorksFund } from "./capital-works-plans";
 import { getSchemeInterestSetting } from "./interest-setting";
@@ -60,6 +61,7 @@ export interface StatutoryPack {
   generatedAt: string;
   funds: FundPack[];
   notes: string[];
+  /** `annualBudgetCents` is the amount tested: the total levies raised for the year (see AUDIT_THRESHOLD). */
   audit: { required: boolean; byLots: boolean; byBudget: boolean; annualBudgetCents: number };
   adopted: { meetingId: string; adoptedAt: string; snapshotId: string } | null;
 }
@@ -198,12 +200,17 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     };
   });
 
-  // Annual budget for the audit test (Regulation cl 21): contributions levied for the year, other income, other amounts held.
-  const levied = notices.filter((n) => isoDay(n.dueDate) >= start).reduce((s, n) => s + toCents(String(n.amountDue)), 0);
-  const otherIncome = fundPacks.reduce((s, f) => s + f.income.filter((r) => r.accountSubType !== "LEVY_INCOME").reduce((t, r) => t + r.amountCents, 0), 0);
-  const held = fundPacks.reduce((s, f) => s + Math.max(0, f.keyInformation.balanceCarriedForwardCents), 0);
-  const annualBudgetCents = levied + otherIncome + held;
-  const audit = { ...auditRequired({ lots: scheme.totalLots, annualBudgetCents, ...AUDIT_THRESHOLD }), annualBudgetCents };
+  // The audit test: total levies raised for the year (AUDIT_THRESHOLD).
+  const schedules = await db.orm.public.LevySchedule.where((x) => and(x.schemeId.eq(schemeId), x.financialYear.eq(financialYear))).limit(500).all();
+  const raised = leviesRaisedForYear({
+    schedules: schedules.map((x) => ({ fundId: x.fundId, status: String(x.status), budgetAmountCents: toCents(String(x.budgetAmount)) })),
+    notices: notices.filter((n) => isoDay(n.dueDate) >= start).map((n) => ({ fundId: n.fundId, amountDueCents: toCents(String(n.amountDue)) })),
+  });
+  const annualBudgetCents = raised.totalCents;
+  const audit = {
+    ...auditRequired({ lots: scheme.totalLots, leviesRaisedCents: annualBudgetCents, lotsMoreThan: AUDIT_THRESHOLD.lotsMoreThan, leviesRaisedMoreThanCents: AUDIT_THRESHOLD.leviesRaisedMoreThanCents }),
+    annualBudgetCents,
+  };
 
   const notes = [
     `The statement of key financial information follows the approved form (${KEY_FINANCIAL_INFORMATION.source}).`,
@@ -218,7 +225,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
       ? `Capital works fund plan "${plan.title}" was adopted${plan.adoptedAt ? ` on ${isoDay(plan.adoptedAt)}` : ""} and is due for review by ${isoDay(plan.reviewDueAt)} (${CAPITAL_WORKS_PLAN.source}).`
       : "No capital works fund plan has been adopted in StrataVerze.",
     audit.required
-      ? `An audit is required (${audit.byLots ? `more than ${AUDIT_THRESHOLD.lotsMoreThan} lots` : "annual budget above the prescribed amount"}; ${AUDIT_THRESHOLD.source}).`
+      ? `An audit is required (${audit.byLots ? `more than ${AUDIT_THRESHOLD.lotsMoreThan} lots` : `levies raised for the year of ${formatAud(annualBudgetCents)}, more than ${formatAud(AUDIT_THRESHOLD.leviesRaisedMoreThanCents)}`}; ${AUDIT_THRESHOLD.source}).`
       : `An audit is not required by size, but the annual general meeting must consider whether to have the accounts audited (${AUDIT_THRESHOLD.source}).`,
     "Interest earned is the total of interest income accounts, which include interest charged on overdue levies.",
   ];

@@ -351,7 +351,7 @@ export default async function LotDetailPage({
                   fileName: String(d.fileName ?? ""),
                   fileSize: Number(d.fileSize ?? 0),
                   createdAt: String(d.createdAt),
-                  fileUrl: await resolveDocumentUrl(String(d.fileUrl)),
+                  fileUrl: await resolveDocumentUrl(String(d.fileUrl)).catch(() => ""),
                 })),
               )}
             />
