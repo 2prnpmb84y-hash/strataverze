@@ -18,15 +18,15 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-[var(--background)]/80 backdrop-blur-lg border-b border-[var(--border)]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
               src="https://www.strataverze.com/brand/logo-horizontal-gradient.png"
               alt="StrataVerze"
-              width={200}
-              height={48}
-              className="h-12 w-auto"
+              width={240}
+              height={56}
+              className="h-14 w-auto"
               priority
             />
           </Link>
