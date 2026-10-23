@@ -18,8 +18,8 @@ So isolation has to hold in two places:
 
 | Severity | Count | Status |
 |---|---|---|
-| Critical | 4 | 2 fixed (SEC-001, SEC-003), 1 partly fixed (SEC-002), 1 open |
-| High | 11 | 2 fixed (SEC-005, SEC-008), 1 partly fixed (SEC-012), 8 open |
+| Critical | 4 | 3 fixed (SEC-001, SEC-003, SEC-004), 1 partly fixed (SEC-002, sign-up closes in S2) |
+| High | 11 | 6 fixed (SEC-005, 007, 008, 009, 014, and 033 in code), 1 partly fixed (SEC-012), 4 open (SEC-006 storage, SEC-010 MFA, SEC-011 sessions, SEC-013 backups) |
 | Medium | 10 | open |
 | Low | 8 | open |
 
@@ -43,7 +43,7 @@ Owner for every app item: the StrataVerze development team (implemented by Claud
 | SEC-001 | Any signed-in user could make themselves platform admin by updating `profiles.is_platform_admin` through the Data API (the update policy and default grants covered every column) | Database grants and RLS | V: a rolled-back proof reported "rows updated: 1" | Revoked browser-role writes on `profiles`. Added a trigger that rejects any change to that column from the browser roles. | **Fixed 23 Oct** (PR #38). Re-proof: "permission denied". Trigger proof: "can only be changed by the server". |
 | SEC-002 | Anyone can become an Adviser: open Supabase sign-up, then `createSchemeAction` needs only sign-in and makes the creator ADVISER of the new scheme | Auth settings, `adviser/schemes/actions.ts:89`, `queries/schemes.ts:140` | V | Limit building creation to platform admins. Close open sign-up once invitation and supplier sign-up run server-side (see Accounts below). | **Partly fixed 23 Oct** (S0, PR #40): building creation and strata roll parsing need platform admin. Open sign-up closes in S2. |
 | SEC-003 | 6 of 8 debt recovery actions check only that someone is signed in. An owner can mark their own instalments paid, close or write off their own case, or exclude it from recovery. Anyone can open cases on any scheme. | `lib/actions/debt-recovery.ts:32,106,244,382,439,466` | V | Scheme and role check in every action. Load the case and confirm it belongs to the scheme. Take the role from the membership, not the form. | **Fixed 23 Oct** (S0, PR #40), with cross-scheme and debtor tests |
-| SEC-004 | Systemic cross-scheme record access in server actions. The action authorises the scheme id it was sent, then reads, updates or deletes the record id it was sent, without checking the two belong together. | Adviser CRUD (about 86 of 161 actions: lots, lot workflows, meetings, motions, agenda, minutes, insurance, announcements, by-laws, compliance, contacts, documents, funds, work orders), finance (post journal, lock and reopen period, bank accounts, account codes, matching rules), `works.ts` (about 25 actions), `contractor.ts` licence and insurance | V (samples: `deleteLotAction`, `submitApprovalDecision`, `saveLicence`), R for the rest | One shared helper that loads a record only within the authorised scheme. Make every query mutator require `schemeId`. Automated tests. | Open |
+| SEC-004 | Systemic cross-scheme record access in server actions. The action authorises the scheme id it was sent, then reads, updates or deletes the record id it was sent, without checking the two belong together. | Adviser CRUD (about 86 of 161 actions: lots, lot workflows, meetings, motions, agenda, minutes, insurance, announcements, by-laws, compliance, contacts, documents, funds, work orders), finance (post journal, lock and reopen period, bank accounts, account codes, matching rules), `works.ts` (about 25 actions), `contractor.ts` licence and insurance | V (samples: `deleteLotAction`, `submitApprovalDecision`, `saveLicence`), R for the rest | One shared helper that loads a record only within the authorised scheme. Make every query mutator require `schemeId`. Automated tests. | **Fixed 23 Oct** (S1, PR #41). An independent review found no cross-scheme paths left. |
 
 SEC-004 also includes mass assignment. `createMatchingRule({ schemeId, ...data })` lets the caller's `data.schemeId` override the authorised scheme, so a rule with `autoPost` could be planted in another building (V).
 
@@ -53,15 +53,16 @@ SEC-004 also includes mass assignment. `createMatchingRule({ schemeId, ...data }
 |---|---|---|---|---|---|
 | SEC-005 | **Data API is wide open to members.** `anon` and `authenticated` hold full grants on all 142 tables. Policies let any member, suppliers included, read their scheme's levy notices, journals, bank transactions, bank accounts, contacts, activity log, invitations (with tokens) and co-members' emails and phones. `schemes` and `organisations` accept inserts from anyone, including signed-out callers (`CHECK true`, role `public`). GraphQL is exposed too. | Database | V | Revoke all table, sequence and default privileges from `anon` and `authenticated`. Keep only the function EXECUTE that storage needs. Optionally stop exposing `public` in the API settings. RLS stays as a second layer. | **Fixed 23 Oct** (S0, PR #40). Re-proof: every direct read and write returns "permission denied" over HTTP. Storage access for members still works. |
 | SEC-006 | **Storage is readable by any member of the scheme.** Suppliers and owners can list and download every file under `schemes/<id>/`, including other owners' payment confirmations. The signing actions sign any path the caller sends. Uploads go from the browser directly, so server validation never runs. No MIME restriction on the bucket. SVG allowed. | Storage policies, `documents/actions.ts:307`, `owner insurance/actions.ts:18`, upload forms | V (policy), R (actions) | Server-only storage: uploads through server-issued signed upload URLs after authorisation, downloads through short-lived links signed only after checking the document record and its visibility. Remove the browser storage policies. MIME allow-list and size limit on the bucket. No SVG. | Open |
-| SEC-007 | Payment controls can be bypassed. `authoriseWorksPayment` skips the verified bank details check when the field is omitted, accepts any amount, and takes a free-text beneficiary. | `works.ts:1112-1150` | V | Require a VERIFIED bank version for the invoice's contractor. Cap at the approved amount less prior instructions. Take the beneficiary from the bank record. | Open |
+| SEC-007 | Payment controls can be bypassed. `authoriseWorksPayment` skips the verified bank details check when the field is omitted, accepts any amount, and takes a free-text beneficiary. | `works.ts:1112-1150` | V | Require a VERIFIED bank version for the invoice's contractor. Cap at the approved amount less prior instructions. Take the beneficiary from the bank record. | **Fixed 23 Oct** (S1, PR #41). Works payments stay blocked until a bank detail verification step exists. |
 | SEC-008 | Sign-in only on contractor and quote actions. Any account can submit quotes on any RFQ in any contractor's name (`submitWorksQuotation`) and rewrite any contractor's ABN, email and phone (`updateContractorBusiness`). Contractors can submit their own forged ABR result (`saveAbnLookupResult`). | `works.ts:659,497`, `contractor.ts:262` | V (first two), R | Require an active contractor contact. Remove the duplicate actions. ABN checks only through the server-side ABR lookup. | **Fixed 23 Oct** (S0, PR #40). Unused `contractor.ts` removed. |
-| SEC-009 | Cross-scheme and over-broad reads | various pages, see the list below | V (dashboard), R (rest) | Membership and record-scope checks on every page. Minimal fields returned. | Open |
+| SEC-009 | Cross-scheme and over-broad reads | various pages, see the list below | V (dashboard), R (rest) | Membership and record-scope checks on every page. Minimal fields returned. | **Fixed 23 Oct** (S1, PR #41) |
 | SEC-010 | No MFA in the app. TOTP is enabled in Supabase, but there is no enrolment, challenge or enforcement, and 0 factors are enrolled. | Auth | V | See MFA design below | Open |
 | SEC-011 | Sessions never expire. Time-box and inactivity settings need the Supabase Pro plan, and the app enforces no timeout. | Auth | V | App-enforced idle and absolute timeouts (see Sessions below) | Open |
 | SEC-012 | Auth configuration is weak | Supabase Auth | V | See the list below | **Partly fixed 23 Oct**: Site URL, redirect list, and minimum 8 characters with all four character types. Open sign-up and CAPTCHA wait for S2. |
 | SEC-013 | No database backups. The Supabase Free plan includes no backups. | Supabase plan | V | Upgrade to Pro (daily backups, PITR available as an add-on), or run a scheduled encrypted export as an interim measure | Open, needs decision |
-| SEC-014 | Governance and role integrity | owner and adviser governance actions, `payment-controls.ts:28` | R | See the list below | Open |
+| SEC-014 | Governance and role integrity | owner and adviser governance actions, `payment-controls.ts:28` | R | See the list below | **Fixed 23 Oct** (S1, PR #41), including the independent review items (co-owner conflicts, committee and owner votes kept apart, own-lot refunds) |
 | SEC-033 | **Email links pointed at an unregistered domain.** Invitation, levy and notification emails linked to `https://strataverze.com.au` (DNS: does not exist). Anyone registering it would receive owners' clicks. No app emails have been sent yet, because `RESEND_API_KEY` is not set in Vercel. | `lib/notifications.ts`, `levies/notice-content-data.ts`, `email.ts` sender | V | `siteUrl()` falls back to the production deployment. Register the domain before using it as the sender or link domain. | **Fixed in code 23 Oct** (S0, PR #40). Domain decision open. |
+| SEC-034 | **Multi-row writes changed only one row.** In Prisma 8, `update()` and `delete()` change only the first matching row. A receipt covering several levy payments linked only one of them. Moving or unmatching a receipt left other bank allocations behind. Insurance item replacement left old items. Budget, plan and notice supersession could miss rows. | finance, insurance, meetings queries | V (Prisma type definitions) | `updateAndCount` / `deleteAndCount`, plus a guard test | **Fixed 23 Oct** (S1, PR #41) |
 
 SEC-009 covers these reads:
 - The owner dashboard trusts the scheme-selection cookie. Any signed-in user who sets it sees another scheme's meetings and work orders, and committee members anywhere also see its fund balances.
@@ -91,16 +92,16 @@ SEC-014 covers these integrity gaps:
 
 | ID | Finding | Evidence | Remediation |
 |---|---|---|---|
-| SEC-015 | Admin pages and 10 finance list pages rely on the layout check only | R | Check in every page |
+| SEC-015 | Admin pages and 10 finance list pages rely on the layout check only | R | Check in every page **Fixed 23 Oct (S1, PR #41).** |
 | SEC-016 | **Audit logging gaps.** `activity_logs` needs a scheme, so there are no auth, MFA or platform events. Rows can be altered or deleted. No outcome, IP or request context. No downloads, contact views or access denials recorded (except finance documents). Supabase Auth audit-to-database is off. Owners see the scheme's whole activity log. | V | New append-only security audit log (see Audit below) |
 | SEC-017 | **Database TLS not enforced.** Supabase "Enforce SSL on incoming connections" is off. The local `DATABASE_URL` has no `sslmode`, and the production value is unconfirmed. | V | Enforce SSL (brief database reboot), add `sslmode` to the connection strings and test on a preview deployment |
 | SEC-018 | **Preview deployments use production database credentials.** All variables are scoped "Production and Preview", none marked Sensitive. | V | Separate preview database, or remove production credentials from Preview. Mark the variables Sensitive. |
 | SEC-019 | Email templates insert user text into HTML unescaped (announcements, invitations, meetings, levies, work orders). This is a phishing vector from the StrataVerze sending address. | R | One shared escape for every value, and validate link targets |
 | SEC-020 | Rate limiting is per serverless instance and in memory, applied only to login | R | Database-backed limiter on login, sign-up, forgot and reset password, invitation acceptance and search |
 | SEC-021 | **Dependency management.** No Dependabot, no audit in CI, Actions not pinned. `npm audit` (production) lists 14 findings: 8 high, 6 moderate. Most sit in the Prisma CLI toolchain (hono, lodash, alchemy), which is installed as a runtime dependency. `fflate` 0.8.2 has a moderate denial-of-service issue (fix 0.8.3). An unused `@prisma/client` 7 is installed. | V | Dependabot, an audit gate in CI, move the CLI to devDependencies, bump `fflate`, remove the unused client |
-| SEC-022 | Client-asserted upload details: `fileUrl`, size and MIME type are trusted, and `resolveDocumentUrl` passes external URLs through, which makes an open redirect | R | Covered by the SEC-006 rebuild |
-| SEC-023 | Global `hasCommitteeRole` and similar checks are not tied to the scheme in hand | V | Scheme-scoped role checks |
-| SEC-024 | The search and profile actions have no rate limit and allow 2-character wildcard searches | R | Minimum length, exact email match, rate limit |
+| SEC-022 | Client-asserted upload details: `fileUrl`, size and MIME type are trusted, and `resolveDocumentUrl` passes external URLs through, which makes an open redirect | R | Covered by the SEC-006 rebuild **Partly fixed 23 Oct (S1): paths limited to the scheme folder, no external URLs. Server-side storage in S3..** |
+| SEC-023 | Global `hasCommitteeRole` and similar checks are not tied to the scheme in hand | V | Scheme-scoped role checks **Fixed 23 Oct (S1).** |
+| SEC-024 | The search and profile actions have no rate limit and allow 2-character wildcard searches | R | Minimum length, exact email match, rate limit **Fixed 23 Oct (S1).** |
 
 ### Low
 
@@ -112,8 +113,8 @@ SEC-014 covers these integrity gaps:
 | SEC-028 | Authenticated API responses send `cache-control: public, max-age=0`. They should send `private, no-store`. |
 | SEC-029 | The signed URL helper defaults to 3600 seconds |
 | SEC-030 | Supabase auth cookies are readable by JavaScript (the `@supabase/ssr` design). The strict nonce CSP is the main mitigation. |
-| SEC-031 | The pending invitation lookup uses an unescaped `ilike` on email |
-| SEC-032 | One contractor review path lacks the self-approval guard |
+| SEC-031 | The pending invitation lookup uses an unescaped `ilike` on email **Fixed 23 Oct (S1).** |
+| SEC-032 | One contractor review path lacks the self-approval guard **Fixed 23 Oct (S1).** |
 
 ### Controls already working (with evidence)
 
@@ -289,6 +290,16 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 3. **Committee access to owner contact details.** Names and lot numbers only, or emails and phones too?
 4. **A separate Supabase project for preview deployments**, or preview runs without database credentials.
 5. **The domain.** Register `strataverze.com.au` (or choose another), then set `APP_URL`, `NEXT_PUBLIC_SITE_URL` and `EMAIL_FROM` in Vercel. Email sending also needs `RESEND_API_KEY`, which is not set yet, and the invitation process depends on it.
+
+## Open items raised in S1 (for decision or a later stage)
+
+- **Bank detail verification.** Nothing yet lets StrataVerze mark a contractor's bank details as verified, so works payments cannot be authorised. A verification step (with call-back to a known number) needs building.
+- **Owner view of work orders.** The approved matrix says owners see only work orders they raised. The maintenance list still shows all of the building's work orders. Decision needed.
+- **Committee calling general meetings.** The committee's meeting form can create AGM and EGM meetings, which email every member. This is right for self-managed buildings, where the secretary convenes meetings. Decision needed.
+- **Payment policy loosening.** A treasurer (not also an adviser) can loosen the payment policy alone. A second-approver step is a follow-up.
+- **Contractor identity after approval.** An approved contractor can still change its company name, phone and email without re-review.
+- **Owner assignment.** An adviser can assign any existing profile as owner of a lot without an invitation (replaced by the invitation flow in S2).
+- **Password change.** Changing a password does not ask for the current password (S4, with re-authentication).
 
 ## Residual risks and limitations
 
