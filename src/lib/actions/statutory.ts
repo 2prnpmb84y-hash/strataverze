@@ -5,6 +5,7 @@ import { db } from "@/prisma/db";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { StatutoryPackError, adoptStatutoryPack } from "@/lib/finance/statutory-pack";
 import { logActivity } from "@/lib/queries/activity-log";
+import { generateStatutoryPackPdf } from "@/lib/pdf/generate";
 
 export type StatutoryActionResult = { error?: string; success?: boolean };
 
@@ -15,6 +16,12 @@ export async function adoptStatutoryPackAction(schemeId: string, financialYear: 
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     if (!meetingId || !motionId) return { error: "Choose the annual general meeting and the motion that adopted the statements." };
     await adoptStatutoryPack({ schemeId, financialYear, meetingId, motionId, actorId: profile.id });
+    // Keep the adopted statements as a PDF too, linked to the meeting.
+    try {
+      await generateStatutoryPackPdf({ schemeId, financialYear, actorId: profile.id });
+    } catch (err) {
+      console.error("[statutory] Could not store the PDF of the adopted statements:", err);
+    }
     revalidatePath(path(schemeId));
     revalidatePath(`/adviser/schemes/${schemeId}/finance/documents`);
     return { success: true };

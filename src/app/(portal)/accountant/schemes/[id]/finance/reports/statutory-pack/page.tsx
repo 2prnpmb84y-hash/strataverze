@@ -43,6 +43,9 @@ export default async function AccountantStatutoryPackPage({ params, searchParams
         <a href={`/api/finance/audit-export?schemeId=${id}&year=${financialYear}`} className="rounded-[var(--radius-card)] border border-line bg-white px-4 py-2 text-sm font-medium text-ink hover:bg-zinc-50">
           Download audit export (zip)
         </a>
+        <a href={`/api/finance/pdf/statutory-pack?schemeId=${id}&year=${financialYear}`} target="_blank" rel="noopener" className="rounded-[var(--radius-card)] border border-line bg-white px-4 py-2 text-sm font-medium text-ink hover:bg-zinc-50">
+          Financial statements (PDF)
+        </a>
         {pack.adopted && (
           <a href={`/api/finance/statutory-pack/${pack.adopted.snapshotId}`} className="text-sm underline">
             Download the locked copy

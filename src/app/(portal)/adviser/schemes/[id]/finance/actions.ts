@@ -1009,8 +1009,12 @@ export async function issueScheduleNoticesAction(
       });
     }
 
-    // Email each notice to its owner. A failed email does not undo the issue.
-    const emailed = await sendIssuedNotices(contentInput);
+    // Email each notice to its owner, with the notice attached as a PDF. A failed email does not undo the issue.
+    const ids = new Map(created.map((n) => [String(n.noticeNumber), n.id]));
+    const emailed = await sendIssuedNotices({
+      ...contentInput,
+      notices: contentInput.notices.map((n) => ({ ...n, noticeId: ids.get(n.noticeNumber) })),
+    });
     await logActivity({
       schemeId,
       actorId: profile.id,

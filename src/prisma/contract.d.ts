@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e7ddc74e9278944ad5a02db8f86c207502fa4547e230d1e39c39531963e44073'>;
+  StorageHashBase<'115351ba42e587054fa14f6d1ebcef30e043240e018bf71ac8bd52c9b84db364'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -739,6 +739,7 @@ export type FieldOutputTypes = {
     readonly FinancialDocument: {
       readonly amount: Numeric<12, 2> | null;
       readonly bankTransactionId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly contentHash: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly documentDate: CodecTypes['pg/date-string@1']['output'] | null;
       readonly documentStatus: CodecTypes['pg/text@1']['output'];
@@ -762,6 +763,11 @@ export type FieldOutputTypes = {
       readonly uploadedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly uploadedBy: CodecTypes['pg/uuid@1']['output'];
       readonly verificationStatus: CodecTypes['pg/text@1']['output'];
+    };
+    readonly FinancialDocumentFile: {
+      readonly contentBase64: CodecTypes['pg/text@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly financialDocumentId: CodecTypes['pg/uuid@1']['output'];
     };
     readonly FinancialPeriod: {
       readonly closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -3018,6 +3024,7 @@ export type FieldInputTypes = {
     readonly FinancialDocument: {
       readonly amount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly bankTransactionId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly contentHash: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly documentDate: CodecTypes['pg/date-string@1']['input'] | null;
       readonly documentStatus: CodecTypes['pg/text@1']['input'];
@@ -3041,6 +3048,11 @@ export type FieldInputTypes = {
       readonly uploadedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly uploadedBy: CodecTypes['pg/uuid@1']['input'];
       readonly verificationStatus: CodecTypes['pg/text@1']['input'];
+    };
+    readonly FinancialDocumentFile: {
+      readonly contentBase64: CodecTypes['pg/text@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly financialDocumentId: CodecTypes['pg/uuid@1']['input'];
     };
     readonly FinancialPeriod: {
       readonly closedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
@@ -5294,9 +5306,15 @@ export type StorageColumnTypes = {
       readonly unit_entitlement: CodecTypes['pg/int4@1']['output'];
       readonly vote_value: CodecTypes['pg/text@1']['output'];
     };
+    readonly financial_document_files: {
+      readonly content_base64: CodecTypes['pg/text@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly financial_document_id: CodecTypes['pg/uuid@1']['output'];
+    };
     readonly financial_documents: {
       readonly amount: Numeric<12, 2> | null;
       readonly bank_transaction_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly content_hash: CodecTypes['pg/text@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly document_date: CodecTypes['pg/date-string@1']['output'] | null;
       readonly document_status: CodecTypes['pg/text@1']['output'];
@@ -7574,9 +7592,15 @@ export type StorageColumnInputTypes = {
       readonly unit_entitlement: CodecTypes['pg/int4@1']['input'];
       readonly vote_value: CodecTypes['pg/text@1']['input'];
     };
+    readonly financial_document_files: {
+      readonly content_base64: CodecTypes['pg/text@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly financial_document_id: CodecTypes['pg/uuid@1']['input'];
+    };
     readonly financial_documents: {
       readonly amount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly bank_transaction_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly content_hash: CodecTypes['pg/text@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly document_date: CodecTypes['pg/date-string@1']['input'] | null;
       readonly document_status: CodecTypes['pg/text@1']['input'];
@@ -9995,6 +10019,7 @@ export namespace Models {
   export type public_FinancialDocument = {
     amount: Numeric<12, 2> | null;
     bankTransactionId: CodecTypes['pg/uuid@1']['output'] | null;
+    contentHash: CodecTypes['pg/text@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     documentDate: CodecTypes['pg/date-string@1']['output'] | null;
     documentStatus: CodecTypes['pg/text@1']['output'];
@@ -10026,6 +10051,12 @@ export namespace Models {
     supplierInvoice: public_SupplierInvoice | null;
     readonly [RelationKeys]?:
       'bankTransaction' | 'levyNotice' | 'lot' | 'scheme' | 'supplier' | 'supplierInvoice';
+  };
+  export type public_FinancialDocumentFile = {
+    contentBase64: CodecTypes['pg/text@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    financialDocumentId: CodecTypes['pg/uuid@1']['output'];
+    readonly [RelationKeys]?: never;
   };
   export type public_FinancialPeriod = {
     closedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -12579,6 +12610,7 @@ export declare const models: {
     ElectronicBallot: Models.public_ElectronicBallot;
     ElectronicVote: Models.public_ElectronicVote;
     FinancialDocument: Models.public_FinancialDocument;
+    FinancialDocumentFile: Models.public_FinancialDocumentFile;
     FinancialPeriod: Models.public_FinancialPeriod;
     Fund: Models.public_Fund;
     InsuranceClaim: Models.public_InsuranceClaim;
@@ -16840,6 +16872,33 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly financial_document_files: {
+              columns: {
+                readonly content_base64: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly financial_document_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['financial_document_id'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly financial_documents: {
               columns: {
                 readonly amount: {
@@ -16852,6 +16911,12 @@ type ContractBase = Omit<
                 readonly bank_transaction_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly content_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -31998,6 +32063,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ElectronicVote';
     };
+    readonly financial_document_files: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'FinancialDocumentFile';
+    };
     readonly financial_documents: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'FinancialDocument';
@@ -36271,6 +36340,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly contentHash: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -36466,6 +36539,7 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly amount: { readonly column: 'amount' };
                 readonly bankTransactionId: { readonly column: 'bank_transaction_id' };
+                readonly contentHash: { readonly column: 'content_hash' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly documentDate: { readonly column: 'document_date' };
                 readonly documentStatus: { readonly column: 'document_status' };
@@ -36489,6 +36563,35 @@ type ContractBase = Omit<
                 readonly uploadedAt: { readonly column: 'uploaded_at' };
                 readonly uploadedBy: { readonly column: 'uploaded_by' };
                 readonly verificationStatus: { readonly column: 'verification_status' };
+              };
+            };
+          };
+          readonly FinancialDocumentFile: {
+            readonly fields: {
+              readonly contentBase64: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly financialDocumentId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'financial_document_files';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly contentBase64: { readonly column: 'content_base64' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly financialDocumentId: { readonly column: 'financial_document_id' };
               };
             };
           };

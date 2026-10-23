@@ -54,6 +54,16 @@ export default async function CommitteePackPage({
         description={String(scheme.name)}
         backHref={`/adviser/schemes/${id}/finance/reports`}
         backLabel="Reports"
+        action={
+          <a
+            href={`/api/finance/pdf/committee-pack?schemeId=${id}&startDate=${startDate}&endDate=${endDate}&year=${financialYear}`}
+            target="_blank"
+            rel="noopener"
+            className="text-sm font-medium text-turquoise underline"
+          >
+            Download PDF
+          </a>
+        }
       />
 
       <CommitteePackClient

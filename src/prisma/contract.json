@@ -128,6 +128,10 @@
       "model": "ElectronicVote",
       "namespace": "public"
     },
+    "financial_document_files": {
+      "model": "FinancialDocumentFile",
+      "namespace": "public"
+    },
     "financial_documents": {
       "model": "FinancialDocument",
       "namespace": "public"
@@ -6612,6 +6616,13 @@
                   "kind": "scalar"
                 }
               },
+              "contentHash": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -6892,6 +6903,9 @@
                 "bankTransactionId": {
                   "column": "bank_transaction_id"
                 },
+                "contentHash": {
+                  "column": "content_hash"
+                },
                 "createdAt": {
                   "column": "created_at"
                 },
@@ -6964,6 +6978,47 @@
               },
               "namespaceId": "public",
               "table": "financial_documents"
+            }
+          },
+          "FinancialDocumentFile": {
+            "fields": {
+              "contentBase64": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "financialDocumentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "contentBase64": {
+                  "column": "content_base64"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "financialDocumentId": {
+                  "column": "financial_document_id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "financial_document_files"
             }
           },
           "FinancialPeriod": {
@@ -35149,6 +35204,37 @@
               },
               "uniques": []
             },
+            "financial_document_files": {
+              "columns": {
+                "content_base64": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "financial_document_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "financial_document_id"
+                ]
+              },
+              "uniques": []
+            },
             "financial_documents": {
               "columns": {
                 "amount": {
@@ -35163,6 +35249,11 @@
                 "bank_transaction_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "content_hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "nullable": true
                 },
                 "created_at": {
@@ -52076,7 +52167,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e7ddc74e9278944ad5a02db8f86c207502fa4547e230d1e39c39531963e44073"
+    "storageHash": "115351ba42e587054fa14f6d1ebcef30e043240e018bf71ac8bd52c9b84db364"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

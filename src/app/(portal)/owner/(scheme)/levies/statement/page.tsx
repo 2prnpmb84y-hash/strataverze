@@ -101,6 +101,7 @@ export default async function OwnerStatementPage({
 
       <OwnerStatementTable
         lotOptions={lotOptions}
+        selectedSchemeId={lotEntries.find((e) => e.lotId === effectiveLotId)?.schemeId ?? ""}
         selectedLotId={effectiveLotId ?? ""}
         selectedLotLabel={selectedLotLabel}
         startDate={startDate ?? ""}

@@ -49,6 +49,9 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
         <a href={`/api/finance/audit-export?schemeId=${id}&year=${financialYear}`} className="rounded-[var(--radius-card)] border border-line bg-white px-4 py-2 text-sm font-medium text-ink hover:bg-zinc-50">
           Download audit export (zip)
         </a>
+        <a href={`/api/finance/pdf/statutory-pack?schemeId=${id}&year=${financialYear}`} target="_blank" rel="noopener" className="rounded-[var(--radius-card)] border border-line bg-white px-4 py-2 text-sm font-medium text-ink hover:bg-zinc-50">
+          Financial statements (PDF)
+        </a>
       </form>
 
       {pack.adopted ? (

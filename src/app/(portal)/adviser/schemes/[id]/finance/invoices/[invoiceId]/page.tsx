@@ -101,6 +101,13 @@ export default async function InvoiceDetailPage({
         title={`Invoice ${String(invoice.invoiceNumber ?? "")}`}
         backHref={`/adviser/schemes/${id}/finance/invoices`}
         backLabel="Invoices"
+        action={
+          Number(invoice.amountPaid ?? 0) > 0 ? (
+            <a href={`/api/finance/pdf/remittance/${invoice.id}`} target="_blank" rel="noopener" className="text-sm font-medium text-turquoise underline">
+              Remittance advice (PDF)
+            </a>
+          ) : undefined
+        }
       />
 
       {/* Status and description header */}

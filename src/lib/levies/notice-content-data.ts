@@ -9,10 +9,13 @@ import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
 import { fromCents } from "@/lib/billing/money";
 import { validateLevyNoticeContent, type MissingItem } from "@/lib/finance/levy-notice-content";
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { generateLevyNoticePdf } from "@/lib/pdf/generate";
 
 const APP_URL = process.env.APP_URL ?? "https://strataverze.com.au";
 
 export interface PlannedNotice {
+  /** Set once the notice exists, so its PDF can be attached to the email. */
+  noticeId?: string;
   lotId: string;
   lotNumber: string;
   ownerId: string | null;
@@ -21,7 +24,7 @@ export interface PlannedNotice {
   amountCents: number;
 }
 
-async function noticeContext(schemeId: string, fundId: string, issuerId: string) {
+export async function noticeContext(schemeId: string, fundId: string, issuerId: string) {
   const [scheme, fund, issuer] = await Promise.all([
     db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first(),
     db.orm.public.Fund.where((f) => f.id.eq(fundId)).first(),
@@ -82,7 +85,7 @@ export async function checkPlannedNotices(input: {
   return [...seen.values()];
 }
 
-async function ownerNames(profileIds: string[]) {
+export async function ownerNames(profileIds: string[]) {
   const map = new Map<string, { name: string; email: string | null }>();
   if (profileIds.length === 0) return map;
   const rows = await db.orm.public.Profile.where((p) => p.id.in([...new Set(profileIds)])).limit(5000).all();
@@ -107,8 +110,18 @@ export async function sendIssuedNotices(input: {
     for (const n of input.notices) {
       const owner = n.ownerId ? owners.get(n.ownerId) : null;
       if (!owner?.email) continue;
-      const ok = await sendEmail(
-        levyNoticeEmail({
+      // Attach the notice as a PDF (stored as a financial document). The email goes without it if that fails.
+      let attachments: { filename: string; content: Buffer; contentType: string }[] | undefined;
+      if (n.noticeId) {
+        try {
+          const pdf = await generateLevyNoticePdf(n.noticeId, input.issuerId);
+          if (pdf) attachments = [{ filename: pdf.fileName, content: Buffer.from(pdf.bytes), contentType: "application/pdf" }];
+        } catch (err) {
+          console.error("[levy-notices] Could not attach the PDF:", err);
+        }
+      }
+      const ok = await sendEmail({
+        ...levyNoticeEmail({
           to: owner.email,
           ownerName: owner.name,
           schemeName: scheme.name,
@@ -127,7 +140,8 @@ export async function sendIssuedNotices(input: {
           ledgerUrl: `${APP_URL}/owner/levies`,
           noInterest: setting.mode === "NO_INTEREST",
         }),
-      );
+        attachments,
+      });
       if (ok) sent += 1;
     }
   } catch (err) {

@@ -1679,6 +1679,8 @@ model FinancialDocument {
   supplierInvoiceId  String?          @map("supplier_invoice_id") @db.Uuid
   /// The meeting a document was adopted at (statutory statements pack).
   meetingId          String?          @map("meeting_id") @db.Uuid
+  /// SHA-256 of the file, for generated documents.
+  contentHash        String?          @map("content_hash")
   levyNoticeId       String?          @map("levy_notice_id") @db.Uuid
   bankTransactionId  String?          @map("bank_transaction_id") @db.Uuid
   amount             Decimal?         @db.Decimal(12, 2)
@@ -3695,4 +3697,14 @@ model StatutoryPackSnapshot {
 
   @@unique([schemeId, financialYear, meetingId])
   @@map("statutory_pack_snapshots")
+}
+
+/// The bytes of a document StrataVerze generated (a PDF), base64 encoded.
+/// Kept in the database behind the finance access checks, not in file storage.
+model FinancialDocumentFile {
+  financialDocumentId String   @id @map("financial_document_id") @db.Uuid
+  contentBase64       String   @map("content_base64")
+  createdAt           DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@map("financial_document_files")
 }

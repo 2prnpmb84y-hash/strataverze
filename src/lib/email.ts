@@ -13,6 +13,8 @@ type SendEmailParams = {
   to: string | string[];
   subject: string;
   html: string;
+  /** Files to attach, for example a levy notice PDF. */
+  attachments?: { filename: string; content: Buffer; contentType?: string }[];
 };
 
 /**
@@ -21,7 +23,7 @@ type SendEmailParams = {
  * is configured in production) so it never blocks a server action.
  * Returns true only when Resend accepted the email.
  */
-export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<boolean> {
+export async function sendEmail({ to, subject, html, attachments }: SendEmailParams): Promise<boolean> {
   if (!resend) {
     console.log(
       `[email] Skipping email (no RESEND_API_KEY): recipients=${Array.isArray(to) ? to.length : 1}, subject="${subject}"`,
@@ -35,6 +37,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
+      ...(attachments?.length ? { attachments } : {}),
     });
     if (result.error) {
       console.error("[email] Resend rejected the email:", result.error.message);

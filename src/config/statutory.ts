@@ -77,12 +77,10 @@ export const CAPITAL_WORKS_PLAN = {
  * Audit of the accounts and financial statements.
  *
  * SSMA 2015 s 95: required for a scheme of more than 100 lots, or with an
- * annual budget above the prescribed amount. The amount is understood to be
- * $250,000 (practitioner commentary); how the budget is worked out is in the
- * Strata Schemes Management Regulation 2016 cl 21 (contributions levied for
- * the year, other income, and other amounts held). Other schemes consider an
- * audit at each AGM. Confirm the lot test (more than 100, or 100 or more) and
- * where the amount is prescribed against the in-force legislation.
+ * annual budget of more than $250,000 (thresholds confirmed by StrataVerze,
+ * 23 October 2026). How the budget is worked out is in the Strata Schemes
+ * Management Regulation 2016 cl 21: contributions levied for the year, other
+ * income, and other amounts held. Other schemes consider an audit at each AGM.
  */
 export const AUDIT_THRESHOLD = {
   lotsMoreThan: 100,

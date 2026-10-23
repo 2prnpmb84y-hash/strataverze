@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   serverExternalPackages: ["unpdf", "pdfjs-dist"],
+  // The Inter font files used to render PDFs on the server.
+  outputFileTracingIncludes: {
+    "/**/*": ["./src/lib/pdf/fonts/*.ttf"],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "4mb",

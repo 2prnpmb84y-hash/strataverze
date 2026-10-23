@@ -178,7 +178,9 @@ export default async function OwnerLeviesPage() {
                             {item.title}
                           </p>
                           <p className="text-xs text-ink-muted">
-                            {item.noticeNumber}
+                            <a href={`/api/finance/pdf/levy-notice/${item.id}`} target="_blank" rel="noopener" className="underline">
+                              {item.noticeNumber} (PDF)
+                            </a>
                             {item.interestCharged > 0
                               ? ` · includes ${formatCurrency(item.interestCharged)} interest`
                               : ""}
@@ -262,7 +264,10 @@ export default async function OwnerLeviesPage() {
                         </p>
                         <p className="text-xs text-ink-muted">
                           {item.lotLabel}
-                          {` · ${item.noticeNumber}`}
+                          {" · "}
+                          <a href={`/api/finance/pdf/levy-notice/${item.id}`} target="_blank" rel="noopener" className="underline">
+                            {item.noticeNumber} (PDF)
+                          </a>
                           {" · Due "}
                           {dueDate.toLocaleDateString("en-AU", {
                             day: "numeric",

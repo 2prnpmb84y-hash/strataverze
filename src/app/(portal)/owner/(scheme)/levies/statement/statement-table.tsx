@@ -29,6 +29,7 @@ function formatDate(value: string): string {
 
 export function OwnerStatementTable({
   lotOptions,
+  selectedSchemeId,
   selectedLotId,
   selectedLotLabel,
   startDate,
@@ -40,6 +41,8 @@ export function OwnerStatementTable({
   statementLines,
 }: {
   lotOptions: { id: string; label: string }[];
+  /** The scheme of the selected lot, for the PDF link. */
+  selectedSchemeId: string;
   selectedLotId: string;
   selectedLotLabel: string;
   startDate: string;
@@ -158,6 +161,18 @@ export function OwnerStatementTable({
           <Card>
             <CardHeader
               title={`Statement — ${selectedLotLabel}`}
+              action={
+                selectedLotId ? (
+                  <a
+                    href={`/api/finance/pdf/owner-statement?schemeId=${selectedSchemeId}&lotId=${selectedLotId}${startDate ? `&startDate=${startDate}` : ""}${endDate ? `&endDate=${endDate}` : ""}`}
+                    target="_blank"
+                    rel="noopener"
+                    className="text-sm font-medium text-turquoise underline"
+                  >
+                    Download PDF
+                  </a>
+                ) : undefined
+              }
               description={
                 startDate || endDate
                   ? `Period: ${startDate || "Start"} to ${endDate || "Present"}`
