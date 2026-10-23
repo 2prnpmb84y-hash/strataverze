@@ -302,7 +302,7 @@ export default function Page() {
 
             {/* Card 2 — With a manager */}
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 flex flex-col">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal mb-5">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-lavender/10 text-brand-lavender mb-5">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
