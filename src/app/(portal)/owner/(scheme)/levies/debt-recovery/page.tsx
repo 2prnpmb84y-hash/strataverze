@@ -1,15 +1,16 @@
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme, scopeSchemeIds } from "@/lib/owner/scheme-scope";
+import { debtorMayView } from "@/lib/owner/debt-case-view";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForOwner } from "@/lib/queries/schemes";
+import { getSchemesForCommittee, getSchemesForOwner } from "@/lib/queries/schemes";
 import {
   getDebtRecoveryCasesForOwner,
   getDebtRecoveryCasesForSchemes,
 } from "@/lib/queries/debt-recovery";
-import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { PageHeader } from "@/components/ui/page-header";
 import { connection } from "next/server";
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { DebtRecoveryOwnerClient } from "./debt-recovery-owner-client";
 
 export default async function OwnerDebtRecoveryPage() {
@@ -17,30 +18,41 @@ export default async function OwnerDebtRecoveryPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  // Check if user has committee access (elevated permissions)
-  const committee = await requireCommitteeAccess();
-  const isCommittee = !!committee;
+  const [committeeSchemes, ownerSchemes, selectedSchemeId, ownerMemberships, ownCases] =
+    await Promise.all([
+      getSchemesForCommittee(profile.id),
+      getSchemesForOwner(profile.id),
+      getVerifiedSelectedSchemeId(),
+      // Inactive too, for the former-owner grace period.
+      db.orm.public.SchemeMembership
+        .where((m) => and(m.profileId.eq(profile.id), m.role.eq("OWNER")))
+        .limit(200)
+        .all(),
+      getDebtRecoveryCasesForOwner(profile.id),
+    ]);
 
-  const selectedSchemeId = await getSelectedSchemeId();
+  // Committee members see every case of the schemes where they sit on the
+  // committee (per scheme, not "committee somewhere"); everywhere else an
+  // owner sees only their own cases, while they still own (or within 30
+  // days of owning) the lot.
+  const committeeIds = scopeSchemeIds(committeeSchemes.map((s) => s.id), selectedSchemeId);
+  const isCommittee = committeeIds.length > 0;
+  const committeeCases = await getDebtRecoveryCasesForSchemes(committeeIds);
+  const seen = new Set(committeeCases.map((c) => c.id));
+  const cases = [
+    ...committeeCases,
+    ...ownCases.filter(
+      (c) =>
+        !seen.has(c.id) &&
+        (!selectedSchemeId || c.schemeId === selectedSchemeId) &&
+        debtorMayView(c, profile.id, ownerMemberships),
+    ),
+  ];
 
-  let cases;
-  if (isCommittee) {
-    // Committee members see all cases across their schemes
-    cases = await getDebtRecoveryCasesForSchemes(
-      scopeSchemeIds(committee.schemeIds, selectedSchemeId),
-    );
-  } else {
-    // Regular owners see only their own cases
-    cases = (await getDebtRecoveryCasesForOwner(profile.id)).filter(
-      (c) => !selectedSchemeId || c.schemeId === selectedSchemeId,
-    );
-  }
-
-  // Build lot/scheme lookup from owner schemes
-  const schemes = scopeToSelectedScheme(
-    isCommittee ? committee.schemes : await getSchemesForOwner(profile.id),
-    selectedSchemeId,
-  );
+  // Build lot/scheme lookup from the user's schemes
+  const byId = new Map<string, { id: string; name: string }>();
+  for (const s of [...ownerSchemes, ...committeeSchemes]) byId.set(s.id, { id: s.id, name: s.name });
+  const schemes = scopeToSelectedScheme([...byId.values()], selectedSchemeId);
 
   const schemeLookup = new Map(schemes.map((s) => [s.id, s.name]));
 

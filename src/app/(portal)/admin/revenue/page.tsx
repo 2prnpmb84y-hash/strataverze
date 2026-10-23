@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { db } from "@/prisma/db";
+import { requirePlatformAdminPage } from "@/lib/auth/require-access";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -13,9 +14,10 @@ const isoTime = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v 
 const day = (iso: string | null) =>
   iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "No end date";
 
-/** StrataVerze staff: revenue at a glance. Access is checked by the admin layout. */
+/** StrataVerze staff: revenue at a glance. Checked here as well as in the admin layout (finding F5). */
 export default async function RevenuePage() {
   await connection();
+  await requirePlatformAdminPage();
   const now = new Date();
   const [subscriptions, schemes, lots, priceBook, feeEvents, invoices] = await Promise.all([
     db.orm.public.SchemeSubscription.limit(10000).all(),

@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { createDocument } from "@/lib/queries/documents";
 import { createClient } from "@/lib/supabase/server";
 import { validateFileUpload } from "@/lib/upload/validate-mime";
@@ -26,9 +27,13 @@ export async function uploadDocumentAction(
   _prev: DocumentFormState,
   formData: FormData,
 ): Promise<DocumentFormState> {
+  // Only the committee (and advisers) publish to the scheme library, whatever
+  // the category: the upload page is committee-only and every category here
+  // is an official record (minutes, by-laws, financial, insurance,
+  // compliance). Owners do not upload to the library (finding F8).
   let profile;
   try {
-    ({ profile } = await requireSchemeMembership(schemeId, ["OWNER", "COMMITTEE"]));
+    ({ profile } = await requireSchemeAccess(schemeId, "documents.publish"));
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;

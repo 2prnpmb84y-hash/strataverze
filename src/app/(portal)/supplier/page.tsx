@@ -233,8 +233,8 @@ export default async function SupplierDashboard() {
                     {qr.category}
                     {qr.budget && ` · ${qr.budget}`}
                     {" · "}
-                    {qr.quotes?.length ?? 0} quote
-                    {(qr.quotes?.length ?? 0) === 1 ? "" : "s"} submitted
+                    {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0)} quote
+                    {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0) === 1 ? "" : "s"} submitted
                   </p>
                 </div>
                 <span className="shrink-0 inline-flex items-center rounded-full bg-supplier/10 px-2.5 py-0.5 text-xs font-medium text-supplier">

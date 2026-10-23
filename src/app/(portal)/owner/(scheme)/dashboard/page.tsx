@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { getCurrentProfile, hasCommitteeRole } from "@/lib/queries/profiles";
+import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { getLevyNoticesForLots } from "@/lib/queries/levies";
@@ -26,17 +26,21 @@ export default async function OwnerDashboard() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const selectedSchemeId = await getSelectedSchemeId();
-  if (!selectedSchemeId) {
+  // The cookie is only a preference: the user must hold an active OWNER or
+  // COMMITTEE membership on the selected scheme (finding F1).
+  const selected = await getSelectedOwnerScheme();
+  if (!selected) {
     redirect("/owner");
   }
+  const selectedSchemeId = selected.schemeId;
 
   const scheme = await getSchemeById(selectedSchemeId);
   if (!scheme) {
     redirect("/owner");
   }
 
-  const isCommittee = await hasCommitteeRole(profile.id);
+  // Committee of THIS scheme, not of any scheme.
+  const isCommittee = selected.roles.includes("COMMITTEE");
 
   const schemeIds = [selectedSchemeId];
 

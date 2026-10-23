@@ -25,10 +25,15 @@ export async function getInvitationsForScheme(schemeId: string, limit = 200) {
  * Used when a user logs in to check if they have pending invitations.
  */
 export async function getPendingInvitationsForEmail(email: string) {
+  // Exact match on the lowercased address. Invitations are stored lowercased
+  // (createInvitation), and ilike would treat % and _ in an address as
+  // wildcards and match other people's invitations (SEC finding F14).
+  const normalised = email.trim().toLowerCase();
+  if (!normalised) return [];
   return db.orm.public.Invitation
     .where((i) =>
       and(
-        i.email.ilike(email),
+        i.email.eq(normalised),
         i.status.eq("PENDING"),
         i.expiresAt.gt(toTimestamp(new Date().toISOString())),
       ),

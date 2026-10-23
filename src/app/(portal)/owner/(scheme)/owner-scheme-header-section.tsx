@@ -1,6 +1,6 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById, getSchemesForOwner } from "@/lib/queries/schemes";
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { SchemeDetailHeader } from "@/components/scheme-detail-header";
 import {
   formatBuildingClass,
@@ -18,7 +18,7 @@ export async function OwnerSchemeHeaderSection() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  let schemeId = await getSelectedSchemeId();
+  let schemeId = await getVerifiedSelectedSchemeId();
   if (!schemeId) {
     const ownerSchemes = await getSchemesForOwner(profile.id);
     if (ownerSchemes.length !== 1) return null;

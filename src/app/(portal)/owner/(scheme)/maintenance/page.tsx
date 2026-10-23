@@ -1,7 +1,7 @@
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeSchemeIds } from "@/lib/owner/scheme-scope";
 import { notFound } from "next/navigation";
-import { getCurrentProfile, hasCommitteeRole } from "@/lib/queries/profiles";
+import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner, getSchemesForCommittee } from "@/lib/queries/schemes";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { paginateArray, parsePage } from "@/lib/pagination";
@@ -20,23 +20,23 @@ export default async function OwnerMaintenancePage({
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const [ownerSchemes, isCommittee] = await Promise.all([
+  const [ownerSchemes, committeeSchemes, selectedSchemeId] = await Promise.all([
     getSchemesForOwner(profile.id),
-    hasCommitteeRole(profile.id),
+    getSchemesForCommittee(profile.id),
+    getVerifiedSelectedSchemeId(),
   ]);
 
   // Build a deduplicated map of scheme id -> name from both sources
   const schemeMap = new Map(ownerSchemes.map((s) => [s.id, s.name]));
-  if (isCommittee) {
-    const committeeSchemes = await getSchemesForCommittee(profile.id);
-    for (const cs of committeeSchemes) {
-      if (!schemeMap.has(cs.id)) schemeMap.set(cs.id, cs.name);
-    }
+  for (const cs of committeeSchemes) {
+    if (!schemeMap.has(cs.id)) schemeMap.set(cs.id, cs.name);
   }
 
   if (schemeMap.size === 0) notFound();
 
-  const schemeIds = scopeSchemeIds([...schemeMap.keys()], await getSelectedSchemeId());
+  const schemeIds = scopeSchemeIds([...schemeMap.keys()], selectedSchemeId);
+  // Committee of a scheme in view, not committee of any scheme (SEC-023).
+  const isCommittee = committeeSchemes.some((cs) => schemeIds.includes(cs.id));
   const workOrders = await getWorkOrdersForSchemes(schemeIds);
 
   const schemeNames = Object.fromEntries(schemeMap);

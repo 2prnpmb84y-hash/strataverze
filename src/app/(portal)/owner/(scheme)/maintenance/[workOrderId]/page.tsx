@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
-import { getCurrentProfile, hasCommitteeRole } from "@/lib/queries/profiles";
-import { getSchemesForOwner } from "@/lib/queries/schemes";
-import { getSchemesForCommittee } from "@/lib/queries/schemes";
+import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getWorkOrderById } from "@/lib/queries/work-orders";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -48,21 +47,11 @@ export default async function OwnerWorkOrderDetailPage({
   const workOrder = await getWorkOrderById(workOrderId);
   if (!workOrder) notFound();
 
-  // Check owner access OR committee access
-  const [ownerSchemes, isCommittee] = await Promise.all([
-    getSchemesForOwner(profile.id),
-    hasCommitteeRole(profile.id),
-  ]);
-
-  let hasAccess = ownerSchemes.some((s) => s.id === workOrder.schemeId);
-
-  // If not an owner, check committee access
-  if (!hasAccess && isCommittee) {
-    const committeeSchemes = await getSchemesForCommittee(profile.id);
-    hasAccess = committeeSchemes.some((s) => s.id === workOrder.schemeId);
-  }
-
-  if (!hasAccess) notFound();
+  // An active OWNER or COMMITTEE membership on the work order's own scheme
+  // (404 otherwise). Committee controls need committee of THIS scheme.
+  const access = await requirePageAccess(workOrder.schemeId, "maintenance.request");
+  if (!access) return null;
+  const isCommittee = access.roles.includes("COMMITTEE");
 
   const raisedByName =
     `${workOrder.raisedBy.firstName} ${workOrder.raisedBy.lastName}`.trim() ||

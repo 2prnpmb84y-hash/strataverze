@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee, getSchemesForOwner } from "@/lib/queries/schemes";
@@ -25,7 +25,7 @@ export default async function OwnerPlatformFeesPage() {
   ]);
   const byId = new Map<string, { id: string; name: string }>();
   for (const s of [...owned, ...committee]) byId.set(s.id, { id: s.id, name: String(s.name) });
-  const schemes = scopeToSelectedScheme([...byId.values()], await getSelectedSchemeId());
+  const schemes = scopeToSelectedScheme([...byId.values()], await getVerifiedSelectedSchemeId());
 
   const header = (
     <PageHeader
