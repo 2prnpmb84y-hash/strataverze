@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { assertBelongsTo, assertInScheme, assertOneOf } from "@/lib/auth/scheme-scope";
@@ -47,6 +48,11 @@ export async function createCommitteeMotionAction(
 
   const { profile, meeting } = result;
 
+  // The committee adds motions to its own meetings only. General meeting
+  // motions are prepared by the adviser with the notice.
+  if (normaliseMeetingType(String(meeting.meetingType)) !== "COMMITTEE") {
+    return { error: "Committee motions can only be added to committee meetings." };
+  }
   if (meeting.status !== "SCHEDULED") {
     return { error: "Motions can only be added to scheduled meetings." };
   }
@@ -100,6 +106,10 @@ export async function castCommitteeVoteAction(
       const motion = await getMotionById(motionId);
       assertInScheme(motion, result.meeting.schemeId, "Motion");
       assertBelongsTo(motion.meetingId, meetingId, "Motion");
+      // Committee votes are for committee meetings. General meeting votes
+      // are cast per lot through the owner meeting actions.
+      if (normaliseMeetingType(String(result.meeting.meetingType)) !== "COMMITTEE")
+        return { error: "This motion is voted on by owners, not the committee." };
       if (motion.status !== "OPEN") return { error: "This motion is not open for voting." };
       if (CLOSED_MEETING_STATUSES.includes(result.meeting.status))
         return { error: "This meeting is closed." };

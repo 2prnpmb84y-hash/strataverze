@@ -313,10 +313,7 @@ export async function updateWorksRequest(
   if (!description) return { error: "Description is required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-    ]);
+    const { profile } = await requireSchemeAccess(schemeId, "works.manage");
 
     // The request must belong to the scheme the caller was authorised on.
     await requestInScheme(requestId, schemeId);
@@ -374,7 +371,7 @@ export async function submitWorksRequest(
   schemeId: string,
 ): Promise<ActionResult> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
+    const { profile, roles } = await requireSchemeMembership(schemeId, [
       "ADVISER",
       "COMMITTEE",
       "OWNER",
@@ -385,6 +382,10 @@ export async function submitWorksRequest(
       .first();
 
     if (!request) return { error: "Request not found." };
+    // Owners and committee members submit only the requests they raised.
+    if (!roles.includes("ADVISER") && request.raisedById !== profile.id) {
+      return { error: "Request not found." };
+    }
     if (request.status !== "DRAFT")
       return { error: "Only draft requests can be submitted." };
 
@@ -436,11 +437,13 @@ export async function reviewWorksRequest(
     return { error: "Invalid review outcome." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-    ]);
-    await requestInScheme(requestId, schemeId);
+    const { profile } = await requireSchemeAccess(schemeId, "works.approve");
+    const request = await requestInScheme(requestId, schemeId);
+    // Only a request awaiting review can be reviewed (not a draft, a closed
+    // or rejected request, or one already in progress).
+    if (!["SUBMITTED", "UNDER_REVIEW"].includes(String(request.status))) {
+      return { error: "This request is not awaiting review." };
+    }
 
     await db.transaction(async (tx) => {
       // Create the review record
@@ -989,10 +992,7 @@ export async function createWorksWorkOrder(
   if (!title) return { error: "Title is required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-    ]);
+    const { profile } = await requireSchemeAccess(schemeId, "works.manage");
 
     // The contract must be this scheme's, and the work order goes to the
     // business the contract was awarded to.
@@ -2263,10 +2263,7 @@ export async function submitWorksVariation(
   schemeId: string,
 ): Promise<ActionResult> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-    ]);
+    const { profile } = await requireSchemeAccess(schemeId, "works.manage");
     const variation = await variationInScheme(variationId, schemeId);
     if (variation.status !== "DRAFT") return { error: "Only a draft variation can be submitted." };
 
@@ -2313,6 +2310,14 @@ export async function approveWorksVariation(
       .first();
     if (!parent || parent.schemeId !== schemeId) return { error: "Variation not found." };
     if (variation.status === "APPROVED") return { error: "This variation is already approved." };
+    // A variation is approved only after it has been submitted, and not by
+    // the person who requested it.
+    if (!["SUBMITTED", "UNDER_REVIEW"].includes(String(variation.status))) {
+      return { error: "Only a submitted variation can be approved." };
+    }
+    if (variation.requestedById === profile.id) {
+      return { error: "A variation cannot be approved by the person who requested it." };
+    }
 
     // Approval and the StrataVerze variation fee together.
     await db.transaction(async (tx) => {
@@ -2564,10 +2569,7 @@ export async function updateWorksWorkOrder(
   if (!title) return { error: "Title is required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-    ]);
+    const { profile } = await requireSchemeAccess(schemeId, "works.manage");
     await workOrderInScheme(workOrderId, schemeId);
 
     await db.orm.public.WorksWorkOrder

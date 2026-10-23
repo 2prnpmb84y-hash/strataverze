@@ -36,13 +36,16 @@ vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, DEFAULT_RECOVERY_STE
 const instalmentFirst = vi.fn();
 const lotFirst = vi.fn();
 const ownerMembershipFirst = vi.fn();
+const lotOwnersAll = vi.fn();
 vi.mock("@/prisma/db", () => ({
   db: {
     orm: {
       public: {
         PaymentPlanInstalment: { where: () => ({ first: instalmentFirst }) },
         Lot: { where: () => ({ first: lotFirst }) },
-        SchemeMembership: { where: () => ({ first: ownerMembershipFirst }) },
+        SchemeMembership: {
+          where: () => ({ first: ownerMembershipFirst, limit: () => ({ all: lotOwnersAll }) }),
+        },
         DebtRecoveryStep: { where: () => ({ first: vi.fn() }) },
       },
     },
@@ -67,7 +70,8 @@ beforeEach(() => {
   queries.getDebtRecoveryCaseById.mockResolvedValue(caseInA);
   queries.getPaymentPlanForCase.mockResolvedValue({ id: "plan-1" });
   queries.getInstalmentsForPlan.mockResolvedValue([{ status: "UPCOMING" }]);
-  instalmentFirst.mockResolvedValue({ id: "inst-1", planId: "plan-1", status: "UPCOMING" });
+  instalmentFirst.mockResolvedValue({ id: "inst-1", planId: "plan-1", status: "UPCOMING", amount: 100 });
+  lotOwnersAll.mockResolvedValue([{ profileId: "debtor", isActive: true, endDate: null }]);
 });
 
 describe("recordInstalmentPaymentAction", () => {
@@ -89,6 +93,34 @@ describe("recordInstalmentPaymentAction", () => {
     const r = await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 100);
     expect(r.error).toMatch(/your own lot/);
     expect(queries.updateInstalment).not.toHaveBeenCalled();
+  });
+
+  it("rejects a committee member who co-owns the debtor's lot", async () => {
+    membership.mockResolvedValue({ profile: { id: "co-owner" }, membership: {}, roles: ["COMMITTEE"] });
+    lotOwnersAll.mockResolvedValue([
+      { profileId: "debtor", isActive: true, endDate: null },
+      { profileId: "co-owner", isActive: true, endDate: null },
+    ]);
+    const r = await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 100);
+    expect(r.error).toMatch(/your own lot/);
+    expect(queries.updateInstalment).not.toHaveBeenCalled();
+    const close = await actions.closeDebtRecoveryCaseAction("case-1", SCHEME_A, "x", "CLOSED_WRITTEN_OFF");
+    expect(close.error).toMatch(/your own lot/);
+  });
+
+  it("rejects a former owner of the lot within 30 days", async () => {
+    membership.mockResolvedValue({ profile: { id: "seller" }, membership: {}, roles: ["COMMITTEE"] });
+    lotOwnersAll.mockResolvedValue([
+      { profileId: "seller", isActive: false, endDate: new Date(Date.now() - 5 * 86400000).toISOString() },
+    ]);
+    const r = await actions.addDebtRecoveryNoteAction("case-1", SCHEME_A, "note");
+    expect(r.error).toMatch(/your own lot/);
+  });
+
+  it("records a part payment as partly paid, not paid", async () => {
+    await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 0.01);
+    expect(queries.updateInstalment).toHaveBeenCalledWith("inst-1", expect.objectContaining({ status: "PARTIALLY_PAID" }));
+    expect(queries.updateDebtRecoveryCase).not.toHaveBeenCalled();
   });
 
   it("rejects an instalment that belongs to another case's plan", async () => {

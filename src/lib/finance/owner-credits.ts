@@ -420,7 +420,23 @@ export async function authoriseOwnerCreditRefund(input: {
 }): Promise<ApprovalOutcome> {
   const loaded = await refundControls(input.refundId);
   if (!loaded || loaded.refund.schemeId !== input.schemeId) throw new PaymentControlError("Refund not found.");
-  const { forControls } = loaded;
+  const { forControls, refund } = loaded;
+  // Nobody approves a refund to a lot they own or co-own.
+  if (refund.ownerId === input.actorId) {
+    throw new PaymentControlError("You cannot approve a refund to your own lot.");
+  }
+  const lotOwner = await db.orm.public.SchemeMembership
+    .where((m) =>
+      and(
+        m.schemeId.eq(input.schemeId),
+        m.lotId.eq(refund.lotId),
+        m.profileId.eq(input.actorId),
+        m.role.eq("OWNER"),
+        m.isActive.eq(true),
+      ),
+    )
+    .first();
+  if (lotOwner) throw new PaymentControlError("You cannot approve a refund to your own lot.");
   const settings = await getPaymentSettings(input.schemeId);
   const members = await getApprovalMembers(input.schemeId);
   const decision = checkSegregation("APPROVE", input.actorId, forControls, {

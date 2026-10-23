@@ -37,6 +37,24 @@ import {
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
+/** Days after an ownership ends during which the former owner still counts as an owner. */
+const OWNER_CONFLICT_DAYS = 30;
+
+/**
+ * Profiles holding an OWNER membership on the lot (co-owners each have one),
+ * active or ended in the last 30 days. They may not act on the lot's case.
+ */
+async function lotOwnerIds(schemeId: string, lotId: string): Promise<string[]> {
+  const rows = await db.orm.public.SchemeMembership
+    .where((m) => and(m.schemeId.eq(schemeId), m.lotId.eq(lotId), m.role.eq("OWNER")))
+    .limit(50)
+    .all();
+  const cutoff = Date.now() - OWNER_CONFLICT_DAYS * 24 * 60 * 60 * 1000;
+  return rows
+    .filter((m) => m.isActive || (m.endDate != null && new Date(String(m.endDate)).getTime() >= cutoff))
+    .map((m) => m.profileId);
+}
+
 /**
  * Authorise an action on an existing case: the caller must be an adviser or
  * committee member of the scheme, the case must belong to that scheme, and
@@ -49,7 +67,8 @@ async function authoriseCaseAction(
 ) {
   const { profile } = await requireSchemeMembership(schemeId, roles);
   const caseRow = await getDebtRecoveryCaseById(caseId);
-  const problem = caseAccessProblem(caseRow, schemeId, profile.id);
+  const owners = caseRow ? await lotOwnerIds(schemeId, caseRow.lotId) : [];
+  const problem = caseAccessProblem(caseRow, schemeId, profile.id, owners);
   if (problem || !caseRow) throw new AuthorisationError(problem ?? "Case not found.");
   return { profile, caseRow };
 }
@@ -237,7 +256,7 @@ export async function completeDebtRecoveryStepAction(
     if (!step || step.caseId !== caseId || !caseRow || caseRow.schemeId !== schemeId) {
       return { error: "Step not found" };
     }
-    const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id);
+    const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id, await lotOwnerIds(schemeId, caseRow.lotId));
     if (accessProblem) return { error: accessProblem };
     if (step.status === "COMPLETED") return { error: "This step is already complete" };
 
@@ -360,7 +379,7 @@ export async function createPaymentPlanAction(
     if (!caseRow || caseRow.schemeId !== schemeId || caseRow.lotId !== lotId) {
       return { error: "Case not found" };
     }
-    const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id);
+    const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id, await lotOwnerIds(schemeId, caseRow.lotId));
     if (accessProblem) return { error: accessProblem };
 
     const totalAmount = parseFloat(formData.get("totalAmount") as string);
@@ -473,8 +492,10 @@ export async function recordInstalmentPaymentAction(
     }
     if (instalment.status === "PAID") return { error: "This instalment is already paid" };
 
+    // A part payment does not clear the instalment (or, in turn, the case).
+    const fullyPaid = Math.round(amountPaid * 100) >= Math.round(Number(instalment.amount) * 100);
     await updateInstalment(instalmentId, {
-      status: "PAID",
+      status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
       amountPaid,
       paidAt: new Date().toISOString(),
     });

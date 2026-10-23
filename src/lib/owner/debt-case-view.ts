@@ -38,16 +38,15 @@ export function isCommitteeOfCaseScheme(caseRow: CaseForViewer, memberships: rea
 }
 
 /**
- * Whether the profile is the debtor and still (or within the grace period)
- * an owner of the case's lot.
+ * Whether the memberships include an OWNER membership on the case's lot that
+ * is active or ended within the grace period. Co-owners each hold their own
+ * OWNER membership on the same lot.
  */
-export function debtorMayView(
+export function holdsCaseLot(
   caseRow: CaseForViewer,
-  profileId: string,
   memberships: readonly MembershipForCase[],
   now: Date = new Date(),
 ): boolean {
-  if (!profileId || caseRow.ownerId !== profileId) return false;
   const graceMs = FORMER_OWNER_GRACE_DAYS * 24 * 60 * 60 * 1000;
   return memberships.some((m) => {
     if (m.role !== "OWNER" || m.schemeId !== caseRow.schemeId || m.lotId !== caseRow.lotId) return false;
@@ -58,17 +57,35 @@ export function debtorMayView(
   });
 }
 
+/**
+ * Whether the profile is the debtor, or a co-owner of the debtor's lot, and
+ * still (or within the grace period) an owner of that lot.
+ */
+export function debtorMayView(
+  caseRow: CaseForViewer,
+  profileId: string,
+  memberships: readonly MembershipForCase[],
+  now: Date = new Date(),
+): boolean {
+  if (!profileId) return false;
+  return holdsCaseLot(caseRow, memberships, now);
+}
+
 export type CaseViewer = "committee" | "debtor" | null;
 
-/** Which view, if any, the profile gets. */
+/**
+ * Which view, if any, the profile gets. Anyone who owns (or co-owns) the
+ * case's lot gets the debtor's view, even if they are on the committee, so
+ * nobody sees the committee's working notes on their own debt.
+ */
 export function caseViewerFor(
   caseRow: CaseForViewer,
   profileId: string,
   memberships: readonly MembershipForCase[],
   now: Date = new Date(),
 ): CaseViewer {
-  const isDebtor = caseRow.ownerId === profileId;
-  if (!isDebtor && isCommitteeOfCaseScheme(caseRow, memberships)) return "committee";
+  const ownsLot = caseRow.ownerId === profileId || holdsCaseLot(caseRow, memberships, now);
+  if (!ownsLot && isCommitteeOfCaseScheme(caseRow, memberships)) return "committee";
   if (debtorMayView(caseRow, profileId, memberships, now)) return "debtor";
   return null;
 }

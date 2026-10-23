@@ -500,3 +500,54 @@ describe("cross-scheme record ids", () => {
     expect(model("WorksContract").update).not.toHaveBeenCalled();
   });
 });
+
+// ─── Role and status rules from the independent review ──────────
+
+describe("works role and status rules", () => {
+  it("lets only advisers manage works records (committee refused)", async () => {
+    // The caller is a committee member only: any check that does not admit
+    // COMMITTEE refuses them.
+    membership.mockImplementation(async (_s: string, roles: string[]) => {
+      if (!roles.includes("COMMITTEE")) {
+        throw new AuthorisationError("You do not have permission to perform this action.");
+      }
+      return { profile: { id: "committee" }, membership: {}, roles: ["COMMITTEE"] };
+    });
+    const r = await actions.updateWorksRequest(
+      form({ requestId: "req-1", schemeId: SCHEME_A, title: "Roof", description: "Leak", category: "REPAIR" }),
+    );
+    expect(r.error).toMatch(/permission/);
+    expect(model("WorksRequest").update).not.toHaveBeenCalled();
+  });
+
+  it("reviews only a request awaiting review", async () => {
+    model("WorksRequest").first.mockResolvedValue({ id: "req-1", schemeId: SCHEME_A, status: "CLOSED" });
+    const r = await actions.reviewWorksRequest(
+      form({ requestId: "req-1", schemeId: SCHEME_A, outcome: "EMERGENCY_APPROVED" }),
+    );
+    expect(r.error).toMatch(/not awaiting review/);
+    expect(model("WorksRequest").update).not.toHaveBeenCalled();
+  });
+
+  it("lets an owner submit only a request they raised", async () => {
+    membership.mockResolvedValue({ profile: { id: "owner" }, membership: {}, roles: ["OWNER"] });
+    model("WorksRequest").first.mockResolvedValue({ id: "req-1", schemeId: SCHEME_A, status: "DRAFT", raisedById: "adviser-profile" });
+    const r = await actions.submitWorksRequest("req-1", SCHEME_A);
+    expect(r.error).toBe("Request not found.");
+    expect(model("WorksRequest").update).not.toHaveBeenCalled();
+  });
+
+  it("approves only a submitted variation, and not the requester's own", async () => {
+    model("WorksContract").first.mockResolvedValue({ id: "c-1", schemeId: SCHEME_A });
+    model("WorksVariation").first.mockResolvedValue({ id: "v-1", contractId: "c-1", status: "DRAFT", requestedById: "x" });
+    expect((await actions.approveWorksVariation("v-1", SCHEME_A)).error).toMatch(/submitted variation/);
+    model("WorksVariation").first.mockResolvedValue({
+      id: "v-1",
+      contractId: "c-1",
+      status: "SUBMITTED",
+      requestedById: "adviser-profile",
+    });
+    expect((await actions.approveWorksVariation("v-1", SCHEME_A)).error).toMatch(/requested it/);
+    expect(model("WorksVariation").update).not.toHaveBeenCalled();
+  });
+});

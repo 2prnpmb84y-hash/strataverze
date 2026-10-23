@@ -158,6 +158,11 @@ vi.mock("@/lib/meetings/setup", () => ({
   validateMeetingSetup: vi.fn(() => ({ errors: {} })),
   createMeetingWithRuleSnapshot: vi.fn(),
   DEFAULT_TIMEZONE: "Australia/Sydney",
+  normaliseMeetingType: (v: string) => {
+    const u = (v ?? "").toUpperCase();
+    if (u === "SGM") return "EGM";
+    return ["AGM", "EGM", "COMMITTEE", "FIRST_AGM"].includes(u) ? u : null;
+  },
 }));
 vi.mock("@/lib/billing/capture", () => ({ quoteUsageFee: vi.fn(async () => null) }));
 vi.mock("@/lib/billing/disclosure", () => ({
@@ -184,6 +189,7 @@ const LOT_B = { id: "lot-b", schemeId: SCHEME_B, entitlement: 10 };
 const MEETING_A = { id: "meeting-a", schemeId: SCHEME_A, status: "SCHEDULED", meetingType: "AGM" };
 const MEETING_A2 = { id: "meeting-a2", schemeId: SCHEME_A, status: "SCHEDULED", meetingType: "AGM" };
 const MEETING_B = { id: "meeting-b", schemeId: SCHEME_B, status: "SCHEDULED", meetingType: "AGM" };
+const MEETING_C = { id: "meeting-c", schemeId: SCHEME_A, status: "SCHEDULED", meetingType: "COMMITTEE" };
 const motion = (id: string, schemeId: string, meetingId: string | null, status = "OPEN") => ({
   id,
   schemeId,
@@ -207,7 +213,7 @@ beforeEach(() => {
   lots.getLotInScheme.mockImplementation(async (schemeId: string, lotId: string) =>
     allLots.find((l) => l.id === lotId && l.schemeId === schemeId) ?? null,
   );
-  const allMeetings = [MEETING_A, MEETING_A2, MEETING_B];
+  const allMeetings = [MEETING_A, MEETING_A2, MEETING_B, MEETING_C];
   meetings.getMeetingById.mockImplementation(async (id: string) =>
     allMeetings.find((m) => m.id === id) ?? null,
   );
@@ -434,6 +440,13 @@ describe("owner castVoteAction (F8)", () => {
     expect(motions.castVote).not.toHaveBeenCalled();
   });
 
+  it("refuses an owner voting on a committee meeting's motion", async () => {
+    motions.getMotionById.mockResolvedValue(motion("motion-c", SCHEME_A, MEETING_C.id));
+    const r = await ownerMeetingActions.castVoteAction("motion-c", "FOR");
+    expect(r.error).toMatch(/voted on by the committee/);
+    expect(motions.castVote).not.toHaveBeenCalled();
+  });
+
   it("refuses a supplier or accountant membership", async () => {
     callerRoles = { [SCHEME_A]: ["SUPPLIER", "ACCOUNTANT"] };
     motions.getMotionById.mockResolvedValue(motion("motion-a", SCHEME_A, MEETING_A.id));
@@ -556,6 +569,24 @@ describe("committee voting (F6)", () => {
     const r = await committeeActions.castCommitteeVoteAction(MEETING_A.id, "motion-a", "YES");
     expect(r.error).toBe("Invalid vote value.");
     expect(motions.castVote).not.toHaveBeenCalled();
+  });
+
+  it("refuses a committee vote on a general meeting motion", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE"] };
+    motions.getMotionById.mockResolvedValue(motion("motion-a", SCHEME_A, MEETING_A.id));
+    const r = await committeeActions.castCommitteeVoteAction(MEETING_A.id, "motion-a", "FOR");
+    expect(r.error).toMatch(/voted on by owners/);
+    expect(motions.castVote).not.toHaveBeenCalled();
+  });
+
+  it("refuses a committee motion on a general meeting", async () => {
+    callerRoles = { [SCHEME_A]: ["COMMITTEE"] };
+    const fd = new FormData();
+    fd.set("title", "t");
+    fd.set("description", "d");
+    const r = await committeeActions.createCommitteeMotionAction(MEETING_A.id, {}, fd);
+    expect(r.error).toMatch(/committee meetings/);
+    expect(motions.createMotion).not.toHaveBeenCalled();
   });
 
   it("refuses a plain owner raising a committee motion", async () => {

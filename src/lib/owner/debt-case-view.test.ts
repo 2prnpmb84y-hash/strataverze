@@ -17,14 +17,31 @@ describe("debtorMayView", () => {
     expect(debtorMayView(debtCase, "debtor", former(31), now)).toBe(false);
   });
 
-  it("rejects an inactive membership with no end date, another lot, or another person", () => {
+  it("rejects an inactive membership with no end date, or another lot", () => {
     expect(debtorMayView(debtCase, "debtor", [{ schemeId: A, lotId: "lot-1", role: "OWNER", isActive: false }], now)).toBe(false);
     expect(debtorMayView(debtCase, "debtor", [{ schemeId: A, lotId: "lot-2", role: "OWNER", isActive: true }], now)).toBe(false);
-    expect(debtorMayView(debtCase, "someone", [{ schemeId: A, lotId: "lot-1", role: "OWNER", isActive: true }], now)).toBe(false);
+  });
+
+  it("gives a co-owner of the lot the debtor view (they are jointly liable)", () => {
+    expect(debtorMayView(debtCase, "co-owner", [{ schemeId: A, lotId: "lot-1", role: "OWNER", isActive: true }], now)).toBe(true);
   });
 });
 
 describe("caseViewerFor", () => {
+  it("gives a committee member who co-owns the lot only the debtor view", () => {
+    expect(
+      caseViewerFor(
+        debtCase,
+        "co-owner",
+        [
+          { schemeId: A, lotId: null, role: "COMMITTEE", isActive: true },
+          { schemeId: A, lotId: "lot-1", role: "OWNER", isActive: true },
+        ],
+        now,
+      ),
+    ).toBe("debtor");
+  });
+
   it("gives the committee of the case's scheme the full case", () => {
     expect(caseViewerFor(debtCase, "cm", [{ schemeId: A, lotId: null, role: "COMMITTEE", isActive: true }], now)).toBe("committee");
   });

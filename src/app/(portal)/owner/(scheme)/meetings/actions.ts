@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { castVote, getMotionById, VOTE_VALUES } from "@/lib/queries/motions";
@@ -75,6 +76,11 @@ export async function castVoteAction(motionId: string, voteValue: string) {
     }
     if (!OPEN_MOTION_STATUSES.includes(motion.status) || CLOSED_MEETING_STATUSES.includes(meeting.status)) {
       return { error: "This motion is not open for voting." };
+    }
+    // Owners vote at general meetings. Committee motions are voted on by the
+    // committee through the governance actions.
+    if (normaliseMeetingType(String(meeting.meetingType)) === "COMMITTEE") {
+      return { error: "This motion is voted on by the committee." };
     }
 
     // One vote per lot: if a co-owner of every one of the caller's lots has
