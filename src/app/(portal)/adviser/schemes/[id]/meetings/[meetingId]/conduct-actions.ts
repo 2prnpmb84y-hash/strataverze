@@ -1,10 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  requireSchemeMembership,
-  AuthorisationError,
-} from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { getMeetingById, updateMeeting } from "@/lib/queries/meetings";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getAgendaItem, updateAgendaItem } from "@/lib/queries/agenda";
@@ -24,7 +22,7 @@ export async function startMeetingAction(
   meetingId: string,
 ): Promise<ConductActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     const meeting = await getMeetingById(meetingId);
     if (!meeting || meeting.schemeId !== schemeId)
       return { error: "Meeting not found." };
@@ -33,7 +31,7 @@ export async function startMeetingAction(
         error: `The meeting cannot be started from ${meeting.status}. Issue the notice first.`,
       };
 
-    await updateMeeting(meetingId, {
+    await updateMeeting(schemeId, meetingId, {
       status: "IN_PROGRESS",
       openedAt: new Date().toISOString(),
     });
@@ -55,14 +53,14 @@ export async function finishMeetingAction(
   meetingId: string,
 ): Promise<ConductActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     const meeting = await getMeetingById(meetingId);
     if (!meeting || meeting.schemeId !== schemeId)
       return { error: "Meeting not found." };
     if (!canTransition(meeting.status, "MINUTES_DRAFT"))
       return { error: `The meeting cannot be finished from ${meeting.status}.` };
 
-    await updateMeeting(meetingId, {
+    await updateMeeting(schemeId, meetingId, {
       status: "MINUTES_DRAFT",
       closedAt: new Date().toISOString(),
     });
@@ -86,7 +84,7 @@ export async function recordAgendaOutcomeAction(
   requestedOutcome: string,
 ): Promise<ConductActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     if (!isOutcome(requestedOutcome))
       return { error: "Invalid outcome." };
 
@@ -95,7 +93,8 @@ export async function recordAgendaOutcomeAction(
       getAgendaItem(meetingId, itemId),
       getSchemeById(schemeId),
     ]);
-    if (!meeting || !item || !scheme) return { error: "Agenda item not found." };
+    if (!meeting || meeting.schemeId !== schemeId || !item || !scheme)
+      return { error: "Agenda item not found." };
     if (meeting.status !== "IN_PROGRESS")
       return { error: "Outcomes can only be recorded while the meeting is running." };
 
@@ -105,7 +104,7 @@ export async function recordAgendaOutcomeAction(
       resolutionCategory: item.resolutionCategory,
     });
 
-    await updateAgendaItem(itemId, {
+    await updateAgendaItem(meetingId, itemId, {
       outcome: result.outcome,
       status: result.status,
     });
@@ -130,13 +129,15 @@ export async function addConductNoteAction(
   note: string,
 ): Promise<ConductActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     const trimmed = note.trim();
     if (!trimmed) return { error: "Note is empty." };
 
     const meeting = await getMeetingById(meetingId);
     if (!meeting || meeting.schemeId !== schemeId)
       return { error: "Meeting not found." };
+    if (itemId && !(await getAgendaItem(meetingId, itemId)))
+      return { error: "Agenda item not found." };
 
     await recordMeetingEvent({
       meetingId,

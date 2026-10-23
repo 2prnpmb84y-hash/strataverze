@@ -8,7 +8,6 @@ import {
   createMotionAction,
   updateMotionStatusAction,
   deleteMotionAction,
-  castVoteAction,
   type MotionFormState,
 } from "../actions";
 
@@ -219,12 +218,6 @@ function MotionItem({
     });
   }
 
-  function handleVote(value: string) {
-    startTransition(async () => {
-      await castVoteAction(schemeId, meetingId, motion.id, value);
-    });
-  }
-
   return (
     <div className="rounded-[var(--radius-card)] border border-line p-4">
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -273,36 +266,7 @@ function MotionItem({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        {/* Vote buttons (when motion is open) */}
-        {motion.status === "OPEN" && (
-          <>
-            <button
-              type="button"
-              onClick={() => handleVote("FOR")}
-              disabled={isPending}
-              className="text-xs font-medium text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
-            >
-              Vote For
-            </button>
-            <button
-              type="button"
-              onClick={() => handleVote("AGAINST")}
-              disabled={isPending}
-              className="text-xs font-medium text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
-            >
-              Vote Against
-            </button>
-            <button
-              type="button"
-              onClick={() => handleVote("ABSTAIN")}
-              disabled={isPending}
-              className="text-xs font-medium text-gray-500 hover:text-gray-600 transition-colors disabled:opacity-50"
-            >
-              Abstain
-            </button>
-          </>
-        )}
-
+        {/* Advisers do not vote: owners vote per lot in the owner portal. */}
         {/* Status transitions */}
         {motion.status === "DRAFT" && meetingStatus === "SCHEDULED" && (
           <button

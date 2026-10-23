@@ -1,10 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  requireSchemeMembership,
-  AuthorisationError,
-} from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { getMeetingById } from "@/lib/queries/meetings";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getAgendaItemsForMeeting, updateAgendaItem } from "@/lib/queries/agenda";
@@ -41,7 +39,7 @@ export async function openBallotAction(
   feeConfirmedCents: number | null = null,
 ): Promise<EvotingActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     const [meeting, scheme, existing] = await Promise.all([
       getMeetingById(meetingId),
       getSchemeById(schemeId),
@@ -106,14 +104,15 @@ export async function closeBallotAction(
   meetingId: string,
 ): Promise<EvotingActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     const [meeting, scheme, ballot, items] = await Promise.all([
       getMeetingById(meetingId),
       getSchemeById(schemeId),
       getBallotForMeeting(meetingId),
       getAgendaItemsForMeeting(meetingId),
     ]);
-    if (!meeting || !scheme) return { error: "Meeting not found." };
+    if (!meeting || !scheme || meeting.schemeId !== schemeId)
+      return { error: "Meeting not found." };
     if (!ballot) return { error: "There is no ballot to close." };
     if (ballot.status === "CLOSED")
       return { error: "The ballot is already closed." };
@@ -148,7 +147,7 @@ export async function closeBallotAction(
           requestedOutcome: evaluation.passed ? "RESOLVED" : "MOTION_LOST",
           resolutionCategory: item.resolutionCategory,
         });
-        await updateAgendaItem(item.id, {
+        await updateAgendaItem(meetingId, item.id, {
           outcome: outcome.outcome,
           status: outcome.status,
         });

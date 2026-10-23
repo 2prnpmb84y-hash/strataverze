@@ -73,6 +73,7 @@ export async function createContact(data: {
  * Update an existing contact.
  */
 export async function updateContact(
+  schemeId: string,
   contactId: string,
   data: Partial<{
     name: string;
@@ -95,14 +96,14 @@ export async function updateContact(
   if (data.notes !== undefined) update.notes = data.notes;
   if (data.isPreferred !== undefined) update.isPreferred = data.isPreferred;
 
-  return db.orm.public.Contact.where({ id: contactId }).update(update);
+  return db.orm.public.Contact.where((r) => and(r.id.eq(contactId), r.schemeId.eq(schemeId))).update(update);
 }
 
 /**
  * Soft-delete a contact.
  */
-export async function deleteContact(contactId: string) {
+export async function deleteContact(schemeId: string, contactId: string) {
   return db.orm.public.Contact
-    .where({ id: contactId })
+    .where((r) => and(r.id.eq(contactId), r.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

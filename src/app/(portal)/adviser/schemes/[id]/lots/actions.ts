@@ -3,8 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { searchProfiles } from "@/lib/queries/profiles";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
 import {
+  getLotInScheme,
   createLot,
   updateLot,
   deleteLot,
@@ -57,7 +60,7 @@ export async function createLotAction(
   formData: FormData,
 ): Promise<LotFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "lots.manage");
 
     const { errors, isValid, data } = validateLotForm(formData);
     if (!isValid) return { fieldErrors: errors };
@@ -97,12 +100,15 @@ export async function updateLotAction(
   formData: FormData,
 ): Promise<LotFormState> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "lots.manage");
 
     const { errors, isValid, data } = validateLotForm(formData);
     if (!isValid) return { fieldErrors: errors };
 
-    await updateLot(lotId, data);
+    const lot = await getLotInScheme(schemeId, lotId);
+    assertInScheme(lot, schemeId, "Lot");
+
+    await updateLot(schemeId, lotId, data);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
   } catch (err) {
@@ -113,9 +119,12 @@ export async function updateLotAction(
 
 export async function deleteLotAction(schemeId: string, lotId: string) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "lots.manage");
 
-    await deleteLot(lotId);
+    const lot = await getLotInScheme(schemeId, lotId);
+    assertInScheme(lot, schemeId, "Lot");
+
+    await deleteLot(schemeId, lotId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/lots`);
   } catch (err) {
@@ -138,7 +147,7 @@ export async function deleteLotAction(schemeId: string, lotId: string) {
  */
 export async function searchProfilesAction(query: string, schemeId: string) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "lots.manage");
     return searchProfiles(query, schemeId);
   } catch {
     return [];
@@ -154,7 +163,10 @@ export async function assignOwnerAction(
   profileId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "lots.manage");
+
+    const lot = await getLotInScheme(schemeId, lotId);
+    assertInScheme(lot, schemeId, "Lot");
 
     await assignOwnerToLot({ schemeId, lotId, profileId });
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
@@ -175,7 +187,7 @@ export async function removeOwnerAction(
   membershipId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "lots.manage");
 
     // Verify the membership belongs to this scheme before removing
     const target = await db.orm.public.SchemeMembership

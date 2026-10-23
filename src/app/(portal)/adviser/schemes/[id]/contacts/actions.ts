@@ -2,11 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
 import {
   createContact,
   updateContact,
   deleteContact,
+  getContactById,
 } from "@/lib/queries/contacts";
 import { logActivity } from "@/lib/queries/activity-log";
 
@@ -57,7 +60,7 @@ export async function createContactAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "scheme.manage");
 
     const contact = await createContact({
       schemeId,
@@ -122,9 +125,10 @@ export async function updateContactAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "scheme.manage");
 
-    await updateContact(contactId, {
+    assertInScheme(await getContactById(contactId), schemeId, "Contact");
+    await updateContact(schemeId, contactId, {
       name,
       company: company ?? null,
       category,
@@ -157,9 +161,10 @@ export async function deleteContactAction(
   contactId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "scheme.manage");
 
-    await deleteContact(contactId);
+    assertInScheme(await getContactById(contactId), schemeId, "Contact");
+    await deleteContact(schemeId, contactId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/lots`);
   } catch (err) {

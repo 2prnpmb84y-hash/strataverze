@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
-import { createAnnouncement, updateAnnouncement, deleteAnnouncement } from "@/lib/queries/announcements";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
+import { createAnnouncement, updateAnnouncement, deleteAnnouncement, getAnnouncementById } from "@/lib/queries/announcements";
 import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
 import { notifyAnnouncementPublished } from "@/lib/notifications";
 import { logActivity } from "@/lib/queries/activity-log";
@@ -35,7 +37,7 @@ export async function createAnnouncementAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "announcements.manage");
 
     const announcement = await createAnnouncement({
       schemeId,
@@ -114,9 +116,10 @@ export async function updateAnnouncementAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "announcements.manage");
 
-    await updateAnnouncement(announcementId, {
+    assertInScheme(await getAnnouncementById(announcementId), schemeId, "Announcement");
+    await updateAnnouncement(schemeId, announcementId, {
       title,
       body,
       priority,
@@ -136,9 +139,10 @@ export async function deleteAnnouncementAction(
   announcementId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "announcements.manage");
 
-    await deleteAnnouncement(announcementId);
+    assertInScheme(await getAnnouncementById(announcementId), schemeId, "Announcement");
+    await deleteAnnouncement(schemeId, announcementId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/announcements`);
   } catch (err) {

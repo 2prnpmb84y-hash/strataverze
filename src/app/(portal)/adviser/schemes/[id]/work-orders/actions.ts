@@ -3,12 +3,14 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { assertInScheme, assertOneOf } from "@/lib/auth/scheme-scope";
 import {
   createWorkOrder,
   updateWorkOrder,
   deleteWorkOrder,
   addComment,
   getWorkOrderById,
+  WORK_ORDER_STATUSES,
 } from "@/lib/queries/work-orders";
 import { logActivity } from "@/lib/queries/activity-log";
 import { getSchemeNameById, getMemberEmailsForScheme } from "@/lib/queries/schemes";
@@ -130,7 +132,8 @@ export async function updateWorkOrderAction(
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    await updateWorkOrder(workOrderId, {
+    assertInScheme(await getWorkOrderById(workOrderId), schemeId, "Work order");
+    await updateWorkOrder(schemeId, workOrderId, {
       title,
       description,
       priority,
@@ -155,12 +158,16 @@ export async function updateWorkOrderStatusAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    const data: Parameters<typeof updateWorkOrder>[1] = { status };
+    assertOneOf(status, WORK_ORDER_STATUSES, "status");
+    assertInScheme(await getWorkOrderById(workOrderId), schemeId, "Work order");
+
+    const data: Parameters<typeof updateWorkOrder>[2] = { status };
     if (status === "COMPLETED") {
       data.completedAt = new Date().toISOString();
-      if (actualCost != null) data.actualCost = actualCost;
+      if (actualCost != null && Number.isFinite(Number(actualCost)))
+        data.actualCost = Number(actualCost);
     }
-    await updateWorkOrder(workOrderId, data);
+    await updateWorkOrder(schemeId, workOrderId, data);
 
     if (status === "COMPLETED") {
       await logActivity({
@@ -208,7 +215,8 @@ export async function deleteWorkOrderAction(
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    await deleteWorkOrder(workOrderId);
+    assertInScheme(await getWorkOrderById(workOrderId), schemeId, "Work order");
+    await deleteWorkOrder(schemeId, workOrderId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/work-orders`);
   } catch (err) {
@@ -238,6 +246,7 @@ export async function addCommentAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
+    assertInScheme(await getWorkOrderById(workOrderId), schemeId, "Work order");
     await addComment({
       workOrderId,
       authorId: profile.id,

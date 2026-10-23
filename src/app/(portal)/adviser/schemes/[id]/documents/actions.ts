@@ -2,11 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
 import {
   createDocument,
   updateDocument,
   deleteDocument,
+  getDocumentById,
 } from "@/lib/queries/documents";
 import { createClient } from "@/lib/supabase/server";
 import { validateFileUpload } from "@/lib/upload/validate-mime";
@@ -33,7 +36,7 @@ export async function uploadDocumentAction(
   formData: FormData,
 ): Promise<DocumentFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "documents.manage");
 
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -118,7 +121,7 @@ export async function uploadFileAction(
   formData: FormData,
 ): Promise<{ id: string; error?: string }> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "documents.manage");
 
     const file = formData.get("file") as File | null;
     if (!file || file.size === 0) {
@@ -199,13 +202,14 @@ export async function updateDocumentMetadataAction(
   data: Record<string, string>,
 ): Promise<{ error?: string }> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "documents.manage");
 
     if (!data.title?.trim()) {
       return { error: "Name is required." };
     }
 
-    await updateDocument(documentId, {
+    assertInScheme(await getDocumentById(documentId), schemeId, "Document");
+    await updateDocument(schemeId, documentId, {
       title: data.title.trim(),
       documentType: data.documentType || null,
       documentDate: data.documentDate || null,
@@ -232,8 +236,9 @@ export async function removeDocumentAction(
   documentId: string,
 ): Promise<{ error?: string }> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await deleteDocument(documentId);
+    await requireSchemeAccess(schemeId, "documents.manage");
+    assertInScheme(await getDocumentById(documentId), schemeId, "Document");
+    await deleteDocument(schemeId, documentId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
   } catch (err) {
@@ -249,7 +254,7 @@ export async function updateDocumentAction(
   formData: FormData,
 ): Promise<DocumentFormState> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "documents.manage");
 
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -262,7 +267,8 @@ export async function updateDocumentAction(
 
     if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
-    await updateDocument(documentId, {
+    assertInScheme(await getDocumentById(documentId), schemeId, "Document");
+    await updateDocument(schemeId, documentId, {
       title,
       description: description || null,
       category,
@@ -280,9 +286,10 @@ export async function deleteDocumentAction(
   documentId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "documents.manage");
 
-    await deleteDocument(documentId);
+    assertInScheme(await getDocumentById(documentId), schemeId, "Document");
+    await deleteDocument(schemeId, documentId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {
@@ -303,18 +310,21 @@ export async function deleteDocumentAction(
 /**
  * Return a short-lived signed URL for a document so the client
  * never needs to construct raw public URLs.
+ *
+ * Takes the document id, not a storage path (security review L1): the
+ * document is loaded scoped to the scheme and only its own fileUrl is
+ * signed. Suppliers have no access to the scheme document library.
  */
 export async function getDocumentSignedUrlAction(
   schemeId: string,
-  fileUrl: string,
+  documentId: string,
 ): Promise<{ url?: string; error?: string }> {
+  let fileUrl: string;
   try {
-    await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-      "OWNER",
-      "SUPPLIER",
-    ]);
+    await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "OWNER"]);
+    const document = await getDocumentById(documentId);
+    assertInScheme(document, schemeId, "Document");
+    fileUrl = document.fileUrl;
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;

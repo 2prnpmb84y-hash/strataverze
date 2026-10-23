@@ -88,6 +88,7 @@ export async function createAnnouncement(data: {
  * Update an existing announcement.
  */
 export async function updateAnnouncement(
+  schemeId: string,
   announcementId: string,
   data: Partial<{
     title: string;
@@ -106,15 +107,15 @@ export async function updateAnnouncement(
     update.expiresAt = data.expiresAt ? toTimestamp(data.expiresAt) : null;
 
   return db.orm.public.Announcement
-    .where({ id: announcementId })
+    .where((r) => and(r.id.eq(announcementId), r.schemeId.eq(schemeId)))
     .update(update);
 }
 
 /**
  * Soft-delete an announcement.
  */
-export async function deleteAnnouncement(announcementId: string) {
+export async function deleteAnnouncement(schemeId: string, announcementId: string) {
   return db.orm.public.Announcement
-    .where({ id: announcementId })
+    .where((r) => and(r.id.eq(announcementId), r.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

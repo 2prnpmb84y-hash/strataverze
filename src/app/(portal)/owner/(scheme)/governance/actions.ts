@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import {
   getSchemeNameById,
   getMemberEmailsForScheme,
@@ -38,10 +39,8 @@ export async function createCommitteeMeetingAction(
   let profileId: string;
   let state: string;
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "OWNER",
-      "COMMITTEE",
-    ]);
+    // Committee only (security review F9): plain owners cannot convene meetings here.
+    const { profile } = await requireSchemeAccess(schemeId, "governance.committee");
     profileId = profile.id;
     const scheme = await getSchemeById(schemeId);
     if (!scheme) return { error: "Scheme not found." };

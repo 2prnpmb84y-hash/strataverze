@@ -55,6 +55,7 @@ export async function createFund(data: {
  * Update a fund's name and balance.
  */
 export async function updateFund(
+  schemeId: string,
   fundId: string,
   data: Partial<{
     name: string;
@@ -65,7 +66,7 @@ export async function updateFund(
   if (data.name !== undefined) updateData.name = data.name;
   if (data.balance !== undefined) updateData.balance = toNumeric(data.balance);
 
-  return db.orm.public.Fund.where({ id: fundId }).update(updateData);
+  return db.orm.public.Fund.where((r) => and(r.id.eq(fundId), r.schemeId.eq(schemeId))).update(updateData);
 }
 
 /**
@@ -83,8 +84,8 @@ export async function getFundsForSchemes(schemeIds: string[], limit = 200) {
 /**
  * Soft-delete a fund.
  */
-export async function deleteFund(fundId: string) {
+export async function deleteFund(schemeId: string, fundId: string) {
   return db.orm.public.Fund
-    .where({ id: fundId })
+    .where((r) => and(r.id.eq(fundId), r.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

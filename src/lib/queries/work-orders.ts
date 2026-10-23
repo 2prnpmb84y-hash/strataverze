@@ -12,6 +12,16 @@ function toTimestamp(value: string): TimestampString<3> {
   return value as unknown as TimestampString<3>;
 }
 
+/** Work order status vocabulary (schema: OPEN, QUOTING, AWARDED, IN_PROGRESS, COMPLETED, CANCELLED). */
+export const WORK_ORDER_STATUSES = [
+  "OPEN",
+  "QUOTING",
+  "AWARDED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+] as const;
+
 /**
  * Fetch all work orders for a scheme, newest first.
  */
@@ -67,6 +77,7 @@ export async function createWorkOrder(data: {
  * Update a work order's details.
  */
 export async function updateWorkOrder(
+  schemeId: string,
   workOrderId: string,
   data: {
     title?: string;
@@ -95,16 +106,16 @@ export async function updateWorkOrder(
     update.completedAt = data.completedAt != null ? toTimestamp(data.completedAt) : null;
 
   return db.orm.public.WorkOrder
-    .where({ id: workOrderId })
+    .where((r) => and(r.id.eq(workOrderId), r.schemeId.eq(schemeId)))
     .update(update);
 }
 
 /**
  * Soft-delete a work order.
  */
-export async function deleteWorkOrder(workOrderId: string) {
+export async function deleteWorkOrder(schemeId: string, workOrderId: string) {
   return db.orm.public.WorkOrder
-    .where({ id: workOrderId })
+    .where((r) => and(r.id.eq(workOrderId), r.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 

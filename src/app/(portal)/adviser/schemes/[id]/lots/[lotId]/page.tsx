@@ -49,6 +49,8 @@ export default async function LotDetailPage({
   if (!isAdviser) notFound();
 
   const lot = await getLotDetail(lotId);
+  if (!lot || lot.schemeId !== id) notFound();
+
   const [lotDetailExt, tenants, propertyManager, deliveryPrefs, debtCollection, documents] =
     await Promise.all([
       getLotDetailExtended(lotId),
@@ -58,8 +60,6 @@ export default async function LotDetailPage({
       getDebtCollection(lotId),
       getDocumentsForScheme(id),
     ]);
-
-  if (!lot || lot.schemeId !== id) notFound();
 
   // Find the operating bank account for this scheme
   const operatingAccount = scheme.bankAccounts?.find(

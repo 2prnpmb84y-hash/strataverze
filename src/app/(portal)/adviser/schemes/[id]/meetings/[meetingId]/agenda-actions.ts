@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  requireSchemeMembership,
-  AuthorisationError,
-} from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { inScheme } from "@/lib/auth/scheme-scope";
 import { getMeetingById } from "@/lib/queries/meetings";
 import { getSchemeById } from "@/lib/queries/schemes";
 import {
@@ -40,10 +39,10 @@ export async function addAgendaItemAction(
   formData: FormData,
 ): Promise<AgendaFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     const meeting = await getMeetingById(meetingId);
-    if (!meeting) return { error: "Meeting not found." };
+    if (!meeting || !inScheme(meeting, schemeId)) return { error: "Meeting not found." };
 
     const input = {
       title: ((formData.get("title") as string) ?? "").trim(),
@@ -81,14 +80,15 @@ export async function loadAgendaTemplateAction(
   meetingId: string,
 ): Promise<AgendaFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     const [meeting, scheme, existing] = await Promise.all([
       getMeetingById(meetingId),
       getSchemeById(schemeId),
       getAgendaItemsForMeeting(meetingId),
     ]);
-    if (!meeting || !scheme) return { error: "Meeting not found." };
+    if (!meeting || !scheme || !inScheme(meeting, schemeId))
+      return { error: "Meeting not found." };
     if (existing.length > 0)
       return { error: "This meeting already has agenda items." };
 
@@ -133,13 +133,14 @@ export async function addMotionFromLibraryAction(
   motionKey: string,
 ): Promise<AgendaFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     const [meeting, scheme] = await Promise.all([
       getMeetingById(meetingId),
       getSchemeById(schemeId),
     ]);
-    if (!meeting || !scheme) return { error: "Meeting not found." };
+    if (!meeting || !scheme || !inScheme(meeting, schemeId))
+      return { error: "Meeting not found." };
 
     const type = normaliseMeetingType(meeting.meetingType) as MeetingType | null;
     const entry = getMotionLibrary(scheme.state, type ?? undefined).find(
@@ -191,12 +192,15 @@ export async function deleteAgendaItemAction(
   itemId: string,
 ): Promise<AgendaFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
+
+    const meeting = await getMeetingById(meetingId);
+    if (!meeting || !inScheme(meeting, schemeId)) return { error: "Meeting not found." };
 
     const item = await getAgendaItem(meetingId, itemId);
     if (!item) return { error: "Agenda item not found." };
 
-    await deleteAgendaItem(itemId);
+    await deleteAgendaItem(meetingId, itemId);
     await recordMeetingEvent({
       meetingId,
       actorId: profile.id,

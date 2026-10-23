@@ -61,7 +61,7 @@ export function OwnerAssignment({
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (value.trim().length < 2) {
+    if (value.trim().length < 3) {
       setResults([]);
       setShowResults(false);
       return;

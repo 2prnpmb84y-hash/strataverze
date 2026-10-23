@@ -1,10 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  requireSchemeMembership,
-  AuthorisationError,
-} from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { getMeetingById, updateMeeting } from "@/lib/queries/meetings";
 import {
   getSchemeById,
@@ -39,7 +37,7 @@ export async function issueNoticeAction(
   feeConfirmedCents: number | null = null,
 ): Promise<NoticeActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     const [meeting, scheme, items] = await Promise.all([
       getMeetingById(meetingId),
@@ -141,7 +139,7 @@ export async function issueNoticeAction(
     // adjourned general meeting is charged per adjournment. AGMs and committee
     // meetings are covered by the subscription.
     await db.transaction(async (tx) => {
-      await updateMeeting(meetingId, { status: "NOTICE_ISSUED" }, tx.orm);
+      await updateMeeting(schemeId, meetingId, { status: "NOTICE_ISSUED" }, tx.orm);
       if (chargeAdjournment) {
         await captureUsageFee(tx.orm, {
           schemeId,

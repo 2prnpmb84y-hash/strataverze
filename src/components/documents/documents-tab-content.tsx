@@ -84,7 +84,7 @@ export function DocumentsTabContent({
       setLoadingUrl(true);
       setSignedUrl(null);
     });
-    getDocumentSignedUrlAction(schemeId, doc.fileUrl).then((result) => {
+    getDocumentSignedUrlAction(schemeId, doc.id).then((result) => {
       if (cancelled) return;
       startTransition(() => {
         if (result.url) setSignedUrl(result.url);

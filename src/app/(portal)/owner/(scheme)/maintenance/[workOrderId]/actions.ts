@@ -104,11 +104,11 @@ export async function updateWorkOrderStatusAction(
   }
 
   try {
-    const data: Parameters<typeof updateWorkOrder>[1] = { status };
+    const data: Parameters<typeof updateWorkOrder>[2] = { status };
     if (status === "COMPLETED") {
       data.completedAt = new Date().toISOString();
     }
-    await updateWorkOrder(workOrderId, data);
+    await updateWorkOrder(workOrder.schemeId, workOrderId, data);
     revalidatePath(`/owner/maintenance/${workOrderId}`);
     revalidatePath("/owner/maintenance");
     return {};

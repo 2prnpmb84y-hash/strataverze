@@ -72,6 +72,7 @@ export async function createDocument(data: {
  * Update a document's metadata.
  */
 export async function updateDocument(
+  schemeId: string,
   documentId: string,
   data: Partial<{
     title: string;
@@ -99,15 +100,15 @@ export async function updateDocument(
   if (data.supplier !== undefined) update.supplier = data.supplier;
   if (data.comments !== undefined) update.comments = data.comments;
 
-  return db.orm.public.Document.where({ id: documentId }).update(update);
+  return db.orm.public.Document.where((r) => and(r.id.eq(documentId), r.schemeId.eq(schemeId))).update(update);
 }
 
 /**
  * Soft-delete a document.
  */
-export async function deleteDocument(documentId: string) {
+export async function deleteDocument(schemeId: string, documentId: string) {
   return db.orm.public.Document
-    .where({ id: documentId })
+    .where((r) => and(r.id.eq(documentId), r.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 

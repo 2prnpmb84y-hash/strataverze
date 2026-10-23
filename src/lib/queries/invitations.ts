@@ -164,12 +164,13 @@ export async function declineInvitation(invitationId: string) {
 }
 
 /**
- * Revoke (cancel) a pending invitation.
+ * Revoke (cancel) a pending invitation. Scheme-scoped: an invitation on
+ * another scheme matches nothing.
  */
-export async function revokeInvitation(invitationId: string) {
+export async function revokeInvitation(schemeId: string, invitationId: string) {
   await db.orm.public.Invitation
     .where((i) =>
-      and(i.id.eq(invitationId), i.status.eq("PENDING")),
+      and(i.id.eq(invitationId), i.schemeId.eq(schemeId), i.status.eq("PENDING")),
     )
     .update({ status: "EXPIRED" });
 }

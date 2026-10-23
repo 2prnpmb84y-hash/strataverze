@@ -2,11 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
 import {
   createBylawAtomic,
   updateBylaw,
   deleteBylaw,
+  getBylawById,
 } from "@/lib/queries/bylaws";
 import { logActivity } from "@/lib/queries/activity-log";
 
@@ -49,7 +52,7 @@ export async function createBylawAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     // Atomic: assigns next number, creates by-law, and logs activity
     // in a single transaction to prevent duplicate numbers.
@@ -111,9 +114,10 @@ export async function updateBylawAction(
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
-    await updateBylaw(bylawId, {
+    assertInScheme(await getBylawById(bylawId), schemeId, "By-law");
+    await updateBylaw(schemeId, bylawId, {
       title,
       body,
       category,
@@ -153,9 +157,10 @@ export async function deleteBylawAction(
   bylawId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "governance.manage");
 
-    await deleteBylaw(bylawId);
+    assertInScheme(await getBylawById(bylawId), schemeId, "By-law");
+    await deleteBylaw(schemeId, bylawId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/governance`);
   } catch (err) {
