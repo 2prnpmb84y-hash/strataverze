@@ -25,7 +25,7 @@ So isolation has to hold in two places:
 
 The single most important point: **today anyone on the internet can sign up, create a building, and become its Adviser** (SEC-002). Many server actions check only "is this person an Adviser on *some* scheme" and then act on whatever record id they are sent (SEC-004). Together, a stranger could change or delete other buildings' records if they know the record ids. Ids are random UUIDs, so this is hard to exploit blind, but unguessable ids are not an access control.
 
-Production currently holds 2 user profiles, so real exposure today is very low. Every Critical and High item must be fixed before any real building is onboarded.
+Production holds 2 user profiles, Matthew and Emily, and both are platform admins (Emily made admin on 23 Oct at Matthew's request). Real exposure today is very low. Every Critical and High item must be fixed before any real building is onboarded.
 
 **Evidence key**
 - **V:** verified by me against the code, the live database or the dashboard.
@@ -197,7 +197,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 
 | Stage | Content | Production change |
 |---|---|---|
-| **S0 Containment** | (a) Revoke Data API privileges (SEC-005). (b) Building creation for platform admins only (SEC-002). (c) Fix the sign-in-only actions (SEC-003, SEC-008). (d) Auth settings: Site URL and redirect list, minimum password 12 with character rules, secure password change on. | Grants migration. Auth settings. |
+| **S0 Containment** | (a) Revoke Data API privileges (SEC-005). (b) Building creation for platform admins only (SEC-002). (c) Fix the sign-in-only actions (SEC-003, SEC-008). (d) Auth settings: Site URL and redirect list, minimum password 8 with character rules, secure password change on. | Grants migration. Auth settings. |
 | **S1 Authorisation layer** | `src/config/permissions.ts` (the matrix as code), `requireSchemeAccess(schemeId, capability)`, `loadInScheme(...)`, scheme-scoped mutators. Fix SEC-004, 007, 009, 014, 015, 023, 024. | None |
 | **S2 Accounts lifecycle** | Admin onboarding, bulk owner invitations, committee offices, Adviser invitation by chair or secretary, change of ownership with 30-day read-only, server-side account creation, supplier sign-up. Then turn off open sign-up. | Migration for offices and transfers. Auth setting. |
 | **S3 Storage** | Server-only uploads and downloads, document visibility, bucket MIME and size limits, SVG removed (SEC-006, 022) | Storage policies and bucket settings |
@@ -243,7 +243,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 | Absolute timeout, owners, committee, suppliers | **14 days** | Fortnightly sign-in |
 | Access token lifetime (Supabase) | **15 minutes** (currently 60) | Limits a stolen token's use against the Auth API. The app check revokes immediately inside the app either way. |
 | Step-up window | **15 minutes** | |
-| Password minimum | **12 characters**, mixed case and digits (Supabase setting) | Applies at next password change, so existing users are unaffected |
+| Password minimum | **8 characters** (your decision, 23 Oct), mixed case and digits (Supabase setting) | Applies at next password change, so existing users are unaffected. Matches the app's existing 8 character rule. |
 | Invitation expiry | **14 days** | |
 | Outgoing owner read-only | **30 days** (your decision) | |
 | Security audit log retention | **7 years**, then deleted by a scheduled job | Aligns with financial record keeping. I am not certain of the exact NSW record-keeping periods that apply to an owners corporation's access logs, so please confirm with your compliance view. |
