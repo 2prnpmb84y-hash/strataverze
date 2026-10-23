@@ -192,22 +192,6 @@ function ContactForm() {
         </select>
       </div>
 
-      {/* Message */}
-      <div>
-        <label htmlFor="message" className="mb-1.5 block text-sm font-medium">
-          Message <span className="text-brand-teal">*</span>
-        </label>
-        <textarea
-          id="message"
-          name="message"
-          required
-          rows={5}
-          disabled={status === "submitting"}
-          className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-60"
-          placeholder="How can we help?"
-        />
-      </div>
-
       {/* Founding scheme toggle */}
       <div className="flex items-start gap-3 rounded-xl border border-brand-teal/20 bg-brand-teal/5 p-4">
         <label className="relative inline-flex cursor-pointer items-center pt-0.5">
@@ -226,6 +210,22 @@ function ContactForm() {
             Register your scheme as a founding member and receive priority onboarding and early-access benefits.
           </span>
         </div>
+      </div>
+
+      {/* Message */}
+      <div>
+        <label htmlFor="message" className="mb-1.5 block text-sm font-medium">
+          Message{" "}
+          <span className="text-sm text-[var(--muted)]">(optional)</span>
+        </label>
+        <textarea
+          id="message"
+          name="message"
+          rows={5}
+          disabled={status === "submitting"}
+          className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-60"
+          placeholder="How can we help?"
+        />
       </div>
 
       {/* Error message */}
