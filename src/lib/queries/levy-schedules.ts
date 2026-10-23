@@ -350,6 +350,8 @@ export async function recordLevyPayment(
     recordedBy?: string | null;
     /** The StrataVerze fee (incl. GST, cents) the user confirmed, if any. */
     feeConfirmedCents?: number | null;
+    /** False when the fee is captured once for a bank deposit split across notices. */
+    captureFee?: boolean;
   } = {
     paymentDate: new Date().toISOString().slice(0, 10),
   },
@@ -408,7 +410,7 @@ export async function recordLevyPayment(
 
     // StrataVerze transaction service fee, charged to the scheme (never added
     // to the owner's notice). Same transaction as the receipt.
-    await captureTransactionFee(tx.orm, {
+    if (details.captureFee !== false) await captureTransactionFee(tx.orm, {
       schemeId: notice.schemeId,
       movement: notice.levySchedule?.levyType === "SPECIAL" ? "SPECIAL_LEVY_RECEIPT" : "LEVY_RECEIPT",
       paymentCents,

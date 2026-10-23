@@ -48,10 +48,8 @@ import {
 // ── Bank transactions ─────────────────────────────────────────
 import {
   importBankTransactions,
-  matchTransaction,
   reconcileTransaction,
   excludeTransaction,
-  unmatchTransaction,
 } from "@/lib/queries/bank-transactions";
 
 // ── Levy schedules & notices ──────────────────────────────────
@@ -59,7 +57,6 @@ import {
   createLevySchedule,
   createLevyNoticesBatch,
   issueLevyNotice,
-  recordLevyPayment,
   approveLevySchedule,
   activateLevySchedule,
   getLevyScheduleById,
@@ -77,7 +74,17 @@ import {
   supplierInvoiceControls,
 } from "@/lib/finance/invoice-approval";
 import { checkBankDetailsForPayment } from "@/lib/finance/payment-controls";
-import { applyOwnerCredit, leviesInAdvanceAccountId } from "@/lib/finance/owner-credits";
+import { applyOwnerCredit } from "@/lib/finance/owner-credits";
+import { LevyReceiptError, receiptLevyPayment } from "@/lib/finance/levy-receipts";
+import {
+  ReconciliationError,
+  allocateBankTransaction,
+  allocatedByTransaction,
+  clearAllocations,
+  getAllocationCandidates,
+  getSuspenseItems,
+} from "@/lib/finance/bank-allocations";
+import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconciliation";
 import { sydneyToday } from "@/lib/finance/interest-setting";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -614,6 +621,17 @@ export async function importBankTransactionsAction(
   }
 }
 
+/** Bank transaction of this scheme, or null. */
+async function schemeTransaction(schemeId: string, transactionId: string) {
+  const txn = await db.orm.public.BankTransaction.where((t) => t.id.eq(transactionId)).first();
+  return txn && txn.schemeId === schemeId ? txn : null;
+}
+
+/**
+ * Match a transaction to one journal entry: allocates as much of the
+ * transaction as the entry has left. Use the allocation panel to split a
+ * transaction across several entries.
+ */
 export async function matchTransactionAction(
   schemeId: string,
   transactionId: string,
@@ -621,32 +639,35 @@ export async function matchTransactionAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-
-    await matchTransaction(transactionId, journalEntryId, profile.id);
-
-    await logActivity({
+    const txn = await schemeTransaction(schemeId, transactionId);
+    if (!txn) return { error: "Bank transaction not found." };
+    const candidate = (await getAllocationCandidates(schemeId, 2000)).find((c) => c.id === journalEntryId);
+    if (!candidate) return { error: "That entry is not a posted bank entry with an amount left to match." };
+    const left = unallocatedCents(toCents(String(txn.amount)), (await allocatedByTransaction([txn.id])).get(txn.id) ?? 0);
+    await allocateBankTransaction({
       schemeId,
+      transactionId,
+      requests: [{ journalEntryId, amountCents: Math.min(left, candidate.remainingCents) }],
       actorId: profile.id,
-      action: "BANK_TRANSACTION_MATCHED",
-      entityType: "BankTransaction",
-      entityId: transactionId,
-      metadata: { journalEntryId },
     });
-
     revalidatePath(financePath(schemeId));
     return { success: true };
   } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof AuthorisationError || err instanceof ReconciliationError) return { error: err.message };
     return { error: "Failed to match transaction." };
   }
 }
 
+/** Mark a fully matched transaction as reconciled. */
 export async function reconcileTransactionAction(
   schemeId: string,
   transactionId: string,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const txn = await schemeTransaction(schemeId, transactionId);
+    if (!txn) return { error: "Bank transaction not found." };
+    if (txn.reconciliationStatus !== "MATCHED") return { error: "Only a fully matched transaction can be reconciled." };
 
     await reconcileTransaction(transactionId);
 
@@ -667,12 +688,18 @@ export async function reconcileTransactionAction(
   }
 }
 
+/** Exclude a transaction from reconciliation (nothing allocated to it yet). */
 export async function excludeTransactionAction(
   schemeId: string,
   transactionId: string,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const txn = await schemeTransaction(schemeId, transactionId);
+    if (!txn) return { error: "Bank transaction not found." };
+    if (((await allocatedByTransaction([txn.id])).get(txn.id) ?? 0) > 0) {
+      return { error: "Part of this transaction is already allocated. Unmatch it before excluding it." };
+    }
 
     await excludeTransaction(transactionId);
 
@@ -693,28 +720,18 @@ export async function excludeTransactionAction(
   }
 }
 
+/** Remove a transaction's allocations so it can be matched again. */
 export async function unmatchTransactionAction(
   schemeId: string,
   transactionId: string,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-
-    await unmatchTransaction(transactionId);
-
-    await logActivity({
-      schemeId,
-      actorId: profile.id,
-      action: "BANK_TRANSACTION_UNMATCHED",
-      entityType: "BankTransaction",
-      entityId: transactionId,
-      metadata: {},
-    });
-
+    await clearAllocations({ schemeId, transactionId, actorId: profile.id });
     revalidatePath(financePath(schemeId));
     return { success: true };
   } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof AuthorisationError || err instanceof ReconciliationError) return { error: err.message };
     return { error: "Failed to unmatch transaction." };
   }
 }
@@ -1153,101 +1170,24 @@ export async function recordLevyPaymentAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-
     if (!(amount > 0)) return { error: "Payment amount must be greater than zero." };
     if (!ISO_DATE.test(paymentDate)) return { error: "Payment date is required." };
 
-    const notice = await db.orm.public.LevyNotice
-      .where((ln) => ln.id.eq(levyNoticeId))
-      .include("fund")
-      .first();
-    if (!notice || notice.schemeId !== schemeId) return { error: "Levy notice not found." };
-
-    // A payment above what the notice owes (levy plus interest) is held as credit, but only when confirmed.
-    const owedCents =
-      toCents(String(notice.amountDue)) + toCents(String(notice.interestCharged ?? 0)) - toCents(String(notice.amountPaid));
-    const excessCents = Math.max(0, Math.round(amount * 100) - Math.max(0, owedCents));
-    if (excessCents > 0 && !confirmOverpayment) {
-      return {
-        error:
-          owedCents <= 0
-            ? "This notice is already paid. Confirm that the whole payment is to be held as the owner's credit."
-            : `This payment is $${fromCents(excessCents).toFixed(2)} more than the notice owes. Confirm that the extra is to be held as the owner's credit.`,
-        data: { overpayment: true, excess: fromCents(excessCents) },
-      };
-    }
-
-    const result = await recordLevyPayment(levyNoticeId, amount, { paymentDate, recordedBy: profile.id, feeConfirmedCents });
-
-    // ── Auto journal entry: DR Bank, CR Levies Receivable (and CR Levies Paid in Advance for any credit) ──
-    const fundType = (notice.fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
-    const bankAccount = await getSystemAccountBySubType(schemeId, "BANK", "ADMINISTRATIVE");
-    const receivableAccount = await getSystemAccountBySubType(schemeId, "ACCOUNTS_RECEIVABLE", fundType);
-    const advanceAccountId = result.excessCents > 0 ? await leviesInAdvanceAccountId(schemeId, notice.fundId) : null;
-
-    if (bankAccount && receivableAccount && (result.excessCents === 0 || advanceAccountId)) {
-      const lines: Array<{ accountCodeId: string; fundId: string; debit?: number; credit?: number; description?: string; lotId?: string }> = [
-        { accountCodeId: bankAccount.id, fundId: notice.fundId, debit: amount, description: "Bank receipt — levy payment" },
-      ];
-      if (result.appliedCents > 0) {
-        lines.push({
-          accountCodeId: receivableAccount.id,
-          fundId: notice.fundId,
-          credit: fromCents(result.appliedCents),
-          description: "Levies receivable reduced",
-          lotId: notice.lotId,
-        });
-      }
-      if (result.excessCents > 0 && advanceAccountId) {
-        lines.push({
-          accountCodeId: advanceAccountId,
-          fundId: notice.fundId,
-          credit: fromCents(result.excessCents),
-          description: "Overpayment held as owner credit",
-          lotId: notice.lotId,
-        });
-      }
-      const entryNumber = await getNextEntryNumber(schemeId);
-      const entry = await createJournalEntry({
-        schemeId,
-        entryNumber,
-        transactionDate: paymentDate,
-        description: `Levy payment received — notice ${String(notice.noticeNumber)}`,
-        entryType: "AUTO",
-        sourceType: "PAYMENT",
-        sourceId: levyNoticeId,
-        createdBy: profile.id,
-        lines,
-      });
-      await postJournalEntry(entry.id, profile.id);
-      if (result.creditTxId) {
-        await db.orm.public.OwnerCreditTransaction.where((t) => t.id.eq(result.creditTxId!)).update({ journalEntryId: entry.id });
-      }
-    }
-
-    await logActivity({
+    const result = await receiptLevyPayment({
       schemeId,
+      levyNoticeId,
+      amountCents: Math.round(amount * 100),
+      paymentDate,
       actorId: profile.id,
-      action: "LEVY_PAYMENT_RECORDED",
-      entityType: "LevyNotice",
-      entityId: levyNoticeId,
-      metadata: { amount, paymentDate, creditHeld: fromCents(result.excessCents) },
+      feeConfirmedCents,
+      confirmOverpayment,
     });
-    if (result.excessCents > 0) {
-      await logActivity({
-        schemeId,
-        actorId: profile.id,
-        action: "OWNER_CREDIT_RECEIVED",
-        entityType: "Lot",
-        entityId: notice.lotId,
-        metadata: { amount: fromCents(result.excessCents), levyNoticeId },
-      });
-    }
 
     revalidatePath(financePath(schemeId));
     return { success: true, data: { creditHeld: fromCents(result.excessCents) } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof LevyReceiptError) return { error: err.message, data: err.data };
     const msg = err instanceof Error ? err.message : "Failed to record payment.";
     return { error: msg };
   }
@@ -1772,6 +1712,31 @@ export async function closePeriodAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const period = await db.orm.public.FinancialPeriod.where((p) => p.id.eq(periodId)).first();
+    if (!period || period.schemeId !== schemeId) return { error: "Financial period not found." };
+    if (period.status !== "OPEN") return { error: "Only an open period can be closed." };
+
+    // Unidentified amounts in suspense must be cleared before the period closes.
+    const periodEnd = String(period.endDate).slice(0, 10);
+    const blocking = suspenseBlockingClose(
+      periodEnd,
+      (await getSuspenseItems(schemeId, "OPEN")).map((i) => ({
+        id: i.id,
+        transactionDate: i.transactionDate,
+        amountCents: i.amountCents,
+        description: i.description,
+      })),
+    );
+    if (blocking.length > 0) {
+      const list = blocking
+        .slice(0, 5)
+        .map((i) => `${i.transactionDate} $${fromCents(Math.abs(i.amountCents)).toFixed(2)} ${i.description}`)
+        .join("; ");
+      return {
+        error: `Clear ${blocking.length} suspense item${blocking.length === 1 ? "" : "s"} before closing this period: ${list}${blocking.length > 5 ? "; and more" : ""}.`,
+        data: { suspense: blocking },
+      };
+    }
 
     await closePeriod(periodId, profile.id);
 

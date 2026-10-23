@@ -1328,6 +1328,8 @@ model SchemeBankAccount {
   lastReconciledDate    DateTime?         @db.Date @map("last_reconciled_date")
   lastReconciledBalance Decimal?          @db.Decimal(12, 2) @map("last_reconciled_balance")
   bankFeedEnabled       Boolean           @default(false) @map("bank_feed_enabled")
+  /// Saved CSV column mapping (JSON, by header name), pre-selected on the next import.
+  csvMapping             String?             @map("csv_mapping")
   createdAt             DateTime          @default(now()) @db.Timestamptz @map("created_at")
   updatedAt             DateTime          @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -3561,4 +3563,44 @@ model OwnerCreditRefund {
 
   @@index([schemeId, status])
   @@map("owner_credit_refunds")
+}
+
+/// Part of a bank transaction allocated to a journal entry. A transaction is
+/// MATCHED when its allocations add up to its whole amount. Amount is positive.
+model BankTransactionAllocation {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId          String   @map("scheme_id") @db.Uuid
+  bankTransactionId String   @map("bank_transaction_id") @db.Uuid
+  journalEntryId    String   @map("journal_entry_id") @db.Uuid
+  amount            Decimal  @db.Decimal(12, 2)
+  createdBy         String?  @map("created_by") @db.Uuid
+  createdAt         DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@unique([bankTransactionId, journalEntryId])
+  @@index([schemeId])
+  @@index([journalEntryId])
+  @@map("bank_transaction_allocations")
+}
+
+/// An unidentified bank amount posted to the suspense account. Must be cleared
+/// to the right account before the period it falls in can be closed.
+model SuspenseItem {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId              String    @map("scheme_id") @db.Uuid
+  bankTransactionId     String    @map("bank_transaction_id") @db.Uuid
+  journalEntryId        String    @map("journal_entry_id") @db.Uuid
+  /// Signed: positive for money received, negative for money paid out.
+  amount                Decimal   @db.Decimal(12, 2)
+  transactionDate       DateTime  @db.Date @map("transaction_date")
+  description           String
+  status                String    @default("OPEN")
+  clearedJournalEntryId String?   @map("cleared_journal_entry_id") @db.Uuid
+  clearedNote           String?   @map("cleared_note")
+  clearedBy             String?   @map("cleared_by") @db.Uuid
+  clearedAt             DateTime? @db.Timestamptz @map("cleared_at")
+  createdBy             String?   @map("created_by") @db.Uuid
+  createdAt             DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  @@index([schemeId, status])
+  @@map("suspense_items")
 }

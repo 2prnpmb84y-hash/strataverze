@@ -46,6 +46,9 @@ export default async function OwnerFinancePage() {
   }
 
   const schemeIds = schemes.map((s) => s.id);
+  const isTreasurer = schemes.some((s) =>
+    s.memberships.some((m) => m.profileId === profile.id && String(m.role) === "COMMITTEE" && m.isTreasurer),
+  );
   const schemeNames = new Map(schemes.map((s) => [s.id, String(s.name)]));
 
   // Get the owner's lot IDs from their memberships
@@ -120,6 +123,11 @@ export default async function OwnerFinancePage() {
             <Button variant="secondary" href="/owner/finance/platform-fees">
               StrataVerze Fees
             </Button>
+            {isTreasurer && (
+              <Button variant="secondary" href="/owner/finance/reconciliation">
+                Reconciliation
+              </Button>
+            )}
           </div>
         }
       />
