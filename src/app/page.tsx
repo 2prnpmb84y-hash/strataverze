@@ -175,7 +175,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 2. SOCIAL PROOF BAR                                          */}
       {/* ============================================================ */}
-      <section className="bg-[var(--surface)]">
+      <section className="border-t border-[var(--border)] bg-[var(--surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 text-center">
             <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 3. THE PLATFORM — What the committee can do                   */}
       {/* ============================================================ */}
-      <section className="py-20 lg:py-28 bg-[var(--surface-alt)]">
+      <section className="border-t border-[var(--border)] py-20 lg:py-28 bg-[var(--surface-alt)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold tracking-widest uppercase text-[var(--muted)] mb-3">
@@ -246,7 +246,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 4. FIND YOUR STARTING POINT                                  */}
       {/* ============================================================ */}
-      <section className="py-20 lg:py-28 bg-[#EEF3F7] dark:bg-slate-800/40">
+      <section className="border-t border-[var(--border)] py-20 lg:py-28 bg-[#EEF3F7] dark:bg-slate-800/40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold tracking-widest uppercase text-[var(--muted)] mb-3">
@@ -344,7 +344,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 5. RECORDS SECTION                                           */}
       {/* ============================================================ */}
-      <section className="py-20 lg:py-28 bg-[var(--surface)]">
+      <section className="border-t border-[var(--border)] py-20 lg:py-28 bg-[var(--surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Image */}
@@ -402,7 +402,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 6. SUPPLIERS TEASER                                          */}
       {/* ============================================================ */}
-      <section className="py-20 lg:py-28 bg-[var(--surface-alt)]">
+      <section className="border-t border-[var(--border)] py-20 lg:py-28 bg-[var(--surface-alt)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight">
@@ -491,7 +491,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 7. ABOUT / FOUNDER TEASER                                    */}
       {/* ============================================================ */}
-      <section className="py-20 lg:py-28 bg-[var(--surface)]">
+      <section className="border-t border-[var(--border)] py-20 lg:py-28 bg-[var(--surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center gap-10 max-w-3xl mx-auto">
             {/* Photo */}
@@ -543,7 +543,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 8. CTA SECTION                                               */}
       {/* ============================================================ */}
-      <section className="gradient-bg">
+      <section className="border-t border-[var(--border)] gradient-bg">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-24 text-center">
           <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-white">
             Join the Founding Schemes programme
