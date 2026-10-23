@@ -42,6 +42,26 @@ export function approversRequired(policy: PaymentPolicy, amountCents: number): 1
   return amountCents > secondApproverThresholdCents(policy) ? 2 : 1;
 }
 
+/**
+ * Which parts of a policy change loosen the controls: allowing self or
+ * adviser approval, raising the approval limits, or shortening the bank
+ * change cooling-off period. Empty when the change only tightens or keeps them.
+ */
+export function policyLoosening(
+  current: { policy: PaymentPolicy; coolingOffDays: number },
+  next: PaymentPolicy & { coolingOffDays: number },
+): string[] {
+  const loosened: string[] = [];
+  if (next.allowSelfApproval && !current.policy.allowSelfApproval) loosened.push("allowSelfApproval");
+  if (next.allowAdviserApproval && !current.policy.allowAdviserApproval) loosened.push("allowAdviserApproval");
+  if (next.singleApproverLimitCents > current.policy.singleApproverLimitCents) loosened.push("singleApproverLimit");
+  if (secondApproverThresholdCents(next) > secondApproverThresholdCents(current.policy)) {
+    loosened.push("requireSecondApproverAbove");
+  }
+  if (next.coolingOffDays < current.coolingOffDays) loosened.push("coolingOffDays");
+  return loosened;
+}
+
 // ─── Who may approve ────────────────────────────────────────────────────────
 
 export interface SchemeMember {

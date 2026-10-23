@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getContractorBusinesses } from "@/lib/queries/works";
 import { notFound } from "next/navigation";
@@ -28,13 +28,15 @@ export default async function ContractorsPage({
   const { id } = await params;
   const { status, search } = await searchParams;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.read");
+  if (!access) return null;
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
-  const contractors = await getContractorBusinesses({ status, search });
+  // Only approved contractors and those linked to this scheme.
+  const contractors = await getContractorBusinesses({ status, search, visibleToSchemeId: id });
 
   return (
     <div className="space-y-6">

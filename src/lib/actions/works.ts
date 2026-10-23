@@ -16,6 +16,9 @@ import {
   requirePlatformAdmin,
   AuthorisationError,
 } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertBelongsTo, assertInScheme } from "@/lib/auth/scheme-scope";
+import { toCents } from "@/lib/billing/money";
 import { logActivity, type ActivityAction } from "@/lib/queries/activity-log";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
@@ -89,6 +92,113 @@ function isRedirectError(err: unknown): boolean {
     typeof (err as { digest: unknown }).digest === "string" &&
     (err as { digest: string }).digest.startsWith("NEXT_REDIRECT")
   );
+}
+
+// ─── Scheme scope (SEC-004) ─────────────────────────────────────
+//
+// Each action authorises the scheme id it was sent. Every record id it was
+// also sent is then loaded scoped to that scheme and checked again after
+// loading, so a record from another scheme is simply "not found". These
+// helpers are not exported, so they are not server action endpoints.
+
+async function requestInScheme(requestId: string, schemeId: string) {
+  const row = await db.orm.public.WorksRequest
+    .where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId)))
+    .first();
+  assertInScheme(row, schemeId, "Request");
+  return row;
+}
+
+async function contractInScheme(contractId: string, schemeId: string, label = "Contract") {
+  const row = await db.orm.public.WorksContract
+    .where((c) => and(c.id.eq(contractId), c.schemeId.eq(schemeId)))
+    .first();
+  assertInScheme(row, schemeId, label);
+  return row;
+}
+
+async function workOrderInScheme(workOrderId: string, schemeId: string) {
+  const row = await db.orm.public.WorksWorkOrder
+    .where((wo) => and(wo.id.eq(workOrderId), wo.schemeId.eq(schemeId)))
+    .first();
+  assertInScheme(row, schemeId, "Work order");
+  return row;
+}
+
+async function invoiceInScheme(invoiceId: string, schemeId: string) {
+  const row = await db.orm.public.WorksInvoice
+    .where((i) => and(i.id.eq(invoiceId), i.schemeId.eq(schemeId)))
+    .first();
+  assertInScheme(row, schemeId, "Invoice");
+  return row;
+}
+
+/** A variation, through its contract. */
+async function variationInScheme(variationId: string, schemeId: string) {
+  const variation = await db.orm.public.WorksVariation
+    .where((v) => v.id.eq(variationId))
+    .first();
+  if (!variation) throw new AuthorisationError("Variation not found.");
+  await contractInScheme(variation.contractId, schemeId, "Variation");
+  return variation;
+}
+
+/** A compliance requirement. Organisation level requirements (no scheme) are not editable from a scheme. */
+async function requirementInScheme(requirementId: string, schemeId: string) {
+  const row = await db.orm.public.WorksComplianceRequirement
+    .where((r) => and(r.id.eq(requirementId), r.schemeId.eq(schemeId)))
+    .first();
+  if (!row) throw new AuthorisationError("Compliance requirement not found.");
+  assertBelongsTo(row.schemeId, schemeId, "Compliance requirement");
+  return row;
+}
+
+/** A compliance check, through its requirement. */
+async function complianceCheckInScheme(checkId: string, schemeId: string) {
+  const check = await db.orm.public.WorksComplianceCheck
+    .where((c) => c.id.eq(checkId))
+    .first();
+  if (!check) throw new AuthorisationError("Compliance check not found.");
+  const requirement = await db.orm.public.WorksComplianceRequirement
+    .where((r) => r.id.eq(check.requirementId))
+    .first();
+  assertBelongsTo(requirement?.schemeId, schemeId, "Compliance check");
+  return check;
+}
+
+async function approvalRouteInScheme(routeId: string, schemeId: string) {
+  const row = await db.orm.public.WorksApprovalRoute
+    .where((r) => and(r.id.eq(routeId), r.schemeId.eq(schemeId)))
+    .first();
+  if (!row) throw new AuthorisationError("Approval route not found.");
+  assertBelongsTo(row.schemeId, schemeId, "Approval route");
+  return row;
+}
+
+async function delegationInScheme(delegationId: string, schemeId: string) {
+  const row = await db.orm.public.WorksDelegation
+    .where((d) => and(d.id.eq(delegationId), d.schemeId.eq(schemeId)))
+    .first();
+  assertInScheme(row, schemeId, "Delegation");
+  return row;
+}
+
+/** Throw unless the profile is an active member of the scheme (any role). */
+async function requireActiveMember(profileId: string, schemeId: string, label: string) {
+  const member = await db.orm.public.SchemeMembership
+    .where((m) => and(m.schemeId.eq(schemeId), m.profileId.eq(profileId), m.isActive.eq(true)))
+    .first();
+  if (!member || member.schemeId !== schemeId || !member.isActive) {
+    throw new AuthorisationError(`${label} must be an active member of this scheme.`);
+  }
+}
+
+/** Invoice statuses in which the invoice may still be edited (before assessment and approval). */
+const EDITABLE_INVOICE_STATUSES = ["SUBMITTED", "UNDER_ASSESSMENT", "FURTHER_INFORMATION", "DISPUTED"];
+
+/** Contract statuses after execution, when the contract value is fixed (change it by variation). */
+function isPostExecutionStatus(status: string | null | undefined) {
+  return isExecutedContractStatus(status) || ["COMPLETE", "TERMINATED"].includes(String(status ?? "").toUpperCase());
 }
 
 // ─── Works Requests ─────────────────────────────────────────────
@@ -208,16 +318,19 @@ export async function updateWorksRequest(
       "COMMITTEE",
     ]);
 
+    // The request must belong to the scheme the caller was authorised on.
+    await requestInScheme(requestId, schemeId);
+
     await db.transaction(async (tx) => {
       // Get current version number
       const existing = await tx.orm.public.WorksRequest
-        .where((r) => r.id.eq(requestId))
+        .where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId)))
         .first();
       if (!existing) throw new Error("Request not found.");
       const nextVersion = existing.currentVersion + 1;
 
       // Update the request
-      await tx.orm.public.WorksRequest.where((r) => r.id.eq(requestId)).update({
+      await tx.orm.public.WorksRequest.where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId))).update({
         title: toVarchar<300>(title),
         description,
         location: location ? toVarchar<500>(location) : null,
@@ -327,6 +440,7 @@ export async function reviewWorksRequest(
       "ADVISER",
       "COMMITTEE",
     ]);
+    await requestInScheme(requestId, schemeId);
 
     await db.transaction(async (tx) => {
       // Create the review record
@@ -349,7 +463,7 @@ export async function reviewWorksRequest(
       const newStatus = statusMap[outcome] ?? "UNDER_REVIEW";
 
       await tx.orm.public.WorksRequest
-        .where((r) => r.id.eq(requestId))
+        .where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId)))
         .update({
           status: newStatus,
           closedAt:
@@ -393,8 +507,11 @@ export async function assignWorksRequest(
     const { profile } = await requireSchemeMembership(schemeId, [
       "ADVISER",
     ]);
+    await requestInScheme(requestId, schemeId);
+    // Only someone on this scheme can be given the request.
+    await requireActiveMember(assignedToId, schemeId, "The assignee");
 
-    await db.orm.public.WorksRequest.where((r) => r.id.eq(requestId)).update({
+    await db.orm.public.WorksRequest.where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId))).update({
       assignedToId,
     });
 
@@ -558,9 +675,9 @@ export async function createWorksRfq(
 
     // Get the current scope version
     const scope = await db.orm.public.WorksScope
-      .where((s) => s.id.eq(scopeId))
+      .where((s) => and(s.id.eq(scopeId), s.schemeId.eq(schemeId)))
       .first();
-    if (!scope) return { error: "Scope not found." };
+    if (!scope || scope.schemeId !== schemeId) return { error: "Scope not found." };
 
     const rfqNumber = await generateNumber("RFQ", schemeId, "WorksRfq");
 
@@ -780,6 +897,32 @@ export async function createWorksContract(
       "ADVISER",
     ]);
 
+    // Every parent record must belong to this scheme. A quotation must be
+    // on one of this scheme's RFQs and from the contractor named; without a
+    // quotation the contractor must be approved by StrataVerze.
+    await requestInScheme(requestId, schemeId);
+    if (quotationId) {
+      const quotation = await db.orm.public.WorksQuotation
+        .where((q) => q.id.eq(quotationId))
+        .first();
+      const rfq = quotation
+        ? await db.orm.public.WorksRfq
+            .where((r) => and(r.id.eq(quotation.rfqId), r.schemeId.eq(schemeId)))
+            .first()
+        : null;
+      if (!quotation || !rfq || rfq.schemeId !== schemeId) return { error: "Quotation not found." };
+      if (quotation.contractorBusinessId !== contractorBusinessId) {
+        return { error: "The contractor must be the one who gave the quotation." };
+      }
+    } else {
+      const contractor = await db.orm.public.ContractorBusiness
+        .where((c) => and(c.id.eq(contractorBusinessId), c.deletedAt.eq(null)))
+        .first();
+      if (!contractor || contractor.status !== "APPROVED") {
+        return { error: "Choose a contractor approved by StrataVerze." };
+      }
+    }
+
     const contractNumber = await generateNumber(
       "CON",
       schemeId,
@@ -851,6 +994,13 @@ export async function createWorksWorkOrder(
       "COMMITTEE",
     ]);
 
+    // The contract must be this scheme's, and the work order goes to the
+    // business the contract was awarded to.
+    const contract = await contractInScheme(contractId, schemeId);
+    if (contract.contractorBusinessId !== contractorBusinessId) {
+      return { error: "The contractor must be the one the contract was awarded to." };
+    }
+
     const workOrderNumber = await generateNumber(
       "WO",
       schemeId,
@@ -918,11 +1068,38 @@ export async function submitWorksInvoice(
     return { error: "Claimed amount is required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
+    // The accountant is read only, so cannot submit invoices (M2).
+    const { profile, roles } = await requireSchemeMembership(schemeId, [
       "ADVISER",
-      "ACCOUNTANT",
       "SUPPLIER",
     ]);
+    const isAdviser = roles.includes("ADVISER");
+
+    // A supplier invoices only for its own business, and only against a
+    // contract of this scheme awarded to that business.
+    if (!isAdviser) {
+      await requireActiveContractorContact(contractorBusinessId);
+      if (!contractId) return { error: "Choose the contract this invoice is for." };
+    }
+
+    // Every parent record must belong to this scheme.
+    if (contractId) {
+      const contract = await contractInScheme(contractId, schemeId);
+      if (contract.contractorBusinessId !== contractorBusinessId) {
+        return { error: "The contractor must be the one the contract was awarded to." };
+      }
+    }
+    if (requestId) await requestInScheme(requestId, schemeId);
+    if (milestoneId) {
+      const milestone = await db.orm.public.WorksMilestone
+        .where((m) => m.id.eq(milestoneId))
+        .first();
+      if (!milestone) return { error: "Milestone not found." };
+      const workOrder = await workOrderInScheme(milestone.workOrderId, schemeId);
+      if (workOrder.contractorBusinessId !== contractorBusinessId || (contractId && workOrder.contractId !== contractId)) {
+        return { error: "Milestone not found." };
+      }
+    }
 
     await db.orm.public.WorksInvoice.create({
       requestId,
@@ -993,8 +1170,24 @@ export async function updateWorksInvoice(
       "ADVISER",
     ]);
 
+    // The invoice must be this scheme's, and it cannot be changed once it
+    // has been assessed for approval or anyone has approved it: the payee
+    // and amount are what the approvers signed off.
+    const existing = await invoiceInScheme(invoiceId, schemeId);
+    if (!EDITABLE_INVOICE_STATUSES.includes(String(existing.status)) || (await hasAuthorisations(invoiceId))) {
+      return { error: "This invoice has been assessed or approved, so it can no longer be edited." };
+    }
+    if (contractId) {
+      const contract = await contractInScheme(contractId, schemeId);
+      if (contract.contractorBusinessId !== contractorBusinessId) {
+        return { error: "The contractor must be the one the contract was awarded to." };
+      }
+    } else if (contractorBusinessId !== existing.contractorBusinessId) {
+      return { error: "Choose the contract for a different contractor." };
+    }
+
     await db.orm.public.WorksInvoice
-      .where((i) => i.id.eq(invoiceId))
+      .where((i) => and(i.id.eq(invoiceId), i.schemeId.eq(schemeId)))
       .update({
         contractId,
         contractorBusinessId,
@@ -1043,10 +1236,8 @@ export async function assessWorksInvoice(
     return { error: "Assessed amount is required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "ACCOUNTANT",
-    ]);
+    // The accountant is read only (M2): assessing is a works write.
+    const { profile } = await requireSchemeAccess(schemeId, "works.manage");
     const existing = await db.orm.public.WorksInvoice.where((i) => i.id.eq(invoiceId)).first();
     if (!existing || existing.schemeId !== schemeId) return { error: "Invoice not found." };
     if (await hasAuthorisations(invoiceId)) {
@@ -1109,6 +1300,12 @@ export async function assessWorksInvoice(
 
 /**
  * Create a payment instruction (authorise payment for an invoice).
+ *
+ * Payment controls (SEC-007): the invoice must be approved; the payment goes
+ * to the contractor's current VERIFIED bank details, named by version and
+ * never typed in; the beneficiary is the account name on those details; and
+ * the amount instructed can never exceed the approved (assessed) amount less
+ * what has already been instructed.
  */
 export async function authoriseWorksPayment(
   formData: FormData,
@@ -1118,7 +1315,6 @@ export async function authoriseWorksPayment(
   const approvedAmountRaw = (
     formData.get("approvedAmount") as string
   )?.trim();
-  const beneficiary = (formData.get("beneficiary") as string)?.trim();
   const bankDetailVersionId =
     (formData.get("bankDetailVersionId") as string) || null;
 
@@ -1126,24 +1322,73 @@ export async function authoriseWorksPayment(
     return { error: "Invoice and scheme are required." };
   if (!approvedAmountRaw)
     return { error: "Approved amount is required." };
-  if (!beneficiary) return { error: "Beneficiary is required." };
+  if (!/^\d+(\.\d{1,2})?$/.test(approvedAmountRaw) || toCents(approvedAmountRaw) <= 0)
+    return { error: "Enter the amount in dollars and cents, for example 500 or 500.00." };
+  if (!bankDetailVersionId)
+    return { error: "The contractor's verified bank details are required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "works.payments");
 
     // Payment controls: the invoice must be approved, and the bank details used
     // must be verified.
     const controls = await worksInvoiceControls(invoiceId);
     if (!controls || controls.invoice.schemeId !== schemeId) return { error: "Invoice not found." };
+    const invoice = controls.invoice;
     const sod = await checkInvoiceControl(schemeId, "RECORD_PAYMENT", profile.id, controls.forControls);
     if (sod.result === "blocked") return { error: sod.reason };
-    if (bankDetailVersionId) {
-      const bank = await db.orm.public.WorksBankDetailVersion.where((b) => b.id.eq(bankDetailVersionId)).first();
-      if (!bank || bank.contractorBusinessId !== controls.invoice.contractorBusinessId) {
-        return { error: "Those bank details do not belong to this contractor." };
-      }
-      if (bank.status !== "VERIFIED") return { error: "The contractor's bank details have not been verified. Verify them before paying." };
+
+    const bank = await db.orm.public.WorksBankDetailVersion
+      .where((b) => and(b.id.eq(bankDetailVersionId), b.contractorBusinessId.eq(invoice.contractorBusinessId)))
+      .first();
+    if (!bank || bank.contractorBusinessId !== invoice.contractorBusinessId) {
+      return { error: "Those bank details do not belong to this contractor." };
     }
+    if (bank.status !== "VERIFIED") {
+      return { error: "The contractor's bank details have not been verified. Verify them before paying." };
+    }
+    // A later change to the bank details (other than one already rejected)
+    // must be verified before anyone pays, so an older version cannot be used.
+    const versions = await db.orm.public.WorksBankDetailVersion
+      .where((b) => b.contractorBusinessId.eq(invoice.contractorBusinessId))
+      .all();
+    const newer = versions.find(
+      (v) => v.versionNumber > bank.versionNumber && v.status !== "REJECTED",
+    );
+    if (newer) {
+      return { error: "The contractor's bank details have changed and the new details have not been verified. Verify them before paying." };
+    }
+
+    // The most that may be instructed is the approved amount (the assessed
+    // amount the approvers signed off) less what is already instructed.
+    const approvedCents = [invoice.assessedAmount, invoice.approvedAmount]
+      .filter((v) => v != null)
+      .map((v) => toCents(String(v)));
+    if (approvedCents.length === 0) return { error: "This invoice has not been assessed." };
+    const capCents = Math.min(...approvedCents);
+    const instructions = await db.orm.public.WorksPaymentInstruction
+      .where((pi) => pi.invoiceId.eq(invoiceId))
+      .all();
+    const instructedCents = instructions
+      .filter((pi) => pi.status !== "INVALIDATED")
+      .reduce((sum, pi) => sum + toCents(String(pi.approvedAmount)), 0);
+    const amountCents = toCents(approvedAmountRaw);
+    const remainingCents = capCents - instructedCents;
+    if (amountCents > remainingCents) {
+      return {
+        error:
+          remainingCents > 0
+            ? `The amount is more than the approved amount still to be paid ($${(remainingCents / 100).toFixed(2)}).`
+            : "The approved amount has already been fully instructed.",
+      };
+    }
+
+    const contractor = await db.orm.public.ContractorBusiness
+      .where((c) => c.id.eq(invoice.contractorBusinessId))
+      .first();
+    const beneficiary = String(bank.accountName || contractor?.companyName || "").trim().slice(0, 300);
+    if (!beneficiary) return { error: "The contractor's bank details have no account name." };
+
     if (sod.result === "exception") {
       await logActivity({
         schemeId,
@@ -1159,17 +1404,18 @@ export async function authoriseWorksPayment(
       await tx.orm.public.WorksPaymentInstruction.create({
         invoiceId,
         authorisedById: profile.id,
-        approvedAmount: toNumeric(Number(approvedAmountRaw)),
+        approvedAmount: toNumeric(amountCents / 100),
         beneficiary: toVarchar<300>(beneficiary),
-        bankDetailVersionId,
+        bankDetailVersionId: bank.id,
         status: "PENDING",
       });
 
-      // Update invoice status
+      // The invoice's approved amount is the amount signed off, not this
+      // instruction (there may be several part payments).
       await tx.orm.public.WorksInvoice
-        .where((i) => i.id.eq(invoiceId))
+        .where((i) => and(i.id.eq(invoiceId), i.schemeId.eq(schemeId)))
         .update({
-          approvedAmount: toNumeric(Number(approvedAmountRaw)),
+          approvedAmount: toNumeric(capCents / 100),
           status: "PAYMENT_INSTRUCTED",
         });
     });
@@ -1181,8 +1427,9 @@ export async function authoriseWorksPayment(
       entityType: "SupplierInvoice",
       entityId: invoiceId,
       metadata: {
-        approvedAmount: Number(approvedAmountRaw),
+        approvedAmount: amountCents / 100,
         beneficiary,
+        bankDetailVersionId: bank.id,
         module: "works",
       },
     });
@@ -1223,49 +1470,63 @@ export async function recordWorksPayment(
     return { error: "Invalid payment method." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "ACCOUNTANT",
-    ]);
+    // The accountant is read only (M2): recording payments is works.payments.
+    const { profile } = await requireSchemeAccess(schemeId, "works.payments");
+
+    if (!/^\d+(\.\d{1,2})?$/.test(amountRaw) || toCents(amountRaw) <= 0) {
+      return { error: "Enter the amount in dollars and cents, for example 500 or 500.00." };
+    }
+
+    // The instruction must be for an invoice of this scheme (SEC-004), still
+    // live, and the payment cannot exceed what it instructed.
+    const instruction = await db.orm.public.WorksPaymentInstruction
+      .where((pi) => pi.id.eq(paymentInstructionId))
+      .first();
+    if (!instruction) return { error: "Payment instruction not found." };
+    const invoice = await db.orm.public.WorksInvoice
+      .where((i) => and(i.id.eq(instruction.invoiceId), i.schemeId.eq(schemeId)))
+      .first();
+    if (!invoice || invoice.schemeId !== schemeId) return { error: "Payment instruction not found." };
+    if (instruction.status === "INVALIDATED") return { error: "This payment instruction was cancelled." };
+    const records = await db.orm.public.WorksPaymentRecord
+      .where((r) => r.paymentInstructionId.eq(paymentInstructionId))
+      .all();
+    const recordedCents = records.reduce((sum, r) => sum + toCents(String(r.amount)), 0);
+    const amountCents = toCents(amountRaw);
+    if (recordedCents + amountCents > toCents(String(instruction.approvedAmount))) {
+      return { error: "The payment is more than the amount instructed." };
+    }
 
     await db.transaction(async (tx) => {
       await tx.orm.public.WorksPaymentRecord.create({
         paymentInstructionId,
         externalReference: externalReference ? toVarchar<200>(externalReference) : null,
         paymentMethod,
-        amount: toNumeric(Number(amountRaw)),
+        amount: toNumeric(amountCents / 100),
         paymentDate: toTimestamp(paymentDate),
         recordedById: profile.id,
         remittanceInfo,
         reconciliationStatus: "UNRECONCILED",
       });
 
-      // Fetch the instruction to find its invoice
-      const instruction = await tx.orm.public.WorksPaymentInstruction
-        .where((pi) => pi.id.eq(paymentInstructionId))
+      // Update the invoice's paid amount
+      const current = await tx.orm.public.WorksInvoice
+        .where((i) => and(i.id.eq(invoice.id), i.schemeId.eq(schemeId)))
         .first();
 
-      if (instruction) {
-        // Update the invoice's paid amount
-        const invoice = await tx.orm.public.WorksInvoice
-          .where((i) => i.id.eq(instruction.invoiceId))
-          .first();
+      if (current) {
+        const newPaidCents = toCents(String(current.paidAmount)) + amountCents;
+        const newStatus =
+          newPaidCents >= toCents(String(current.approvedAmount ?? current.claimedAmount))
+            ? "PAID"
+            : "PAYMENT_INSTRUCTED";
 
-        if (invoice) {
-          const newPaidAmount =
-            Number(invoice.paidAmount) + Number(amountRaw);
-          const newStatus =
-            newPaidAmount >= Number(invoice.approvedAmount ?? invoice.claimedAmount)
-              ? "PAID"
-              : "PAYMENT_INSTRUCTED";
-
-          await tx.orm.public.WorksInvoice
-            .where((i) => i.id.eq(instruction.invoiceId))
-            .update({
-              paidAmount: toNumeric(newPaidAmount),
-              status: newStatus,
-            });
-        }
+        await tx.orm.public.WorksInvoice
+          .where((i) => and(i.id.eq(invoice.id), i.schemeId.eq(schemeId)))
+          .update({
+            paidAmount: toNumeric(newPaidCents / 100),
+            status: newStatus,
+          });
       }
     });
 
@@ -1375,9 +1636,10 @@ export async function updateComplianceRequirement(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requirementInScheme(requirementId, schemeId);
 
     await db.orm.public.WorksComplianceRequirement
-      .where((r) => r.id.eq(requirementId))
+      .where((r) => and(r.id.eq(requirementId), r.schemeId.eq(schemeId)))
       .update({
         name: toVarchar<300>(name),
         description,
@@ -1416,9 +1678,10 @@ export async function deactivateComplianceRequirement(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requirementInScheme(requirementId, schemeId);
 
     await db.orm.public.WorksComplianceRequirement
-      .where((r) => r.id.eq(requirementId))
+      .where((r) => and(r.id.eq(requirementId), r.schemeId.eq(schemeId)))
       .update({ isActive: false });
 
     await logActivity({
@@ -1458,10 +1721,34 @@ export async function submitComplianceCheck(
   if (!schemeId) return { error: "Scheme is required." };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
+    const { profile, roles } = await requireSchemeMembership(schemeId, [
       "ADVISER",
       "SUPPLIER",
     ]);
+    const isAdviser = roles.includes("ADVISER");
+
+    // The requirement and work order must be this scheme's (SEC-004).
+    const requirement = await requirementInScheme(requirementId, schemeId);
+    if (!requirement.isActive) return { error: "This compliance requirement is no longer active." };
+    const workOrder = worksWorkOrderId ? await workOrderInScheme(worksWorkOrderId, schemeId) : null;
+    if (workOrder && contractorBusinessId && workOrder.contractorBusinessId !== contractorBusinessId) {
+      return { error: "Work order not found." };
+    }
+
+    // A supplier submits only for its own business, and only for work on
+    // this scheme awarded to that business (M2).
+    if (!isAdviser) {
+      if (!contractorBusinessId) return { error: "Contractor is required." };
+      await requireActiveContractorContact(contractorBusinessId);
+      if (!workOrder) {
+        const awarded = await db.orm.public.WorksContract
+          .where((c) => and(c.schemeId.eq(schemeId), c.contractorBusinessId.eq(contractorBusinessId)))
+          .first();
+        if (!awarded || awarded.schemeId !== schemeId || awarded.contractorBusinessId !== contractorBusinessId) {
+          return { error: "Your business has no work on this scheme." };
+        }
+      }
+    }
 
     const check = await db.orm.public.WorksComplianceCheck.create({
       requirementId,
@@ -1512,11 +1799,8 @@ export async function verifyComplianceCheck(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    const check = await db.orm.public.WorksComplianceCheck
-      .where((c) => c.id.eq(checkId))
-      .first();
-
-    if (!check) return { error: "Compliance check not found." };
+    // The check must be against one of this scheme's requirements.
+    const check = await complianceCheckInScheme(checkId, schemeId);
 
     const previousStatus = check.status;
     const now = new Date().toISOString();
@@ -1571,11 +1855,8 @@ export async function rejectComplianceCheck(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    const check = await db.orm.public.WorksComplianceCheck
-      .where((c) => c.id.eq(checkId))
-      .first();
-
-    if (!check) return { error: "Compliance check not found." };
+    // The check must be against one of this scheme's requirements.
+    const check = await complianceCheckInScheme(checkId, schemeId);
 
     const previousStatus = check.status;
 
@@ -1692,9 +1973,10 @@ export async function updateApprovalRoute(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await approvalRouteInScheme(routeId, schemeId);
 
     await db.orm.public.WorksApprovalRoute
-      .where((r) => r.id.eq(routeId))
+      .where((r) => and(r.id.eq(routeId), r.schemeId.eq(schemeId)))
       .update({
         name: toVarchar<200>(name),
         description,
@@ -1745,6 +2027,8 @@ export async function createDelegation(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // Authority can only be delegated to someone on this scheme.
+    await requireActiveMember(delegatedToId, schemeId, "The delegate");
 
     await db.orm.public.WorksDelegation.create({
       schemeId,
@@ -1784,9 +2068,10 @@ export async function revokeDelegation(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await delegationInScheme(delegationId, schemeId);
 
     await db.orm.public.WorksDelegation
-      .where((d) => d.id.eq(delegationId))
+      .where((d) => and(d.id.eq(delegationId), d.schemeId.eq(schemeId)))
       .update({ isActive: false });
 
     await logActivity({
@@ -1825,20 +2110,25 @@ export async function submitApprovalDecision(
   }
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-    ]);
+    const { profile, roles } = await requireSchemeAccess(schemeId, "works.approve");
 
+    // The workflow must be this scheme's (SEC-004).
     const workflow = await db.orm.public.WorksApprovalWorkflow
-      .where((w) => w.id.eq(workflowId))
+      .where((w) => and(w.id.eq(workflowId), w.schemeId.eq(schemeId)))
       .include("approvalRoute")
       .include("records")
       .first();
 
-    if (!workflow) return { error: "Approval workflow not found." };
+    if (!workflow || workflow.schemeId !== schemeId) return { error: "Approval workflow not found." };
     if (workflow.status !== "PENDING") {
       return { error: "This workflow is no longer pending." };
+    }
+
+    // Only the roles the approval route names may decide (M2). A route
+    // with no roles listed falls back to the works.approve roles.
+    const approverRoles = workflow.approvalRoute?.approverRoles ?? [];
+    if (approverRoles.length > 0 && !roles.some((r) => approverRoles.includes(r))) {
+      return { error: "Your role cannot approve on this approval route." };
     }
 
     // Check the approver hasn't already decided
@@ -1861,7 +2151,7 @@ export async function submitApprovalDecision(
     if (decision === "REJECTED") {
       // Any rejection rejects the whole workflow
       await db.orm.public.WorksApprovalWorkflow
-        .where((w) => w.id.eq(workflowId))
+        .where((w) => and(w.id.eq(workflowId), w.schemeId.eq(schemeId)))
         .update({ status: "REJECTED" });
     } else if (decision === "APPROVED") {
       // Count approvals (including this new one)
@@ -1872,7 +2162,7 @@ export async function submitApprovalDecision(
 
       if (approvalCount >= required) {
         await db.orm.public.WorksApprovalWorkflow
-          .where((w) => w.id.eq(workflowId))
+          .where((w) => and(w.id.eq(workflowId), w.schemeId.eq(schemeId)))
           .update({ status: "APPROVED" });
       }
     }
@@ -1928,6 +2218,7 @@ export async function createWorksVariation(
     const { profile } = await requireSchemeMembership(schemeId, [
       "ADVISER",
     ]);
+    await contractInScheme(contractId, schemeId);
 
     // Get next variation number for this contract
     const lastVariation = await db.orm.public.WorksVariation
@@ -1976,9 +2267,11 @@ export async function submitWorksVariation(
       "ADVISER",
       "COMMITTEE",
     ]);
+    const variation = await variationInScheme(variationId, schemeId);
+    if (variation.status !== "DRAFT") return { error: "Only a draft variation can be submitted." };
 
     await db.orm.public.WorksVariation
-      .where((v) => v.id.eq(variationId))
+      .where((v) => and(v.id.eq(variationId), v.contractId.eq(variation.contractId)))
       .update({ status: "SUBMITTED" });
 
     await logActivity({
@@ -2094,9 +2387,11 @@ export async function rejectWorksVariation(
     const { profile } = await requireSchemeMembership(schemeId, [
       "ADVISER",
     ]);
+    const variation = await variationInScheme(variationId, schemeId);
+    if (variation.status === "APPROVED") return { error: "An approved variation cannot be rejected." };
 
     await db.orm.public.WorksVariation
-      .where((v) => v.id.eq(variationId))
+      .where((v) => and(v.id.eq(variationId), v.contractId.eq(variation.contractId)))
       .update({ status: "REJECTED" });
 
     await logActivity({
@@ -2202,9 +2497,25 @@ export async function updateWorksContract(
     const { profile } = await requireSchemeMembership(schemeId, [
       "ADVISER",
     ]);
+    const existing = await contractInScheme(contractId, schemeId);
+
+    // Once executed, the contract price is fixed: it changes only through an
+    // approved variation (the works contract fee was charged on that value).
+    if (isPostExecutionStatus(existing.status)) {
+      const differs = (raw: string | null, current: unknown) =>
+        raw != null && raw !== "" && toCents(raw) !== toCents(String(current ?? 0));
+      if (
+        differs(contractValueRaw, existing.contractValue) ||
+        differs(gstAmountRaw, existing.gstAmount) ||
+        differs(totalValueRaw, existing.totalValue) ||
+        toCents(retentionPercentageRaw ?? 0) !== toCents(String(existing.retentionPercentage ?? 0))
+      ) {
+        return { error: "This contract has been executed, so its value cannot be changed. Record a variation instead." };
+      }
+    }
 
     await db.orm.public.WorksContract
-      .where((c) => c.id.eq(contractId))
+      .where((c) => and(c.id.eq(contractId), c.schemeId.eq(schemeId)))
       .update({
         title: toVarchar<300>(title),
         description,
@@ -2257,9 +2568,10 @@ export async function updateWorksWorkOrder(
       "ADVISER",
       "COMMITTEE",
     ]);
+    await workOrderInScheme(workOrderId, schemeId);
 
     await db.orm.public.WorksWorkOrder
-      .where((wo) => wo.id.eq(workOrderId))
+      .where((wo) => and(wo.id.eq(workOrderId), wo.schemeId.eq(schemeId)))
       .update({
         title: toVarchar<300>(title),
         description,

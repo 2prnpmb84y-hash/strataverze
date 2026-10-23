@@ -8,6 +8,7 @@ import {
   checkBankDetailsForPayment,
   checkSegregation,
   eligibleApprovers,
+  policyLoosening,
   type BankDetailVersionForControls,
   type ControlContext,
   type InvoiceForControls,
@@ -161,5 +162,29 @@ describe("bank detail change control", () => {
     expect(canVerifyBankChange(version({ status: "PENDING", verifiedById: null }), "treasurer")).toEqual({ ok: true, slot: "FIRST" });
     expect(canVerifyBankChange(version(), "treasurer").ok).toBe(false);
     expect(canVerifyBankChange(version(), "authoriser")).toEqual({ ok: true, slot: "SECOND" });
+  });
+});
+
+describe("policyLoosening", () => {
+  const current = { policy, coolingOffDays: 5 };
+  it("is empty for an unchanged or tightened policy", () => {
+    expect(policyLoosening(current, { ...policy, coolingOffDays: 5 })).toEqual([]);
+    expect(policyLoosening(current, { ...policy, singleApproverLimitCents: 50000, coolingOffDays: 10 })).toEqual([]);
+  });
+  it("names each loosening change", () => {
+    expect(
+      policyLoosening(current, {
+        singleApproverLimitCents: 200000,
+        requireSecondApproverAboveCents: null,
+        allowSelfApproval: true,
+        allowAdviserApproval: true,
+        coolingOffDays: 1,
+      }),
+    ).toEqual(["allowSelfApproval", "allowAdviserApproval", "singleApproverLimit", "requireSecondApproverAbove", "coolingOffDays"]);
+  });
+  it("treats raising the separate second-approver threshold as loosening", () => {
+    expect(policyLoosening(current, { ...policy, requireSecondApproverAboveCents: 500000, coolingOffDays: 5 })).toEqual([
+      "requireSecondApproverAbove",
+    ]);
   });
 });

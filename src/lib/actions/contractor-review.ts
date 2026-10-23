@@ -118,6 +118,9 @@ export async function rejectContractor(
 
     if (!contractorId) return { error: "Contractor ID is required." };
     if (!reason) return { error: "A reason for rejection is required." };
+    if (await isOwnContractor(profile.id, contractorId)) {
+      return { error: "You cannot review your own business." };
+    }
 
     // Update business status
     await db.orm.public.ContractorBusiness
@@ -174,6 +177,9 @@ export async function requestClarification(
 
     if (!contractorId) return { error: "Contractor ID is required." };
     if (!message) return { error: "A clarification message is required." };
+    if (await isOwnContractor(profile.id, contractorId)) {
+      return { error: "You cannot review your own business." };
+    }
 
     // Update business status
     await db.orm.public.ContractorBusiness
@@ -241,6 +247,15 @@ export async function resolveReviewItem(
 
     if (!reviewItemId) return { error: "Review item ID is required." };
     if (!outcome) return { error: "Outcome is required." };
+
+    // A reviewer cannot resolve review items about their own business (L3).
+    const item = await db.orm.public.ContractorReviewItem
+      .where((r) => r.id.eq(reviewItemId))
+      .first();
+    if (!item) return { error: "Review item not found." };
+    if (await isOwnContractor(profile.id, item.contractorBusinessId)) {
+      return { error: "You cannot review your own business." };
+    }
 
     await db.orm.public.ContractorReviewItem
       .where({ id: reviewItemId })

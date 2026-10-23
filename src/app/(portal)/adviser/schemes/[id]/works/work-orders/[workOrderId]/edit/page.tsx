@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import {
   getWorksWorkOrderById,
@@ -18,14 +18,15 @@ export default async function EditWorkOrderPage({
   await connection();
   const { id, workOrderId } = await params;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.manage");
+  if (!access) return null;
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
   const wo = await getWorksWorkOrderById(workOrderId);
-  if (!wo) notFound();
+  if (!wo || wo.schemeId !== id) notFound();
 
   const rawContracts = await getWorksContractsForScheme(id, { status: "ACTIVE" });
   const executedContracts = await getWorksContractsForScheme(id, { status: "EXECUTED" });

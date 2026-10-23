@@ -251,15 +251,25 @@ export async function saveBusinessProfile(
       ? tradeCategoriesRaw.split(",").map((c) => c.trim()).filter(Boolean)
       : [];
 
+    // The ABN is set by the ABN Lookup step, which verifies it with the ABR.
+    // Saving the profile cannot change it (L5): a different ABN must be
+    // looked up again so the verified result matches the ABN on file.
+    const business = await db.orm.public.ContractorBusiness
+      .where((c) => c.id.eq(contractorId))
+      .first();
+    if (!business) return { error: "Contractor business not found." };
+    const submittedAbn = formData.get("abn") ? normaliseAbn(formData.get("abn") as string) : "";
+    const currentAbn = business.abn ? normaliseAbn(String(business.abn)) : "";
+    if (submittedAbn && submittedAbn !== currentAbn) {
+      return { error: "Your ABN has changed. Use Look Up ABN to verify the new ABN before saving." };
+    }
+
     await db.orm.public.ContractorBusiness
       .where((c) => c.id.eq(contractorId))
       .update({
         companyName: toVarchar<300>(companyName),
         tradingName: formData.get("tradingName")
           ? toVarchar<300>((formData.get("tradingName") as string).trim())
-          : null,
-        abn: formData.get("abn")
-          ? toVarchar<11>(normaliseAbn(formData.get("abn") as string))
           : null,
         acn: formData.get("acn")
           ? toVarchar<9>((formData.get("acn") as string).trim())
@@ -399,11 +409,29 @@ export async function saveLicence(
 
     let resultId: string;
     if (licenceId) {
+      const existing = await db.orm.public.WorksLicence
+        .where((l) =>
+          and(l.id.eq(licenceId), l.contractorBusinessId.eq(contractorId)),
+        )
+        .first();
+      if (!existing || existing.contractorBusinessId !== contractorId) return { error: "Licence not found." };
+      // A verified licence that is edited must be verified again (L5).
+      const wasVerified = existing.status === "VERIFIED";
       await db.orm.public.WorksLicence
         .where((l) =>
           and(l.id.eq(licenceId), l.contractorBusinessId.eq(contractorId)),
         )
-        .update(data);
+        .update(
+          wasVerified
+            ? {
+                ...data,
+                status: "SUBMITTED_UNVERIFIED",
+                verifiedById: null,
+                verifiedAt: null,
+                verificationOutcome: null,
+              }
+            : data,
+        );
       resultId = licenceId;
     } else {
       const created = await db.orm.public.WorksLicence.create(data);
@@ -501,11 +529,29 @@ export async function saveInsurance(
 
     let resultId: string;
     if (insuranceId) {
+      const existing = await db.orm.public.WorksInsurance
+        .where((i) =>
+          and(i.id.eq(insuranceId), i.contractorBusinessId.eq(contractorId)),
+        )
+        .first();
+      if (!existing || existing.contractorBusinessId !== contractorId) return { error: "Insurance policy not found." };
+      // A verified policy that is edited must be verified again (L5).
+      const wasVerified = existing.status === "VERIFIED";
       await db.orm.public.WorksInsurance
         .where((i) =>
           and(i.id.eq(insuranceId), i.contractorBusinessId.eq(contractorId)),
         )
-        .update(data);
+        .update(
+          wasVerified
+            ? {
+                ...data,
+                status: "SUBMITTED_UNVERIFIED",
+                verifiedById: null,
+                verifiedAt: null,
+                verificationOutcome: null,
+              }
+            : data,
+        );
       resultId = insuranceId;
     } else {
       const created = await db.orm.public.WorksInsurance.create(data);

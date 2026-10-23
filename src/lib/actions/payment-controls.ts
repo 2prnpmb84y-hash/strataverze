@@ -2,14 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { getCurrentProfile } from "@/lib/queries/profiles";
 import { logActivity } from "@/lib/queries/activity-log";
 import { toCents } from "@/lib/billing/money";
-import { canVerifyBankChange, type VerificationMethod } from "@/lib/finance/payment-controls";
+import { canVerifyBankChange, policyLoosening, type VerificationMethod } from "@/lib/finance/payment-controls";
 import {
   bankDetailsDiffer,
   getBankDetailVersionById,
+  getPaymentSettings,
   recordBankDetailChange,
   savePaymentPolicy,
 } from "@/lib/queries/payment-controls";
@@ -24,21 +27,37 @@ function revalidateScheme(schemeId: string) {
   revalidatePath("/owner", "layout");
 }
 
-/** Flag or unflag a committee member as treasurer. Advisers and committee members may do this. */
+/**
+ * Flag or unflag a committee member as treasurer. The treasurer approves
+ * payments, so the committee appoints them (or StrataVerze staff, audited):
+ * not the adviser, who is also a payee, and nobody may appoint themselves
+ * (M3). Stepping down from your own treasurer role is allowed.
+ */
 export async function setTreasurerAction(schemeId: string, membershipId: string, isTreasurer: boolean): Promise<ControlActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE"]);
-    const membership = await db.orm.public.SchemeMembership.where((m) => m.id.eq(membershipId)).first();
+    if (!schemeId || !membershipId) return { error: "Member not found." };
+    const current = await getCurrentProfile();
+    if (!current) throw new AuthorisationError("You must be signed in.");
+    const asPlatformAdmin = !!current.isPlatformAdmin;
+    const profile = asPlatformAdmin ? current : (await requireSchemeMembership(schemeId, ["COMMITTEE"])).profile;
+    const membership = await db.orm.public.SchemeMembership
+      .where((m) => and(m.id.eq(membershipId), m.schemeId.eq(schemeId)))
+      .first();
     if (!membership || membership.schemeId !== schemeId) return { error: "Member not found." };
     if (membership.role !== "COMMITTEE") return { error: "Only a committee member can be the treasurer." };
-    await db.orm.public.SchemeMembership.where((m) => m.id.eq(membershipId)).update({ isTreasurer });
+    if (isTreasurer && membership.profileId === profile.id) {
+      return { error: "You cannot make yourself the treasurer. Another committee member must do it." };
+    }
+    await db.orm.public.SchemeMembership
+      .where((m) => and(m.id.eq(membershipId), m.schemeId.eq(schemeId)))
+      .update({ isTreasurer });
     await logActivity({
       schemeId,
       actorId: profile.id,
       action: "TREASURER_SET",
       entityType: "SchemeMembership",
       entityId: membershipId,
-      metadata: { isTreasurer, profileId: membership.profileId },
+      metadata: { isTreasurer, profileId: membership.profileId, asPlatformAdmin },
     });
     revalidateScheme(schemeId);
     return { success: isTreasurer ? "Treasurer flagged." : "Treasurer flag removed." };
@@ -58,7 +77,7 @@ export async function savePaymentPolicyAction(
   formData: FormData,
 ): Promise<ControlActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["COMMITTEE"]);
+    const { profile, roles } = await requireSchemeMembership(schemeId, ["COMMITTEE"]);
     const money = (name: string) => {
       const raw = String(formData.get(name) ?? "").trim();
       if (!raw) return null;
@@ -84,13 +103,26 @@ export async function savePaymentPolicyAction(
       allowAdviserApproval: formData.get("allowAdviserApproval") === "on",
       coolingOffDays,
     };
+
+    // Loosening the controls (M3): a committee member who is also the
+    // scheme's adviser could otherwise free up their own approvals, so they
+    // may tighten the policy but not loosen it. A second approver for
+    // loosening changes is a follow-up.
+    const loosened = policyLoosening(await getPaymentSettings(schemeId), policy);
+    if (loosened.length > 0 && roles.includes("ADVISER")) {
+      return {
+        error:
+          "You are also this scheme's adviser, so you cannot loosen the payment controls. Another committee member must make this change.",
+      };
+    }
+
     await savePaymentPolicy(schemeId, policy, profile.id);
     await logActivity({
       schemeId,
       actorId: profile.id,
       action: "PAYMENT_POLICY_UPDATED",
       entityType: "SchemePaymentPolicy",
-      metadata: policy,
+      metadata: { ...policy, loosened },
     });
     revalidateScheme(schemeId);
     return { success: "Payment policy saved." };
@@ -169,10 +201,17 @@ export async function verifySupplierBankDetailsAction(
     const now = new Date().toISOString() as never;
 
     if (decision === "REJECT") {
+      // Only a change still waiting for verification can be rejected (L6):
+      // verified details on file are replaced by a new change, not rejected.
+      if (version.status !== "PENDING") {
+        return { error: version.status === "REJECTED" ? "These bank details were already rejected." : "Only a change waiting for verification can be rejected." };
+      }
       if (profile.id === version.changedById) return { error: "The person who changed the bank details cannot reject them." };
       const reason = String(formData.get("reason") ?? "").trim();
       if (!reason) return { error: "Give a reason for rejecting the change." };
-      await db.orm.public.SupplierBankDetailVersion.where((v) => v.id.eq(versionId)).update({ status: "REJECTED", rejectionReason: reason });
+      await db.orm.public.SupplierBankDetailVersion
+        .where((v) => and(v.id.eq(versionId), v.status.eq("PENDING")))
+        .update({ status: "REJECTED", rejectionReason: reason });
       await logActivity({
         schemeId,
         actorId: profile.id,
