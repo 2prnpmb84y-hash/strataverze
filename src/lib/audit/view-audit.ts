@@ -1,43 +1,108 @@
 /**
- * Page views recorded in the security audit log (security stage S6): pages
- * that show owners' personal details or a building's financial records. The
- * proxy matches each page request against these rules.
+ * Page views recorded in the security audit log (security stage S6).
  *
- * A view event means the page was requested by a signed-in user whose
- * session was accepted. If the page then refuses them, that refusal is a
- * separate access.denied event.
+ * Every page of a building's Adviser and Accountant areas is recorded, with
+ * the most sensitive ones (the strata roll, a lot and its owners, members,
+ * contacts, financial records, documents, the logs) named separately. Owner
+ * and committee finance pages that show other owners' arrears are recorded
+ * too.
+ *
+ * The proxy works out who may see the page from their roles on that
+ * building: a view by someone without the role is recorded as denied (the
+ * page itself then refuses them).
  */
 
-const ID = "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})";
+export type ViewArea = "adviser" | "accountant" | "owner";
 
-export type ViewRule = { pattern: RegExp; action: string; resourceType: string };
+export type ViewTarget = {
+  action: string;
+  area: ViewArea;
+  /** Null for owner pages, whose building comes from the scheme cookie. */
+  schemeId: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  /** The sub-page, for the log (no query string). */
+  page: string;
+  /** Roles on the building that may see this page. */
+  roles: readonly string[];
+};
 
-export const VIEW_RULES: readonly ViewRule[] = [
-  // The strata roll (owners' names and lots) on the building's main page.
-  { pattern: new RegExp(`^/adviser/schemes/${ID}/?$`), action: "view.strata_roll", resourceType: "Scheme" },
-  // A lot and its owners' contact details.
-  { pattern: new RegExp(`^/adviser/schemes/${ID}/lots/${ID}(/|$)`), action: "view.owner_details", resourceType: "Lot" },
-  { pattern: new RegExp(`^/adviser/schemes/${ID}/members(/|$)`), action: "view.member_list", resourceType: "Scheme" },
-  { pattern: new RegExp(`^/adviser/schemes/${ID}/activity(/|$)`), action: "view.activity_log", resourceType: "Scheme" },
-  // Financial reports, ledgers, levies, bank and debt records.
-  {
-    pattern: new RegExp(
-      `^/adviser/schemes/${ID}/(finance/(reports|journal|accounts|levies|reconciliation|bank-accounts|bank-import|debt-recovery|owner-credits|invoices|interest|budget|periods)|levies)(/|$)`,
-    ),
-    action: "view.financial",
-    resourceType: "Scheme",
-  },
+/**
+ * A UUID in canonical form (lower case, hyphenated), accepting the forms the
+ * database also accepts: upper case, without hyphens, or in braces. Null for
+ * anything else.
+ */
+export function canonicalUuid(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let s = raw.trim();
+  if (s.startsWith("{") && s.endsWith("}")) s = s.slice(1, -1);
+  const hex = s.replace(/-/g, "").toLowerCase();
+  if (!/^[0-9a-f]{32}$/.test(hex)) return null;
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function decode(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+/** The audit action for a building page, by its sub-path. */
+function buildingPageAction(rest: string[]): { action: string; resourceType: string; resourceId: string | null } {
+  const [first, second] = rest.map((s) => s.toLowerCase());
+  if (!first) return { action: "view.strata_roll", resourceType: "Scheme", resourceId: null };
+  if (first === "lots" && second && second !== "new") {
+    return { action: "view.owner_details", resourceType: "Lot", resourceId: canonicalUuid(decode(rest[1])) };
+  }
+  if (first === "lots") return { action: "view.lot_list", resourceType: "Scheme", resourceId: null };
+  if (first === "members") return { action: "view.member_list", resourceType: "Scheme", resourceId: null };
+  if (first === "contacts") return { action: "view.contacts", resourceType: "Scheme", resourceId: null };
+  if (first === "activity" || first === "security-log") return { action: "view.audit_log", resourceType: "Scheme", resourceId: null };
+  if (first === "finance" || first === "levies" || first === "funds") return { action: "view.financial", resourceType: "Scheme", resourceId: null };
+  if (first === "documents") return { action: "view.documents", resourceType: "Scheme", resourceId: null };
+  return { action: "view.scheme_page", resourceType: "Scheme", resourceId: null };
+}
+
+const OWNER_AUDITED = [
+  /^\/owner\/finance\/(treasurer|reconciliation|approvals)(\/|$)/i,
+  /^\/owner\/levies\/debt-recovery(\/|$)/i,
 ];
 
-/** The view event for a page path, or null when the page is not audited. */
-export function viewEventFor(pathname: string): { action: string; schemeId: string; resourceType: string; resourceId: string; area: string } | null {
-  for (const rule of VIEW_RULES) {
-    const m = rule.pattern.exec(pathname);
-    if (!m) continue;
-    const schemeId = m[1];
-    const lotId = rule.resourceType === "Lot" ? m[2] : null;
-    const area = pathname.split("/").slice(4, 7).join("/").slice(0, 120) || "overview";
-    return { action: rule.action, schemeId, resourceType: rule.resourceType, resourceId: lotId ?? schemeId, area };
+/** What a page request is, for the audit log, or null when it is not audited. */
+export function viewTargetFor(pathname: string): ViewTarget | null {
+  const parts = pathname.split("/").filter(Boolean);
+  const top = parts[0]?.toLowerCase();
+  if ((top === "adviser" || top === "accountant") && parts[1]?.toLowerCase() === "schemes" && parts[2]) {
+    const schemeId = canonicalUuid(decode(parts[2]));
+    if (!schemeId) return null;
+    const rest = parts.slice(3);
+    const page = rest.join("/").toLowerCase().slice(0, 120) || "overview";
+    const { action, resourceType, resourceId } =
+      top === "accountant"
+        ? { action: "view.financial", resourceType: "Scheme", resourceId: null }
+        : buildingPageAction(rest);
+    return {
+      action,
+      area: top,
+      schemeId,
+      resourceType,
+      resourceId: resourceId ?? schemeId,
+      page,
+      roles: top === "accountant" ? ["ACCOUNTANT", "ADVISER"] : ["ADVISER"],
+    };
+  }
+  if (top === "owner" && OWNER_AUDITED.some((re) => re.test(pathname))) {
+    return {
+      action: "view.financial",
+      area: "owner",
+      schemeId: null,
+      resourceType: "Scheme",
+      resourceId: null,
+      page: parts.slice(1).join("/").toLowerCase().slice(0, 120),
+      roles: ["OWNER", "COMMITTEE"],
+    };
   }
   return null;
 }

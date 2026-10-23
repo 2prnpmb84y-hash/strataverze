@@ -20683,6 +20683,13 @@
           },
           "SecurityAuditCheck": {
             "fields": {
+              "checkSeq": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
               "checkedAt": {
                 "nullable": false,
                 "type": {
@@ -20691,6 +20698,27 @@
                 }
               },
               "firstBadSeq": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "fullCheck": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "headHash": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "headSeq": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/int8@1",
@@ -20711,6 +20739,13 @@
                   "kind": "scalar"
                 }
               },
+              "problem": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "rowsChecked": {
                 "nullable": false,
                 "type": {
@@ -20722,17 +20757,32 @@
             "relations": {},
             "storage": {
               "fields": {
+                "checkSeq": {
+                  "column": "check_seq"
+                },
                 "checkedAt": {
                   "column": "checked_at"
                 },
                 "firstBadSeq": {
                   "column": "first_bad_seq"
                 },
+                "fullCheck": {
+                  "column": "full_check"
+                },
+                "headHash": {
+                  "column": "head_hash"
+                },
+                "headSeq": {
+                  "column": "head_seq"
+                },
                 "id": {
                   "column": "id"
                 },
                 "ok": {
                   "column": "ok"
+                },
+                "problem": {
+                  "column": "problem"
                 },
                 "rowsChecked": {
                   "column": "rows_checked"
@@ -45175,6 +45225,15 @@
             },
             "security_audit_checks": {
               "columns": {
+                "check_seq": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "default": {
+                    "expression": "0",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
                 "checked_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -45185,6 +45244,25 @@
                   "nullable": false
                 },
                 "first_bad_seq": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": true
+                },
+                "full_check": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "head_hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "head_seq": {
                   "codecId": "pg/int8@1",
                   "dataType": "pg/int8",
                   "nullable": true
@@ -45203,6 +45281,11 @@
                   "dataType": "pg/bool",
                   "nullable": false
                 },
+                "problem": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "rows_checked": {
                   "codecId": "pg/int8@1",
                   "dataType": "pg/int8",
@@ -45211,6 +45294,13 @@
               },
               "foreignKeys": [],
               "indexes": [
+                {
+                  "columns": [
+                    "check_seq"
+                  ],
+                  "name": "security_audit_checks_check_seq_key",
+                  "unique": true
+                },
                 {
                   "columns": [
                     "checked_at"
@@ -53684,7 +53774,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "bbd359a57cd153bd3aa4713ea1315b934d5425ceaceb7d09d3cf94a340814005"
+    "storageHash": "52189e4326416a9cbc06d15a9dfb8c49364fa32069ddc947227bab8a1f6c12de"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

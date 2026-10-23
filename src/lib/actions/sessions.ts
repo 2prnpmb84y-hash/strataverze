@@ -7,6 +7,7 @@ import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { endSession, revokeAllSessions } from "@/lib/auth/session-register";
 import { getProfileById } from "@/lib/queries/profiles";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
+import { isSignOutReason } from "@/lib/audit/admin-reasons";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSession } from "@/lib/auth/current-session";
 
@@ -59,22 +60,20 @@ export async function signOutEverywhereAction(): Promise<{ error?: string }> {
 /**
  * A platform admin ends every session of another user, for example when a
  * device is lost or an account may be compromised. Needs a recent
- * authenticator check and a recorded reason.
+ * authenticator check and one of the fixed reasons (SIGN_OUT_REASONS).
  */
 export async function adminSignOutUserAction(profileId: string, reason: string): Promise<{ error?: string }> {
   try {
     const admin = await requirePlatformAdmin();
     await requireRecentMfa();
-    const why = (reason ?? "").trim();
-    if (why.length < 10) return { error: "Record why (at least 10 characters)." };
-    if (why.length > 1000) return { error: "Keep the reason under 1,000 characters." };
+    if (!isSignOutReason(reason)) return { error: "Choose why." };
     if (profileId === admin.id) return { error: "Use Sign out everywhere in your own settings." };
     const target = await getProfileById(profileId);
     if (!target) return { error: "User not found." };
 
     // The admin's reason is kept in the security audit log (restricted to
     // platform admins), not in the server log.
-    await revokeAllSessions(target.id, { actorProfileId: admin.id, reason: `admin sign-out: ${why}` });
+    await revokeAllSessions(target.id, { actorProfileId: admin.id, reason: `admin sign-out: ${reason}` });
     revalidatePath("/admin/security");
     return {};
   } catch (err) {

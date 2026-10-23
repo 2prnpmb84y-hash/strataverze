@@ -13,6 +13,8 @@ const categoryLabels: Record<string, string> = {
   contractor: "Contractor review",
   admin: "Administration",
   action: "Actions taken (every form and button)",
+  lot: "Lots",
+  membership: "Owners and memberships",
 };
 
 /** A plain GET form, so filters live in the address and work without script. */

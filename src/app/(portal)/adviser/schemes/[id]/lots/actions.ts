@@ -16,6 +16,7 @@ import {
   removeOwnerFromLot,
 } from "@/lib/queries/lots";
 import { logActivity } from "@/lib/queries/activity-log";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revokeAllSessions } from "@/lib/auth/session-register";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
@@ -102,7 +103,7 @@ export async function updateLotAction(
   formData: FormData,
 ): Promise<LotFormState> {
   try {
-    await requireSchemeAccess(schemeId, "lots.manage");
+    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
 
     const { errors, isValid, data } = validateLotForm(formData);
     if (!isValid) return { fieldErrors: errors };
@@ -111,6 +112,15 @@ export async function updateLotAction(
     assertInScheme(lot, schemeId, "Lot");
 
     await updateLot(schemeId, lotId, data);
+    await recordSecurityEvent({
+      action: "lot.updated",
+      outcome: "allowed",
+      actorProfileId: actor.id,
+      actorRole: "ADVISER",
+      schemeId,
+      resourceType: "Lot",
+      resourceId: lotId,
+    });
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
   } catch (err) {
@@ -121,12 +131,21 @@ export async function updateLotAction(
 
 export async function deleteLotAction(schemeId: string, lotId: string) {
   try {
-    await requireSchemeAccess(schemeId, "lots.manage");
+    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
 
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
 
     await deleteLot(schemeId, lotId);
+    await recordSecurityEvent({
+      action: "lot.deleted",
+      outcome: "allowed",
+      actorProfileId: actor.id,
+      actorRole: "ADVISER",
+      schemeId,
+      resourceType: "Lot",
+      resourceId: lotId,
+    });
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/lots`);
   } catch (err) {
@@ -165,7 +184,7 @@ export async function assignOwnerAction(
   profileId: string,
 ) {
   try {
-    await requireSchemeAccess(schemeId, "lots.manage");
+    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
@@ -173,6 +192,16 @@ export async function assignOwnerAction(
     assertInScheme(lot, schemeId, "Lot");
 
     await assignOwnerToLot({ schemeId, lotId, profileId });
+    await recordSecurityEvent({
+      action: "membership.owner_assigned",
+      outcome: "allowed",
+      actorProfileId: actor.id,
+      actorRole: "ADVISER",
+      schemeId,
+      resourceType: "Lot",
+      resourceId: lotId,
+      metadata: { profileId },
+    });
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
@@ -211,6 +240,16 @@ export async function removeOwnerAction(
     }
 
     await removeOwnerFromLot(membershipId);
+    await recordSecurityEvent({
+      action: "membership.owner_removed",
+      outcome: "allowed",
+      actorProfileId: actor.id,
+      actorRole: "ADVISER",
+      schemeId,
+      resourceType: "Lot",
+      resourceId: lotId,
+      metadata: { profileId: target.profileId },
+    });
     // A role was removed: end the person's sessions so every device signs in
     // again under their remaining access (security stage S5).
     if (target.profileId !== actor.id) {

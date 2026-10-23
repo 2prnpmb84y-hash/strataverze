@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/site-url";
-import { auditHash, recordSecurityEvent } from "@/lib/audit/security-audit";
+import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
 
 export async function resetPassword(formData: FormData) {
   const supabase = await createClient();
@@ -25,7 +25,7 @@ export async function resetPassword(formData: FormData) {
     console.error("[forgot-password] resetPasswordForEmail failed:", error.code ?? error.name);
   }
 
-  await recordSecurityEvent({
+  await recordSecurityEventLater({
     action: "auth.password_reset_requested",
     outcome: error ? "failed" : "allowed",
     metadata: { subject: auditHash(email) },

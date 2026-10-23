@@ -7,7 +7,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { authRateLimit } from "@/lib/auth/rate-limit";
 import { decodeJwtPayload } from "@/lib/auth/mfa-policy";
-import { auditHash, recordSecurityEvent } from "@/lib/audit/security-audit";
+import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
 
 /** The session id in an access token (not verified: it was just issued to us). */
 function sessionIdOf(token: string): string | null {
@@ -36,7 +36,7 @@ export async function login(formData: FormData) {
 
   const limit = authRateLimit(`login:${ip}:${email}`);
   if (!limit.success) {
-    await recordSecurityEvent({
+    await recordSecurityEventLater({
       action: "auth.sign_in",
       outcome: "denied",
       reason: "too many attempts",
@@ -56,7 +56,7 @@ export async function login(formData: FormData) {
   const { data: signedIn, error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
-    await recordSecurityEvent({
+    await recordSecurityEventLater({
       action: "auth.sign_in",
       outcome: "failed",
       reason: "wrong email or password",
@@ -65,7 +65,7 @@ export async function login(formData: FormData) {
     redirect("/login?error=Invalid+email+or+password");
   }
 
-  await recordSecurityEvent({
+  await recordSecurityEventLater({
     action: "auth.sign_in",
     outcome: "allowed",
     actorAuthId: signedIn.user?.id ?? null,
@@ -117,11 +117,11 @@ export async function signup(formData: FormData) {
   const { data: created, error } = await supabase.auth.signUp(data);
 
   if (error) {
-    await recordSecurityEvent({ action: "auth.sign_up", outcome: "failed", metadata: { subject: auditHash(email) } });
+    await recordSecurityEventLater({ action: "auth.sign_up", outcome: "failed", metadata: { subject: auditHash(email) } });
     // Map to a generic message so Supabase internals are not exposed
     redirect("/login?error=Unable+to+create+account.+Please+try+again.");
   }
-  await recordSecurityEvent({ action: "auth.sign_up", outcome: "allowed", actorAuthId: created.user?.id ?? null });
+  await recordSecurityEventLater({ action: "auth.sign_up", outcome: "allowed", actorAuthId: created.user?.id ?? null });
 
   revalidatePath("/", "layout");
   redirect("/login?message=Check+your+email+to+confirm+your+account");

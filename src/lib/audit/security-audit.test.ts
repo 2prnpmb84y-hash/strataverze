@@ -113,3 +113,41 @@ describe("recordActionInvocation", () => {
     expect(create).not.toHaveBeenCalled();
   });
 });
+
+describe("free text never reaches the log", () => {
+  it("drops strings with spaces or punctuation, keeps ids, codes, dates and paths", () => {
+    expect(
+      sanitiseMetadata({
+        kind: "levy_notice",
+        lotId: "22222222-2222-4222-8222-222222222222",
+        paidOn: "2026-10-23",
+        page: "/adviser/schemes/x/lots",
+        status: "Smith family dispute",
+        what: "Pay J SMITH 0412 345 678",
+        descriptionPattern: "SMITH",
+      }),
+    ).toEqual({
+      kind: "levy_notice",
+      lotId: "22222222-2222-4222-8222-222222222222",
+      paidOn: "2026-10-23",
+      page: "/adviser/schemes/x/lots",
+    });
+  });
+
+  it("keeps only allowed keys when a list is given", () => {
+    expect(sanitiseMetadata({ amount: 100, mood: "x" }, new Set(["amount"]))).toEqual({ amount: 100 });
+  });
+});
+
+describe("anonymous floods", () => {
+  it("are capped per source, with a periodic count of what was held back", async () => {
+    const { anonymousEventAllowed } = await import("./security-audit");
+    const t0 = 1_800_000_000_000;
+    const results = Array.from({ length: 25 }, (_, i) => anonymousEventAllowed("flood-test", t0 + i));
+    expect(results.slice(0, 20).every((r) => r.write)).toBe(true);
+    // The first over the cap writes a summary; the rest that minute are held back.
+    expect(results[20]).toEqual({ write: true, heldBack: 1 });
+    expect(results.slice(21).every((r) => !r.write)).toBe(true);
+    expect(anonymousEventAllowed("flood-test", t0 + 61_000)).toEqual({ write: true, heldBack: 5 });
+  });
+});

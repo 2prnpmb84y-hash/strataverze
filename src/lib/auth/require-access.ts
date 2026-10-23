@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { rolesFor, type Capability } from "@/config/permissions";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { AuthorisationError, requireSchemeMembership } from "./require-membership";
-import { recordSecurityEvent } from "@/lib/audit/security-audit";
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 
 /**
  * Server action check: the signed-in user holds the capability on this
@@ -38,7 +38,7 @@ export async function requirePlatformAdminPage() {
   const profile = await getCurrentProfile();
   if (!profile?.isPlatformAdmin) {
     if (profile) {
-      await recordSecurityEvent({
+      await recordSecurityEventLater({
         action: "access.denied",
         outcome: "denied",
         actorProfileId: profile.id,

@@ -35,6 +35,16 @@ const LABELS: Record<string, string> = {
   "contractor.review_item_resolved": "Contractor review item resolved",
   "admin.referral_income_recorded": "Referral income recorded",
   "action.authorised": "Action taken",
+  "lot.updated": "Lot changed",
+  "lot.deleted": "Lot deleted",
+  "membership.owner_assigned": "Owner assigned to a lot",
+  "membership.owner_removed": "Owner removed from a lot",
+  "auth.password_set": "First password set",
+  "auth.link_sign_in": "Signed in from an email link",
+  "view.lot_list": "Viewed the lot list",
+  "view.contacts": "Viewed building contacts",
+  "view.documents": "Viewed documents",
+  "view.scheme_page": "Viewed a building page",
 };
 
 export function auditActionLabel(action: string): string {

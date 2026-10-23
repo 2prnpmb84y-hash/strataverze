@@ -29,7 +29,7 @@ export default async function AdminAuditPage({
   const before = Number(one(sp.before)) || null;
 
   const [{ events, nextBeforeSeq }, check] = await Promise.all([
-    listSecurityEvents({ category, outcome, beforeSeq: before, limit: 100 }),
+    listSecurityEvents({ scope: { kind: "platform" }, category, outcome, beforeSeq: before, limit: 100 }),
     latestAuditCheck(),
   ]);
   // Reading the audit log is itself recorded.
@@ -52,16 +52,23 @@ export default async function AdminAuditPage({
         <Card>
           <CardHeader
             title="Integrity check"
-            description="Each event carries a hash of the one before it. A daily check walks the whole chain."
+            description="Each event carries a hash of the one before it. The chain is checked every hour, and in full every Sunday."
           />
           {check ? (
-            <p className={`text-sm ${check.ok ? "text-ink" : "text-red-700 font-medium"}`}>
-              {check.ok
-                ? `Unbroken at the last check (${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })}, ${check.rowsChecked.toLocaleString("en-AU")} events).`
-                : `BROKEN at event #${check.firstBadSeq} (checked ${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })}). Follow the incident steps in the security runbook.`}
-            </p>
+            <div className="space-y-1">
+              <p className={`text-sm ${check.ok ? "text-ink" : "text-red-700 font-medium"}`}>
+                {check.ok
+                  ? `Unbroken at the last check (${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })}, ${check.rowsChecked.toLocaleString("en-AU")} events checked${check.fullCheck ? ", full check" : ""}).`
+                  : `BROKEN at event #${check.firstBadSeq}: ${check.problem ?? "the chain does not match"} (checked ${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })}). Follow the incident steps in the security runbook.`}
+              </p>
+              {check.stale && (
+                <p className="text-sm text-amber-800 font-medium">
+                  The last check is more than 3 hours old. The hourly check may have stopped: see the security runbook.
+                </p>
+              )}
+            </div>
           ) : (
-            <p className="text-sm text-ink-muted">The first daily check has not run yet.</p>
+            <p className="text-sm text-ink-muted">The first check has not run yet.</p>
           )}
         </Card>
         <Card>

@@ -1,4 +1,20 @@
 import { AuthorisationError } from "./errors";
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
+
+/**
+ * Record a refused record lookup (S6). These helpers are synchronous, so the
+ * write is started and left to finish; it never throws. The request's
+ * signed-in person is filled in by the audit helper.
+ */
+function recordRefusal(label: string, schemeId: string | null, reason: string) {
+  void recordSecurityEventLater({
+    action: "access.denied",
+    outcome: "denied",
+    schemeId,
+    resourceType: label,
+    reason,
+  });
+}
 
 /**
  * Record-to-scheme checks (security finding SEC-004).
@@ -33,7 +49,10 @@ export function assertInScheme<T extends { schemeId: string }>(
   schemeId: string,
   label = "Record",
 ): asserts record is T {
-  if (!inScheme(record, schemeId)) throw new AuthorisationError(`${label} not found.`);
+  if (!inScheme(record, schemeId)) {
+    recordRefusal(label, schemeId, record ? "record belongs to another building" : "record not found");
+    throw new AuthorisationError(`${label} not found.`);
+  }
 }
 
 /** Throw unless a child record belongs to the expected parent. */
@@ -43,6 +62,7 @@ export function assertBelongsTo(
   label = "Record",
 ): void {
   if (!actualParentId || !expectedParentId || actualParentId !== expectedParentId) {
+    recordRefusal(label, null, "record does not belong to the expected parent");
     throw new AuthorisationError(`${label} not found.`);
   }
 }

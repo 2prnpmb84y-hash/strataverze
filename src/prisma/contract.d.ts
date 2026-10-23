@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'bbd359a57cd153bd3aa4713ea1315b934d5425ceaceb7d09d3cf94a340814005'>;
+  StorageHashBase<'52189e4326416a9cbc06d15a9dfb8c49364fa32069ddc947227bab8a1f6c12de'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1818,10 +1818,15 @@ export type FieldOutputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly SecurityAuditCheck: {
+      readonly checkSeq: CodecTypes['pg/int8@1']['output'];
       readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly firstBadSeq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly fullCheck: CodecTypes['pg/bool@1']['output'];
+      readonly headHash: CodecTypes['pg/text@1']['output'] | null;
+      readonly headSeq: CodecTypes['pg/int8@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly ok: CodecTypes['pg/bool@1']['output'];
+      readonly problem: CodecTypes['pg/text@1']['output'] | null;
       readonly rowsChecked: CodecTypes['pg/int8@1']['output'];
     };
     readonly SecurityAuditEvent: {
@@ -4194,10 +4199,15 @@ export type FieldInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly SecurityAuditCheck: {
+      readonly checkSeq: CodecTypes['pg/int8@1']['input'];
       readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly firstBadSeq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly fullCheck: CodecTypes['pg/bool@1']['input'];
+      readonly headHash: CodecTypes['pg/text@1']['input'] | null;
+      readonly headSeq: CodecTypes['pg/int8@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly ok: CodecTypes['pg/bool@1']['input'];
+      readonly problem: CodecTypes['pg/text@1']['input'] | null;
       readonly rowsChecked: CodecTypes['pg/int8@1']['input'];
     };
     readonly SecurityAuditEvent: {
@@ -6571,10 +6581,15 @@ export type StorageColumnTypes = {
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly security_audit_checks: {
+      readonly check_seq: CodecTypes['pg/int8@1']['output'];
       readonly checked_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly first_bad_seq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly full_check: CodecTypes['pg/bool@1']['output'];
+      readonly head_hash: CodecTypes['pg/text@1']['output'] | null;
+      readonly head_seq: CodecTypes['pg/int8@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly ok: CodecTypes['pg/bool@1']['output'];
+      readonly problem: CodecTypes['pg/text@1']['output'] | null;
       readonly rows_checked: CodecTypes['pg/int8@1']['output'];
     };
     readonly security_audit_events: {
@@ -8948,10 +8963,15 @@ export type StorageColumnInputTypes = {
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly security_audit_checks: {
+      readonly check_seq: CodecTypes['pg/int8@1']['input'];
       readonly checked_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly first_bad_seq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly full_check: CodecTypes['pg/bool@1']['input'];
+      readonly head_hash: CodecTypes['pg/text@1']['input'] | null;
+      readonly head_seq: CodecTypes['pg/int8@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly ok: CodecTypes['pg/bool@1']['input'];
+      readonly problem: CodecTypes['pg/text@1']['input'] | null;
       readonly rows_checked: CodecTypes['pg/int8@1']['input'];
     };
     readonly security_audit_events: {
@@ -11938,10 +11958,15 @@ export namespace Models {
     readonly [RelationKeys]?: never;
   };
   export type public_SecurityAuditCheck = {
+    checkSeq: CodecTypes['pg/int8@1']['output'];
     checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     firstBadSeq: CodecTypes['pg/int8@1']['output'] | null;
+    fullCheck: CodecTypes['pg/bool@1']['output'];
+    headHash: CodecTypes['pg/text@1']['output'] | null;
+    headSeq: CodecTypes['pg/int8@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
     ok: CodecTypes['pg/bool@1']['output'];
+    problem: CodecTypes['pg/text@1']['output'] | null;
     rowsChecked: CodecTypes['pg/int8@1']['output'];
     readonly [RelationKeys]?: never;
   };
@@ -25729,6 +25754,13 @@ type ContractBase = Omit<
             };
             readonly security_audit_checks: {
               columns: {
+                readonly check_seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: '0' };
+                  readonly many: false;
+                };
                 readonly checked_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -25737,6 +25769,28 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly first_bad_seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly full_check: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly head_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly head_seq: {
                   readonly dataType: 'pg/int8';
                   readonly codecId: 'pg/int8@1';
                   readonly nullable: true;
@@ -25758,6 +25812,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly problem: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly rows_checked: {
                   readonly dataType: 'pg/int8';
                   readonly codecId: 'pg/int8@1';
@@ -25768,6 +25828,11 @@ type ContractBase = Omit<
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
               indexes: readonly [
+                {
+                  readonly name: 'security_audit_checks_check_seq_key';
+                  readonly columns: readonly ['check_seq'];
+                  readonly unique: true;
+                },
                 {
                   readonly name: 'security_audit_checks_time_idx';
                   readonly columns: readonly ['checked_at'];
@@ -46430,6 +46495,10 @@ type ContractBase = Omit<
           };
           readonly SecurityAuditCheck: {
             readonly fields: {
+              readonly checkSeq: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
               readonly checkedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -46441,6 +46510,18 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
               };
+              readonly fullCheck: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly headHash: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly headSeq: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -46448,6 +46529,10 @@ type ContractBase = Omit<
               readonly ok: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly problem: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly rowsChecked: {
                 readonly nullable: false;
@@ -46459,10 +46544,15 @@ type ContractBase = Omit<
               readonly table: 'security_audit_checks';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly checkSeq: { readonly column: 'check_seq' };
                 readonly checkedAt: { readonly column: 'checked_at' };
                 readonly firstBadSeq: { readonly column: 'first_bad_seq' };
+                readonly fullCheck: { readonly column: 'full_check' };
+                readonly headHash: { readonly column: 'head_hash' };
+                readonly headSeq: { readonly column: 'head_seq' };
                 readonly id: { readonly column: 'id' };
                 readonly ok: { readonly column: 'ok' };
+                readonly problem: { readonly column: 'problem' };
                 readonly rowsChecked: { readonly column: 'rows_checked' };
               };
             };

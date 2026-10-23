@@ -39,6 +39,9 @@ CREATE INDEX IF NOT EXISTS mfa_factor_grants_user_idx ON public.mfa_factor_grant
 ALTER TABLE public.mfa_factor_grants ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.mfa_factor_grants FROM PUBLIC, anon, authenticated;
 
+-- NOTE: 20261024_security_audit_db_events.sql replaces this function with a
+-- version that also records changes in the security audit log. If this file
+-- is ever re-run, run that one again afterwards.
 CREATE OR REPLACE FUNCTION public.mfa_factor_guard()
 RETURNS trigger
 LANGUAGE plpgsql

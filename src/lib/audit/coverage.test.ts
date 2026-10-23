@@ -61,6 +61,19 @@ describe("activity log entries are mirrored", () => {
     );
   });
 
+  it("copying only allowed metadata keys", async () => {
+    await logActivity({
+      schemeId: "s1",
+      actorId: "p1",
+      action: "CONTACT_UPDATED",
+      entityType: "Contact" as never,
+      metadata: { title: "Mrs Smith", amount: 5 },
+    });
+    const event = record.mock.calls[0][0] as { metadataKeys: Set<string> };
+    expect(event.metadataKeys.has("amount")).toBe(true);
+    expect(event.metadataKeys.has("title")).toBe(false);
+  });
+
   it("marking refusals as denied", async () => {
     await logActivity({ schemeId: "s1", actorId: "p1", action: "FINANCIAL_DOCUMENT_ACCESS_DENIED", entityType: "Scheme" });
     expect(record).toHaveBeenCalledWith(expect.objectContaining({ outcome: "denied" }));

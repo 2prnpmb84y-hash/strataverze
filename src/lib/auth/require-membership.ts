@@ -2,7 +2,7 @@ import { db } from "@/prisma/db";
 import { AuthorisationError } from "./errors";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { recordActionInvocation, recordSecurityEvent } from "@/lib/audit/security-audit";
+import { recordActionInvocation, recordSecurityEventLater } from "@/lib/audit/security-audit";
 
 export type PortalRole = "OWNER" | "COMMITTEE" | "ADVISER" | "SUPPLIER" | "ACCOUNTANT" | "PAYMENT_AUTHORISER";
 
@@ -37,7 +37,7 @@ export async function requireSchemeMembership(
 
   if (!membership) {
     // Every refusal is a security event (S6).
-    await recordSecurityEvent({
+    await recordSecurityEventLater({
       action: "access.denied",
       outcome: "denied",
       actorProfileId: profile.id,
@@ -79,7 +79,7 @@ export async function requireAuth() {
 export async function requirePlatformAdmin() {
   const profile = await requireAuth();
   if (!profile.isPlatformAdmin) {
-    await recordSecurityEvent({
+    await recordSecurityEventLater({
       action: "access.denied",
       outcome: "denied",
       actorProfileId: profile.id,

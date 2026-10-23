@@ -24,6 +24,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .limit(1000)
     .all();
   if (!canViewSchemeBilling(memberships, invoice.schemeId, profile.isPlatformAdmin)) {
+    await recordSecurityEventLater({
+      action: "access.denied",
+      outcome: "denied",
+      actorProfileId: profile.id,
+      schemeId: invoice.schemeId,
+      resourceType: "PlatformInvoice",
+      resourceId: invoiceId,
+      reason: "cannot see this building's billing",
+    });
     // Same response as a missing invoice, so ids cannot be probed.
     return new NextResponse("Not found", { status: 404 });
   }

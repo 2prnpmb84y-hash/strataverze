@@ -33,7 +33,7 @@ export default async function SchemeSecurityLogPage({
   const outcome = one(sp.outcome);
   const before = Number(one(sp.before)) || null;
 
-  const { events, nextBeforeSeq } = await listSecurityEvents({ schemeId: id, category, outcome, beforeSeq: before, limit: 100 });
+  const { events, nextBeforeSeq } = await listSecurityEvents({ scope: { kind: "scheme", schemeId: id }, category, outcome, beforeSeq: before, limit: 100 });
   await recordSecurityEventLater({
     action: "view.audit_log",
     outcome: "allowed",

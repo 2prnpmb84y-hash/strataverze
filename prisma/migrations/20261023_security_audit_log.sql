@@ -5,23 +5,32 @@
 -- adds a separate, append-only security audit log.
 --
 -- security_audit_events
---   * Written only by the app's database connection. The Data API roles have
---     no access (default privileges, and RLS with no policies).
+--   * Written only by the app's database connection. No Data API role
+--     (anon, authenticated, service_role) has access, and RLS is on with no
+--     policies.
 --   * Append-only: a trigger refuses every UPDATE and TRUNCATE, and every
 --     DELETE except by the retention job, which removes only rows older than
---     7 years (approved retention, 23 Oct).
+--     7 years (approved retention, 23 Oct) and records how far it removed.
 --   * Hash chain: on insert the database numbers the row (seq), stamps the
 --     time, and stores the hash of the previous row with a hash of this one.
---     Changing, removing or reordering any row breaks the chain from that
---     point. Rows are numbered under a lock, so concurrent inserts cannot
---     fork the chain.
+--     Rows are numbered under a lock, so concurrent inserts cannot fork it.
 --   * Nothing secret is stored: no passwords, tokens, codes, bank numbers or
 --     request bodies (the app filters metadata to an allow-list too).
 --
--- security_audit_checks
---   * The result of each chain check. verify_security_audit_chain() walks
---     the whole log. run_security_audit_check() records the result, and is
---     run daily by pg_cron (see the end of this file).
+-- security_audit_checks (append-only)
+--   * Each check records the head of the chain (last seq and its hash). The
+--     next check requires that head to be unchanged, so rows removed from
+--     the end, or rewritten, after a check are detected. Rows removed from
+--     the start are detected against the retention watermark.
+--   * pg_cron runs an incremental check hourly and a full check weekly (see
+--     20261023_security_audit_schedule.sql).
+--
+-- Limitation (see the security register): the database owner role used by
+-- the app can disable triggers and rewrite the table and these functions.
+-- The chain detects changes by anything less privileged, and changes made
+-- before the next hourly check by anything that does not also rewrite the
+-- checks. Anchoring the head outside the database (a daily email to a
+-- security inbox) is planned once email is set up.
 --
 -- Idempotent. Applied by hand through the Supabase SQL editor.
 
@@ -52,18 +61,35 @@ CREATE INDEX IF NOT EXISTS security_audit_events_scheme_idx ON public.security_a
 CREATE INDEX IF NOT EXISTS security_audit_events_actor_idx ON public.security_audit_events (actor_profile_id, occurred_at DESC);
 CREATE INDEX IF NOT EXISTS security_audit_events_action_idx ON public.security_audit_events (action, occurred_at DESC);
 ALTER TABLE public.security_audit_events ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.security_audit_events FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.security_audit_events FROM PUBLIC, anon, authenticated, service_role;
 
 CREATE TABLE IF NOT EXISTS public.security_audit_checks (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  check_seq     bigint GENERATED ALWAYS AS IDENTITY UNIQUE,
+  -- Set by a trigger, so a check cannot be back- or forward-dated.
   checked_at    timestamptz NOT NULL DEFAULT now(),
+  full_check    boolean NOT NULL DEFAULT false,
   ok            boolean NOT NULL,
   rows_checked  bigint NOT NULL,
-  first_bad_seq bigint
+  first_bad_seq bigint,
+  head_seq      bigint,
+  head_hash     text,
+  problem       text
 );
 CREATE INDEX IF NOT EXISTS security_audit_checks_time_idx ON public.security_audit_checks (checked_at DESC);
 ALTER TABLE public.security_audit_checks ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.security_audit_checks FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.security_audit_checks FROM PUBLIC, anon, authenticated, service_role;
+
+-- How far retention has removed events: the first remaining row must follow on.
+CREATE TABLE IF NOT EXISTS public.security_audit_purges (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  purged_at           timestamptz NOT NULL DEFAULT now(),
+  purged_through_seq  bigint NOT NULL,
+  purged_through_hash text NOT NULL,
+  rows_removed        bigint NOT NULL
+);
+ALTER TABLE public.security_audit_purges ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.security_audit_purges FROM PUBLIC, anon, authenticated, service_role;
 
 -- The hash of one row: the previous hash, then the row's fields as jsonb
 -- text (jsonb prints keys in a fixed order, so this is deterministic).
@@ -82,7 +108,7 @@ AS $$
       'request_id', e.request_id, 'metadata', e.metadata
     )::text, 'UTF8')), 'hex');
 $$;
-REVOKE EXECUTE ON FUNCTION public.security_audit_row_hash(public.security_audit_events) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.security_audit_row_hash(public.security_audit_events) FROM PUBLIC, anon, authenticated, service_role;
 
 -- Number, stamp and chain each new row.
 CREATE OR REPLACE FUNCTION public.security_audit_chain()
@@ -98,6 +124,11 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtext('strataverze.security_audit_chain'));
   SELECT seq, row_hash INTO last_seq, last_hash
   FROM public.security_audit_events ORDER BY seq DESC LIMIT 1;
+  IF last_seq IS NULL THEN
+    -- Empty after retention: continue from the watermark.
+    SELECT purged_through_seq, purged_through_hash INTO last_seq, last_hash
+    FROM public.security_audit_purges ORDER BY purged_through_seq DESC LIMIT 1;
+  END IF;
   NEW.seq := coalesce(last_seq, 0) + 1;
   NEW.occurred_at := clock_timestamp();
   NEW.metadata := coalesce(NEW.metadata, '{}'::jsonb);
@@ -106,45 +137,86 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION public.security_audit_chain() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.security_audit_chain() FROM PUBLIC, anon, authenticated, service_role;
 
 DROP TRIGGER IF EXISTS security_audit_events_chain ON public.security_audit_events;
 CREATE TRIGGER security_audit_events_chain
   BEFORE INSERT ON public.security_audit_events
   FOR EACH ROW EXECUTE FUNCTION public.security_audit_chain();
 
--- Append-only.
+-- Append-only, for all three tables. Retention may delete events older than
+-- 7 years and checks older than 1 year; the purge record is never removed.
 CREATE OR REPLACE FUNCTION public.security_audit_append_only()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  IF TG_OP = 'DELETE'
-     AND current_setting('strataverze.audit_purge', true) = 'on'
-     AND OLD.occurred_at < now() - interval '7 years' THEN
-    RETURN OLD;
+  IF TG_OP = 'DELETE' AND current_setting('strataverze.audit_purge', true) = 'on' THEN
+    IF TG_TABLE_NAME = 'security_audit_events' AND OLD.occurred_at < now() - interval '7 years' THEN
+      RETURN OLD;
+    END IF;
+    IF TG_TABLE_NAME = 'security_audit_checks' AND OLD.checked_at < now() - interval '1 year' THEN
+      RETURN OLD;
+    END IF;
   END IF;
-  RAISE EXCEPTION 'StrataVerze: the security audit log cannot be changed or deleted (%)', TG_OP
+  RAISE EXCEPTION 'StrataVerze: the security audit log cannot be changed or deleted (% on %)', TG_OP, TG_TABLE_NAME
     USING ERRCODE = '42501';
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION public.security_audit_append_only() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.security_audit_append_only() FROM PUBLIC, anon, authenticated, service_role;
 
 DROP TRIGGER IF EXISTS security_audit_events_append_only ON public.security_audit_events;
 CREATE TRIGGER security_audit_events_append_only
   BEFORE UPDATE OR DELETE ON public.security_audit_events
   FOR EACH ROW EXECUTE FUNCTION public.security_audit_append_only();
-
 DROP TRIGGER IF EXISTS security_audit_events_no_truncate ON public.security_audit_events;
 CREATE TRIGGER security_audit_events_no_truncate
   BEFORE TRUNCATE ON public.security_audit_events
   FOR EACH STATEMENT EXECUTE FUNCTION public.security_audit_append_only();
 
--- Walk the chain. The first remaining row's prev_hash is taken as given
--- (older rows may have been removed by retention).
-CREATE OR REPLACE FUNCTION public.verify_security_audit_chain()
-RETURNS TABLE (ok boolean, rows_checked bigint, first_bad_seq bigint)
+DROP TRIGGER IF EXISTS security_audit_checks_append_only ON public.security_audit_checks;
+CREATE TRIGGER security_audit_checks_append_only
+  BEFORE UPDATE OR DELETE ON public.security_audit_checks
+  FOR EACH ROW EXECUTE FUNCTION public.security_audit_append_only();
+DROP TRIGGER IF EXISTS security_audit_checks_no_truncate ON public.security_audit_checks;
+CREATE TRIGGER security_audit_checks_no_truncate
+  BEFORE TRUNCATE ON public.security_audit_checks
+  FOR EACH STATEMENT EXECUTE FUNCTION public.security_audit_append_only();
+
+DROP TRIGGER IF EXISTS security_audit_purges_append_only ON public.security_audit_purges;
+CREATE TRIGGER security_audit_purges_append_only
+  BEFORE UPDATE OR DELETE ON public.security_audit_purges
+  FOR EACH ROW EXECUTE FUNCTION public.security_audit_append_only();
+DROP TRIGGER IF EXISTS security_audit_purges_no_truncate ON public.security_audit_purges;
+CREATE TRIGGER security_audit_purges_no_truncate
+  BEFORE TRUNCATE ON public.security_audit_purges
+  FOR EACH STATEMENT EXECUTE FUNCTION public.security_audit_append_only();
+
+-- A check's time is the database's, not the caller's.
+CREATE OR REPLACE FUNCTION public.security_audit_check_stamp()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  NEW.checked_at := clock_timestamp();
+  RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public.security_audit_check_stamp() FROM PUBLIC, anon, authenticated, service_role;
+DROP TRIGGER IF EXISTS security_audit_checks_stamp ON public.security_audit_checks;
+CREATE TRIGGER security_audit_checks_stamp
+  BEFORE INSERT ON public.security_audit_checks
+  FOR EACH ROW EXECUTE FUNCTION public.security_audit_check_stamp();
+
+-- Check the chain.
+--   full = false: from the head recorded by the last good check (cheap).
+--   full = true:  every row, from the start or the retention watermark.
+-- Either way the last good check's head must still be there, unchanged.
+DROP FUNCTION IF EXISTS public.verify_security_audit_chain();
+CREATE OR REPLACE FUNCTION public.verify_security_audit_chain(full_check boolean DEFAULT false)
+RETURNS TABLE (ok boolean, rows_checked bigint, first_bad_seq bigint, head_seq bigint, head_hash text, problem text)
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
@@ -152,39 +224,103 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   e public.security_audit_events;
-  expected_prev text := NULL;
-  expected_seq bigint := NULL;
+  anchor_seq bigint;
+  anchor_hash text;
+  wm_seq bigint;
+  wm_hash text;
+  start_seq bigint;
+  expected_prev text;
+  expected_seq bigint;
+  first_row boolean := true;
   n bigint := 0;
+  found_hash text;
 BEGIN
-  FOR e IN SELECT * FROM public.security_audit_events ORDER BY seq LOOP
-    n := n + 1;
-    IF (expected_prev IS NOT NULL AND (e.prev_hash <> expected_prev OR e.seq <> expected_seq))
-       OR e.row_hash <> public.security_audit_row_hash(e) THEN
-      ok := false; rows_checked := n; first_bad_seq := e.seq;
-      RETURN NEXT;
-      RETURN;
+  SELECT c.head_seq, c.head_hash INTO anchor_seq, anchor_hash
+  FROM public.security_audit_checks c
+  WHERE c.ok AND c.head_seq IS NOT NULL
+  ORDER BY c.check_seq DESC LIMIT 1;
+  SELECT p.purged_through_seq, p.purged_through_hash INTO wm_seq, wm_hash
+  FROM public.security_audit_purges p ORDER BY p.purged_through_seq DESC LIMIT 1;
+
+  -- The last good check's head must still be present and unchanged (unless
+  -- retention has since removed it).
+  IF anchor_seq IS NOT NULL AND (wm_seq IS NULL OR anchor_seq > wm_seq) THEN
+    SELECT s.row_hash INTO found_hash FROM public.security_audit_events s WHERE s.seq = anchor_seq;
+    IF found_hash IS DISTINCT FROM anchor_hash THEN
+      ok := false; rows_checked := 0; first_bad_seq := anchor_seq; head_seq := NULL; head_hash := NULL;
+      problem := CASE WHEN found_hash IS NULL THEN 'events after the last check are missing' ELSE 'an event already checked has changed' END;
+      RETURN NEXT; RETURN;
     END IF;
+  END IF;
+
+  IF full_check OR anchor_seq IS NULL OR (wm_seq IS NOT NULL AND anchor_seq <= wm_seq) THEN
+    start_seq := NULL;  -- from the first row
+  ELSE
+    start_seq := anchor_seq;
+    expected_prev := NULL;
+  END IF;
+
+  FOR e IN
+    SELECT * FROM public.security_audit_events s
+    WHERE start_seq IS NULL OR s.seq >= start_seq
+    ORDER BY s.seq
+  LOOP
+    n := n + 1;
+    IF first_row AND start_seq IS NULL THEN
+      -- The very first row must start the chain, or follow the watermark.
+      IF NOT (
+        (wm_seq IS NULL AND e.seq = 1 AND e.prev_hash = repeat('0', 64))
+        OR (wm_seq IS NOT NULL AND e.seq = wm_seq + 1 AND e.prev_hash = wm_hash)
+      ) THEN
+        ok := false; rows_checked := n; first_bad_seq := e.seq; head_seq := NULL; head_hash := NULL;
+        problem := 'events at the start of the log are missing';
+        RETURN NEXT; RETURN;
+      END IF;
+    ELSIF NOT first_row AND (e.prev_hash <> expected_prev OR e.seq <> expected_seq) THEN
+      ok := false; rows_checked := n; first_bad_seq := e.seq; head_seq := NULL; head_hash := NULL;
+      problem := 'the chain is broken (an event was removed, changed or reordered)';
+      RETURN NEXT; RETURN;
+    END IF;
+    IF e.row_hash <> public.security_audit_row_hash(e) THEN
+      ok := false; rows_checked := n; first_bad_seq := e.seq; head_seq := NULL; head_hash := NULL;
+      problem := 'an event has been changed';
+      RETURN NEXT; RETURN;
+    END IF;
+    first_row := false;
     expected_prev := e.row_hash;
     expected_seq := e.seq + 1;
+    head_seq := e.seq;
+    head_hash := e.row_hash;
   END LOOP;
-  ok := true; rows_checked := n; first_bad_seq := NULL;
+
+  IF n = 0 AND anchor_seq IS NOT NULL AND (wm_seq IS NULL OR anchor_seq > wm_seq) THEN
+    ok := false; rows_checked := 0; first_bad_seq := anchor_seq; head_seq := NULL; head_hash := NULL;
+    problem := 'events after the last check are missing';
+    RETURN NEXT; RETURN;
+  END IF;
+  ok := true; rows_checked := n; first_bad_seq := NULL; problem := NULL;
+  head_seq := coalesce(head_seq, anchor_seq);
+  head_hash := coalesce(head_hash, anchor_hash);
   RETURN NEXT;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION public.verify_security_audit_chain() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.verify_security_audit_chain(boolean) FROM PUBLIC, anon, authenticated, service_role;
 
-CREATE OR REPLACE FUNCTION public.run_security_audit_check()
+DROP FUNCTION IF EXISTS public.run_security_audit_check();
+CREATE OR REPLACE FUNCTION public.run_security_audit_check(full_check boolean DEFAULT false)
 RETURNS void
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  INSERT INTO public.security_audit_checks (ok, rows_checked, first_bad_seq)
-  SELECT ok, rows_checked, first_bad_seq FROM public.verify_security_audit_chain();
+  INSERT INTO public.security_audit_checks (full_check, ok, rows_checked, first_bad_seq, head_seq, head_hash, problem)
+  SELECT full_check, v.ok, v.rows_checked, v.first_bad_seq, v.head_seq, v.head_hash, v.problem
+  FROM public.verify_security_audit_chain(full_check) v;
 $$;
-REVOKE EXECUTE ON FUNCTION public.run_security_audit_check() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.run_security_audit_check(boolean) FROM PUBLIC, anon, authenticated, service_role;
 
--- Retention: remove events older than 7 years, and checks older than 1 year.
+-- Retention: remove events older than 7 years (recording the watermark
+-- first) and checks older than 1 year.
 CREATE OR REPLACE FUNCTION public.purge_security_audit_events()
 RETURNS bigint
 LANGUAGE plpgsql
@@ -193,111 +329,31 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   removed bigint;
+  last_seq bigint;
+  last_hash text;
 BEGIN
+  PERFORM pg_advisory_xact_lock(hashtext('strataverze.security_audit_chain'));
+  SELECT seq, row_hash INTO last_seq, last_hash
+  FROM public.security_audit_events
+  WHERE occurred_at < now() - interval '7 years'
+  ORDER BY seq DESC LIMIT 1;
+  IF last_seq IS NULL THEN
+    removed := 0;
+  ELSE
+    PERFORM set_config('strataverze.audit_purge', 'on', true);
+    DELETE FROM public.security_audit_events WHERE seq <= last_seq;
+    GET DIAGNOSTICS removed = ROW_COUNT;
+    INSERT INTO public.security_audit_purges (purged_through_seq, purged_through_hash, rows_removed)
+    VALUES (last_seq, last_hash, removed);
+  END IF;
   PERFORM set_config('strataverze.audit_purge', 'on', true);
-  DELETE FROM public.security_audit_events WHERE occurred_at < now() - interval '7 years';
-  GET DIAGNOSTICS removed = ROW_COUNT;
-  PERFORM set_config('strataverze.audit_purge', 'off', true);
   DELETE FROM public.security_audit_checks WHERE checked_at < now() - interval '1 year';
+  PERFORM set_config('strataverze.audit_purge', 'off', true);
   RETURN removed;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION public.purge_security_audit_events() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.purge_security_audit_events() FROM PUBLIC, anon, authenticated, service_role;
 
--- Events recorded by the database itself, so they are captured however the
--- change was made (the app, or a direct call to the Supabase Auth API).
-
--- A password change (S5 ends every session; S6 records it).
-CREATE OR REPLACE FUNCTION public.end_sessions_on_password_change()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  IF NEW.encrypted_password IS DISTINCT FROM OLD.encrypted_password AND OLD.encrypted_password IS NOT NULL
-     AND OLD.encrypted_password <> '' THEN
-    UPDATE public.profiles SET sessions_revoked_at = now() WHERE auth_id = NEW.id;
-    INSERT INTO public.security_audit_events (action, outcome, actor_auth_id, actor_profile_id, resource_type, resource_id, reason)
-    SELECT 'auth.password_changed', 'allowed', NEW.id, p.id, 'profile', p.id::text, 'every session ended'
-    FROM (SELECT NEW.id AS auth_id) a LEFT JOIN public.profiles p ON p.auth_id = a.auth_id;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
--- Authenticator changes (the S4 guard; S6 records what it allowed).
-CREATE OR REPLACE FUNCTION public.mfa_factor_guard()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-DECLARE
-  grant_id uuid;
-  verified_count integer;
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    IF EXISTS (
-      SELECT 1 FROM auth.mfa_factors f
-      WHERE f.user_id = NEW.user_id AND f.status::text = 'verified'
-    ) THEN
-      SELECT g.id INTO grant_id
-      FROM public.mfa_factor_grants g
-      WHERE g.auth_user_id = NEW.user_id
-        AND g.action = 'enrol'
-        AND g.used_at IS NULL
-        AND g.created_at > now() - interval '10 minutes'
-      ORDER BY g.created_at DESC
-      LIMIT 1
-      FOR UPDATE;
-      IF grant_id IS NULL THEN
-        RAISE EXCEPTION 'StrataVerze: adding another authenticator must be done in the app after a recent check'
-          USING ERRCODE = '42501';
-      END IF;
-      UPDATE public.mfa_factor_grants SET used_at = now() WHERE id = grant_id;
-    END IF;
-    RETURN NEW;
-
-  ELSIF TG_OP = 'UPDATE' THEN
-    IF NEW.status::text = 'verified' AND OLD.status::text IS DISTINCT FROM 'verified' THEN
-      SELECT count(*) INTO verified_count
-      FROM auth.mfa_factors f
-      WHERE f.user_id = NEW.user_id AND f.status::text = 'verified' AND f.id <> NEW.id;
-      IF verified_count >= 2 THEN
-        RAISE EXCEPTION 'StrataVerze: at most two authenticators are allowed'
-          USING ERRCODE = '42501';
-      END IF;
-      INSERT INTO public.security_audit_events (action, outcome, actor_auth_id, resource_type, resource_id, metadata)
-      VALUES ('mfa.factor_verified', 'allowed', NEW.user_id, 'mfa_factor', NEW.id::text,
-              jsonb_build_object('factorType', NEW.factor_type::text, 'source', 'database'));
-    END IF;
-    RETURN NEW;
-
-  ELSIF TG_OP = 'DELETE' THEN
-    IF OLD.status::text = 'verified'
-       AND EXISTS (SELECT 1 FROM auth.users u WHERE u.id = OLD.user_id) THEN
-      SELECT g.id INTO grant_id
-      FROM public.mfa_factor_grants g
-      WHERE g.auth_user_id = OLD.user_id
-        AND g.action = 'remove'
-        AND g.factor_id = OLD.id
-        AND g.used_at IS NULL
-        AND g.created_at > now() - interval '10 minutes'
-      ORDER BY g.created_at DESC
-      LIMIT 1
-      FOR UPDATE;
-      IF grant_id IS NULL THEN
-        RAISE EXCEPTION 'StrataVerze: removing an authenticator must be done in the app after a recent check'
-          USING ERRCODE = '42501';
-      END IF;
-      UPDATE public.mfa_factor_grants SET used_at = now() WHERE id = grant_id;
-      INSERT INTO public.security_audit_events (action, outcome, actor_auth_id, resource_type, resource_id, metadata)
-      VALUES ('mfa.factor_deleted', 'allowed', OLD.user_id, 'mfa_factor', OLD.id::text,
-              jsonb_build_object('factorType', OLD.factor_type::text, 'source', 'database'));
-    END IF;
-    RETURN OLD;
-  END IF;
-  RETURN NULL;
-END;
-$$;
+-- The S4 and S5 tables are reached only by the app too.
+REVOKE ALL ON public.mfa_factor_grants FROM service_role;
+REVOKE ALL ON public.app_sessions FROM service_role;

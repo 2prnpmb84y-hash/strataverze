@@ -3862,13 +3862,20 @@ model SecurityAuditEvent {
   @@map("security_audit_events")
 }
 
-/// Result of each daily hash chain check of the security audit log.
+/// Result of each hash chain check of the security audit log (append-only).
 model SecurityAuditCheck {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Set by the database.
+  checkSeq    BigInt   @default(dbgenerated("0")) @unique @map("check_seq")
+  /// Set by the database.
   checkedAt   DateTime @default(now()) @db.Timestamptz @map("checked_at")
+  fullCheck   Boolean  @default(false) @map("full_check")
   ok          Boolean
   rowsChecked BigInt   @map("rows_checked")
   firstBadSeq BigInt?  @map("first_bad_seq")
+  headSeq     BigInt?  @map("head_seq")
+  headHash    String?  @map("head_hash")
+  problem     String?
 
   @@index([checkedAt], map: "security_audit_checks_time_idx")
   @@map("security_audit_checks")

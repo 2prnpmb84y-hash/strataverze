@@ -6,6 +6,7 @@ import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { grantFactorRemoval } from "@/lib/auth/mfa-grants";
 import { revokeAllSessions } from "@/lib/auth/session-register";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
+import { isIdentityCheck } from "@/lib/audit/admin-reasons";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfileById } from "@/lib/queries/profiles";
 
@@ -15,7 +16,8 @@ import { getProfileById } from "@/lib/queries/profiles";
  *
  * Process (see the security runbook): the administrator verifies the person's
  * identity out of band first, by calling them back on the phone number held
- * on record and confirming by email. They then reset here, giving the reason.
+ * on record and confirming by email. They then reset here, choosing how they
+checked.
  * Deleting a verified factor also signs the user out of every session
  * (Supabase Auth admin API). They set up a new authenticator at their next
  * sign-in.
@@ -25,14 +27,12 @@ import { getProfileById } from "@/lib/queries/profiles";
  */
 export async function resetUserMfaAction(
   profileId: string,
-  reason: string,
+  identityCheck: string,
 ): Promise<{ error?: string; removed?: number }> {
   try {
     const admin = await requirePlatformAdmin();
     await requireRecentMfa();
-    const why = (reason ?? "").trim();
-    if (why.length < 10) return { error: "Record how you verified the person's identity (at least 10 characters)." };
-    if (why.length > 1000) return { error: "Keep the reason under 1,000 characters." };
+    if (!isIdentityCheck(identityCheck)) return { error: "Choose how you verified the person's identity." };
     if (profileId === admin.id) return { error: "Another administrator must reset your authenticator." };
 
     const target = await getProfileById(profileId);
@@ -59,8 +59,8 @@ export async function resetUserMfaAction(
     // Removing a verified authenticator signs the user out in Supabase Auth;
     // end the app's sessions too, so every device has to sign in again.
     await revokeAllSessions(target.id, { actorProfileId: admin.id, reason: "MFA reset by an administrator" });
-    // The identity check the admin recorded is kept in the security audit
-    // log (restricted to platform admins), not in the server log.
+    // How the admin checked the person's identity, as a fixed choice (no
+    // free text is kept in the audit log).
     await recordSecurityEvent({
       action: "mfa.admin_reset",
       outcome: "allowed",
@@ -68,8 +68,8 @@ export async function resetUserMfaAction(
       actorRole: "platform_admin",
       resourceType: "profile",
       resourceId: target.id,
-      reason: why,
-      metadata: { removed },
+      reason: "identity checked before reset",
+      metadata: { removed, identityCheck },
     });
     revalidatePath("/admin/security");
     return { removed };

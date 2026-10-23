@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { loadSessionState } from "./session-state";
+import { noteRequestActor } from "@/lib/audit/security-audit";
 
 /**
  * The signed-in user for this request: their Supabase user (validated with
@@ -36,5 +37,7 @@ export const getCurrentSession = cache(async () => {
     }
     return null;
   }
+  // Lets security events raised later in this request name the person.
+  await noteRequestActor({ profileId: state.session.profile.id, authId: state.session.user.id });
   return state.session;
 });
