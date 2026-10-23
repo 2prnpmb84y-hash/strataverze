@@ -61,4 +61,32 @@ describe("accounting basis", () => {
     expect(r.find((l) => l.fundId === "cw")?.amountCents).toBe(300_000);
     expect(r.find((l) => l.fundId === "admin" && l.accountType === "INCOME")?.amountCents).toBe(600_000);
   });
+
+  it("treats a reversal as its original on a cash basis", () => {
+    const withReversals: BasisEntry[] = [
+      ...entries,
+      // The unpaid invoice is reversed: nothing was recognised on a cash basis, so nothing comes off.
+      { id: "rev-inv2", date: "2026-09-05", sourceType: "REVERSAL", sourceId: "inv2", lines: [line(AP, 50_000, 0), line(REPAIRS, 0, 50_000)] },
+      // The receipt is dishonoured: the cash income comes back out.
+      { id: "rev-rcpt", date: "2026-08-20", sourceType: "REVERSAL", sourceId: "rcpt", lines: [line(AR, 600_000, 0), line(BANK, 0, 600_000)] },
+      // The invoice payment is reversed: its expense comes back out.
+      { id: "rev-pay", date: "2026-07-20", sourceType: "REVERSAL", sourceId: "pay", lines: [line(BANK, 100_000, 0), line(AP, 0, 100_000)] },
+    ];
+    const cash = recognisedIncomeExpense({
+      entries: withReversals,
+      start: "2026-07-01",
+      end: "2027-06-30",
+      basisForFund: () => "CASH",
+      levyIncomeAccount: () => ({ accountId: "levy", accountCode: "4-1000", accountName: "levy" }),
+    });
+    expect(incomeExpenseTotals(cash)).toEqual({ incomeCents: 0, expenseCents: 0, surplusCents: 0 });
+    const accrual = recognisedIncomeExpense({
+      entries: withReversals,
+      start: "2026-07-01",
+      end: "2027-06-30",
+      basisForFund: () => "ACCRUAL",
+      levyIncomeAccount: () => ({ accountId: "levy", accountCode: "4-1000", accountName: "levy" }),
+    });
+    expect(incomeExpenseTotals(accrual)).toEqual({ incomeCents: 1_000_000, expenseCents: 0, surplusCents: 1_000_000 });
+  });
 });

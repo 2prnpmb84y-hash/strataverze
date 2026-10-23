@@ -14,12 +14,13 @@ import { financialYearStart, addDays } from "@/lib/levies/notice-plan";
 import { toBasisEntries } from "@/lib/queries/reports";
 import { logActivity } from "@/lib/queries/activity-log";
 import { AUDIT_THRESHOLD, CAPITAL_WORKS_PLAN, KEY_FINANCIAL_INFORMATION, STATUTORY_INTEREST } from "@/config/statutory";
-import { recognisedIncomeExpense, incomeExpenseTotals, type AccountingBasis, type RecognisedLine } from "./accounting-basis";
+import { levyIncomeAccountPicker, recognisedIncomeExpense, incomeExpenseTotals, type AccountingBasis, type RecognisedLine } from "./accounting-basis";
 import { auditRequired, keyFinancialInformation, unpaidAt, type KeyFinancialInformation } from "./key-financial-information";
 import { currentBudgetLines } from "./budgets";
 import { getAdoptedPlan, isCapitalWorksFund } from "./capital-works-plans";
 import { getSchemeInterestSetting } from "./interest-setting";
 import { generalMeetingResolutionProblem } from "./resolutions";
+import { LEDGER_STATUSES } from "@/lib/finance/ledger-status";
 
 export class StatutoryPackError extends Error {}
 
@@ -28,6 +29,8 @@ const varchar = <N extends number>(v: string) => v as unknown as Varchar<N>;
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
 
 export interface BalanceSheetLine {
+  /** Absent in packs adopted before drill-down was added. */
+  accountId?: string;
   accountCode: string;
   accountName: string;
   accountType: "ASSET" | "LIABILITY";
@@ -76,7 +79,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
 
   const [entries, funds, levyIncomeAccounts, notices, lots, nextBudget, plan, interest, snapshot] = await Promise.all([
     db.orm.public.JournalEntry
-      .where((je) => and(je.schemeId.eq(schemeId), je.status.eq("POSTED"), je.transactionDate.lte(ts(end))))
+      .where((je) => and(je.schemeId.eq(schemeId), je.status.in(LEDGER_STATUSES), je.transactionDate.lte(ts(end))))
       .include("lines", (l) => l.include("accountCode"))
       .limit(50000)
       .all(),
@@ -100,10 +103,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
 
   const basisEntries = toBasisEntries(entries);
   const basisForFund = (fid: string) => (funds.find((f) => f.id === fid)?.accountingBasis === "ACCRUAL" ? "ACCRUAL" : "CASH") as AccountingBasis;
-  const levyIncomeAccount = (fid: string) => {
-    const a = levyIncomeAccounts.find((x) => x.fundId === fid) ?? levyIncomeAccounts[0];
-    return a ? { accountId: a.id, accountCode: String(a.code), accountName: String(a.name) } : null;
-  };
+  const levyIncomeAccount = levyIncomeAccountPicker(levyIncomeAccounts);
   const lotNumber = (lotId: string) => String(lots.find((l) => l.id === lotId)?.lotNumber ?? "?");
 
   const fundPacks: FundPack[] = funds.map((f) => {
@@ -146,7 +146,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
       if (e.date > end) continue;
       for (const l of e.lines) {
         if (l.accountType !== "ASSET" && l.accountType !== "LIABILITY") continue;
-        const row = bs.get(l.accountId) ?? { accountCode: l.accountCode, accountName: l.accountName, accountType: l.accountType, cents: 0 };
+        const row = bs.get(l.accountId) ?? { accountId: l.accountId, accountCode: l.accountCode, accountName: l.accountName, accountType: l.accountType, cents: 0 };
         row.cents += l.accountType === "ASSET" ? l.debitCents - l.creditCents : l.creditCents - l.debitCents;
         bs.set(l.accountId, row);
       }

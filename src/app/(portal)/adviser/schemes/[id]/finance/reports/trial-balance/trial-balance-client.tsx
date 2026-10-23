@@ -1,11 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { drillDownHref } from "@/lib/finance/drill-down";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SelectField, FormField } from "@/components/ui/form-field";
 import { EmptyState } from "@/components/ui/empty-state";
 
 interface TrialBalanceLine {
+  accountCodeId: string;
+  fundId: string | null;
   accountCode: string;
   accountName: string;
   accountType: string;
@@ -56,6 +60,8 @@ export function TrialBalanceClient({
       `${reportBase}/trial-balance${qs ? `?${qs}` : ""}`,
     );
   }
+
+  const drill = (line: TrialBalanceLine) => drillDownHref(reportBase, { accountId: line.accountCodeId, fundId: line.fundId, end: asAtDate });
 
   // Group lines by account type for visual separation
   const assetLines = lines.filter((l) => l.accountType === "ASSET");
@@ -137,8 +143,7 @@ export function TrialBalanceClient({
                   <SectionGroup
                     key={section.label}
                     label={section.label}
-                    items={section.items}
-                  />
+                    items={section.items} drill={drill} />
                 ))}
                 <tr className="border-t-2 border-line font-bold">
                   <td colSpan={3} className="py-3 pr-4 text-ink">
@@ -163,9 +168,11 @@ export function TrialBalanceClient({
 function SectionGroup({
   label,
   items,
+  drill,
 }: {
   label: string;
   items: TrialBalanceLine[];
+  drill: (line: TrialBalanceLine) => string;
 }) {
   return (
     <>
@@ -188,10 +195,22 @@ function SectionGroup({
           <td className="py-2 pr-4 text-ink">{line.accountName}</td>
           <td className="py-2 pr-4 text-ink-muted">{line.fundName}</td>
           <td className="py-2 pr-4 text-right tabular-nums text-ink">
-            {formatCurrency(line.debitBalance)}
+            {line.debitBalance ? (
+              <Link href={drill(line)} className="text-turquoise underline" title="Show the journal entries behind this balance">
+                {formatCurrency(line.debitBalance)}
+              </Link>
+            ) : (
+              formatCurrency(line.debitBalance)
+            )}
           </td>
           <td className="py-2 text-right tabular-nums text-ink">
-            {formatCurrency(line.creditBalance)}
+            {line.creditBalance ? (
+              <Link href={drill(line)} className="text-turquoise underline" title="Show the journal entries behind this balance">
+                {formatCurrency(line.creditBalance)}
+              </Link>
+            ) : (
+              formatCurrency(line.creditBalance)
+            )}
           </td>
         </tr>
       ))}

@@ -18,6 +18,8 @@ import {
   extractInvoiceFromPdf,
   type ExtractedInvoiceData,
 } from "@/lib/queries/invoice-extraction";
+import { storeUploadedInvoicePdf } from "@/lib/pdf/store";
+import { assertExtractionUsable, completeInvoiceReview, InvoiceReviewError, recordInvoiceExtraction } from "@/lib/finance/invoice-extractions";
 
 // ── Chart of accounts ─────────────────────────────────────────
 import {
@@ -1295,12 +1297,23 @@ export async function createSupplierInvoiceAction(
     description: string;
     accountCodeId: string;
     fundId: string;
+    /** Set when the invoice was filled in from an uploaded PDF (TC-009). */
+    extractionId?: string;
+    /** The adviser has checked each extracted field against the invoice. */
+    reviewConfirmed?: boolean;
   },
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
     if (!data.supplierId) return { error: "Supplier is required." };
+    if (data.extractionId && !data.reviewConfirmed) {
+      return { error: "Check each field against the invoice and tick the review box before creating it." };
+    }
+    if (Math.round(data.subtotal * 100) + Math.round(data.gstAmount * 100) !== Math.round(data.totalAmount * 100)) {
+      return { error: "Subtotal plus GST must equal the total." };
+    }
+    if (data.extractionId) await assertExtractionUsable(schemeId, data.extractionId);
     if (!data.invoiceNumber?.trim()) return { error: "Invoice number is required." };
     if (!data.invoiceDate) return { error: "Invoice date is required." };
     if (!data.dueDate) return { error: "Due date is required." };
@@ -1350,10 +1363,39 @@ export async function createSupplierInvoiceAction(
       },
     });
 
+    let correctionCount: number | undefined;
+    let reviewWarning: string | undefined;
+    if (data.extractionId) {
+      try {
+        const corrections = await completeInvoiceReview({
+          schemeId,
+          extractionId: data.extractionId,
+          invoiceId: invoice.id,
+          actorId: profile.id,
+          accepted: {
+            supplierId: data.supplierId,
+            invoiceNumber: data.invoiceNumber.trim(),
+            invoiceDate: data.invoiceDate,
+            dueDate: data.dueDate,
+            subtotalCents: Math.round(data.subtotal * 100),
+            gstCents: Math.round(data.gstAmount * 100),
+            totalCents: Math.round(data.totalAmount * 100),
+            description: data.description ?? "",
+          },
+        });
+        correctionCount = corrections.length;
+      } catch (reviewErr) {
+        // The invoice exists: say so, rather than reporting it as not created.
+        console.error("Invoice review record failed:", reviewErr);
+        reviewWarning = "The invoice was created, but the record of the extraction review could not be saved.";
+      }
+    }
+
     revalidatePath(financePath(schemeId));
-    return { success: true, data: { id: invoice.id } };
+    return { success: true, data: { id: invoice.id, correctionCount, reviewWarning } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof InvoiceReviewError) return { error: err.message };
     if (isRedirectError(err)) throw err;
     return { error: "Failed to create supplier invoice." };
   }
@@ -2256,22 +2298,34 @@ export async function exportAuditTrailAction(
 export async function extractInvoiceFromPdfAction(
   schemeId: string,
   base64Data: string,
+  fileName = "invoice.pdf",
 ): Promise<{
   error?: string;
-  data?: ExtractedInvoiceData;
+  data?: Omit<ExtractedInvoiceData, "rawText">;
+  extractionId?: string;
+  documentId?: string;
 }> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
     const buffer = Buffer.from(base64Data, "base64");
 
     if (buffer.length > 10 * 1024 * 1024) {
       return { error: "PDF file exceeds 10 MB limit." };
     }
+    if (buffer.subarray(0, 5).toString("latin1") !== "%PDF-") {
+      return { error: "That file is not a PDF." };
+    }
 
     const result = await extractInvoiceFromPdf(buffer);
 
-    return { data: result };
+    // TC-009: keep the invoice and exactly what was read from it, before any review.
+    const stored = await storeUploadedInvoicePdf({ schemeId, fileName, bytes: new Uint8Array(buffer), actorId: profile.id });
+    const extractionId = await recordInvoiceExtraction({ schemeId, documentId: stored.id, data: result, actorId: profile.id });
+
+    const { rawText: _rawText, ...data } = result;
+    void _rawText;
+    return { data, extractionId, documentId: stored.id };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Invoice extraction error:", err);

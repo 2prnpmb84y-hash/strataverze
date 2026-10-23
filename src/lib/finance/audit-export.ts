@@ -12,6 +12,7 @@ import { getTrialBalanceReport } from "@/lib/queries/reports";
 import { formatAuditTrailCsv, getAuditTrailForExport } from "@/lib/queries/activity-log";
 import { financialYearRange } from "./statutory-pack";
 import { csv } from "./csv";
+import { inLedger } from "@/lib/finance/ledger-status";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
@@ -58,7 +59,7 @@ export async function buildAuditExport(schemeId: string, financialYear: number):
   const entryNumber = new Map(entries.map((e) => [e.id, String(e.entryNumber)]));
 
   // General ledger: posted lines by account, with the opening balance at the start of the year.
-  const posted = entries.filter((e) => e.status === "POSTED");
+  const posted = entries.filter((e) => inLedger(e.status));
   const gl: unknown[][] = [["Account code", "Account name", "Fund", "Date", "Entry", "Description", "Debit", "Credit", "Balance"]];
   for (const a of [...accounts].sort((x, y) => String(x.code).localeCompare(String(y.code)))) {
     const lines = posted.flatMap((e) => (e.lines ?? []).filter((l) => l.accountCodeId === a.id).map((l) => ({ e, l })));

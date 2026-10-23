@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import Link from "next/link";
 import { getJournalEntryById } from "@/lib/queries/journal-entries";
+import { getEntrySources } from "@/lib/finance/report-drill-down";
+import { formatAud } from "@/lib/billing/money";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { JournalEntryActions } from "./journal-entry-actions";
@@ -62,7 +65,32 @@ export default async function JournalEntryDetailPage({
   if (!isAdviser) notFound();
 
   const entry = await getJournalEntryById(entryId);
-  if (!entry) notFound();
+  // An entry is only shown under its own scheme.
+  if (!entry || entry.schemeId !== id) notFound();
+  const sources = (await getEntrySources(id, [{ id: entry.id, sourceType: entry.sourceType, sourceId: entry.sourceId }])).get(entry.id);
+  const base = `/adviser/schemes/${id}/finance`;
+  const sourceHref = (() => {
+    const s = sources?.source;
+    if (!s) return null;
+    switch (s.kind) {
+      case "SUPPLIER_INVOICE":
+        return `${base}/invoices/${s.id}`;
+      case "LEVY_SCHEDULE":
+        return `${base}/levies/${s.id}`;
+      case "LEVY_NOTICE":
+        return s.levyScheduleId ? `${base}/levies/${s.levyScheduleId}` : null;
+      case "BANK_TRANSACTION":
+      case "SUSPENSE_ITEM":
+        return `${base}/reconciliation`;
+      case "OWNER_CREDIT":
+      case "OWNER_CREDIT_REFUND":
+        return `${base}/owner-credits`;
+      case "JOURNAL_ENTRY":
+        return `${base}/journal/${s.id}`;
+      default:
+        return null;
+    }
+  })();
 
   const status = String(entry.status);
   const lines = entry.lines ?? [];
@@ -130,6 +158,34 @@ export default async function JournalEntryDetailPage({
             value={formatDate(entry.createdAt)}
           />
         </dl>
+      </Card>
+
+      {/* Where the entry came from */}
+      <Card>
+        <CardHeader title="Source" description="The record this entry was posted from, its documents and the bank transactions it was matched to." />
+        <div className="space-y-2 text-sm">
+          {sources?.source ? (
+            sourceHref ? (
+              <Link href={sourceHref} className="text-turquoise underline">
+                {sources.source.label}
+              </Link>
+            ) : (
+              <p className="text-ink">{sources.source.label}</p>
+            )
+          ) : (
+            <p className="text-ink-muted">No source record. This entry was made by hand or by data migration.</p>
+          )}
+          {sources?.documents.map((d) => (
+            <a key={d.id} href={`${base}/documents/${d.id}`} className="block text-turquoise underline">
+              {d.fileName}
+            </a>
+          ))}
+          {sources?.bankTransactions.map((t) => (
+            <p key={t.id} className="text-ink-muted">
+              Bank transaction {formatDate(t.date)}: {t.description} ({formatAud(t.amountCents)}, {t.status.toLowerCase()})
+            </p>
+          ))}
+        </div>
       </Card>
 
       {/* Journal lines */}

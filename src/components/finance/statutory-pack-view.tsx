@@ -1,17 +1,27 @@
 import { formatAud } from "@/lib/billing/money";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 import { KEY_FINANCIAL_INFORMATION } from "@/config/statutory";
+import { drillDownHref } from "@/lib/finance/drill-down";
 import { Card, CardHeader } from "@/components/ui/card";
 
-const Row = ({ label, cents, strong = false }: { label: string; cents: number; strong?: boolean }) => (
+const Row = ({ label, cents, strong = false, href }: { label: string; cents: number; strong?: boolean; href?: string }) => (
   <tr className={strong ? "font-semibold" : undefined}>
     <td className="py-1.5 pr-4">{label}</td>
-    <td className="py-1.5 text-right tabular-nums">{formatAud(cents)}</td>
+    <td className="py-1.5 text-right tabular-nums">
+      {href ? (
+        <a href={href} className="text-turquoise underline" title="Show the journal entries behind this amount">
+          {formatAud(cents)}
+        </a>
+      ) : (
+        formatAud(cents)
+      )}
+    </td>
   </tr>
 );
 
 /** The statutory statements pack, fund by fund. */
-export function StatutoryPackView({ pack }: { pack: StatutoryPack }) {
+/** `reportsBase` (the portal's reports path) turns each account line into a link to its drill-down. */
+export function StatutoryPackView({ pack, reportsBase }: { pack: StatutoryPack; reportsBase?: string }) {
   const rows = KEY_FINANCIAL_INFORMATION.rows;
   return (
     <div className="space-y-6">
@@ -55,11 +65,21 @@ export function StatutoryPackView({ pack }: { pack: StatutoryPack }) {
             <table className="w-full text-sm">
               <tbody className="divide-y divide-line">
                 {f.income.map((l) => (
-                  <Row key={`i-${l.accountId}`} label={`${l.accountCode} ${l.accountName}`} cents={l.amountCents} />
+                  <Row
+                    key={`i-${l.accountId}`}
+                    label={`${l.accountCode} ${l.accountName}`}
+                    cents={l.amountCents}
+                    href={reportsBase ? drillDownHref(reportsBase, { accountId: l.accountId, fundId: f.fundId, start: pack.start, end: pack.end, basis: f.basis }) : undefined}
+                  />
                 ))}
                 <Row label="Total income" cents={f.totals.incomeCents} strong />
                 {f.expenditure.map((l) => (
-                  <Row key={`e-${l.accountId}`} label={`${l.accountCode} ${l.accountName}`} cents={l.amountCents} />
+                  <Row
+                    key={`e-${l.accountId}`}
+                    label={`${l.accountCode} ${l.accountName}`}
+                    cents={l.amountCents}
+                    href={reportsBase ? drillDownHref(reportsBase, { accountId: l.accountId, fundId: f.fundId, start: pack.start, end: pack.end, basis: f.basis }) : undefined}
+                  />
                 ))}
                 <Row label="Total expenditure" cents={f.totals.expenseCents} strong />
                 <Row label="Surplus (deficit)" cents={f.totals.surplusCents} strong />
@@ -72,10 +92,20 @@ export function StatutoryPackView({ pack }: { pack: StatutoryPack }) {
             <table className="w-full text-sm">
               <tbody className="divide-y divide-line">
                 {f.balanceSheet.assets.map((l) => (
-                  <Row key={`a-${l.accountCode}`} label={`${l.accountCode} ${l.accountName}`} cents={l.cents} />
+                  <Row
+                    key={`a-${l.accountCode}`}
+                    label={`${l.accountCode} ${l.accountName}`}
+                    cents={l.cents}
+                    href={reportsBase && l.accountId ? drillDownHref(reportsBase, { accountId: l.accountId, fundId: f.fundId, end: pack.end }) : undefined}
+                  />
                 ))}
                 {f.balanceSheet.liabilities.map((l) => (
-                  <Row key={`l-${l.accountCode}`} label={`Less ${l.accountCode} ${l.accountName}`} cents={-l.cents} />
+                  <Row
+                    key={`l-${l.accountCode}`}
+                    label={`Less ${l.accountCode} ${l.accountName}`}
+                    cents={-l.cents}
+                    href={reportsBase && l.accountId ? drillDownHref(reportsBase, { accountId: l.accountId, fundId: f.fundId, end: pack.end }) : undefined}
+                  />
                 ))}
                 <Row label="Owners' funds" cents={f.balanceSheet.ownersFundsCents} strong />
               </tbody>

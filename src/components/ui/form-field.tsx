@@ -68,6 +68,8 @@ export function TextareaField({
   helpText,
   className = "",
   rows = 3,
+  value,
+  onChange,
 }: {
   label: string;
   name: string;
@@ -78,6 +80,8 @@ export function TextareaField({
   helpText?: string;
   className?: string;
   rows?: number;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }) {
   return (
     <div className={className}>
@@ -92,7 +96,9 @@ export function TextareaField({
         id={name}
         name={name}
         required={required}
-        defaultValue={defaultValue}
+        defaultValue={value === undefined ? defaultValue : undefined}
+        value={value}
+        onChange={onChange}
         placeholder={placeholder}
         rows={rows}
         className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors resize-y"
@@ -149,6 +155,7 @@ export function SelectField({
   error,
   className = "",
   onChange,
+  helpText,
 }: {
   label: string;
   name: string;
@@ -159,6 +166,7 @@ export function SelectField({
   error?: string;
   className?: string;
   onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  helpText?: string;
 }) {
   return (
     <div className={className}>
@@ -185,6 +193,9 @@ export function SelectField({
         ))}
       </select>
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+      {helpText && !error && (
+        <p className="mt-1.5 text-xs text-ink-muted">{helpText}</p>
+      )}
     </div>
   );
 }

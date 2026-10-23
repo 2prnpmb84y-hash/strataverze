@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'115351ba42e587054fa14f6d1ebcef30e043240e018bf71ac8bd52c9b84db364'>;
+  StorageHashBase<'06c96ffaf4237c0403a4b04ba6ed4e363610d495772511e1359af688c915d8b8'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1035,6 +1035,21 @@ export type FieldOutputTypes = {
       readonly totalAmount: Numeric<12, 2>;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly workOrderId: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly InvoiceExtraction: {
+      readonly accepted: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly confidence: CodecTypes['pg/text@1']['output'];
+      readonly corrections: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['output'];
+      readonly extracted: CodecTypes['pg/jsonb@1']['output'];
+      readonly financialDocumentId: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly method: CodecTypes['pg/text@1']['output'];
+      readonly reviewedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly reviewedBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly supplierInvoiceId: CodecTypes['pg/uuid@1']['output'] | null;
     };
     readonly JournalEntry: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -3321,6 +3336,21 @@ export type FieldInputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly workOrderId: CodecTypes['pg/uuid@1']['input'];
     };
+    readonly InvoiceExtraction: {
+      readonly accepted: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly confidence: CodecTypes['pg/text@1']['input'];
+      readonly corrections: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['input'];
+      readonly extracted: CodecTypes['pg/jsonb@1']['input'];
+      readonly financialDocumentId: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly method: CodecTypes['pg/text@1']['input'];
+      readonly reviewedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly reviewedBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly supplierInvoiceId: CodecTypes['pg/uuid@1']['input'] | null;
+    };
     readonly JournalEntry: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly createdBy: CodecTypes['pg/uuid@1']['input'];
@@ -5588,6 +5618,21 @@ export type StorageColumnTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly token: CodecTypes['pg/text@1']['output'];
+    };
+    readonly invoice_extractions: {
+      readonly accepted: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly confidence: CodecTypes['pg/text@1']['output'];
+      readonly corrections: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by: CodecTypes['pg/uuid@1']['output'];
+      readonly extracted: CodecTypes['pg/jsonb@1']['output'];
+      readonly financial_document_id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly method: CodecTypes['pg/text@1']['output'];
+      readonly reviewed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly reviewed_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly supplier_invoice_id: CodecTypes['pg/uuid@1']['output'] | null;
     };
     readonly invoices: {
       readonly amount: Numeric<12, 2>;
@@ -7874,6 +7919,21 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly token: CodecTypes['pg/text@1']['input'];
+    };
+    readonly invoice_extractions: {
+      readonly accepted: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly confidence: CodecTypes['pg/text@1']['input'];
+      readonly corrections: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by: CodecTypes['pg/uuid@1']['input'];
+      readonly extracted: CodecTypes['pg/jsonb@1']['input'];
+      readonly financial_document_id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly method: CodecTypes['pg/text@1']['input'];
+      readonly reviewed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly reviewed_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly supplier_invoice_id: CodecTypes['pg/uuid@1']['input'] | null;
     };
     readonly invoices: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -10401,6 +10461,22 @@ export namespace Models {
     workOrder: public_WorkOrder;
     readonly [RelationKeys]?: 'scheme' | 'supplier' | 'workOrder';
   };
+  export type public_InvoiceExtraction = {
+    accepted: CodecTypes['pg/jsonb@1']['output'] | null;
+    confidence: CodecTypes['pg/text@1']['output'];
+    corrections: CodecTypes['pg/jsonb@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdBy: CodecTypes['pg/uuid@1']['output'];
+    extracted: CodecTypes['pg/jsonb@1']['output'];
+    financialDocumentId: CodecTypes['pg/uuid@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    method: CodecTypes['pg/text@1']['output'];
+    reviewedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    reviewedBy: CodecTypes['pg/uuid@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    supplierInvoiceId: CodecTypes['pg/uuid@1']['output'] | null;
+    readonly [RelationKeys]?: never;
+  };
   export type public_JournalEntry = {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     createdBy: CodecTypes['pg/uuid@1']['output'];
@@ -12624,6 +12700,7 @@ export declare const models: {
     InsuranceTask: Models.public_InsuranceTask;
     Invitation: Models.public_Invitation;
     Invoice: Models.public_Invoice;
+    InvoiceExtraction: Models.public_InvoiceExtraction;
     JournalEntry: Models.public_JournalEntry;
     JournalLine: Models.public_JournalLine;
     LevyNotice: Models.public_LevyNotice;
@@ -19104,6 +19181,108 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly invoice_extractions: {
+              columns: {
+                readonly accepted: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly confidence: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly corrections: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly extracted: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly financial_document_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly reviewed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reviewed_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly supplier_invoice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'invoice_extractions_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'invoice_extractions_supplier_invoice_id_idx';
+                  readonly columns: readonly ['supplier_invoice_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly invoices: {
               columns: {
@@ -32116,6 +32295,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Invitation';
     };
+    readonly invoice_extractions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'InvoiceExtraction';
+    };
     readonly invoices: { readonly namespace: 'public' & NamespaceId; readonly model: 'Invoice' };
     readonly journal_entries: {
       readonly namespace: 'public' & NamespaceId;
@@ -38635,6 +38818,88 @@ type ContractBase = Omit<
                 readonly totalAmount: { readonly column: 'total_amount' };
                 readonly updatedAt: { readonly column: 'updated_at' };
                 readonly workOrderId: { readonly column: 'work_order_id' };
+              };
+            };
+          };
+          readonly InvoiceExtraction: {
+            readonly fields: {
+              readonly accepted: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly confidence: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly corrections: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly extracted: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly financialDocumentId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly method: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reviewedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly reviewedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly supplierInvoiceId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'invoice_extractions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly accepted: { readonly column: 'accepted' };
+                readonly confidence: { readonly column: 'confidence' };
+                readonly corrections: { readonly column: 'corrections' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly extracted: { readonly column: 'extracted' };
+                readonly financialDocumentId: { readonly column: 'financial_document_id' };
+                readonly id: { readonly column: 'id' };
+                readonly method: { readonly column: 'method' };
+                readonly reviewedAt: { readonly column: 'reviewed_at' };
+                readonly reviewedBy: { readonly column: 'reviewed_by' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly supplierInvoiceId: { readonly column: 'supplier_invoice_id' };
               };
             };
           };

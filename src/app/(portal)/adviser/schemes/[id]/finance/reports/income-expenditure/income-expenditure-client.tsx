@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { drillDownHref } from "@/lib/finance/drill-down";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SelectField, FormField } from "@/components/ui/form-field";
 import { EmptyState } from "@/components/ui/empty-state";
 
 interface AccountLine {
+  accountCodeId: string;
   code: string;
   name: string;
   accountType: string;
@@ -64,6 +67,8 @@ export function IncomeExpenditureClient({
   }
 
   const hasData = incomeAccounts.length > 0 || expenseAccounts.length > 0;
+  const drill = (a: AccountLine) =>
+    drillDownHref(reportBase, { accountId: a.accountCodeId, fundId: a.fundId, start: startDate || null, end: endDate || null });
 
   return (
     <div className="space-y-6">
@@ -146,7 +151,9 @@ export function IncomeExpenditureClient({
                         {a.fundName}
                       </td>
                       <td className="py-2 text-right tabular-nums text-ink">
-                        {formatCurrency(a.netAmount)}
+                        <Link href={drill(a)} className="text-turquoise underline" title="Show the journal entries behind this amount">
+                          {formatCurrency(a.netAmount)}
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -192,7 +199,9 @@ export function IncomeExpenditureClient({
                         {a.fundName}
                       </td>
                       <td className="py-2 text-right tabular-nums text-ink">
-                        {formatCurrency(a.netAmount)}
+                        <Link href={drill(a)} className="text-turquoise underline" title="Show the journal entries behind this amount">
+                          {formatCurrency(a.netAmount)}
+                        </Link>
                       </td>
                     </tr>
                   ))}

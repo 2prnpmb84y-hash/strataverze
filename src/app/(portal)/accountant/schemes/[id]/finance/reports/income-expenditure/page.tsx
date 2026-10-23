@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getFundsForScheme } from "@/lib/queries/funds";
-import { getJournalEntriesForScheme } from "@/lib/queries/journal-entries";
+import { getLedgerIncomeExpenditure } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { IncomeExpenditureClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/income-expenditure/income-expenditure-client";
 import { connection } from "next/server";
@@ -25,77 +25,7 @@ export default async function AccountantIncomeExpenditurePage({
 
   const funds = await getFundsForScheme(id);
 
-  // Fetch posted journal entries for the period
-  const entries = await getJournalEntriesForScheme(id, {
-    status: "POSTED",
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
-  });
-
-  // Build account-level aggregates from journal lines
-  type AccountAggregate = {
-    code: string;
-    name: string;
-    accountType: string;
-    fundId: string | null;
-    fundName: string;
-    totalDebit: number;
-    totalCredit: number;
-    netAmount: number;
-  };
-
-  const accountMap = new Map<string, AccountAggregate>();
-
-  for (const entry of entries) {
-    for (const line of entry.lines) {
-      if (fundFilter && line.fundId !== fundFilter) continue;
-
-      const accountCode = line.accountCode;
-      if (!accountCode) continue;
-
-      const key = `${accountCode.id}-${line.fundId ?? "none"}`;
-      const existing = accountMap.get(key);
-      const debit = Number(line.debit ?? 0);
-      const credit = Number(line.credit ?? 0);
-
-      if (existing) {
-        existing.totalDebit += debit;
-        existing.totalCredit += credit;
-      } else {
-        accountMap.set(key, {
-          code: String(accountCode.code),
-          name: String(accountCode.name),
-          accountType: String(accountCode.accountType),
-          fundId: accountCode.fundId ?? null,
-          fundName: line.fund ? String(line.fund.name) : "Unallocated",
-          totalDebit: debit,
-          totalCredit: credit,
-          netAmount: 0,
-        });
-      }
-    }
-  }
-
-  // Calculate net amounts
-  const accounts = Array.from(accountMap.values()).map((acc) => {
-    if (acc.accountType === "INCOME") {
-      acc.netAmount = acc.totalCredit - acc.totalDebit;
-    } else {
-      acc.netAmount = acc.totalDebit - acc.totalCredit;
-    }
-    return acc;
-  });
-
-  const incomeAccounts = accounts
-    .filter((a) => a.accountType === "INCOME")
-    .sort((a, b) => a.code.localeCompare(b.code));
-  const expenseAccounts = accounts
-    .filter((a) => a.accountType === "EXPENSE")
-    .sort((a, b) => a.code.localeCompare(b.code));
-
-  const totalIncome = incomeAccounts.reduce((sum, a) => sum + a.netAmount, 0);
-  const totalExpenses = expenseAccounts.reduce((sum, a) => sum + a.netAmount, 0);
-  const netSurplus = totalIncome - totalExpenses;
+  const report = await getLedgerIncomeExpenditure(id, { fundId: fundFilter || null, startDate: startDate || null, endDate: endDate || null });
 
   return (
     <div className="space-y-6">
@@ -112,11 +42,11 @@ export default async function AccountantIncomeExpenditurePage({
         selectedFund={fundFilter ?? ""}
         startDate={startDate ?? ""}
         endDate={endDate ?? ""}
-        incomeAccounts={incomeAccounts}
-        expenseAccounts={expenseAccounts}
-        totalIncome={totalIncome}
-        totalExpenses={totalExpenses}
-        netSurplus={netSurplus}
+        incomeAccounts={report.incomeAccounts}
+        expenseAccounts={report.expenseAccounts}
+        totalIncome={report.totalIncome}
+        totalExpenses={report.totalExpenses}
+        netSurplus={report.netSurplus}
         basePath={`/accountant/schemes/${id}/finance/reports`}
       />
     </div>

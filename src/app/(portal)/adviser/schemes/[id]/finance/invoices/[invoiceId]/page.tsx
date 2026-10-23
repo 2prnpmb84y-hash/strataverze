@@ -9,6 +9,7 @@ import { transactionFeeTable } from "@/lib/billing/capture";
 import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
 import { getInvoiceControlView } from "@/lib/finance/control-view";
 import { ApprovalPanel } from "@/components/finance/approval-panel";
+import { getInvoiceExtraction } from "@/lib/finance/invoice-extractions";
 import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
@@ -81,7 +82,10 @@ export default async function InvoiceDetailPage({
   if (!invoice || invoice.schemeId !== id) notFound();
 
   const status = String(invoice.status);
-  const controls = await getInvoiceControlView(id, { supplierInvoiceId: invoiceId }, profile.id);
+  const [controls, extraction] = await Promise.all([
+    getInvoiceControlView(id, { supplierInvoiceId: invoiceId }, profile.id),
+    getInvoiceExtraction(id, invoiceId),
+  ]);
   const paymentBlocked =
     controls?.bank.blocked
       ? controls.bank.message
@@ -194,6 +198,45 @@ export default async function InvoiceDetailPage({
           </div>
         </div>
       </Card>
+
+      {/* TC-009: what was read from the uploaded invoice and what was corrected */}
+      {extraction && (
+        <Card>
+          <CardHeader
+            title="Entered from the uploaded invoice"
+            description={`Read by ${extraction.method === "OCR" ? "OCR" : "text extraction"} with ${extraction.confidence} confidence, then checked field by field by the adviser.`}
+            action={
+              <a href={`/api/finance/documents/${extraction.documentId}`} target="_blank" rel="noreferrer" className="text-sm text-turquoise underline">
+                Invoice PDF
+              </a>
+            }
+          />
+          {extraction.corrections.length === 0 ? (
+            <p className="text-sm text-ink-muted">Every field was accepted as read.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-muted">
+                    <th scope="col" className="py-2 pr-4 text-left">Field</th>
+                    <th scope="col" className="py-2 pr-4 text-left">Read from PDF</th>
+                    <th scope="col" className="py-2 text-left">Entered</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {extraction.corrections.map((c) => (
+                    <tr key={c.label} className="border-b border-line/50">
+                      <td className="py-2 pr-4 text-ink">{c.label}</td>
+                      <td className="py-2 pr-4 tabular-nums text-ink-muted line-through decoration-ink-muted/50">{c.extracted}</td>
+                      <td className="py-2 tabular-nums text-ink">{c.accepted}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Payment controls */}
       {controls && status !== "CANCELLED" && (

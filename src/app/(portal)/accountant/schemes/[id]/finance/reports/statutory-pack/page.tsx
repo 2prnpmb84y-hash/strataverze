@@ -52,7 +52,7 @@ export default async function AccountantStatutoryPackPage({ params, searchParams
           </a>
         )}
       </form>
-      <StatutoryPackView pack={pack} />
+      <StatutoryPackView pack={pack} reportsBase={`/accountant/schemes/${id}/finance/reports`} />
     </div>
   );
 }
