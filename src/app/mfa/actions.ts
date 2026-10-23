@@ -8,6 +8,7 @@ import { getMfaStatus, requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { AuthorisationError } from "@/lib/auth/errors";
 import { MAX_TOTP_FACTORS, safeNextPath } from "@/lib/auth/mfa-policy";
 import { rateLimit } from "@/lib/auth/rate-limit";
+import { grantFactorEnrolment, grantFactorRemoval } from "@/lib/auth/mfa-grants";
 
 /**
  * Authenticator (TOTP) enrolment and verification, security stage S4.
@@ -17,7 +18,20 @@ import { rateLimit } from "@/lib/auth/rate-limit";
  * would send a user who still has to verify straight back here.
  */
 
-type Result = { error?: string };
+type Result = { error?: string; navigate?: string };
+
+/**
+ * Where to go after a successful check. Pages use a normal redirect. A route
+ * handler (a download such as the audit export) is returned to the browser
+ * to open itself, because a server action redirect to a route handler can
+ * run it twice (once on the server, again in the browser).
+ */
+function finish(next: string | undefined): Result {
+  const target = safeNextPath(next) ?? "/dashboard";
+  revalidatePath("/", "layout");
+  if (target.startsWith("/api/")) return { navigate: target };
+  redirect(target);
+}
 
 const CODE = /^\d{6}$/;
 
@@ -50,7 +64,11 @@ export async function startTotpEnrolmentAction(): Promise<
     if (session.verifiedFactors.length >= MAX_TOTP_FACTORS) {
       return { error: `You already have ${MAX_TOTP_FACTORS} authenticators. Remove one before adding another.` };
     }
-    if (session.verifiedFactors.length > 0) await requireRecentMfa();
+    if (session.verifiedFactors.length > 0) {
+      await requireRecentMfa();
+      // The database refuses a second authenticator without this grant.
+      await grantFactorEnrolment(session.user.id, session.profile.id);
+    }
 
     const supabase = await createClient();
     // Clear any half-finished enrolment, so a fresh QR code can be issued.
@@ -87,16 +105,33 @@ export async function confirmTotpEnrolmentAction(factorId: string, rawCode: stri
   }
   const code = cleanCode(rawCode);
   if (!CODE.test(code)) return { error: "Enter the 6-digit code from your authenticator app." };
-  const ownsFactor = (session.user.factors ?? []).some((f) => f.id === factorId && f.factor_type === "totp");
+  const ownsFactor = (session.user.factors ?? []).some(
+    (f) => f.id === factorId && f.factor_type === "totp" && f.status !== "verified",
+  );
   if (!ownsFactor) return { error: "Start setting up your authenticator again." };
+
+  // Check the rules again here, not only when enrolment started: two set-ups
+  // started together must not end with more than the maximum, and a second
+  // authenticator still needs a recent check with the first.
+  const supabase = await createClient();
+  if (session.verifiedFactors.length >= MAX_TOTP_FACTORS) {
+    await supabase.auth.mfa.unenroll({ factorId });
+    return { error: `You already have ${MAX_TOTP_FACTORS} authenticators. Remove one before adding another.` };
+  }
+  if (session.verifiedFactors.length > 0) {
+    try {
+      await requireRecentMfa();
+    } catch (err) {
+      if (err instanceof AuthorisationError) return { error: err.message };
+      throw err;
+    }
+  }
   if (!codeAttemptAllowed(session.user.id)) return { error: "Too many attempts. Wait 15 minutes and try again." };
 
-  const supabase = await createClient();
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
   if (error) return { error: "That code did not match. Check the time on your phone is correct and try again." };
 
-  revalidatePath("/", "layout");
-  redirect(safeNextPath(next) ?? "/dashboard");
+  return finish(next);
 }
 
 /** Verify with an enrolled authenticator, at sign-in or before a sensitive operation. */
@@ -117,8 +152,7 @@ export async function verifyTotpAction(factorId: string, rawCode: string, next?:
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
   if (error) return { error: "That code did not match. Check the time on your phone is correct and try again." };
 
-  revalidatePath("/", "layout");
-  redirect(safeNextPath(next) ?? "/dashboard");
+  return finish(next);
 }
 
 /**
@@ -135,6 +169,8 @@ export async function removeTotpFactorAction(factorId: string): Promise<Result> 
     if (status?.mandatory && session.verifiedFactors.length <= 1) {
       return { error: "Your role requires an authenticator. Add another one before removing this one." };
     }
+    // The database refuses to remove a verified authenticator without this grant.
+    await grantFactorRemoval(session.user.id, factorId, session.profile.id);
     const supabase = await createClient();
     const { error } = await supabase.auth.mfa.unenroll({ factorId });
     if (error) {

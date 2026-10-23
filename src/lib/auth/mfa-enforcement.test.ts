@@ -97,3 +97,12 @@ describe("requireRecentMfa", () => {
     await expect(requireRecentMfa()).rejects.toThrow(/signed in/);
   });
 });
+
+describe("getCurrentProfile fails closed", () => {
+  it("enforces MFA on the session it returns, even if a later lookup comes back empty", async () => {
+    // First lookup: an admin with a password-only session. Any later lookup: signed out.
+    session.mockResolvedValueOnce(makeSession({ admin: true, factors: 1, aal: "aal1" })).mockResolvedValue(null);
+    const { getCurrentProfile } = await import("@/lib/queries/profiles");
+    await expect(getCurrentProfile()).rejects.toThrow("REDIRECT /mfa");
+  });
+});

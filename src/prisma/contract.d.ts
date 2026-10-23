@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3c7bcbec4d66974913f22d40c342e60199c90ecc86423631aaf0183bd409a700'>;
+  StorageHashBase<'0f3ee913ce04edfa0ad2686eb4425c50412e53a66752439bf08b2b462e4ad4bd'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1328,6 +1328,15 @@ export type FieldOutputTypes = {
       readonly ruleSetVersion: CodecTypes['pg/text@1']['output'] | null;
       readonly state: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly MfaFactorGrant: {
+      readonly action: CodecTypes['pg/text@1']['output'];
+      readonly authUserId: CodecTypes['pg/uuid@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly factorId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly grantedBy: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly usedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     };
     readonly MigrationBatch: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -3659,6 +3668,15 @@ export type FieldInputTypes = {
       readonly state: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly MfaFactorGrant: {
+      readonly action: CodecTypes['pg/text@1']['input'];
+      readonly authUserId: CodecTypes['pg/uuid@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly factorId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly grantedBy: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly usedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+    };
     readonly MigrationBatch: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly createdBy: CodecTypes['pg/uuid@1']['input'];
@@ -5988,6 +6006,15 @@ export type StorageColumnTypes = {
       readonly timezone: CodecTypes['pg/text@1']['output'] | null;
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly mfa_factor_grants: {
+      readonly action: CodecTypes['pg/text@1']['output'];
+      readonly auth_user_id: CodecTypes['pg/uuid@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly factor_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly granted_by: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly used_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     };
     readonly migration_batches: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -8319,6 +8346,15 @@ export type StorageColumnInputTypes = {
       readonly timezone: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly mfa_factor_grants: {
+      readonly action: CodecTypes['pg/text@1']['input'];
+      readonly auth_user_id: CodecTypes['pg/uuid@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly factor_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly granted_by: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly used_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
     };
     readonly migration_batches: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -10972,6 +11008,16 @@ export namespace Models {
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     readonly [RelationKeys]?: never;
   };
+  export type public_MfaFactorGrant = {
+    action: CodecTypes['pg/text@1']['output'];
+    authUserId: CodecTypes['pg/uuid@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    factorId: CodecTypes['pg/uuid@1']['output'] | null;
+    grantedBy: CodecTypes['pg/uuid@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    usedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    readonly [RelationKeys]?: never;
+  };
   export type public_MigrationBatch = {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     createdBy: CodecTypes['pg/uuid@1']['output'];
@@ -12869,6 +12915,7 @@ export declare const models: {
     MeetingEvent: Models.public_MeetingEvent;
     MeetingRuleSet: Models.public_MeetingRuleSet;
     MeetingTemplate: Models.public_MeetingTemplate;
+    MfaFactorGrant: Models.public_MfaFactorGrant;
     MigrationBatch: Models.public_MigrationBatch;
     Minutes: Models.public_Minutes;
     Motion: Models.public_Motion;
@@ -21904,6 +21951,67 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly mfa_factor_grants: {
+              columns: {
+                readonly action: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly auth_user_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly factor_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly granted_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly used_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'mfa_factor_grants_user_idx';
+                  readonly columns: readonly ['auth_user_id', 'action', 'created_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly migration_batches: {
               columns: {
@@ -32711,6 +32819,10 @@ type ContractBase = Omit<
       readonly model: 'MeetingTemplate';
     };
     readonly meetings: { readonly namespace: 'public' & NamespaceId; readonly model: 'Meeting' };
+    readonly mfa_factor_grants: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'MfaFactorGrant';
+    };
     readonly migration_batches: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'MigrationBatch';
@@ -41478,6 +41590,58 @@ type ContractBase = Omit<
                 readonly ruleSetVersion: { readonly column: 'rule_set_version' };
                 readonly state: { readonly column: 'state' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly MfaFactorGrant: {
+            readonly fields: {
+              readonly action: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly authUserId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly factorId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly grantedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly usedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'mfa_factor_grants';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly action: { readonly column: 'action' };
+                readonly authUserId: { readonly column: 'auth_user_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly factorId: { readonly column: 'factor_id' };
+                readonly grantedBy: { readonly column: 'granted_by' };
+                readonly id: { readonly column: 'id' };
+                readonly usedAt: { readonly column: 'used_at' };
               };
             };
           };

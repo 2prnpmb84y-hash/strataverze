@@ -625,6 +625,7 @@ export async function updateContractorBusiness(
     // them here (SEC-008). Contractors maintain their own profile through
     // contractor onboarding.
     await requirePlatformAdmin();
+    await requireRecentMfa();
 
     const tradeCategories = tradeCategoriesRaw
       ? tradeCategoriesRaw.split(",").map((c) => c.trim())
@@ -1923,6 +1924,7 @@ export async function createApprovalRoute(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
 
     await db.orm.public.WorksApprovalRoute.create({
       schemeId,
@@ -1978,6 +1980,7 @@ export async function updateApprovalRoute(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
     await approvalRouteInScheme(routeId, schemeId);
 
     await db.orm.public.WorksApprovalRoute
@@ -2032,6 +2035,7 @@ export async function createDelegation(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
     // Authority can only be delegated to someone on this scheme.
     await requireActiveMember(delegatedToId, schemeId, "The delegate");
 
@@ -2073,6 +2077,7 @@ export async function revokeDelegation(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
     await delegationInScheme(delegationId, schemeId);
 
     await db.orm.public.WorksDelegation
@@ -2613,6 +2618,7 @@ async function hasAuthorisations(worksInvoiceId: string) {
 export async function approveWorksInvoiceAction(schemeId: string, invoiceId: string): Promise<ActionResult> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "PAYMENT_AUTHORISER"]);
+    await requireRecentMfa();
     const ip = (await headers()).get("x-forwarded-for");
     const outcome = await authoriseWorksInvoice({ schemeId, worksInvoiceId: invoiceId, actorId: profile.id, ip });
     revalidatePath(`/adviser/schemes/${schemeId}/works/invoices/${invoiceId}`);

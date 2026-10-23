@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-membership";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
+import { grantFactorRemoval } from "@/lib/auth/mfa-grants";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfileById } from "@/lib/queries/profiles";
 
@@ -43,6 +44,8 @@ export async function resetUserMfaAction(
     }
     let removed = 0;
     for (const factor of data?.factors ?? []) {
+      // The database refuses to remove a verified authenticator without this grant.
+      if (factor.status === "verified") await grantFactorRemoval(target.authId, factor.id, admin.id);
       const { error: delError } = await supabase.auth.admin.mfa.deleteFactor({ id: factor.id, userId: target.authId });
       if (delError) {
         console.error("[admin-mfa] deleteFactor failed:", delError.code ?? delError.name);
@@ -52,10 +55,9 @@ export async function resetUserMfaAction(
     }
 
     // Recorded in the server log until the security audit log (stage S6)
-    // exists. No secrets or codes are logged.
-    console.info(
-      `[admin-mfa] reset by=${admin.id} target=${target.id} removed=${removed} reason=${JSON.stringify(why.slice(0, 200))}`,
-    );
+    // exists. The reason is not logged, since it can hold personal details
+    // from the identity check; S6 stores it in the audit log instead.
+    console.info(`[admin-mfa] reset by=${admin.id} target=${target.id} removed=${removed}`);
     revalidatePath("/admin/security");
     return { removed };
   } catch (err) {

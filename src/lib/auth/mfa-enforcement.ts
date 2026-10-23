@@ -6,12 +6,13 @@ import { getCurrentSession } from "./current-session";
 import { AuthorisationError } from "./errors";
 import { mfaGate, mfaMandatory, recentlyVerified } from "./mfa-policy";
 
+type CurrentSession = NonNullable<Awaited<ReturnType<typeof getCurrentSession>>>;
+
 /**
- * MFA status of the signed-in user for this request, or null when signed out.
+ * MFA status for a session already loaded. Memoised per request for the
+ * same session object, so the membership lookup runs once.
  */
-export const getMfaStatus = cache(async () => {
-  const session = await getCurrentSession();
-  if (!session) return null;
+export const mfaStatusFor = cache(async (session: CurrentSession) => {
   let mandatory = !!session.profile.isPlatformAdmin;
   if (!mandatory) {
     const memberships = await db.orm.public.SchemeMembership
@@ -29,14 +30,31 @@ export const getMfaStatus = cache(async () => {
 });
 
 /**
- * Send the user to enrol or verify when their session does not meet the MFA
- * policy. Called by getCurrentProfile, so every page, server action and route
- * handler that loads the current user is covered.
+ * MFA status of the signed-in user for this request, or null when signed out.
  */
-export async function enforceMfa(): Promise<void> {
-  const status = await getMfaStatus();
-  if (!status || status.gate === "ok") return;
+export const getMfaStatus = cache(async () => {
+  const session = await getCurrentSession();
+  if (!session) return null;
+  return mfaStatusFor(session);
+});
+
+/**
+ * Send the user to enrol or verify when this session does not meet the MFA
+ * policy. getCurrentProfile calls it with the session it is about to return,
+ * so the check is always made on that same session and cannot pass because a
+ * second lookup came back empty (security review of S4).
+ */
+export async function enforceMfaFor(session: CurrentSession): Promise<void> {
+  const status = await mfaStatusFor(session);
+  if (status.gate === "ok") return;
   redirect(status.gate === "enrol" ? "/mfa/setup" : "/mfa");
+}
+
+/** enforceMfaFor for the current session. Nothing to enforce when signed out. */
+export async function enforceMfa(): Promise<void> {
+  const session = await getCurrentSession();
+  if (!session) return;
+  await enforceMfaFor(session);
 }
 
 /** Thrown when a sensitive operation needs a fresh authenticator check. */

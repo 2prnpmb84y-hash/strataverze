@@ -3786,3 +3786,22 @@ model MigrationBatch {
   @@index([schemeId])
   @@map("migration_batches")
 }
+
+/// One-time permission, written by the app after its checks, to add a second
+/// authenticator ("enrol") or remove a verified one ("remove", with factorId).
+/// A database trigger on auth.mfa_factors requires it, so the Supabase Auth
+/// API cannot be used to skip the app's rules (security stage S4).
+model MfaFactorGrant {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authUserId String    @map("auth_user_id") @db.Uuid
+  /// enrol or remove.
+  action     String
+  factorId   String?   @map("factor_id") @db.Uuid
+  /// Profile id of whoever authorised it (the user, or the resetting admin).
+  grantedBy  String    @map("granted_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  usedAt     DateTime? @db.Timestamptz @map("used_at")
+
+  @@index([authUserId, action, createdAt], map: "mfa_factor_grants_user_idx")
+  @@map("mfa_factor_grants")
+}

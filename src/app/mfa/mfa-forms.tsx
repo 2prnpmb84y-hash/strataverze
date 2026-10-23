@@ -63,6 +63,7 @@ export function VerifyForm({
           setError(null);
           const r = await verifyTotpAction(factorId, code, next ?? undefined);
           if (r?.error) setError(r.error);
+          else if (r?.navigate) window.location.assign(r.navigate);
         });
       }}
     >
@@ -144,6 +145,7 @@ export function EnrolForm({ next }: { next: string | null }) {
           setError(null);
           const r = await confirmTotpEnrolmentAction(setup.factorId, code, next ?? undefined);
           if (r?.error) setError(r.error);
+          else if (r?.navigate) window.location.assign(r.navigate);
         });
       }}
     >

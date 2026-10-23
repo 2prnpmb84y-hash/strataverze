@@ -59,6 +59,11 @@ describe("assurance and step-up", () => {
     expect(a).toEqual({ aal: "aal2", lastTotpAt: now - 100, sessionId: "s1" });
   });
 
+  it("accepts the mfa/totp method name too", () => {
+    const a = assuranceFromClaims({ aal: "aal2", amr: [{ method: "mfa/totp", timestamp: now - 5 }] });
+    expect(a.lastTotpAt).toBe(now - 5);
+  });
+
   it("ignores string-form amr and missing claims", () => {
     expect(assuranceFromClaims({ aal: "aal1", amr: ["password"] }).lastTotpAt).toBeNull();
     expect(assuranceFromClaims(null)).toEqual({ aal: null, lastTotpAt: null, sessionId: null });
@@ -95,8 +100,31 @@ describe("safeNextPath", () => {
   });
 
   it("rejects external, protocol-relative and MFA loop targets", () => {
-    for (const bad of ["https://evil.example", "//evil.example", "/\\evil", "javascript:alert(1)", "/mfa", "/mfa/setup"]) {
-      expect(safeNextPath(bad)).toBeNull();
+    for (const bad of [
+      "https://evil.example",
+      "//evil.example",
+      "/\\evil",
+      "javascript:alert(1)",
+      "/mfa",
+      "/mfa?next=/x",
+      "/mfa/other",
+      // Browsers drop tabs and newlines, so these would become //evil.example.
+      "/\t/evil.example",
+      "/\n/evil.example",
+      "/\r//evil.example",
+      "/%09/evil.example".replace("%09", "\t"),
+      "/\u0000x",
+    ]) {
+      expect(safeNextPath(bad), JSON.stringify(bad)).toBeNull();
     }
+  });
+
+  it("allows returning to the setup page to add a second authenticator", () => {
+    expect(safeNextPath("/mfa/setup")).toBe("/mfa/setup");
+  });
+
+  it("normalises dot segments without leaving the site", () => {
+    expect(safeNextPath("/a/../settings")).toBe("/settings");
+    expect(safeNextPath("/./settings")).toBe("/settings");
   });
 });

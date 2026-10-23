@@ -1,7 +1,7 @@
 import { db } from "@/prisma/db";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { getCurrentSession } from "@/lib/auth/current-session";
-import { enforceMfa } from "@/lib/auth/mfa-enforcement";
+import { enforceMfaFor } from "@/lib/auth/mfa-enforcement";
 
 /**
  * Get the currently authenticated user's profile, creating it on first
@@ -16,7 +16,8 @@ import { enforceMfa } from "@/lib/auth/mfa-enforcement";
 export async function getCurrentProfile() {
   const session = await getCurrentSession();
   if (!session) return null;
-  await enforceMfa();
+  // Checked on this same session, so it fails closed (see enforceMfaFor).
+  await enforceMfaFor(session);
   return session.profile;
 }
 

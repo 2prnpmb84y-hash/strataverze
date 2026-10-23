@@ -549,6 +549,7 @@ export async function deactivateBankAccountAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
 
     const deactivated = await deactivateBankAccount(schemeId, bankAccountId);
     if (!deactivated) return { error: "Bank account not found." };
@@ -1408,8 +1409,8 @@ export async function recordLevyPaymentFormAction(
 ): Promise<ActionState> {
   const amount = Number(formData.get("amount") || 0);
   const paymentDate = String(formData.get("paymentDate") ?? "").trim();
-  const notice = await db.orm.public.LevyNotice.where((ln) => ln.id.eq(levyNoticeId)).first();
-  if (!notice || notice.schemeId !== schemeId) return { error: "Levy notice not found." };
+  // recordLevyPaymentAction authorises the caller and checks the notice
+  // belongs to the scheme; nothing is read here until it has.
   const result = await recordLevyPaymentAction(
     schemeId,
     levyNoticeId,
@@ -1419,7 +1420,10 @@ export async function recordLevyPaymentFormAction(
     formData.get("confirmOverpayment") === "on",
   );
   if (result.success) {
-    revalidatePath(financePath(schemeId, `/levies/${notice.levyScheduleId}`));
+    const notice = await db.orm.public.LevyNotice
+      .where((ln) => and(ln.id.eq(levyNoticeId), ln.schemeId.eq(schemeId)))
+      .first();
+    if (notice) revalidatePath(financePath(schemeId, `/levies/${notice.levyScheduleId}`));
   }
   return result;
 }

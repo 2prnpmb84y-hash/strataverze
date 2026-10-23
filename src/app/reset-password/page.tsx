@@ -37,6 +37,9 @@ function ResetPasswordForm() {
   } | null>(error ? { type: "error", message: error } : null);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [needsMfa, setNeedsMfa] = useState(false);
+
+  const afterMfa = searchParams.get("after") === "mfa";
 
   useEffect(() => {
     const supabase = createClient();
@@ -45,7 +48,14 @@ function ResetPasswordForm() {
         setReady(true);
       }
     });
-  }, []);
+    // Back from entering an authenticator code: the recovery session is
+    // still signed in, now verified.
+    if (afterMfa) {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session) setReady(true);
+      });
+    }
+  }, [afterMfa]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,7 +86,20 @@ function ResetPasswordForm() {
     setLoading(false);
 
     if (updateError) {
-      setStatus({ type: "error", message: updateError.message });
+      // An account with an authenticator needs a code before its password
+      // can change, so a reset link alone cannot take the account over.
+      if (updateError.code === "insufficient_aal") {
+        setNeedsMfa(true);
+        setStatus({
+          type: "error",
+          message: "Your account uses an authenticator app. Enter a code from it first, then set your new password.",
+        });
+        return;
+      }
+      setStatus({
+        type: "error",
+        message: "Unable to update your password. The reset link may have expired. Please request a new one.",
+      });
       return;
     }
 
@@ -106,6 +129,14 @@ function ResetPasswordForm() {
           {status?.type === "error" && (
             <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 mb-4">
               <p className="text-sm text-red-700">{status.message}</p>
+              {needsMfa && (
+                <a
+                  href={`/mfa?next=${encodeURIComponent("/reset-password?after=mfa")}`}
+                  className="text-sm font-medium text-turquoise hover:text-turquoise/80 transition-colors mt-2 inline-block"
+                >
+                  Enter authenticator code
+                </a>
+              )}
             </div>
           )}
 

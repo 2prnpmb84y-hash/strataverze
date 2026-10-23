@@ -51,13 +51,16 @@ export type SessionAssurance = {
 
 type AmrEntry = { method?: string; timestamp?: number } | string;
 
+/** AMR method names Supabase uses for an authenticator app check (auth-js lists both). */
+const TOTP_AMR_METHODS: readonly string[] = ["totp", "mfa/totp"];
+
 /** Read the assurance level and the last TOTP time from access token claims. */
 export function assuranceFromClaims(claims: Record<string, unknown> | null | undefined): SessionAssurance {
   if (!claims) return { aal: null, lastTotpAt: null, sessionId: null };
   const amr = Array.isArray(claims.amr) ? (claims.amr as AmrEntry[]) : [];
   const totpTimes = amr
     .filter((e): e is { method?: string; timestamp?: number } => typeof e === "object" && e !== null)
-    .filter((e) => e.method === "totp" && typeof e.timestamp === "number")
+    .filter((e) => TOTP_AMR_METHODS.includes(e.method ?? "") && typeof e.timestamp === "number")
     .map((e) => e.timestamp as number);
   return {
     aal: typeof claims.aal === "string" ? claims.aal : null,
@@ -111,10 +114,33 @@ export function recentlyVerified(
   return nowSeconds - assurance.lastTotpAt <= maxAgeSeconds && assurance.lastTotpAt <= nowSeconds + 60;
 }
 
-/** A safe path to return to after verifying (internal paths only). */
+/** MFA pages that may be returned to after verifying (adding a second authenticator). */
+const ALLOWED_MFA_RETURN_PATHS: readonly string[] = ["/mfa/setup"];
+
+/**
+ * A safe path to return to after verifying: an internal path only.
+ *
+ * The value is parsed as a URL against a placeholder origin and must still
+ * be on that origin, so "//evil.com", "/\\evil.com" and "/<tab>/evil.com"
+ * (browsers drop tabs and newlines from URLs) are all refused. Control
+ * characters are refused outright. MFA pages are refused, apart from the
+ * setup page, so a user cannot be sent round in a loop.
+ */
 export function safeNextPath(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("://") || raw.includes("\\")) return null;
-  if (raw.startsWith("/mfa")) return null;
-  return raw;
+  if (!raw || typeof raw !== "string" || raw.length > 2048) return null;
+  if (/[\u0000-\u001f\u007f]/.test(raw)) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw, "https://next.invalid");
+  } catch {
+    return null;
+  }
+  if (parsed.origin !== "https://next.invalid") return null;
+  const path = parsed.pathname + parsed.search;
+  if (path.startsWith("//")) return null;
+  if ((path === "/mfa" || path.startsWith("/mfa/") || path.startsWith("/mfa?")) && !ALLOWED_MFA_RETURN_PATHS.includes(parsed.pathname)) {
+    return null;
+  }
+  return path;
 }

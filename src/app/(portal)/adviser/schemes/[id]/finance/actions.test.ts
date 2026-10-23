@@ -7,6 +7,7 @@ vi.mock("@/lib/auth/mfa-enforcement", () => ({
   requireRecentMfa: stepUp.requireRecentMfa,
   getMfaStatus: vi.fn(async () => null),
   enforceMfa: vi.fn(async () => {}),
+  enforceMfaFor: vi.fn(async () => {}),
   StepUpRequiredError: class extends Error {},
 }));
 

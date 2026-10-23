@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { safeNextPath } from "@/lib/auth/mfa-policy";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -53,11 +54,13 @@ const protectedPrefixes = [
   "/dashboard",
 ];
 
+// Signed-in users are sent on from these. Not /reset-password: a recovery
+// session is signed in, and must be able to come back to it after entering
+// an authenticator code.
 const authRoutes = new Set([
   "/login",
   "/signup",
   "/forgot-password",
-  "/reset-password",
 ]);
 
 export async function proxy(request: NextRequest) {
@@ -141,21 +144,8 @@ export async function proxy(request: NextRequest) {
  * attacks. Returns null for anything suspicious.
  */
 function sanitisePath(raw: string | null): string | null {
-  if (!raw) return null;
-
-  // Strip double-slash prefixes that browsers interpret as protocol-relative
-  const cleaned = raw.replace(/^\/\/+/, "/");
-
-  // Must start with a single slash and not contain a protocol
-  if (!cleaned.startsWith("/") || cleaned.includes("://")) return null;
-
-  try {
-    const parsed = new URL(cleaned, "http://localhost");
-    if (parsed.hostname !== "localhost") return null;
-    return parsed.pathname + parsed.search;
-  } catch {
-    return null;
-  }
+  // One rule for every "return to" link (security review of S4).
+  return safeNextPath(raw);
 }
 
 // ── Matcher ─────────────────────────────────────────────────────────

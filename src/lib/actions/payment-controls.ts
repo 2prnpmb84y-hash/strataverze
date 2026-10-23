@@ -146,6 +146,7 @@ export async function changeSupplierBankDetailsAction(
 ): Promise<ControlActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE"]);
+    await requireRecentMfa();
     const supplier = await db.orm.public.Supplier.where((s) => s.id.eq(supplierId)).first();
     if (!supplier || supplier.schemeId !== schemeId) return { error: "Supplier not found." };
 

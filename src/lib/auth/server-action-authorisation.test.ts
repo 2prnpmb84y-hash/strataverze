@@ -26,7 +26,6 @@ const ALLOWED: Record<string, string> = {
   "src/app/login/actions.ts#login": "sign-in",
   "src/app/login/actions.ts#signup": "sign-up (to be replaced by invitation and supplier sign-up in S2)",
   "src/app/forgot-password/actions.ts#resetPassword": "public password reset request",
-  "src/app/reset-password/actions.ts#updatePassword": "acts only on the caller's own session",
   "src/lib/actions/contractor-onboarding.ts#registerContractorAccount": "supplier self-registration",
   // Act only on the caller's own records.
   "src/app/(portal)/settings/actions.ts#updateProfileAction": "updates only the caller's own profile, from an explicit field list",

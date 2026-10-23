@@ -260,6 +260,10 @@
       "model": "Meeting",
       "namespace": "public"
     },
+    "mfa_factor_grants": {
+      "model": "MfaFactorGrant",
+      "namespace": "public"
+    },
     "migration_batches": {
       "model": "MigrationBatch",
       "namespace": "public"
@@ -13966,6 +13970,87 @@
               },
               "namespaceId": "public",
               "table": "meeting_templates"
+            }
+          },
+          "MfaFactorGrant": {
+            "fields": {
+              "action": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "authUserId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "factorId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "grantedBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "usedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "action": {
+                  "column": "action"
+                },
+                "authUserId": {
+                  "column": "auth_user_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "factorId": {
+                  "column": "factor_id"
+                },
+                "grantedBy": {
+                  "column": "granted_by"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "usedAt": {
+                  "column": "used_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "mfa_factor_grants"
             }
           },
           "MigrationBatch": {
@@ -40920,6 +41005,71 @@
               },
               "uniques": []
             },
+            "mfa_factor_grants": {
+              "columns": {
+                "action": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "auth_user_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "factor_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "granted_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "used_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "auth_user_id",
+                    "action",
+                    "created_at"
+                  ],
+                  "name": "mfa_factor_grants_user_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "migration_batches": {
               "columns": {
                 "created_at": {
@@ -52893,7 +53043,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3c7bcbec4d66974913f22d40c342e60199c90ecc86423631aaf0183bd409a700"
+    "storageHash": "0f3ee913ce04edfa0ad2686eb4425c50412e53a66752439bf08b2b462e4ad4bd"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

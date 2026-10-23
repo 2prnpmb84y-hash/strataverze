@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requirePlatformAdmin } from "@/lib/auth/require-membership";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { chargeComplianceVerification } from "@/lib/billing/contractor-fees";
@@ -32,8 +33,14 @@ function toTimestamp(value: string): TimestampString<3> {
 /**
  * Contractor applications are reviewed by StrataVerze staff only (platform
  * admins). Previously any signed-in user, including the contractor, could.
+ * Each review action also needs an authenticator check in the last 15
+ * minutes (S4 step-up).
  */
-const requireReviewer = () => requirePlatformAdmin();
+async function requireReviewer() {
+  const profile = await requirePlatformAdmin();
+  await requireRecentMfa();
+  return profile;
+}
 
 /** Whether the reviewer is a contact of the contractor they are reviewing. */
 async function isOwnContractor(profileId: string, contractorId: string) {

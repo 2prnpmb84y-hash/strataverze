@@ -1,5 +1,6 @@
 "use server";
 
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import {
   COMPLIANCE_FEE_DECLARATION,
   chargeComplianceVerification,
@@ -606,6 +607,7 @@ export async function saveBankDetails(
     if (!contractorId) return { error: "Contractor ID is required." };
 
     await requireContractorOwnership(profile.id, contractorId);
+    await requireRecentMfa();
 
     const accountName = (formData.get("accountName") as string)?.trim();
     const bankName = (formData.get("bankName") as string)?.trim();
