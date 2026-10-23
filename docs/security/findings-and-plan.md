@@ -20,7 +20,7 @@ So isolation has to hold in two places:
 |---|---|---|
 | Critical | 4 | 3 fixed (SEC-001, SEC-003, SEC-004), 1 partly fixed (SEC-002, sign-up closes in S2) |
 | High | 11 | 8 fixed (SEC-005, 007, 008, 009, 010, 011, 014, and 033 in code), 1 partly fixed (SEC-012), 2 open (SEC-006 storage, SEC-013 backups) |
-| Medium | 10 | open |
+| Medium | 10 | 1 fixed (SEC-016), 9 open |
 | Low | 8 | open |
 
 The single most important point: **today anyone on the internet can sign up, create a building, and become its Adviser** (SEC-002). Many server actions check only "is this person an Adviser on *some* scheme" and then act on whatever record id they are sent (SEC-004). Together, a stranger could change or delete other buildings' records if they know the record ids. Ids are random UUIDs, so this is hard to exploit blind, but unguessable ids are not an access control.
@@ -93,7 +93,7 @@ SEC-014 covers these integrity gaps:
 | ID | Finding | Evidence | Remediation |
 |---|---|---|---|
 | SEC-015 | Admin pages and 10 finance list pages rely on the layout check only | R | Check in every page **Fixed 23 Oct (S1, PR #41).** |
-| SEC-016 | **Audit logging gaps.** `activity_logs` needs a scheme, so there are no auth, MFA or platform events. Rows can be altered or deleted. No outcome, IP or request context. No downloads, contact views or access denials recorded (except finance documents). Supabase Auth audit-to-database is off. Owners see the scheme's whole activity log. | V | New append-only security audit log (see Audit below) |
+| SEC-016 | **Audit logging gaps.** `activity_logs` needs a scheme, so there are no auth, MFA or platform events. Rows can be altered or deleted. No outcome, IP or request context. No downloads, contact views or access denials recorded (except finance documents). Supabase Auth audit-to-database is off. Owners see the scheme's whole activity log. | V | New append-only security audit log (see Audit below) | **Fixed 23 Oct** (S6, PR #44). Tables, triggers, schedules and the Auth audit setting applied. The owner feed was already restricted in S1. |
 | SEC-017 | **Database TLS not enforced.** Supabase "Enforce SSL on incoming connections" is off. The local `DATABASE_URL` has no `sslmode`, and the production value is unconfirmed. | V | Enforce SSL (brief database reboot), add `sslmode` to the connection strings and test on a preview deployment |
 | SEC-018 | **Preview deployments use production database credentials.** All variables are scoped "Production and Preview", none marked Sensitive. | V | Separate preview database, or remove production credentials from Preview. Mark the variables Sensitive. |
 | SEC-019 | Email templates insert user text into HTML unescaped (announcements, invitations, meetings, levies, work orders). This is a phishing vector from the StrataVerze sending address. | R | One shared escape for every value, and validate link targets |
@@ -205,7 +205,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 | **S3 Storage** | Server-only uploads and downloads, document visibility, bucket MIME and size limits, SVG removed (SEC-006, 022) | Storage policies and bucket settings |
 | **S4 MFA** (done, PR #42) | Enrolment, login challenge, server enforcement, step-up for sensitive operations, recovery and admin reset | Storage policy and authenticator guard (applied 23 Oct) |
 | **S5 Sessions** (done, PR #43) | App session register, idle and absolute timeouts, revocation on disable, role change and password reset, admin "sign out everywhere" | Migration (applied 23 Oct) |
-| **S6 Audit log** | Append-only `security_audit_events` with a hash chain, event coverage, admin viewer, retention job, owner feed restricted | Migration. Turn on Auth audit to database. |
+| **S6 Audit log** (done, PR #44) | Append-only `security_audit_events` with a hash chain, event coverage, admin viewer, retention job, owner feed restricted | Migration, pg_cron, Auth audit to database (all applied 23 Oct) |
 | **S7 Web hardening** | Email escaping, error mapping, log hygiene, database-backed rate limiting, cache headers, cron comparison, signed URL default (SEC-019, 020, 025 to 029, 031, 032) | Migration (rate limit table) |
 | **S8 Transport and patching** | Enforce SSL and `sslmode`, preview separation, Sensitive variables, Dependabot, CI audit gate, pinned Actions, dependency clean-up (SEC-017, 018, 021) | Database reboot. Vercel settings. |
 | **S9 Documentation and verification** | Final register, matrix, verification report with evidence, runbook, residual risks | None |
@@ -299,6 +299,40 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 - **Who can read it:** platform admins read everything, and Advisers read their own building's events, both read-only.
 - **Provider logs.** Supabase and Vercel infrastructure logs are separate. Their retention on the current plans is short and is not relied on.
 
+### As built (S6, 23 Oct)
+
+- **Tables.**
+  - `security_audit_events` is numbered, timestamped and hash-chained by the database, under a lock.
+  - `security_audit_checks` and `security_audit_purges` are append-only too.
+  - No Data API role can read or write any of them: `anon`, `authenticated` and `service_role` are all refused.
+- **Integrity checks.**
+  - Each check records the chain head, and the next check requires it unchanged.
+  - The first row must start the chain, or follow the retention watermark.
+  - pg_cron checks from the last head every hour, and checks the whole log every Sunday.
+  - Retention runs on the 1st of each month.
+- **Recorded by the database itself:** password changes (which also end every session), first passwords, and authenticator verification and removal, however they were made. Supabase Auth's own audit log is also written to the database.
+- **Recorded by the app:**
+  - **Sign-in and passwords:** sign-in (success, failure, rate limited), sign-in from an email link, sign-up, sign-out (now this device only), password reset requests.
+  - **MFA and sessions:** MFA enrolment, verification and removal, admin resets (with a fixed identity-check choice, never free text), fresh-code refusals, session ends and revocations.
+  - **Refusals:** every authorisation refusal, including cross-building record lookups.
+  - **Actions:** every authorised server action, with who, which building, their roles and the page.
+  - **Changes:** every activity log entry (copied with an allow-list of keys), lot changes, owner assignment and removal, building creation and deletion, contractor review, referral income.
+  - **Downloads:** PDF, CSV and document downloads.
+  - **Page views:** every Adviser and Accountant building page, with the owner details, strata roll, members, contacts, documents and financial pages named separately. Also owner and committee pages that show other owners' arrears. The outcome comes from the person's roles on that building.
+- **Kept out of the log:**
+  - Metadata values must look like ids, codes, amounts, dates or paths. Names, titles and other free text are dropped.
+  - IP addresses are stored only as a keyed hash.
+  - Events from people who are not signed in are capped per source.
+- **Viewers.**
+  - `/admin/audit` (platform admins) shows everything, plus the latest check, warning if it is stale or failed.
+  - `/adviser/schemes/[id]/security-log` (the building's Adviser) shows only its own people by name, and no source hash.
+  - Reading either log is recorded.
+- **Limits.**
+  - **The database owner credential** (held in Vercel) can still disable the triggers and rewrite the log. The chain catches changes by anything less privileged. Anchoring the head outside the database, by a daily email to a security inbox, waits on email (S2).
+  - **Removals from the end.** These are caught at the next hourly check, unless whoever removed them also rewrites the checks.
+  - **Alerts.** A failed check shows on the admin page only, until email exists.
+  - **Specific events.** Of 212 privileged actions, 97 have no specific event, only the generic "action taken" one.
+
 ## Changes that could disrupt users
 
 1. **Enforcing database SSL** causes a database reboot of seconds to a few minutes. Best done out of hours.
@@ -341,6 +375,8 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 - Third parties that hold personal information: Resend (email content), Vercel logs, ABR.
 - Exported files and PDFs are outside our control once downloaded.
 - Platform admins (StrataVerze staff) can see every building. This is mitigated by MFA, audit and least use, not removed.
+- **The Supabase service role key** can read and write every other table through the Data API, by Supabase's design. It is held only in Vercel, server-side. Since S6 it has no access to the audit log, the MFA grants or the session register.
+- **The audit log can be rewritten by the database owner credential** (see S6 as built). An external daily anchor waits on email.
 - The `postgres` database credential is all-powerful. It is held only in Vercel and the local environment.
 - **Access token lifetime is 60 minutes** (your decision). A token copied from a signed-in browser keeps working directly against Supabase until it expires, even after the session is ended. The app itself refuses it straight away. Once S3 moves storage server-side, the token reaches nothing but the Auth API.
 - **Code-guessing limits.** The app limits code checks to 5 per 15 minutes per user, but per server instance. Supabase's own limit applies to direct calls. Both are to be confirmed (see MFA design).
