@@ -35,12 +35,12 @@ export default async function LoginPage({
         <div className="w-full max-w-sm">
           {/* Mobile logo — hidden on desktop */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <Logo size="xl" variant="gradient" />
+            <Logo size="xl" variant="dark" />
           </div>
 
           {/* Desktop logo — hidden on mobile */}
           <div className="hidden lg:flex justify-center mb-8">
-            <Logo size="lg" variant="gradient" />
+            <Logo size="lg" variant="dark" />
           </div>
 
           {/* Form card */}
