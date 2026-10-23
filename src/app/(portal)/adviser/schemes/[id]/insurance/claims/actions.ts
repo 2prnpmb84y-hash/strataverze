@@ -1,5 +1,6 @@
 "use server";
 
+import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { captureUsageFee } from "@/lib/billing/capture";
@@ -7,8 +8,6 @@ import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
-import { createClient } from "@/lib/supabase/server";
-import { validateFileUpload } from "@/lib/upload/validate-mime";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
@@ -346,40 +345,39 @@ export async function uploadClaimEvidenceAction(
 ): Promise<{ id?: string; error?: string }> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    const file = formData.get("file") as File | null;
+    const uploadId = String(formData.get("uploadId") ?? "");
     const category = (formData.get("category") as string) || "CLAIM_EVIDENCE";
-    if (!file || file.size === 0) return { error: "No file provided." };
+    if (!uploadId) return { error: "No file provided." };
     if (!DOCUMENT_CATEGORY_SET.has(category)) return { error: "Invalid document category." };
     // The claim must be this scheme's (SEC-004).
     const claim = await getSchemeClaim(schemeId, claimId);
     if (!claim) return { error: "Claim not found." };
-    const mimeError = validateFileUpload(file);
-    if (mimeError) return { error: mimeError };
-    if (file.size > 30 * 1024 * 1024) return { error: "File must be smaller than 30 MB." };
-
-    const supabase = await createClient();
-    const ext = file.name.split(".").pop() ?? "bin";
-    const storagePath = `schemes/${schemeId}/insurance/claims/${claim.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(storagePath, file, { contentType: file.type, upsert: false });
-    if (uploadError) return { error: `Upload failed: ${uploadError.message}` };
+    // What actually arrived in storage, checked (S3).
+    let upload;
+    try {
+      upload = await verifyUpload({ uploadId, schemeId, purpose: "claim_evidence", profileId: profile.id });
+    } catch (err) {
+      const message = uploadErrorMessage(err);
+      if (message) return { error: message };
+      throw err;
+    }
 
     const doc = await createInsuranceDocument({
       schemeId,
       claimId: claim.id,
       category,
-      title: file.name.replace(/\.[^.]+$/, ""),
-      fileUrl: storagePath,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type || null,
+      title: upload.fileName.replace(/\.[^.]+$/, ""),
+      fileUrl: upload.path,
+      fileName: upload.fileName,
+      fileSize: upload.size,
+      mimeType: upload.mimeType,
       uploadedBy: profile.id,
     });
+    await markUploadUsed(uploadId, `InsuranceDocument:${doc.id}`);
     await recordClaimEvent({
       claimId: claim.id,
       eventType: "DOCUMENT_ADDED",
-      note: `Evidence added: ${file.name}`,
+      note: `Evidence added: ${upload.fileName}`,
       actorId: profile.id,
     });
     revalidatePath(`/adviser/schemes/${schemeId}/insurance/claims/${claimId}`);

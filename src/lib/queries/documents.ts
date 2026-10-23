@@ -47,6 +47,8 @@ export async function createDocument(data: {
   lotNumber?: string;
   supplier?: string;
   comments?: string;
+  /** Who may see it (S3). Defaults to all members. */
+  visibility?: string;
 }) {
   return db.orm.public.Document.create({
     schemeId: data.schemeId,
@@ -65,6 +67,7 @@ export async function createDocument(data: {
     lotNumber: data.lotNumber ?? null,
     supplier: data.supplier ?? null,
     comments: data.comments ?? null,
+    visibility: data.visibility ?? "ALL_MEMBERS",
   });
 }
 
@@ -85,6 +88,7 @@ export async function updateDocument(
     lotNumber: string | null;
     supplier: string | null;
     comments: string | null;
+    visibility: string;
   }>,
 ) {
   const update: Record<string, unknown> = {};
@@ -99,6 +103,7 @@ export async function updateDocument(
   if (data.lotNumber !== undefined) update.lotNumber = data.lotNumber;
   if (data.supplier !== undefined) update.supplier = data.supplier;
   if (data.comments !== undefined) update.comments = data.comments;
+  if (data.visibility !== undefined) update.visibility = data.visibility;
 
   return db.orm.public.Document.where((r) => and(r.id.eq(documentId), r.schemeId.eq(schemeId))).update(update);
 }

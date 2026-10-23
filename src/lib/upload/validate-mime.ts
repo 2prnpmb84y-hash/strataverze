@@ -20,7 +20,6 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/png",
   "image/gif",
   "image/webp",
-  "image/svg+xml",
 ]);
 
 /**
@@ -41,7 +40,6 @@ const ALLOWED_EXTENSIONS = new Set([
   "png",
   "gif",
   "webp",
-  "svg",
 ]);
 
 /**

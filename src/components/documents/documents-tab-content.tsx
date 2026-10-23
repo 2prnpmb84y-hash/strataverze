@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DocumentUploadModal } from "./document-upload-modal";
 import { DocumentViewer } from "./document-viewer";
+import { stageUpload } from "@/lib/storage/client-upload";
 import {
   uploadFileAction,
   updateDocumentMetadataAction,
@@ -20,6 +21,8 @@ export type DocumentMetadata = {
   lotNumber: string;
   supplier: string;
   comments: string;
+  /** Who can see it (S3). */
+  visibility: string;
 };
 
 type DocumentRecord = {
@@ -39,6 +42,8 @@ type DocumentRecord = {
   comments: string | null;
   description: string | null;
   createdAt: string;
+  /** Who can see it (S3). */
+  visibility?: string;
 };
 
 type Props = {
@@ -107,9 +112,17 @@ export function DocumentsTabContent({
       for (let i = 0; i < files.length; i++) {
         setUploadProgress({ current: i + 1, total: files.length });
 
+        // Straight to storage through a one-time link the server issues; the
+        // server then checks what arrived (S3).
+        const staged = await stageUpload(schemeId, "library", files[i]);
+        if ("error" in staged) {
+          errors.push(`${files[i].name}: ${staged.error}`);
+          continue;
+        }
         const fd = new FormData();
-        fd.append("file", files[i]);
+        fd.append("uploadId", staged.uploadId);
         fd.append("category", metadata.category || "OTHER");
+        fd.append("visibility", metadata.visibility || "ALL_MEMBERS");
         if (metadata.documentType) fd.append("documentType", metadata.documentType);
         if (metadata.strataPlan) fd.append("strataPlan", metadata.strataPlan);
         if (metadata.schedule) fd.append("schedule", metadata.schedule);
@@ -172,6 +185,7 @@ export function DocumentsTabContent({
                 lotNumber: data.lotNumber || null,
                 supplier: data.supplier || null,
                 comments: data.comments || null,
+                visibility: data.visibility || d.visibility,
               }
             : d,
         ),

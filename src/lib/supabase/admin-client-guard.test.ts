@@ -10,6 +10,8 @@ import { describe, expect, it } from "vitest";
 const ALLOWED_USERS = new Set([
   "src/lib/actions/admin-mfa.ts",
   "src/app/(portal)/admin/security/page.tsx",
+  // The documents bucket (S3): every caller authorises first.
+  "src/lib/storage/server-storage.ts",
 ]);
 
 function walk(dir: string): string[] {

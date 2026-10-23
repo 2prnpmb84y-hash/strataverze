@@ -1,5 +1,6 @@
 "use client";
 
+import { VISIBILITY_OPTIONS } from "./visibility-options";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +21,8 @@ type DocumentRecord = {
   comments: string | null;
   description: string | null;
   createdAt: string;
+  /** Who can see it (S3). */
+  visibility?: string;
 };
 
 const DOCUMENT_TYPES = [
@@ -248,6 +251,24 @@ export function DocumentViewer({
               placeholder="e.g. Schedule A"
               className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
             />
+          </div>
+
+          <div>
+            <label htmlFor="visibility" className="block text-sm font-medium text-ink mb-1.5">
+              Who can see it
+            </label>
+            <select
+              id="visibility"
+              name="visibility"
+              defaultValue={document.visibility ?? "ALL_MEMBERS"}
+              className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
+            >
+              {VISIBILITY_OPTIONS.map((v) => (
+                <option key={v.value} value={v.value}>
+                  {v.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

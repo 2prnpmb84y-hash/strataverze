@@ -1,11 +1,10 @@
 "use server";
 
+import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
-import { createClient } from "@/lib/supabase/server";
-import { validateFileUpload } from "@/lib/upload/validate-mime";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
@@ -20,7 +19,6 @@ import { getSchemePolicy } from "@/lib/queries/insurance";
 import { DOCUMENT_CATEGORIES } from "@/lib/insurance/constants";
 
 const CATEGORY_SET = new Set<string>(DOCUMENT_CATEGORIES);
-const MAX_BYTES = 30 * 1024 * 1024;
 
 export interface UploadResult {
   id?: string;
@@ -40,17 +38,14 @@ export async function uploadInsuranceDocumentAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    const file = formData.get("file") as File | null;
+    const uploadId = String(formData.get("uploadId") ?? "");
     const category = (formData.get("category") as string) || "OTHER";
     const title = ((formData.get("title") as string) ?? "").trim();
     const notes = ((formData.get("notes") as string) ?? "").trim();
     const supersedesId = ((formData.get("supersedesId") as string) ?? "").trim() || null;
 
-    if (!file || file.size === 0) return { error: "No file provided." };
+    if (!uploadId) return { error: "No file provided." };
     if (!CATEGORY_SET.has(category)) return { error: "Invalid document category." };
-    const mimeError = validateFileUpload(file);
-    if (mimeError) return { error: mimeError };
-    if (file.size > MAX_BYTES) return { error: "File must be smaller than 30 MB." };
 
     // The policy must be this scheme's (SEC-004).
     const policy = await getSchemePolicy(schemeId, policyId);
@@ -67,31 +62,32 @@ export async function uploadInsuranceDocumentAction(
       version = prev.version + 1;
     }
 
-    const supabase = await createClient();
-    const ext = file.name.split(".").pop() ?? "bin";
-    const storagePath = `schemes/${schemeId}/insurance/${policy.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(storagePath, file, { contentType: file.type, upsert: false });
-
-    if (uploadError) return { error: `Upload failed: ${uploadError.message}` };
+    // What actually arrived in storage, checked (S3).
+    let upload;
+    try {
+      upload = await verifyUpload({ uploadId, schemeId, purpose: "insurance", profileId: profile.id });
+    } catch (err) {
+      const message = uploadErrorMessage(err);
+      if (message) return { error: message };
+      throw err;
+    }
 
     const doc = await createInsuranceDocument({
       schemeId,
       policyId: policy.id,
       category,
-      title: title || file.name.replace(/\.[^.]+$/, ""),
-      fileUrl: storagePath,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type || null,
+      title: title || upload.fileName.replace(/\.[^.]+$/, ""),
+      fileUrl: upload.path,
+      fileName: upload.fileName,
+      fileSize: upload.size,
+      mimeType: upload.mimeType,
       uploadedBy: profile.id,
       version,
       supersedesId,
       notes: notes || null,
     });
 
+    await markUploadUsed(uploadId, `InsuranceDocument:${doc.id}`);
     if (prev) await markDocumentNotCurrent(schemeId, prev.id);
 
     await logActivity({
@@ -100,7 +96,7 @@ export async function uploadInsuranceDocumentAction(
       action: "INSURANCE_DOCUMENT_UPLOADED",
       entityType: "InsuranceDocument",
       entityId: doc.id,
-      metadata: { policyId, category, fileName: file.name, version },
+      metadata: { policyId, category, fileName: upload.fileName, version },
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}/insurance/${policyId}`);

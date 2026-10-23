@@ -21,7 +21,6 @@ describe("validateFileUpload", () => {
       { name: "image.png", type: "image/png" },
       { name: "image.gif", type: "image/gif" },
       { name: "image.webp", type: "image/webp" },
-      { name: "icon.svg", type: "image/svg+xml" },
       { name: "data.csv", type: "text/csv" },
       { name: "notes.txt", type: "text/plain" },
       { name: "slides.pptx", type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" },
@@ -47,6 +46,10 @@ describe("validateFileUpload", () => {
       const file = makeFile("script.js", "application/javascript");
       const result = validateFileUpload(file);
       expect(result).not.toBeNull();
+    });
+
+    it("rejects SVG, which can carry script (S3)", () => {
+      expect(validateFileUpload(makeFile("icon.svg", "image/svg+xml"))).not.toBeNull();
     });
 
     it("rejects HTML files", () => {

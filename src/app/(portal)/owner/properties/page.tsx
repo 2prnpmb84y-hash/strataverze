@@ -3,7 +3,7 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getSchemeNotificationCounts } from "@/lib/queries/schemes";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
-import { getDocumentsForSchemes } from "@/lib/queries/documents";
+import { getVisibleDocumentsForSchemes } from "@/lib/documents/viewers";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export default async function OwnerPropertiesPage() {
         ? getWorkOrdersForSchemes(schemeIds, 5)
         : Promise.resolve([]),
       schemeIds.length > 0
-        ? getDocumentsForSchemes(schemeIds, 5)
+        ? getVisibleDocumentsForSchemes(profile.id, schemeIds, 5)
         : Promise.resolve([]),
     ]);
 

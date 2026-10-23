@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { signDownload } from "@/lib/storage/server-storage";
 
 /**
  * Generate a short-lived signed URL for a document in Supabase Storage.
@@ -12,18 +12,9 @@ export async function getSignedDocumentUrl(
   storagePath: string,
   expiresIn = 3600,
 ): Promise<string> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.storage
-    .from("documents")
-    .createSignedUrl(storagePath, expiresIn);
-
-  if (error || !data?.signedUrl) {
-    console.error("Failed to create signed URL for document:", storagePath, error?.message);
-    throw new Error("Could not generate a secure download link for this document.");
-  }
-
-  return data.signedUrl;
+  // Signed on the server with the service role (S3): browsers have no
+  // storage access of their own. Callers check the document first.
+  return signDownload(storagePath, expiresIn);
 }
 
 /**

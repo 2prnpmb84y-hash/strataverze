@@ -1,5 +1,6 @@
 "use client";
 
+import { stageUpload } from "@/lib/storage/client-upload";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -76,8 +77,14 @@ export function InsuranceDocumentsSection({
     setQueue(items);
 
     for (let i = 0; i < files.length; i++) {
+      // Straight to storage through a one-time link the server issues (S3).
+      const staged = await stageUpload(schemeId, "insurance", files[i]);
+      if ("error" in staged) {
+        setQueue((q) => q.map((it, j) => (j === i ? { ...it, status: "error", error: staged.error } : it)));
+        continue;
+      }
       const fd = new FormData();
-      fd.set("file", files[i]);
+      fd.set("uploadId", staged.uploadId);
       fd.set("category", supersedesId ? documentCategoryOf(supersedesId) : category);
       if (supersedesId) fd.set("supersedesId", supersedesId);
       const res = await uploadInsuranceDocumentAction(schemeId, policyId, fd);
