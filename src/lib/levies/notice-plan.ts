@@ -73,7 +73,7 @@ export function addMonths(date: string, months: number): string {
   return isoDate(target);
 }
 
-function addDays(date: string, days: number): string {
+export function addDays(date: string, days: number): string {
   const d = parseIso(date);
   d.setUTCDate(d.getUTCDate() + days);
   return isoDate(d);

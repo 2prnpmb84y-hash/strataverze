@@ -87,6 +87,9 @@ import {
 import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconciliation";
 import { sydneyToday } from "@/lib/finance/interest-setting";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
+import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
+import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
+import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { checkPlannedNotices, sendIssuedNotices } from "@/lib/levies/notice-content-data";
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
@@ -895,6 +898,14 @@ export async function issueScheduleNoticesAction(
     }
 
     const isSpecial = schedule.levyType === "SPECIAL";
+    // Budget levies need the budget for that fund and year adopted at a general meeting.
+    const activation = levyScheduleActivationProblem({
+      levyType: schedule.levyType,
+      financialYear: Number(schedule.financialYear),
+      fundName: String(schedule.fund?.name ?? "fund"),
+      budgets: (await getBudgets(schemeId, Number(schedule.financialYear))).filter((b) => b.fundId === schedule.fundId),
+    });
+    if (activation) return { error: activation };
     const firstDueDate = isSpecial
       ? toIsoDay(schedule.dueDate)
       : String(formData.get("firstDueDate") ?? "").trim();
@@ -1825,8 +1836,11 @@ export async function createBudgetLineAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const account = await db.orm.public.AccountCode.where((a) => a.id.eq(data.accountCodeId)).first();
+    if (!account || account.schemeId !== schemeId) return { error: "Choose an account of this scheme." };
+    const budget = await editableBudgetFor(schemeId, data.fundId, data.financialYear, profile.id);
 
-    const line = await createBudgetLine(data);
+    const line = await createBudgetLine({ ...data, budgetId: budget.id });
 
     await logActivity({
       schemeId,
@@ -1845,7 +1859,7 @@ export async function createBudgetLineAction(
     revalidatePath(financePath(schemeId, "/budget"));
     return { success: true, data: { id: line.id } };
   } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof AuthorisationError || err instanceof BudgetError) return { error: err.message };
     const message = err instanceof Error ? err.message : "";
     if (message.includes("unique") || message.includes("duplicate")) {
       return { error: "A budget line already exists for this account and financial year." };
@@ -1864,6 +1878,7 @@ export async function updateBudgetLineAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await assertLineEditable(schemeId, budgetLineId);
 
     await updateBudgetLine(budgetLineId, data);
 
@@ -1879,7 +1894,7 @@ export async function updateBudgetLineAction(
     revalidatePath(financePath(schemeId, "/budget"));
     return { success: true };
   } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof AuthorisationError || err instanceof BudgetError) return { error: err.message };
     return { error: "Failed to update budget line." };
   }
 }
@@ -1890,6 +1905,7 @@ export async function deleteBudgetLineAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await assertLineEditable(schemeId, budgetLineId);
 
     await deleteBudgetLine(budgetLineId);
 
@@ -1905,7 +1921,7 @@ export async function deleteBudgetLineAction(
     revalidatePath(financePath(schemeId, "/budget"));
     return { success: true };
   } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof AuthorisationError || err instanceof BudgetError) return { error: err.message };
     return { error: "Failed to delete budget line." };
   }
 }
@@ -2268,8 +2284,6 @@ export async function extractInvoiceFromPdfAction(
 // INTEREST SETTING (SSMA 2015 s 85)
 // ═══════════════════════════════════════════════════════════════
 
-const GENERAL_MEETING_TYPES = ["AGM", "EGM", "SGM", "FIRST_AGM"];
-
 /**
  * Record whether the scheme charges statutory interest or, by a recorded
  * general meeting resolution, no interest. No other rate can be set.
@@ -2288,15 +2302,8 @@ export async function saveInterestSettingAction(
     if (problem) return { error: problem };
 
     if (mode === "NO_INTEREST") {
-      const meeting = await db.orm.public.Meeting.where((m) => m.id.eq(meetingId!)).first();
-      if (!meeting || meeting.schemeId !== schemeId || !GENERAL_MEETING_TYPES.includes(meeting.meetingType)) {
-        return { error: "Choose a general meeting of this scheme." };
-      }
-      const motion = await db.orm.public.AgendaItem.where((a) => a.id.eq(motionId!)).first();
-      if (!motion || motion.meetingId !== meeting.id) return { error: "Choose a motion from that meeting." };
-      if (motion.status !== "CARRIED" && motion.outcome !== "RESOLVED") {
-        return { error: "That motion was not carried, so it cannot be relied on." };
-      }
+      const resolution = await generalMeetingResolutionProblem(schemeId, meetingId, motionId);
+      if (resolution) return { error: resolution };
     }
 
     await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).update({

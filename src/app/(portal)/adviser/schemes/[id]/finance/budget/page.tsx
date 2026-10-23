@@ -7,6 +7,10 @@ import { getBudgetLinesForScheme, getBudgetVsActual } from "@/lib/queries/budget
 import { PageHeader } from "@/components/ui/page-header";
 import { BudgetClient } from "./budget-client";
 import { connection } from "next/server";
+import { getBudgets } from "@/lib/finance/budgets";
+import { workingBudgets } from "@/lib/finance/budget-status";
+import { resolutionMeetings } from "@/lib/finance/resolutions";
+import { BudgetStatusPanel, type FundBudgetStatus } from "./budget-status-panel";
 
 export default async function BudgetPage({
   params,
@@ -34,11 +38,26 @@ export default async function BudgetPage({
   const currentFY = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
   const financialYear = yearParam ? parseInt(yearParam, 10) : currentFY;
 
-  const [funds, accountCodes, budgetLines] = await Promise.all([
+  const [funds, accountCodes, budgetLines, budgets, meetings] = await Promise.all([
     getFundsForScheme(id),
     getAccountCodesForScheme(id),
     getBudgetLinesForScheme(id, financialYear),
+    getBudgets(id, financialYear),
+    resolutionMeetings(id),
   ]);
+  const working = workingBudgets(budgets);
+  const meetingLabels = new Map(meetings.map((m) => [m.id, m.label]));
+  const statusRows: FundBudgetStatus[] = funds.map((f) => {
+    const b = working.find((x) => x.fundId === f.id) ?? null;
+    return {
+      fundId: f.id,
+      fundName: String(f.name),
+      budgetId: b?.id ?? null,
+      version: b?.version ?? null,
+      status: b?.status ?? null,
+      adoptedLabel: b?.adoptedMeetingId ? (meetingLabels.get(b.adoptedMeetingId) ?? "a general meeting") : null,
+    };
+  });
 
   // Get budget vs actual for the selected fund (or all funds)
   const selectedFundId = fundParam || (funds[0]?.id ?? "");
@@ -64,6 +83,8 @@ export default async function BudgetPage({
         backHref={`/adviser/schemes/${id}/finance`}
         backLabel="Finance"
       />
+
+      <BudgetStatusPanel schemeId={id} rows={statusRows} meetings={meetings} />
 
       <BudgetClient
         schemeId={id}

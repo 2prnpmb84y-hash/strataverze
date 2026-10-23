@@ -4,10 +4,9 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getOverdueLevyNoticesWithInterest } from "@/lib/queries/interest";
 import { PageHeader } from "@/components/ui/page-header";
 import { InterestClient } from "./interest-client";
-import { InterestSettingForm, type ResolutionMeeting } from "./interest-setting-form";
+import { InterestSettingForm } from "./interest-setting-form";
 import { Card } from "@/components/ui/card";
-import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { resolutionMeetings } from "@/lib/finance/resolutions";
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { connection } from "next/server";
 
@@ -78,28 +77,4 @@ export default async function InterestPage({
       />
     </div>
   );
-}
-
-/** General meetings of the scheme with their carried motions, newest first. */
-async function resolutionMeetings(schemeId: string): Promise<ResolutionMeeting[]> {
-  const meetings = await db.orm.public.Meeting
-    .where((m) => and(m.schemeId.eq(schemeId), m.meetingType.in(["AGM", "EGM", "SGM", "FIRST_AGM"])))
-    .orderBy((m) => m.scheduledAt.desc())
-    .limit(100)
-    .all();
-  if (meetings.length === 0) return [];
-  const items = await db.orm.public.AgendaItem
-    .where((a) => a.meetingId.in(meetings.map((m) => m.id)))
-    .orderBy((a) => a.position.asc())
-    .limit(5000)
-    .all();
-  return meetings
-    .map((m) => ({
-      id: m.id,
-      label: `${m.title} (${new Date(String(m.scheduledAt)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" })})`,
-      motions: items
-        .filter((a) => a.meetingId === m.id && (a.status === "CARRIED" || a.outcome === "RESOLVED"))
-        .map((a) => ({ id: a.id, label: `${a.position}. ${a.title}` })),
-    }))
-    .filter((m) => m.motions.length > 0);
 }

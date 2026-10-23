@@ -10,9 +10,9 @@ import {
 } from "./actions";
 
 const fundTypeOptions = [
-  { value: "ADMIN", label: "Administrative Fund" },
-  { value: "SINKING", label: "Capital Works Fund" },
-  { value: "RESERVE", label: "Reserve Fund" },
+  { value: "ADMINISTRATIVE", label: "Administrative Fund" },
+  { value: "CAPITAL_WORKS", label: "Capital Works Fund" },
+  { value: "SPECIAL", label: "Special Fund" },
 ];
 
 export function FundForm({
@@ -62,7 +62,7 @@ export function FundForm({
           label="Fund Type"
           name="fundType"
           required
-          defaultValue={defaults?.fundType ?? "ADMIN"}
+          defaultValue={defaults?.fundType ?? "ADMINISTRATIVE"}
           options={fundTypeOptions}
           error={state.fieldErrors?.fundType}
         />

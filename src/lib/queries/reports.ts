@@ -1,6 +1,10 @@
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import { currentBudgetLines } from "@/lib/finance/budgets";
+import { getAdoptedPlan, isCapitalWorksFund } from "@/lib/finance/capital-works-plans";
+import { spendByYear } from "@/lib/finance/capital-works-plan";
+import { recognisedIncomeExpense, type AccountingBasis, type BasisEntry, type RecognisedLine } from "@/lib/finance/accounting-basis";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -42,37 +46,42 @@ export async function getIncomeExpenseReport(
   compEndDate: string,
 ): Promise<IncomeExpenseReport> {
   try {
-  // Fetch all posted journal entries in the current period
-  const currentEntries = await db.orm.public.JournalEntry
-    .where((je) =>
-      and(
-        je.schemeId.eq(schemeId),
-        je.status.eq("POSTED"),
-        je.transactionDate.gte(toTimestamp(startDate)),
-        je.transactionDate.lte(toTimestamp(endDate)),
-      ),
-    )
-    .include("lines", (l) => l.include("accountCode").include("fund"))
-    .limit(2000)
-    .all();
-
-  // Fetch comparative period entries
-  const compEntries = await db.orm.public.JournalEntry
-    .where((je) =>
-      and(
-        je.schemeId.eq(schemeId),
-        je.status.eq("POSTED"),
-        je.transactionDate.gte(toTimestamp(compStartDate)),
-        je.transactionDate.lte(toTimestamp(compEndDate)),
-      ),
-    )
-    .include("lines", (l) => l.include("accountCode").include("fund"))
-    .limit(2000)
-    .all();
-
-  // Aggregate by account code for current period
-  const currentTotals = aggregateByAccount(currentEntries, fundId);
-  const compTotals = aggregateByAccount(compEntries, fundId);
+  // Every posted entry up to the end of the later period: a cash basis report
+  // needs invoices approved before the period to recognise payments in it.
+  const lastEnd = endDate > compEndDate ? endDate : compEndDate;
+  const [entries, funds, accounts] = await Promise.all([
+    db.orm.public.JournalEntry
+      .where((je) => and(je.schemeId.eq(schemeId), je.status.eq("POSTED"), je.transactionDate.lte(toTimestamp(lastEnd))))
+      .include("lines", (l) => l.include("accountCode"))
+      .limit(50000)
+      .all(),
+    db.orm.public.Fund.where((f) => f.schemeId.eq(schemeId)).limit(20).all(),
+    db.orm.public.AccountCode.where((a) => and(a.schemeId.eq(schemeId), a.accountSubType.eq("LEVY_INCOME"))).limit(20).all(),
+  ]);
+  const fundById = new Map(funds.map((f) => [f.id, f]));
+  const basisEntries = toBasisEntries(entries, fundId);
+  const levyIncomeAccount = (fid: string) => {
+    const a = accounts.find((x) => x.fundId === fid) ?? accounts[0];
+    return a ? { accountId: a.id, accountCode: String(a.code), accountName: String(a.name) } : null;
+  };
+  const basisForFund = (fid: string) => (fundById.get(fid)?.accountingBasis === "ACCRUAL" ? "ACCRUAL" : "CASH") as AccountingBasis;
+  const toTotals = (lines: RecognisedLine[]) => {
+    const out: Record<string, AccountAggregate> = {};
+    for (const l of lines) {
+      const key = l.accountCode;
+      out[key] ??= {
+        accountCode: l.accountCode,
+        accountName: l.accountName,
+        fundName: String(fundById.get(l.fundId)?.name ?? ""),
+        accountType: l.accountType,
+        amount: 0,
+      };
+      out[key].amount += l.amountCents / 100;
+    }
+    return out;
+  };
+  const currentTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: startDate, end: endDate, basisForFund, levyIncomeAccount }));
+  const compTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: compStartDate, end: compEndDate, basisForFund, levyIncomeAccount }));
 
   // Build report lines
   const allCodes = new Set([
@@ -147,60 +156,49 @@ export async function getIncomeExpenseReport(
   }
 }
 
+/** Posted entries in the shape the basis filter takes, optionally limited to one fund's lines. */
+export function toBasisEntries(
+  entries: Array<{
+    id: string;
+    transactionDate: unknown;
+    sourceType: string | null;
+    sourceId: string | null;
+    lines?: Array<{
+      accountCodeId: string;
+      fundId: string;
+      debit: unknown;
+      credit: unknown;
+      accountCode: { code: unknown; name: unknown; accountType: unknown; accountSubType: string | null } | null;
+    }>;
+  }>,
+  fundId: string | null = null,
+): BasisEntry[] {
+  return entries.map((e) => ({
+    id: e.id,
+    date: String(e.transactionDate).slice(0, 10),
+    sourceType: e.sourceType,
+    sourceId: e.sourceId,
+    lines: (e.lines ?? [])
+      .filter((l) => l.accountCode && (!fundId || l.fundId === fundId))
+      .map((l) => ({
+        accountId: l.accountCodeId,
+        accountCode: String(l.accountCode!.code),
+        accountName: String(l.accountCode!.name),
+        accountType: String(l.accountCode!.accountType),
+        accountSubType: l.accountCode!.accountSubType ?? null,
+        fundId: l.fundId,
+        debitCents: Math.round(Number(l.debit ?? 0) * 100),
+        creditCents: Math.round(Number(l.credit ?? 0) * 100),
+      })),
+  }));
+}
+
 interface AccountAggregate {
   accountCode: string;
   accountName: string;
   fundName: string;
   accountType: string;
   amount: number;
-}
-
-function aggregateByAccount(
-  entries: Array<{
-    lines: Array<{
-      accountCode: { code: unknown; name: unknown; accountType: unknown } | null;
-      fund: { name: unknown } | null;
-      fundId: string;
-      debit: unknown;
-      credit: unknown;
-    }>;
-  }>,
-  fundId: string | null,
-): Record<string, AccountAggregate> {
-  const totals: Record<string, AccountAggregate> = {};
-
-  for (const entry of entries) {
-    for (const line of entry.lines) {
-      if (fundId && line.fundId !== fundId) continue;
-      if (!line.accountCode) continue;
-
-      const code = String(line.accountCode.code);
-      const accountType = String(line.accountCode.accountType);
-
-      if (!totals[code]) {
-        totals[code] = {
-          accountCode: code,
-          accountName: String(line.accountCode.name),
-          fundName: line.fund ? String(line.fund.name) : "",
-          accountType,
-          amount: 0,
-        };
-      }
-
-      // For income accounts: credits increase, debits decrease
-      // For expense accounts: debits increase, credits decrease
-      const debit = Number(line.debit ?? 0);
-      const credit = Number(line.credit ?? 0);
-
-      if (accountType === "INCOME") {
-        totals[code].amount += credit - debit;
-      } else if (accountType === "EXPENSE") {
-        totals[code].amount += debit - credit;
-      }
-    }
-  }
-
-  return totals;
 }
 
 // ─── Aged Arrears Report ────────────────────────────────────────
@@ -1549,6 +1547,8 @@ export interface FundProjection {
   fundType: string;
   currentBalance: number;
   years: FundProjectionYear[];
+  /** Where the figures come from, for example the adopted capital works fund plan. */
+  basisNote?: string;
 }
 
 export interface FundBalanceProjections {
@@ -1587,11 +1587,10 @@ export async function getFundBalanceProjections(
   const now = new Date();
   const currentFY = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
 
-  // 4. Get budget lines for current FY and all funds
-  const allBudgetLines = await db.orm.public.BudgetLine
-    .where((bl) => bl.financialYear.eq(currentFY))
-    .limit(1000)
-    .all();
+  // 4. The budget lines in force for the current FY (adopted, else the latest version)
+  const allBudgetLines = await currentBudgetLines(schemeId, currentFY);
+  // The adopted capital works fund plan, if any, drives the capital works projection.
+  const adoptedPlan = await getAdoptedPlan(schemeId);
 
   // Get account codes for budget lines
   const budgetAccountCodeIds = [
@@ -1652,6 +1651,14 @@ export async function getFundBalanceProjections(
     const annualIncome =
       fundLevyIncome.get(fund.id) ?? fundBudgetIncome.get(fund.id) ?? 0;
     const annualExpense = fundBudgetExpense.get(fund.id) ?? 0;
+    const usePlan = !!adoptedPlan && isCapitalWorksFund(String(fund.fundType));
+    const planSpend = usePlan
+      ? spendByYear(
+          (adoptedPlan!.items ?? []).map((i) => ({ plannedYear: i.plannedYear, estimatedCostCents: Math.round(Number(i.estimatedCost) * 100) })),
+          adoptedPlan!.periodStartYear,
+        )
+      : [];
+    const planContribution = usePlan ? Number(adoptedPlan!.annualContribution ?? 0) : 0;
 
     const years: FundProjectionYear[] = [];
     let opening = currentBalance;
@@ -1659,8 +1666,10 @@ export async function getFundBalanceProjections(
     for (let i = 0; i < yearsAhead; i++) {
       const fy = currentFY + i;
       const label = `FY ${fy}/${String(fy + 1).slice(2)}`;
-      const levyIncome = Math.round(annualIncome * 100) / 100;
-      const expenses = Math.round(annualExpense * 100) / 100;
+      const k = fy - (adoptedPlan?.periodStartYear ?? 0);
+      const inPlan = usePlan && k >= 0 && k < planSpend.length;
+      const levyIncome = Math.round((inPlan ? planContribution : annualIncome) * 100) / 100;
+      const expenses = Math.round((inPlan ? planSpend[k] / 100 : annualExpense) * 100) / 100;
       const netMovement = Math.round((levyIncome - expenses) * 100) / 100;
       const closing = Math.round((opening + netMovement) * 100) / 100;
 
@@ -1683,6 +1692,9 @@ export async function getFundBalanceProjections(
       fundType: String(fund.fundType),
       currentBalance: Math.round(currentBalance * 100) / 100,
       years,
+      basisNote: usePlan
+        ? `From the adopted capital works fund plan "${adoptedPlan!.title}": its yearly contribution and planned expenditure.`
+        : undefined,
     });
   }
 

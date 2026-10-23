@@ -1,23 +1,38 @@
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
+import { workingBudgets } from "@/lib/finance/budget-status";
 
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
 }
 
+/** Ids of the budget version being worked on for each fund and year. */
+async function workingBudgetIds(filter: { schemeId?: string; fundId?: string; financialYear: number }) {
+  const budgets = await db.orm.public.Budget
+    .where((b) =>
+      filter.fundId
+        ? and(b.fundId.eq(filter.fundId), b.financialYear.eq(filter.financialYear))
+        : and(b.schemeId.eq(filter.schemeId!), b.financialYear.eq(filter.financialYear)),
+    )
+    .limit(500)
+    .all();
+  return workingBudgets(budgets).map((b) => b.id);
+}
+
 /**
- * Fetch all budget lines for a fund and financial year.
+ * Fetch the budget lines for a fund and financial year, from the version
+ * being worked on (the latest that is not superseded).
  */
 export async function getBudgetLinesForFund(
   fundId: string,
   financialYear: number,
   limit = 200,
 ) {
+  const ids = await workingBudgetIds({ fundId, financialYear });
+  if (ids.length === 0) return [];
   return db.orm.public.BudgetLine
-    .where((b) =>
-      and(b.fundId.eq(fundId), b.financialYear.eq(financialYear)),
-    )
+    .where((b) => b.budgetId.in(ids))
     .include("fund")
     .orderBy((b) => b.createdAt.asc())
     .limit(limit)
@@ -25,35 +40,22 @@ export async function getBudgetLinesForFund(
 }
 
 /**
- * Fetch all budget lines for a scheme across all funds for a financial year.
- * Returns lines with their fund details. Account codes must be looked up separately.
+ * Fetch the budget lines for a scheme across all funds for a financial year,
+ * from the version of each fund's budget being worked on.
  */
 export async function getBudgetLinesForScheme(
   schemeId: string,
   financialYear: number,
   limit = 500,
 ) {
-  // BudgetLine doesn't have a direct schemeId field, so we go through Fund
-  const funds = await db.orm.public.Fund
-    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.isNull()))
+  const ids = await workingBudgetIds({ schemeId, financialYear });
+  if (ids.length === 0) return [];
+  return db.orm.public.BudgetLine
+    .where((b) => b.budgetId.in(ids))
+    .include("fund")
+    .orderBy((b) => b.createdAt.asc())
+    .limit(limit)
     .all();
-
-  if (funds.length === 0) return [];
-
-  const allLines = [];
-  for (const fund of funds) {
-    const lines = await db.orm.public.BudgetLine
-      .where((b) =>
-        and(b.fundId.eq(fund.id), b.financialYear.eq(financialYear)),
-      )
-      .include("fund")
-      .orderBy((b) => b.createdAt.asc())
-      .limit(limit)
-      .all();
-    allLines.push(...lines);
-  }
-
-  return allLines;
 }
 
 /**
@@ -80,8 +82,10 @@ export async function createBudgetLine(data: {
   financialYear: number;
   budgetAmount: number;
   notes?: string;
+  budgetId: string;
 }) {
   return db.orm.public.BudgetLine.create({
+    budgetId: data.budgetId,
     fundId: data.fundId,
     accountCodeId: data.accountCodeId,
     financialYear: data.financialYear,

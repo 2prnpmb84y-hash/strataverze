@@ -131,6 +131,17 @@ export type ActivityAction =
   | "SUSPENSE_POSTED"
   | "SUSPENSE_CLEARED"
   | "BANK_CSV_MAPPING_SAVED"
+  // Statutory reporting
+  | "BUDGET_PROPOSED"
+  | "BUDGET_ADOPTED"
+  | "BUDGET_REVISION_STARTED"
+  | "CAPITAL_WORKS_PLAN_CREATED"
+  | "CAPITAL_WORKS_PLAN_UPDATED"
+  | "CAPITAL_WORKS_PLAN_ADOPTED"
+  | "CAPITAL_WORKS_LEVY_GENERATED"
+  | "FUND_ACCOUNTING_BASIS_CHANGED"
+  | "STATUTORY_PACK_ADOPTED"
+  | "AUDIT_EXPORT_DOWNLOADED"
   | "INTEREST_SETTING_CHANGED"
   | "LEVY_NOTICES_EMAILED";
 
@@ -171,6 +182,9 @@ export type ActivityEntityType =
   | "SchemePaymentPolicy"
   | "WorksInvoice"
   | "OwnerCreditRefund"
+  | "Budget"
+  | "CapitalWorksPlan"
+  | "StatutoryPack"
   // Works compliance and approval entity types
   | "ComplianceRequirement"
   | "ComplianceCheck"

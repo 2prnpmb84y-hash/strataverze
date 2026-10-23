@@ -1,3 +1,4 @@
+import { defaultAccountingBasis } from "@/config/statutory";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -46,6 +47,7 @@ export async function createFund(data: {
     name: data.name,
     fundType: data.fundType,
     balance: toNumeric(data.balance ?? 0),
+    accountingBasis: defaultAccountingBasis(data.fundType),
   });
 }
 
