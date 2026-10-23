@@ -5,14 +5,15 @@
  * Security finding SEC-033: links previously fell back to
  * https://strataverze.com.au, a domain that is not registered, so anyone who
  * registered it would have received owners' clicks on invitation and levy
- * emails. Links now fall back to the platform's own domain,
- * https://www.strataverze.com (chosen 23 Oct 2026; the bare domain redirects
- * to www and both are connected to the Vercel project), and never to
- * localhost outside development.
+ * emails. Links now fall back to the app's own address,
+ * https://app.strataverze.com, and never to localhost outside development.
+ *
+ * Since 23 Oct 2026 www.strataverze.com (and the bare domain) serve the
+ * marketing site, a separate Vercel project, whose Log in button links here.
  *
  * APP_URL (server) and NEXT_PUBLIC_SITE_URL (client) in Vercel override it.
  */
-export const PRODUCTION_SITE_URL = "https://www.strataverze.com";
+export const PRODUCTION_SITE_URL = "https://app.strataverze.com";
 
 function clean(url: string | undefined): string | null {
   const value = url?.trim().replace(/\/+$/, "");
