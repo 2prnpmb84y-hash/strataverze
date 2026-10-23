@@ -113,7 +113,7 @@ export default function Page() {
             <div className="shrink-0">
               <Image
                 src="/images/emily-doan.jpg"
-                alt="Emily Doan, Founder of StrataVerze"
+                alt="Emily Doan, Co-Founder of StrataVerze"
                 width={280}
                 height={280}
                 className="rounded-full object-cover"
@@ -126,17 +126,15 @@ export default function Page() {
                 Emily Doan
               </h2>
               <p className="mt-1 text-lg font-medium text-brand-teal-dark">
-                Founder
+                Co-Founder
               </p>
 
               <div className="mt-6 space-y-4 text-[var(--foreground)]/80 leading-relaxed">
                 <p>
-                  Emily spent years working alongside strata committees and
-                  owners across New South Wales — advising on governance,
-                  finances, and the day-to-day challenges of running an Owners
-                  Corporation. She saw first-hand how fragmented record-keeping
-                  and opaque financial reporting left committees in the dark
-                  about their own schemes.
+                  A qualified CPA with years of experience managing trust
+                  accounts and business operations, Emily has seen first-hand
+                  how fragmented record-keeping and opaque financial reporting
+                  leave strata committees in the dark about their own schemes.
                 </p>
                 <p>
                   Too often, critical documents lived on a manager&rsquo;s
@@ -146,12 +144,13 @@ export default function Page() {
                   better.
                 </p>
                 <p>
-                  Emily built StrataVerze because she believes committees
+                  Emily co-founded StrataVerze because she believes committees
                   shouldn&rsquo;t lose control of their records every time a
                   manager changes, and owners deserve a platform that belongs to
-                  them — not the service provider. StrataVerze is designed from
-                  the ground up to keep the Owners Corporation at the centre of
-                  every decision.
+                  them — not the service provider. Her financial expertise
+                  underpins every part of the platform, from levy tracking and
+                  trust account transparency to the reporting that keeps
+                  committees informed and in control.
                 </p>
               </div>
             </div>
