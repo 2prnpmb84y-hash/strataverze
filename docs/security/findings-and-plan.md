@@ -19,8 +19,8 @@ So isolation has to hold in two places:
 | Severity | Count | Status |
 |---|---|---|
 | Critical | 4 | 3 fixed (SEC-001, SEC-003, SEC-004), 1 partly fixed (SEC-002, sign-up closes in S2) |
-| High | 11 | 8 fixed (SEC-005, 007, 008, 009, 010, 011, 014, and 033 in code), 1 partly fixed (SEC-012), 2 open (SEC-006 storage, SEC-013 backups) |
-| Medium | 10 | 1 fixed (SEC-016), 9 open |
+| High | 11 | 9 fixed (SEC-005, 006, 007, 008, 009, 010, 011, 014, and 033 in code), 1 partly fixed (SEC-012), 1 open (SEC-013 backups). SEC-006 is complete only once part 2 of its migration is applied after deploy. |
+| Medium | 10 | 2 fixed (SEC-016, SEC-022 in code), 8 open |
 | Low | 8 | open |
 
 The single most important point: **today anyone on the internet can sign up, create a building, and become its Adviser** (SEC-002). Many server actions check only "is this person an Adviser on *some* scheme" and then act on whatever record id they are sent (SEC-004). Together, a stranger could change or delete other buildings' records if they know the record ids. Ids are random UUIDs, so this is hard to exploit blind, but unguessable ids are not an access control.
@@ -52,7 +52,7 @@ SEC-004 also includes mass assignment. `createMatchingRule({ schemeId, ...data }
 | ID | Finding | Component | Evidence | Remediation | Status |
 |---|---|---|---|---|---|
 | SEC-005 | **Data API is wide open to members.** `anon` and `authenticated` hold full grants on all 142 tables. Policies let any member, suppliers included, read their scheme's levy notices, journals, bank transactions, bank accounts, contacts, activity log, invitations (with tokens) and co-members' emails and phones. `schemes` and `organisations` accept inserts from anyone, including signed-out callers (`CHECK true`, role `public`). GraphQL is exposed too. | Database | V | Revoke all table, sequence and default privileges from `anon` and `authenticated`. Keep only the function EXECUTE that storage needs. Optionally stop exposing `public` in the API settings. RLS stays as a second layer. | **Fixed 23 Oct** (S0, PR #40). Re-proof: every direct read and write returns "permission denied" over HTTP. Storage access for members still works. |
-| SEC-006 | **Storage is readable by any member of the scheme.** Suppliers and owners can list and download every file under `schemes/<id>/`, including other owners' payment confirmations. The signing actions sign any path the caller sends. Uploads go from the browser directly, so server validation never runs. No MIME restriction on the bucket. SVG allowed. | Storage policies, `documents/actions.ts:307`, `owner insurance/actions.ts:18`, upload forms | V (policy), R (actions) | Server-only storage: uploads through server-issued signed upload URLs after authorisation, downloads through short-lived links signed only after checking the document record and its visibility. Remove the browser storage policies. MIME allow-list and size limit on the bucket. No SVG. | Open |
+| SEC-006 | **Storage is readable by any member of the scheme.** Suppliers and owners can list and download every file under `schemes/<id>/`, including other owners' payment confirmations. The signing actions sign any path the caller sends. Uploads go from the browser directly, so server validation never runs. No MIME restriction on the bucket. SVG allowed. | Storage policies, `documents/actions.ts:307`, `owner insurance/actions.ts:18`, upload forms | V (policy), R (actions) | Server-only storage: uploads through server-issued signed upload URLs after authorisation, downloads through short-lived links signed only after checking the document record and its visibility. Remove the browser storage policies. MIME allow-list and size limit on the bucket. No SVG. | **Fixed in code 23 Oct (S3, PR #45).** Part 1 applied to production (uploads table, visibility, bucket types and limit). Part 2, which removes the browser storage policies, is applied straight after deploy. Until then members can still read the bucket directly with their own session. |
 | SEC-007 | Payment controls can be bypassed. `authoriseWorksPayment` skips the verified bank details check when the field is omitted, accepts any amount, and takes a free-text beneficiary. | `works.ts:1112-1150` | V | Require a VERIFIED bank version for the invoice's contractor. Cap at the approved amount less prior instructions. Take the beneficiary from the bank record. | **Fixed 23 Oct** (S1, PR #41). Works payments stay blocked until a bank detail verification step exists. |
 | SEC-008 | Sign-in only on contractor and quote actions. Any account can submit quotes on any RFQ in any contractor's name (`submitWorksQuotation`) and rewrite any contractor's ABN, email and phone (`updateContractorBusiness`). Contractors can submit their own forged ABR result (`saveAbnLookupResult`). | `works.ts:659,497`, `contractor.ts:262` | V (first two), R | Require an active contractor contact. Remove the duplicate actions. ABN checks only through the server-side ABR lookup. | **Fixed 23 Oct** (S0, PR #40). Unused `contractor.ts` removed. |
 | SEC-009 | Cross-scheme and over-broad reads | various pages, see the list below | V (dashboard), R (rest) | Membership and record-scope checks on every page. Minimal fields returned. | **Fixed 23 Oct** (S1, PR #41) |
@@ -99,7 +99,7 @@ SEC-014 covers these integrity gaps:
 | SEC-019 | Email templates insert user text into HTML unescaped (announcements, invitations, meetings, levies, work orders). This is a phishing vector from the StrataVerze sending address. | R | One shared escape for every value, and validate link targets |
 | SEC-020 | Rate limiting is per serverless instance and in memory, applied only to login | R | Database-backed limiter on login, sign-up, forgot and reset password, invitation acceptance and search |
 | SEC-021 | **Dependency management.** No Dependabot, no audit in CI, Actions not pinned. `npm audit` (production) lists 14 findings: 8 high, 6 moderate. Most sit in the Prisma CLI toolchain (hono, lodash, alchemy), which is installed as a runtime dependency. `fflate` 0.8.2 has a moderate denial-of-service issue (fix 0.8.3). An unused `@prisma/client` 7 is installed. | V | Dependabot, an audit gate in CI, move the CLI to devDependencies, bump `fflate`, remove the unused client |
-| SEC-022 | Client-asserted upload details: `fileUrl`, size and MIME type are trusted, and `resolveDocumentUrl` passes external URLs through, which makes an open redirect | R | Covered by the SEC-006 rebuild **Partly fixed 23 Oct (S1): paths limited to the scheme folder, no external URLs. Server-side storage in S3..** |
+| SEC-022 | Client-asserted upload details: `fileUrl`, size and MIME type are trusted, and `resolveDocumentUrl` passes external URLs through, which makes an open redirect | R | Covered by the SEC-006 rebuild **Partly fixed 23 Oct (S1): paths limited to the scheme folder, no external URLs. Fixed in code 23 Oct (S3, PR #45): nothing the browser sends is stored, and the stored size, type and bytes are checked.** |
 | SEC-023 | Global `hasCommitteeRole` and similar checks are not tied to the scheme in hand | V | Scheme-scoped role checks **Fixed 23 Oct (S1).** |
 | SEC-024 | The search and profile actions have no rate limit and allow 2-character wildcard searches | R | Minimum length, exact email match, rate limit **Fixed 23 Oct (S1).** |
 
@@ -202,7 +202,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 | **S0 Containment** | (a) Revoke Data API privileges (SEC-005). (b) Building creation for platform admins only (SEC-002). (c) Fix the sign-in-only actions (SEC-003, SEC-008). (d) Auth settings: Site URL and redirect list, minimum password 8 with character rules, secure password change on. | Grants migration. Auth settings. |
 | **S1 Authorisation layer** | `src/config/permissions.ts` (the matrix as code), `requireSchemeAccess(schemeId, capability)`, `loadInScheme(...)`, scheme-scoped mutators. Fix SEC-004, 007, 009, 014, 015, 023, 024. | None |
 | **S2 Accounts lifecycle** | Admin onboarding, bulk owner invitations, committee offices, Adviser invitation by chair or secretary, change of ownership with 30-day read-only, server-side account creation, supplier sign-up. Then turn off open sign-up. | Migration for offices and transfers. Auth setting. |
-| **S3 Storage** | Server-only uploads and downloads, document visibility, bucket MIME and size limits, SVG removed (SEC-006, 022) | Storage policies and bucket settings |
+| **S3 Storage** (done, PR #45) | Server-only uploads and downloads, document visibility, bucket MIME and size limits, SVG removed (SEC-006, 022) | Part 1 applied 23 Oct. Part 2 (drop browser policies) on deploy |
 | **S4 MFA** (done, PR #42) | Enrolment, login challenge, server enforcement, step-up for sensitive operations, recovery and admin reset | Storage policy and authenticator guard (applied 23 Oct) |
 | **S5 Sessions** (done, PR #43) | App session register, idle and absolute timeouts, revocation on disable, role change and password reset, admin "sign out everywhere" | Migration (applied 23 Oct) |
 | **S6 Audit log** (done, PR #44) | Append-only `security_audit_events` with a hash chain, event coverage, admin viewer, retention job, owner feed restricted | Migration, pg_cron, Auth audit to database (all applied 23 Oct) |
@@ -333,6 +333,41 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
   - **Alerts.** A failed check shows on the admin page only, until email exists.
   - **Specific events.** Of 212 privileged actions, 97 have no specific event, only the generic "action taken" one.
 
+## Storage design (stage S3, as built 23 Oct)
+
+**Uploads, in three steps** (`src/lib/storage/uploads.ts`):
+1. **Prepare.** The server authorises the person for the purpose on that building, checks the name and declared size, and chooses the path itself (`schemes/<id>/<folder>/<random>.<ext>`). It records the upload and returns a one-time signed upload link, valid for 2 hours. Limit: 60 uploads per person per 10 minutes, counted in the database.
+2. **Verify.** Before the file is used, the server checks the stored size, the stored type (it must be the type the server chose for the name) and the first 4 KB of the file, which must match the type. A refused file is removed and recorded in the audit log.
+3. **Use.** The upload is claimed for one record in a single statement, so it cannot be used twice. The claim is released if the record cannot be created.
+
+Uploads never used are removed daily once their link has expired (run from the existing daily cron).
+
+| Purpose | Who | Folder | Types | Limit |
+|---|---|---|---|---|
+| Library | Adviser (`documents.manage`) | library | PDF, images, Office, text, CSV | 30 MB |
+| Committee library | Committee (`documents.publish`) | library | as above | 10 MB |
+| Insurance documents | `insurance.manage` | insurance | as above | 30 MB |
+| Claim evidence | `insurance.manage` | insurance/claims | as above | 30 MB |
+| Financial documents | Adviser | finance | PDF, PNG, JPEG, HEIC | 10 MB |
+| Payment confirmations | Owner | payments | PDF, PNG, JPEG, HEIC | 10 MB |
+
+**Downloads** are short-lived links signed on the server with the service role, only after the record (and, for library documents, its visibility) is checked.
+
+**Document visibility:** all members (the default, and every existing document), committee, the owners of one lot, or the manager only. Lists, search, downloads and the owner notification feed honour it.
+
+**File checks** (`src/lib/upload/file-types.ts`): SVG, HTML and script are refused. Zips must name Office parts. Password-protected Office files, Windows-1252 and UTF-16 text are accepted.
+
+**Database:**
+- Part 1 (`20261024_storage_server_only.sql`): applied 23 Oct after a rolled-back proof.
+- Part 2 (`20261025_storage_remove_browser_access.sql`): drops the four browser policies, then stops if any other permissive policy still opens the bucket. A rolled-back proof on production left only the restrictive MFA policy. **Apply straight after S3 is deployed.**
+
+**Live checks after deploy** (they could not be tested before deploy):
+- A signed upload works with no session, and still works after part 2.
+- Re-sending to the same link with `x-upsert: true` is refused.
+- Word, CSV and HEIC uploads work from Windows Chrome and macOS Safari.
+- Signed downloads answer Range requests and send `nosniff`.
+- `SUPABASE_SERVICE_ROLE_KEY` is set for Production.
+
 ## Changes that could disrupt users
 
 1. **Enforcing database SSL** causes a database reboot of seconds to a few minutes. Best done out of hours.
@@ -340,7 +375,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 3. **Turning off open sign-up.** Existing accounts are unaffected. New owners can join only by invitation, and new suppliers only through the supplier sign-up. This waits until S2 ships.
 4. **MFA.** You and any Adviser must enrol at next sign-in once S4 ships.
 5. **Timeouts.** Idle users are signed out.
-6. **Storage changes.** Upload and download flows change. The 3 existing files stay in place.
+6. **Storage changes.** Upload and download flows change. The 3 existing files stay in place. SVG files can no longer be uploaded. A file whose contents do not match its name is refused.
 
 ## Decisions needed
 
@@ -365,6 +400,8 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 - **Notifications.** Nobody is yet told by email when their phone number, authenticators or sessions change, or when an admin resets their MFA. This waits on email (S2).
 - **Durable record of admin actions.** Admin MFA resets and admin sign-outs are only in the short-lived server log until the audit log (S6). The reason typed by the admin is not logged, because it can hold personal details.
 - **Exports.** Decided 23 Oct: the committee pack, statutory pack, owner statement, levy notice and remittance PDFs stay without a fresh authenticator check. Only the audit export needs one.
+- **Insurance document access level.** `InsuranceDocument.accessLevel` (default RESTRICTED) is not enforced: owners see every current policy document. This predates S3. Decide whether owners should see policy documents marked restricted.
+- **Contractor document links.** The contractor onboarding and works document fields are free text, not stored files, and are not shown anywhere today. Any future link must go through the server signing.
 - **Money actions not on the step-up list.** Decided 23 Oct: levy receipts and reversals, journal entries, special levies, levy schedule approval, debt recovery write-offs and owner credit application stay as they are. They need MFA for the roles that hold them, but not a check in the last 15 minutes.
 
 ## Residual risks and limitations
@@ -378,6 +415,8 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 - **The Supabase service role key** can read and write every other table through the Data API, by Supabase's design. It is held only in Vercel, server-side. Since S6 it has no access to the audit log, the MFA grants or the session register.
 - **The audit log can be rewritten by the database owner credential** (see S6 as built). An external daily anchor waits on email.
 - The `postgres` database credential is all-powerful. It is held only in Vercel and the local environment.
-- **Access token lifetime is 60 minutes** (your decision). A token copied from a signed-in browser keeps working directly against Supabase until it expires, even after the session is ended. The app itself refuses it straight away. Once S3 moves storage server-side, the token reaches nothing but the Auth API.
+- **Access token lifetime is 60 minutes** (your decision). A token copied from a signed-in browser keeps working directly against Supabase until it expires, even after the session is ended. The app itself refuses it straight away. Once part 2 of S3 is applied, the token reaches nothing but the Auth API.
 - **Code-guessing limits.** The app limits code checks to 5 per 15 minutes per user, but per server instance. Supabase's own limit applies to direct calls. Both are to be confirmed (see MFA design).
+- **Office file check is a heuristic.** A zip that names Office parts in its first entries passes as an Office file. It is stored with an Office type, so browsers download it rather than run it.
+- **Until part 2 of S3 is applied,** members can read and upload in their building's storage folder directly with their own session, outside the visibility rules.
 - **Session timeouts are checked on the next request.** A page left open shows its content until the next click or reload, which then signs the user out. There is no on-screen countdown.
