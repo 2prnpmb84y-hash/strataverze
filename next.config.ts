@@ -6,11 +6,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "www.strataverze.com",
-        pathname: "/images/**",
-      },
-      {
-        protocol: "https",
-        hostname: "www.strataverze.com",
         pathname: "/brand/**",
       },
     ],

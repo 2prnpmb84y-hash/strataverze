@@ -6,6 +6,21 @@ export const metadata = {
     "Learn about StrataVerze — an owner-first strata management platform built for NSW Owners Corporations.",
 };
 
+/* ------------------------------------------------------------------ */
+/*  Lifestyle banner images                                            */
+/* ------------------------------------------------------------------ */
+
+const lifestyleImages = [
+  {
+    src: "/images/family-balcony-sydney.webp",
+    alt: "Family enjoying views of Sydney Harbour from their apartment balcony",
+  },
+  {
+    src: "/images/residents-lobby-aurora.webp",
+    alt: "Residents chatting in the lobby of their apartment building",
+  },
+];
+
 const values = [
   {
     title: "Transparency",
@@ -140,6 +155,28 @@ export default function Page() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Lifestyle banner */}
+      <section className="py-12 md:py-16">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {lifestyleImages.map((img) => (
+              <div
+                key={img.src}
+                className="relative aspect-[3/2] overflow-hidden rounded-2xl"
+              >
+                <Image
+                  src={img.src}
+                  alt={img.alt}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, 50vw"
+                />
+              </div>
+            ))}
           </div>
         </div>
       </section>

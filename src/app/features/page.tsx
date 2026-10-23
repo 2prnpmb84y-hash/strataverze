@@ -28,8 +28,8 @@ const features: FeatureSection[] = [
     title: "Financial Management",
     description:
       "Levy invoicing, payment tracking, budget reports, and treasurer dashboards. Every committee member can see how the scheme’s funds are being managed.",
-    image: "https://www.strataverze.com/images/feature-financial.webp",
-    imageAlt: "StrataVerze financial management dashboard",
+    image: "/images/owner-tablet-home.webp",
+    imageAlt: "Strata scheme owner reviewing finances on a tablet at home",
     bullets: [
       { label: "Levy invoicing and tracking" },
       { label: "Budget vs actuals reporting" },
@@ -41,8 +41,8 @@ const features: FeatureSection[] = [
     title: "Records Vault",
     description:
       "A secure, searchable repository for every document your scheme needs — meeting minutes, contracts, insurance certificates, compliance reports. Documents stay with the scheme, not the manager.",
-    image: "https://www.strataverze.com/images/vault-garden.webp",
-    imageAlt: "StrataVerze records vault interface",
+    image: "/images/community-courtyard.webp",
+    imageAlt: "Residents chatting outside their strata apartment building courtyard",
     bullets: [
       { label: "Organised document categories" },
       { label: "Full-text search" },
@@ -66,8 +66,8 @@ const features: FeatureSection[] = [
     title: "Compliance Tracking",
     description:
       "Stay ahead of fire safety inspections, insurance renewals, annual returns, and AGM deadlines. Automated reminders mean nothing falls through the cracks.",
-    image: "https://www.strataverze.com/images/feature-compliance.webp",
-    imageAlt: "StrataVerze compliance tracking dashboard",
+    image: "/images/neighbours-garden-chat.webp",
+    imageAlt: "Neighbours chatting in a landscaped strata building garden",
     bullets: [
       { label: "Fire safety compliance" },
       { label: "Insurance renewal tracking" },
@@ -79,8 +79,8 @@ const features: FeatureSection[] = [
     title: "Strata Adviser Tools",
     description:
       "For strata managers and advisers who work with owner-run schemes. Access the tools you need to support committees without taking over their records.",
-    image: "https://www.strataverze.com/images/feature-adviser.webp",
-    imageAlt: "StrataVerze adviser multi-scheme dashboard",
+    image: "/images/adviser-tablet-coworking.webp",
+    imageAlt: "Strata adviser reviewing scheme data on a tablet in a co-working space",
     bullets: [
       { label: "Multi-scheme dashboard" },
       { label: "Committee collaboration" },

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -87,6 +88,21 @@ export default function SuppliersPage() {
                 </svg>
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Lifestyle image */}
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="relative aspect-[21/9] overflow-hidden rounded-2xl">
+            <Image
+              src="/images/residents-lobby-aurora.webp"
+              alt="Residents meeting in the lobby of their modern apartment building"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 960px"
+            />
           </div>
         </div>
       </section>

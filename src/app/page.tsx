@@ -142,8 +142,8 @@ export default function Page() {
             {/* Right column — hero image */}
             <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden gradient-bg">
               <Image
-                src="https://www.strataverze.com/images/hero-lobby.webp"
-                alt="Modern apartment lobby representing strata scheme common areas"
+                src="/images/hero-lobby-residents.webp"
+                alt="Diverse group of apartment residents chatting in a modern strata building lobby"
                 fill
                 className="object-cover"
                 priority
@@ -225,8 +225,8 @@ export default function Page() {
             {/* Image */}
             <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden gradient-bg order-2 lg:order-1">
               <Image
-                src="https://www.strataverze.com/images/feature-financial.webp"
-                alt="StrataVerze financial management dashboard"
+                src="/images/community-courtyard.webp"
+                alt="Strata scheme residents chatting in a landscaped courtyard outside their apartment building"
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
