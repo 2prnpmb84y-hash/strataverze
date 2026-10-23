@@ -313,7 +313,7 @@ export async function replaceCoverageItems(
   if (!(await getSchemePolicy(schemeId, policyId))) return false;
   await db.orm.public.InsuranceCoverageItem
     .where((c) => c.policyId.eq(policyId))
-    .delete();
+    .deleteAndCount();
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
     await db.orm.public.InsuranceCoverageItem.create({
@@ -356,7 +356,7 @@ export async function replacePremiumLineItems(
   if (!(await getSchemePolicy(schemeId, policyId))) return false;
   await db.orm.public.InsurancePremiumLineItem
     .where((l) => l.policyId.eq(policyId))
-    .delete();
+    .deleteAndCount();
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
     await db.orm.public.InsurancePremiumLineItem.create({

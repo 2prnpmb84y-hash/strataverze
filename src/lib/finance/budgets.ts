@@ -100,7 +100,7 @@ export async function adoptBudget(schemeId: string, budgetId: string, meetingId:
   await db.transaction(async (tx) => {
     await tx.orm.public.Budget
       .where((x) => and(x.fundId.eq(b.fundId), x.financialYear.eq(b.financialYear), x.status.eq("ADOPTED")))
-      .update({ status: "SUPERSEDED", updatedAt: ts(new Date().toISOString()) });
+      .updateAndCount({ status: "SUPERSEDED", updatedAt: ts(new Date().toISOString()) });
     await tx.orm.public.Budget.where((x) => x.id.eq(b.id)).update({
       status: "ADOPTED",
       adoptedMeetingId: meetingId,
@@ -112,7 +112,7 @@ export async function adoptBudget(schemeId: string, budgetId: string, meetingId:
     // Older drafts for the same fund and year are replaced by the adopted version.
     await tx.orm.public.Budget
       .where((x) => and(x.fundId.eq(b.fundId), x.financialYear.eq(b.financialYear), x.status.in(["DRAFT", "PROPOSED"]), x.version.lt(b.version)))
-      .update({ status: "SUPERSEDED", updatedAt: ts(new Date().toISOString()) });
+      .updateAndCount({ status: "SUPERSEDED", updatedAt: ts(new Date().toISOString()) });
   });
   await logActivity({ schemeId, actorId, action: "BUDGET_ADOPTED", entityType: "Budget", entityId: b.id, metadata: { meetingId, motionId, version: b.version } });
 }

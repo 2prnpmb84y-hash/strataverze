@@ -116,6 +116,10 @@ export async function createInvoiceAction(
 
     // The work order must be awarded to the caller, with an active SUPPLIER membership.
     const { profile, workOrder } = await loadAwardedWorkOrder(workOrderId);
+    // Work must have started; a cancelled job cannot be invoiced.
+    if (!["IN_PROGRESS", "COMPLETED"].includes(String(workOrder.status))) {
+      return { error: "You can invoice once the work is in progress or completed." };
+    }
 
     // Create the invoice
     const invoice = await db.orm.public.Invoice.create({

@@ -43,7 +43,7 @@ export async function getLatestNoticeVersion(meetingId: string): Promise<number>
 export async function supersedeNotices(meetingId: string) {
   return db.orm.public.Notice
     .where((n) => n.meetingId.eq(meetingId))
-    .update({ status: "SUPERSEDED" });
+    .updateAndCount({ status: "SUPERSEDED" });
 }
 
 export interface CreateNoticeRecipientData {

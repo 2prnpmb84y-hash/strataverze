@@ -205,14 +205,18 @@ export default async function OwnerApprovalsPage() {
       {isCommittee && (
         <>
           <Card>
-            <CardHeader title="Treasurer" description="The treasurer can approve payments. Advisers can also set this on the scheme's Members page." />
+            <CardHeader title="Treasurer" description="The treasurer can approve payments. Another committee member appoints the treasurer. Nobody can appoint themselves." />
             <ul className="divide-y divide-line">
               {members
                 .filter((m) => m.role === "COMMITTEE")
                 .map((m) => (
                   <li key={m.membershipId} className="py-3 flex items-center justify-between text-sm">
                     <span>{m.name}</span>
-                    <TreasurerToggle schemeId={schemeId} membershipId={m.membershipId} isTreasurer={m.isTreasurer} />
+                    {m.profileId !== profile.id || m.isTreasurer ? (
+                      <TreasurerToggle schemeId={schemeId} membershipId={m.membershipId} isTreasurer={m.isTreasurer} />
+                    ) : (
+                      <span className="text-xs text-ink-muted">Another committee member can appoint you</span>
+                    )}
                   </li>
                 ))}
             </ul>

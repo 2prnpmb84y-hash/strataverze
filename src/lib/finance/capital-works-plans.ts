@@ -193,7 +193,7 @@ export async function adoptPlan(schemeId: string, planId: string, meetingId: str
   });
 
   await db.transaction(async (tx) => {
-    await tx.orm.public.CapitalWorksPlan.where((p) => and(p.schemeId.eq(schemeId), p.status.eq("ADOPTED"))).update({ status: "SUPERSEDED" });
+    await tx.orm.public.CapitalWorksPlan.where((p) => and(p.schemeId.eq(schemeId), p.status.eq("ADOPTED"))).updateAndCount({ status: "SUPERSEDED" });
     await tx.orm.public.CapitalWorksPlan.where((p) => p.id.eq(planId)).update({
       status: "ADOPTED",
       adoptedMeetingId: meetingId,

@@ -108,6 +108,18 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
         tables[name] = table(name).filter((r) => r !== row);
         return { ...row };
       },
+      // As in Prisma 8: update() and delete() change the first matching row,
+      // the AndCount forms change every matching row.
+      updateAndCount: async (data: Row) => {
+        const rows = matching();
+        for (const row of rows) Object.assign(row, data);
+        return rows.length;
+      },
+      deleteAndCount: async () => {
+        const rows = new Set(matching());
+        tables[name] = table(name).filter((r) => !rows.has(r));
+        return rows.size;
+      },
       create: async (data: Row) => {
         const row = { id: `fake-${name}-${nextId++}`, ...data };
         table(name).push(row);

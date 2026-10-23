@@ -51,7 +51,7 @@ export default async function OwnerDocumentsPage({
   const paginatedDocs = await Promise.all(
     pageDocs.map(async (d) => ({
       ...d,
-      fileUrl: await resolveDocumentUrl(String(d.fileUrl), 600).catch(() => ""),
+      fileUrl: await resolveDocumentUrl(String(d.fileUrl), 600, { schemeId: d.schemeId }).catch(() => ""),
     })),
   );
 

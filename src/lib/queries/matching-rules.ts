@@ -177,7 +177,7 @@ export async function deleteMatchingRule(schemeId: string, ruleId: string) {
   // First clear matching_rule_id from any transactions that reference this rule
   await db.orm.public.BankTransaction
     .where((t) => and(t.matchingRuleId.eq(rule.id), t.schemeId.eq(schemeId)))
-    .update({ matchingRuleId: null });
+    .updateAndCount({ matchingRuleId: null });
 
   await db.orm.public.MatchingRule
     .where((r) => and(r.id.eq(rule.id), r.schemeId.eq(schemeId)))

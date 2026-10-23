@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requirePlatformAdmin } from "@/lib/auth/require-membership";
+import { AuthorisationError, requirePlatformAdmin } from "@/lib/auth/require-membership";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { chargeComplianceVerification } from "@/lib/billing/contractor-fees";
@@ -100,7 +100,7 @@ export async function approveContractor(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to approve contractor." };
   }
 }
@@ -159,7 +159,7 @@ export async function rejectContractor(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to reject contractor." };
   }
 }
@@ -201,7 +201,7 @@ export async function requestClarification(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to request clarification." };
   }
 }
@@ -228,7 +228,7 @@ export async function suspendContractor(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to suspend contractor." };
   }
 }
@@ -270,7 +270,7 @@ export async function resolveReviewItem(
     revalidatePath("/adviser/contractors");
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to resolve review item." };
   }
 }

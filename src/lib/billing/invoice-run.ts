@@ -267,7 +267,7 @@ export async function runMonthlyInvoices(month: string, now: Date = new Date()):
 export async function syncPlatformInvoiceStatus(supplierInvoiceId: string, supplierStatus: string, orm: Orm = db.orm) {
   const status = platformStatusFor(supplierStatus);
   if (!status) return;
-  await orm.public.PlatformInvoice.where((i) => i.supplierInvoiceId.eq(supplierInvoiceId)).update({ status });
+  await orm.public.PlatformInvoice.where((i) => i.supplierInvoiceId.eq(supplierInvoiceId)).updateAndCount({ status });
 }
 
 /** Email each issued invoice to the scheme's committee. Never throws. */

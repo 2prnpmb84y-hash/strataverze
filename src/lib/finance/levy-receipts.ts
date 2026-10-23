@@ -150,8 +150,8 @@ export async function receiptLevyPayments(input: {
     });
     await postJournalEntry(entry.id, input.actorId);
     journalEntryId = entry.id;
-    if (paymentIds.length) await db.orm.public.LevyPayment.where((p) => p.id.in(paymentIds)).update({ journalEntryId: entry.id });
-    if (creditTxIds.length) await db.orm.public.OwnerCreditTransaction.where((t) => t.id.in(creditTxIds)).update({ journalEntryId: entry.id });
+    if (paymentIds.length) await db.orm.public.LevyPayment.where((p) => p.id.in(paymentIds)).updateAndCount({ journalEntryId: entry.id });
+    if (creditTxIds.length) await db.orm.public.OwnerCreditTransaction.where((t) => t.id.in(creditTxIds)).updateAndCount({ journalEntryId: entry.id });
   }
 
   for (const p of parts) {

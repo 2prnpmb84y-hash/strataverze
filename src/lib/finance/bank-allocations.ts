@@ -192,7 +192,7 @@ export async function clearAllocations(input: { schemeId: string; transactionId:
     throw new ReconciliationError("Part of this transaction is in suspense. Clear the suspense item to the right account instead.");
   }
   await db.transaction(async (tx) => {
-    await tx.orm.public.BankTransactionAllocation.where((a) => a.bankTransactionId.eq(txn.id)).delete();
+    await tx.orm.public.BankTransactionAllocation.where((a) => a.bankTransactionId.eq(txn.id)).deleteAndCount();
     await syncTransaction(tx.orm, txn.id, null);
   });
   await logActivity({

@@ -35,16 +35,9 @@ const ALLOWED: Record<string, string> = {
   "src/lib/actions/scheme-selection.ts#selectScheme": "checks the caller's own memberships",
   "src/lib/actions/scheme-selection.ts#getSelectedSchemeId": "reads the caller's own cookie; never used as authorisation after S1",
   "src/lib/actions/scheme-selection.ts#clearSelectedScheme": "clears the caller's own cookie",
-  "src/app/(portal)/owner/(scheme)/finance/actions.ts#uploadPaymentConfirmationAction": "scoped to the caller's own schemes and lots (tightened in S1 and S3)",
-  // Supplier self-service: each loads the record and checks it is the caller's own.
-  "src/app/(portal)/supplier/quotes/[id]/actions.ts#submitQuoteAction": "checks the quote request is open to the caller (reviewed again in S1)",
+  "src/app/(portal)/owner/(scheme)/finance/actions.ts#uploadPaymentConfirmationAction": "scoped to the caller's own lots and the scheme's payments folder (src/lib/owner/payment-upload.ts)",
   "src/app/(portal)/supplier/quotes/[id]/actions.ts#withdrawQuoteAction": "checks the quote is the caller's own",
-  "src/app/(portal)/supplier/work-orders/[id]/actions.ts#updateWorkOrderStatusAction": "checks the work order is awarded to the caller (membership check added in S1)",
-  "src/app/(portal)/supplier/work-orders/[id]/actions.ts#createInvoiceAction": "checks the work order is awarded to the caller",
-  // Known gaps, fixed in stage S1 (findings SEC-009 and SEC-014).
-  "src/app/(portal)/owner/(scheme)/meetings/actions.ts#castVoteAction": "S1: role and motion checks",
-  "src/app/(portal)/owner/(scheme)/meetings/actions.ts#castBallotVoteAction": "S1: role and agenda item checks",
-  "src/app/search/actions.ts#globalSearch": "S1: scope from server-side roles",
+  "src/app/search/actions.ts#globalSearch": "scope worked out per scheme from the caller's own memberships (src/lib/search/scope.ts)",
 };
 
 function walk(dir: string): string[] {
@@ -104,6 +97,7 @@ function passes(fn: Fn, all: Fn[], seen = new Set<string>()): boolean {
 describe("server actions", () => {
   const files = walk(join(ROOT, "src"));
   const unchecked: string[] = [];
+  const needlesslyAllowed: string[] = [];
   const seenKeys = new Set<string>();
 
   for (const file of files) {
@@ -115,12 +109,18 @@ describe("server actions", () => {
     for (const fn of fns.filter((f) => f.exported)) {
       const key = `${relative(ROOT, file)}#${fn.name}`;
       seenKeys.add(key);
-      if (!passes(fn, fns) && !ALLOWED[key]) unchecked.push(key);
+      const ok = passes(fn, fns);
+      if (!ok && !ALLOWED[key]) unchecked.push(key);
+      if (ok && ALLOWED[key]) needlesslyAllowed.push(key);
     }
   }
 
   it("each call a scheme, role or ownership check", () => {
     expect(unchecked).toEqual([]);
+  });
+
+  it("keep the allow-list to actions that need it", () => {
+    expect(needlesslyAllowed).toEqual([]);
   });
 
   it("have no stale allow-list entries", () => {

@@ -401,10 +401,12 @@ describe("document signed URLs (L1)", () => {
   });
 
   it("signs the record's own fileUrl", async () => {
-    documents.getDocumentById.mockResolvedValue({ id: "doc-a", schemeId: SCHEME_A, fileUrl: "scheme-a/levy.pdf" });
+    const path = `schemes/${SCHEME_A}/levy.pdf`;
+    documents.getDocumentById.mockResolvedValue({ id: "doc-a", schemeId: SCHEME_A, fileUrl: path });
     const r = await documentActions.getDocumentSignedUrlAction(SCHEME_A, "doc-a");
     expect(r.url).toBeDefined();
-    expect(resolveDocumentUrl).toHaveBeenCalledWith("scheme-a/levy.pdf", 600);
+    // Signed only within this scheme's folder of the documents bucket.
+    expect(resolveDocumentUrl).toHaveBeenCalledWith(path, 600, { schemeId: SCHEME_A });
   });
 
   it("refuses a supplier", async () => {

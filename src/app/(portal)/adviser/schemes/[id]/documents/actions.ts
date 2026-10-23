@@ -331,7 +331,7 @@ export async function getDocumentSignedUrlAction(
   }
 
   try {
-    const url = await resolveDocumentUrl(fileUrl, 600); // 10 minutes
+    const url = await resolveDocumentUrl(fileUrl, 600, { schemeId }); // 10 minutes
     return { url };
   } catch {
     return { error: "Failed to generate document URL." };
