@@ -7,89 +7,113 @@ export const metadata: Metadata = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Inline SVG icons for feature cards                                 */
+/*  Platform capability card data                                      */
 /* ------------------------------------------------------------------ */
 
-function DollarIcon() {
-  return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <line x1="12" y1="1" x2="12" y2="23" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  );
-}
-
-function VaultIcon() {
-  return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-
-function ComplianceIcon() {
-  return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-      <path d="M9 14l2 2 4-4" />
-    </svg>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Feature card data                                                  */
-/* ------------------------------------------------------------------ */
-
-const features = [
+const platformCapabilities = [
   {
-    title: "Financial Management",
+    title: "Levies and owner accounts",
     description:
-      "Track levies, generate invoices, and see where every dollar goes. Committee treasurers get reports that actually make sense.",
-    icon: DollarIcon,
+      "Issue levy notices with the right split between funds, track what each lot owes, and let owners see their own statement.",
+    iconColor: "text-brand-teal",
+    iconBg: "bg-brand-teal/10",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+      </svg>
+    ),
   },
   {
-    title: "Records Vault",
+    title: "A ledger that balances",
     description:
-      "Store meeting minutes, contracts, insurance certificates, and compliance documents in one secure location that belongs to the scheme.",
-    icon: VaultIcon,
+      "Double-entry accounts by fund, monthly periods you can close and lock, budgets against actuals, trial balance and the reports an accountant expects.",
+    iconColor: "text-brand-teal-dark",
+    iconBg: "bg-brand-teal/10",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4 6h16M4 10h16M4 14h10M4 18h7" />
+      </svg>
+    ),
   },
   {
-    title: "Compliance Tracking",
+    title: "Bank reconciliation in minutes",
     description:
-      "Stay ahead of fire safety inspections, insurance renewals, and AGM deadlines with automated reminders and audit trails.",
-    icon: ComplianceIcon,
+      "Import your bank statement (CSV or OFX), match receipts and payments with rules, and see what is outstanding. Live bank feeds are on the roadmap.",
+    iconColor: "text-brand-amber",
+    iconBg: "bg-brand-amber/10",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M3 10h18M8 4v2M16 4v2" />
+      </svg>
+    ),
+  },
+  {
+    title: "Meetings from notice to minutes",
+    description:
+      "A wizard that sets the agenda, issues notices, records attendance and votes including electronic voting before the meeting, and produces the minutes.",
+    iconColor: "text-slate-700 dark:text-slate-300",
+    iconBg: "bg-slate-100 dark:bg-slate-800",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M3 10h18M8 4v2M16 4v2M7 14h4M7 17h2" />
+      </svg>
+    ),
+  },
+  {
+    title: "Arrears handled properly",
+    description:
+      "Reminders, interest, payment plans and the NSW recovery steps in order, with every letter kept.",
+    iconColor: "text-brand-lavender",
+    iconBg: "bg-brand-lavender/10",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 3" />
+      </svg>
+    ),
+  },
+  {
+    title: "Maintenance and contractors",
+    description:
+      "Quotes, approvals, work orders and invoices, with contractor ABN and insurance details checked.",
+    iconColor: "text-brand-amber",
+    iconBg: "bg-brand-amber/10",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      </svg>
+    ),
+  },
+  {
+    title: "Insurance",
+    description:
+      "Policies, documents, claims and renewal dates in one place.",
+    iconColor: "text-brand-teal",
+    iconBg: "bg-brand-teal/10",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    title: "Documents and the strata roll",
+    description:
+      "Every record where the Act says it should be kept, with an audit trail of who did what.",
+    iconColor: "text-slate-700 dark:text-slate-300",
+    iconBg: "bg-slate-100 dark:bg-slate-800",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="8" y1="13" x2="16" y2="13" />
+        <line x1="8" y1="17" x2="12" y2="17" />
+      </svg>
+    ),
   },
 ];
 
@@ -185,30 +209,39 @@ export default function Page() {
       </section>
 
       {/* ============================================================ */}
-      {/* 3. FEATURES OVERVIEW                                         */}
+      {/* 3. THE PLATFORM — What the committee can do                   */}
       {/* ============================================================ */}
       <section className="py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
+            <p className="text-sm font-semibold tracking-widest uppercase text-[var(--muted)] mb-3">
+              The Platform
+            </p>
             <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight">
-              Everything your scheme needs
+              What the committee can do
             </h2>
+            <p className="mt-4 text-lg text-[var(--muted)]">
+              Finances, meetings, documents and compliance managed by the people
+              who run the scheme.
+            </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature) => (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {platformCapabilities.map((cap) => (
               <div
-                key={feature.title}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 flex flex-col gap-4"
+                key={cap.title}
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-7 flex flex-col gap-4"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full gradient-bg text-white">
-                  <feature.icon />
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${cap.iconBg} ${cap.iconColor}`}
+                >
+                  {cap.icon}
                 </div>
-                <h3 className="font-heading text-xl font-semibold">
-                  {feature.title}
+                <h3 className="font-heading text-lg font-bold leading-snug">
+                  {cap.title}
                 </h3>
-                <p className="text-[var(--muted)] leading-relaxed">
-                  {feature.description}
+                <p className="text-sm text-[var(--muted)] leading-relaxed">
+                  {cap.description}
                 </p>
               </div>
             ))}
