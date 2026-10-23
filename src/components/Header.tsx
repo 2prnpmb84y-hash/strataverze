@@ -24,9 +24,9 @@ export default function Header() {
             <Image
               src="https://www.strataverze.com/brand/logo-horizontal-gradient.png"
               alt="StrataVerze"
-              width={240}
-              height={56}
-              className="h-14 w-auto"
+              width={280}
+              height={64}
+              className="h-16 w-auto"
               priority
             />
           </Link>

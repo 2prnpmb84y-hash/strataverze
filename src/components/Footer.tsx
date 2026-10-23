@@ -28,9 +28,9 @@ export default function Footer() {
               <Image
                 src="https://www.strataverze.com/brand/logo-horizontal-gradient.png"
                 alt="StrataVerze"
-                width={220}
-                height={48}
-                className="h-12 w-auto"
+                width={260}
+                height={56}
+                className="h-14 w-auto"
               />
             </Link>
             <p className="mt-4 text-sm text-[var(--muted)] max-w-xs">
