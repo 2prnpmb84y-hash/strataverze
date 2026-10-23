@@ -330,8 +330,8 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 - **Password change.** Changing a password does not ask for the current password. It is done from a reset link only. Since S5, any password change signs out every session, including the one that made it.
 - **Notifications.** Nobody is yet told by email when their phone number, authenticators or sessions change, or when an admin resets their MFA. This waits on email (S2).
 - **Durable record of admin actions.** Admin MFA resets and admin sign-outs are only in the short-lived server log until the audit log (S6). The reason typed by the admin is not logged, because it can hold personal details.
-- **Exports.** The committee pack, statutory pack, owner statement, levy notice and remittance PDFs do not need a fresh authenticator check. Only the audit export does. Owners downloading their own documents is the main use. This is your call if you want the packs gated.
-- **Money actions not on the step-up list.** Levy receipts and reversals, journal entries, special levies, levy schedule approval, debt recovery write-offs and owner credit application need MFA (for the roles that hold them) but not a check in the last 15 minutes. They could be added to the list if you want.
+- **Exports.** Decided 23 Oct: the committee pack, statutory pack, owner statement, levy notice and remittance PDFs stay without a fresh authenticator check. Only the audit export needs one.
+- **Money actions not on the step-up list.** Decided 23 Oct: levy receipts and reversals, journal entries, special levies, levy schedule approval, debt recovery write-offs and owner credit application stay as they are. They need MFA for the roles that hold them, but not a check in the last 15 minutes.
 
 ## Residual risks and limitations
 
