@@ -91,9 +91,9 @@ export default async function OwnerDashboard() {
                 label: fund.name,
                 value: `$${Number(fund.balance).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`,
                 colour:
-                  fund.fundType === "ADMIN"
+                  fund.fundType === "ADMINISTRATIVE"
                     ? "bg-turquoise"
-                    : fund.fundType === "SINKING"
+                    : fund.fundType === "CAPITAL_WORKS"
                       ? "bg-blue-400"
                       : "bg-amber-400",
               }))}
@@ -101,9 +101,9 @@ export default async function OwnerDashboard() {
                 label: fund.name,
                 value: Math.abs(Number(fund.balance)),
                 colour:
-                  fund.fundType === "ADMIN"
+                  fund.fundType === "ADMINISTRATIVE"
                     ? "bg-turquoise"
-                    : fund.fundType === "SINKING"
+                    : fund.fundType === "CAPITAL_WORKS"
                       ? "bg-blue-400"
                       : "bg-amber-400",
               }))}

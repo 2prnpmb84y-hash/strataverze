@@ -1,0 +1,93 @@
+/**
+ * Statement of key financial information (pure): the rows of the approved
+ * form under SSMA 2015 s 94(2), per fund, from ledger lines and levy data.
+ * See KEY_FINANCIAL_INFORMATION in src/config/statutory.ts.
+ */
+import type { BasisEntry } from "./accounting-basis";
+
+export interface KeyFinancialInformation {
+  balanceCarriedForwardCents: number;
+  totalIncomeReceivedCents: number;
+  totalInterestEarnedCents: number;
+  totalContributionsPaidCents: number;
+  totalUnpaidContributionsCents: number;
+  maintenanceExpenditureCents: number;
+  administrationExpenditureCents: number;
+  balanceAtEndCents: number;
+  principalItemsNextPeriod: { description: string; amountCents: number }[];
+}
+
+/** Owners' funds of a fund (assets less liabilities) from its ledger lines up to and including a date. */
+export function ownersFundsCents(entries: BasisEntry[], fundId: string, upTo: string): number {
+  let assets = 0;
+  let liabilities = 0;
+  for (const e of entries) {
+    if (e.date > upTo) continue;
+    for (const l of e.lines) {
+      if (l.fundId !== fundId) continue;
+      if (l.accountType === "ASSET") assets += l.debitCents - l.creditCents;
+      else if (l.accountType === "LIABILITY") liabilities += l.creditCents - l.debitCents;
+    }
+  }
+  return assets - liabilities;
+}
+
+export interface UnpaidNotice {
+  dueDate: string;
+  owedCents: number;
+  payments: { date: string; amountCents: number }[];
+}
+
+/** Contributions due by the date and still unpaid at it (payments after the date do not count). */
+export function unpaidAt(notices: UnpaidNotice[], asAt: string): number {
+  return notices
+    .filter((n) => n.dueDate <= asAt)
+    .reduce((s, n) => s + Math.max(0, n.owedCents - n.payments.filter((p) => p.date <= asAt).reduce((t, p) => t + p.amountCents, 0)), 0);
+}
+
+export function keyFinancialInformation(input: {
+  entries: BasisEntry[];
+  fundId: string;
+  start: string;
+  end: string;
+  /** Day before the period starts. */
+  dayBefore: string;
+  /** Income and expenditure recognised for the fund in the period, on its basis. */
+  recognised: { accountType: "INCOME" | "EXPENSE"; accountSubType: string | null; amountCents: number }[];
+  unpaidNotices: UnpaidNotice[];
+  principalItemsNextPeriod: { description: string; amountCents: number }[];
+}): KeyFinancialInformation {
+  let received = 0;
+  let contributions = 0;
+  for (const e of input.entries) {
+    if (e.date < input.start || e.date > input.end) continue;
+    for (const l of e.lines) {
+      if (l.fundId !== input.fundId) continue;
+      // Money received into the bank for this fund.
+      if (l.accountSubType === "BANK") received += l.debitCents;
+      // Contributions paid: receivables credited by receipts or applied credit.
+      if (l.accountSubType === "ACCOUNTS_RECEIVABLE" && (e.sourceType === "PAYMENT" || e.sourceType === "OWNER_CREDIT")) {
+        contributions += l.creditCents - l.debitCents;
+      }
+    }
+  }
+  const sum = (pred: (r: (typeof input.recognised)[number]) => boolean) => input.recognised.filter(pred).reduce((s, r) => s + r.amountCents, 0);
+  return {
+    balanceCarriedForwardCents: ownersFundsCents(input.entries, input.fundId, input.dayBefore),
+    totalIncomeReceivedCents: received,
+    totalInterestEarnedCents: sum((r) => r.accountType === "INCOME" && r.accountSubType === "INTEREST_INCOME"),
+    totalContributionsPaidCents: contributions,
+    totalUnpaidContributionsCents: unpaidAt(input.unpaidNotices, input.end),
+    maintenanceExpenditureCents: sum((r) => r.accountType === "EXPENSE" && r.accountSubType === "MAINTENANCE_EXPENSE"),
+    administrationExpenditureCents: sum((r) => r.accountType === "EXPENSE" && r.accountSubType !== "MAINTENANCE_EXPENSE"),
+    balanceAtEndCents: ownersFundsCents(input.entries, input.fundId, input.end),
+    principalItemsNextPeriod: [...input.principalItemsNextPeriod].sort((a, b) => b.amountCents - a.amountCents).slice(0, 8),
+  };
+}
+
+/** Whether the accounts must be audited (SSMA 2015 s 95). See AUDIT_THRESHOLD. */
+export function auditRequired(input: { lots: number; annualBudgetCents: number; lotsMoreThan: number; annualBudgetMoreThanCents: number }) {
+  const byLots = input.lots > input.lotsMoreThan;
+  const byBudget = input.annualBudgetCents > input.annualBudgetMoreThanCents;
+  return { required: byLots || byBudget, byLots, byBudget };
+}

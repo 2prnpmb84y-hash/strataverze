@@ -1,3 +1,5 @@
+import { defaultAccountingBasis } from "@/config/statutory";
+import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
 
 /**
@@ -112,7 +114,7 @@ export async function createScheme(
   },
   adviserProfileId: string,
 ) {
-  return db.transaction(async (tx) => {
+  const created = await db.transaction(async (tx) => {
     const scheme = await tx.orm.public.Scheme.create({
       name: data.name,
       planNumber: data.planNumber,
@@ -146,16 +148,27 @@ export async function createScheme(
     await tx.orm.public.Fund.create({
       schemeId: scheme.id,
       name: "Administrative Fund",
-      fundType: "ADMIN",
+      fundType: "ADMINISTRATIVE",
+      accountingBasis: defaultAccountingBasis("ADMINISTRATIVE"),
     });
     await tx.orm.public.Fund.create({
       schemeId: scheme.id,
       name: "Capital Works Fund",
-      fundType: "SINKING",
+      fundType: "CAPITAL_WORKS",
+      accountingBasis: defaultAccountingBasis("CAPITAL_WORKS"),
     });
 
     return scheme;
   });
+
+  // The default NSW chart of accounts, so the ledger can post from day one.
+  // A failure here does not undo the scheme; the adviser can seed it from Finance.
+  try {
+    await seedDefaultChartOfAccounts(created.id);
+  } catch (err) {
+    console.error("[schemes] Could not seed the chart of accounts:", err);
+  }
+  return created;
 }
 
 /**

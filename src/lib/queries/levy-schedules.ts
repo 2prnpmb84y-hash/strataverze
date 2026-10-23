@@ -81,8 +81,11 @@ export async function createLevySchedule(data: {
   dueDate?: string | null;
   /** Record approval at creation (special levies are raised by resolution). */
   approval?: { approvedBy: string; approvedAt: string };
+  /** The adopted capital works fund plan the schedule comes from. */
+  capitalWorksPlanId?: string | null;
 }) {
   return db.orm.public.LevySchedule.create({
+    capitalWorksPlanId: data.capitalWorksPlanId ?? null,
     schemeId: data.schemeId,
     fundId: data.fundId,
     financialYear: data.financialYear,

@@ -55,3 +55,75 @@ export const LEVY_NOTICE_RULES = {
  * StrataVerze, 23 October 2026; section reference still to be added).
  */
 export const PAYMENT_ALLOCATION_ORDER = ["LEVY", "INTEREST", "RECOVERY_COSTS"] as const;
+
+/**
+ * Capital works fund plan.
+ *
+ * SSMA 2015 s 80 requires a plan of anticipated major expenditure from the
+ * capital works fund for at least the next 10 years, reviewed at least once
+ * every 5 years. From 1 April 2026 a new or reviewed plan must use the
+ * standard form (Strata Schemes Legislation Amendment Act 2025, as described
+ * by PBL Legal). Section numbers for the review period and the standard form
+ * were not confirmed against the in-force Act: check legislation.nsw.gov.au.
+ */
+export const CAPITAL_WORKS_PLAN = {
+  horizonYears: 10,
+  reviewEveryYears: 5,
+  standardFormFrom: "2026-04-01",
+  source: "Strata Schemes Management Act 2015 (NSW) s 80; Strata Schemes Legislation Amendment Act 2025",
+} as const;
+
+/**
+ * Audit of the accounts and financial statements.
+ *
+ * SSMA 2015 s 95: required for a scheme of more than 100 lots, or with an
+ * annual budget above the prescribed amount. The amount is understood to be
+ * $250,000 (practitioner commentary); how the budget is worked out is in the
+ * Strata Schemes Management Regulation 2016 cl 21 (contributions levied for
+ * the year, other income, and other amounts held). Other schemes consider an
+ * audit at each AGM. Confirm the lot test (more than 100, or 100 or more) and
+ * where the amount is prescribed against the in-force legislation.
+ */
+export const AUDIT_THRESHOLD = {
+  lotsMoreThan: 100,
+  annualBudgetMoreThanCents: 25_000_000,
+  source: "Strata Schemes Management Act 2015 (NSW) s 95; Strata Schemes Management Regulation 2016 cl 21",
+} as const;
+
+/**
+ * Statement of key financial information: the approved form under SSMA 2015
+ * s 94(2), one for the administrative and capital works funds (NSW
+ * Government). Rows follow the approved form as described by StrataMax's
+ * guide; check them against the current NSW Government form before relying
+ * on the layout.
+ */
+export const KEY_FINANCIAL_INFORMATION = {
+  source: "Strata Schemes Management Act 2015 (NSW) s 94(2), approved form (NSW Government)",
+  rows: [
+    "Balance carried forward",
+    "Total income received",
+    "Total interest earned",
+    "Total contributions paid",
+    "Total unpaid contributions",
+    "Total expenditure for maintenance",
+    "Total expenditure for administration",
+    "Balance at the end of the period",
+    "Principal items of expenditure for the next period",
+  ],
+} as const;
+
+/**
+ * Default accounting basis per fund type (Financial Management Requirements):
+ * the administrative fund on a cash basis, the capital works fund on an
+ * accrual basis. The basis changes how reports recognise income and
+ * expenditure, never how entries are posted.
+ */
+export const DEFAULT_ACCOUNTING_BASIS: Record<string, "CASH" | "ACCRUAL"> = {
+  ADMINISTRATIVE: "CASH",
+  CAPITAL_WORKS: "ACCRUAL",
+};
+
+/** The default basis for a fund type, including the older ADMIN and SINKING names. */
+export function defaultAccountingBasis(fundType: string): "CASH" | "ACCRUAL" {
+  return fundType === "CAPITAL_WORKS" || fundType === "SINKING" ? "ACCRUAL" : "CASH";
+}

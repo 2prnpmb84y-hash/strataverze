@@ -49,6 +49,12 @@ const reports = [
     href: "/three-way-reconciliation",
   },
   {
+    key: "statutory-pack",
+    title: "Statutory Statements",
+    description: "Statement of key financial information, income and expenditure, balance sheet, levy register and notes for the AGM, with the audit export.",
+    href: "/statutory-pack",
+  },
+  {
     key: "trial-balance",
     title: "Trial Balance",
     description:

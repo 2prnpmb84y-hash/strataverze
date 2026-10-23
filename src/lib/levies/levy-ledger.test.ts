@@ -90,6 +90,17 @@ describe("buildStatement", () => {
     expect(s.closingBalance).toBe(725.08);
   });
 
+  it("opens a mid-year statement at the balance carried forward, including credit", () => {
+    const paid = { ...q1, status: "PAID", amountPaid: "825.09", balanceOutstanding: "0" };
+    const receipts = [{ id: "p1", levyNoticeId: "n1", amount: "825.09", paymentDate: "2026-07-10" }];
+    const credits = [{ id: "c1", type: "OVERPAYMENT", amount: "100", effectiveDate: "2026-07-10" }];
+    // Statement from 1 September: Q1 levied and paid, plus $100 credit held, so it opens $100 in credit.
+    const s = buildStatement([paid, q2], receipts, { startDate: "2026-09-01" }, credits);
+    expect(s.openingBalance).toBe(-100);
+    expect(s.lines.map((l) => [l.date, l.balance])).toEqual([["2026-10-01", 725.08]]);
+    expect(s.closingBalance).toBe(725.08);
+  });
+
   it("accounts for amounts paid before receipts were kept", () => {
     const s = buildStatement([{ ...q1, updatedAt: "2026-07-20T03:00:00Z" }], []);
     expect(s.lines.find((l) => l.type === "Payment")).toMatchObject({ date: "2026-07-20", payment: 300 });

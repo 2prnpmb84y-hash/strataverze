@@ -11,7 +11,7 @@ export type FundFormState = {
   fieldErrors?: Record<string, string>;
 };
 
-const FUND_TYPES = ["ADMIN", "SINKING", "RESERVE"];
+const FUND_TYPES = ["ADMINISTRATIVE", "CAPITAL_WORKS", "SPECIAL"];
 
 function validateFundForm(formData: FormData) {
   const errors: Record<string, string> = {};
@@ -31,7 +31,7 @@ function validateFundForm(formData: FormData) {
     isValid: Object.keys(errors).length === 0,
     data: {
       name: name?.trim() ?? "",
-      fundType: fundType ?? "ADMIN",
+      fundType: fundType ?? "ADMINISTRATIVE",
       balance: balance ? Number(balance) : 0,
     },
   };

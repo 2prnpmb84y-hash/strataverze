@@ -118,7 +118,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
           <Card key={fund.fundId}>
             <CardHeader
               title={fund.fundName}
-              description={fundTypeLabel(fund.fundType)}
+              description={fund.basisNote ? `${fundTypeLabel(fund.fundType)}. ${fund.basisNote}` : fundTypeLabel(fund.fundType)}
             />
 
             {/* Summary strip */}
