@@ -16,7 +16,12 @@
  *   month after it becomes due.
  * - s 85(3): the owners corporation may resolve that a contribution bears no
  *   interest, generally or in a particular case. It cannot set a different rate.
- * - s 85(5): payment plans may be agreed for overdue contributions.
+ *   The platform accepts only a general meeting resolution for this, not a
+ *   committee decision (confirmed by StrataVerze, 23 October 2026).
+ * - s 85(5): payment plans may be agreed for overdue contributions. Entering a
+ *   payment plan does not stop interest. It keeps accruing at the statutory
+ *   rate unless the owners corporation resolves to waive it (confirmed by
+ *   StrataVerze, 23 October 2026).
  */
 export const STATUTORY_INTEREST = {
   annualRatePercent: 10,
@@ -46,6 +51,7 @@ export const LEVY_NOTICE_RULES = {
 /**
  * Order in which an owner's payment is applied to what they owe: levies first,
  * then interest, then recovery costs (Strata Schemes Legislation Amendment Act
- * 2025, as described in practitioner commentary; confirm the section).
+ * 2025, as described in practitioner commentary; order confirmed by
+ * StrataVerze, 23 October 2026; section reference still to be added).
  */
 export const PAYMENT_ALLOCATION_ORDER = ["LEVY", "INTEREST", "RECOVERY_COSTS"] as const;

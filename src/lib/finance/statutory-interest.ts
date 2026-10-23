@@ -3,9 +3,10 @@
  *
  * Simple interest at the statutory rate on the unpaid levy (not on interest),
  * accrued day by day from the due date. Nothing is payable if the levy is
- * paid in full within the grace period. Accrual stops at write-off or when a
- * payment plan starts. A recorded resolution can remove interest entirely
- * (SSMA 2015 s 85(3)); it cannot raise or lower the rate.
+ * paid in full within the grace period. Accrual stops at write-off. A payment
+ * plan does not stop it. Only a resolution of the owners corporation that the
+ * contribution bears no interest removes it (SSMA 2015 s 85(3)); it cannot
+ * raise or lower the rate.
  */
 import { STATUTORY_INTEREST } from "@/config/statutory";
 
@@ -18,7 +19,7 @@ export interface InterestInput {
   payments: { date: string; amountCents: number }[];
   /** YYYY-MM-DD the calculation runs to (inclusive of that day's interest up to, not including, it). */
   asAt: string;
-  /** YYYY-MM-DD accrual stops (write-off or payment plan start), if any. */
+  /** YYYY-MM-DD accrual stops (write-off), if any. A payment plan is not a reason to stop. */
   stopAt?: string | null;
   /** A resolution that the contribution bears no interest. */
   noInterest?: boolean;

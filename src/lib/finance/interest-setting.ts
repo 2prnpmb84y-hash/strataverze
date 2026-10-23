@@ -38,7 +38,11 @@ export interface NoticeInterest extends InterestResult {
 
 /**
  * Statutory interest owed to date on each overdue notice of a scheme, from
- * the notice's levy amount, its payment history and any payment plan.
+ * the notice's levy amount and its payment history.
+ *
+ * A payment plan does not stop interest: it keeps accruing at the statutory
+ * rate unless the owners corporation resolves that the contribution bears no
+ * interest (s 85(3)), which is the scheme's NO_INTEREST setting.
  */
 export async function statutoryInterestForScheme(schemeId: string, asAt = sydneyToday()): Promise<NoticeInterest[]> {
   const setting = await getSchemeInterestSetting(schemeId);
@@ -48,17 +52,8 @@ export async function statutoryInterestForScheme(schemeId: string, asAt = sydney
     .all();
   if (notices.length === 0) return [];
   const ids = notices.map((n) => n.id);
-  const [payments, plans] = await Promise.all([
-    db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all(),
-    db.orm.public.PaymentPlan.where((p) => and(p.schemeId.eq(schemeId), p.status.in(["ACTIVE", "COMPLETED"]))).limit(5000).all(),
-  ]);
+  const payments = await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all();
   return notices.map((n) => {
-    // A payment plan stops accrual on the notices it covers: those already due
-    // when it started, and later ones only if the plan includes ongoing levies.
-    const due = isoDay(n.dueDate);
-    const plan = plans
-      .filter((p) => p.lotId === n.lotId && (due <= isoDay(p.startDate) || p.includesOngoing))
-      .sort((a, b) => isoDay(a.startDate).localeCompare(isoDay(b.startDate)))[0];
     const result = statutoryInterest({
       levyCents: toCents(String(n.amountDue)),
       dueDate: isoDay(n.dueDate),
@@ -66,8 +61,6 @@ export async function statutoryInterestForScheme(schemeId: string, asAt = sydney
         .filter((p) => p.levyNoticeId === n.id)
         .map((p) => ({ date: isoDay(p.paymentDate), amountCents: toCents(String(p.amount)) })),
       asAt,
-      // Accrual stops when a payment plan for the lot starts.
-      stopAt: plan ? (isoDay(plan.startDate) > due ? isoDay(plan.startDate) : due) : null,
       noInterest: setting.mode === "NO_INTEREST",
     });
     const previouslyChargedCents = toCents(String(n.interestCharged ?? 0));
