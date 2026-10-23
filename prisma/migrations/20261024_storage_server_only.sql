@@ -47,6 +47,9 @@ SET public = false,
     allowed_mime_types = ARRAY[
       'application/pdf',
       'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/heic', 'image/heif',
+      -- Non-standard, but sent by some browsers for JPEG files. Kept so the
+      -- current (pre-S3) upload forms keep working until S3 is deployed.
+      'image/jpg',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
