@@ -183,10 +183,10 @@ Legend:
 | Supplier invoices and payments | none | V, approve (per payment controls) | V C U | V | V C own (own invoices) | V |
 | Payment authorisation | none | Treasurer or authoriser per policy | Instruct only, cannot approve own | none | none | none |
 | Budgets, statutory reports | V X (published) | V X | V C U X | V X | none | V |
-| Meetings, notices, minutes | V (published), vote own lot | V C U, vote | V C U | none | none | V |
+| Meetings, notices, minutes | V (published), vote own lot | V C U, vote, and may call general meetings (decided 23 Oct) | V C U | none | none | V |
 | Documents (shared library) | V X (owner-visible) | V X C | V X C U D | V X (financial) | V X (assigned work only) | V |
 | Payment confirmations | C V own | none | V | V | none | V |
-| Work orders, quotes | C (request), V own | V C U, approve | V C U D | none | V U own (assigned), quote own | V |
+| Work orders, quotes | C (request), V (all of the building's work orders, decided 23 Oct) | V C U, approve | V C U D | none | V U own (assigned), quote own | V |
 | Debt recovery | V own case (no internal notes) | V | V C U | V | none | V |
 | Memberships and invitations | none | Chair or secretary: invite Adviser | V C U D (owner, committee, accountant) | none | none | V C U D |
 | Security audit log | none | none | V (own building, read-only) | none | none | V X |
@@ -289,13 +289,14 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
    - Whether Vercel Hobby is acceptable for a commercial service. Please check Vercel's current terms, as I can't confirm them.
 3. **Committee access to owner contact details.** Names and lot numbers only, or emails and phones too?
 4. **A separate Supabase project for preview deployments**, or preview runs without database credentials.
-5. **The domain.** Register `strataverze.com.au` (or choose another), then set `APP_URL`, `NEXT_PUBLIC_SITE_URL` and `EMAIL_FROM` in Vercel. Email sending also needs `RESEND_API_KEY`, which is not set yet, and the invitation process depends on it.
+5. **The domain.** Decided: `strataverze.com`. Still to do: verify the domain in Resend (add its DNS records in Cloudflare), add `RESEND_API_KEY` to Vercel, and add MX records if mail to support@ and staff addresses should be received.
 
 ## Open items raised in S1 (for decision or a later stage)
 
 - **Bank detail verification.** Nothing yet lets StrataVerze mark a contractor's bank details as verified, so works payments cannot be authorised. A verification step (with call-back to a known number) needs building.
-- **Owner view of work orders.** The approved matrix says owners see only work orders they raised. The maintenance list still shows all of the building's work orders. Decision needed.
-- **Committee calling general meetings.** The committee's meeting form can create AGM and EGM meetings, which email every member. This is right for self-managed buildings, where the secretary convenes meetings. Decision needed.
+- **Owner view of work orders.** Decided 23 Oct: owners see all of their building's work orders (matrix and search updated).
+- **Committee calling general meetings.** Decided 23 Oct: the committee as well as the adviser may call general meetings.
+- **Domain.** Decided 23 Oct: `strataverze.com`. It is connected to Vercel (`strataverze.com` redirects to `https://www.strataverze.com`), and the Supabase Site URL and redirect list now use it. Its DNS (Cloudflare) has no MX, SPF, DMARC or Resend DKIM records, so it cannot yet send through Resend or receive mail (including support@). Those records are needed before invitations can go out (stage S2).
 - **Payment policy loosening.** A treasurer (not also an adviser) can loosen the payment policy alone. A second-approver step is a follow-up.
 - **Contractor identity after approval.** An approved contractor can still change its company name, phone and email without re-review.
 - **Owner assignment.** An adviser can assign any existing profile as owner of a lot without an invitation (replaced by the invitation flow in S2).
