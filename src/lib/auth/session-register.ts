@@ -2,6 +2,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { sessionVerdict, toMs, type SessionVerdict } from "./session-policy";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 
 /**
  * The session register (security stage S5). Every request that loads the
@@ -68,7 +69,18 @@ export async function checkAndTouchSession(input: {
   });
 
   if (!verdict.ok) {
-    if (!row.revokedAt) await endSession(input.sessionId, verdict.reason, nowMs);
+    if (!row.revokedAt) {
+      await endSession(input.sessionId, verdict.reason, nowMs);
+      await recordSecurityEvent({
+        action: "session.ended",
+        outcome: "allowed",
+        actorProfileId: input.profileId,
+        resourceType: "session",
+        resourceId: input.sessionId,
+        reason: verdict.reason === "idle" ? "idle timeout" : verdict.reason === "absolute" ? "absolute timeout" : "revoked",
+        metadata: { privileged: input.privileged },
+      });
+    }
     return verdict;
   }
   if (verdict.touch) {
@@ -91,6 +103,18 @@ export async function endSession(sessionId: string, reason: string, nowMs: numbe
  * themselves, by a platform admin, after an MFA reset, and when a role is
  * removed. A database trigger ends the matching Supabase Auth sessions.
  */
-export async function revokeAllSessions(profileId: string, nowMs: number = Date.now()): Promise<void> {
+export async function revokeAllSessions(
+  profileId: string,
+  options: { actorProfileId?: string | null; reason: string; nowMs?: number },
+): Promise<void> {
+  const nowMs = options.nowMs ?? Date.now();
   await db.orm.public.Profile.where((p) => p.id.eq(profileId)).update({ sessionsRevokedAt: ts(nowMs) });
+  await recordSecurityEvent({
+    action: "session.revoked_all",
+    outcome: "allowed",
+    actorProfileId: options.actorProfileId ?? profileId,
+    resourceType: "profile",
+    resourceId: profileId,
+    reason: options.reason,
+  });
 }

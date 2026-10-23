@@ -1,7 +1,8 @@
 "use client";
 
+import { signOutAction } from "@/lib/actions/sessions";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -18,7 +19,6 @@ import {
   Users,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
 import { SearchDialog } from "@/components/search-dialog";
 
 /* ------------------------------------------------------------------ */
@@ -65,7 +65,6 @@ export function TopBar({
   pendingInvitationCount?: number;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -98,9 +97,9 @@ export function TopBar({
   }, [menuOpen]);
 
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
+    // On the server, so the sign-out is recorded and the session ended in
+    // the app's register as well as in Supabase Auth (security stage S6).
+    await signOutAction();
   }
 
   // Derive a display name

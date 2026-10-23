@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { rolesFor, type Capability } from "@/config/permissions";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { AuthorisationError, requireSchemeMembership } from "./require-membership";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 
 /**
  * Server action check: the signed-in user holds the capability on this
@@ -35,6 +36,16 @@ export async function requirePageAccess(schemeId: string, capability: Capability
 /** Page check for platform-admin-only pages: 404 for everyone else. */
 export async function requirePlatformAdminPage() {
   const profile = await getCurrentProfile();
-  if (!profile?.isPlatformAdmin) notFound();
+  if (!profile?.isPlatformAdmin) {
+    if (profile) {
+      await recordSecurityEvent({
+        action: "access.denied",
+        outcome: "denied",
+        actorProfileId: profile.id,
+        reason: "platform admin page",
+      });
+    }
+    notFound();
+  }
   return profile;
 }

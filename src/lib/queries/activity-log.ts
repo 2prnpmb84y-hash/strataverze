@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import {
@@ -214,8 +215,27 @@ type LogActivityData = {
 /**
  * Log an activity event for a scheme.
  */
+/**
+ * Every activity log entry is also a security audit event (security stage
+ * S6). The activity log is the building's own history and can be removed
+ * with the building; the security audit log cannot be changed or deleted.
+ * This gives the audit log every Adviser, committee and admin write that is
+ * already logged as activity.
+ */
+async function mirrorToSecurityAudit(data: LogActivityData, inTransaction: boolean) {
+  await recordSecurityEvent({
+    action: `activity.${String(data.action).toLowerCase()}`,
+    outcome: /_DENIED$/.test(String(data.action)) ? "denied" : "allowed",
+    actorProfileId: data.actorId,
+    schemeId: data.schemeId,
+    resourceType: String(data.entityType),
+    resourceId: data.entityId ?? null,
+    metadata: { ...(data.metadata ?? {}), inTransaction },
+  });
+}
+
 export async function logActivity(data: LogActivityData) {
-  return db.orm.public.ActivityLog.create({
+  const row = await db.orm.public.ActivityLog.create({
     schemeId: data.schemeId,
     actorId: data.actorId,
     action: data.action,
@@ -223,6 +243,8 @@ export async function logActivity(data: LogActivityData) {
     entityId: data.entityId ?? null,
     metadata: (data.metadata ?? null) as Parameters<typeof db.orm.public.ActivityLog.create>[0]["metadata"],
   });
+  await mirrorToSecurityAudit(data, false);
+  return row;
 }
 
 /**
@@ -232,7 +254,7 @@ export async function logActivityTx(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   data: LogActivityData,
 ) {
-  return tx.orm.public.ActivityLog.create({
+  const row = await tx.orm.public.ActivityLog.create({
     schemeId: data.schemeId,
     actorId: data.actorId,
     action: data.action,
@@ -240,6 +262,11 @@ export async function logActivityTx(
     entityId: data.entityId ?? null,
     metadata: (data.metadata ?? null) as Parameters<typeof tx.orm.public.ActivityLog.create>[0]["metadata"],
   });
+  // Written outside the transaction (the audit chain must not be held by
+  // it), so in the rare case the transaction then fails the event remains,
+  // marked inTransaction.
+  await mirrorToSecurityAudit(data, true);
+  return row;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { forbidden } from "@/lib/finance/access-denied";
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import type { NextRequest } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { generateOwnerStatementPdf } from "@/lib/pdf/generate";
@@ -19,5 +20,16 @@ export async function GET(request: NextRequest) {
     return forbidden({ schemeId, actorId: profile.id, entityType: "Lot", entityId: lotId, what: "Owner statement PDF" });
   }
   const pdf = await generateOwnerStatementPdf({ schemeId, lotId, startDate, endDate, actorId: profile.id });
+  if (pdf) {
+    await recordSecurityEventLater({
+      action: "export.pdf",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      schemeId,
+      resourceType: "Lot",
+      resourceId: lotId,
+      metadata: { kind: "owner_statement" },
+    });
+  }
   return pdf ? pdfResponse(pdf) : notFound();
 }

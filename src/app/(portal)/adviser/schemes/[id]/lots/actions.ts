@@ -213,7 +213,9 @@ export async function removeOwnerAction(
     await removeOwnerFromLot(membershipId);
     // A role was removed: end the person's sessions so every device signs in
     // again under their remaining access (security stage S5).
-    if (target.profileId !== actor.id) await revokeAllSessions(target.profileId);
+    if (target.profileId !== actor.id) {
+      await revokeAllSessions(target.profileId, { actorProfileId: actor.id, reason: "owner role removed" });
+    }
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};

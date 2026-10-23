@@ -101,6 +101,7 @@ const adminNav = [
   { label: "Referral income", href: "/admin/referral-income", icon: CreditCard },
   { label: "Contractors", href: "/adviser/contractors", icon: UserPlus },
   { label: "Security", href: "/admin/security", icon: Shield },
+  { label: "Audit log", href: "/admin/audit", icon: FileText },
 ];
 
 const navByPortal: Record<string, typeof ownerNav> = {

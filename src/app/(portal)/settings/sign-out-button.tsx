@@ -1,17 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { signOutEverywhereAction } from "@/lib/actions/sessions";
+import { signOutAction, signOutEverywhereAction } from "@/lib/actions/sessions";
 
 export function SignOutButton() {
-  const router = useRouter();
-
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
+    // On the server, so the sign-out is recorded and the session ended in
+    // the app's register as well as in Supabase Auth (security stage S6).
+    await signOutAction();
   }
 
   return (

@@ -1,5 +1,6 @@
 "use server";
 
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
@@ -320,8 +321,9 @@ export async function getDocumentSignedUrlAction(
   documentId: string,
 ): Promise<{ url?: string; error?: string }> {
   let fileUrl: string;
+  let actorId: string;
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "OWNER"]);
+    actorId = (await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "OWNER"])).profile.id;
     const document = await getDocumentById(documentId);
     assertInScheme(document, schemeId, "Document");
     fileUrl = document.fileUrl;
@@ -331,6 +333,15 @@ export async function getDocumentSignedUrlAction(
   }
 
   try {
+    await recordSecurityEventLater({
+      action: "document.download",
+      outcome: "allowed",
+      actorProfileId: actorId,
+      schemeId,
+      resourceType: "Document",
+      resourceId: documentId,
+      metadata: { kind: "library" },
+    });
     const url = await resolveDocumentUrl(fileUrl, 600, { schemeId }); // 10 minutes
     return { url };
   } catch {

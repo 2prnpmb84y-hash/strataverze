@@ -1,5 +1,6 @@
 "use server";
 
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { redirect } from "next/navigation";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { revalidatePath } from "next/cache";
@@ -91,6 +92,15 @@ export async function createSchemeAction(
     const profile = await requirePlatformAdmin();
 
     const scheme = await createScheme(data, profile.id);
+    await recordSecurityEvent({
+      action: "scheme.created",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      actorRole: "platform_admin",
+      schemeId: scheme.id,
+      resourceType: "Scheme",
+      resourceId: scheme.id,
+    });
     redirect(`/adviser/schemes/${scheme.id}`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -143,11 +153,21 @@ export async function updateSchemeAction(
 
 export async function deleteSchemeAction(schemeId: string) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
     await deleteScheme(schemeId);
+    // The building's activity log goes with it; this record stays.
+    await recordSecurityEvent({
+      action: "scheme.deleted",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      actorRole: "ADVISER",
+      schemeId,
+      resourceType: "Scheme",
+      resourceId: schemeId,
+    });
     revalidatePath("/adviser/schemes");
     redirect("/adviser/schemes");
   } catch (err) {

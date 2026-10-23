@@ -9,6 +9,25 @@ import { AuthorisationError } from "@/lib/auth/errors";
 import { MAX_TOTP_FACTORS, safeNextPath } from "@/lib/auth/mfa-policy";
 import { rateLimit } from "@/lib/auth/rate-limit";
 import { grantFactorEnrolment, grantFactorRemoval } from "@/lib/auth/mfa-grants";
+import { recordSecurityEvent, type SecurityOutcome } from "@/lib/audit/security-audit";
+
+/** An MFA event for the caller's own account. */
+function mfaEvent(
+  session: { user: { id: string }; profile: { id: string } },
+  action: string,
+  outcome: SecurityOutcome,
+  extra: { factorId?: string; reason?: string } = {},
+) {
+  return recordSecurityEvent({
+    action,
+    outcome,
+    actorProfileId: session.profile.id,
+    actorAuthId: session.user.id,
+    resourceType: extra.factorId ? "mfa_factor" : null,
+    resourceId: extra.factorId ?? null,
+    reason: extra.reason ?? null,
+  });
+}
 
 /**
  * Authenticator (TOTP) enrolment and verification, security stage S4.
@@ -87,6 +106,7 @@ export async function startTotpEnrolmentAction(): Promise<
       console.error("[mfa] enroll failed:", error?.code ?? error?.name);
       return { error: "Could not start setting up your authenticator. Please try again." };
     }
+    await mfaEvent(session, "mfa.enrol_started", "allowed", { factorId: data.id });
     return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -126,11 +146,18 @@ export async function confirmTotpEnrolmentAction(factorId: string, rawCode: stri
       throw err;
     }
   }
-  if (!codeAttemptAllowed(session.user.id)) return { error: "Too many attempts. Wait 15 minutes and try again." };
+  if (!codeAttemptAllowed(session.user.id)) {
+    await mfaEvent(session, "mfa.enrol", "denied", { factorId, reason: "too many attempts" });
+    return { error: "Too many attempts. Wait 15 minutes and try again." };
+  }
 
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
-  if (error) return { error: "That code did not match. Check the time on your phone is correct and try again." };
+  if (error) {
+    await mfaEvent(session, "mfa.enrol", "failed", { factorId, reason: "code did not match" });
+    return { error: "That code did not match. Check the time on your phone is correct and try again." };
+  }
 
+  await mfaEvent(session, "mfa.enrol", "allowed", { factorId });
   return finish(next);
 }
 
@@ -146,12 +173,19 @@ export async function verifyTotpAction(factorId: string, rawCode: string, next?:
   const code = cleanCode(rawCode);
   if (!CODE.test(code)) return { error: "Enter the 6-digit code from your authenticator app." };
   if (!session.verifiedFactors.some((f) => f.id === factorId)) return { error: "Choose one of your authenticators." };
-  if (!codeAttemptAllowed(session.user.id)) return { error: "Too many attempts. Wait 15 minutes and try again." };
+  if (!codeAttemptAllowed(session.user.id)) {
+    await mfaEvent(session, "mfa.verify", "denied", { factorId, reason: "too many attempts" });
+    return { error: "Too many attempts. Wait 15 minutes and try again." };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
-  if (error) return { error: "That code did not match. Check the time on your phone is correct and try again." };
+  if (error) {
+    await mfaEvent(session, "mfa.verify", "failed", { factorId, reason: "code did not match" });
+    return { error: "That code did not match. Check the time on your phone is correct and try again." };
+  }
 
+  await mfaEvent(session, "mfa.verify", "allowed", { factorId });
   return finish(next);
 }
 
@@ -177,6 +211,7 @@ export async function removeTotpFactorAction(factorId: string): Promise<Result> 
       console.error("[mfa] unenroll failed:", error.code ?? error.name);
       return { error: "Could not remove that authenticator. Please try again." };
     }
+    await mfaEvent(session, "mfa.factor_removed", "allowed", { factorId });
     // Pick up the lower assurance level straight away.
     await supabase.auth.refreshSession();
     revalidatePath("/settings");

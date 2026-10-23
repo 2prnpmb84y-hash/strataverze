@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { safeNextPath } from "@/lib/auth/mfa-policy";
 import { loadSessionState } from "@/lib/auth/session-state";
-import { NextResponse, type NextRequest } from "next/server";
+import { contextFromHeaders, writeSecurityEvent } from "@/lib/audit/security-audit";
+import { isPrefetch, viewEventFor } from "@/lib/audit/view-audit";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 /**
  * Next.js Proxy (formerly middleware) for StrataVerze.
@@ -121,6 +123,29 @@ export async function proxy(request: NextRequest) {
       // getCurrentSession repeats this check and fails closed, so a database
       // error here does not let an ended session through.
       console.error("[proxy] session check failed:", err instanceof Error ? err.name : "error");
+    }
+    // Pages showing owners' details or financial records are recorded in
+    // the security audit log (S6), after the response is sent.
+    if (state?.kind === "active" && request.method === "GET" && !isPrefetch(request.headers)) {
+      const view = viewEventFor(request.nextUrl.pathname);
+      if (view) {
+        const context = contextFromHeaders(request.headers);
+        const actorProfileId = state.session.profile.id;
+        after(() =>
+          writeSecurityEvent(
+            {
+              action: view.action,
+              outcome: "allowed",
+              actorProfileId,
+              schemeId: view.schemeId,
+              resourceType: view.resourceType,
+              resourceId: view.resourceId,
+              metadata: { area: view.area },
+            },
+            context,
+          ),
+        );
+      }
     }
     if (state?.kind === "ended") {
       endedReason = state.reason;

@@ -1,5 +1,6 @@
 "use server";
 
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
@@ -121,8 +122,9 @@ export async function getInsuranceDocumentUrlAction(
   documentId: string,
 ): Promise<{ url?: string; error?: string }> {
   let doc: Awaited<ReturnType<typeof getDownloadableInsuranceDocument>>;
+  let actorId: string;
   try {
-    await requireSchemeAccess(schemeId, "insurance.manage");
+    actorId = (await requireSchemeAccess(schemeId, "insurance.manage")).profile.id;
     doc = await getDownloadableInsuranceDocument(schemeId, documentId, "manager");
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -130,6 +132,15 @@ export async function getInsuranceDocumentUrlAction(
   }
   if (!doc) return { error: "Document not found." };
   try {
+    await recordSecurityEventLater({
+      action: "document.download",
+      outcome: "allowed",
+      actorProfileId: actorId,
+      schemeId,
+      resourceType: "InsuranceDocument",
+      resourceId: documentId,
+      metadata: { kind: "insurance_policy" },
+    });
     const url = await resolveDocumentUrl(String(doc.fileUrl), 600, { schemeId });
     return { url };
   } catch {

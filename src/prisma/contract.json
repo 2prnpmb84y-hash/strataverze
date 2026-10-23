@@ -384,6 +384,14 @@
       "model": "Scheme",
       "namespace": "public"
     },
+    "security_audit_checks": {
+      "model": "SecurityAuditCheck",
+      "namespace": "public"
+    },
+    "security_audit_events": {
+      "model": "SecurityAuditEvent",
+      "namespace": "public"
+    },
     "statutory_pack_snapshots": {
       "model": "StatutoryPackSnapshot",
       "namespace": "public"
@@ -20671,6 +20679,258 @@
               },
               "namespaceId": "public",
               "table": "scheme_subscriptions"
+            }
+          },
+          "SecurityAuditCheck": {
+            "fields": {
+              "checkedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstBadSeq": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "ok": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "rowsChecked": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "checkedAt": {
+                  "column": "checked_at"
+                },
+                "firstBadSeq": {
+                  "column": "first_bad_seq"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "ok": {
+                  "column": "ok"
+                },
+                "rowsChecked": {
+                  "column": "rows_checked"
+                }
+              },
+              "namespaceId": "public",
+              "table": "security_audit_checks"
+            }
+          },
+          "SecurityAuditEvent": {
+            "fields": {
+              "action": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "actorAuthId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "actorProfileId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "actorRole": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "ipHash": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "metadata": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "occurredAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "outcome": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "prevHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "requestId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "resourceId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "resourceType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "rowHash": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "seq": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "userAgent": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "action": {
+                  "column": "action"
+                },
+                "actorAuthId": {
+                  "column": "actor_auth_id"
+                },
+                "actorProfileId": {
+                  "column": "actor_profile_id"
+                },
+                "actorRole": {
+                  "column": "actor_role"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "ipHash": {
+                  "column": "ip_hash"
+                },
+                "metadata": {
+                  "column": "metadata"
+                },
+                "occurredAt": {
+                  "column": "occurred_at"
+                },
+                "outcome": {
+                  "column": "outcome"
+                },
+                "prevHash": {
+                  "column": "prev_hash"
+                },
+                "reason": {
+                  "column": "reason"
+                },
+                "requestId": {
+                  "column": "request_id"
+                },
+                "resourceId": {
+                  "column": "resource_id"
+                },
+                "resourceType": {
+                  "column": "resource_type"
+                },
+                "rowHash": {
+                  "column": "row_hash"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "seq": {
+                  "column": "seq"
+                },
+                "userAgent": {
+                  "column": "user_agent"
+                }
+              },
+              "namespaceId": "public",
+              "table": "security_audit_events"
             }
           },
           "StatutoryPackSnapshot": {
@@ -44913,6 +45173,224 @@
               },
               "uniques": []
             },
+            "security_audit_checks": {
+              "columns": {
+                "checked_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "first_bad_seq": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "ok": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": false
+                },
+                "rows_checked": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "checked_at"
+                  ],
+                  "name": "security_audit_checks_time_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "security_audit_events": {
+              "columns": {
+                "action": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "actor_auth_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "actor_profile_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "actor_role": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "ip_hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "metadata": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "default": {
+                    "kind": "literal",
+                    "value": {}
+                  },
+                  "nullable": false
+                },
+                "occurred_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "outcome": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "prev_hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": ""
+                  },
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "request_id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "resource_id": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "resource_type": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "row_hash": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": ""
+                  },
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "seq": {
+                  "codecId": "pg/int8@1",
+                  "dataType": "pg/int8",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nullable": false
+                },
+                "user_agent": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "action",
+                    "occurred_at"
+                  ],
+                  "name": "security_audit_events_action_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "actor_profile_id",
+                    "occurred_at"
+                  ],
+                  "name": "security_audit_events_actor_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "occurred_at"
+                  ],
+                  "name": "security_audit_events_scheme_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "seq"
+                  ],
+                  "name": "security_audit_events_seq_key",
+                  "unique": true
+                },
+                {
+                  "columns": [
+                    "occurred_at"
+                  ],
+                  "name": "security_audit_events_time_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "statutory_pack_snapshots": {
               "columns": {
                 "adopted_at": {
@@ -53206,7 +53684,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e857737e2424cfd7d52aae3f02c055ac5b61b48fb21f3250fe68c2e2a25b3804"
+    "storageHash": "bbd359a57cd153bd3aa4713ea1315b934d5425ceaceb7d09d3cf94a340814005"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

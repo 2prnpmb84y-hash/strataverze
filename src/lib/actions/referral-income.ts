@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-membership";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { toCents } from "@/lib/billing/money";
 import { referralIncomeEnabled, referralIncomeProblem, renderReferralDisclosure } from "@/lib/billing/referral";
 
@@ -55,6 +56,15 @@ export async function recordReferralIncomeAction(_prev: ReferralFormState, formD
     revalidatePath("/admin/referral-income");
     revalidatePath(`/adviser/schemes/${schemeId}`, "layout");
     revalidatePath("/owner/finance/platform-fees");
+    await recordSecurityEvent({
+      action: "admin.referral_income_recorded",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      actorRole: "platform_admin",
+      schemeId,
+      resourceType: "Scheme",
+      resourceId: schemeId,
+    });
     return { success: `Recorded ${partnerName} for ${scheme.name}.` };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };

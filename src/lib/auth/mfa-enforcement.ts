@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentSession } from "./current-session";
 import { AuthorisationError } from "./errors";
 import { mfaGate, recentlyVerified } from "./mfa-policy";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 
 type CurrentSession = NonNullable<Awaited<ReturnType<typeof getCurrentSession>>>;
 
@@ -71,5 +72,14 @@ export async function requireRecentMfa(): Promise<void> {
   const status = await getMfaStatus();
   if (!status) throw new AuthorisationError("You must be signed in.");
   if (status.verifiedFactors.length === 0 && !status.mandatory) return;
-  if (!recentlyVerified(status.assurance)) throw new StepUpRequiredError();
+  if (!recentlyVerified(status.assurance)) {
+    await recordSecurityEvent({
+      action: "mfa.step_up_required",
+      outcome: "denied",
+      actorProfileId: status.profile.id,
+      actorAuthId: status.user.id,
+      reason: "no authenticator check in the last 15 minutes",
+    });
+    throw new StepUpRequiredError();
+  }
 }

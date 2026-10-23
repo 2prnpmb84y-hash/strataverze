@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getPlatformInvoiceWithLines } from "@/lib/queries/platform-billing";
@@ -27,6 +28,15 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return new NextResponse("Not found", { status: 404 });
   }
 
+  await recordSecurityEventLater({
+    action: "export.pdf",
+    outcome: "allowed",
+    actorProfileId: profile.id,
+    schemeId: invoice.schemeId,
+    resourceType: "PlatformInvoice",
+    resourceId: invoiceId,
+    metadata: { kind: "platform_invoice" },
+  });
   const bytes = await renderInvoicePdf(invoice);
   return new NextResponse(Buffer.from(bytes), {
     headers: {

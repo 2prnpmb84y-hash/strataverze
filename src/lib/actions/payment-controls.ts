@@ -58,7 +58,9 @@ export async function setTreasurerAction(schemeId: string, membershipId: string,
     // Losing the treasurer office is a role change: end that person's
     // sessions (security stage S5). Gaining it needs no sign-out, as the
     // shorter session limits and MFA apply from the next request.
-    if (!isTreasurer && membership.isTreasurer) await revokeAllSessions(membership.profileId);
+    if (!isTreasurer && membership.isTreasurer) {
+      await revokeAllSessions(membership.profileId, { actorProfileId: profile.id, reason: "treasurer office removed" });
+    }
     await logActivity({
       schemeId,
       actorId: profile.id,

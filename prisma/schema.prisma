@@ -3825,3 +3825,51 @@ model AppSession {
   @@index([profileId], map: "app_sessions_profile_idx")
   @@map("app_sessions")
 }
+
+/// Append-only security audit log (security stage S6). Insert only, through
+/// recordSecurityEvent (src/lib/audit/security-audit.ts). The database
+/// numbers, stamps and hash-chains each row and refuses any change or
+/// deletion except the 7-year retention job.
+model SecurityAuditEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Set by the database.
+  seq            BigInt   @default(0) @unique
+  /// Set by the database.
+  occurredAt     DateTime @default(now()) @db.Timestamptz @map("occurred_at")
+  actorProfileId String?  @map("actor_profile_id") @db.Uuid
+  actorAuthId    String?  @map("actor_auth_id") @db.Uuid
+  actorRole      String?  @map("actor_role")
+  schemeId       String?  @map("scheme_id") @db.Uuid
+  action         String
+  resourceType   String?  @map("resource_type")
+  resourceId     String?  @map("resource_id")
+  /// allowed, denied or failed.
+  outcome        String
+  reason         String?
+  ipHash         String?  @map("ip_hash")
+  userAgent      String?  @map("user_agent")
+  requestId      String?  @map("request_id")
+  metadata       Json     @default("{}")
+  /// Set by the database.
+  prevHash       String   @default("") @map("prev_hash")
+  /// Set by the database.
+  rowHash        String   @default("") @map("row_hash")
+
+  @@index([occurredAt], map: "security_audit_events_time_idx")
+  @@index([schemeId, occurredAt], map: "security_audit_events_scheme_idx")
+  @@index([actorProfileId, occurredAt], map: "security_audit_events_actor_idx")
+  @@index([action, occurredAt], map: "security_audit_events_action_idx")
+  @@map("security_audit_events")
+}
+
+/// Result of each daily hash chain check of the security audit log.
+model SecurityAuditCheck {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  checkedAt   DateTime @default(now()) @db.Timestamptz @map("checked_at")
+  ok          Boolean
+  rowsChecked BigInt   @map("rows_checked")
+  firstBadSeq BigInt?  @map("first_bad_seq")
+
+  @@index([checkedAt], map: "security_audit_checks_time_idx")
+  @@map("security_audit_checks")
+}

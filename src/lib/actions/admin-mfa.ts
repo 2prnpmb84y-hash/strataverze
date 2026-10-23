@@ -5,6 +5,7 @@ import { requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-mem
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { grantFactorRemoval } from "@/lib/auth/mfa-grants";
 import { revokeAllSessions } from "@/lib/auth/session-register";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfileById } from "@/lib/queries/profiles";
 
@@ -55,13 +56,21 @@ export async function resetUserMfaAction(
       removed += 1;
     }
 
-    // Recorded in the server log until the security audit log (stage S6)
-    // exists. The reason is not logged, since it can hold personal details
-    // from the identity check; S6 stores it in the audit log instead.
     // Removing a verified authenticator signs the user out in Supabase Auth;
     // end the app's sessions too, so every device has to sign in again.
-    await revokeAllSessions(target.id);
-    console.info(`[admin-mfa] reset by=${admin.id} target=${target.id} removed=${removed}`);
+    await revokeAllSessions(target.id, { actorProfileId: admin.id, reason: "MFA reset by an administrator" });
+    // The identity check the admin recorded is kept in the security audit
+    // log (restricted to platform admins), not in the server log.
+    await recordSecurityEvent({
+      action: "mfa.admin_reset",
+      outcome: "allowed",
+      actorProfileId: admin.id,
+      actorRole: "platform_admin",
+      resourceType: "profile",
+      resourceId: target.id,
+      reason: why,
+      metadata: { removed },
+    });
     revalidatePath("/admin/security");
     return { removed };
   } catch (err) {

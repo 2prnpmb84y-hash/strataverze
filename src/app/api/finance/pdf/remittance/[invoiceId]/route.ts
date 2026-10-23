@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { generateRemittancePdf } from "@/lib/pdf/generate";
@@ -18,5 +19,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return forbidden({ schemeId: invoice.schemeId, actorId: profile.id, entityType: "SupplierInvoice", entityId: invoice.id, what: "Remittance advice PDF" });
   }
   const pdf = await generateRemittancePdf(invoiceId, profile.id);
+  if (pdf) {
+    await recordSecurityEventLater({
+      action: "export.pdf",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      schemeId: invoice.schemeId,
+      resourceType: "SupplierInvoice",
+      resourceId: invoiceId,
+      metadata: { kind: "remittance" },
+    });
+  }
   return pdf ? pdfResponse(pdf) : notFound();
 }
