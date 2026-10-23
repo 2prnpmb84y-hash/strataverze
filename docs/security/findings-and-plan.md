@@ -19,7 +19,7 @@ So isolation has to hold in two places:
 | Severity | Count | Status |
 |---|---|---|
 | Critical | 4 | 3 fixed (SEC-001, SEC-003, SEC-004), 1 partly fixed (SEC-002, sign-up closes in S2) |
-| High | 11 | 6 fixed (SEC-005, 007, 008, 009, 014, and 033 in code), 1 partly fixed (SEC-012), 4 open (SEC-006 storage, SEC-010 MFA, SEC-011 sessions, SEC-013 backups) |
+| High | 11 | 8 fixed (SEC-005, 007, 008, 009, 010, 011, 014, and 033 in code), 1 partly fixed (SEC-012), 2 open (SEC-006 storage, SEC-013 backups) |
 | Medium | 10 | open |
 | Low | 8 | open |
 
@@ -56,8 +56,8 @@ SEC-004 also includes mass assignment. `createMatchingRule({ schemeId, ...data }
 | SEC-007 | Payment controls can be bypassed. `authoriseWorksPayment` skips the verified bank details check when the field is omitted, accepts any amount, and takes a free-text beneficiary. | `works.ts:1112-1150` | V | Require a VERIFIED bank version for the invoice's contractor. Cap at the approved amount less prior instructions. Take the beneficiary from the bank record. | **Fixed 23 Oct** (S1, PR #41). Works payments stay blocked until a bank detail verification step exists. |
 | SEC-008 | Sign-in only on contractor and quote actions. Any account can submit quotes on any RFQ in any contractor's name (`submitWorksQuotation`) and rewrite any contractor's ABN, email and phone (`updateContractorBusiness`). Contractors can submit their own forged ABR result (`saveAbnLookupResult`). | `works.ts:659,497`, `contractor.ts:262` | V (first two), R | Require an active contractor contact. Remove the duplicate actions. ABN checks only through the server-side ABR lookup. | **Fixed 23 Oct** (S0, PR #40). Unused `contractor.ts` removed. |
 | SEC-009 | Cross-scheme and over-broad reads | various pages, see the list below | V (dashboard), R (rest) | Membership and record-scope checks on every page. Minimal fields returned. | **Fixed 23 Oct** (S1, PR #41) |
-| SEC-010 | No MFA in the app. TOTP is enabled in Supabase, but there is no enrolment, challenge or enforcement, and 0 factors are enrolled. | Auth | V | See MFA design below | Open |
-| SEC-011 | Sessions never expire. Time-box and inactivity settings need the Supabase Pro plan, and the app enforces no timeout. | Auth | V | App-enforced idle and absolute timeouts (see Sessions below) | Open |
+| SEC-010 | No MFA in the app. TOTP is enabled in Supabase, but there is no enrolment, challenge or enforcement, and 0 factors are enrolled. | Auth | V | See MFA design below | Fixed in code (PR #42, with the review fixes). Storage policy and authenticator guard applied 23 Oct |
+| SEC-011 | Sessions never expire. Time-box and inactivity settings need the Supabase Pro plan, and the app enforces no timeout. | Auth | V | App-enforced idle and absolute timeouts (see Sessions below) | Fixed in code (PR #43). Register and triggers applied 23 Oct |
 | SEC-012 | Auth configuration is weak | Supabase Auth | V | See the list below | **Partly fixed 23 Oct**: Site URL, redirect list, and minimum 8 characters with all four character types. Open sign-up and CAPTCHA wait for S2. |
 | SEC-013 | No database backups. The Supabase Free plan includes no backups. | Supabase plan | V | Upgrade to Pro (daily backups, PITR available as an add-on), or run a scheduled encrypted export as an interim measure | Open, needs decision |
 | SEC-014 | Governance and role integrity | owner and adviser governance actions, `payment-controls.ts:28` | R | See the list below | **Fixed 23 Oct** (S1, PR #41), including the independent review items (co-owner conflicts, committee and owner votes kept apart, own-lot refunds) |
@@ -203,8 +203,8 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 | **S1 Authorisation layer** | `src/config/permissions.ts` (the matrix as code), `requireSchemeAccess(schemeId, capability)`, `loadInScheme(...)`, scheme-scoped mutators. Fix SEC-004, 007, 009, 014, 015, 023, 024. | None |
 | **S2 Accounts lifecycle** | Admin onboarding, bulk owner invitations, committee offices, Adviser invitation by chair or secretary, change of ownership with 30-day read-only, server-side account creation, supplier sign-up. Then turn off open sign-up. | Migration for offices and transfers. Auth setting. |
 | **S3 Storage** | Server-only uploads and downloads, document visibility, bucket MIME and size limits, SVG removed (SEC-006, 022) | Storage policies and bucket settings |
-| **S4 MFA** | Enrolment, login challenge, server enforcement, step-up for sensitive operations, recovery and admin reset | Auth setting (limit AAL1 session duration) |
-| **S5 Sessions** | App session register, idle and absolute timeouts, revocation on disable, role change and password reset, admin "sign out everywhere" | Migration |
+| **S4 MFA** (done, PR #42) | Enrolment, login challenge, server enforcement, step-up for sensitive operations, recovery and admin reset | Storage policy and authenticator guard (applied 23 Oct) |
+| **S5 Sessions** (done, PR #43) | App session register, idle and absolute timeouts, revocation on disable, role change and password reset, admin "sign out everywhere" | Migration (applied 23 Oct) |
 | **S6 Audit log** | Append-only `security_audit_events` with a hash chain, event coverage, admin viewer, retention job, owner feed restricted | Migration. Turn on Auth audit to database. |
 | **S7 Web hardening** | Email escaping, error mapping, log hygiene, database-backed rate limiting, cache headers, cron comparison, signed URL default (SEC-019, 020, 025 to 029, 031, 032) | Migration (rate limit table) |
 | **S8 Transport and patching** | Enforce SSL and `sslmode`, preview separation, Sensitive variables, Dependabot, CI audit gate, pinned Actions, dependency clean-up (SEC-017, 018, 021) | Database reboot. Vercel settings. |
@@ -234,6 +234,33 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
   - exports
 - **Recovery.** Users are encouraged to enrol a second authenticator. Supabase has no built-in backup codes. If both are lost, a platform admin removes the factor after verifying identity (callback to the phone number on record, plus a confirmation email). The reset is logged, and all the user's sessions are revoked.
 - **Revocation.** Disabling an account removes its memberships, ends its sessions and blocks sign-in.
+- **Rules held in the database (added after the independent review).** A trigger on `auth.mfa_factors` needs a one-time grant, written by the app after its own checks, to add a second authenticator or remove a verified one, and allows at most two. Calling the Supabase Auth API directly therefore cannot skip the 15 minute check or the admin identity check. Proven in a rolled-back run (13 checks) and applied 23 Oct.
+- **Independent review (23 Oct).** No way round the server gate was found. Fixed:
+  - the missing step-up on works invoice approval and on several bank detail, delegation, approval route and contractor review actions (a guard test now lists them all);
+  - an open redirect through the "return to" link;
+  - a fail-open path in the MFA check;
+  - phone number changes, which now need step-up;
+  - the password reset flow for accounts with an authenticator.
+- **Still to confirm against the live project** once someone has enrolled:
+  - whether Supabase refuses a password change from a password-only session (`insufficient_aal`);
+  - how Supabase rate-limits code checks. If the limit is per IP, all server-side checks share Vercel's addresses.
+
+## Sessions design (stage S5)
+
+- **Register.** `app_sessions` holds one row per Supabase session the app has seen, keyed by the token's `session_id`. It records:
+  - the sign-in time, from `amr` and kept from first sight;
+  - last activity, written at most once a minute;
+  - when and why it ended.
+- **Enforcement.** The same check runs in `getCurrentSession`, which covers every page, server action and route handler, and in the proxy. The proxy also clears the cookies and shows the reason on the sign-in page. A token with no session id or sign-in time is refused.
+- **Ending a session.** Setting `revoked_at` makes a trigger delete the session from `auth.sessions`, and its refresh tokens go with it.
+- **Sign out everywhere.** `profiles.sessions_revoked_at` ends every session that signed in before it. It is set by:
+  - the user in Settings;
+  - a platform admin on /admin/security (step-up and a reason required);
+  - an MFA reset;
+  - losing an owner or treasurer role;
+  - any password change (a trigger on `auth.users`). Setting a first password, for an invited user, does not set it.
+- **Account disable.** When it is built in S2, it calls the same revocation.
+- **Applied 23 Oct.** Proven first in a rolled-back run, which covered single-session end, sign out everywhere, password change, first password, other updates and Data API access.
 
 ## Proposed settings for approval
 
@@ -243,7 +270,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 | Absolute timeout, privileged roles | **12 hours** | One working day |
 | Idle timeout, owners, committee, suppliers | **4 hours** | Lower privilege, less friction |
 | Absolute timeout, owners, committee, suppliers | **14 days** | Fortnightly sign-in |
-| Access token lifetime (Supabase) | **15 minutes** (currently 60) | Limits a stolen token's use against the Auth API. The app check revokes immediately inside the app either way. |
+| Access token lifetime (Supabase) | **60 minutes, unchanged** (your decision, 23 Oct; 15 was proposed) | Inside the app a session is cut off at once either way. See residual risks. |
 | Step-up window | **15 minutes** | |
 | Password minimum | **8 characters** (your decision, 23 Oct), mixed case and digits (Supabase setting) | Applies at next password change, so existing users are unaffected. Matches the app's existing 8 character rule. |
 | Invitation expiry | **14 days** | |
@@ -300,7 +327,11 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 - **Payment policy loosening.** A treasurer (not also an adviser) can loosen the payment policy alone. A second-approver step is a follow-up.
 - **Contractor identity after approval.** An approved contractor can still change its company name, phone and email without re-review.
 - **Owner assignment.** An adviser can assign any existing profile as owner of a lot without an invitation (replaced by the invitation flow in S2).
-- **Password change.** Changing a password does not ask for the current password (S4, with re-authentication).
+- **Password change.** Changing a password does not ask for the current password. It is done from a reset link only. Since S5, any password change signs out every session, including the one that made it.
+- **Notifications.** Nobody is yet told by email when their phone number, authenticators or sessions change, or when an admin resets their MFA. This waits on email (S2).
+- **Durable record of admin actions.** Admin MFA resets and admin sign-outs are only in the short-lived server log until the audit log (S6). The reason typed by the admin is not logged, because it can hold personal details.
+- **Exports.** The committee pack, statutory pack, owner statement, levy notice and remittance PDFs do not need a fresh authenticator check. Only the audit export does. Owners downloading their own documents is the main use. This is your call if you want the packs gated.
+- **Money actions not on the step-up list.** Levy receipts and reversals, journal entries, special levies, levy schedule approval, debt recovery write-offs and owner credit application need MFA (for the roles that hold them) but not a check in the last 15 minutes. They could be added to the list if you want.
 
 ## Residual risks and limitations
 
@@ -311,3 +342,6 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 - Exported files and PDFs are outside our control once downloaded.
 - Platform admins (StrataVerze staff) can see every building. This is mitigated by MFA, audit and least use, not removed.
 - The `postgres` database credential is all-powerful. It is held only in Vercel and the local environment.
+- **Access token lifetime is 60 minutes** (your decision). A token copied from a signed-in browser keeps working directly against Supabase until it expires, even after the session is ended. The app itself refuses it straight away. Once S3 moves storage server-side, the token reaches nothing but the Auth API.
+- **Code-guessing limits.** The app limits code checks to 5 per 15 minutes per user, but per server instance. Supabase's own limit applies to direct calls. Both are to be confirmed (see MFA design).
+- **Session timeouts are checked on the next request.** A page left open shows its content until the next click or reload, which then signs the user out. There is no on-screen countdown.
