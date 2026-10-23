@@ -203,7 +203,7 @@ export async function getAvailablePortals(profileId: string) {
   const portals: string[] = [];
 
   for (const role of roles) {
-    const key = role.toLowerCase();
+    const key = String(role).toLowerCase();
     // COMMITTEE members use the owner portal with extra features
     // Committee members and payment authorisers use the owner portal.
     if (key === "committee" || key === "owner" || key === "payment_authoriser") {
@@ -211,6 +211,12 @@ export async function getAvailablePortals(profileId: string) {
     } else {
       if (!portals.includes(key)) portals.push(key);
     }
+  }
+
+  // A supplier is linked through its business's contact, not a building.
+  if (!portals.includes("supplier")) {
+    const contact = await db.orm.public.ContractorContact.where((c) => c.profileId.eq(profileId)).first();
+    if (contact) portals.push("supplier");
   }
 
   return portals;

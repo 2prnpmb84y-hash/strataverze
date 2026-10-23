@@ -287,6 +287,7 @@ export function PortalShell({
           <TopBar
             user={user}
             portal={portal}
+            otherPortals={otherPortals}
             pageTitle={pageTitle}
             pendingInvitationCount={pendingInvitationCount}
           />
