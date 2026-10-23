@@ -22,7 +22,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/brand/logo-horizontal-gradient.png"
+              src="/brand/logo-horizontal-black.png"
               alt="StrataVerze"
               width={280}
               height={64}
