@@ -210,23 +210,6 @@ export default function Page() {
         </div>
       </section>
 
-      {/* Company Info */}
-      <section className="py-16 md:py-24">
-        <div className="mx-auto max-w-3xl px-4 text-center">
-          <h2 className="font-heading text-3xl font-bold text-[var(--foreground)]">
-            Company details
-          </h2>
-          <div className="mt-8 space-y-2 text-[var(--muted)]">
-            <p className="text-lg font-medium text-[var(--foreground)]">
-              StrataVerze Pty Ltd
-            </p>
-            <p>ABN 25 680 401 450</p>
-            <p>ACN 680 401 450</p>
-            <p>Sydney, Australia</p>
-          </div>
-        </div>
-      </section>
-
       {/* CTA */}
       <section className="gradient-bg py-16 md:py-20">
         <div className="mx-auto max-w-3xl px-4 text-center">
