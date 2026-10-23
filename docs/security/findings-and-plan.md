@@ -20,8 +20,8 @@ So isolation has to hold in two places:
 |---|---|---|
 | Critical | 4 | 3 fixed (SEC-001, SEC-003, SEC-004), 1 partly fixed (SEC-002, sign-up closes in S2) |
 | High | 11 | 9 fixed (SEC-005, 006, 007, 008, 009, 010, 011, 014, and 033 in code), 1 partly fixed (SEC-012), 1 open (SEC-013 backups). SEC-006 is complete only once part 2 of its migration is applied after deploy. |
-| Medium | 10 | 2 fixed (SEC-016, SEC-022 in code), 8 open |
-| Low | 8 | open |
+| Medium | 10 | 4 fixed (SEC-016, and SEC-019, 020, 022 in code), 6 open |
+| Low | 8 | 7 fixed (SEC-025 to 029 in code, SEC-031, 032), 1 accepted (SEC-030) |
 
 The single most important point: **today anyone on the internet can sign up, create a building, and become its Adviser** (SEC-002). Many server actions check only "is this person an Adviser on *some* scheme" and then act on whatever record id they are sent (SEC-004). Together, a stranger could change or delete other buildings' records if they know the record ids. Ids are random UUIDs, so this is hard to exploit blind, but unguessable ids are not an access control.
 
@@ -96,8 +96,8 @@ SEC-014 covers these integrity gaps:
 | SEC-016 | **Audit logging gaps.** `activity_logs` needs a scheme, so there are no auth, MFA or platform events. Rows can be altered or deleted. No outcome, IP or request context. No downloads, contact views or access denials recorded (except finance documents). Supabase Auth audit-to-database is off. Owners see the scheme's whole activity log. | V | New append-only security audit log (see Audit below) | **Fixed 23 Oct** (S6, PR #44). Tables, triggers, schedules and the Auth audit setting applied. The owner feed was already restricted in S1. |
 | SEC-017 | **Database TLS not enforced.** Supabase "Enforce SSL on incoming connections" is off. The local `DATABASE_URL` has no `sslmode`, and the production value is unconfirmed. | V | Enforce SSL (brief database reboot), add `sslmode` to the connection strings and test on a preview deployment |
 | SEC-018 | **Preview deployments use production database credentials.** All variables are scoped "Production and Preview", none marked Sensitive. | V | Separate preview database, or remove production credentials from Preview. Mark the variables Sensitive. |
-| SEC-019 | Email templates insert user text into HTML unescaped (announcements, invitations, meetings, levies, work orders). This is a phishing vector from the StrataVerze sending address. | R | One shared escape for every value, and validate link targets |
-| SEC-020 | Rate limiting is per serverless instance and in memory, applied only to login | R | Database-backed limiter on login, sign-up, forgot and reset password, invitation acceptance and search |
+| SEC-019 | Email templates insert user text into HTML unescaped (announcements, invitations, meetings, levies, work orders). This is a phishing vector from the StrataVerze sending address. | R | One shared escape for every value, and validate link targets **Fixed in code 23 Oct (S7, PR #46).** |
+| SEC-020 | Rate limiting is per serverless instance and in memory, applied only to login | R | Database-backed limiter on login, sign-up, forgot and reset password, invitation acceptance and search **Fixed in code 23 Oct (S7, PR #46).** Table applied to production. Supabase's own Auth API limits still apply to direct calls (see S7 as built). |
 | SEC-021 | **Dependency management.** No Dependabot, no audit in CI, Actions not pinned. `npm audit` (production) lists 14 findings: 8 high, 6 moderate. Most sit in the Prisma CLI toolchain (hono, lodash, alchemy), which is installed as a runtime dependency. `fflate` 0.8.2 has a moderate denial-of-service issue (fix 0.8.3). An unused `@prisma/client` 7 is installed. | V | Dependabot, an audit gate in CI, move the CLI to devDependencies, bump `fflate`, remove the unused client |
 | SEC-022 | Client-asserted upload details: `fileUrl`, size and MIME type are trusted, and `resolveDocumentUrl` passes external URLs through, which makes an open redirect | R | Covered by the SEC-006 rebuild **Partly fixed 23 Oct (S1): paths limited to the scheme folder, no external URLs. Fixed in code 23 Oct (S3, PR #45): nothing the browser sends is stored, and the stored size, type and bytes are checked.** |
 | SEC-023 | Global `hasCommitteeRole` and similar checks are not tied to the scheme in hand | V | Scheme-scoped role checks **Fixed 23 Oct (S1).** |
@@ -107,12 +107,12 @@ SEC-014 covers these integrity gaps:
 
 | ID | Finding |
 |---|---|
-| SEC-025 | Raw database or Supabase error text is returned to the client in several actions |
-| SEC-026 | Strata roll text (owner names and addresses) is written to server logs. Bank detail errors are logged whole. |
-| SEC-027 | The cron secret is compared with `!==` rather than a constant-time comparison |
-| SEC-028 | Authenticated API responses send `cache-control: public, max-age=0`. They should send `private, no-store`. |
-| SEC-029 | The signed URL helper defaults to 3600 seconds |
-| SEC-030 | Supabase auth cookies are readable by JavaScript (the `@supabase/ssr` design). The strict nonce CSP is the main mitigation. |
+| SEC-025 | Raw database or Supabase error text is returned to the client in several actions **Fixed in code 23 Oct (S7, PR #46).** |
+| SEC-026 | Strata roll text (owner names and addresses) is written to server logs. Bank detail errors are logged whole. **Fixed in code 23 Oct (S7, PR #46).** |
+| SEC-027 | The cron secret is compared with `!==` rather than a constant-time comparison **Fixed in code 23 Oct (S7, PR #46).** |
+| SEC-028 | Authenticated API responses send `cache-control: public, max-age=0`. They should send `private, no-store`. **Fixed in code 23 Oct (S7, PR #46).** |
+| SEC-029 | The signed URL helper defaults to 3600 seconds **Fixed in code 23 Oct (S7, PR #46).** |
+| SEC-030 | Supabase auth cookies are readable by JavaScript (the `@supabase/ssr` design). The strict nonce CSP is the main mitigation. **Accepted (design of the library).** |
 | SEC-031 | The pending invitation lookup uses an unescaped `ilike` on email **Fixed 23 Oct (S1).** |
 | SEC-032 | One contractor review path lacks the self-approval guard **Fixed 23 Oct (S1).** |
 
@@ -206,7 +206,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 | **S4 MFA** (done, PR #42) | Enrolment, login challenge, server enforcement, step-up for sensitive operations, recovery and admin reset | Storage policy and authenticator guard (applied 23 Oct) |
 | **S5 Sessions** (done, PR #43) | App session register, idle and absolute timeouts, revocation on disable, role change and password reset, admin "sign out everywhere" | Migration (applied 23 Oct) |
 | **S6 Audit log** (done, PR #44) | Append-only `security_audit_events` with a hash chain, event coverage, admin viewer, retention job, owner feed restricted | Migration, pg_cron, Auth audit to database (all applied 23 Oct) |
-| **S7 Web hardening** | Email escaping, error mapping, log hygiene, database-backed rate limiting, cache headers, cron comparison, signed URL default (SEC-019, 020, 025 to 029, 031, 032) | Migration (rate limit table) |
+| **S7 Web hardening** (done, PR #46) | Email escaping, error mapping, log hygiene, database-backed rate limiting, cache headers, cron comparison, signed URL default (SEC-019, 020, 025 to 029, 031, 032) | Rate limit table and purge job (applied 23 Oct) |
 | **S8 Transport and patching** | Enforce SSL and `sslmode`, preview separation, Sensitive variables, Dependabot, CI audit gate, pinned Actions, dependency clean-up (SEC-017, 018, 021) | Database reboot. Vercel settings. |
 | **S9 Documentation and verification** | Final register, matrix, verification report with evidence, runbook, residual risks | None |
 
@@ -368,6 +368,37 @@ Uploads never used are removed daily once their link has expired (run from the e
 - Signed downloads answer Range requests and send `nosniff`.
 - `SUPABASE_SERVICE_ROLE_KEY` is set for Production.
 
+## Web hardening (stage S7, as built 23 Oct)
+
+- **Emails.** Every template is built with an auto-escaping `html` tag (`src/lib/email-templates/html.ts`). Text from people (building names, titles, announcement bodies, locations, names) can never become markup or a link. Buttons link only to the app's own address. Subjects are one plain line.
+- **Rate limits** (`src/lib/auth/rate-limit-db.ts`, table `rate_limit_hits`). Keys are keyed hashes, so no email or IP address is stored. Rows older than a day are purged hourly.
+
+| Action | Limit | What counts |
+|---|---|---|
+| Sign-in | 5 per 15 min per address and account. 50 per hour per account. 100 per hour per address. | Failed passwords only |
+| Sign-up | 5 per 15 min per address and account. 20 per hour per address. | Every attempt |
+| Password reset email | 3 per 15 min per address and account. 10 per hour per account. 20 per hour per address. | Emails requested from Supabase |
+| Authenticator code | 5 per 15 min per person | Every attempt |
+| Invitation acceptance | 10 per 15 min per person | Every attempt |
+| Search | 60 per minute per person | Every search |
+| Uploads (S3) | 60 per 10 min per person | Every upload prepared |
+
+  Only failures count for sign-in, so nobody can lock an account by being refused or by signing in. A missing IP address skips the address limit. If the database cannot be reached, the in-memory limit applies instead.
+- **Errors and logs.** Messages from the database and libraries stay in the server log. `logError` writes the name, code, constraint, location and the message with quoted values, email addresses and long numbers masked.
+- **Pages and responses.**
+  - The sign-in, forgot and reset password pages show only fixed messages from their address.
+  - Route handlers, proxy redirects and responses that refresh auth cookies send `private, no-store`.
+  - The cron secret is compared in constant time.
+  - Signed download links last 5 minutes by default.
+
+**Supabase's own limits** (read from the dashboard on 23 Oct). Supabase's Auth API can be called directly with the public key, outside the app's limits, so these are what apply there:
+- 30 sign-ins and sign-ups per 5 minutes per IP;
+- 30 code checks per 5 minutes per IP;
+- 150 token refreshes per 5 minutes per IP;
+- 2 emails per hour on the built-in sender (fixed until a custom SMTP sender is set up, which S2 does with Resend).
+
+CAPTCHA (Attack Protection) is off. See Decisions needed.
+
 ## Changes that could disrupt users
 
 1. **Enforcing database SSL** causes a database reboot of seconds to a few minutes. Best done out of hours.
@@ -385,7 +416,8 @@ Uploads never used are removed daily once their link has expired (run from the e
    - Whether Vercel Hobby is acceptable for a commercial service. Please check Vercel's current terms, as I can't confirm them.
 3. **Committee access to owner contact details.** Names and lot numbers only, or emails and phones too?
 4. **A separate Supabase project for preview deployments**, or preview runs without database credentials.
-5. **The domain.** Decided: `strataverze.com`. Still to do: verify the domain in Resend (add its DNS records in Cloudflare), add `RESEND_API_KEY` to Vercel, and add MX records if mail to support@ and staff addresses should be received.
+5. **CAPTCHA on sign-in, sign-up and password reset.** Supabase can require a Cloudflare Turnstile or hCaptcha check on those calls, including direct calls that bypass the app. It needs a free Turnstile site key and secret (you add them), and the forms then show the check. Recommended before onboarding real buildings, because it also stops someone locking an account by failing sign-ins from many addresses.
+6. **The domain.** Decided: `strataverze.com`. Still to do: verify the domain in Resend (add its DNS records in Cloudflare), add `RESEND_API_KEY` to Vercel, and add MX records if mail to support@ and staff addresses should be received.
 
 ## Open items raised in S1 (for decision or a later stage)
 
@@ -419,4 +451,6 @@ Uploads never used are removed daily once their link has expired (run from the e
 - **Code-guessing limits.** The app limits code checks to 5 per 15 minutes per user, but per server instance. Supabase's own limit applies to direct calls. Both are to be confirmed (see MFA design).
 - **Office file check is a heuristic.** A zip that names Office parts in its first entries passes as an Office file. It is stored with an Office type, so browsers download it rather than run it.
 - **Until part 2 of S3 is applied,** members can read and upload in their building's storage folder directly with their own session, outside the visibility rules.
+- **Direct Auth API calls.** Supabase's sign-in, sign-up, reset and code endpoints can be called with the public key, so only Supabase's own per-IP limits apply to them (see S7 as built) until CAPTCHA is on.
+- **Account lockout.** Failed sign-ins from many addresses can still reach an account's limit of 50 an hour. CAPTCHA closes this.
 - **Session timeouts are checked on the next request.** A page left open shows its content until the next click or reload, which then signs the user out. There is no on-screen countdown.
