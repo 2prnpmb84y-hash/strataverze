@@ -98,17 +98,9 @@ export async function validatePeriodForPosting(
   // No matching period — allow (periods may not be set up yet or date is in a gap)
   if (!period) return;
 
-  if (period.status === "LOCKED") {
-    throw new Error(
-      `Cannot post to a locked period (${String(period.name)}). The period must be reopened before any entries can be posted.`,
-    );
-  }
-
-  if (period.status === "CLOSED" && entryType !== "ADJUSTMENT") {
-    throw new Error(
-      `Cannot post to a closed period (${String(period.name)}). Use an adjustment entry or reopen the period first.`,
-    );
-  }
+  // One rule, shared with the pure check below.
+  const problem = checkPeriodPostingRule(String(period.status), String(period.name), entryType);
+  if (problem) throw new Error(problem);
 
   // OPEN period or CLOSED + ADJUSTMENT — allowed
 }
@@ -157,7 +149,8 @@ export function checkPeriodPostingRule(
   entryType: string,
 ): string | null {
   if (periodStatus === "LOCKED") {
-    return `Cannot post to a locked period (${periodName}). The period must be reopened before any entries can be posted.`;
+    // TC-010 wording.
+    return `This period is locked. Contact your system administrator to unlock. (${periodName})`;
   }
   if (periodStatus === "CLOSED" && entryType !== "ADJUSTMENT") {
     return `Cannot post to a closed period (${periodName}). Use an adjustment entry or reopen the period first.`;

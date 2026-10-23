@@ -23,6 +23,7 @@ import { getSchemeInterestSetting } from "./interest-setting";
 import { generalMeetingResolutionProblem } from "./resolutions";
 import { LEDGER_STATUSES } from "@/lib/finance/ledger-status";
 import { migratedInvoiceEntries } from "./migrated-invoices";
+import { livePayments } from "./levy-reversal";
 
 export class StatutoryPackError extends Error {}
 
@@ -99,7 +100,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     db.orm.public.StatutoryPackSnapshot.where((s) => and(s.schemeId.eq(schemeId), s.financialYear.eq(financialYear))).first(),
   ]);
   const payments = notices.length
-    ? await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(notices.map((n) => n.id))).limit(100000).all()
+    ? livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(notices.map((n) => n.id))).limit(100000).all(), end)
     : [];
   const accountIds = [...new Set(nextBudget.map((b) => b.accountCodeId))];
   const budgetAccounts = accountIds.length ? await db.orm.public.AccountCode.where((a) => a.id.in(accountIds)).limit(500).all() : [];

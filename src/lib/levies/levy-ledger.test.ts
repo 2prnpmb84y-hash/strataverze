@@ -60,6 +60,21 @@ describe("buildStatement", () => {
     expect(s.closingBalance).toBe(1350.17);
   });
 
+  it("shows a dishonoured payment and its reversal, with the reason (TC-008)", () => {
+    const after = { ...q1, amountPaid: "100", balanceOutstanding: "725.09" };
+    const s = buildStatement([after], [
+      { ...payments[0], reversedAt: "2026-07-20T02:00:00Z", reversalDate: "2026-07-18", reversalReason: "DISHONOURED", reversalNote: "Direct debit failed" },
+      payments[1],
+    ]);
+    expect(s.lines.map((l) => [l.date, l.type, l.charge, l.payment, l.balance, l.description])).toEqual([
+      ["2026-07-01", "Levy", 825.09, 0, 825.09, expect.any(String)],
+      ["2026-07-10", "Payment", 0, 200, 625.09, "Payment for LN-0001"],
+      ["2026-07-18", "Reversal", 200, 0, 825.09, "Payment for LN-0001 reversed, dishonoured: Direct debit failed"],
+      ["2026-08-15", "Payment", 0, 100, 725.09, "Payment for LN-0001 (BPAY 123)"],
+    ]);
+    expect(s.closingBalance).toBe(725.09);
+  });
+
   it("rolls earlier entries into the opening balance", () => {
     const s = buildStatement([q1, q2], payments, { startDate: "2026-08-01" });
     expect(s.openingBalance).toBe(625.09);

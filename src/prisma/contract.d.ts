@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'f5855c0c9db4d0c254a62821c67aa023472d859d6fdb019dea3d00817b7979e2'>;
+  StorageHashBase<'3c7bcbec4d66974913f22d40c342e60199c90ecc86423631aaf0183bd409a700'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -326,6 +326,8 @@ export type FieldOutputTypes = {
       readonly balance: Numeric<12, 2> | null;
       readonly bankAccountId: CodecTypes['pg/uuid@1']['output'];
       readonly description: Varchar<500>;
+      readonly exclusionReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly fitid: Varchar<255> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly importBatchId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly importSource: CodecTypes['pg/text@1']['output'];
@@ -744,6 +746,7 @@ export type FieldOutputTypes = {
       readonly documentDate: CodecTypes['pg/date-string@1']['output'] | null;
       readonly documentStatus: CodecTypes['pg/text@1']['output'];
       readonly documentType: CodecTypes['pg/text@1']['output'];
+      readonly duplicateOfId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly fileName: Varchar<500>;
       readonly fileSize: CodecTypes['pg/int4@1']['output'];
       readonly fileUrl: CodecTypes['pg/text@1']['output'];
@@ -1107,11 +1110,17 @@ export type FieldOutputTypes = {
       readonly amount: Numeric<12, 2>;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly levyNoticeId: CodecTypes['pg/uuid@1']['output'];
       readonly lotId: CodecTypes['pg/uuid@1']['output'];
       readonly paymentDate: CodecTypes['pg/date-string@1']['output'];
       readonly recordedBy: CodecTypes['pg/uuid@1']['output'] | null;
       readonly reference: CodecTypes['pg/text@1']['output'] | null;
+      readonly reversalDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly reversalJournalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly reversalNote: CodecTypes['pg/text@1']['output'] | null;
+      readonly reversalReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly reversedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
     };
     readonly LevySchedule: {
@@ -2647,6 +2656,8 @@ export type FieldInputTypes = {
       readonly balance: CodecTypes['pg/numeric@1']['input'] | null;
       readonly bankAccountId: CodecTypes['pg/uuid@1']['input'];
       readonly description: CodecTypes['sql/varchar@1']['input'];
+      readonly exclusionReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly fitid: CodecTypes['sql/varchar@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly importBatchId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly importSource: CodecTypes['pg/text@1']['input'];
@@ -3065,6 +3076,7 @@ export type FieldInputTypes = {
       readonly documentDate: CodecTypes['pg/date-string@1']['input'] | null;
       readonly documentStatus: CodecTypes['pg/text@1']['input'];
       readonly documentType: CodecTypes['pg/text@1']['input'];
+      readonly duplicateOfId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly fileName: CodecTypes['sql/varchar@1']['input'];
       readonly fileSize: CodecTypes['pg/int4@1']['input'];
       readonly fileUrl: CodecTypes['pg/text@1']['input'];
@@ -3428,11 +3440,17 @@ export type FieldInputTypes = {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly levyNoticeId: CodecTypes['pg/uuid@1']['input'];
       readonly lotId: CodecTypes['pg/uuid@1']['input'];
       readonly paymentDate: CodecTypes['pg/date-string@1']['input'];
       readonly recordedBy: CodecTypes['pg/uuid@1']['input'] | null;
       readonly reference: CodecTypes['pg/text@1']['input'] | null;
+      readonly reversalDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly reversalJournalEntryId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly reversalNote: CodecTypes['pg/text@1']['input'] | null;
+      readonly reversalReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly reversedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
     };
     readonly LevySchedule: {
@@ -4977,6 +4995,8 @@ export type StorageColumnTypes = {
       readonly balance: Numeric<12, 2> | null;
       readonly bank_account_id: CodecTypes['pg/uuid@1']['output'];
       readonly description: Varchar<500>;
+      readonly exclusion_reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly fitid: Varchar<255> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly import_batch_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly import_source: CodecTypes['pg/text@1']['output'];
@@ -5391,6 +5411,7 @@ export type StorageColumnTypes = {
       readonly document_date: CodecTypes['pg/date-string@1']['output'] | null;
       readonly document_status: CodecTypes['pg/text@1']['output'];
       readonly document_type: CodecTypes['pg/text@1']['output'];
+      readonly duplicate_of_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly file_name: Varchar<500>;
       readonly file_size: CodecTypes['pg/int4@1']['output'];
       readonly file_url: CodecTypes['pg/text@1']['output'];
@@ -5749,11 +5770,17 @@ export type StorageColumnTypes = {
       readonly amount: Numeric<12, 2>;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly levy_notice_id: CodecTypes['pg/uuid@1']['output'];
       readonly lot_id: CodecTypes['pg/uuid@1']['output'];
       readonly payment_date: CodecTypes['pg/date-string@1']['output'];
       readonly recorded_by: CodecTypes['pg/uuid@1']['output'] | null;
       readonly reference: CodecTypes['pg/text@1']['output'] | null;
+      readonly reversal_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly reversal_journal_entry_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly reversal_note: CodecTypes['pg/text@1']['output'] | null;
+      readonly reversal_reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly reversed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
     };
     readonly levy_schedules: {
@@ -7299,6 +7326,8 @@ export type StorageColumnInputTypes = {
       readonly balance: CodecTypes['pg/numeric@1']['input'] | null;
       readonly bank_account_id: CodecTypes['pg/uuid@1']['input'];
       readonly description: CodecTypes['sql/varchar@1']['input'];
+      readonly exclusion_reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly fitid: CodecTypes['sql/varchar@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly import_batch_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly import_source: CodecTypes['pg/text@1']['input'];
@@ -7713,6 +7742,7 @@ export type StorageColumnInputTypes = {
       readonly document_date: CodecTypes['pg/date-string@1']['input'] | null;
       readonly document_status: CodecTypes['pg/text@1']['input'];
       readonly document_type: CodecTypes['pg/text@1']['input'];
+      readonly duplicate_of_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly file_name: CodecTypes['sql/varchar@1']['input'];
       readonly file_size: CodecTypes['pg/int4@1']['input'];
       readonly file_url: CodecTypes['pg/text@1']['input'];
@@ -8071,11 +8101,17 @@ export type StorageColumnInputTypes = {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly levy_notice_id: CodecTypes['pg/uuid@1']['input'];
       readonly lot_id: CodecTypes['pg/uuid@1']['input'];
       readonly payment_date: CodecTypes['pg/date-string@1']['input'];
       readonly recorded_by: CodecTypes['pg/uuid@1']['input'] | null;
       readonly reference: CodecTypes['pg/text@1']['input'] | null;
+      readonly reversal_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly reversal_journal_entry_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly reversal_note: CodecTypes['pg/text@1']['input'] | null;
+      readonly reversal_reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly reversed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
     };
     readonly levy_schedules: {
@@ -9640,6 +9676,8 @@ export namespace Models {
     balance: Numeric<12, 2> | null;
     bankAccountId: CodecTypes['pg/uuid@1']['output'];
     description: Varchar<500>;
+    exclusionReason: CodecTypes['pg/text@1']['output'] | null;
+    fitid: Varchar<255> | null;
     id: CodecTypes['pg/uuid@1']['output'];
     importBatchId: CodecTypes['pg/uuid@1']['output'] | null;
     importSource: CodecTypes['pg/text@1']['output'];
@@ -10168,6 +10206,7 @@ export namespace Models {
     documentDate: CodecTypes['pg/date-string@1']['output'] | null;
     documentStatus: CodecTypes['pg/text@1']['output'];
     documentType: CodecTypes['pg/text@1']['output'];
+    duplicateOfId: CodecTypes['pg/uuid@1']['output'] | null;
     fileName: Varchar<500>;
     fileSize: CodecTypes['pg/int4@1']['output'];
     fileUrl: CodecTypes['pg/text@1']['output'];
@@ -10639,11 +10678,17 @@ export namespace Models {
     amount: Numeric<12, 2>;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
+    journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
     levyNoticeId: CodecTypes['pg/uuid@1']['output'];
     lotId: CodecTypes['pg/uuid@1']['output'];
     paymentDate: CodecTypes['pg/date-string@1']['output'];
     recordedBy: CodecTypes['pg/uuid@1']['output'] | null;
     reference: CodecTypes['pg/text@1']['output'] | null;
+    reversalDate: CodecTypes['pg/date-string@1']['output'] | null;
+    reversalJournalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+    reversalNote: CodecTypes['pg/text@1']['output'] | null;
+    reversalReason: CodecTypes['pg/text@1']['output'] | null;
+    reversedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     levyNotice: public_LevyNotice;
     readonly [RelationKeys]?: 'levyNotice';
@@ -13748,6 +13793,19 @@ type ContractBase = Omit<
                   readonly codecId: 'sql/varchar@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly length: 500 };
+                  readonly many: false;
+                };
+                readonly exclusion_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly fitid: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 255 };
                   readonly many: false;
                 };
                 readonly id: {
@@ -17133,6 +17191,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly duplicate_of_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly file_name: {
                   readonly dataType: 'pg/varchar';
                   readonly codecId: 'sql/varchar@1';
@@ -20126,6 +20190,12 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly levy_notice_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -20153,6 +20223,36 @@ type ContractBase = Omit<
                 readonly reference: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reversal_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reversal_journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reversal_note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reversal_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reversed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -33607,6 +33707,18 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 500 };
                 };
               };
+              readonly exclusionReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fitid: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 255 };
+                };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -33750,6 +33862,8 @@ type ContractBase = Omit<
                 readonly balance: { readonly column: 'balance' };
                 readonly bankAccountId: { readonly column: 'bank_account_id' };
                 readonly description: { readonly column: 'description' };
+                readonly exclusionReason: { readonly column: 'exclusion_reason' };
+                readonly fitid: { readonly column: 'fitid' };
                 readonly id: { readonly column: 'id' };
                 readonly importBatchId: { readonly column: 'import_batch_id' };
                 readonly importSource: { readonly column: 'import_source' };
@@ -36799,6 +36913,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly duplicateOfId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly fileName: {
                 readonly nullable: false;
                 readonly type: {
@@ -36980,6 +37098,7 @@ type ContractBase = Omit<
                 readonly documentDate: { readonly column: 'document_date' };
                 readonly documentStatus: { readonly column: 'document_status' };
                 readonly documentType: { readonly column: 'document_type' };
+                readonly duplicateOfId: { readonly column: 'duplicate_of_id' };
                 readonly fileName: { readonly column: 'file_name' };
                 readonly fileSize: { readonly column: 'file_size' };
                 readonly fileUrl: { readonly column: 'file_url' };
@@ -39692,6 +39811,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly journalEntryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly levyNoticeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -39711,6 +39834,29 @@ type ContractBase = Omit<
               readonly reference: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reversalDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly reversalJournalEntryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly reversalNote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reversalReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reversedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
               };
               readonly schemeId: {
                 readonly nullable: false;
@@ -39738,11 +39884,17 @@ type ContractBase = Omit<
                 readonly amount: { readonly column: 'amount' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly id: { readonly column: 'id' };
+                readonly journalEntryId: { readonly column: 'journal_entry_id' };
                 readonly levyNoticeId: { readonly column: 'levy_notice_id' };
                 readonly lotId: { readonly column: 'lot_id' };
                 readonly paymentDate: { readonly column: 'payment_date' };
                 readonly recordedBy: { readonly column: 'recorded_by' };
                 readonly reference: { readonly column: 'reference' };
+                readonly reversalDate: { readonly column: 'reversal_date' };
+                readonly reversalJournalEntryId: { readonly column: 'reversal_journal_entry_id' };
+                readonly reversalNote: { readonly column: 'reversal_note' };
+                readonly reversalReason: { readonly column: 'reversal_reason' };
+                readonly reversedAt: { readonly column: 'reversed_at' };
                 readonly schemeId: { readonly column: 'scheme_id' };
               };
             };

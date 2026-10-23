@@ -29,7 +29,18 @@ export interface LedgerPayment {
   amount: unknown;
   paymentDate: unknown;
   reference?: unknown;
+  /** Set when the payment was reversed (wrong lot, dishonoured, entered in error). */
+  reversedAt?: unknown;
+  reversalDate?: unknown;
+  reversalReason?: string | null;
+  reversalNote?: string | null;
 }
+
+const REVERSAL_TEXT: Record<string, string> = {
+  WRONG_LOT: "allocated to the wrong lot",
+  DISHONOURED: "dishonoured",
+  ENTERED_IN_ERROR: "entered in error",
+};
 
 const num = (v: unknown) => Math.round(Number(v ?? 0) * 100) / 100;
 
@@ -88,7 +99,7 @@ export const STATUS_STYLES: Record<string, string> = {
 export interface StatementLine {
   id: string;
   date: string;
-  type: "Levy" | "Interest" | "Payment" | "Refund";
+  type: "Levy" | "Interest" | "Payment" | "Refund" | "Reversal";
   description: string;
   charge: number;
   payment: number;
@@ -115,7 +126,7 @@ export interface Statement {
  */
 export interface LedgerCreditMovement {
   id: string;
-  type: string; // OVERPAYMENT, APPLIED, REFUNDED, ADJUSTED
+  type: string; // OVERPAYMENT, APPLIED, REFUNDED, ADJUSTED, REVERSED
   amount: unknown;
   /** The date the movement took effect (payment date, application date, refund date). */
   effectiveDate: unknown;
@@ -154,8 +165,16 @@ export function buildStatement(
       if (appliedReceipts.has(p.id)) continue;
       const ref = p.reference ? ` (${String(p.reference)})` : "";
       entries.push({ id: `pay-${p.id}`, date: toIsoDay(p.paymentDate), type: "Payment", description: `Payment for ${n.noticeNumber}${ref}`, charge: 0, payment: num(p.amount) });
+      // A reversed payment stays on the statement, followed by its reversal with the reason (TC-008).
+      if (p.reversedAt || p.reversalDate) {
+        const why = REVERSAL_TEXT[String(p.reversalReason ?? "")] ?? "reversed";
+        const extra = p.reversalNote ? `: ${String(p.reversalNote)}` : "";
+        const date = toIsoDay(p.reversalDate) || toIsoDay(p.reversedAt) || toIsoDay(p.paymentDate);
+        entries.push({ id: `rev-${p.id}`, date, type: "Reversal", description: `Payment for ${n.noticeNumber} reversed, ${why}${extra}`, charge: num(p.amount), payment: 0 });
+      }
     }
-    const unreceipted = Math.round((num(n.amountPaid) - own.reduce((s, p) => s + num(p.amount), 0)) * 100) / 100;
+    const live = own.filter((p) => !(p.reversedAt || p.reversalDate));
+    const unreceipted = Math.round((num(n.amountPaid) - live.reduce((s, p) => s + num(p.amount), 0)) * 100) / 100;
     if (unreceipted > 0) {
       const date = toIsoDay(n.paidInFullAt) || toIsoDay(n.updatedAt) || due;
       entries.push({ id: `${n.id}-paid`, date, type: "Payment", description: `Payment for ${n.noticeNumber}`, charge: 0, payment: unreceipted });
@@ -171,9 +190,11 @@ export function buildStatement(
       entries.push({ id: `credit-${c.id}`, date, type: "Payment", description: "Credit adjustment", charge: 0, payment: amount });
     } else if (c.type === "REFUNDED") {
       entries.push({ id: `credit-${c.id}`, date, type: "Refund", description: "Credit refunded", charge: amount, payment: 0 });
+    } else if (c.type === "REVERSED") {
+      entries.push({ id: `credit-${c.id}`, date, type: "Reversal", description: "Credit taken back with its reversed receipt", charge: amount, payment: 0 });
     }
   }
-  const order = { Levy: 0, Interest: 1, Payment: 2, Refund: 3 } as const;
+  const order = { Levy: 0, Interest: 1, Payment: 2, Refund: 3, Reversal: 4 } as const;
   entries.sort((a, b) => a.date.localeCompare(b.date) || order[a.type] - order[b.type]);
 
   let opening = 0;

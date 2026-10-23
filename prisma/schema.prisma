@@ -1464,6 +1464,10 @@ model BankTransaction {
   matchedAt             DateTime?           @db.Timestamptz @map("matched_at")
   matchedBy             String?             @map("matched_by") @db.Uuid
   isDuplicate           Boolean             @default(false) @map("is_duplicate")
+  /// OFX FITID: the bank's own id for the transaction, used to skip it if imported again.
+  fitid                 String?             @db.VarChar(255)
+  /// Why the transaction was excluded from reconciliation.
+  exclusionReason       String?             @map("exclusion_reason")
 
   bankAccount           SchemeBankAccount   @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
   scheme                Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
@@ -1595,6 +1599,16 @@ model LevyPayment {
   paymentDate  DateTime   @db.Date @map("payment_date")
   reference    String?
   recordedBy   String?    @map("recorded_by") @db.Uuid
+  /// The receipt journal this payment was posted in.
+  journalEntryId         String?    @map("journal_entry_id") @db.Uuid
+  /// Set when the payment is reversed (wrong lot, dishonoured, entered in error).
+  reversedAt             DateTime?  @db.Timestamptz @map("reversed_at")
+  /// The date the reversal took effect, such as the date the bank dishonoured it.
+  reversalDate           DateTime?  @db.Date @map("reversal_date")
+  /// WRONG_LOT, DISHONOURED or ENTERED_IN_ERROR.
+  reversalReason         String?    @map("reversal_reason")
+  reversalNote           String?    @map("reversal_note")
+  reversalJournalEntryId String?    @map("reversal_journal_entry_id") @db.Uuid
   createdAt    DateTime   @default(now()) @db.Timestamptz @map("created_at")
 
   levyNotice   LevyNotice @relation(fields: [levyNoticeId], references: [id], onDelete: Cascade)
@@ -1687,6 +1701,8 @@ model FinancialDocument {
   meetingId          String?          @map("meeting_id") @db.Uuid
   /// SHA-256 of the file, for generated documents.
   contentHash        String?          @map("content_hash")
+  /// An earlier upload this one may duplicate (same lot, notice, amount and date).
+  duplicateOfId      String?          @map("duplicate_of_id") @db.Uuid
   levyNoticeId       String?          @map("levy_notice_id") @db.Uuid
   bankTransactionId  String?          @map("bank_transaction_id") @db.Uuid
   amount             Decimal?         @db.Decimal(12, 2)

@@ -392,6 +392,9 @@ export function AllocationWorkbench({
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const [clearing, setClearing] = useState<string | null>(null);
+  // TC-007: excluding a transaction needs a reason.
+  const [excluding, setExcluding] = useState<string | null>(null);
+  const [excludeReason, setExcludeReason] = useState("");
   const { pending, error, run } = useRun();
   const unmatchedTotal = useMemo(() => unmatched.reduce((s, t) => s + (Math.abs(t.amountCents) - t.allocatedCents), 0), [unmatched]);
 
@@ -436,7 +439,7 @@ export function AllocationWorkbench({
                         {open === t.id ? "Close" : "Allocate"}
                       </Button>
                       {t.allocatedCents === 0 ? (
-                        <Button type="button" variant="ghost" disabled={pending} onClick={() => run(() => excludeTransactionAction(schemeId, t.id))}>
+                        <Button type="button" variant="ghost" disabled={pending} onClick={() => { setExcluding(excluding === t.id ? null : t.id); setExcludeReason(""); }}>
                           Exclude
                         </Button>
                       ) : !t.hasSuspense ? (
@@ -446,6 +449,29 @@ export function AllocationWorkbench({
                       ) : null}
                     </span>
                   </div>
+                  {excluding === t.id && (
+                    <div className="mt-3 flex flex-wrap items-end gap-2">
+                      <label className="min-w-0 flex-1 text-sm">
+                        <span className="mb-1 block text-xs text-ink-muted">Why is this not a scheme transaction?</span>
+                        <input
+                          type="text"
+                          value={excludeReason}
+                          onChange={(e) => setExcludeReason(e.target.value)}
+                          maxLength={300}
+                          placeholder="For example: bank error, reversed the next day"
+                          className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm"
+                        />
+                      </label>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={pending || excludeReason.trim().length < 3}
+                        onClick={() => run(() => excludeTransactionAction(schemeId, t.id, excludeReason.trim()), () => setExcluding(null))}
+                      >
+                        Exclude with this reason
+                      </Button>
+                    </div>
+                  )}
                   {open === t.id && (
                     <AllocatePanel schemeId={schemeId} txn={t} candidates={candidates} notices={notices} feeTable={feeTable} onDone={() => setOpen(null)} />
                   )}

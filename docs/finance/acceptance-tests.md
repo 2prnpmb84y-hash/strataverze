@@ -1,33 +1,33 @@
 # Finance acceptance tests (TC-001 to TC-013)
 
-The 13 acceptance cases from section 8.2 of the *Financial Management Requirements* (17 October 2026), with how each is tested and where it stands. Status is as at 23 October 2026, after finance hardening stages 1 to 7.
+The 13 acceptance cases from section 8.2 of the *Financial Management Requirements* (17 October 2026), with how each is tested and where it stands. Status is as at 23 October 2026, after finance hardening stages 1 to 7 and the acceptance gaps change.
 
 | Status | Meaning |
 |---|---|
 | **Automated** | Covered by Vitest tests that run in CI (`npm test`). The manual steps are there for a check against the deployed app. |
-| **Manual** | Can only be checked in the running app. Follow the steps. |
-| **Partly met** | The main behaviour works, but part of the case as written does not. The gap is described. |
-| **Not met** | The behaviour described is not built yet. The gap is described. |
+| **Manual** | Met, but can only be checked in the running app. Follow the steps. |
 
 ## Summary
 
 | Case | Title | Status |
 |---|---|---|
-| TC-001 | Duplicate receipt upload | Not met |
+| TC-001 | Duplicate receipt upload | Automated |
 | TC-002 | Uploaded confirmation with no bank transaction | Manual |
-| TC-003 | Payment allocated to the wrong lot | Not met |
-| TC-004 | One payment covering several lots | Partly met (automated) |
+| TC-003 | Payment allocated to the wrong lot | Automated |
+| TC-004 | One payment covering several lots | Automated |
 | TC-005 | Partial payment | Automated |
 | TC-006 | Overpayment | Automated |
-| TC-007 | Unidentified deposit | Partly met (automated) |
-| TC-008 | Dishonoured or reversed payment | Not met |
+| TC-007 | Unidentified deposit | Automated, exclusion reason manual |
+| TC-008 | Dishonoured or reversed payment | Automated |
 | TC-009 | Document with incorrect extracted data | Automated |
-| TC-010 | Change to a locked period | Partly met (automated) |
-| TC-011 | Owner opening another owner's document | Partly met |
-| TC-012 | Bank import with transactions already imported | Not met |
+| TC-010 | Change to a locked period | Automated |
+| TC-011 | Owner opening another owner's document | Manual |
+| TC-012 | Bank import with transactions already imported | Automated |
 | TC-013 | Report total traced to source transactions | Automated |
 
-Four cases are not met and four are partly met. The gaps are listed at the end of this file.
+All 13 cases are met as at 23 October 2026, after the acceptance gaps were closed.
+
+"Automated" means the rules are unit tested. The database flows behind them (the reversal transaction, the import, the upload) have not yet been run end to end against a test scheme, so each case's manual steps should still be followed once before go-live.
 
 ## Before you start
 
@@ -44,7 +44,7 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 
 ## TC-001: Duplicate receipt upload
 
-**Status: Not met.**
+**Status: Automated: `src/lib/finance/payment-confirmations.test.ts`, "flags the same notice, amount and date from the same owner".**
 
 **Steps**
 1. Sign in as owner A. Go to Finance, Upload Payment Confirmation.
@@ -55,9 +55,16 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 - The second upload is accepted.
 - It is flagged as a possible duplicate, and the adviser is alerted.
 
-**Now**
-- Both uploads are accepted, but neither is flagged and no alert is sent.
-- Duplicate checks exist for supplier invoices and adviser document uploads (`src/lib/queries/duplicate-detection.ts`), but not for owner payment confirmations.
+**Checks**
+- Both documents are in Finance, Documents.
+- The second one's page shows "Possible duplicate" with a link to the first.
+- The scheme's advisers receive an email.
+- The activity log has `PAYMENT_CONFIRMATION_POSSIBLE_DUPLICATE`.
+- An upload with a different amount, date or notice is not flagged, and neither is a match against a rejected upload.
+
+**Also checked on every upload**
+- The notice must be on one of the owner's own lots.
+- The file must be in the scheme's payments folder.
 
 ---
 
@@ -83,28 +90,29 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 
 ## TC-003: Payment allocated to the wrong lot
 
-**Status: Not met.**
+**Status: Automated: `src/lib/finance/levy-reversal.test.ts`, "puts the notice back" and "needs the new receipts to add up to the amount moved".**
 
 **Steps**
 1. Receipt a $3,000 bank deposit to lot 5's notice in Finance, Reconciliation.
-2. Find that the bank reference is for lot 12.
-3. Try to move the receipt from lot 5 to lot 12.
+2. Open the receipt's journal entry, from the deposit or Finance, Journal.
+3. Under Levy receipt, choose "It belongs to another lot: move it", pick lot 12's notice for $3,000, and move it.
 
 **Expected**
 - The receipt journal is reversed for lot 5 and entered again for lot 12.
 - Lot 5's notice goes back to its earlier balance, and lot 12's balance falls by $3,000.
 - The audit log shows both steps.
 
-**Now**
-- There is no reallocate action.
-- Unmatching the deposit (`clearAllocations`) removes the bank allocation but leaves the receipt.
-- Reversing the receipt journal reverses the ledger lines but does not reverse the `LevyPayment` or put back the notice's `amountPaid`, balance or status. The ledger and the notice then disagree.
+**Checks**
+- The original entry is Reversed, with a reversal entry dated the same day.
+- A new receipt entry credits lot 12, and the deposit is allocated to it.
+- The activity log has `LEVY_RECEIPT_REVERSED` (reason WRONG_LOT) and `LEVY_RECEIPT_REALLOCATED`.
+- A receipt on a reconciled bank transaction cannot be moved until the reconciliation is reopened.
 
 ---
 
 ## TC-004: One payment covering several lots
 
-**Status: Partly met. Automated: `src/lib/finance/reconciliation.test.ts`, "splits a deposit across several levy receipts".**
+**Status: Automated: `src/lib/finance/levy-reversal.test.ts`, "credits each lot's notice on its own line under one entry".**
 
 **Steps**
 1. Import a $5,500 deposit.
@@ -115,10 +123,9 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 - One receipt journal entry with two allocation lines.
 - The bank transaction is Matched to that entry.
 
-**Now**
-- Both notices are paid and the deposit is Matched.
-- Each notice gets its own receipt journal entry, so there are two entries, each allocated part of the deposit.
-- The ledger and bank figures are the same either way. Only the journal layout differs from the case as written.
+**Checks**
+- The entry debits the bank $5,500 and credits levies receivable $2,000 (lot 3) and $3,500 (lot 7).
+- The deposit is allocated in full to that one entry.
 
 ---
 
@@ -153,7 +160,7 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 
 ## TC-007: Unidentified deposit
 
-**Status: Partly met. Automated: `src/lib/finance/reconciliation.test.ts`.**
+**Status: Automated: `src/lib/finance/reconciliation.test.ts`. The exclusion reason is checked manually.**
 
 **Steps**
 1. Import a $2,750 deposit described "TRANSFER FROM UNKNOWN".
@@ -163,19 +170,20 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 - The deposit stays Unmatched.
 - The adviser can receipt it to a lot, post it to suspense, or exclude it with a reason.
 
-**Now**
-- Receipting it to a lot and posting it to suspense work. A period cannot close while a suspense item from that period is open.
-- Exclude works, but no reason is asked for or recorded (`excludeTransactionAction`).
+**Checks**
+- Receipting it to a lot and posting it to suspense both work. A period cannot close while a suspense item from that period is open.
+- Exclude asks why. The reason is stored on the transaction and in the activity log, and exclude is refused without one.
 
 ---
 
 ## TC-008: Dishonoured or reversed payment
 
-**Status: Not met.**
+**Status: Automated: `src/lib/finance/levy-reversal.test.ts` and `src/lib/levies/levy-ledger.test.ts`, "shows a dishonoured payment and its reversal, with the reason".**
 
 **Steps**
 1. Receipt and reconcile a $3,000 payment for lot 5.
-2. Record the bank's reversal of it, and a $15 dishonour fee.
+2. Open the receipt's journal entry. Under Levy receipt, choose "The bank dishonoured or reversed it".
+3. Enter the dishonour date, a $15 fee with its expense account, and a note. Reverse it.
 
 **Expected**
 - A reversal journal entry is posted.
@@ -183,10 +191,13 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 - The owner's statement shows the dishonour with a note.
 - The fee is a separate expense entry.
 
-**Now**
-- The receipt journal can be reversed, and the fee can be recorded as an expense.
-- As in TC-003, the reversal does not touch the notice or the `LevyPayment`. The notice stays Paid and the statement does not show the dishonour.
-- Cash basis statements now take a reversed receipt back out of income (stage 6).
+**Checks**
+- The reversal is dated the dishonour date.
+- The receipt stays on its deposit, so the reversal can be matched to the bank's reversing debit.
+- The statement shows the payment, then "Payment for LN-… reversed, dishonoured: <note>" as a charge.
+- Interest runs as if the payment had not been made.
+- Any credit the receipt created is taken back out.
+- A receipt whose credit has since been used must have that reversed first.
 
 ---
 
@@ -210,7 +221,7 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 
 ## TC-010: Attempted change to a locked period
 
-**Status: Partly met. Automated: `src/lib/queries/journal-entries.test.ts`, "blocks all entries to a LOCKED period".**
+**Status: Automated: `src/lib/queries/journal-entries.test.ts`, "blocks all entries to a LOCKED period, with the TC-010 message".**
 
 **Steps**
 1. Lock the July 2026 period in Finance, Periods.
@@ -220,15 +231,15 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 - The entry is refused with: "This period is locked. Contact your system administrator to unlock."
 - No entry is posted.
 
-**Now**
-- The entry is refused and not posted.
-- The message reads "Cannot post to a locked period (July 2026). The period must be reopened before any entries can be posted." The wording differs from the case.
+**Checks**
+- The message is exactly that, followed by the period's name in brackets.
+- Reversals, cutovers and receipt reversals are checked against the same rule.
 
 ---
 
 ## TC-011: Owner attempting to access another owner's documents
 
-**Status: Partly met.**
+**Status: Manual.**
 
 **Steps**
 1. As owner B (lot 7), upload a payment confirmation.
@@ -239,17 +250,18 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 - Forbidden (403).
 - The attempt is logged.
 
-**Now**
-- Owner A cannot download it. The route checks access by document type and lot, and since 23 October 2026 storage only serves files to members of the scheme.
-- The response is 404 Not Found, not 403. This avoids confirming that the document exists, but differs from the case.
-- The attempt is not logged.
-- Owner B's payment confirmations are not listed for owner A in the owner portal. Scheme documents in Documents are shared with every member of the scheme.
+**Checks**
+- The response is 403 Forbidden.
+- The activity log has `FINANCIAL_DOCUMENT_ACCESS_DENIED` with owner A and the document.
+- An id that does not exist is still 404.
+- The levy notice, owner statement, remittance, committee pack and statutory statements PDFs answer and log the same way.
+- Storage serves files only to members of the scheme.
 
 ---
 
 ## TC-012: Bank import containing previously imported transactions
 
-**Status: Not met.**
+**Status: Automated: `src/lib/bank-import-parser.test.ts`, "skips T45 to T50 and imports T51 to T80, and says so".**
 
 **Steps**
 1. Import an OFX file with T1 to T50.
@@ -259,10 +271,11 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 - T45 to T50 are skipped by FITID, and T51 to T80 are imported.
 - The adviser is told "6 duplicate transactions skipped, 30 new transactions imported."
 
-**Now**
-- FITID is read from the OFX (`src/lib/bank-import-parser.ts`) and kept as the transaction reference, but it is not used to skip.
-- Duplicates are found by account, date, amount and description, then **imported and flagged** rather than skipped (`importBankTransactions`).
-- The result gives counts of new and flagged transactions, not the message in the case.
+**Checks**
+- The FITID is stored in its own column, unique per bank account.
+- FITIDs kept only as the reference by imports before this change are also recognised.
+- A FITID repeated inside one file is skipped after the first.
+- CSV imports, which have no FITID, still flag possible duplicates by date, amount and description.
 
 ---
 
@@ -283,16 +296,20 @@ Each step names the screen to use. "Finance" is `/adviser/schemes/<id>/finance` 
 
 ---
 
-## Gaps to close
+## Changes that closed the gaps
 
-| Case | What is needed |
+Made on 23 October 2026, in the acceptance gaps change:
+
+| Case | Change |
 |---|---|
-| TC-001 | Check an owner's new payment confirmation against their earlier ones (same notice, amount and date). Flag the match and notify the adviser, without blocking the upload. |
-| TC-003, TC-008 | When a levy receipt is reversed, also reverse its `LevyPayment` and restore the notice's amount paid, balance and status, with a statement line. Add a reallocate action (reverse, then receipt to the right notice) and a dishonour action (reverse, optional fee expense). |
-| TC-004 | Decide whether one journal per notice is acceptable, or build one receipt journal with a line per notice. |
-| TC-007 | Ask for and record a reason when a transaction is excluded. |
-| TC-010 | Change the locked period message to the wording in the case, if preferred. |
-| TC-011 | Log refused document requests. Decide between 403 and 404. |
-| TC-012 | Skip OFX transactions whose FITID is already recorded for the account, store FITID in its own column, and report "n duplicate transactions skipped, n new transactions imported". |
+| TC-001 | Owner uploads are checked against the owner's earlier ones, flagged (`duplicate_of_id`), logged and emailed to the advisers. The upload also checks that the notice is the owner's and the file is in the scheme's payments folder. |
+| TC-003, TC-008 | Receipts are linked to their payments (`levy_payments.journal_entry_id`). Reversing one puts the notices back, reverses any credit and, except for a dishonour, takes it off the bank transaction. Move to another lot, dishonour (with fee) and entered in error are on the journal entry page. Reversed payments are shown on statements and left out of interest. |
+| TC-004 | A payment across several notices is one receipt journal with a line for each lot (decision 23 October 2026). |
+| TC-007 | Excluding a bank transaction needs a reason, stored on the transaction. |
+| TC-010 | The locked period message uses the case's wording. |
+| TC-011 | Refused document requests return 403 and are logged (decision 23 October 2026). |
+| TC-012 | OFX transactions are skipped by FITID, with the case's message. |
 
-The owner payment confirmation upload should also check that the chosen notice is one of the owner's own lots. At present it takes the notice id as given and the first lot the owner holds.
+Found and fixed at the same time:
+- **Bank import dates.** Statement dates were moved to the day before for anyone east of UTC, because the date was turned into a timestamp in the browser.
+- **Journal reversal checks.** Reversing a journal entry did not check that the entry belonged to the scheme, or that its period was open.

@@ -358,7 +358,7 @@ export async function recordLevyPayment(
   } = {
     paymentDate: new Date().toISOString().slice(0, 10),
   },
-): Promise<{ appliedCents: number; excessCents: number; creditTxId: string | null }> {
+): Promise<{ appliedCents: number; excessCents: number; creditTxId: string | null; receiptId: string | null }> {
   return db.transaction(async (tx) => {
     const notice = await tx.orm.public.LevyNotice.where({ id: noticeId })
       .include("levySchedule")
@@ -424,7 +424,7 @@ export async function recordLevyPayment(
       date: details.paymentDate,
     });
 
-    return { appliedCents, excessCents, creditTxId };
+    return { appliedCents, excessCents, creditTxId, receiptId };
   });
 }
 

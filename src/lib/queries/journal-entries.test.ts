@@ -122,16 +122,15 @@ describe("checkPeriodPostingRule", () => {
     expect(result).toContain("FY2024 Q1");
   });
 
-  it("blocks all entries to a LOCKED period", () => {
-    const result = checkPeriodPostingRule("LOCKED", "FY2024 Q1", "STANDARD");
-    expect(result).not.toBeNull();
-    expect(result).toContain("locked period");
+  it("blocks all entries to a LOCKED period, with the TC-010 message", () => {
+    const result = checkPeriodPostingRule("LOCKED", "July 2026", "STANDARD");
+    expect(result).toBe("This period is locked. Contact your system administrator to unlock. (July 2026)");
   });
 
   it("blocks ADJUSTMENT entries to a LOCKED period", () => {
     const result = checkPeriodPostingRule("LOCKED", "FY2024 Q1", "ADJUSTMENT");
     expect(result).not.toBeNull();
-    expect(result).toContain("locked period");
+    expect(result).toContain("This period is locked.");
   });
 
   it("blocks REVERSAL entries to a CLOSED period", () => {
