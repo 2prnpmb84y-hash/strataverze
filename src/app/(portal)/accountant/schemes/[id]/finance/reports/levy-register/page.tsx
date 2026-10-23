@@ -8,6 +8,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
+import { OwnerCreditsCard } from "@/components/finance/owner-credits-card";
 
 function formatCurrency(value: number): string {
   if (value < 0) {
@@ -195,6 +196,7 @@ export default async function AccountantLevyRegisterPage({
           ))}
         </>
       )}
+      <OwnerCreditsCard schemeId={id} />
     </div>
   );
 }

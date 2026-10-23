@@ -19,23 +19,30 @@ type SendEmailParams = {
  * Send an email via Resend.
  * Fails silently when RESEND_API_KEY is not set (development, or before the key
  * is configured in production) so it never blocks a server action.
+ * Returns true only when Resend accepted the email.
  */
-export async function sendEmail({ to, subject, html }: SendEmailParams) {
+export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<boolean> {
   if (!resend) {
     console.log(
       `[email] Skipping email (no RESEND_API_KEY): recipients=${Array.isArray(to) ? to.length : 1}, subject="${subject}"`,
     );
-    return;
+    return false;
   }
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: FROM_ADDRESS,
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
     });
+    if (result.error) {
+      console.error("[email] Resend rejected the email:", result.error.message);
+      return false;
+    }
+    return true;
   } catch (error) {
     console.error("[email] Failed to send email:", error);
+    return false;
   }
 }

@@ -67,6 +67,29 @@ describe("buildStatement", () => {
     expect(s.closingBalance).toBe(1350.17);
   });
 
+  it("shows an overpayment as credit, applies it once, and charges a refund", () => {
+    const paid = { ...q1, status: "PAID", amountPaid: "825.09", balanceOutstanding: "0" };
+    const second = { ...q2, status: "PARTIALLY_PAID", amountPaid: "100", balanceOutstanding: "725.08" };
+    const receipts = [
+      { id: "p1", levyNoticeId: "n1", amount: "825.09", paymentDate: "2026-07-10" },
+      { id: "p-credit", levyNoticeId: "n2", amount: "100", paymentDate: "2026-10-01", reference: "Owner credit applied" },
+    ];
+    const credits = [
+      { id: "c1", type: "OVERPAYMENT", amount: "150", effectiveDate: "2026-07-10" },
+      { id: "c2", type: "APPLIED", amount: "100", effectiveDate: "2026-10-01", levyPaymentId: "p-credit" },
+      { id: "c3", type: "REFUNDED", amount: "50", effectiveDate: "2026-10-05" },
+    ];
+    const s = buildStatement([paid, second], receipts, {}, credits);
+    expect(s.lines.map((l) => [l.date, l.type, l.charge, l.payment, l.balance])).toEqual([
+      ["2026-07-01", "Levy", 825.09, 0, 825.09],
+      ["2026-07-10", "Payment", 0, 825.09, 0],
+      ["2026-07-10", "Payment", 0, 150, -150],
+      ["2026-10-01", "Levy", 825.08, 0, 675.08],
+      ["2026-10-05", "Refund", 50, 0, 725.08],
+    ]);
+    expect(s.closingBalance).toBe(725.08);
+  });
+
   it("accounts for amounts paid before receipts were kept", () => {
     const s = buildStatement([{ ...q1, updatedAt: "2026-07-20T03:00:00Z" }], []);
     expect(s.lines.find((l) => l.type === "Payment")).toMatchObject({ date: "2026-07-20", payment: 300 });

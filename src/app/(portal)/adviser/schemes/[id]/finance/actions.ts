@@ -77,6 +77,11 @@ import {
   supplierInvoiceControls,
 } from "@/lib/finance/invoice-approval";
 import { checkBankDetailsForPayment } from "@/lib/finance/payment-controls";
+import { applyOwnerCredit, leviesInAdvanceAccountId } from "@/lib/finance/owner-credits";
+import { sydneyToday } from "@/lib/finance/interest-setting";
+import { interestSettingProblem } from "@/lib/finance/statutory-interest";
+import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import { checkPlannedNotices, sendIssuedNotices } from "@/lib/levies/notice-content-data";
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
@@ -137,7 +142,6 @@ import {
 // ── Duplicate detection ─────────────────────────────────────
 import {
   checkInvoiceDuplicates,
-  checkPaymentDuplicates,
   checkDocumentDuplicates,
 } from "@/lib/queries/duplicate-detection";
 
@@ -905,14 +909,41 @@ export async function issueScheduleNoticesAction(
 
     const first = await getNextNoticeNumber(schemeId);
     let seq = parseInt(first.replace(/\D/g, ""), 10) || 1;
+    const numbered = plan.map((n) => ({ ...n, noticeNumber: `LN-${String(seq++).padStart(4, "0")}` }));
+
+    // Every notice must carry what a NSW levy notice states before any is issued.
+    const noticeDate = sydneyToday();
+    const contentInput = {
+      schemeId,
+      fundId: schedule.fundId,
+      issuerId: profile.id,
+      noticeDate,
+      isUrgentSpecialLevy: isSpecial && formData.get("urgentSpecialLevy") === "on",
+      notices: numbered.map((n) => ({
+        lotId: n.lotId,
+        lotNumber: n.lotNumber,
+        ownerId: n.ownerId,
+        noticeNumber: n.noticeNumber,
+        dueDate: n.dueDate,
+        amountCents: n.amountCents,
+      })),
+    };
+    const missing = await checkPlannedNotices(contentInput);
+    if (missing.length > 0) {
+      return {
+        error: "The notices cannot be issued yet. Fix the items listed and try again.",
+        data: { missing },
+      };
+    }
+
     const created = await createLevyNoticesBatch(
-      plan.map((n) => ({
+      numbered.map((n) => ({
         schemeId,
         levyScheduleId: scheduleId,
         lotId: n.lotId,
         ownerId: n.ownerId,
         fundId: schedule.fundId,
-        noticeNumber: `LN-${String(seq++).padStart(4, "0")}`,
+        noticeNumber: n.noticeNumber,
         periodStart: n.periodStart,
         periodEnd: n.periodEnd,
         dueDate: n.dueDate,
@@ -940,9 +971,33 @@ export async function issueScheduleNoticesAction(
       metadata: { count: created.length, total: fromCents(totalCents), firstDueDate },
     });
 
+    // Apply owner credit to the new notices when the scheme has auto-apply on.
+    let creditAppliedCents = 0;
+    if (scheme.autoApplyOwnerCredit !== false) {
+      creditAppliedCents = await applyOwnerCredit({
+        schemeId,
+        lotIds: [...new Set(created.map((n) => n.lotId))],
+        actorId: profile.id,
+      });
+    }
+
+    // Email each notice to its owner. A failed email does not undo the issue.
+    const emailed = await sendIssuedNotices(contentInput);
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LEVY_NOTICES_EMAILED",
+      entityType: "LevySchedule",
+      entityId: scheduleId,
+      metadata: { emailed, notices: created.length },
+    });
+
     revalidatePath(financePath(schemeId, "/levies"));
     revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
-    return { success: true, data: { count: created.length } };
+    return {
+      success: true,
+      data: { count: created.length, emailed, creditApplied: fromCents(creditAppliedCents) },
+    };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to issue levy notices." };
@@ -1075,6 +1130,7 @@ export async function recordLevyPaymentFormAction(
     amount,
     paymentDate,
     confirmedCentsFrom(formData),
+    formData.get("confirmOverpayment") === "on",
   );
   if (result.success) {
     revalidatePath(financePath(schemeId, `/levies/${notice.levyScheduleId}`));
@@ -1082,80 +1138,90 @@ export async function recordLevyPaymentFormAction(
   return result;
 }
 
+/**
+ * Record a payment against a levy notice. A payment above what the notice
+ * owes needs `confirmOverpayment`; the excess is then held as the owner's
+ * credit for the lot (DR bank, CR levies paid in advance).
+ */
 export async function recordLevyPaymentAction(
   schemeId: string,
   levyNoticeId: string,
   amount: number,
   paymentDate: string,
   feeConfirmedCents: number | null = null,
+  confirmOverpayment = false,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    if (amount <= 0) return { error: "Payment amount must be greater than zero." };
-    if (!paymentDate) return { error: "Payment date is required." };
+    if (!(amount > 0)) return { error: "Payment amount must be greater than zero." };
+    if (!ISO_DATE.test(paymentDate)) return { error: "Payment date is required." };
 
-    // Duplicate/overpayment detection
-    const paymentDuplicates = await checkPaymentDuplicates(levyNoticeId, amount);
-    if (paymentDuplicates.length > 0) {
-      return {
-        error: paymentDuplicates[0].matchReason,
-        data: { isDuplicate: true },
-      };
-    }
-
-    // Fetch the levy notice to determine its fund before recording payment
     const notice = await db.orm.public.LevyNotice
       .where((ln) => ln.id.eq(levyNoticeId))
       .include("fund")
       .first();
+    if (!notice || notice.schemeId !== schemeId) return { error: "Levy notice not found." };
 
-    await recordLevyPayment(levyNoticeId, amount, { paymentDate, recordedBy: profile.id, feeConfirmedCents });
+    // A payment above what the notice owes (levy plus interest) is held as credit, but only when confirmed.
+    const owedCents =
+      toCents(String(notice.amountDue)) + toCents(String(notice.interestCharged ?? 0)) - toCents(String(notice.amountPaid));
+    const excessCents = Math.max(0, Math.round(amount * 100) - Math.max(0, owedCents));
+    if (excessCents > 0 && !confirmOverpayment) {
+      return {
+        error:
+          owedCents <= 0
+            ? "This notice is already paid. Confirm that the whole payment is to be held as the owner's credit."
+            : `This payment is $${fromCents(excessCents).toFixed(2)} more than the notice owes. Confirm that the extra is to be held as the owner's credit.`,
+        data: { overpayment: true, excess: fromCents(excessCents) },
+      };
+    }
 
-    // ── Auto journal entry: DR Bank, CR Levies Receivable ──
-    if (notice) {
-      const fundType = (notice.fund?.fundType ?? "ADMINISTRATIVE") as
-        | "ADMINISTRATIVE"
-        | "CAPITAL_WORKS";
+    const result = await recordLevyPayment(levyNoticeId, amount, { paymentDate, recordedBy: profile.id, feeConfirmedCents });
 
-      const bankAccount = await getSystemAccountBySubType(
-        schemeId,
-        "BANK",
-        "ADMINISTRATIVE",
-      );
-      const receivableAccount = await getSystemAccountBySubType(
-        schemeId,
-        "ACCOUNTS_RECEIVABLE",
-        fundType,
-      );
+    // ── Auto journal entry: DR Bank, CR Levies Receivable (and CR Levies Paid in Advance for any credit) ──
+    const fundType = (notice.fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
+    const bankAccount = await getSystemAccountBySubType(schemeId, "BANK", "ADMINISTRATIVE");
+    const receivableAccount = await getSystemAccountBySubType(schemeId, "ACCOUNTS_RECEIVABLE", fundType);
+    const advanceAccountId = result.excessCents > 0 ? await leviesInAdvanceAccountId(schemeId, notice.fundId) : null;
 
-      if (bankAccount && receivableAccount) {
-        const entryNumber = await getNextEntryNumber(schemeId);
-        const entry = await createJournalEntry({
-          schemeId,
-          entryNumber,
-          transactionDate: paymentDate,
-          description: `Levy payment received — notice ${String(notice.noticeNumber)}`,
-          entryType: "AUTO",
-          sourceType: "PAYMENT",
-          sourceId: levyNoticeId,
-          createdBy: profile.id,
-          lines: [
-            {
-              accountCodeId: bankAccount.id,
-              fundId: notice.fundId,
-              debit: amount,
-              description: "Bank receipt — levy payment",
-            },
-            {
-              accountCodeId: receivableAccount.id,
-              fundId: notice.fundId,
-              credit: amount,
-              description: "Levies receivable reduced",
-            },
-          ],
+    if (bankAccount && receivableAccount && (result.excessCents === 0 || advanceAccountId)) {
+      const lines: Array<{ accountCodeId: string; fundId: string; debit?: number; credit?: number; description?: string; lotId?: string }> = [
+        { accountCodeId: bankAccount.id, fundId: notice.fundId, debit: amount, description: "Bank receipt — levy payment" },
+      ];
+      if (result.appliedCents > 0) {
+        lines.push({
+          accountCodeId: receivableAccount.id,
+          fundId: notice.fundId,
+          credit: fromCents(result.appliedCents),
+          description: "Levies receivable reduced",
+          lotId: notice.lotId,
         });
-        await postJournalEntry(entry.id, profile.id);
+      }
+      if (result.excessCents > 0 && advanceAccountId) {
+        lines.push({
+          accountCodeId: advanceAccountId,
+          fundId: notice.fundId,
+          credit: fromCents(result.excessCents),
+          description: "Overpayment held as owner credit",
+          lotId: notice.lotId,
+        });
+      }
+      const entryNumber = await getNextEntryNumber(schemeId);
+      const entry = await createJournalEntry({
+        schemeId,
+        entryNumber,
+        transactionDate: paymentDate,
+        description: `Levy payment received — notice ${String(notice.noticeNumber)}`,
+        entryType: "AUTO",
+        sourceType: "PAYMENT",
+        sourceId: levyNoticeId,
+        createdBy: profile.id,
+        lines,
+      });
+      await postJournalEntry(entry.id, profile.id);
+      if (result.creditTxId) {
+        await db.orm.public.OwnerCreditTransaction.where((t) => t.id.eq(result.creditTxId!)).update({ journalEntryId: entry.id });
       }
     }
 
@@ -1165,11 +1231,21 @@ export async function recordLevyPaymentAction(
       action: "LEVY_PAYMENT_RECORDED",
       entityType: "LevyNotice",
       entityId: levyNoticeId,
-      metadata: { amount, paymentDate },
+      metadata: { amount, paymentDate, creditHeld: fromCents(result.excessCents) },
     });
+    if (result.excessCents > 0) {
+      await logActivity({
+        schemeId,
+        actorId: profile.id,
+        action: "OWNER_CREDIT_RECEIVED",
+        entityType: "Lot",
+        entityId: notice.lotId,
+        metadata: { amount: fromCents(result.excessCents), levyNoticeId },
+      });
+    }
 
     revalidatePath(financePath(schemeId));
-    return { success: true };
+    return { success: true, data: { creditHeld: fromCents(result.excessCents) } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     const msg = err instanceof Error ? err.message : "Failed to record payment.";
@@ -2220,5 +2296,63 @@ export async function extractInvoiceFromPdfAction(
           ? err.message
           : "Failed to extract data from the PDF.",
     };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INTEREST SETTING (SSMA 2015 s 85)
+// ═══════════════════════════════════════════════════════════════
+
+const GENERAL_MEETING_TYPES = ["AGM", "EGM", "SGM", "FIRST_AGM"];
+
+/**
+ * Record whether the scheme charges statutory interest or, by a recorded
+ * general meeting resolution, no interest. No other rate can be set.
+ */
+export async function saveInterestSettingAction(
+  schemeId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const mode = String(formData.get("mode") ?? "");
+    const meetingId = String(formData.get("meetingId") ?? "").trim() || null;
+    const motionId = String(formData.get("motionId") ?? "").trim() || null;
+    const problem = interestSettingProblem({ mode, resolutionMeetingId: meetingId, resolutionMotionId: motionId });
+    if (problem) return { error: problem };
+
+    if (mode === "NO_INTEREST") {
+      const meeting = await db.orm.public.Meeting.where((m) => m.id.eq(meetingId!)).first();
+      if (!meeting || meeting.schemeId !== schemeId || !GENERAL_MEETING_TYPES.includes(meeting.meetingType)) {
+        return { error: "Choose a general meeting of this scheme." };
+      }
+      const motion = await db.orm.public.AgendaItem.where((a) => a.id.eq(motionId!)).first();
+      if (!motion || motion.meetingId !== meeting.id) return { error: "Choose a motion from that meeting." };
+      if (motion.status !== "CARRIED" && motion.outcome !== "RESOLVED") {
+        return { error: "That motion was not carried, so it cannot be relied on." };
+      }
+    }
+
+    await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).update({
+      interestMode: mode,
+      interestResolutionMeetingId: mode === "NO_INTEREST" ? meetingId : null,
+      interestResolutionMotionId: mode === "NO_INTEREST" ? motionId : null,
+      interestResolutionRecordedBy: profile.id,
+      interestResolutionRecordedAt: new Date().toISOString() as unknown as TimestampString<3>,
+    });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "INTEREST_SETTING_CHANGED",
+      entityType: "Scheme",
+      entityId: schemeId,
+      metadata: { mode, meetingId, motionId },
+    });
+    revalidatePath(financePath(schemeId, "/interest"));
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to save the interest setting." };
   }
 }

@@ -68,6 +68,14 @@ const DEFAULT_ACCOUNTS: Array<{
     gstApplicable: false,
   },
   {
+    code: "2-1300",
+    name: "Levies Paid in Advance — Admin",
+    accountType: "LIABILITY",
+    subType: "LEVIES_IN_ADVANCE",
+    fundType: "ADMINISTRATIVE",
+    gstApplicable: false,
+  },
+  {
     code: "3-1000",
     name: "Retained Funds — Admin",
     accountType: "EQUITY",
@@ -166,6 +174,14 @@ const DEFAULT_ACCOUNTS: Array<{
     gstApplicable: false,
   },
   {
+    code: "2-2300",
+    name: "Levies Paid in Advance — Capital Works",
+    accountType: "LIABILITY",
+    subType: "LEVIES_IN_ADVANCE",
+    fundType: "CAPITAL_WORKS",
+    gstApplicable: false,
+  },
+  {
     code: "3-2000",
     name: "Retained Funds — Capital Works",
     accountType: "EQUITY",
@@ -203,7 +219,7 @@ const DEFAULT_ACCOUNTS: Array<{
  * Seed the default NSW strata chart of accounts for a scheme.
  *
  * Looks up the scheme's ADMINISTRATIVE and CAPITAL_WORKS funds and creates
- * all 21 default accounts as system accounts within a single transaction.
+ * all default accounts as system accounts within a single transaction.
  *
  * This function is idempotent: if accounts with the same codes already exist
  * for the scheme, they are skipped.
@@ -273,5 +289,39 @@ export async function seedDefaultChartOfAccounts(schemeId: string) {
     }
 
     return created;
+  });
+}
+
+/**
+ * The fund's "Levies Paid in Advance" liability account (owner credits),
+ * created if a scheme seeded before it existed does not have it.
+ */
+export async function ensureLeviesInAdvanceAccount(schemeId: string, fundId: string) {
+  const existing = await db.orm.public.AccountCode
+    .where((a) => a.schemeId.eq(schemeId))
+    .limit(500)
+    .all();
+  const found = existing.find((a) => a.accountSubType === "LEVIES_IN_ADVANCE" && a.fundId === fundId && a.isActive);
+  if (found) return found;
+  const fund = await db.orm.public.Fund.where((f) => f.id.eq(fundId)).first();
+  if (!fund) return null;
+  const isCapital = fund.fundType === "CAPITAL_WORKS";
+  const template = DEFAULT_ACCOUNTS.find((a) => a.subType === "LEVIES_IN_ADVANCE" && a.fundType === (isCapital ? "CAPITAL_WORKS" : "ADMINISTRATIVE"))!;
+  const codes = new Set(existing.map((a) => String(a.code)));
+  let code = template.code;
+  // 2-1300, then 2-1310, 2-1320 ... if a scheme already uses the code.
+  for (let i = 1; codes.has(code) && i < 9; i++) code = `${template.code.slice(0, 2)}${Number(template.code.slice(2)) + i * 10}`;
+  return db.orm.public.AccountCode.create({
+    schemeId,
+    code: toVarchar<10>(code),
+    name: toVarchar<200>(template.name),
+    accountType: template.accountType,
+    accountSubType: template.subType,
+    fundId,
+    isSystemAccount: true,
+    isActive: true,
+    gstApplicable: false,
+    description: "Owner credits: levies paid in advance or overpaid.",
+    parentAccountId: null,
   });
 }

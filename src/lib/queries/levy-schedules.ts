@@ -1,5 +1,8 @@
 import { db } from "@/prisma/db";
 import { captureTransactionFee } from "@/lib/billing/capture";
+import { toCents } from "@/lib/billing/money";
+import { splitLevyPayment } from "@/lib/finance/owner-credit";
+import { recordCreditMovement } from "@/lib/finance/owner-credits";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 
@@ -335,7 +338,8 @@ export async function issueLevyNotice(noticeId: string) {
 /**
  * Record a payment against a levy notice: writes a receipt row (levy_payments)
  * and updates the notice's running totals in one transaction.
- * The balance includes any interest charged on the notice.
+ * The notice takes up to what it owes (levy plus any interest charged). Any
+ * excess is held as the owner's credit for the lot in that fund, never lost.
  */
 export async function recordLevyPayment(
   noticeId: string,
@@ -349,49 +353,73 @@ export async function recordLevyPayment(
   } = {
     paymentDate: new Date().toISOString().slice(0, 10),
   },
-) {
+): Promise<{ appliedCents: number; excessCents: number; creditTxId: string | null }> {
   return db.transaction(async (tx) => {
     const notice = await tx.orm.public.LevyNotice.where({ id: noticeId })
       .include("levySchedule")
       .first();
     if (!notice) throw new Error(`Levy notice not found: ${noticeId}`);
 
-    const owed = Number(notice.amountDue) + Number(notice.interestCharged ?? 0);
-    const newPaid = Math.round((Number(notice.amountPaid) + paymentAmount) * 100) / 100;
-    const newBalance = Math.max(0, Math.round((owed - newPaid) * 100) / 100);
-    const isPaidInFull = newBalance <= 0;
+    const paymentCents = Math.round(paymentAmount * 100);
+    const owedCents = toCents(String(notice.amountDue)) + toCents(String(notice.interestCharged ?? 0));
+    const paidCents = toCents(String(notice.amountPaid));
+    const { appliedCents, excessCents } = splitLevyPayment(paymentCents, owedCents - paidCents);
 
-    const receipt = await tx.orm.public.LevyPayment.create({
-      schemeId: notice.schemeId,
-      levyNoticeId: noticeId,
-      lotId: notice.lotId,
-      amount: toNumeric(paymentAmount),
-      paymentDate: toTimestamp(details.paymentDate),
-      reference: details.reference ?? null,
-      recordedBy: details.recordedBy ?? null,
-    });
+    let receiptId: string | null = null;
+    if (appliedCents > 0) {
+      const receipt = await tx.orm.public.LevyPayment.create({
+        schemeId: notice.schemeId,
+        levyNoticeId: noticeId,
+        lotId: notice.lotId,
+        amount: toNumeric(appliedCents / 100),
+        paymentDate: toTimestamp(details.paymentDate),
+        reference: details.reference ?? null,
+        recordedBy: details.recordedBy ?? null,
+      });
+      receiptId = receipt.id;
+      const newPaid = paidCents + appliedCents;
+      const newBalance = Math.max(0, owedCents - newPaid);
+      const updateData: Record<string, unknown> = {
+        amountPaid: toNumeric(newPaid / 100),
+        balanceOutstanding: toNumeric(newBalance / 100),
+        status: newBalance <= 0 ? "PAID" : "PARTIALLY_PAID",
+      };
+      if (newBalance <= 0) updateData.paidInFullAt = toTimestamp(new Date().toISOString());
+      await tx.orm.public.LevyNotice.where({ id: noticeId }).update(updateData);
+    }
 
-    const updateData: Record<string, unknown> = {
-      amountPaid: toNumeric(newPaid),
-      balanceOutstanding: toNumeric(newBalance),
-      status: isPaidInFull ? "PAID" : "PARTIALLY_PAID",
-    };
-    if (isPaidInFull) updateData.paidInFullAt = toTimestamp(new Date().toISOString());
+    let creditTxId: string | null = null;
+    if (excessCents > 0) {
+      const credit = await recordCreditMovement(tx.orm, {
+        schemeId: notice.schemeId,
+        lotId: notice.lotId,
+        fundId: notice.fundId,
+        ownerId: notice.ownerId ?? null,
+        type: "OVERPAYMENT",
+        amountCents: excessCents,
+        levyNoticeId: noticeId,
+        levyPaymentId: receiptId,
+        note: details.reference ?? null,
+        createdBy: details.recordedBy ?? null,
+        effectiveDate: details.paymentDate,
+      });
+      creditTxId = credit.id;
+    }
 
     // StrataVerze transaction service fee, charged to the scheme (never added
     // to the owner's notice). Same transaction as the receipt.
     await captureTransactionFee(tx.orm, {
       schemeId: notice.schemeId,
       movement: notice.levySchedule?.levyType === "SPECIAL" ? "SPECIAL_LEVY_RECEIPT" : "LEVY_RECEIPT",
-      paymentCents: Math.round(paymentAmount * 100),
-      sourceType: "LevyPayment",
-      sourceId: receipt.id,
+      paymentCents,
+      sourceType: receiptId ? "LevyPayment" : "OwnerCreditTransaction",
+      sourceId: (receiptId ?? creditTxId)!,
       actorId: details.recordedBy ?? null,
       confirmedCents: details.feeConfirmedCents ?? null,
       date: details.paymentDate,
     });
 
-    return tx.orm.public.LevyNotice.where({ id: noticeId }).update(updateData);
+    return { appliedCents, excessCents, creditTxId };
   });
 }
 

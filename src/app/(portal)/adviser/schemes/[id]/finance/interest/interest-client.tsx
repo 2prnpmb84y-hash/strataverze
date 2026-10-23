@@ -21,6 +21,16 @@ type NoticeRow = {
   calculatedInterest: number;
   previouslyCharged: number;
   additionalInterest: number;
+  graceEnds: string | null;
+  interestReason: string;
+};
+
+const REASON_LABEL: Record<string, string> = {
+  IN_GRACE: "In the one month grace period",
+  PAID_IN_GRACE: "Paid within the grace period",
+  NOT_YET_DUE: "Not yet due",
+  NOTHING_OWING: "Nothing owing",
+  NO_INTEREST_RESOLUTION: "No interest by resolution",
 };
 
 function formatCurrency(value: number): string {
@@ -112,8 +122,8 @@ export function InterestClient({
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         }
-        title="No interest rate configured"
-        description="Set an annual interest rate in scheme settings before charging interest on overdue levies."
+        title="No interest is charged"
+        description="The owners corporation has resolved that contributions bear no interest (SSMA 2015 s 85(3)). Change the setting above if that resolution is revoked."
       />
     );
   }
@@ -270,7 +280,9 @@ export function InterestClient({
                       </button>
                     ) : (
                       <span className="text-xs text-ink-muted italic">
-                        Up to date
+                        {notice.interestReason === "IN_GRACE" && notice.graceEnds
+                          ? `Grace period ends ${formatDate(notice.graceEnds)}`
+                          : (REASON_LABEL[notice.interestReason] ?? "Up to date")}
                       </span>
                     )}
                   </td>

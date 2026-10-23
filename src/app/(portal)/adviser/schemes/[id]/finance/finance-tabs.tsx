@@ -16,6 +16,7 @@ const tabs = [
   { key: "matching-rules", label: "Matching Rules", href: "/matching-rules" },
   { key: "budget", label: "Budget", href: "/budget" },
   { key: "interest", label: "Interest", href: "/interest" },
+  { key: "owner-credits", label: "Owner Credits", href: "/owner-credits" },
   { key: "periods", label: "Periods", href: "/periods" },
   { key: "reports", label: "Reports", href: "/reports" },
   { key: "documents", label: "Documents", href: "/documents" },

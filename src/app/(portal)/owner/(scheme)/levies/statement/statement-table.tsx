@@ -148,8 +148,8 @@ export function OwnerStatementTable({
               accent="bg-green-500"
             />
             <StatCard
-              label="Closing Balance"
-              value={formatCurrency(closingBalance)}
+              label={closingBalance < 0 ? "In Credit" : "Closing Balance"}
+              value={formatCurrency(Math.abs(closingBalance))}
               accent={closingBalance > 0 ? "bg-red-500" : "bg-green-500"}
             />
           </div>
