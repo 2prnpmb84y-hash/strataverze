@@ -1,6 +1,6 @@
 "use server";
 
-import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revalidatePath } from "next/cache";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
@@ -1917,26 +1917,30 @@ export async function uploadFinancialDocumentAction(
     }
 
     // Only the known fields, with the authorised scheme and uploader.
-    const doc = await createFinancialDocument({
-      documentType: data.documentType,
-      fileName: upload.fileName,
-      fileUrl: upload.path,
-      fileSize: upload.size,
-      mimeType: upload.mimeType,
-      lotId: data.lotId || undefined,
-      supplierId: data.supplierId || undefined,
-      supplierInvoiceId: invoiceId,
-      levyNoticeId: noticeId,
-      bankTransactionId: transactionId,
-      amount: data.amount,
-      documentDate: data.documentDate,
-      payerName: data.payerName,
-      payeeReference: data.payeeReference,
-      schemeId,
-      uploadedBy: profile.id,
-    });
-
-    await markUploadUsed(data.uploadId, `FinancialDocument:${doc.id}`);
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      data.uploadId,
+      () =>
+        createFinancialDocument({
+        documentType: data.documentType,
+        fileName: upload.fileName,
+        fileUrl: upload.path,
+        fileSize: upload.size,
+        mimeType: upload.mimeType,
+        lotId: data.lotId || undefined,
+        supplierId: data.supplierId || undefined,
+        supplierInvoiceId: invoiceId,
+        levyNoticeId: noticeId,
+        bankTransactionId: transactionId,
+        amount: data.amount,
+        documentDate: data.documentDate,
+        payerName: data.payerName,
+        payeeReference: data.payeeReference,
+        schemeId,
+        uploadedBy: profile.id,
+      }),
+      (d) => `FinancialDocument:${d.id}`,
+    );
 
     await logActivity({
       schemeId,

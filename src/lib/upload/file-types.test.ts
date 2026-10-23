@@ -3,6 +3,7 @@ import { checkFileBytes, checkFileName, sniffKind, STORABLE_MIME_TYPES } from ".
 
 const bytes = (...b: number[]) => new Uint8Array(b);
 const text = (s: string) => new TextEncoder().encode(s);
+const OOXML_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const DOCS = ["pdf", "png", "jpeg", "gif", "webp", "ooxml", "ole", "text"] as const;
 
 describe("sniffKind", () => {
@@ -13,7 +14,7 @@ describe("sniffKind", () => {
     expect(sniffKind(text("GIF89a"))).toBe("gif");
     expect(sniffKind(text("RIFF\u0000\u0000\u0000\u0000WEBPVP8 "))).toBe("webp");
     expect(sniffKind(new Uint8Array([0, 0, 0, 0x18, ...text("ftypheic")]))).toBe("heic");
-    expect(sniffKind(bytes(0x50, 0x4b, 0x03, 0x04))).toBe("ooxml");
+    expect(sniffKind(new Uint8Array([0x50, 0x4b, 0x03, 0x04, ...new Uint8Array(26), ...text("[Content_Types].xml")]))).toBe("ooxml");
     expect(sniffKind(bytes(0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1))).toBe("ole");
     expect(sniffKind(text("lot,owner,amount\n1,A,100\n"))).toBe("text");
   });
@@ -25,6 +26,24 @@ describe("sniffKind", () => {
     expect(sniffKind(text('<?xml version="1.0"?>'))).toBeNull();
     expect(sniffKind(bytes(0x4d, 0x5a, 0x90, 0x00))).toBeNull(); // a Windows program
     expect(sniffKind(new Uint8Array(0))).toBeNull();
+    expect(sniffKind(text("Hello <img src=x onerror=alert(1)>"))).toBeNull();
+    expect(sniffKind(text("<body onload=alert(1)>"))).toBeNull();
+  });
+
+  it("refuses a zip that is not a Word, Excel or PowerPoint file", () => {
+    expect(sniffKind(new Uint8Array([0x50, 0x4b, 0x03, 0x04, ...new Uint8Array(26), ...text("payload/run.js")]))).toBeNull();
+  });
+
+  it("accepts a PDF with bytes before its header, within the first kilobyte", () => {
+    expect(sniffKind(new Uint8Array([0xef, 0xbb, 0xbf, 0x0a, ...text("%PDF-1.4")]))).toBe("pdf");
+  });
+
+  it("accepts text exported as Windows-1252 or UTF-16", () => {
+    // "Café,100" in Windows-1252 (é is 0xE9, not valid UTF-8 on its own).
+    expect(sniffKind(new Uint8Array([0x43, 0x61, 0x66, 0xe9, 0x2c, 0x31, 0x30, 0x30, 0x0a]))).toBe("text");
+    const utf16 = new Uint8Array([0xff, 0xfe, ...[..."lot,amount\n"].flatMap((c) => [c.charCodeAt(0), 0])]);
+    expect(sniffKind(utf16)).toBe("text");
+    expect(sniffKind(bytes(0x41, 0x01, 0x02, 0x03))).toBeNull(); // control characters
   });
 });
 
@@ -45,6 +64,13 @@ describe("checkFileBytes", () => {
     expect(checkFileBytes("invoice.pdf", text("<html>"), DOCS).ok).toBe(false);
     expect(checkFileBytes("photo.png", text("%PDF-1.4"), DOCS).ok).toBe(false);
     expect(checkFileBytes("notes.txt", text("<svg onload=alert(1)>"), DOCS).ok).toBe(false);
+  });
+
+  it("accepts a password-protected Office file, which is stored in the older container format", () => {
+    const ole = bytes(0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1);
+    expect(checkFileBytes("budget.xlsx", ole, DOCS)).toMatchObject({ ok: true, mime: OOXML_XLSX });
+    expect(checkFileBytes("budget.xlsx", ole, ["pdf", "ooxml"]).ok).toBe(true);
+    expect(checkFileBytes("budget.pdf", ole, DOCS).ok).toBe(false);
   });
 });
 

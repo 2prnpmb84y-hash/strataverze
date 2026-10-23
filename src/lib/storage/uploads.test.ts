@@ -19,7 +19,7 @@ vi.mock("./server-storage", () => ({
 }));
 
 const { sharedFake } = await import("@/test/fake-orm");
-const { prepareUpload, verifyUpload, markUploadUsed } = await import("./uploads");
+const { prepareUpload, verifyUpload, consumeUpload, removeExpiredUploads } = await import("./uploads");
 
 const S = "11111111-1111-4111-8111-111111111111";
 const pdf = new TextEncoder().encode("%PDF-1.7 ...");
@@ -56,6 +56,25 @@ describe("prepareUpload", () => {
       prepareUpload({ schemeId: S, purpose: "payment_confirmation", fileName: "x.pdf", size: 11 * 1024 * 1024 }),
     ).rejects.toThrow(/10 MB/);
     expect(rows()).toHaveLength(0);
+  });
+
+  it("refuses a building id that is not in canonical form", async () => {
+    const lower = "abcdef12-3456-4789-8abc-def123456789";
+    for (const schemeId of [lower.toUpperCase(), `{${lower}}`, lower.replace(/-/g, "")]) {
+      await expect(prepareUpload({ schemeId, purpose: "library", fileName: "x.pdf", size: 10 })).rejects.toThrow(/not found/);
+    }
+    expect(authorise).not.toHaveBeenCalled();
+  });
+
+  it("limits how many uploads one person prepares, counted in the database", async () => {
+    sharedFake.reset({
+      StorageUpload: Array.from({ length: 60 }, (_, i) => ({
+        id: `u${i}`,
+        profileId: "p1",
+        createdAt: new Date().toISOString(),
+      })),
+    });
+    await expect(prepareUpload({ schemeId: S, purpose: "library", fileName: "x.pdf", size: 10 })).rejects.toThrow(/Too many/);
   });
 
   it("refuses someone the purpose's check refuses", async () => {
@@ -98,7 +117,7 @@ describe("verifyUpload", () => {
 
   it("refuses another person's upload, another building's, another purpose's, and a used one", async () => {
     const r = await prepared();
-    storage.info.mockResolvedValue({ size: 10, contentType: null });
+    storage.info.mockResolvedValue({ size: 10, contentType: "application/pdf" });
     storage.head.mockResolvedValue(pdf);
     for (const wrong of [
       { profileId: "p2" },
@@ -109,13 +128,83 @@ describe("verifyUpload", () => {
         verifyUpload({ uploadId: r.uploadId, schemeId: S, purpose: "library", profileId: "p1", ...wrong }),
       ).rejects.toThrow(/could not be found/);
     }
-    await markUploadUsed(r.uploadId, "doc-1");
+    await verifyUpload({ uploadId: r.uploadId, schemeId: S, purpose: "library", profileId: "p1" });
+    await consumeUpload(r.uploadId, async () => ({ id: "doc-1" }), (d) => `Document:${d.id}`);
     await expect(verifyUpload({ uploadId: r.uploadId, schemeId: S, purpose: "library", profileId: "p1" })).rejects.toThrow(/could not be found/);
+  });
+
+  it("refuses a file stored with a different type from the one its name implies", async () => {
+    const r = await prepared();
+    storage.info.mockResolvedValue({ size: 100, contentType: "text/csv" });
+    storage.head.mockResolvedValue(pdf);
+    await expect(verifyUpload({ uploadId: r.uploadId, schemeId: S, purpose: "library", profileId: "p1" })).rejects.toThrow(/type does not match/);
+    expect(storage.removed).toEqual([r.path]);
+  });
+
+  it("accepts a stored type with parameters", async () => {
+    const r = await prepared("library", "notes.txt");
+    storage.info.mockResolvedValue({ size: 100, contentType: "text/plain;charset=UTF-8" });
+    storage.head.mockResolvedValue(new TextEncoder().encode("Minutes of the meeting"));
+    await expect(verifyUpload({ uploadId: r.uploadId, schemeId: S, purpose: "library", profileId: "p1" })).resolves.toMatchObject({
+      mimeType: "text/plain",
+    });
   });
 
   it("refuses an expired upload", async () => {
     const r = await prepared();
     rows()[0].expiresAt = new Date(Date.now() - 1000).toISOString();
     await expect(verifyUpload({ uploadId: r.uploadId, schemeId: S, purpose: "library", profileId: "p1" })).rejects.toThrow(/expired/);
+  });
+});
+
+describe("consumeUpload", () => {
+  async function verified() {
+    const r = await prepareUpload({ schemeId: S, purpose: "library", fileName: "Minutes.pdf", size: 1000 });
+    storage.info.mockResolvedValue({ size: 1000, contentType: "application/pdf" });
+    storage.head.mockResolvedValue(pdf);
+    await verifyUpload({ uploadId: r.uploadId, schemeId: S, purpose: "library", profileId: "p1" });
+    return r;
+  }
+
+  it("lets an upload make one record only", async () => {
+    const r = await verified();
+    const create = vi.fn(async () => ({ id: "doc-1" }));
+    await consumeUpload(r.uploadId, create, (d) => `Document:${d.id}`);
+    await expect(consumeUpload(r.uploadId, create, (d) => `Document:${d.id}`)).rejects.toThrow(/already been used/);
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(rows()[0]).toMatchObject({ usedFor: "Document:doc-1" });
+  });
+
+  it("refuses an upload that has not been checked", async () => {
+    const r = await prepareUpload({ schemeId: S, purpose: "library", fileName: "Minutes.pdf", size: 1000 });
+    await expect(consumeUpload(r.uploadId, async () => ({ id: "x" }), () => "x")).rejects.toThrow(/already been used/);
+  });
+
+  it("releases the upload when the record could not be created", async () => {
+    const r = await verified();
+    await expect(
+      consumeUpload(r.uploadId, async () => {
+        throw new Error("database down");
+      }, () => "x"),
+    ).rejects.toThrow(/database down/);
+    expect(rows()[0]).toMatchObject({ usedAt: null, usedFor: null });
+    await expect(consumeUpload(r.uploadId, async () => ({ id: "doc-2" }), (d) => d.id)).resolves.toEqual({ id: "doc-2" });
+  });
+});
+
+describe("removeExpiredUploads", () => {
+  it("removes unused uploads whose link has expired, and nothing else", async () => {
+    const old = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    const fresh = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    sharedFake.reset({
+      StorageUpload: [
+        { id: "a", path: "schemes/s/library/a.pdf", usedAt: null, expiresAt: old },
+        { id: "b", path: "schemes/s/library/b.pdf", usedAt: old, expiresAt: old },
+        { id: "c", path: "schemes/s/library/c.pdf", usedAt: null, expiresAt: fresh },
+      ],
+    });
+    expect(await removeExpiredUploads()).toBe(1);
+    expect(storage.removed).toEqual(["schemes/s/library/a.pdf"]);
+    expect(rows().find((r) => r.id === "a")).toMatchObject({ usedFor: "expired" });
   });
 });

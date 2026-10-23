@@ -19,3 +19,26 @@ DROP POLICY IF EXISTS documents_platform_admin_update ON storage.objects;
 DROP POLICY IF EXISTS documents_platform_admin_delete ON storage.objects;
 -- documents_require_mfa (S4) is a restrictive policy; with no permissive
 -- policy it has nothing left to restrict, and it is kept as a backstop.
+
+-- Check nothing else still opens the bucket to browsers (a policy added in
+-- the dashboard under another name, for example). Any permissive policy on
+-- storage.objects that names the documents bucket, or that does not limit
+-- itself to a bucket at all, stops this script.
+DO $check$
+DECLARE
+  leftover text;
+BEGIN
+  SELECT string_agg(policyname, ', ') INTO leftover
+  FROM pg_policies
+  WHERE schemaname = 'storage'
+    AND tablename = 'objects'
+    AND permissive = 'PERMISSIVE'
+    AND (
+      coalesce(qual, '') || coalesce(with_check, '') ILIKE '%documents%'
+      OR coalesce(qual, '') || coalesce(with_check, '') NOT ILIKE '%bucket_id%'
+    );
+  IF leftover IS NOT NULL THEN
+    RAISE EXCEPTION 'Storage policies still open the documents bucket: %', leftover;
+  END IF;
+END
+$check$;

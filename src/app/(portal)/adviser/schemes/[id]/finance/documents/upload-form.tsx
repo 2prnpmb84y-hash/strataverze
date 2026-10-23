@@ -37,6 +37,7 @@ export function FinancialDocumentUploadForm({
   const [uploading, setUploading] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [skipDuplicate, setSkipDuplicate] = useState(false);
+  const [stagedUpload, setStagedUpload] = useState<{ key: string; uploadId: string } | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -78,12 +79,19 @@ export function FinancialDocumentUploadForm({
 
       // Straight to storage through a one-time link the server issues; the
       // server checks what arrived before recording it (S3).
-      const staged = await stageUpload(schemeId, "finance_document", file);
+      // After a duplicate warning the same file is submitted again: reuse the
+      // upload already made rather than sending the file a second time.
+      const fileKey = `${file.name}|${file.size}|${file.lastModified}`;
+      const staged =
+        stagedUpload && stagedUpload.key === fileKey
+          ? { uploadId: stagedUpload.uploadId }
+          : await stageUpload(schemeId, "finance_document", file);
       if ("error" in staged) {
         setError(staged.error);
         setUploading(false);
         return;
       }
+      setStagedUpload({ key: fileKey, uploadId: staged.uploadId });
 
       setUploading(false);
 

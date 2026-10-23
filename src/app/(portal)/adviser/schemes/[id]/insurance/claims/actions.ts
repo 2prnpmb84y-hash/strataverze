@@ -1,6 +1,6 @@
 "use server";
 
-import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { captureUsageFee } from "@/lib/billing/capture";
@@ -362,18 +362,23 @@ export async function uploadClaimEvidenceAction(
       throw err;
     }
 
-    const doc = await createInsuranceDocument({
-      schemeId,
-      claimId: claim.id,
-      category,
-      title: upload.fileName.replace(/\.[^.]+$/, ""),
-      fileUrl: upload.path,
-      fileName: upload.fileName,
-      fileSize: upload.size,
-      mimeType: upload.mimeType,
-      uploadedBy: profile.id,
-    });
-    await markUploadUsed(uploadId, `InsuranceDocument:${doc.id}`);
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      uploadId,
+      () =>
+        createInsuranceDocument({
+          schemeId,
+          claimId: claim.id,
+          category,
+          title: upload.fileName.replace(/\.[^.]+$/, ""),
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+        }),
+      (d) => `InsuranceDocument:${d.id}`,
+    );
     await recordClaimEvent({
       claimId: claim.id,
       eventType: "DOCUMENT_ADDED",

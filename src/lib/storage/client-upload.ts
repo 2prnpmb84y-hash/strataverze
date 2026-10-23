@@ -25,9 +25,13 @@ export async function stageUpload(
   const storage = createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   }).storage;
+  // storage-js sends a File with its own type, so give it the type the
+  // server chose from the name (the browser's may be empty or wrong). The
+  // server checks the stored type matches.
+  const typed = new File([file], file.name, { type: prepared.contentType });
   const { error } = await storage
     .from("documents")
-    .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType: prepared.contentType, upsert: false });
+    .uploadToSignedUrl(prepared.path, prepared.token, typed, { contentType: prepared.contentType, upsert: false });
   if (error) return { error: "The upload did not complete. Please try again." };
   return { uploadId: prepared.uploadId };
 }

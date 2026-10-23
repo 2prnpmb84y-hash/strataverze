@@ -71,13 +71,67 @@ function ascii(bytes: Uint8Array, from: number, to: number): string {
   return String.fromCharCode(...bytes.slice(from, to));
 }
 
+/** Where `needle` first appears in `bytes` (from `from`, up to `to`), or -1. */
+function indexOfBytes(bytes: Uint8Array, needle: readonly number[], from = 0, to = bytes.length): number {
+  const last = Math.min(to, bytes.length) - needle.length;
+  outer: for (let i = from; i <= last; i++) {
+    for (let j = 0; j < needle.length; j++) if (bytes[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
+const enc = (text: string) => [...text].map((c) => c.charCodeAt(0));
+/** Names found in the zip directory of Word, Excel and PowerPoint files. */
+const OOXML_MARKERS = ["[Content_Types].xml", "_rels/", "docProps/", "word/", "xl/", "ppt/"].map(enc);
+/** PDF readers accept the header within the first kilobyte. */
+const PDF_HEADER = enc("%PDF-");
+const PDF_HEADER_WINDOW = 1024;
+
+/** Tags that make a browser treat text as a page or an image with script. */
+const MARKUP = /<\s*\/?\s*(svg|html|head|body|script|style|iframe|frame|object|embed|img|meta|link|base|form|a|math|!doctype|\?xml)\b/i;
+
+/**
+ * Decode a text sample: UTF-8 first, then UTF-16 when it starts with a byte
+ * order mark, then Windows-1252 (common for bank and accounting exports).
+ * Null when it is not text (NUL bytes or control characters outside UTF-16).
+ */
+function decodeText(head: Uint8Array): string | null {
+  if (head.length === 0) return null;
+  const sample = head.length >= 4096 ? trimPartialUtf8(head) : head;
+  if ((head[0] === 0xff && head[1] === 0xfe) || (head[0] === 0xfe && head[1] === 0xff)) {
+    try {
+      const text = new TextDecoder(head[0] === 0xff ? "utf-16le" : "utf-16be", { fatal: true }).decode(
+        head.slice(0, head.length - (head.length % 2)),
+      );
+      return hasControlCharacters(text) ? null : text;
+    } catch {
+      return null;
+    }
+  }
+  if (head.includes(0)) return null;
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(sample);
+  } catch {
+    text = new TextDecoder("windows-1252").decode(head);
+  }
+  return hasControlCharacters(text) ? null : text;
+}
+
+/** Control characters other than tab, line feed, carriage return and form feed. */
+function hasControlCharacters(text: string): boolean {
+  return /[\u0000-\u0008\u000B\u000E-\u001F\u007F]/.test(text);
+}
+
 /**
  * What the bytes are, from their first few kilobytes, or null when they are
- * not one of the allowed kinds. Text must be valid UTF-8 with no NUL bytes
- * and must not look like HTML, SVG or script.
+ * not one of the allowed kinds. A zip must look like an Office file. Text
+ * must not contain control characters and must not look like HTML, SVG or
+ * script.
  */
 export function sniffKind(head: Uint8Array): FileKind | null {
-  if (startsWith(head, [0x25, 0x50, 0x44, 0x46, 0x2d])) return "pdf"; // %PDF-
+  if (indexOfBytes(head, PDF_HEADER, 0, PDF_HEADER_WINDOW) >= 0) return "pdf";
   if (startsWith(head, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "png";
   if (startsWith(head, [0xff, 0xd8, 0xff])) return "jpeg";
   if (startsWith(head, [0x47, 0x49, 0x46, 0x38])) return "gif"; // GIF8
@@ -85,19 +139,14 @@ export function sniffKind(head: Uint8Array): FileKind | null {
   if (ascii(head, 4, 8) === "ftyp" && ["heic", "heix", "hevc", "heim", "heis", "mif1", "msf1"].includes(ascii(head, 8, 12))) {
     return "heic";
   }
-  if (startsWith(head, [0x50, 0x4b, 0x03, 0x04])) return "ooxml"; // a zip; Office files are zips
-  if (startsWith(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return "ole";
-  if (head.length > 0 && !head.includes(0)) {
-    let text: string;
-    try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(head.length >= 4096 ? trimPartialUtf8(head) : head);
-    } catch {
-      return null;
-    }
-    if (/<\s*(svg|html|script|!doctype|\?xml|iframe|object|embed)\b/i.test(text)) return null;
-    return "text";
+  if (startsWith(head, [0x50, 0x4b, 0x03, 0x04])) {
+    // A zip. Office files name their parts in the zip's first entries.
+    return OOXML_MARKERS.some((m) => indexOfBytes(head, m) >= 0) ? "ooxml" : null;
   }
-  return null;
+  if (startsWith(head, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return "ole";
+  const text = decodeText(head);
+  if (text === null || MARKUP.test(text)) return null;
+  return "text";
 }
 
 /** Drop a UTF-8 sequence cut off at the end of a sample. */
@@ -135,7 +184,10 @@ export function checkFileBytes(fileName: string, head: Uint8Array, allowed: read
   const byName = checkFileName(fileName, allowed);
   if (!byName.ok) return byName;
   const sniffed = sniffKind(head);
-  if (sniffed !== byName.kind) {
+  // A password-protected Word, Excel or PowerPoint file is an encrypted
+  // container in the older (OLE) format, whatever its extension.
+  const protectedOffice = byName.kind === "ooxml" && sniffed === "ole";
+  if (sniffed !== byName.kind && !protectedOffice) {
     return { ok: false, error: "The file's contents do not match its type. Please upload the original file." };
   }
   return byName;

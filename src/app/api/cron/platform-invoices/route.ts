@@ -3,10 +3,12 @@ import { notifyIssuedInvoices, runMonthlyInvoices } from "@/lib/billing/invoice-
 import { sydneyMonth } from "@/lib/billing/invoice";
 import { accrueComplianceRenewals } from "@/lib/billing/contractor-fees";
 import { strataVerzeGstRegistered } from "@/lib/billing/strataverze-supplier";
+import { removeExpiredUploads } from "@/lib/storage/uploads";
 
 /**
  * Monthly StrataVerze invoicing and yearly contractor compliance renewals,
- * called by Vercel Cron (see vercel.json).
+ * called by Vercel Cron (see vercel.json). Also removes uploads that were
+ * prepared but never used (S3), so one daily job covers both.
  *
  * Runs daily and invoices the current Sydney month for any scheme not yet
  * invoiced, so a missed or repeated cron call does no harm. Switched off
@@ -19,6 +21,15 @@ export async function GET(request: NextRequest) {
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
+  // Uploads never used, once their signed link has expired (S3). A failure
+  // here must not stop invoicing.
+  try {
+    const removed = await removeExpiredUploads();
+    if (removed > 0) console.info(`[storage] removed ${removed} unused uploads`);
+  } catch (err) {
+    console.error("[storage] unused upload clean-up failed:", err instanceof Error ? err.name : "error");
+  }
+
   // Yearly contractor compliance verification renewals (only while capture is on).
   const renewals = await accrueComplianceRenewals();
 

@@ -12,7 +12,7 @@ import {
   deleteDocument,
   getDocumentById,
 } from "@/lib/queries/documents";
-import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { canSeeDocument, parseVisibility } from "@/lib/documents/visibility";
 import { documentViewers } from "@/lib/documents/viewers";
 import { logActivity } from "@/lib/queries/activity-log";
@@ -66,20 +66,25 @@ export async function uploadDocumentAction(
       throw err;
     }
 
-    const doc = await createDocument({
-      schemeId,
-      title,
-      description: description || undefined,
-      category,
-      fileUrl: upload.path,
-      fileName: upload.fileName,
-      fileSize: upload.size,
-      mimeType: upload.mimeType,
-      uploadedBy: profile.id,
-      lotNumber,
-      visibility: visibility as string,
-    });
-    await markUploadUsed(uploadId, `Document:${doc.id}`);
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      uploadId,
+      () =>
+        createDocument({
+          schemeId,
+          title,
+          description: description || undefined,
+          category,
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+          lotNumber,
+          visibility: visibility as string,
+        }),
+      (d) => `Document:${d.id}`,
+    );
 
     await logActivity({
       schemeId,
@@ -143,24 +148,29 @@ export async function uploadFileAction(
     }
     const title = upload.fileName.replace(/\.[^.]+$/, "");
 
-    const doc = await createDocument({
-      schemeId,
-      title,
-      category,
-      documentType,
-      fileUrl: upload.path,
-      fileName: upload.fileName,
-      fileSize: upload.size,
-      mimeType: upload.mimeType,
-      uploadedBy: profile.id,
-      strataPlan,
-      schedule,
-      lotNumber,
-      supplier,
-      comments,
-      visibility: visibility as string,
-    });
-    await markUploadUsed(uploadId, `Document:${doc.id}`);
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      uploadId,
+      () =>
+        createDocument({
+          schemeId,
+          title,
+          category,
+          documentType,
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+          strataPlan,
+          schedule,
+          lotNumber,
+          supplier,
+          comments,
+          visibility: visibility as string,
+        }),
+      (d) => `Document:${d.id}`,
+    );
 
     await logActivity({
       schemeId,

@@ -11,7 +11,7 @@ import { sendEmail } from "@/lib/email";
 import { possibleDuplicatePaymentEmail } from "@/lib/email-templates/payment-confirmation";
 import { findDuplicateConfirmation } from "@/lib/finance/payment-confirmations";
 import { paymentUploadPathProblem } from "@/lib/owner/payment-upload";
-import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import type { Varchar, TimestampString, Numeric } from "@prisma/orm-postgres/target/codec-types";
 
 function toVarchar<N extends number>(value: string): Varchar<N> {
@@ -103,33 +103,37 @@ export async function uploadPaymentConfirmationAction(
       })),
     );
 
-    const doc = await db.orm.public.FinancialDocument.create({
-      schemeId,
-      documentType: "PAYMENT_CONFIRMATION",
-      uploadedBy: profile.id,
-      fileName: toVarchar<500>(upload.fileName),
-      fileUrl: upload.path,
-      fileSize,
-      mimeType: toVarchar<100>(mimeType),
-      lotId: lotId ?? undefined,
-      levyNoticeId: data.levyNoticeId ?? undefined,
-      amount: data.amount !== undefined ? toNumeric(data.amount) : undefined,
-      documentDate: data.documentDate
-        ? toTimestamp(data.documentDate)
-        : undefined,
-      payerName: data.payerName
-        ? toVarchar<200>(data.payerName)
-        : undefined,
-      payeeReference: data.payeeReference
-        ? toVarchar<200>(data.payeeReference)
-        : undefined,
-      documentStatus: "UPLOADED",
-      verificationStatus: "PENDING",
-      duplicateOfId: duplicate?.id ?? null,
-      reviewNotes: duplicate ? "Possible duplicate of an earlier upload with the same notice, amount and date." : null,
-    });
-
-    await markUploadUsed(data.uploadId, `FinancialDocument:${doc.id}`);
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      data.uploadId,
+      () =>
+        db.orm.public.FinancialDocument.create({
+        schemeId,
+        documentType: "PAYMENT_CONFIRMATION",
+        uploadedBy: profile.id,
+        fileName: toVarchar<500>(upload.fileName),
+        fileUrl: upload.path,
+        fileSize,
+        mimeType: toVarchar<100>(mimeType),
+        lotId: lotId ?? undefined,
+        levyNoticeId: data.levyNoticeId ?? undefined,
+        amount: data.amount !== undefined ? toNumeric(data.amount) : undefined,
+        documentDate: data.documentDate
+          ? toTimestamp(data.documentDate)
+          : undefined,
+        payerName: data.payerName
+          ? toVarchar<200>(data.payerName)
+          : undefined,
+        payeeReference: data.payeeReference
+          ? toVarchar<200>(data.payeeReference)
+          : undefined,
+        documentStatus: "UPLOADED",
+        verificationStatus: "PENDING",
+        duplicateOfId: duplicate?.id ?? null,
+        reviewNotes: duplicate ? "Possible duplicate of an earlier upload with the same notice, amount and date." : null,
+      }),
+      (d) => `FinancialDocument:${d.id}`,
+    );
 
     await logActivity({
       schemeId,

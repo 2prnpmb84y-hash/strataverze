@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { createDocument } from "@/lib/queries/documents";
-import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { parseVisibility } from "@/lib/documents/visibility";
 
 export type DocumentFormState = {
@@ -69,20 +69,25 @@ export async function uploadDocumentAction(
       throw err;
     }
 
-    const doc = await createDocument({
-      schemeId,
-      title,
-      description: description || undefined,
-      category,
-      fileUrl: upload.path,
-      fileName: upload.fileName,
-      fileSize: upload.size,
-      mimeType: upload.mimeType,
-      uploadedBy: profile.id,
-      lotNumber,
-      visibility: visibility as string,
-    });
-    await markUploadUsed(uploadId, `Document:${doc.id}`);
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    await consumeUpload(
+      uploadId,
+      () =>
+        createDocument({
+          schemeId,
+          title,
+          description: description || undefined,
+          category,
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+          lotNumber,
+          visibility: visibility as string,
+        }),
+      (d) => `Document:${d.id}`,
+    );
 
     revalidatePath("/owner/documents");
     redirect("/owner/documents");

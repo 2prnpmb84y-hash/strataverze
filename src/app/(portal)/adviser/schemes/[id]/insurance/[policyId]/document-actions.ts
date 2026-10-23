@@ -1,6 +1,6 @@
 "use server";
 
-import { markUploadUsed, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
@@ -72,22 +72,26 @@ export async function uploadInsuranceDocumentAction(
       throw err;
     }
 
-    const doc = await createInsuranceDocument({
-      schemeId,
-      policyId: policy.id,
-      category,
-      title: title || upload.fileName.replace(/\.[^.]+$/, ""),
-      fileUrl: upload.path,
-      fileName: upload.fileName,
-      fileSize: upload.size,
-      mimeType: upload.mimeType,
-      uploadedBy: profile.id,
-      version,
-      supersedesId,
-      notes: notes || null,
-    });
-
-    await markUploadUsed(uploadId, `InsuranceDocument:${doc.id}`);
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      uploadId,
+      () =>
+        createInsuranceDocument({
+          schemeId,
+          policyId: policy.id,
+          category,
+          title: title || upload.fileName.replace(/\.[^.]+$/, ""),
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+          version,
+          supersedesId,
+          notes: notes || null,
+        }),
+      (d) => `InsuranceDocument:${d.id}`,
+    );
     if (prev) await markDocumentNotCurrent(schemeId, prev.id);
 
     await logActivity({

@@ -49,3 +49,21 @@ export async function getVisibleDocumentsForSchemes(profileId: string, schemeIds
     })
     .slice(0, limit);
 }
+
+/**
+ * Of these library document ids, the ones this person may not see (S3).
+ * Used to hide "document uploaded" events for documents kept from them.
+ * Deleted or unknown documents are not included.
+ */
+export async function hiddenDocumentIds(profileId: string, documentIds: readonly string[]): Promise<Set<string>> {
+  const hidden = new Set<string>();
+  const ids = [...new Set(documentIds)];
+  if (ids.length === 0) return hidden;
+  const docs = await db.orm.public.Document.where((d) => d.id.in(ids)).limit(ids.length).all();
+  const viewers = await documentViewers(profileId, [...new Set(docs.map((d) => d.schemeId))]);
+  for (const d of docs) {
+    const viewer = viewers.get(d.schemeId);
+    if (!viewer || !canSeeDocument(d, viewer)) hidden.add(d.id);
+  }
+  return hidden;
+}

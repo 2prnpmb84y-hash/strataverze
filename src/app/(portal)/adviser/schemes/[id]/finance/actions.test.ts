@@ -40,7 +40,7 @@ vi.mock("@/lib/storage/uploads", async () => {
     UploadError: actual.UploadError,
     uploadErrorMessage: actual.uploadErrorMessage,
     verifyUpload: (i: unknown) => verifyUpload(i),
-    markUploadUsed: vi.fn(async () => {}),
+    consumeUpload: async (_id: string, create: () => Promise<unknown>) => create(),
   };
 });
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
