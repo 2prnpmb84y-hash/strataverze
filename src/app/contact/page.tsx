@@ -208,6 +208,26 @@ function ContactForm() {
         />
       </div>
 
+      {/* Founding scheme toggle */}
+      <div className="flex items-start gap-3 rounded-xl border border-brand-teal/20 bg-brand-teal/5 p-4">
+        <label className="relative inline-flex cursor-pointer items-center pt-0.5">
+          <input
+            type="checkbox"
+            name="founding_scheme"
+            value="yes"
+            disabled={status === "submitting"}
+            className="peer sr-only"
+          />
+          <div className="h-6 w-11 rounded-full bg-[var(--border)] transition-colors after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-brand-teal peer-checked:after:translate-x-5 peer-focus:ring-2 peer-focus:ring-brand-teal/20 peer-disabled:opacity-60" />
+        </label>
+        <div>
+          <span className="block text-sm font-semibold">Apply for Founding Scheme registration</span>
+          <span className="block text-xs text-[var(--muted)] mt-0.5">
+            Register your scheme as a founding member and receive priority onboarding and early-access benefits.
+          </span>
+        </div>
+      </div>
+
       {/* Error message */}
       {status === "error" && (
         <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400">
