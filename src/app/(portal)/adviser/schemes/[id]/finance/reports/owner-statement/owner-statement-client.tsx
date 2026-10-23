@@ -142,6 +142,18 @@ export function OwnerStatementClient({
           <Card>
             <CardHeader
               title={`Statement — ${selectedLotLabel}`}
+              action={
+                selectedLotId ? (
+                  <a
+                    href={`/api/finance/pdf/owner-statement?schemeId=${schemeId}&lotId=${selectedLotId}${startDate ? `&startDate=${startDate}` : ""}${endDate ? `&endDate=${endDate}` : ""}`}
+                    target="_blank"
+                    rel="noopener"
+                    className="text-sm font-medium text-turquoise underline"
+                  >
+                    Download PDF
+                  </a>
+                ) : undefined
+              }
               description={`Owner: ${selectedOwnerName}${startDate || endDate ? ` | Period: ${startDate || "Start"} to ${endDate || "Present"}` : " | All periods"}`}
             />
 

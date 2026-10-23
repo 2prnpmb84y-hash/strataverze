@@ -284,7 +284,15 @@ export default async function LevyScheduleDetailPage({
               return (
                 <div key={notice.id} className="px-6 py-3 space-y-2">
                   <div className="grid grid-cols-2 sm:grid-cols-[90px_1fr_110px_110px_110px_100px] gap-2 sm:gap-4 items-center text-sm">
-                    <div className="text-ink-muted tabular-nums">{String(notice.noticeNumber)}</div>
+                    <div className="text-ink-muted tabular-nums">
+                      {noticeStatus === "DRAFT" ? (
+                        String(notice.noticeNumber)
+                      ) : (
+                        <a href={`/api/finance/pdf/levy-notice/${notice.id}`} target="_blank" rel="noopener" className="underline" title="Open the notice as a PDF">
+                          {String(notice.noticeNumber)}
+                        </a>
+                      )}
+                    </div>
                     <div className="text-ink font-medium">
                       {notice.lot ? `Lot ${String(notice.lot.lotNumber)}` : "—"}
                     </div>
