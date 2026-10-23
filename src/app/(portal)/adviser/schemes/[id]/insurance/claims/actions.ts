@@ -17,14 +17,24 @@ import {
   recordClaimLodgement,
   recordClaimEvent,
   getClaimById,
+  getSchemeClaim,
 } from "@/lib/queries/insurance-claims";
-import { createInsuranceDocument } from "@/lib/queries/insurance-documents";
+import { createInsuranceDocument, getDownloadableInsuranceDocument } from "@/lib/queries/insurance-documents";
+import { getSchemePolicy } from "@/lib/queries/insurance";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { canTransitionClaim, isClaimStatus } from "@/lib/insurance/status";
-import { CLAIM_CATEGORIES } from "@/lib/insurance/constants";
+import { CLAIM_CATEGORIES, DOCUMENT_CATEGORIES } from "@/lib/insurance/constants";
 
 export type ClaimFormState = { error?: string; fieldErrors?: Record<string, string> };
 
 const CATEGORY_SET = new Set<string>(CLAIM_CATEGORIES);
+const DOCUMENT_CATEGORY_SET = new Set<string>(DOCUMENT_CATEGORIES);
+
+/** A claim may only be filed against one of the scheme's own policies. */
+async function policyProblem(schemeId: string, policyId: string | null): Promise<string | null> {
+  if (!policyId) return null;
+  return (await getSchemePolicy(schemeId, policyId)) ? null : "Choose a policy of this scheme.";
+}
 
 function str(fd: FormData, k: string): string {
   return ((fd.get(k) as string) ?? "").trim();
@@ -98,7 +108,9 @@ export async function createClaimAction(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    const claim = await createClaim({ schemeId, ...fields });
+    const badPolicy = await policyProblem(schemeId, fields.policyId);
+    if (badPolicy) return { fieldErrors: { policyId: badPolicy } };
+    const claim = await createClaim({ ...fields, schemeId });
     await recordClaimEvent({
       claimId: claim.id,
       eventType: "CREATED",
@@ -135,7 +147,11 @@ export async function updateClaimAction(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await updateClaim(claimId, fields);
+    const badPolicy = await policyProblem(schemeId, fields.policyId);
+    if (badPolicy) return { fieldErrors: { policyId: badPolicy } };
+    // Scheme-scoped: another scheme's claim id matches nothing (SEC-004).
+    const updated = await updateClaim(schemeId, claimId, fields);
+    if (!updated) return { error: "Claim not found." };
     await logActivity({
       schemeId,
       actorId: profile.id,
@@ -160,7 +176,7 @@ export async function updateClaimManagementAction(
 ): Promise<ClaimFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await updateClaim(claimId, {
+    const updated = await updateClaim(schemeId, claimId, {
       insurerClaimRef: optStr(formData, "insurerClaimRef"),
       assessorDetails: optStr(formData, "assessorDetails"),
       contractorDetails: optStr(formData, "contractorDetails"),
@@ -171,6 +187,7 @@ export async function updateClaimManagementAction(
       settlementDetails: optStr(formData, "settlementDetails"),
       decisionReason: optStr(formData, "decisionReason"),
     });
+    if (!updated) return { error: "Claim not found." };
     await recordClaimEvent({
       claimId,
       eventType: "AMOUNT_UPDATED",
@@ -299,12 +316,14 @@ export async function addClaimNoteAction(
   claimId: string,
   note: string,
 ): Promise<{ error?: string }> {
-  const trimmed = note.trim();
+  const trimmed = typeof note === "string" ? note.trim() : "";
   if (!trimmed) return { error: "Note cannot be empty." };
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const claim = await getSchemeClaim(schemeId, claimId);
+    if (!claim) return { error: "Claim not found." };
     await recordClaimEvent({
-      claimId,
+      claimId: claim.id,
       eventType: "NOTE",
       note: trimmed,
       actorId: profile.id,
@@ -329,13 +348,17 @@ export async function uploadClaimEvidenceAction(
     const file = formData.get("file") as File | null;
     const category = (formData.get("category") as string) || "CLAIM_EVIDENCE";
     if (!file || file.size === 0) return { error: "No file provided." };
+    if (!DOCUMENT_CATEGORY_SET.has(category)) return { error: "Invalid document category." };
+    // The claim must be this scheme's (SEC-004).
+    const claim = await getSchemeClaim(schemeId, claimId);
+    if (!claim) return { error: "Claim not found." };
     const mimeError = validateFileUpload(file);
     if (mimeError) return { error: mimeError };
     if (file.size > 30 * 1024 * 1024) return { error: "File must be smaller than 30 MB." };
 
     const supabase = await createClient();
     const ext = file.name.split(".").pop() ?? "bin";
-    const storagePath = `schemes/${schemeId}/insurance/claims/${claimId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    const storagePath = `schemes/${schemeId}/insurance/claims/${claim.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from("documents")
       .upload(storagePath, file, { contentType: file.type, upsert: false });
@@ -343,7 +366,7 @@ export async function uploadClaimEvidenceAction(
 
     const doc = await createInsuranceDocument({
       schemeId,
-      claimId,
+      claimId: claim.id,
       category,
       title: file.name.replace(/\.[^.]+$/, ""),
       fileUrl: storagePath,
@@ -353,7 +376,7 @@ export async function uploadClaimEvidenceAction(
       uploadedBy: profile.id,
     });
     await recordClaimEvent({
-      claimId,
+      claimId: claim.id,
       eventType: "DOCUMENT_ADDED",
       note: `Evidence added: ${file.name}`,
       actorId: profile.id,
@@ -366,18 +389,28 @@ export async function uploadClaimEvidenceAction(
   }
 }
 
+/**
+ * Short-lived signed URL for a claim's evidence. Takes the document's id,
+ * never a path, and signs the record's own stored path once the document is
+ * confirmed to be evidence on one of this scheme's claims. Only the adviser
+ * claim page lists evidence, so only advisers may sign it.
+ */
 export async function getClaimDocumentUrlAction(
   schemeId: string,
-  fileUrl: string,
+  documentId: string,
 ): Promise<{ url?: string; error?: string }> {
+  let doc: Awaited<ReturnType<typeof getDownloadableInsuranceDocument>>;
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "OWNER"]);
+    await requireSchemeAccess(schemeId, "insurance.manage");
+    doc = await getDownloadableInsuranceDocument(schemeId, documentId, "manager");
+    if (doc && !(doc.claimId && (await getSchemeClaim(schemeId, doc.claimId)))) doc = null;
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;
   }
+  if (!doc) return { error: "Document not found." };
   try {
-    return { url: await resolveDocumentUrl(fileUrl, 600) };
+    return { url: await resolveDocumentUrl(String(doc.fileUrl), 600, { schemeId }) };
   } catch {
     return { error: "Failed to generate document URL." };
   }

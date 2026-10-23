@@ -186,6 +186,7 @@ function ClaimFormInner({
             label="Insurer policy"
             name="policyId"
             defaultValue={defaults.policyId}
+            error={state.fieldErrors?.policyId}
             options={[
               { value: "", label: "Not linked / unknown" },
               ...policies.map((p) => ({ value: p.id, label: p.label })),

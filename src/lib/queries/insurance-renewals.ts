@@ -58,7 +58,17 @@ export async function getActiveRenewalForPolicy(policyId: string) {
     .first();
 }
 
+/** The scheme's live (not deleted) renewal with this id, or null. */
+export async function getSchemeRenewal(schemeId: string, renewalId: string) {
+  if (!schemeId || !renewalId) return null;
+  return db.orm.public.InsuranceRenewal
+    .where((r) => and(r.id.eq(renewalId), r.schemeId.eq(schemeId), r.deletedAt.eq(null)))
+    .first();
+}
+
+/** Update a renewal. Scheme-scoped: returns null when the renewal is not this scheme's. */
 export async function updateRenewal(
+  schemeId: string,
   renewalId: string,
   data: Partial<{
     ownerId: string | null;
@@ -92,7 +102,9 @@ export async function updateRenewal(
   if (data.placementInstructions !== undefined) s("placementInstructions", data.placementInstructions);
   if (data.notes !== undefined) s("notes", data.notes);
   if (data.notProceedingReason !== undefined) s("notProceedingReason", data.notProceedingReason);
-  return db.orm.public.InsuranceRenewal.where({ id: renewalId }).update(u);
+  return db.orm.public.InsuranceRenewal
+    .where((r) => and(r.id.eq(renewalId), r.schemeId.eq(schemeId), r.deletedAt.eq(null)))
+    .update(u);
 }
 
 export async function setRenewalStage(

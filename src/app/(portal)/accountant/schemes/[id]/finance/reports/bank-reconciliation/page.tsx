@@ -44,19 +44,21 @@ export default async function AccountantBankReconciliationPage({
 
   const asAtDate = asAt || new Date().toISOString().slice(0, 10);
 
+  // The selected account must be one of this scheme's accounts.
+  const selectedAccount = selectedAccountId
+    ? bankAccounts.find((ba) => ba.id === selectedAccountId)
+    : null;
+  if (selectedAccountId && !selectedAccount) notFound();
+
   let report: Awaited<ReturnType<typeof getBankReconciliationReport>> | null =
     null;
-  if (selectedAccountId) {
+  if (selectedAccount) {
     report = await getBankReconciliationReport(
-      selectedAccountId,
+      selectedAccount.id,
       id,
       asAtDate,
     );
   }
-
-  const selectedAccount = selectedAccountId
-    ? bankAccounts.find((ba) => ba.id === selectedAccountId)
-    : null;
 
   return (
     <div className="space-y-6">

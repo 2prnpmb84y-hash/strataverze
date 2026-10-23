@@ -92,9 +92,11 @@ export async function createBankAccount(data: {
 }
 
 /**
- * Partially update a bank account's details.
+ * Partially update a bank account's details. Scheme-scoped: returns null when
+ * the account is not this scheme's.
  */
 export async function updateBankAccount(
+  schemeId: string,
   bankAccountId: string,
   data: Partial<{
     accountName: string;
@@ -114,7 +116,7 @@ export async function updateBankAccount(
   if (data.bankFeedEnabled !== undefined) updateData.bankFeedEnabled = data.bankFeedEnabled;
 
   return db.orm.public.SchemeBankAccount
-    .where({ id: bankAccountId })
+    .where((ba) => and(ba.id.eq(bankAccountId), ba.schemeId.eq(schemeId)))
     .update(updateData);
 }
 
@@ -136,15 +138,11 @@ export async function updateReconciliationStatus(
 }
 
 /**
- * Deactivate a bank account (soft-disable via isActive flag).
+ * Deactivate a bank account (soft-disable via isActive flag). Scheme-scoped:
+ * returns null when the account is not this scheme's.
  */
-export async function deactivateBankAccount(bankAccountId: string) {
-  try {
-    return db.orm.public.SchemeBankAccount
-      .where({ id: bankAccountId })
-      .update({ isActive: false });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+export async function deactivateBankAccount(schemeId: string, bankAccountId: string) {
+  return db.orm.public.SchemeBankAccount
+    .where((ba) => and(ba.id.eq(bankAccountId), ba.schemeId.eq(schemeId)))
+    .update({ isActive: false });
 }
