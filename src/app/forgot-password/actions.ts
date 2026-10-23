@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { siteUrl } from "@/lib/site-url";
 import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { headers } from "next/headers";
-import { hitRateLimits } from "@/lib/auth/rate-limit-db";
+import { anyRateLimitReached, clientIp, recordRateLimitHits, type RateLimitName } from "@/lib/auth/rate-limit-db";
 
 const SENT = "/forgot-password?message=If+that+address+has+an+account%2C+we+have+emailed+a+password+reset+link";
 
@@ -18,11 +18,18 @@ export async function resetPassword(formData: FormData) {
     redirect("/forgot-password?error=Please+enter+your+email+address");
   }
 
-  // A few reset emails per account and per address (S7, SEC-020). When the
-  // limit is reached nothing is sent, but the page says the same as always,
-  // so it cannot be used to tell which addresses have accounts.
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!(await hitRateLimits([["passwordReset", email], ["passwordResetAddress", ip]]))) {
+  // A few reset emails per account and address, per account, and per
+  // address (S7, SEC-020). Only emails actually requested from Supabase
+  // count, so refused requests do not extend the block. When a limit is
+  // reached nothing is sent, but the page says the same as always, so it
+  // cannot be used to tell which addresses have accounts.
+  const ip = clientIp(await headers());
+  const limits: [RateLimitName, string | null][] = [
+    ["passwordReset", ip ? `${ip}|${email}` : email],
+    ["passwordResetAccount", email],
+    ["passwordResetAddress", ip],
+  ];
+  if (await anyRateLimitReached(limits)) {
     await recordSecurityEventLater({
       action: "auth.password_reset_requested",
       outcome: "denied",
@@ -32,6 +39,7 @@ export async function resetPassword(formData: FormData) {
     redirect(SENT);
   }
 
+  await recordRateLimitHits(limits);
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl()}/reset-password`,
   });

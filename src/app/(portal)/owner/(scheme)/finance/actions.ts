@@ -188,8 +188,11 @@ export async function uploadPaymentConfirmationAction(
     revalidatePath("/owner/finance");
     return { success: true, data: { possibleDuplicate: !!duplicate } };
   } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Failed to upload payment confirmation.";
-    return { error: msg };
+    // Upload and access messages are written for people; anything else
+    // stays in the server log (S7, SEC-025).
+    const known = uploadErrorMessage(err);
+    if (known) return { error: known };
+    logError("uploadPaymentConfirmationAction error:", err);
+    return { error: "Failed to upload payment confirmation." };
   }
 }

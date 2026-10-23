@@ -87,7 +87,7 @@ export async function proxy(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, cacheHeaders) {
           // Forward new cookies to the browser via the request object
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
@@ -97,6 +97,10 @@ export async function proxy(request: NextRequest) {
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
+          );
+          // A response that sets auth cookies must not be cached (S7).
+          Object.entries(cacheHeaders ?? {}).forEach(([key, value]) =>
+            supabaseResponse.headers.set(key, value),
           );
         },
       },
@@ -186,6 +190,8 @@ export async function proxy(request: NextRequest) {
 /** Carry any cookies Supabase set (a refresh, or clearing on sign-out) onto a redirect. */
 function withCookies(response: NextResponse, from: NextResponse): NextResponse {
   for (const cookie of from.cookies.getAll()) response.cookies.set(cookie);
+  // Redirects that carry auth cookies are never cached (S7).
+  response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
 

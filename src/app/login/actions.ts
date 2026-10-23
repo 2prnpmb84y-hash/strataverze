@@ -5,7 +5,7 @@ import { validatePassword } from "@/lib/auth/password-policy";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { hitRateLimits } from "@/lib/auth/rate-limit-db";
+import { anyRateLimitReached, clientIp, recordRateLimitHits, type RateLimitName } from "@/lib/auth/rate-limit-db";
 import { decodeJwtPayload } from "@/lib/auth/mfa-policy";
 import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
 
@@ -21,8 +21,7 @@ function isValidEmail(email: string): boolean {
 }
 
 export async function login(formData: FormData) {
-  const headersList = await headers();
-  const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(await headers());
   const email = String(formData.get("email")).trim().toLowerCase();
 
   if (!isValidEmail(email)) {
@@ -34,14 +33,15 @@ export async function login(formData: FormData) {
     redirect("/login?error=Please+enter+your+password.");
   }
 
-  // Per address and account, per account, and per address, across every
-  // server instance (S7, SEC-020).
-  const allowed = await hitRateLimits([
-    ["signIn", `${ip}|${email}`],
+  // Failed sign-ins per address and account, per account, and per address,
+  // across every server instance (S7, SEC-020). Only failures count, so
+  // nobody can lock an account by signing in correctly or by being refused.
+  const limits: [RateLimitName, string | null][] = [
+    ["signIn", ip ? `${ip}|${email}` : null],
     ["signInAccount", email],
     ["signInAddress", ip],
-  ]);
-  if (!allowed) {
+  ];
+  if (await anyRateLimitReached(limits)) {
     await recordSecurityEventLater({
       action: "auth.sign_in",
       outcome: "denied",
@@ -62,6 +62,7 @@ export async function login(formData: FormData) {
   const { data: signedIn, error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
+    await recordRateLimitHits(limits);
     await recordSecurityEventLater({
       action: "auth.sign_in",
       outcome: "failed",
@@ -95,19 +96,19 @@ export async function login(formData: FormData) {
 
 
 export async function signup(formData: FormData) {
-  const headersList = await headers();
-  const ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ip = clientIp(await headers());
   const email = String(formData.get("email")).trim().toLowerCase();
 
   if (!isValidEmail(email)) {
     redirect("/login?error=Please+enter+a+valid+email+address.");
   }
 
-  const allowed = await hitRateLimits([
-    ["signUp", `${ip}|${email}`],
+  // Sign-up attempts per address and account, and per address (S7).
+  const signUpLimits: [RateLimitName, string | null][] = [
+    ["signUp", ip ? `${ip}|${email}` : email],
     ["signUpAddress", ip],
-  ]);
-  if (!allowed) {
+  ];
+  if (await anyRateLimitReached(signUpLimits)) {
     await recordSecurityEventLater({ action: "auth.sign_up", outcome: "denied", reason: "too many attempts", metadata: { subject: auditHash(email) } });
     redirect("/login?error=Too+many+attempts.+Please+try+again+later.");
   }
@@ -124,6 +125,7 @@ export async function signup(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(passwordError)}`);
   }
 
+  await recordRateLimitHits(signUpLimits);
   const { data: created, error } = await supabase.auth.signUp(data);
 
   if (error) {

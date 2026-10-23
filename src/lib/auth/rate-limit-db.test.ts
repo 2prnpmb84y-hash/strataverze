@@ -54,3 +54,22 @@ describe("hitRateLimits", () => {
     expect(rows()).toHaveLength(14);
   });
 });
+
+describe("rateLimitReached and recordRateLimitHits (count failures only)", () => {
+  it("does not count a check, only a recorded failure", async () => {
+    const { rateLimitReached, recordRateLimitHits, anyRateLimitReached } = await import("./rate-limit-db");
+    const now = Date.parse("2026-10-23T10:00:00Z");
+    for (let i = 0; i < 10; i++) expect(await rateLimitReached("signIn", "ip|a@example.com", now)).toBe(false);
+    expect(rows()).toHaveLength(0);
+    for (let i = 0; i < RATE_LIMITS.signIn.limit; i++) await recordRateLimitHits([["signIn", "ip|a@example.com"]], now);
+    expect(await rateLimitReached("signIn", "ip|a@example.com", now)).toBe(true);
+    expect(await anyRateLimitReached([["signIn", "ip|b@example.com"], ["signInAddress", "ip"]])).toBe(false);
+  });
+
+  it("skips a limit with no subject (no IP address) rather than sharing one bucket", async () => {
+    const { rateLimitReached, recordRateLimitHits } = await import("./rate-limit-db");
+    await recordRateLimitHits([["signInAddress", null]]);
+    expect(rows()).toHaveLength(0);
+    expect(await rateLimitReached("signInAddress", null)).toBe(false);
+  });
+});

@@ -34,7 +34,9 @@ function ResetPasswordForm() {
   const [status, setStatus] = useState<{
     type: "error" | "success";
     message: string;
-  } | null>(error ? { type: "error", message: error } : null);
+    // The link's own error text is not shown (S7): a crafted link could
+    // otherwise put any words on the page.
+  } | null>(error ? { type: "error", message: "The reset link is invalid or has expired. Please request a new one." } : null);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const [needsMfa, setNeedsMfa] = useState(false);

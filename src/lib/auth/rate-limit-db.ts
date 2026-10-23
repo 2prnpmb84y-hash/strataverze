@@ -11,8 +11,15 @@ import { rateLimit } from "./rate-limit";
  * Each attempt adds a row to rate_limit_hits under a keyed hash of the
  * limit's name and subject (an email address, an IP address or a profile
  * id), so no address is stored in the clear. The attempt is allowed while
- * the rows for that key in the window number no more than the limit. Denied
- * attempts count too, so hammering does not reset the window.
+ * the rows for that key in the window number no more than the limit.
+ *
+ * Two ways to use it:
+ *   - hitRateLimit: every attempt counts (authenticator codes, search).
+ *   - rateLimitReached, then recordRateLimitHit only when the attempt
+ *     failed or was used: for sign-in (failed passwords only) and password
+ *     reset emails (only those sent). Counting refused or successful
+ *     attempts there would let anyone who knows an email address lock its
+ *     owner out (review of S7).
  *
  * The in-memory limiter still runs first, as a cheap first check and as the
  * fallback if the database cannot be reached (the request is then limited
@@ -22,17 +29,23 @@ import { rateLimit } from "./rate-limit";
 const MINUTE = 60 * 1000;
 
 export const RATE_LIMITS = {
-  /** Sign-in attempts from one address for one account. */
+  /** Failed sign-ins from one address for one account. */
   signIn: { limit: 5, windowMs: 15 * MINUTE },
-  /** Sign-in attempts for one account from anywhere. */
-  signInAccount: { limit: 20, windowMs: 60 * MINUTE },
-  /** Sign-in attempts from one address for any account. */
-  signInAddress: { limit: 50, windowMs: 60 * MINUTE },
+  /**
+   * Failed sign-ins for one account from anywhere. Above what one address
+   * can reach (20 an hour), so locking an account out needs many addresses.
+   */
+  signInAccount: { limit: 50, windowMs: 60 * MINUTE },
+  /** Failed sign-ins from one address for any account (password spraying). */
+  signInAddress: { limit: 100, windowMs: 60 * MINUTE },
   signUp: { limit: 5, windowMs: 15 * MINUTE },
   signUpAddress: { limit: 20, windowMs: 60 * MINUTE },
-  /** Password reset emails for one account. */
+  /** Password reset emails sent for one account from one address. */
   passwordReset: { limit: 3, windowMs: 15 * MINUTE },
-  passwordResetAddress: { limit: 10, windowMs: 60 * MINUTE },
+  /** Password reset emails sent for one account from anywhere. */
+  passwordResetAccount: { limit: 10, windowMs: 60 * MINUTE },
+  /** Password reset emails requested from one address. */
+  passwordResetAddress: { limit: 20, windowMs: 60 * MINUTE },
   /** Authenticator code checks for one person. */
   mfaVerify: { limit: 5, windowMs: 15 * MINUTE },
   invitationAccept: { limit: 10, windowMs: 15 * MINUTE },
@@ -74,4 +87,61 @@ export async function hitRateLimit(name: RateLimitName, subject: string | null |
 export async function hitRateLimits(checks: readonly [RateLimitName, string | null | undefined][]): Promise<boolean> {
   const results = await Promise.all(checks.map(([name, subject]) => hitRateLimit(name, subject)));
   return results.every(Boolean);
+}
+
+/** A limit's key, or null when there is no subject (the limit is then skipped). */
+function keyFor(name: RateLimitName, subject: string | null | undefined): string | null {
+  if (!subject) return null;
+  return auditHash(`${name}|${subject}`);
+}
+
+/**
+ * Whether the limit is already reached for this subject, without counting
+ * an attempt. A missing subject (no IP address, say) never limits. If the
+ * database cannot be reached the attempt is allowed (Supabase's own limits
+ * still apply).
+ */
+export async function rateLimitReached(name: RateLimitName, subject: string | null | undefined, nowMs: number = Date.now()): Promise<boolean> {
+  const { limit, windowMs } = RATE_LIMITS[name];
+  const keyHash = keyFor(name, subject);
+  if (!keyHash) return false;
+  try {
+    const count = Number(
+      await db.orm.public.RateLimitHit
+        .where((h) => and(h.keyHash.eq(keyHash), h.hitAt.gt(ts(nowMs - windowMs))))
+        .count(),
+    );
+    return count >= limit;
+  } catch (err) {
+    console.error("[rate-limit] database check failed:", err instanceof Error ? err.name : "error");
+    return false;
+  }
+}
+
+/** Whether any of these limits is reached. */
+export async function anyRateLimitReached(checks: readonly [RateLimitName, string | null | undefined][]): Promise<boolean> {
+  const results = await Promise.all(checks.map(([name, subject]) => rateLimitReached(name, subject)));
+  return results.some(Boolean);
+}
+
+/** Count one attempt against each of these limits (failures are logged, never thrown). */
+export async function recordRateLimitHits(checks: readonly [RateLimitName, string | null | undefined][], nowMs: number = Date.now()): Promise<void> {
+  for (const [name, subject] of checks) {
+    const keyHash = keyFor(name, subject);
+    if (!keyHash) continue;
+    try {
+      await db.orm.public.RateLimitHit.create({ keyHash, hitAt: ts(nowMs) });
+    } catch (err) {
+      console.error("[rate-limit] could not record an attempt:", err instanceof Error ? err.name : "error");
+    }
+  }
+}
+
+/**
+ * The client's IP address as Vercel reports it, or null. Vercel sets
+ * x-forwarded-for itself (a value sent by the client is not passed on).
+ */
+export function clientIp(h: Headers): string | null {
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")?.trim() || "";
+  return ip ? ip.slice(0, 64) : null;
 }

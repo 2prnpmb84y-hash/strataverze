@@ -1,3 +1,4 @@
+import { logError } from "@/lib/log";
 /**
  * ABN Lookup Integration
  *
@@ -164,7 +165,7 @@ export async function lookupAbn(rawAbn: string): Promise<AbnLookupOutcome> {
     if (err instanceof DOMException && err.name === "AbortError") {
       console.error("ABN Lookup request timed out");
     } else {
-      console.error("ABN Lookup network error:", (err as Error).message);
+      logError("ABN Lookup network error:", err);
     }
     return {
       success: false,
@@ -323,7 +324,7 @@ export async function lookupAbn(rawAbn: string): Promise<AbnLookupOutcome> {
 
     return { success: true, data: result };
   } catch (err) {
-    console.error("ABN Lookup parse error:", (err as Error).message);
+    logError("ABN Lookup parse error:", err);
     return {
       success: false,
       error: "Failed to parse ABN Lookup response. Please try again.",

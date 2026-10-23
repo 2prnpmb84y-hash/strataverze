@@ -10,10 +10,16 @@
 
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const LONG_NUMBER = /\d[\d\s-]{4,}\d/g;
+/** Quoted values, as databases put the input that failed in their messages. */
+const QUOTED = /"[^"]*"|'[^']*'|\([^()]*\)=\([^()]*\)/g;
 
-/** Mask email addresses and runs of six or more digits (BSBs, account and phone numbers). */
+/**
+ * Mask quoted values, email addresses and runs of six or more digits (BSBs,
+ * account and phone numbers).
+ */
 export function redactText(text: string, max = 300): string {
   return String(text ?? "")
+    .replace(QUOTED, "[value]")
     .replace(EMAIL, "[email]")
     .replace(LONG_NUMBER, (m) => (m.replace(/\D/g, "").length >= 6 ? "[number]" : m))
     .slice(0, max);
@@ -25,6 +31,9 @@ export function errorSummary(err: unknown): Record<string, string> {
   const out: Record<string, string> = { name: err.name };
   const code = (err as { code?: unknown }).code;
   if (typeof code === "string" || typeof code === "number") out.code = String(code).slice(0, 64);
+  // Postgres names the constraint separately, so it survives the masking.
+  const constraint = (err as { constraint?: unknown }).constraint;
+  if (typeof constraint === "string") out.constraint = constraint.slice(0, 100);
   out.message = redactText(err.message);
   const frames = (err.stack ?? "").split("\n").filter((l) => l.trim().startsWith("at ")).slice(0, 3);
   if (frames.length) out.at = frames.map((f) => f.trim().slice(3)).join(" < ");

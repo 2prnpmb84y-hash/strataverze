@@ -177,7 +177,8 @@ export async function validateMigrationAction(
 function cutoverError(err: unknown): ActionState {
   if (err instanceof AuthorisationError || err instanceof CutoverError) return { error: err.message };
   logError("Cutover error:", err);
-  return { error: err instanceof Error ? err.message : "Something went wrong with the cutover." };
+  // Database and library messages stay in the server log (S7, SEC-025).
+  return { error: "Something went wrong with the cutover." };
 }
 
 const cutoverPath = (schemeId: string) => `/adviser/schemes/${schemeId}/finance/migration/cutover`;
