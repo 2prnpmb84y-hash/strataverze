@@ -149,7 +149,7 @@ export function LotFinancials({
                           ? "bg-blue-100 text-blue-700"
                           : "bg-purple-100 text-purple-700"
                       }`}>
-                        {item.levyType === "ORDINARY" ? "Annual" : "Special"}
+                        {item.levyType === "ORDINARY" ? "Annual" : item.levyType === "BROUGHT_FORWARD" ? "Brought forward" : "Special"}
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-ink-muted tabular-nums">

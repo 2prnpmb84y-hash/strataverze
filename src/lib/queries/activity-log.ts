@@ -74,6 +74,8 @@ export type ActivityAction =
   | "FINANCIAL_SUPPLIER_CREATED"
   | "SUPPLIER_INVOICE_CREATED"
   | "SUPPLIER_INVOICE_EXTRACTION_REVIEWED"
+  | "DATA_MIGRATION_SIGNED_OFF"
+  | "DATA_MIGRATION_EXECUTED"
   | "SUPPLIER_INVOICE_APPROVED"
   | "SUPPLIER_INVOICE_PAYMENT"
   | "SUPPLIER_INVOICE_CANCELLED"
@@ -147,6 +149,7 @@ export type ActivityAction =
   | "LEVY_NOTICES_EMAILED";
 
 export type ActivityEntityType =
+  | "MigrationBatch"
   | "Levy"
   | "Invitation"
   | "SchemeMembership"

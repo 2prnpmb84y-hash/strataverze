@@ -83,12 +83,8 @@ const DATA_TYPES: {
     description:
       "Import account codes, names, types and fund assignments from the source system.",
   },
-  {
-    id: "opening_balances",
-    name: "Opening Balances",
-    description:
-      "Import opening debit and credit balances at the cutover date for each account.",
-  },
+  // Opening balances go through the cutover (migration/cutover), with the
+  // trial balance check, the detail behind each control account and a sign-off.
 ];
 
 interface TargetField {

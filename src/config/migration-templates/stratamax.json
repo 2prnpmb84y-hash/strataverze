@@ -1,0 +1,72 @@
+{
+  "sourceSystem": "stratamax",
+  "displayName": "StrataMax",
+  "status": "UNCONFIRMED",
+  "note": "To be confirmed against sample StrataMax exports. These column names are a starting point, not a verified export layout: StrataMax does not publish its export column headings, and its help describes Excel exports of reports such as the Aged Balance List and Levy Arrears Pre-Issue. Save each report as CSV, then check every mapped column on upload. Any column can be remapped by hand.",
+  "references": [
+    { "title": "StrataMax help: Levy and Arrears Reports", "url": "https://kokbstratamax.knowledgeowl.com/help/levy-and-arrears-reports" },
+    { "title": "StrataMax help: Interactive Reports", "url": "https://kokbstratamax.knowledgeowl.com/help/interactive-reports" }
+  ],
+  "dataTypes": {
+    "lots": {
+      "lotNumber": ["LotNo", "Lot No", "Lot Number", "Lot"],
+      "unitNumber": ["UnitNo", "Unit No", "Unit Number", "Unit"],
+      "entitlement": ["Entitlement", "Unit Entitlement", "Contribution Entitlement", "Units"],
+      "floorArea": ["Area", "Floor Area"],
+      "lotType": ["Type", "Lot Type"]
+    },
+    "chart_of_accounts": {
+      "code": ["AccCode", "Account Code", "Account", "Code"],
+      "name": ["AccName", "Account Name", "Name", "Description"],
+      "accountType": ["AccType", "Account Type", "Type"],
+      "accountSubType": ["SubType", "Sub Type"],
+      "fundType": ["Fund", "Fund Type"]
+    },
+    "opening_balances": {
+      "accountCode": ["Account", "Account Code", "AccCode", "Code"],
+      "debit": ["Dr", "Debit"],
+      "credit": ["Cr", "Credit"],
+      "balance": ["Balance", "Closing Balance"],
+      "fundName": ["Fund"],
+      "description": ["Narration", "Account Name", "Description"]
+    },
+    "levy_arrears": {
+      "lotNumber": ["Lot Number", "LotNo", "Lot No", "Lot"],
+      "fundName": ["Fund", "Fund Name"],
+      "noticeNumber": ["Notice", "Notice No", "Reference"],
+      "dueDate": ["Due Date", "Due", "Date Due"],
+      "periodStart": ["Period From", "From", "Period Start"],
+      "periodEnd": ["Period To", "To", "Period End"],
+      "levyOutstanding": ["Levy Arrears", "Arrears", "Levy Outstanding", "Balance", "Amount Outstanding"],
+      "interestCharged": ["Interest", "Interest Charged", "Interest Raised"],
+      "interestPaid": ["Interest Paid"],
+      "description": ["Description", "Levy Description"]
+    },
+    "unpaid_invoices": {
+      "supplierName": ["Creditor", "Creditor Name", "Supplier", "Payee"],
+      "supplierAbn": ["ABN", "Creditor ABN"],
+      "invoiceNumber": ["Invoice No", "Invoice Number", "Invoice", "Reference"],
+      "invoiceDate": ["Invoice Date", "Date"],
+      "dueDate": ["Due Date", "Due"],
+      "totalAmount": ["Amount", "Invoice Amount", "Total"],
+      "gstAmount": ["GST", "GST Amount"],
+      "amountPaid": ["Paid", "Amount Paid"],
+      "accountCode": ["Account", "Account Code", "Expense Account"],
+      "fundName": ["Fund"],
+      "description": ["Description", "Details"]
+    },
+    "owner_credits": {
+      "lotNumber": ["Lot Number", "LotNo", "Lot No", "Lot"],
+      "fundName": ["Fund"],
+      "creditAmount": ["Prepaid", "Paid in Advance", "Credit", "Balance"],
+      "note": ["Note", "Description"]
+    },
+    "bank_balances": {
+      "accountName": ["Account Name", "Bank Account", "Account"],
+      "bsb": ["BSB"],
+      "accountNumber": ["Account Number", "Account No"],
+      "reconciledDate": ["Reconciled Date", "Statement Date", "Date"],
+      "reconciledBalance": ["Reconciled Balance", "Statement Balance", "Balance"]
+    }
+  }
+}

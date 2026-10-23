@@ -9,6 +9,7 @@ import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { toBasisEntries } from "@/lib/queries/reports";
 import { levyIncomeAccountPicker } from "./accounting-basis";
 import { LEDGER_STATUSES } from "./ledger-status";
+import { migratedInvoiceEntries } from "./migrated-invoices";
 import { cellRows, sourceCandidates, type DrillDownParams, type DrillEntry, type DrillResult, type SourceKind } from "./drill-down";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
@@ -56,11 +57,12 @@ export async function getJournalEntriesForReportCell(
   let q = db.orm.public.JournalEntry.where((je) => and(je.schemeId.eq(schemeId), je.status.in(LEDGER_STATUSES)));
   if (periodRange.end) q = q.where((je) => je.transactionDate.lte(ts(periodRange.end!)));
   if (mode === "LEDGER" && periodRange.start) q = q.where((je) => je.transactionDate.gte(ts(periodRange.start!)));
-  const [entries, levyIncome] = await Promise.all([
+  const [entries, levyIncome, extraInvoices] = await Promise.all([
     q.include("lines", (l) => l.include("accountCode")).limit(50000).all(),
     mode === "CASH"
       ? db.orm.public.AccountCode.where((a) => and(a.schemeId.eq(schemeId), a.accountSubType.eq("LEVY_INCOME"))).limit(20).all()
       : Promise.resolve([]),
+    mode === "CASH" ? migratedInvoiceEntries(schemeId) : Promise.resolve([]),
   ]);
 
   const basis = toBasisEntries(entries);
@@ -79,6 +81,7 @@ export async function getJournalEntriesForReportCell(
     params,
     accountType: String(account.accountType),
     levyIncomeAccount: levyIncomeAccountPicker(levyIncome),
+    extraInvoices,
   });
   return {
     ...result,

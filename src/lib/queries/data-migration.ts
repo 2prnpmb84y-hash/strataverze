@@ -5,10 +5,6 @@ import type {
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
 import { logActivity } from "@/lib/queries/activity-log";
-import {
-  getNextEntryNumber,
-  createJournalEntry,
-} from "@/lib/queries/journal-entries";
 
 // ─── Prisma 8 Branded-Type Helpers ────────────────────────────
 
@@ -894,148 +890,13 @@ export async function importChartOfAccounts(
   return { created, errors: importErrors };
 }
 
-/**
- * Import opening balances as a single journal entry.
- * Creates a JournalEntry with entryType "OPENING_BALANCE" and one
- * JournalLine per row. Uses the journal-entries module for entry numbering.
+/*
+ * Opening balances are not imported here. They go through the financial
+ * cutover (src/lib/finance/migration-batches.ts), which posts them only once
+ * the opening trial balance nets to zero and the cutover has been signed off,
+ * together with the outstanding notices, unpaid invoices, owner credits and
+ * bank reconciled balances behind the control accounts.
  */
-export async function importOpeningBalances(
-  schemeId: string,
-  rows: MigrationRow[],
-  cutoverDate: string,
-  userId: string,
-): Promise<{ journalEntryId: string; lineCount: number; errors: string[] }> {
-  const validRows = rows.filter((r) => r.errors.length === 0);
-  const importErrors: string[] = [];
-
-  if (validRows.length === 0) {
-    return {
-      journalEntryId: "",
-      lineCount: 0,
-      errors: ["No valid rows to import"],
-    };
-  }
-
-  // Pre-fetch account codes and funds for lookups
-  const accountCodes = await db.orm.public.AccountCode
-    .where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true)))
-    .include("fund")
-    .all();
-
-  const accountByCode = new Map<
-    string,
-    { id: string; fundId: string | null }
-  >();
-  for (const ac of accountCodes) {
-    accountByCode.set(String(ac.code).trim(), {
-      id: ac.id,
-      fundId: ac.fundId ? String(ac.fundId) : null,
-    });
-  }
-
-  // Resolve fund by name for rows that specify one
-  const funds = await db.orm.public.Fund
-    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
-    .all();
-
-  const fundByName = new Map<string, string>();
-  for (const fund of funds) {
-    fundByName.set(String(fund.name).toLowerCase().trim(), fund.id);
-  }
-
-  // Build journal lines
-  const lines: Array<{
-    accountCodeId: string;
-    fundId: string;
-    debit?: number;
-    credit?: number;
-    description?: string;
-  }> = [];
-
-  for (const row of validRows) {
-    const code = row.data.accountCode?.trim();
-    const account = code ? accountByCode.get(code) : undefined;
-
-    if (!account) {
-      importErrors.push(
-        `Row ${row.rowNumber}: Account code "${code}" not found`,
-      );
-      continue;
-    }
-
-    // Determine fund: row-level fundName overrides the account's default fund
-    let fundId = account.fundId ?? "";
-    const rowFundName = row.data.fundName?.trim().toLowerCase();
-    if (rowFundName) {
-      const resolvedFund = fundByName.get(rowFundName);
-      if (resolvedFund) {
-        fundId = resolvedFund;
-      }
-    }
-
-    if (!fundId) {
-      importErrors.push(
-        `Row ${row.rowNumber}: No fund resolved for account "${code}"`,
-      );
-      continue;
-    }
-
-    const debit = row.data.debit ? Number(row.data.debit) : 0;
-    const credit = row.data.credit ? Number(row.data.credit) : 0;
-
-    lines.push({
-      accountCodeId: account.id,
-      fundId,
-      debit: debit > 0 ? debit : undefined,
-      credit: credit > 0 ? credit : undefined,
-      description: row.data.description?.trim() || undefined,
-    });
-  }
-
-  if (lines.length === 0) {
-    return {
-      journalEntryId: "",
-      lineCount: 0,
-      errors: importErrors.length > 0
-        ? importErrors
-        : ["No journal lines could be created from the supplied rows"],
-    };
-  }
-
-  // Get the next entry number and create the journal entry
-  const entryNumber = await getNextEntryNumber(schemeId);
-
-  const entry = await createJournalEntry({
-    schemeId,
-    entryNumber,
-    transactionDate: cutoverDate,
-    description: "Opening balances — data migration",
-    entryType: "OPENING_BALANCE",
-    sourceType: "DATA_MIGRATION",
-    createdBy: userId,
-    lines,
-  });
-
-  await logActivity({
-    schemeId,
-    actorId: userId,
-    action: "SCHEME_UPDATED",
-    entityType: "JournalEntry",
-    entityId: entry.id,
-    metadata: {
-      source: "data_migration",
-      action: "opening_balances_imported",
-      lineCount: lines.length,
-      cutoverDate,
-    },
-  });
-
-  return {
-    journalEntryId: entry.id,
-    lineCount: lines.length,
-    errors: importErrors,
-  };
-}
 
 // ─── Orchestration Helpers ──────────────────────────────────
 
@@ -1115,7 +976,6 @@ export async function validateMigration(
 export async function executeMigration(
   migration: MigrationResult,
   userId: string,
-  cutoverDate?: string,
 ): Promise<MigrationResult> {
   if (
     migration.status !== "CONFIRMED" &&
@@ -1155,25 +1015,9 @@ export async function executeMigration(
         };
       }
 
-      case "opening_balances": {
-        if (!cutoverDate) {
-          return {
-            ...migration,
-            status: "FAILED",
-          };
-        }
-        const result = await importOpeningBalances(
-          migration.schemeId,
-          migration.rows,
-          cutoverDate,
-          userId,
-        );
-        return {
-          ...migration,
-          status: result.errors.length > 0 ? "FAILED" : "POSTED",
-          postedAt: new Date().toISOString(),
-        };
-      }
+      case "opening_balances":
+        // See executeCutover: the trial balance check and the sign-off are required.
+        return { ...migration, status: "FAILED" };
 
       default:
         return { ...migration, status: "FAILED" };

@@ -1,0 +1,71 @@
+{
+  "sourceSystem": "strata_master",
+  "displayName": "Strata Master (MRI Software)",
+  "status": "UNCONFIRMED",
+  "note": "To be confirmed against sample Strata Master exports. These column names are a starting point, not a verified export layout: MRI Software does not publish Strata Master's export column headings. Export each report to CSV, then check every mapped column on upload. Any column can be remapped by hand.",
+  "references": [
+    { "title": "MRI Software: Strata Master", "url": "https://www.mrisoftware.com/au/products/strata-master/" }
+  ],
+  "dataTypes": {
+    "lots": {
+      "lotNumber": ["LotNumber", "Lot Number", "Lot No", "Lot"],
+      "unitNumber": ["UnitNumber", "Unit Number", "Unit"],
+      "entitlement": ["Entitlement", "Unit Entitlement", "UE"],
+      "floorArea": ["FloorArea", "Floor Area", "Area"],
+      "lotType": ["LotType", "Lot Type", "Type"]
+    },
+    "chart_of_accounts": {
+      "code": ["Code", "Account Code", "Account"],
+      "name": ["Name", "Account Name", "Description"],
+      "accountType": ["AccountType", "Account Type", "Type"],
+      "accountSubType": ["AccountSubType", "Sub Type"],
+      "fundType": ["FundType", "Fund Type", "Fund"]
+    },
+    "opening_balances": {
+      "accountCode": ["AccountCode", "Account Code", "Account", "Code"],
+      "debit": ["Debit", "Dr"],
+      "credit": ["Credit", "Cr"],
+      "balance": ["Balance", "Closing Balance"],
+      "fundName": ["Fund", "FundName"],
+      "description": ["Description", "Account Name"]
+    },
+    "levy_arrears": {
+      "lotNumber": ["LotNumber", "Lot Number", "Lot"],
+      "fundName": ["Fund", "FundName"],
+      "noticeNumber": ["NoticeNumber", "Notice Number", "Reference"],
+      "dueDate": ["DueDate", "Due Date", "Due"],
+      "periodStart": ["PeriodFrom", "Period From", "Period Start"],
+      "periodEnd": ["PeriodTo", "Period To", "Period End"],
+      "levyOutstanding": ["Arrears", "Levy Arrears", "Outstanding", "Balance"],
+      "interestCharged": ["Interest", "Interest Charged"],
+      "interestPaid": ["InterestPaid", "Interest Paid"],
+      "description": ["Description"]
+    },
+    "unpaid_invoices": {
+      "supplierName": ["Creditor", "Supplier", "Payee"],
+      "supplierAbn": ["ABN"],
+      "invoiceNumber": ["InvoiceNumber", "Invoice Number", "Invoice No", "Reference"],
+      "invoiceDate": ["InvoiceDate", "Invoice Date", "Date"],
+      "dueDate": ["DueDate", "Due Date"],
+      "totalAmount": ["Amount", "Total", "Invoice Amount"],
+      "gstAmount": ["GST", "GSTAmount"],
+      "amountPaid": ["Paid", "AmountPaid", "Amount Paid"],
+      "accountCode": ["AccountCode", "Account Code", "Account"],
+      "fundName": ["Fund"],
+      "description": ["Description", "Details"]
+    },
+    "owner_credits": {
+      "lotNumber": ["LotNumber", "Lot Number", "Lot"],
+      "fundName": ["Fund"],
+      "creditAmount": ["Prepaid", "Paid In Advance", "Credit", "Balance"],
+      "note": ["Note", "Description"]
+    },
+    "bank_balances": {
+      "accountName": ["AccountName", "Account Name", "Bank Account"],
+      "bsb": ["BSB"],
+      "accountNumber": ["AccountNumber", "Account Number", "Account No"],
+      "reconciledDate": ["ReconciledDate", "Reconciled Date", "Statement Date"],
+      "reconciledBalance": ["ReconciledBalance", "Reconciled Balance", "Statement Balance"]
+    }
+  }
+}

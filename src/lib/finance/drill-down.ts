@@ -99,6 +99,8 @@ export function cellRows(input: {
   params: DrillDownParams;
   accountType: string;
   levyIncomeAccount: (fundId: string) => { accountId: string; accountCode: string; accountName: string } | null;
+  /** Invoices brought across in a cutover (see RecognitionInput.extraInvoices). */
+  extraInvoices?: BasisEntry[];
 }): DrillResult {
   const { params } = input;
   const inFund = (fundId: string) => !params.fundId || fundId === params.fundId;
@@ -150,6 +152,7 @@ export function cellRows(input: {
       end: params.end ?? "9999-12-31",
       basisForFund: () => basis,
       levyIncomeAccount: input.levyIncomeAccount,
+      extraInvoices: (input.extraInvoices ?? []).map((e) => ({ ...e, lines: e.lines.filter((l) => inFund(l.fundId)) })),
     })) {
       if (rec.line.accountId !== params.accountId) continue;
       const e = byId.get(rec.entryId);

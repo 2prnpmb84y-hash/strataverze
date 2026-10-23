@@ -1534,6 +1534,8 @@ model LevySchedule {
   approvedBy       String?      @map("approved_by") @db.Uuid
   /// The adopted capital works fund plan this schedule was generated from, if any.
   capitalWorksPlanId String?    @map("capital_works_plan_id") @db.Uuid
+  /// The cutover this schedule holds brought-forward notices for, if any.
+  migrationBatchId String?     @map("migration_batch_id") @db.Uuid
   createdAt        DateTime     @default(now()) @db.Timestamptz @map("created_at")
   updatedAt        DateTime     @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -1563,6 +1565,8 @@ model LevyNotice {
   status             String              @default("DRAFT") // DRAFT, ISSUED, PARTIALLY_PAID, PAID, OVERDUE, WRITTEN_OFF
   issuedAt           DateTime?           @db.Timestamptz @map("issued_at")
   paidInFullAt       DateTime?           @db.Timestamptz @map("paid_in_full_at")
+  /// The cutover this notice was brought across in, if any.
+  migrationBatchId   String?             @map("migration_batch_id") @db.Uuid
   createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
   updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -1649,6 +1653,8 @@ model SupplierInvoice {
   journalEntryId     String?             @map("journal_entry_id") @db.Uuid
   /// Who entered the invoice. They can never approve it.
   preparedById       String?             @map("prepared_by_id") @db.Uuid
+  /// The cutover this invoice was brought across in, if any. Its accounts payable is in the opening balances.
+  migrationBatchId   String?             @map("migration_batch_id") @db.Uuid
   createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
   updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -3542,6 +3548,8 @@ model OwnerCreditTransaction {
   levyPaymentId  String?  @map("levy_payment_id") @db.Uuid
   refundId       String?  @map("refund_id") @db.Uuid
   journalEntryId String?  @map("journal_entry_id") @db.Uuid
+  /// The cutover this credit was brought across in, if any.
+  migrationBatchId String? @map("migration_batch_id") @db.Uuid
   /// The date the movement took effect: payment date, application date or refund date.
   effectiveDate  DateTime @db.Date @map("effective_date")
   note           String?
@@ -3733,4 +3741,32 @@ model InvoiceExtraction {
   @@index([schemeId])
   @@index([supplierInvoiceId])
   @@map("invoice_extractions")
+}
+
+/// A financial cutover from another system (Stage 7): the staged files, the
+/// checks, the sign-off and what was created when it ran.
+model MigrationBatch {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId     String    @map("scheme_id") @db.Uuid
+  /// stratamax, strata_master, myob, xero or other.
+  sourceSystem String    @map("source_system")
+  cutoverDate  DateTime? @db.Date @map("cutover_date")
+  /// DRAFT, SIGNED_OFF, EXECUTED.
+  status       String    @default("DRAFT")
+  /// Per file type: { fileName, sha256, mapping, headers, records }.
+  files        Json      @default("{}")
+  /// { signedOffBy, signedOffAt, sourceSystem, cutoverDate, files, acknowledgedDifferences, note }.
+  signOff      Json?     @map("sign_off")
+  signedOffBy  String?   @map("signed_off_by") @db.Uuid
+  signedOffAt  DateTime? @db.Timestamptz @map("signed_off_at")
+  /// What the run created: journal entry, counts and ids.
+  results      Json?
+  executedBy   String?   @map("executed_by") @db.Uuid
+  executedAt   DateTime? @db.Timestamptz @map("executed_at")
+  createdBy    String    @map("created_by") @db.Uuid
+  createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt    DateTime  @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@index([schemeId])
+  @@map("migration_batches")
 }

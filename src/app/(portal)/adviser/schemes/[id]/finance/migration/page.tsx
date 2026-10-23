@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireSchemeMembership } from "@/lib/auth/require-membership";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import { MigrationClient } from "./migration-client";
 import { connection } from "next/server";
 
@@ -23,6 +24,8 @@ export default async function MigrationPage({
         title="Data Migration"
         backHref={`/adviser/schemes/${id}/finance`}
         backLabel="Finance"
+        description="Bring lots and the chart of accounts across first. Then run the cutover for opening balances, arrears, unpaid invoices, owner credits and bank balances."
+        action={<Button href={`/adviser/schemes/${id}/finance/migration/cutover`}>Cutover</Button>}
       />
 
       <MigrationClient schemeId={id} schemeName={scheme.name} />

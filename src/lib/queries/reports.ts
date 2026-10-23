@@ -6,6 +6,7 @@ import { getAdoptedPlan, isCapitalWorksFund } from "@/lib/finance/capital-works-
 import { spendByYear } from "@/lib/finance/capital-works-plan";
 import { levyIncomeAccountPicker, recognisedIncomeExpense, type AccountingBasis, type BasisEntry, type RecognisedLine } from "@/lib/finance/accounting-basis";
 import { LEDGER_STATUSES, inLedger } from "@/lib/finance/ledger-status";
+import { migratedInvoiceEntries } from "@/lib/finance/migrated-invoices";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -61,6 +62,7 @@ export async function getIncomeExpenseReport(
   ]);
   const fundById = new Map(funds.map((f) => [f.id, f]));
   const basisEntries = toBasisEntries(entries, fundId);
+  const extraInvoices = (await migratedInvoiceEntries(schemeId)).map((e) => ({ ...e, lines: e.lines.filter((l) => !fundId || l.fundId === fundId) }));
   const levyIncomeAccount = levyIncomeAccountPicker(accounts);
   const basisForFund = (fid: string) => (fundById.get(fid)?.accountingBasis === "ACCRUAL" ? "ACCRUAL" : "CASH") as AccountingBasis;
   const toTotals = (lines: RecognisedLine[]) => {
@@ -78,8 +80,8 @@ export async function getIncomeExpenseReport(
     }
     return out;
   };
-  const currentTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: startDate, end: endDate, basisForFund, levyIncomeAccount }));
-  const compTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: compStartDate, end: compEndDate, basisForFund, levyIncomeAccount }));
+  const currentTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: startDate, end: endDate, basisForFund, levyIncomeAccount, extraInvoices }));
+  const compTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: compStartDate, end: compEndDate, basisForFund, levyIncomeAccount, extraInvoices }));
 
   // Build report lines
   const allCodes = new Set([

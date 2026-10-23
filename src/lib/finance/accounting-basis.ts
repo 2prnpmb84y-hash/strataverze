@@ -55,6 +55,13 @@ export interface RecognitionInput {
   end: string;
   basisForFund: (fundId: string) => AccountingBasis;
   levyIncomeAccount: (fundId: string) => { accountId: string; accountCode: string; accountName: string } | null;
+  /**
+   * Invoice entries that are not in the ledger: invoices brought across in a
+   * cutover, whose payable is in the opening balances. Used only to find an
+   * invoice's expense lines when it is paid on a cash basis, never recognised
+   * themselves.
+   */
+  extraInvoices?: BasisEntry[];
 }
 
 /** How an entry came to be recognised against an account. */
@@ -87,6 +94,7 @@ export function recognitions(input: RecognitionInput): Recognition[] {
   // Invoice approval entries, by invoice id, for cash basis expense recognition.
   const invoices = new Map<string, BasisEntry>();
   for (const e of input.entries) if (e.sourceType === "INVOICE" && e.sourceId) invoices.set(e.sourceId, e);
+  for (const e of input.extraInvoices ?? []) if (e.sourceType === "INVOICE" && e.sourceId && !invoices.has(e.sourceId)) invoices.set(e.sourceId, e);
   // A reversal is treated as its original: reversing an invoice approval is
   // accrual only, and reversing a receipt or a payment undoes cash recognised.
   const byId = new Map(input.entries.map((e) => [e.id, e]));

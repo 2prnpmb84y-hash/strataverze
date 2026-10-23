@@ -22,6 +22,7 @@ import { getAdoptedPlan, isCapitalWorksFund } from "./capital-works-plans";
 import { getSchemeInterestSetting } from "./interest-setting";
 import { generalMeetingResolutionProblem } from "./resolutions";
 import { LEDGER_STATUSES } from "@/lib/finance/ledger-status";
+import { migratedInvoiceEntries } from "./migrated-invoices";
 
 export class StatutoryPackError extends Error {}
 
@@ -104,14 +105,16 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
   const budgetAccounts = accountIds.length ? await db.orm.public.AccountCode.where((a) => a.id.in(accountIds)).limit(500).all() : [];
 
   const basisEntries = toBasisEntries(entries);
+  const migratedInvoices = await migratedInvoiceEntries(schemeId);
   const basisForFund = (fid: string) => (funds.find((f) => f.id === fid)?.accountingBasis === "ACCRUAL" ? "ACCRUAL" : "CASH") as AccountingBasis;
   const levyIncomeAccount = levyIncomeAccountPicker(levyIncomeAccounts);
   const lotNumber = (lotId: string) => String(lots.find((l) => l.id === lotId)?.lotNumber ?? "?");
 
   const fundPacks: FundPack[] = funds.map((f) => {
     const onlyFund = basisEntries.map((e) => ({ ...e, lines: e.lines.filter((l) => l.fundId === f.id) }));
-    const recognised = recognisedIncomeExpense({ entries: onlyFund, start, end, basisForFund, levyIncomeAccount });
-    const comparative = incomeExpenseTotals(recognisedIncomeExpense({ entries: onlyFund, start: prior.start, end: prior.end, basisForFund, levyIncomeAccount }));
+    const extraInvoices = migratedInvoices.map((e) => ({ ...e, lines: e.lines.filter((l) => l.fundId === f.id) }));
+    const recognised = recognisedIncomeExpense({ entries: onlyFund, start, end, basisForFund, levyIncomeAccount, extraInvoices });
+    const comparative = incomeExpenseTotals(recognisedIncomeExpense({ entries: onlyFund, start: prior.start, end: prior.end, basisForFund, levyIncomeAccount, extraInvoices }));
 
     const fundNotices = notices.filter((n) => n.fundId === f.id);
     const unpaidInput = fundNotices.map((n) => ({

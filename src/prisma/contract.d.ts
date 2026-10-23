@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'06c96ffaf4237c0403a4b04ba6ed4e363610d495772511e1359af688c915d8b8'>;
+  StorageHashBase<'f5855c0c9db4d0c254a62821c67aa023472d859d6fdb019dea3d00817b7979e2'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1093,6 +1093,7 @@ export type FieldOutputTypes = {
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly levyScheduleId: CodecTypes['pg/uuid@1']['output'];
       readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly noticeNumber: Varchar<20>;
       readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -1126,6 +1127,7 @@ export type FieldOutputTypes = {
       readonly fundId: CodecTypes['pg/uuid@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly levyType: CodecTypes['pg/text@1']['output'];
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'] | null;
@@ -1318,6 +1320,23 @@ export type FieldOutputTypes = {
       readonly state: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly MigrationBatch: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['output'];
+      readonly cutoverDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly executedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly executedBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly files: CodecTypes['pg/jsonb@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly results: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly signOff: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly signedOffAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly signedOffBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly sourceSystem: CodecTypes['pg/text@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly Minutes: {
       readonly confirmedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly confirmedById: CodecTypes['pg/uuid@1']['output'] | null;
@@ -1465,6 +1484,7 @@ export type FieldOutputTypes = {
       readonly levyNoticeId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly levyPaymentId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly lotId: CodecTypes['pg/uuid@1']['output'];
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly note: CodecTypes['pg/text@1']['output'] | null;
       readonly ownerId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly refundId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -1836,6 +1856,7 @@ export type FieldOutputTypes = {
       readonly invoiceDate: CodecTypes['pg/date-string@1']['output'];
       readonly invoiceNumber: Varchar<50>;
       readonly journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly preparedById: CodecTypes['pg/uuid@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
@@ -3393,6 +3414,7 @@ export type FieldInputTypes = {
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly levyScheduleId: CodecTypes['pg/uuid@1']['input'];
       readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly noticeNumber: CodecTypes['sql/varchar@1']['input'];
       readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
@@ -3426,6 +3448,7 @@ export type FieldInputTypes = {
       readonly fundId: CodecTypes['pg/uuid@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly levyType: CodecTypes['pg/text@1']['input'];
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'] | null;
@@ -3618,6 +3641,23 @@ export type FieldInputTypes = {
       readonly state: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly MigrationBatch: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['input'];
+      readonly cutoverDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly executedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly executedBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly files: CodecTypes['pg/jsonb@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly results: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly signOff: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly signedOffAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly signedOffBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly sourceSystem: CodecTypes['pg/text@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly Minutes: {
       readonly confirmedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly confirmedById: CodecTypes['pg/uuid@1']['input'] | null;
@@ -3765,6 +3805,7 @@ export type FieldInputTypes = {
       readonly levyNoticeId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly levyPaymentId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly lotId: CodecTypes['pg/uuid@1']['input'];
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly note: CodecTypes['pg/text@1']['input'] | null;
       readonly ownerId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly refundId: CodecTypes['pg/uuid@1']['input'] | null;
@@ -4136,6 +4177,7 @@ export type FieldInputTypes = {
       readonly invoiceDate: CodecTypes['pg/date-string@1']['input'];
       readonly invoiceNumber: CodecTypes['sql/varchar@1']['input'];
       readonly journalEntryId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly migrationBatchId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly preparedById: CodecTypes['pg/uuid@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
@@ -5693,6 +5735,7 @@ export type StorageColumnTypes = {
       readonly issued_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly levy_schedule_id: CodecTypes['pg/uuid@1']['output'];
       readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly notice_number: Varchar<20>;
       readonly owner_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -5726,6 +5769,7 @@ export type StorageColumnTypes = {
       readonly fund_id: CodecTypes['pg/uuid@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly levy_type: CodecTypes['pg/text@1']['output'];
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'] | null;
@@ -5918,6 +5962,23 @@ export type StorageColumnTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly migration_batches: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by: CodecTypes['pg/uuid@1']['output'];
+      readonly cutover_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly executed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly executed_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly files: CodecTypes['pg/jsonb@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly results: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly sign_off: CodecTypes['pg/jsonb@1']['output'] | null;
+      readonly signed_off_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly signed_off_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly source_system: CodecTypes['pg/text@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly minutes: {
       readonly confirmed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly confirmed_by_id: CodecTypes['pg/uuid@1']['output'] | null;
@@ -6065,6 +6126,7 @@ export type StorageColumnTypes = {
       readonly levy_notice_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly levy_payment_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly lot_id: CodecTypes['pg/uuid@1']['output'];
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly note: CodecTypes['pg/text@1']['output'] | null;
       readonly owner_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly refund_id: CodecTypes['pg/uuid@1']['output'] | null;
@@ -6419,6 +6481,7 @@ export type StorageColumnTypes = {
       readonly invoice_date: CodecTypes['pg/date-string@1']['output'];
       readonly invoice_number: Varchar<50>;
       readonly journal_entry_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly prepared_by_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
@@ -7994,6 +8057,7 @@ export type StorageColumnInputTypes = {
       readonly issued_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly levy_schedule_id: CodecTypes['pg/uuid@1']['input'];
       readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly notice_number: CodecTypes['sql/varchar@1']['input'];
       readonly owner_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
@@ -8027,6 +8091,7 @@ export type StorageColumnInputTypes = {
       readonly fund_id: CodecTypes['pg/uuid@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly levy_type: CodecTypes['pg/text@1']['input'];
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'] | null;
@@ -8219,6 +8284,23 @@ export type StorageColumnInputTypes = {
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly migration_batches: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by: CodecTypes['pg/uuid@1']['input'];
+      readonly cutover_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly executed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly executed_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly files: CodecTypes['pg/jsonb@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly results: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly sign_off: CodecTypes['pg/jsonb@1']['input'] | null;
+      readonly signed_off_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly signed_off_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly source_system: CodecTypes['pg/text@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly minutes: {
       readonly confirmed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly confirmed_by_id: CodecTypes['pg/uuid@1']['input'] | null;
@@ -8366,6 +8448,7 @@ export type StorageColumnInputTypes = {
       readonly levy_notice_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly levy_payment_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly lot_id: CodecTypes['pg/uuid@1']['input'];
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly note: CodecTypes['pg/text@1']['input'] | null;
       readonly owner_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly refund_id: CodecTypes['pg/uuid@1']['input'] | null;
@@ -8720,6 +8803,7 @@ export type StorageColumnInputTypes = {
       readonly invoice_date: CodecTypes['pg/date-string@1']['input'];
       readonly invoice_number: CodecTypes['sql/varchar@1']['input'];
       readonly journal_entry_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly migration_batch_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly prepared_by_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
@@ -10533,6 +10617,7 @@ export namespace Models {
     issuedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     levyScheduleId: CodecTypes['pg/uuid@1']['output'];
     lotId: CodecTypes['pg/uuid@1']['output'];
+    migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
     noticeNumber: Varchar<20>;
     ownerId: CodecTypes['pg/uuid@1']['output'] | null;
     paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
@@ -10576,6 +10661,7 @@ export namespace Models {
     fundId: CodecTypes['pg/uuid@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
     levyType: CodecTypes['pg/text@1']['output'];
+    migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
     title: CodecTypes['pg/text@1']['output'] | null;
@@ -10841,6 +10927,24 @@ export namespace Models {
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     readonly [RelationKeys]?: never;
   };
+  export type public_MigrationBatch = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdBy: CodecTypes['pg/uuid@1']['output'];
+    cutoverDate: CodecTypes['pg/date-string@1']['output'] | null;
+    executedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    executedBy: CodecTypes['pg/uuid@1']['output'] | null;
+    files: CodecTypes['pg/jsonb@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    results: CodecTypes['pg/jsonb@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    signOff: CodecTypes['pg/jsonb@1']['output'] | null;
+    signedOffAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    signedOffBy: CodecTypes['pg/uuid@1']['output'] | null;
+    sourceSystem: CodecTypes['pg/text@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_Minutes = {
     confirmedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     confirmedById: CodecTypes['pg/uuid@1']['output'] | null;
@@ -11018,6 +11122,7 @@ export namespace Models {
     levyNoticeId: CodecTypes['pg/uuid@1']['output'] | null;
     levyPaymentId: CodecTypes['pg/uuid@1']['output'] | null;
     lotId: CodecTypes['pg/uuid@1']['output'];
+    migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
     note: CodecTypes['pg/text@1']['output'] | null;
     ownerId: CodecTypes['pg/uuid@1']['output'] | null;
     refundId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -11656,6 +11761,7 @@ export namespace Models {
     invoiceDate: CodecTypes['pg/date-string@1']['output'];
     invoiceNumber: Varchar<50>;
     journalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+    migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
     preparedById: CodecTypes['pg/uuid@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
@@ -12718,6 +12824,7 @@ export declare const models: {
     MeetingEvent: Models.public_MeetingEvent;
     MeetingRuleSet: Models.public_MeetingRuleSet;
     MeetingTemplate: Models.public_MeetingTemplate;
+    MigrationBatch: Models.public_MigrationBatch;
     Minutes: Models.public_Minutes;
     Motion: Models.public_Motion;
     MotionLibraryEntry: Models.public_MotionLibraryEntry;
@@ -19858,6 +19965,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly migration_batch_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly notice_number: {
                   readonly dataType: 'pg/varchar';
                   readonly codecId: 'sql/varchar@1';
@@ -20166,6 +20279,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/text@1', 'ORDINARY'>;
                   };
+                  readonly many: false;
+                };
+                readonly migration_batch_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly scheme_id: {
@@ -21686,6 +21805,124 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly migration_batches: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly cutover_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly executed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly executed_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly files: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/jsonb@1', {}>;
+                  };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly results: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly sign_off: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly signed_off_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly signed_off_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly source_system: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'DRAFT'>;
+                  };
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'migration_batches_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly minutes: {
               columns: {
                 readonly confirmed_at: {
@@ -22712,6 +22949,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly migration_batch_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly note: {
@@ -25349,6 +25592,12 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly migration_batch_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: true;
@@ -32362,6 +32611,10 @@ type ContractBase = Omit<
       readonly model: 'MeetingTemplate';
     };
     readonly meetings: { readonly namespace: 'public' & NamespaceId; readonly model: 'Meeting' };
+    readonly migration_batches: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'MigrationBatch';
+    };
     readonly minutes: { readonly namespace: 'public' & NamespaceId; readonly model: 'Minutes' };
     readonly motion_library_entries: {
       readonly namespace: 'public' & NamespaceId;
@@ -39278,6 +39531,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly migrationBatchId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly noticeNumber: {
                 readonly nullable: false;
                 readonly type: {
@@ -39402,6 +39659,7 @@ type ContractBase = Omit<
                 readonly issuedAt: { readonly column: 'issued_at' };
                 readonly levyScheduleId: { readonly column: 'levy_schedule_id' };
                 readonly lotId: { readonly column: 'lot_id' };
+                readonly migrationBatchId: { readonly column: 'migration_batch_id' };
                 readonly noticeNumber: { readonly column: 'notice_number' };
                 readonly ownerId: { readonly column: 'owner_id' };
                 readonly paidInFullAt: { readonly column: 'paid_in_full_at' };
@@ -39549,6 +39807,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly migrationBatchId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -39631,6 +39893,7 @@ type ContractBase = Omit<
                 readonly fundId: { readonly column: 'fund_id' };
                 readonly id: { readonly column: 'id' };
                 readonly levyType: { readonly column: 'levy_type' };
+                readonly migrationBatchId: { readonly column: 'migration_batch_id' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly title: { readonly column: 'title' };
@@ -41066,6 +41329,104 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly MigrationBatch: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly cutoverDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly executedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly executedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly files: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly results: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly signOff: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly signedOffAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly signedOffBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sourceSystem: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'migration_batches';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly cutoverDate: { readonly column: 'cutover_date' };
+                readonly executedAt: { readonly column: 'executed_at' };
+                readonly executedBy: { readonly column: 'executed_by' };
+                readonly files: { readonly column: 'files' };
+                readonly id: { readonly column: 'id' };
+                readonly results: { readonly column: 'results' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly signOff: { readonly column: 'sign_off' };
+                readonly signedOffAt: { readonly column: 'signed_off_at' };
+                readonly signedOffBy: { readonly column: 'signed_off_by' };
+                readonly sourceSystem: { readonly column: 'source_system' };
+                readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
           readonly Minutes: {
             readonly fields: {
               readonly confirmedAt: {
@@ -42043,6 +42404,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly migrationBatchId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly note: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -42079,6 +42444,7 @@ type ContractBase = Omit<
                 readonly levyNoticeId: { readonly column: 'levy_notice_id' };
                 readonly levyPaymentId: { readonly column: 'levy_payment_id' };
                 readonly lotId: { readonly column: 'lot_id' };
+                readonly migrationBatchId: { readonly column: 'migration_batch_id' };
                 readonly note: { readonly column: 'note' };
                 readonly ownerId: { readonly column: 'owner_id' };
                 readonly refundId: { readonly column: 'refund_id' };
@@ -45677,6 +46043,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly migrationBatchId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly preparedById: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -45793,6 +46163,7 @@ type ContractBase = Omit<
                 readonly invoiceDate: { readonly column: 'invoice_date' };
                 readonly invoiceNumber: { readonly column: 'invoice_number' };
                 readonly journalEntryId: { readonly column: 'journal_entry_id' };
+                readonly migrationBatchId: { readonly column: 'migration_batch_id' };
                 readonly preparedById: { readonly column: 'prepared_by_id' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
