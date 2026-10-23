@@ -129,45 +129,60 @@ export default function Page() {
       {/* ============================================================ */}
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold tracking-widest uppercase text-brand-teal">
-              Owner-first strata management, New South Wales
-            </p>
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left column — copy */}
+            <div className="max-w-xl">
+              <p className="text-sm font-semibold tracking-widest uppercase text-brand-teal">
+                Owner-first strata management, New South Wales
+              </p>
 
-            <h1 className="mt-4 font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
-              Your scheme.
-              <br />
-              Your records.
-              <br />
-              <span className="gradient-text">Your call.</span>
-            </h1>
+              <h1 className="mt-4 font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
+                Your scheme.
+                <br />
+                Your records.
+                <br />
+                <span className="gradient-text">Your call.</span>
+              </h1>
 
-            <p className="mt-6 text-lg text-[var(--muted)] leading-relaxed max-w-2xl">
-              StrataVerze is the owners corporation&rsquo;s own management
-              platform. Finances, documents, meetings and compliance in one
-              place that the committee controls, with a strata manager,
-              accountant or other adviser invited in on your terms.
-            </p>
+              <p className="mt-6 text-lg text-[var(--muted)] leading-relaxed">
+                StrataVerze is the owners corporation&rsquo;s own management
+                platform. Finances, documents, meetings and compliance in one
+                place that the committee controls, with a strata manager,
+                accountant or other adviser invited in on your terms.
+              </p>
 
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                href="/pricing"
-                className="inline-flex items-center rounded-full bg-brand-amber px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-brand-amber-dark transition-colors"
-              >
-                Apply for the Founding Schemes programme
-              </Link>
-              <Link
-                href="/features"
-                className="inline-flex items-center rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
-              >
-                See how it works
-              </Link>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center rounded-full bg-brand-amber px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-brand-amber-dark transition-colors"
+                >
+                  Apply for the Founding Schemes programme
+                </Link>
+                <Link
+                  href="/features"
+                  className="inline-flex items-center rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
+                >
+                  See how it works
+                </Link>
+              </div>
+
+              <p className="mt-6 text-sm text-[var(--muted)]">
+                Free for founding schemes until 30&nbsp;June&nbsp;2027. Assisted
+                migration included. No lock-in.
+              </p>
             </div>
 
-            <p className="mt-6 text-sm text-[var(--muted)]">
-              Free for founding schemes until 30&nbsp;June&nbsp;2027. Assisted
-              migration included. No lock-in.
-            </p>
+            {/* Right column — hero image */}
+            <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden">
+              <Image
+                src="/images/hero-lobby-residents.webp"
+                alt="Diverse group of apartment residents chatting in a modern strata building lobby"
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            </div>
           </div>
         </div>
       </section>
