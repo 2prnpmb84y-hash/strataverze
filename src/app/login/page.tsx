@@ -19,7 +19,7 @@ export default async function LoginPage({
         <div className="absolute bottom-[-60px] right-[-40px] w-48 h-48 rounded-full bg-white/5" />
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-md">
-          <LogoMark size={80} variant="white" />
+          <LogoMark size={120} variant="white" />
           <h1 className="mt-8 text-3xl font-bold font-heading text-white leading-tight">
             Owner-first strata management
           </h1>
@@ -35,12 +35,12 @@ export default async function LoginPage({
         <div className="w-full max-w-sm">
           {/* Mobile logo — hidden on desktop */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <Logo size="lg" variant="gradient" />
+            <Logo size="xl" variant="gradient" />
           </div>
 
-          {/* Desktop logo — smaller, hidden on mobile */}
+          {/* Desktop logo — hidden on mobile */}
           <div className="hidden lg:flex justify-center mb-8">
-            <Logo size="md" variant="gradient" />
+            <Logo size="lg" variant="gradient" />
           </div>
 
           {/* Form card */}

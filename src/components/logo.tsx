@@ -35,16 +35,17 @@ export function LogoMark({
 }
 
 interface LogoProps {
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   variant?: "gradient" | "white" | "dark";
   className?: string;
   showWordmark?: boolean;
 }
 
 const sizeMap = {
-  sm: { mark: 24, imgHeight: "h-6", gap: "gap-2" },
-  md: { mark: 32, imgHeight: "h-8", gap: "gap-2.5" },
-  lg: { mark: 40, imgHeight: "h-10", gap: "gap-3" },
+  sm: { mark: 28, imgHeight: "h-7", gap: "gap-2" },
+  md: { mark: 36, imgHeight: "h-9", gap: "gap-2.5" },
+  lg: { mark: 48, imgHeight: "h-12", gap: "gap-3" },
+  xl: { mark: 64, imgHeight: "h-16", gap: "gap-4" },
 } as const;
 
 /**
