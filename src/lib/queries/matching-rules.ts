@@ -363,6 +363,15 @@ export async function autoMatchTransactions(
             });
           }
 
+          // Allocate the whole transaction to the new entry, then mark it matched.
+          await db.orm.public.BankTransactionAllocation.create({
+            schemeId,
+            bankTransactionId: txn.id,
+            journalEntryId: journalEntry.id,
+            amount: toNumeric(absAmount),
+            createdBy: profileId ?? null,
+          });
+
           // Update the bank transaction
           await db.orm.public.BankTransaction
             .where({ id: txn.id })

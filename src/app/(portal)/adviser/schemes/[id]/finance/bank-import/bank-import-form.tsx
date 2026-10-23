@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition, useCallback, useMemo } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SelectField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { importBankTransactionsAction } from "../actions";
 import { parseCSVLine, parseDate, parseOFX } from "@/lib/bank-import-parser";
 import type { ParsedTransaction } from "@/lib/bank-import-parser";
+import { applySavedMapping, parseMoneyCell, parseSavedMapping, toSavedMapping } from "@/lib/finance/csv-mapping";
+import { checkRunningBalance } from "@/lib/finance/reconciliation";
+import { saveCsvMappingAction } from "@/lib/actions/reconciliation";
 
 interface BankAccount {
   id: string;
@@ -38,10 +41,17 @@ function formatCurrency(value: number): string {
 export function BankImportForm({
   schemeId,
   bankAccounts,
+  savedMappings = {},
+  lastBalances = {},
 }: {
   schemeId: string;
   bankAccounts: BankAccount[];
+  /** Saved CSV mapping (JSON) per bank account id. */
+  savedMappings?: Record<string, string | null>;
+  /** The latest imported statement balance per bank account id. */
+  lastBalances?: Record<string, { cents: number; date: string } | null>;
 }) {
+  const [usedSavedMapping, setUsedSavedMapping] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState<ImportStep>("select");
   const [selectedAccountId, setSelectedAccountId] = useState("");
@@ -167,6 +177,13 @@ export function BankImportForm({
           }
 
           setColumnMapping(autoMapping);
+          // Use the mapping saved for this account last time, if this file has those columns.
+          const saved = applySavedMapping(headers, parseSavedMapping(savedMappings[selectedAccountId]));
+          if (saved) {
+            setColumnMapping(saved.mapping);
+            setAmountFormat(saved.amountFormat);
+          }
+          setUsedSavedMapping(!!saved);
           setStep("mapping");
         } else {
           setError(
@@ -176,7 +193,7 @@ export function BankImportForm({
       };
       reader.readAsText(file);
     },
-    [],
+    [savedMappings, selectedAccountId],
   );
 
   function applyMapping() {
@@ -221,12 +238,9 @@ export function BankImportForm({
       }
 
       const description = row[columnMapping.description] ?? "";
-      const balance =
-        columnMapping.balance !== null
-          ? parseFloat(
-              (row[columnMapping.balance] ?? "").replace(/[$,\s]/g, ""),
-            ) || undefined
-          : undefined;
+      // A balance of exactly zero is a real balance, so keep it.
+      const balanceCents = columnMapping.balance !== null ? parseMoneyCell(row[columnMapping.balance]) : null;
+      const balance = balanceCents == null ? undefined : balanceCents / 100;
       const reference =
         columnMapping.reference !== null
           ? row[columnMapping.reference] || undefined
@@ -267,6 +281,15 @@ export function BankImportForm({
         return;
       }
 
+      if (fileType === "csv" && csvHeaders.length > 0) {
+        // Remember this mapping for the account. A failure here does not affect the import.
+        await saveCsvMappingAction(
+          schemeId,
+          selectedAccountId,
+          JSON.stringify(toSavedMapping(csvHeaders, columnMapping, amountFormat)),
+        );
+      }
+
       setImportResult({
         imported: (result.data?.imported as number) ?? 0,
         duplicates: (result.data?.duplicates as number) ?? 0,
@@ -274,6 +297,20 @@ export function BankImportForm({
       setStep("result");
     });
   }
+
+  // Check the file's balances run on without a gap (a missing page) and start where the last import ended.
+  const balanceCheck = useMemo(() => {
+    const rows = transactions.map((t) => ({
+      date: t.transactionDate.slice(0, 10),
+      amountCents: Math.round(t.amount * 100),
+      balanceCents: t.balance === undefined ? null : Math.round(t.balance * 100),
+    }));
+    const last = lastBalances[selectedAccountId] ?? null;
+    const firstDate = rows.reduce<string | null>((m, r) => (m == null || r.date < m ? r.date : m), null);
+    // Only compare with the last import when this file starts after it.
+    const lastCents = last && firstDate && firstDate > last.date ? last.cents : null;
+    return checkRunningBalance(rows, lastCents);
+  }, [transactions, lastBalances, selectedAccountId]);
 
   if (bankAccounts.length === 0) {
     return (
@@ -383,6 +420,11 @@ export function BankImportForm({
             description="Map the columns in your CSV file to transaction fields."
           />
           <div className="px-6 pb-6 space-y-4">
+            {usedSavedMapping && (
+              <p className="text-sm text-green-700">
+                These are the columns you chose last time for this account. Check them, then continue.
+              </p>
+            )}
             {/* Preview first 3 rows */}
             <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
               <table className="min-w-full text-sm">
@@ -658,6 +700,34 @@ export function BankImportForm({
               </div>
             </div>
           </Card>
+
+          {balanceCheck.checked && (balanceCheck.gaps.length > 0 || balanceCheck.openingGapCents != null) && (
+            <div role="alert" className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-1">
+              <p className="font-medium">The balances in this file do not run on. A statement page may be missing.</p>
+              {balanceCheck.openingGapCents != null && (
+                <p>
+                  The file opens at {formatCurrency((balanceCheck.openingCents ?? 0) / 100)}, but the last import for this account
+                  ended at {formatCurrency(((balanceCheck.openingCents ?? 0) - balanceCheck.openingGapCents) / 100)}. A difference
+                  of {formatCurrency(balanceCheck.openingGapCents / 100)} is not in either file.
+                </p>
+              )}
+              {balanceCheck.gaps.slice(0, 5).map((g) => (
+                <p key={`${g.afterIndex}-${g.beforeDate}`}>
+                  Between {new Date(`${g.afterDate}T00:00:00`).toLocaleDateString("en-AU")} and{" "}
+                  {new Date(`${g.beforeDate}T00:00:00`).toLocaleDateString("en-AU")}: the balance should be{" "}
+                  {formatCurrency(g.expectedCents / 100)} but the file shows {formatCurrency(g.actualCents / 100)} (
+                  {formatCurrency(g.missingCents / 100)} unaccounted for).
+                </p>
+              ))}
+              <p>You can still import. Get the missing statement lines from the bank and import them too.</p>
+            </div>
+          )}
+          {balanceCheck.checked && balanceCheck.gaps.length === 0 && balanceCheck.openingGapCents == null && (
+            <p className="text-sm text-green-700">
+              Balances check out: opening {formatCurrency((balanceCheck.openingCents ?? 0) / 100)} plus movements equals closing{" "}
+              {formatCurrency((balanceCheck.closingCents ?? 0) / 100)}.
+            </p>
+          )}
 
           {/* Summary */}
           <Card>

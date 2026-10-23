@@ -49,6 +49,12 @@ const reports = [
     href: "/bank-reconciliation",
   },
   {
+    key: "three-way-reconciliation",
+    title: "Three-way Reconciliation",
+    description: "Ledger bank balance by fund, payment provider wallet and bank statement, with unmatched, pending and suspense items listed.",
+    href: "/three-way-reconciliation",
+  },
+  {
     key: "trial-balance",
     title: "Trial Balance",
     description:

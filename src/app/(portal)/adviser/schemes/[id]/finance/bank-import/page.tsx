@@ -3,6 +3,9 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
 import { BankImportForm } from "./bank-import-form";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { toCents } from "@/lib/billing/money";
 import { connection } from "next/server";
 
 export default async function BankImportPage({
@@ -24,6 +27,15 @@ export default async function BankImportPage({
   if (!isAdviser) notFound();
 
   const bankAccounts = await getBankAccountsForScheme(id);
+  // The latest imported balance per account, to check a new file starts where the last one ended.
+  const lastBalances: Record<string, { cents: number; date: string } | null> = {};
+  for (const ba of bankAccounts) {
+    const last = await db.orm.public.BankTransaction
+      .where((t) => and(t.bankAccountId.eq(ba.id), t.balance.isNotNull(), t.isDuplicate.eq(false)))
+      .orderBy([(t) => t.transactionDate.desc(), (t) => t.importedAt.desc()])
+      .first();
+    lastBalances[ba.id] = last ? { cents: toCents(String(last.balance)), date: String(last.transactionDate).slice(0, 10) } : null;
+  }
 
   return (
     <div className="space-y-6">
@@ -45,6 +57,8 @@ export default async function BankImportPage({
           bsb: String(ba.bsb),
           accountNumber: String(ba.accountNumber),
         }))}
+        savedMappings={Object.fromEntries(bankAccounts.map((ba) => [ba.id, ba.csvMapping ?? null]))}
+        lastBalances={lastBalances}
       />
     </div>
   );

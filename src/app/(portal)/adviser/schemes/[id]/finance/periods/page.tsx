@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PeriodActions } from "./period-actions";
 import { connection } from "next/server";
+import { getSuspenseItems } from "@/lib/finance/bank-allocations";
+import { formatAud } from "@/lib/billing/money";
 
 const statusStyles: Record<string, string> = {
   OPEN: "bg-green-100 text-green-700",
@@ -48,7 +50,7 @@ export default async function FinancialPeriodsPage({
   );
   if (!isAdviser) notFound();
 
-  const periods = await getFinancialPeriodsForScheme(id);
+  const [periods, suspense] = await Promise.all([getFinancialPeriodsForScheme(id), getSuspenseItems(id, "OPEN")]);
 
   const basePath = `/adviser/schemes/${id}/finance/periods`;
 
@@ -83,6 +85,33 @@ export default async function FinancialPeriodsPage({
           </Button>
         </div>
       </div>
+
+      {suspense.length > 0 && (
+        <Card>
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="font-medium text-ink">Open suspense items</p>
+              <p className="text-ink-muted">
+                A period cannot be closed while it has unidentified bank amounts in suspense. Clear each one to the right account on
+                the Reconciliation page.
+              </p>
+            </div>
+            <ul className="divide-y divide-line">
+              {suspense.map((i) => (
+                <li key={i.id} className="flex flex-wrap justify-between gap-2 py-2">
+                  <span className="text-ink">
+                    {i.transactionDate} · {i.description}
+                  </span>
+                  <span className="tabular-nums font-medium">{formatAud(i.amountCents)}</span>
+                </li>
+              ))}
+            </ul>
+            <Button variant="secondary" href={`/adviser/schemes/${id}/finance/reconciliation#suspense`}>
+              Go to reconciliation
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {periods.length === 0 ? (
         <EmptyState

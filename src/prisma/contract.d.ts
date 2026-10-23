@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'63003cc8e44f28fae8d51e030cef5fcdb4c27686c8cdb5fb499bb3fa7cd8a79f'>;
+  StorageHashBase<'84284d9a52ca91035c6094c209878b4da212940b24f8fc099fa70644c9ecc7fd'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -339,6 +339,15 @@ export type FieldOutputTypes = {
       readonly reference: Varchar<100> | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly transactionDate: CodecTypes['pg/date-string@1']['output'];
+    };
+    readonly BankTransactionAllocation: {
+      readonly amount: Numeric<12, 2>;
+      readonly bankTransactionId: CodecTypes['pg/uuid@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
     };
     readonly BudgetLine: {
       readonly accountCodeId: CodecTypes['pg/uuid@1']['output'];
@@ -1616,6 +1625,7 @@ export type FieldOutputTypes = {
       readonly bankName: CodecTypes['pg/text@1']['output'] | null;
       readonly bsb: Varchar<7>;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly csvMapping: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly isActive: CodecTypes['pg/bool@1']['output'];
       readonly isOperating: CodecTypes['pg/bool@1']['output'];
@@ -1751,6 +1761,22 @@ export type FieldOutputTypes = {
       readonly supplierId: CodecTypes['pg/uuid@1']['output'];
       readonly totalAmount: Numeric<12, 2>;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly SuspenseItem: {
+      readonly amount: Numeric<12, 2>;
+      readonly bankTransactionId: CodecTypes['pg/uuid@1']['output'];
+      readonly clearedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly clearedBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly clearedJournalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly clearedNote: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly description: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly transactionDate: CodecTypes['pg/date-string@1']['output'];
     };
     readonly Vote: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -2531,6 +2557,15 @@ export type FieldInputTypes = {
       readonly reference: CodecTypes['sql/varchar@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly transactionDate: CodecTypes['pg/date-string@1']['input'];
+    };
+    readonly BankTransactionAllocation: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly bankTransactionId: CodecTypes['pg/uuid@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
     };
     readonly BudgetLine: {
       readonly accountCodeId: CodecTypes['pg/uuid@1']['input'];
@@ -3808,6 +3843,7 @@ export type FieldInputTypes = {
       readonly bankName: CodecTypes['pg/text@1']['input'] | null;
       readonly bsb: CodecTypes['sql/varchar@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly csvMapping: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly isActive: CodecTypes['pg/bool@1']['input'];
       readonly isOperating: CodecTypes['pg/bool@1']['input'];
@@ -3943,6 +3979,22 @@ export type FieldInputTypes = {
       readonly supplierId: CodecTypes['pg/uuid@1']['input'];
       readonly totalAmount: CodecTypes['pg/numeric@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly SuspenseItem: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly bankTransactionId: CodecTypes['pg/uuid@1']['input'];
+      readonly clearedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly clearedBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly clearedJournalEntryId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly clearedNote: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly description: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journalEntryId: CodecTypes['pg/uuid@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly transactionDate: CodecTypes['pg/date-string@1']['input'];
     };
     readonly Vote: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -4704,6 +4756,15 @@ export type StorageColumnTypes = {
       readonly rule_set_state: CodecTypes['pg/text@1']['output'];
       readonly rule_set_version: CodecTypes['pg/text@1']['output'];
       readonly snapshot: CodecTypes['pg/jsonb@1']['output'];
+    };
+    readonly bank_transaction_allocations: {
+      readonly amount: Numeric<12, 2>;
+      readonly bank_transaction_id: CodecTypes['pg/uuid@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
     };
     readonly bank_transactions: {
       readonly amount: Numeric<12, 2>;
@@ -5966,6 +6027,7 @@ export type StorageColumnTypes = {
       readonly bank_name: CodecTypes['pg/text@1']['output'] | null;
       readonly bsb: Varchar<7>;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly csv_mapping: CodecTypes['pg/text@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly is_active: CodecTypes['pg/bool@1']['output'];
       readonly is_operating: CodecTypes['pg/bool@1']['output'];
@@ -6136,6 +6198,22 @@ export type StorageColumnTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly trading_name: Varchar<200> | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly suspense_items: {
+      readonly amount: Numeric<12, 2>;
+      readonly bank_transaction_id: CodecTypes['pg/uuid@1']['output'];
+      readonly cleared_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly cleared_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly cleared_journal_entry_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly cleared_note: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly description: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly transaction_date: CodecTypes['pg/date-string@1']['output'];
     };
     readonly votes: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -6897,6 +6975,15 @@ export type StorageColumnInputTypes = {
       readonly rule_set_state: CodecTypes['pg/text@1']['input'];
       readonly rule_set_version: CodecTypes['pg/text@1']['input'];
       readonly snapshot: CodecTypes['pg/jsonb@1']['input'];
+    };
+    readonly bank_transaction_allocations: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly bank_transaction_id: CodecTypes['pg/uuid@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
     };
     readonly bank_transactions: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -8159,6 +8246,7 @@ export type StorageColumnInputTypes = {
       readonly bank_name: CodecTypes['pg/text@1']['input'] | null;
       readonly bsb: CodecTypes['sql/varchar@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly csv_mapping: CodecTypes['pg/text@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly is_active: CodecTypes['pg/bool@1']['input'];
       readonly is_operating: CodecTypes['pg/bool@1']['input'];
@@ -8329,6 +8417,22 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly trading_name: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly suspense_items: {
+      readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly bank_transaction_id: CodecTypes['pg/uuid@1']['input'];
+      readonly cleared_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly cleared_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly cleared_journal_entry_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly cleared_note: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly description: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly journal_entry_id: CodecTypes['pg/uuid@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly transaction_date: CodecTypes['pg/date-string@1']['input'];
     };
     readonly votes: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -9150,6 +9254,16 @@ export namespace Models {
       | 'matchedJournalEntry'
       | 'matchingRule'
       | 'scheme';
+  };
+  export type public_BankTransactionAllocation = {
+    amount: Numeric<12, 2>;
+    bankTransactionId: CodecTypes['pg/uuid@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    journalEntryId: CodecTypes['pg/uuid@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    readonly [RelationKeys]?: never;
   };
   export type public_BudgetLine = {
     accountCodeId: CodecTypes['pg/uuid@1']['output'];
@@ -10976,6 +11090,7 @@ export namespace Models {
     bankName: CodecTypes['pg/text@1']['output'] | null;
     bsb: Varchar<7>;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    csvMapping: CodecTypes['pg/text@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
     isActive: CodecTypes['pg/bool@1']['output'];
     isOperating: CodecTypes['pg/bool@1']['output'];
@@ -11136,6 +11251,23 @@ export namespace Models {
     scheme: public_Scheme;
     supplier: public_Supplier;
     readonly [RelationKeys]?: 'accountCode' | 'financialDocuments' | 'fund' | 'scheme' | 'supplier';
+  };
+  export type public_SuspenseItem = {
+    amount: Numeric<12, 2>;
+    bankTransactionId: CodecTypes['pg/uuid@1']['output'];
+    clearedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    clearedBy: CodecTypes['pg/uuid@1']['output'] | null;
+    clearedJournalEntryId: CodecTypes['pg/uuid@1']['output'] | null;
+    clearedNote: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+    description: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    journalEntryId: CodecTypes['pg/uuid@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    transactionDate: CodecTypes['pg/date-string@1']['output'];
+    readonly [RelationKeys]?: never;
   };
   export type public_Vote = {
     id: CodecTypes['pg/uuid@1']['output'];
@@ -12111,6 +12243,7 @@ export declare const models: {
     Announcement: Models.public_Announcement;
     AppliedRuleSet: Models.public_AppliedRuleSet;
     BankTransaction: Models.public_BankTransaction;
+    BankTransactionAllocation: Models.public_BankTransactionAllocation;
     BudgetLine: Models.public_BudgetLine;
     ByLaw: Models.public_ByLaw;
     Comment: Models.public_Comment;
@@ -12193,6 +12326,7 @@ export declare const models: {
     Supplier: Models.public_Supplier;
     SupplierBankDetailVersion: Models.public_SupplierBankDetailVersion;
     SupplierInvoice: Models.public_SupplierInvoice;
+    SuspenseItem: Models.public_SuspenseItem;
     Vote: Models.public_Vote;
     WorkOrder: Models.public_WorkOrder;
     WorksApprovalRecord: Models.public_WorksApprovalRecord;
@@ -12983,6 +13117,78 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly bank_transaction_allocations: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly bank_transaction_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'bank_transaction_allocations_bank_transaction_id_journal_en_key';
+                  readonly columns: readonly ['bank_transaction_id', 'journal_entry_id'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'bank_transaction_allocations_journal_entry_id_idx';
+                  readonly columns: readonly ['journal_entry_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'bank_transaction_allocations_scheme_id_idx';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly bank_transactions: {
               columns: {
@@ -23101,6 +23307,12 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly csv_mapping: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -24397,6 +24609,114 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly suspense_items: {
+              columns: {
+                readonly amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly bank_transaction_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly cleared_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cleared_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cleared_journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly cleared_note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly description: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly journal_entry_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'OPEN'>;
+                  };
+                  readonly many: false;
+                };
+                readonly transaction_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'suspense_items_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly votes: {
               columns: {
@@ -30829,6 +31149,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AppliedRuleSet';
     };
+    readonly bank_transaction_allocations: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'BankTransactionAllocation';
+    };
     readonly bank_transactions: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'BankTransaction';
@@ -31116,6 +31440,10 @@ type ContractBase = Omit<
       readonly model: 'SupplierInvoice';
     };
     readonly suppliers: { readonly namespace: 'public' & NamespaceId; readonly model: 'Supplier' };
+    readonly suspense_items: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SuspenseItem';
+    };
     readonly votes: { readonly namespace: 'public' & NamespaceId; readonly model: 'Vote' };
     readonly work_orders: {
       readonly namespace: 'public' & NamespaceId;
@@ -32153,6 +32481,59 @@ type ContractBase = Omit<
                 readonly reference: { readonly column: 'reference' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly transactionDate: { readonly column: 'transaction_date' };
+              };
+            };
+          };
+          readonly BankTransactionAllocation: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly bankTransactionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly journalEntryId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'bank_transaction_allocations';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly bankTransactionId: { readonly column: 'bank_transaction_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly id: { readonly column: 'id' };
+                readonly journalEntryId: { readonly column: 'journal_entry_id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
               };
             };
           };
@@ -42915,6 +43296,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly csvMapping: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -42995,6 +43380,7 @@ type ContractBase = Omit<
                 readonly bankName: { readonly column: 'bank_name' };
                 readonly bsb: { readonly column: 'bsb' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly csvMapping: { readonly column: 'csv_mapping' };
                 readonly id: { readonly column: 'id' };
                 readonly isActive: { readonly column: 'is_active' };
                 readonly isOperating: { readonly column: 'is_operating' };
@@ -43902,6 +44288,97 @@ type ContractBase = Omit<
                 readonly supplierId: { readonly column: 'supplier_id' };
                 readonly totalAmount: { readonly column: 'total_amount' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly SuspenseItem: {
+            readonly fields: {
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly bankTransactionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly clearedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly clearedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly clearedJournalEntryId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly clearedNote: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly description: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly journalEntryId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly transactionDate: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'suspense_items';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly amount: { readonly column: 'amount' };
+                readonly bankTransactionId: { readonly column: 'bank_transaction_id' };
+                readonly clearedAt: { readonly column: 'cleared_at' };
+                readonly clearedBy: { readonly column: 'cleared_by' };
+                readonly clearedJournalEntryId: { readonly column: 'cleared_journal_entry_id' };
+                readonly clearedNote: { readonly column: 'cleared_note' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly description: { readonly column: 'description' };
+                readonly id: { readonly column: 'id' };
+                readonly journalEntryId: { readonly column: 'journal_entry_id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly status: { readonly column: 'status' };
+                readonly transactionDate: { readonly column: 'transaction_date' };
               };
             };
           };
