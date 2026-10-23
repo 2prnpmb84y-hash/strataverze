@@ -37,7 +37,7 @@ describe("statutoryInterest", () => {
     });
   });
 
-  it("stops accruing when a payment plan starts", () => {
+  it("stops accruing at write-off", () => {
     const paused = statutoryInterest({ ...notice, asAt: "2026-12-01", stopAt: "2026-08-15" });
     expect(paused.interestCents).toBe(1233);
   });

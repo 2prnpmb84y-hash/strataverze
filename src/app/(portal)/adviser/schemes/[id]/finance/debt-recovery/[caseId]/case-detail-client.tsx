@@ -1225,7 +1225,7 @@ function PaymentPlanPanel({
           </label>
           <label className="flex items-center gap-1.5 text-xs text-gray-700">
             <input type="checkbox" name="interestWaived" className="rounded" />
-            Waived
+            Interest waived by owners corporation resolution
           </label>
         </div>
         <div className="flex justify-end gap-2 pt-1">
