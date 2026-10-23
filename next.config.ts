@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "www.strataverze.com",
         pathname: "/images/**",
       },
+      {
+        protocol: "https",
+        hostname: "www.strataverze.com",
+        pathname: "/brand/**",
+      },
     ],
   },
   turbopack: {

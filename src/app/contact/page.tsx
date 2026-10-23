@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 const subjectOptions = [
   "General enquiry",
@@ -9,29 +9,119 @@ const subjectOptions = [
   "Partnership",
 ] as const;
 
-// NOTE: metadata cannot be exported from a client component.
-// Move metadata to a separate layout.tsx in this directory, or use
-// generateMetadata in a server wrapper. For now, the page title is
-// set via the <title> fallback in the root layout template.
+// ──────────────────────────────────────────────────────────────────
+// Formspree form ID
+// Set the NEXT_PUBLIC_FORMSPREE_ID environment variable in Vercel,
+// or replace the fallback string below.
+//
+// To get a form ID:
+// 1. Sign up at https://formspree.io (free tier: 50 subs/month)
+// 2. Create a form called "StrataVerze Contact"
+// 3. Copy the form ID (the part after /f/ in the endpoint URL)
+// 4. Add it as NEXT_PUBLIC_FORMSPREE_ID in Vercel Environment Variables
+// ──────────────────────────────────────────────────────────────────
+const FORMSPREE_ID = process.env.NEXT_PUBLIC_FORMSPREE_ID || "PLACEHOLDER";
+const FORMSPREE_URL = `https://formspree.io/f/${FORMSPREE_ID}`;
+
+type FormStatus = "idle" | "submitting" | "success" | "error";
 
 function ContactForm() {
   const [subject, setSubject] = useState("");
+  const [status, setStatus] = useState<FormStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setStatus("submitting");
+    setErrorMessage("");
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    // Honeypot check — if filled, silently "succeed" without submitting
+    if (data.get("_gotcha")) {
+      setStatus("success");
+      return;
+    }
+
+    try {
+      const res = await fetch(FORMSPREE_URL, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: data,
+      });
+
+      if (res.ok) {
+        setStatus("success");
+        form.reset();
+        setSubject("");
+      } else {
+        const json = await res.json().catch(() => null);
+        const msg =
+          json?.errors
+            ?.map((err: { message: string }) => err.message)
+            .join(", ") ||
+          "Something went wrong. Please try again or email us directly.";
+        setErrorMessage(msg);
+        setStatus("error");
+      }
+    } catch {
+      setErrorMessage(
+        "Could not reach the server. Please check your connection and try again."
+      );
+      setStatus("error");
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div className="rounded-2xl border border-brand-teal/30 bg-brand-teal/5 p-8 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-teal/10">
+          <svg
+            className="h-7 w-7 text-brand-teal"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+            />
+          </svg>
+        </div>
+        <h3 className="mb-2 text-xl font-semibold">Message sent</h3>
+        <p className="text-[var(--muted)]">
+          Thanks for reaching out. We will get back to you within one business
+          day.
+        </p>
+        <button
+          type="button"
+          onClick={() => setStatus("idle")}
+          className="mt-6 text-sm font-medium text-brand-teal transition-colors hover:text-brand-teal-dark"
+        >
+          Send another message
+        </button>
+      </div>
+    );
+  }
 
   return (
-    // TODO: Connect to a form handling service (e.g. Formspree, Basin,
-    // or a Next.js API route at /api/contact) before launch.
-    // The action below is a placeholder.
-    <form
-      action="https://formspree.io/f/PLACEHOLDER"
-      method="POST"
-      className="space-y-6"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Honeypot — hidden from real users, catches bots */}
+      <input
+        type="text"
+        name="_gotcha"
+        tabIndex={-1}
+        autoComplete="off"
+        className="!absolute !h-0 !w-0 !overflow-hidden !opacity-0"
+        aria-hidden="true"
+      />
+
       {/* Name */}
       <div>
-        <label
-          htmlFor="name"
-          className="mb-1.5 block text-sm font-medium"
-        >
+        <label htmlFor="name" className="mb-1.5 block text-sm font-medium">
           Name <span className="text-brand-teal">*</span>
         </label>
         <input
@@ -39,17 +129,15 @@ function ContactForm() {
           id="name"
           name="name"
           required
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+          disabled={status === "submitting"}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-60"
           placeholder="Your full name"
         />
       </div>
 
       {/* Email */}
       <div>
-        <label
-          htmlFor="email"
-          className="mb-1.5 block text-sm font-medium"
-        >
+        <label htmlFor="email" className="mb-1.5 block text-sm font-medium">
           Email <span className="text-brand-teal">*</span>
         </label>
         <input
@@ -57,34 +145,31 @@ function ContactForm() {
           id="email"
           name="email"
           required
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+          disabled={status === "submitting"}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-60"
           placeholder="you@example.com"
         />
       </div>
 
       {/* Phone (optional) */}
       <div>
-        <label
-          htmlFor="phone"
-          className="mb-1.5 block text-sm font-medium"
-        >
-          Phone <span className="text-sm text-[var(--muted)]">(optional)</span>
+        <label htmlFor="phone" className="mb-1.5 block text-sm font-medium">
+          Phone{" "}
+          <span className="text-sm text-[var(--muted)]">(optional)</span>
         </label>
         <input
           type="tel"
           id="phone"
           name="phone"
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+          disabled={status === "submitting"}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-60"
           placeholder="04XX XXX XXX"
         />
       </div>
 
       {/* Subject */}
       <div>
-        <label
-          htmlFor="subject"
-          className="mb-1.5 block text-sm font-medium"
-        >
+        <label htmlFor="subject" className="mb-1.5 block text-sm font-medium">
           Subject <span className="text-brand-teal">*</span>
         </label>
         <select
@@ -93,7 +178,8 @@ function ContactForm() {
           required
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+          disabled={status === "submitting"}
+          className="w-full appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-60"
         >
           <option value="" disabled>
             Select a subject
@@ -108,10 +194,7 @@ function ContactForm() {
 
       {/* Message */}
       <div>
-        <label
-          htmlFor="message"
-          className="mb-1.5 block text-sm font-medium"
-        >
+        <label htmlFor="message" className="mb-1.5 block text-sm font-medium">
           Message <span className="text-brand-teal">*</span>
         </label>
         <textarea
@@ -119,17 +202,51 @@ function ContactForm() {
           name="message"
           required
           rows={5}
-          className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
+          disabled={status === "submitting"}
+          className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--foreground)] transition-colors focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-60"
           placeholder="How can we help?"
         />
       </div>
 
+      {/* Error message */}
+      {status === "error" && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Submit */}
       <button
         type="submit"
-        className="w-full rounded-xl bg-brand-teal px-6 py-3.5 font-semibold text-white transition-colors hover:bg-brand-teal-dark"
+        disabled={status === "submitting"}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-teal px-6 py-3.5 font-semibold text-white transition-colors hover:bg-brand-teal-dark disabled:cursor-not-allowed disabled:opacity-70"
       >
-        Send message
+        {status === "submitting" ? (
+          <>
+            <svg
+              className="h-5 w-5 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4Z"
+              />
+            </svg>
+            Sending…
+          </>
+        ) : (
+          "Send message"
+        )}
       </button>
     </form>
   );

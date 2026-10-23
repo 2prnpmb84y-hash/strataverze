@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const footerLinks = {
@@ -23,13 +24,14 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg gradient-bg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SV</span>
-              </div>
-              <span className="font-heading font-bold text-lg">
-                Strata<span className="gradient-text">Verze</span>
-              </span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="https://www.strataverze.com/brand/logo-horizontal-gradient.png"
+                alt="StrataVerze"
+                width={140}
+                height={32}
+                className="h-7 w-auto"
+              />
             </Link>
             <p className="mt-4 text-sm text-[var(--muted)] max-w-xs">
               Owner-first strata management for NSW Owners Corporations. Transparent finances, secure records, and real control.

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -19,13 +20,15 @@ export default function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg gradient-bg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">SV</span>
-            </div>
-            <span className="font-heading font-bold text-xl">
-              Strata<span className="gradient-text">Verze</span>
-            </span>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="https://www.strataverze.com/brand/logo-horizontal-gradient.png"
+              alt="StrataVerze"
+              width={160}
+              height={36}
+              className="h-8 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop nav */}
