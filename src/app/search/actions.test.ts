@@ -108,13 +108,13 @@ describe("globalSearch", () => {
     }
   });
 
-  it("gives an owner their own work orders and no contacts", async () => {
+  it("gives an owner their building's work orders and no contacts", async () => {
     memberships.mockResolvedValue([{ schemeId: SCHEME_A, role: "OWNER", isActive: true }]);
     await globalSearch("leak", "owner");
     expect(queried.Contact).toBeUndefined();
     expect(flat(queried.Document?.[0])).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_A] });
     const wo = flat(queried.WorkOrder?.[0]);
-    expect(wo).toContainEqual({ col: "raisedById", op: "eq", v: "me" });
+    expect(wo).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_A] });
     expect(wo.some((c) => c.col === "supplierId")).toBe(false);
   });
 
@@ -126,9 +126,8 @@ describe("globalSearch", () => {
     await globalSearch("roof", "owner");
     expect(flat(queried.Contact?.[0])).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_A] });
     const wo = flat(queried.WorkOrder?.[0]);
-    expect(wo).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_A] });
-    expect(wo).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_B] });
-    expect(wo).toContainEqual({ col: "raisedById", op: "eq", v: "me" });
+    // Committee on A and owner on B: both buildings' work orders, no others.
+    expect(wo).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_A, SCHEME_B] });
   });
 
   it("keeps the minimum length and escapes wildcards", async () => {

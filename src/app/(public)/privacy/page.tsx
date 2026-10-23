@@ -164,10 +164,10 @@ export default function PrivacyPolicyPage() {
         <p>
           To exercise any of these rights, contact us at{" "}
           <a
-            href="mailto:support@strataverze.com.au"
+            href="mailto:support@strataverze.com"
             className="text-[#00D4BF] underline hover:text-[#00bfad]"
           >
-            support@strataverze.com.au
+            support@strataverze.com
           </a>
           .
         </p>
@@ -207,10 +207,10 @@ export default function PrivacyPolicyPage() {
         <p className="mt-2">
           <strong>Email:</strong>{" "}
           <a
-            href="mailto:support@strataverze.com.au"
+            href="mailto:support@strataverze.com"
             className="text-[#00D4BF] underline hover:text-[#00bfad]"
           >
-            support@strataverze.com.au
+            support@strataverze.com
           </a>
         </p>
         <p>

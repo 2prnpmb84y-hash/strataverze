@@ -6,7 +6,8 @@
  *
  * The scope is worked out per scheme from the caller's ACTIVE memberships:
  *   adviser / committee: documents, work orders, contacts and lots of the scheme
- *   owner:               the scheme's documents and lots, and work orders they raised; no contacts
+ *   owner:               the scheme's documents, lots and work orders; no contacts
+ *                        (owners see all of their building's work orders, decided 23 Oct 2026)
  *   supplier:            only work orders awarded to them
  *   accountant / payment authoriser: the scheme itself only
  *
@@ -91,8 +92,9 @@ export function searchPlan(scopes: readonly SchemeSearchScope[]): SearchPlan {
     lots: ids(["adviser", "committee", "owner"]),
     documents: ids(["adviser", "committee", "owner"]),
     contacts: ids(["adviser", "committee"]),
-    workOrdersAll: ids(["adviser", "committee"]),
-    workOrdersRaised: ids(["owner"]),
+    workOrdersAll: ids(["adviser", "committee", "owner"]),
+    // Kept for a narrower owner policy; owners currently see every work order.
+    workOrdersRaised: [],
     workOrdersAwarded: ids(["supplier"]),
   };
 }

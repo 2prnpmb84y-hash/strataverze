@@ -30,7 +30,11 @@ export const CAPABILITIES = {
 
   /** Meetings, notices, agendas, minutes, ballots in the adviser portal. */
   "governance.manage": ["ADVISER"],
-  /** Committee business in the owner portal: committee meetings and motions. */
+  /**
+   * Committee business in the owner portal: committee meetings and motions,
+   * and calling general meetings (decided 23 Oct 2026: the committee as well
+   * as the adviser may call an AGM or EGM, as in self-managed buildings).
+   */
   "governance.committee": ["COMMITTEE", "ADVISER"],
   /** Voting at general meetings and on ballots: owners, per lot. */
   "governance.vote.owner": ["OWNER"],
@@ -46,7 +50,7 @@ export const CAPABILITIES = {
   "insurance.manage": ["ADVISER"],
   "insurance.read": ["ADVISER", "COMMITTEE", "OWNER"],
 
-  /** Raising maintenance requests. */
+  /** Raising maintenance requests. Owners see all of their building's work orders (decided 23 Oct 2026). */
   "maintenance.request": ["OWNER", "COMMITTEE"],
   /** Managing work orders. */
   "maintenance.manage": ["ADVISER", "COMMITTEE"],

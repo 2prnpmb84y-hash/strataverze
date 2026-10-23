@@ -58,14 +58,14 @@ describe("searchPlan", () => {
     });
   });
 
-  it("gives an owner documents and lots, their own work orders, and no contacts", () => {
+  it("gives an owner the building's documents, lots and work orders, and no contacts", () => {
     expect(searchPlan([{ schemeId: A, level: "owner" }])).toEqual({
       schemes: [A],
       lots: [A],
       documents: [A],
       contacts: [],
-      workOrdersAll: [],
-      workOrdersRaised: [A],
+      workOrdersAll: [A],
+      workOrdersRaised: [],
       workOrdersAwarded: [],
     });
   });

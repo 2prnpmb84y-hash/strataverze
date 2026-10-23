@@ -38,7 +38,7 @@ export default function TermsOfServicePage() {
         <ul className="list-disc pl-6 space-y-1">
           <li>
             <strong>&ldquo;Platform&rdquo;</strong> means the StrataVerze web
-            application available at strataverze.vercel.app and any associated
+            application available at www.strataverze.com and any associated
             services.
           </li>
           <li>
@@ -153,10 +153,10 @@ export default function TermsOfServicePage() {
         <p>
           Support is available via email at{" "}
           <a
-            href="mailto:support@strataverze.com.au"
+            href="mailto:support@strataverze.com"
             className="text-[#00D4BF] underline hover:text-[#00bfad]"
           >
-            support@strataverze.com.au
+            support@strataverze.com
           </a>
           .
         </p>
@@ -268,10 +268,10 @@ export default function TermsOfServicePage() {
         <p className="mt-2">
           <strong>Email:</strong>{" "}
           <a
-            href="mailto:support@strataverze.com.au"
+            href="mailto:support@strataverze.com"
             className="text-[#00D4BF] underline hover:text-[#00bfad]"
           >
-            support@strataverze.com.au
+            support@strataverze.com
           </a>
         </p>
       </section>
