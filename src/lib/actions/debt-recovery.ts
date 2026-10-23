@@ -1,9 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import {
+  caseAccessProblem,
+  initiatingRole,
+  isCaseClosed,
+  isCasePriority,
+  isCaseStatus,
+  isClosedStatus,
+  isValidAmount,
+  MAX_NOTE_LENGTH,
+} from "@/lib/auth/debt-recovery-access";
 import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
 import { captureUsageFee } from "@/lib/billing/capture";
 import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
@@ -27,17 +37,57 @@ import {
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
+/**
+ * Authorise an action on an existing case: the caller must be an adviser or
+ * committee member of the scheme, the case must belong to that scheme, and
+ * the caller must not be the debtor. Throws AuthorisationError otherwise.
+ */
+async function authoriseCaseAction(
+  caseId: string,
+  schemeId: string,
+  roles: ("ADVISER" | "COMMITTEE")[] = ["ADVISER", "COMMITTEE"],
+) {
+  const { profile } = await requireSchemeMembership(schemeId, roles);
+  const caseRow = await getDebtRecoveryCaseById(caseId);
+  const problem = caseAccessProblem(caseRow, schemeId, profile.id);
+  if (problem || !caseRow) throw new AuthorisationError(problem ?? "Case not found.");
+  return { profile, caseRow };
+}
+
 // ─── Initiate Debt Recovery Case ────────────────────────────────
 
 export async function initiateDebtRecoveryAction(
   schemeId: string,
   lotId: string,
   ownerId: string,
-  role: "COMMITTEE" | "ADVISER",
+  // Kept for the existing callers; the role recorded comes from the
+  // caller's memberships, never from the client.
+  _requestedRole?: "COMMITTEE" | "ADVISER",
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    const { profile, roles } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE"]);
+    const role = initiatingRole(roles);
+    if (!role) return { error: "You do not have permission to perform this action." };
+
+    // The lot must belong to this scheme, and the owner must be an active
+    // owner of that lot. Nobody may open a case against their own lot.
+    const lot = await db.orm.public.Lot.where({ id: lotId }).first();
+    if (!lot || lot.schemeId !== schemeId) return { error: "Lot not found" };
+    const ownerMembership = await db.orm.public.SchemeMembership
+      .where((m) =>
+        and(
+          m.schemeId.eq(schemeId),
+          m.lotId.eq(lotId),
+          m.profileId.eq(ownerId),
+          m.role.eq("OWNER"),
+          m.isActive.eq(true),
+        ),
+      )
+      .first();
+    if (!ownerMembership) return { error: "That person is not an owner of this lot" };
+    if (ownerId === profile.id) {
+      return { error: "You cannot act on a debt recovery case for your own lot." };
+    }
 
     // Gather overdue levy notices
     const overdueNotices = await getOverdueLevyNoticesForLot(schemeId, lotId);
@@ -96,6 +146,7 @@ export async function initiateDebtRecoveryAction(
 
     return { success: true, id: newCase.id };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to initiate debt recovery:", err);
     return { error: "Failed to initiate debt recovery case" };
   }
@@ -109,8 +160,7 @@ export async function updateDebtRecoveryCaseAction(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    const { profile, caseRow } = await authoriseCaseAction(caseId, schemeId);
 
     const data: Record<string, unknown> = {};
     const status = formData.get("status") as string;
@@ -121,6 +171,19 @@ export async function updateDebtRecoveryCaseAction(
     const courtFileNumber = formData.get("courtFileNumber") as string;
     const excludeFromRecovery = formData.get("excludeFromRecovery") === "on";
     const exclusionReason = formData.get("exclusionReason") as string;
+
+    if (status && !isCaseStatus(status)) return { error: "Invalid case status" };
+    // Closing goes through closeDebtRecoveryCaseAction, which records a reason.
+    if (status && isClosedStatus(status) && status !== caseRow.status) {
+      return { error: "Close the case from the close case form" };
+    }
+    if (priority && !isCasePriority(priority)) return { error: "Invalid priority" };
+    if ((notes ?? "").length > MAX_NOTE_LENGTH || (exclusionReason ?? "").length > MAX_NOTE_LENGTH) {
+      return { error: "Text is too long" };
+    }
+    if (excludeFromRecovery && !(exclusionReason ?? "").trim()) {
+      return { error: "Give a reason for excluding this case from recovery" };
+    }
 
     if (status) data.status = status;
     if (priority) data.priority = priority;
@@ -145,6 +208,7 @@ export async function updateDebtRecoveryCaseAction(
 
     return { success: true };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to update debt recovery case:", err);
     return { error: "Failed to update case" };
   }
@@ -173,6 +237,8 @@ export async function completeDebtRecoveryStepAction(
     if (!step || step.caseId !== caseId || !caseRow || caseRow.schemeId !== schemeId) {
       return { error: "Step not found" };
     }
+    const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id);
+    if (accessProblem) return { error: accessProblem };
     if (step.status === "COMPLETED") return { error: "This step is already complete" };
 
     await db.transaction(async (tx) => {
@@ -248,13 +314,17 @@ export async function closeDebtRecoveryCaseAction(
   status: "CLOSED_PAID" | "CLOSED_WRITTEN_OFF" | "CLOSED_SETTLED",
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    const { profile, caseRow } = await authoriseCaseAction(caseId, schemeId);
+    if (!isClosedStatus(status)) return { error: "Invalid closing status" };
+    if (isCaseClosed(caseRow)) return { error: "This case is already closed" };
+    const reason = (closedReason ?? "").trim();
+    if (!reason) return { error: "Give a reason for closing the case" };
+    if (reason.length > MAX_NOTE_LENGTH) return { error: "Reason is too long" };
 
     await updateDebtRecoveryCase(caseId, {
       status,
       closedAt: new Date().toISOString(),
-      closedReason,
+      closedReason: reason,
       currentStep: "CLOSED",
     });
 
@@ -270,6 +340,7 @@ export async function closeDebtRecoveryCaseAction(
 
     return { success: true };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to close case:", err);
     return { error: "Failed to close case" };
   }
@@ -289,6 +360,8 @@ export async function createPaymentPlanAction(
     if (!caseRow || caseRow.schemeId !== schemeId || caseRow.lotId !== lotId) {
       return { error: "Case not found" };
     }
+    const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id);
+    if (accessProblem) return { error: accessProblem };
 
     const totalAmount = parseFloat(formData.get("totalAmount") as string);
     const instalmentAmount = parseFloat(formData.get("instalmentAmount") as string);
@@ -386,8 +459,19 @@ export async function recordInstalmentPaymentAction(
   amountPaid: number,
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    const { profile, caseRow } = await authoriseCaseAction(caseId, schemeId);
+    if (isCaseClosed(caseRow)) return { error: "This case is already closed" };
+    if (!isValidAmount(amountPaid)) return { error: "Enter a valid amount" };
+
+    // The instalment must belong to this case's payment plan.
+    const [instalment, casePlan] = await Promise.all([
+      db.orm.public.PaymentPlanInstalment.where({ id: instalmentId }).first(),
+      getPaymentPlanForCase(caseId),
+    ]);
+    if (!instalment || !casePlan || instalment.planId !== casePlan.id) {
+      return { error: "Instalment not found" };
+    }
+    if (instalment.status === "PAID") return { error: "This instalment is already paid" };
 
     await updateInstalment(instalmentId, {
       status: "PAID",
@@ -429,6 +513,7 @@ export async function recordInstalmentPaymentAction(
 
     return { success: true };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to record payment:", err);
     return { error: "Failed to record payment" };
   }
@@ -442,13 +527,15 @@ export async function addDebtRecoveryNoteAction(
   note: string,
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    const { profile } = await authoriseCaseAction(caseId, schemeId);
+    const text = (note ?? "").trim();
+    if (!text) return { error: "Note cannot be empty" };
+    if (text.length > MAX_NOTE_LENGTH) return { error: "Note is too long" };
 
     await logDebtRecoveryActivity({
       caseId,
       activityType: "NOTE_ADDED",
-      description: note,
+      description: text,
       performedBy: profile.id,
     });
 
@@ -456,6 +543,7 @@ export async function addDebtRecoveryNoteAction(
 
     return { success: true };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to add note:", err);
     return { error: "Failed to add note" };
   }
@@ -471,8 +559,11 @@ export async function generateNoticeDocumentAction(
   content: string,
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile) return { error: "Not authenticated" };
+    // Drafting recovery notices is the adviser's job.
+    const { profile } = await authoriseCaseAction(caseId, schemeId, ["ADVISER"]);
+    if (!/^[A-Z][A-Z0-9_]{1,63}$/.test(documentType ?? "")) return { error: "Invalid document type" };
+    if (!(title ?? "").trim() || title.length > 300) return { error: "Enter a title of up to 300 characters" };
+    if ((content ?? "").length > 100_000) return { error: "Document is too long" };
 
     const doc = await createDebtRecoveryDocument({
       caseId,
@@ -494,6 +585,7 @@ export async function generateNoticeDocumentAction(
 
     return { success: true, id: doc.id };
   } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
     console.error("Failed to generate document:", err);
     return { error: "Failed to generate document" };
   }

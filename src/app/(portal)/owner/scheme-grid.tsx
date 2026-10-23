@@ -38,9 +38,12 @@ const stateOptions = [
 export function SchemeGrid({
   schemes,
   firstName,
+  canAddProperty = false,
 }: {
   schemes: SchemeCard[];
   firstName: string;
+  /** Only StrataVerze administrators onboard buildings. */
+  canAddProperty?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("");
@@ -80,15 +83,17 @@ export function SchemeGrid({
         Select a property to manage.
       </p>
 
-      {/* Add Property button */}
-      <div className="mb-6">
-        <Button href="/owner/add-property">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          Add Property
-        </Button>
-      </div>
+      {/* Add Property button (StrataVerze administrators only) */}
+      {canAddProperty && (
+        <div className="mb-6">
+          <Button href="/owner/add-property">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            Add Property
+          </Button>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

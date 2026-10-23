@@ -1,7 +1,15 @@
+import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { PageHeader } from "@/components/ui/page-header";
+import { getCurrentProfile } from "@/lib/queries/profiles";
 import { AddPropertyWizard } from "../add-property-wizard";
 
-export default function NewSchemePage() {
+export default async function NewSchemePage() {
+  await connection();
+  // Buildings are onboarded by StrataVerze administrators only.
+  const profile = await getCurrentProfile();
+  if (!profile?.isPlatformAdmin) notFound();
+
   return (
     <div className="max-w-3xl">
       <PageHeader

@@ -65,6 +65,14 @@ export async function declineInvitationAction(invitationId: string) {
     const invitation = await getInvitationById(invitationId);
     if (!invitation) return { error: "Invitation not found." };
 
+    // Only the person the invitation was sent to may decline it.
+    if (String(profile.email).toLowerCase() !== String(invitation.email).toLowerCase()) {
+      return { error: "Invitation not found." };
+    }
+    if (invitation.status !== "PENDING") {
+      return { error: "This invitation is no longer pending." };
+    }
+
     await declineInvitation(invitationId);
 
     await logActivity({

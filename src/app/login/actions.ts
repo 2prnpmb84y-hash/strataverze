@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { validatePassword } from "@/lib/auth/password-policy";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
@@ -57,22 +58,6 @@ export async function login(formData: FormData) {
   redirect("/dashboard");
 }
 
-/**
- * Validate password meets minimum complexity requirements.
- * Returns an error message or null if valid.
- */
-function validatePassword(password: string): string | null {
-  if (password.length < 8) return "Password must be at least 8 characters.";
-  if (!/[A-Z]/.test(password))
-    return "Password must contain at least one uppercase letter.";
-  if (!/[a-z]/.test(password))
-    return "Password must contain at least one lowercase letter.";
-  if (!/\d/.test(password))
-    return "Password must contain at least one number.";
-  if (!/[^A-Za-z0-9]/.test(password))
-    return "Password must contain at least one special character.";
-  return null;
-}
 
 export async function signup(formData: FormData) {
   const headersList = await headers();

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { siteUrl } from "@/lib/site-url";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { db } from "@/prisma/db";
@@ -179,7 +180,7 @@ export async function uploadPaymentConfirmationAction(
               amount: amountCents != null ? (amountCents / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD" }) : "",
               documentDate: documentDate ? new Date(`${documentDate}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "",
               earlierUploadedAt: new Date(duplicate.uploadedAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" }),
-              reviewUrl: `${process.env.APP_URL ?? "https://strataverze.vercel.app"}/adviser/schemes/${schemeId}/finance/documents/${doc.id}`,
+              reviewUrl: `${siteUrl()}/adviser/schemes/${schemeId}/finance/documents/${doc.id}`,
             }),
           );
         }

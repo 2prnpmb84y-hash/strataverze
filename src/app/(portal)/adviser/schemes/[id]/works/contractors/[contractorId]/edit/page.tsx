@@ -17,6 +17,8 @@ export default async function EditContractorPage({
 
   const profile = await getCurrentProfile();
   if (!profile) return null;
+  // Contractor identity details are maintained by StrataVerze staff only.
+  if (!profile.isPlatformAdmin) notFound();
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();

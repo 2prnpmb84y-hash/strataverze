@@ -13,12 +13,13 @@ import { isExecutedContractStatus } from "@/lib/billing/hook-codes";
 import { revalidatePath } from "next/cache";
 import {
   requireSchemeMembership,
-  requireAuth,
+  requirePlatformAdmin,
   AuthorisationError,
 } from "@/lib/auth/require-membership";
 import { logActivity, type ActivityAction } from "@/lib/queries/activity-log";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
+import { quotationProblem, requireActiveContractorContact } from "@/lib/auth/require-contractor";
 import type {
   Numeric,
   TimestampString,
@@ -437,10 +438,14 @@ export async function createContractorBusiness(
   const gstRegistered = formData.get("gstRegistered") === "true";
   const notes = (formData.get("notes") as string)?.trim() || null;
 
+  const schemeId = formData.get("schemeId") as string;
   if (!companyName) return { error: "Company name is required." };
+  if (!schemeId) return { error: "Scheme is required." };
 
   try {
-    await requireAuth();
+    // An adviser may register a contractor for StrataVerze to review. The
+    // business starts as PENDING and is approved by StrataVerze staff.
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
 
     const tradeCategories = tradeCategoriesRaw
       ? tradeCategoriesRaw.split(",").map((c) => c.trim())
@@ -494,7 +499,11 @@ export async function updateContractorBusiness(
   if (!companyName) return { error: "Company name is required." };
 
   try {
-    await requireAuth();
+    // A contractor's identity, ABN, email and phone are what remittances and
+    // bank detail call-backs rely on, so only StrataVerze staff may change
+    // them here (SEC-008). Contractors maintain their own profile through
+    // contractor onboarding.
+    await requirePlatformAdmin();
 
     const tradeCategories = tradeCategoriesRaw
       ? tradeCategoriesRaw.split(",").map((c) => c.trim())
@@ -656,12 +665,25 @@ export async function submitWorksQuotation(
     return { error: "Subtotal and total amount are required." };
 
   try {
-    await requireAuth();
+    // Only an active contact of the quoting business, on an open RFQ the
+    // business was invited to (SEC-008).
+    const { profile } = await requireActiveContractorContact(contractorBusinessId);
 
     const rfq = await db.orm.public.WorksRfq
       .where((r) => r.id.eq(rfqId))
       .first();
-    if (!rfq) return { error: "RFQ not found." };
+    const invitation = rfq
+      ? await db.orm.public.WorksRfqInvitation
+          .where((i) => and(i.rfqId.eq(rfqId), i.contractorBusinessId.eq(contractorBusinessId)))
+          .first()
+      : null;
+    const problem = quotationProblem(rfq, invitation);
+    if (problem || !rfq) return { error: problem ?? "RFQ not found." };
+
+    const amounts = [subtotalRaw, gstAmountRaw, totalAmountRaw].map(Number);
+    if (amounts.some((n) => !Number.isFinite(n) || n < 0)) {
+      return { error: "Enter valid amounts." };
+    }
 
     // Generate quotation number
     const existingCount = await db.orm.public.WorksQuotation
@@ -707,7 +729,7 @@ export async function submitWorksQuotation(
 
     await logActivity({
       schemeId: rfq.schemeId,
-      actorId: (await requireAuth()).id,
+      actorId: profile.id,
       action: "QUOTE_SUBMITTED",
       entityType: "Quote",
       metadata: { rfqId, quotationNumber, module: "works" },

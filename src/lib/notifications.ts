@@ -1,4 +1,5 @@
 import { sendEmail } from "@/lib/email";
+import { siteUrl } from "@/lib/site-url";
 import { invitationEmail } from "@/lib/email-templates/invitation";
 import {
   workOrderCreatedEmail,
@@ -9,7 +10,7 @@ import { meetingScheduledEmail } from "@/lib/email-templates/meeting";
 import { announcementPublishedEmail } from "@/lib/email-templates/announcement";
 import { platformInvoiceEmail } from "@/lib/email-templates/platform-invoice";
 
-const APP_URL = process.env.APP_URL ?? "https://strataverze.com.au";
+const APP_URL = siteUrl();
 
 // ─── Invitations ────────────────────────────────────────────────
 

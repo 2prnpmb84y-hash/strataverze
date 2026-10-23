@@ -157,8 +157,9 @@ export async function acceptInvitation(
  * Decline an invitation.
  */
 export async function declineInvitation(invitationId: string) {
+  // Only a pending invitation can be declined; an accepted one stays accepted.
   await db.orm.public.Invitation
-    .where({ id: invitationId })
+    .where((i) => and(i.id.eq(invitationId), i.status.eq("PENDING")))
     .update({ status: "DECLINED" });
 }
 
