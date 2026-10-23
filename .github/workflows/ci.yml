@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Read-only token: CI never needs to write to the repository (S8, SEC-021).
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -27,17 +31,30 @@ jobs:
       EMAIL_FROM: noreply@example.com
 
     steps:
+      # Actions are pinned to a commit, not a movable tag (S8, SEC-021).
+      # Dependabot proposes updates to these pins.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      # Fails on any high or critical advisory in what the app ships
+      # (production dependencies). The Prisma CLI is a development tool and
+      # is reported separately below without failing the build.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit all dependencies (report only)
+        run: npm audit --audit-level=critical || true
 
       - name: Lint
         run: npm run lint

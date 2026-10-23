@@ -1,0 +1,31 @@
+# Security stage S8 (finding SEC-021): weekly dependency and Action updates.
+# Security updates are raised as soon as an advisory is published (turn on
+# "Dependabot security updates" in the repository's Code security settings).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Australia/Sydney
+    open-pull-requests-limit: 5
+    groups:
+      # Minor and patch updates arrive as one pull request; majors stay separate.
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Prisma 8 is on release candidates; move it deliberately.
+      - dependency-name: "prisma"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@prisma/*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Australia/Sydney
