@@ -27,8 +27,8 @@ const platformCapabilities = [
     title: "A ledger that balances",
     description:
       "Double-entry accounts by fund, monthly periods you can close and lock, budgets against actuals, trial balance and the reports an accountant expects.",
-    iconColor: "text-brand-teal-dark",
-    iconBg: "bg-brand-teal/10",
+    iconColor: "text-brand-lavender",
+    iconBg: "bg-brand-lavender/10",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M4 6h16M4 10h16M4 14h10M4 18h7" />
