@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { AuthorisationError } from "./errors";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 
@@ -68,13 +69,4 @@ export async function requirePlatformAdmin() {
   return profile;
 }
 
-/**
- * Custom error class so callers can distinguish auth failures from
- * unexpected errors without inspecting message strings.
- */
-export class AuthorisationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AuthorisationError";
-  }
-}
+export { AuthorisationError };

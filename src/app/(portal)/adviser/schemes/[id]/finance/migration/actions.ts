@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import {
   requireSchemeMembership,
   AuthorisationError,
@@ -240,6 +241,8 @@ export async function removeCutoverFileAction(schemeId: string, batchId: string,
 export async function signOffCutoverAction(schemeId: string, batchId: string, acknowledged: string[], note: string): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     await signOffCutover({ schemeId, batchId, actorId: profile.id, acknowledged, note });
     revalidatePath(cutoverPath(schemeId));
     return { success: true };
@@ -251,6 +254,8 @@ export async function signOffCutoverAction(schemeId: string, batchId: string, ac
 export async function executeCutoverAction(schemeId: string, batchId: string): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const results = await executeCutover({ schemeId, batchId, actorId: profile.id });
     revalidatePath(`/adviser/schemes/${schemeId}/finance`);
     revalidatePath(cutoverPath(schemeId));

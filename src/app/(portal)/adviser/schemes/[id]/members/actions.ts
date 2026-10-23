@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { assertInScheme } from "@/lib/auth/scheme-scope";
@@ -31,6 +32,8 @@ export async function sendInvitationAction(
 ): Promise<InvitationFormState> {
   try {
     const { profile } = await requireSchemeAccess(schemeId, "members.manage");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const email = (formData.get("email") as string)?.trim().toLowerCase();
     const role = formData.get("role") as string;
@@ -108,6 +111,8 @@ export async function revokeInvitationAction(
 ) {
   try {
     const { profile } = await requireSchemeAccess(schemeId, "members.manage");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     // The invitation must belong to this scheme (SEC-004).
     const invitation = await db.orm.public.Invitation

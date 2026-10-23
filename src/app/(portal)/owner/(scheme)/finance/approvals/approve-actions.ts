@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { PaymentControlError, authoriseSupplierInvoice } from "@/lib/finance/invoice-approval";
@@ -9,6 +10,8 @@ import { PaymentControlError, authoriseSupplierInvoice } from "@/lib/finance/inv
 export async function ownerApproveSupplierInvoiceAction(schemeId: string, invoiceId: string) {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["COMMITTEE", "PAYMENT_AUTHORISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const ip = (await headers()).get("x-forwarded-for");
     await authoriseSupplierInvoice({ schemeId, invoiceId, actorId: profile.id, ip });
     revalidatePath("/owner/finance/approvals");

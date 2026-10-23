@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// MFA step-up (stage S4) is tested in src/lib/auth/mfa-enforcement.test.ts.
+// Here the caller has verified recently unless a test says otherwise.
+const stepUp = vi.hoisted(() => ({ requireRecentMfa: vi.fn(async () => {}) }));
+vi.mock("@/lib/auth/mfa-enforcement", () => ({
+  requireRecentMfa: stepUp.requireRecentMfa,
+  getMfaStatus: vi.fn(async () => null),
+  enforceMfa: vi.fn(async () => {}),
+  StepUpRequiredError: class extends Error {},
+}));
+
 /**
  * Cross-scheme tests for the adviser finance server actions (security
  * finding SEC-004). The caller is a genuine adviser of scheme A. Each action

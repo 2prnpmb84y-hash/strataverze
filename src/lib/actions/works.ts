@@ -1,6 +1,7 @@
 "use server";
 
 import { feeErrorMessage } from "@/lib/billing/disclosure";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { headers } from "next/headers";
 import {
   PaymentControlError,
@@ -1329,6 +1330,8 @@ export async function authoriseWorksPayment(
 
   try {
     const { profile } = await requireSchemeAccess(schemeId, "works.payments");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     // Payment controls: the invoice must be approved, and the bank details used
     // must be verified.
@@ -1472,6 +1475,8 @@ export async function recordWorksPayment(
   try {
     // The accountant is read only (M2): recording payments is works.payments.
     const { profile } = await requireSchemeAccess(schemeId, "works.payments");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     if (!/^\d+(\.\d{1,2})?$/.test(amountRaw) || toCents(amountRaw) <= 0) {
       return { error: "Enter the amount in dollars and cents, for example 500 or 500.00." };
@@ -2111,6 +2116,8 @@ export async function submitApprovalDecision(
 
   try {
     const { profile, roles } = await requireSchemeAccess(schemeId, "works.approve");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     // The workflow must be this scheme's (SEC-004).
     const workflow = await db.orm.public.WorksApprovalWorkflow

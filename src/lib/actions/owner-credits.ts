@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
@@ -60,6 +61,8 @@ export async function requestOwnerCreditRefundAction(
 export async function approveOwnerCreditRefundAction(schemeId: string, refundId: string) {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["COMMITTEE", "PAYMENT_AUTHORISER", "ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const ip = (await headers()).get("x-forwarded-for");
     await authoriseOwnerCreditRefund({ schemeId, refundId, actorId: profile.id, ip });
     revalidatePath(creditsPath(schemeId));
@@ -79,6 +82,8 @@ export async function recordOwnerCreditRefundPaidAction(
 ): Promise<CreditActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const paidOn = String(formData.get("paidOn") ?? "").trim();
     if (!ISO_DATE.test(paidOn)) return { error: "Enter the date the refund was paid." };
     await recordOwnerCreditRefundPaid({ schemeId, refundId, actorId: profile.id, paidOn });

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { revalidatePath } from "next/cache";
 import { searchProfiles } from "@/lib/queries/profiles";
 import { AuthorisationError } from "@/lib/auth/require-membership";
@@ -164,6 +165,8 @@ export async function assignOwnerAction(
 ) {
   try {
     await requireSchemeAccess(schemeId, "lots.manage");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
@@ -188,6 +191,8 @@ export async function removeOwnerAction(
 ) {
   try {
     await requireSchemeAccess(schemeId, "lots.manage");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     // Verify the membership belongs to this scheme before removing
     const target = await db.orm.public.SchemeMembership

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import {
   requireSchemeMembership,
   AuthorisationError,
@@ -463,6 +464,8 @@ export async function createBankAccountAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const bankName = (formData.get("bankName") as string)?.trim();
     const accountName = (formData.get("accountName") as string)?.trim();
@@ -516,6 +519,8 @@ export async function updateBankAccountAction(
 ): Promise<ActionState> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const bankName = (formData.get("bankName") as string)?.trim() || undefined;
     const accountName = (formData.get("accountName") as string)?.trim() || undefined;
@@ -1659,6 +1664,8 @@ export async function approveInvoiceAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "PAYMENT_AUTHORISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const ip = (await headers()).get("x-forwarded-for");
     const outcome = await authoriseSupplierInvoice({ schemeId, invoiceId, actorId: profile.id, ip });
     revalidatePath(financePath(schemeId));
@@ -1690,6 +1697,8 @@ export async function recordInvoicePaymentAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     if (amount <= 0) return { error: "Payment amount must be greater than zero." };
     if (!paymentDate) return { error: "Payment date is required." };
@@ -2156,6 +2165,8 @@ export async function reopenPeriodAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const period = await db.orm.public.FinancialPeriod
       .where((p) => and(p.id.eq(periodId), p.schemeId.eq(schemeId)))
       .first();
@@ -2660,6 +2671,8 @@ export async function exportAuditTrailAction(
 ): Promise<{ error?: string; data?: { csv: string; filename: string } }> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const rows = await getAuditTrailForExport(schemeId, filters);
     const csv = formatAuditTrailCsv(rows);

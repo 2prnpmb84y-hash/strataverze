@@ -142,6 +142,7 @@ const adminMobileNav = [
   { label: "Revenue", href: "/admin/revenue" },
   { label: "Referral income", href: "/admin/referral-income" },
   { label: "Contractors", href: "/adviser/contractors" },
+  { label: "Security", href: "/admin/security" },
 ];
 
 const mobileNavByPortal: Record<string, typeof ownerBaseNav> = {

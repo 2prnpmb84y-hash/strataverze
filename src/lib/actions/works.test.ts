@@ -1,5 +1,15 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
+// MFA step-up (stage S4) is tested in src/lib/auth/mfa-enforcement.test.ts.
+// Here the caller has verified recently unless a test says otherwise.
+const stepUp = vi.hoisted(() => ({ requireRecentMfa: vi.fn(async () => {}) }));
+vi.mock("@/lib/auth/mfa-enforcement", () => ({
+  requireRecentMfa: stepUp.requireRecentMfa,
+  getMfaStatus: vi.fn(async () => null),
+  enforceMfa: vi.fn(async () => {}),
+  StepUpRequiredError: class extends Error {},
+}));
+
 /**
  * Cross-scheme, role and payment control tests for the works server actions
  * (security findings SEC-004 H4/M1/M2 and SEC-007). The actions are called
@@ -549,5 +559,17 @@ describe("works role and status rules", () => {
     });
     expect((await actions.approveWorksVariation("v-1", SCHEME_A)).error).toMatch(/requested it/);
     expect(model("WorksVariation").update).not.toHaveBeenCalled();
+  });
+});
+
+describe("MFA step-up on payments", () => {
+  it("refuses to authorise a payment without a recent authenticator check", async () => {
+    stepUp.requireRecentMfa.mockRejectedValueOnce(new AuthorisationError("For your security, confirm it is you first."));
+    const r = await actions.recordWorksPayment(
+      form({ paymentInstructionId: "pi-1", schemeId: SCHEME_A, amount: "10", paymentDate: "2026-10-23", paymentMethod: "EFT" }),
+    );
+    expect(r.error).toMatch(/confirm it is you/);
+    expect(model("WorksPaymentRecord").create).not.toHaveBeenCalled();
+    expect(model("WorksInvoice").update).not.toHaveBeenCalled();
   });
 });

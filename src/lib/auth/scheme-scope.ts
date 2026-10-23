@@ -1,4 +1,4 @@
-import { AuthorisationError } from "./require-membership";
+import { AuthorisationError } from "./errors";
 
 /**
  * Record-to-scheme checks (security finding SEC-004).

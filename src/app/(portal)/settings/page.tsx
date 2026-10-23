@@ -4,6 +4,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
 import { SignOutButton } from "./sign-out-button";
+import { SecuritySection } from "./security-section";
+import { getMfaStatus } from "@/lib/auth/mfa-enforcement";
+import { MAX_TOTP_FACTORS } from "@/lib/auth/mfa-policy";
 import { connection } from "next/server";
 
 export default async function SettingsPage() {
@@ -15,6 +18,12 @@ export default async function SettingsPage() {
   if (!profileWithMemberships) redirect("/login");
 
   const { memberships } = profileWithMemberships;
+  const mfa = await getMfaStatus();
+  const factors = (mfa?.verifiedFactors ?? []).map((f, i) => ({
+    id: f.id,
+    name: f.friendly_name || `Authenticator ${i + 1}`,
+    createdAt: String(f.created_at),
+  }));
 
   const roleLabels: Record<string, string> = {
     OWNER: "Owner",
@@ -70,6 +79,14 @@ export default async function SettingsPage() {
             </div>
           </Card>
         )}
+
+        <Card>
+          <CardHeader
+            title="Security"
+            description="Two-step sign-in with an authenticator app."
+          />
+          <SecuritySection factors={factors} mandatory={!!mfa?.mandatory} maxFactors={MAX_TOTP_FACTORS} />
+        </Card>
 
         <Card>
           <CardHeader
