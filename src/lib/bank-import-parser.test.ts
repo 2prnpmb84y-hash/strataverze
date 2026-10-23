@@ -55,62 +55,42 @@ describe("parseCSVLine", () => {
 // ── parseDate ─────────────────────────────────────────────────────
 
 describe("parseDate", () => {
-  it("parses DD/MM/YYYY (Australian format)", () => {
-    const result = parseDate("15/06/2024");
-    expect(result).not.toBeNull();
-    const d = new Date(result!);
-    expect(d.getFullYear()).toBe(2024);
-    expect(d.getMonth()).toBe(5); // June is 0-indexed
-    expect(d.getDate()).toBe(15);
+  it("parses DD/MM/YYYY (Australian format) as a calendar date", () => {
+    expect(parseDate("15/06/2024")).toBe("2024-06-15");
   });
 
   it("parses D/M/YYYY with single digit day and month", () => {
-    const result = parseDate("1/3/2024");
-    expect(result).not.toBeNull();
-    const d = new Date(result!);
-    expect(d.getFullYear()).toBe(2024);
-    expect(d.getMonth()).toBe(2); // March
-    expect(d.getDate()).toBe(1);
+    expect(parseDate("1/3/2024")).toBe("2024-03-01");
   });
 
   it("parses DD-MM-YYYY with dash separator", () => {
-    const result = parseDate("25-12-2024");
-    expect(result).not.toBeNull();
-    const d = new Date(result!);
-    expect(d.getMonth()).toBe(11); // December
-    expect(d.getDate()).toBe(25);
+    expect(parseDate("25-12-2024")).toBe("2024-12-25");
   });
 
   it("parses DD.MM.YYYY with dot separator", () => {
-    const result = parseDate("01.07.2024");
-    expect(result).not.toBeNull();
-    const d = new Date(result!);
-    expect(d.getMonth()).toBe(6); // July
+    expect(parseDate("01.07.2024")).toBe("2024-07-01");
   });
 
   it("parses YYYY-MM-DD (ISO format)", () => {
-    const result = parseDate("2024-06-15");
-    expect(result).not.toBeNull();
-    const d = new Date(result!);
-    expect(d.getFullYear()).toBe(2024);
+    expect(parseDate("2024-06-15")).toBe("2024-06-15");
   });
 
   it("parses YYYYMMDD (OFX format)", () => {
-    const result = parseDate("20240615");
-    expect(result).not.toBeNull();
-    const d = new Date(result!);
-    expect(d.getFullYear()).toBe(2024);
-    expect(d.getMonth()).toBe(5);
-    expect(d.getDate()).toBe(15);
+    expect(parseDate("20240615")).toBe("2024-06-15");
   });
 
   it("parses YYYYMMDD with trailing time (OFX extended)", () => {
-    const result = parseDate("20240615120000");
-    expect(result).not.toBeNull();
-    const d = new Date(result!);
-    expect(d.getFullYear()).toBe(2024);
-    expect(d.getMonth()).toBe(5);
-    expect(d.getDate()).toBe(15);
+    expect(parseDate("20240615120000")).toBe("2024-06-15");
+  });
+
+  it("never moves the date to the day before, whatever the time zone", () => {
+    expect(parseDate("20261001")).toBe("2026-10-01");
+    expect(parseDate("01/10/2026")).toBe("2026-10-01");
+  });
+
+  it("refuses impossible dates", () => {
+    expect(parseDate("31/02/2026")).toBeNull();
+    expect(parseDate("20260231")).toBeNull();
   });
 
   it("returns null for garbage input", () => {
@@ -176,12 +156,9 @@ OFXHEADER:100
     expect(result[1].reference).toBe("TXN002");
   });
 
-  it("parses transaction dates as ISO strings", () => {
+  it("parses transaction dates as calendar dates", () => {
     const result = parseOFX(sampleOFX);
-    const d = new Date(result[0].transactionDate);
-    expect(d.getFullYear()).toBe(2024);
-    expect(d.getMonth()).toBe(5); // June
-    expect(d.getDate()).toBe(15);
+    expect(result[0].transactionDate).toBe("2024-06-15");
   });
 
   it("skips transactions missing DTPOSTED", () => {
@@ -287,5 +264,31 @@ describe("parseCsvContent", () => {
     const result = parseCsvContent("");
     expect(result.headers).toEqual([]);
     expect(result.rows).toEqual([]);
+  });
+});
+
+describe("OFX re-import by FITID (TC-012)", () => {
+  it("skips T45 to T50 and imports T51 to T80, and says so", async () => {
+    const { splitByFitId, importSummary } = await import("./bank-import-parser");
+    const first = new Set(Array.from({ length: 50 }, (_, i) => `T${i + 1}`));
+    const second = Array.from({ length: 36 }, (_, i) => ({ fitId: `T${i + 45}` }));
+    const { fresh, skipped } = splitByFitId(second, first);
+    expect(skipped.map((t) => t.fitId)).toEqual(["T45", "T46", "T47", "T48", "T49", "T50"]);
+    expect(fresh).toHaveLength(30);
+    expect(fresh[0].fitId).toBe("T51");
+    expect(importSummary({ skipped: skipped.length, imported: fresh.length, flagged: 0 })).toBe("6 duplicate transactions skipped, 30 new transactions imported.");
+  });
+
+  it("skips a FITID repeated within one file, and keeps transactions without one", async () => {
+    const { splitByFitId, importSummary } = await import("./bank-import-parser");
+    const { fresh, skipped } = splitByFitId([{ fitId: "A" }, { fitId: "A" }, {}, {}], new Set());
+    expect([fresh.length, skipped.length]).toEqual([3, 1]);
+    expect(importSummary({ skipped: 1, imported: 1, flagged: 1 })).toBe("1 duplicate transaction skipped, 1 new transaction imported, 1 of them flagged as possible duplicates for review.");
+  });
+
+  it("reads FITID from an OFX file", async () => {
+    const { parseOFX } = await import("./bank-import-parser");
+    const ofx = "<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261001<TRNAMT>3000.00<FITID>T45<NAME>LEVY LOT 5</STMTTRN>";
+    expect(parseOFX(ofx)[0]).toMatchObject({ fitId: "T45", amount: 3000, transactionDate: "2026-10-01" });
   });
 });

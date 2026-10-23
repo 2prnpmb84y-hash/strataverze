@@ -9,6 +9,8 @@ export interface ParsedTransaction {
   description: string;
   reference?: string;
   balance?: number;
+  /** OFX FITID: the bank's own id for the transaction. */
+  fitId?: string;
 }
 
 /**
@@ -49,28 +51,27 @@ export function parseCSVLine(line: string): string[] {
  * Returns an ISO string or null if unparseable.
  */
 export function parseDate(value: string): string | null {
-  // Try DD/MM/YYYY (Australian format)
-  const auMatch = value.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
-  if (auMatch) {
-    const [, day, month, year] = auMatch;
-    const d = new Date(Number(year), Number(month) - 1, Number(day));
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
+  // A bank statement date is a calendar date. It is returned as YYYY-MM-DD, never as a
+  // timestamp: turning it into an instant in the browser's time zone moved dates to the
+  // day before for anyone east of UTC (all of Australia).
+  const day = (y: number, m: number, d: number): string | null => {
+    const t = new Date(Date.UTC(y, m - 1, d));
+    if (t.getUTCFullYear() !== y || t.getUTCMonth() !== m - 1 || t.getUTCDate() !== d) return null;
+    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  };
+  const v = value.trim();
 
-  // Try YYYY-MM-DD (ISO format)
-  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    const d = new Date(value);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
+  // DD/MM/YYYY (Australian format), also with - or . separators
+  const auMatch = v.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
+  if (auMatch) return day(Number(auMatch[3]), Number(auMatch[2]), Number(auMatch[1]));
 
-  // Try YYYYMMDD (OFX date format)
-  const ofxMatch = value.match(/^(\d{4})(\d{2})(\d{2})/);
-  if (ofxMatch) {
-    const [, year, month, day] = ofxMatch;
-    const d = new Date(Number(year), Number(month) - 1, Number(day));
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
+  // YYYY-MM-DD (ISO format)
+  const isoMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) return day(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
+
+  // YYYYMMDD (OFX date format), with any time after it
+  const ofxMatch = v.match(/^(\d{4})(\d{2})(\d{2})/);
+  if (ofxMatch) return day(Number(ofxMatch[1]), Number(ofxMatch[2]), Number(ofxMatch[3]));
 
   return null;
 }
@@ -114,6 +115,7 @@ export function parseOFX(content: string): ParsedTransaction[] {
       amount,
       description: String(name),
       reference: fitId ?? memo ?? undefined,
+      fitId: fitId ?? undefined,
     });
   }
 
@@ -138,4 +140,34 @@ export function parseCsvContent(content: string): {
   const headers = parseCSVLine(lines[0]);
   const rows = lines.slice(1).map(parseCSVLine);
   return { headers, rows };
+}
+
+/**
+ * TC-012: which transactions in an OFX file were imported before, by FITID.
+ * `known` holds the FITIDs already recorded for the bank account (including
+ * those kept only as the reference by earlier imports). A FITID repeated
+ * within the file is skipped after its first appearance.
+ */
+export function splitByFitId<T extends { fitId?: string }>(transactions: T[], known: Set<string>): { fresh: T[]; skipped: T[] } {
+  const seen = new Set(known);
+  const fresh: T[] = [];
+  const skipped: T[] = [];
+  for (const t of transactions) {
+    const id = t.fitId?.trim();
+    if (id && seen.has(id)) {
+      skipped.push(t);
+      continue;
+    }
+    if (id) seen.add(id);
+    fresh.push(t);
+  }
+  return { fresh, skipped };
+}
+
+/** The result of an import, as the adviser is told it. */
+export function importSummary(r: { skipped: number; imported: number; flagged: number }): string {
+  const n = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+  const parts = [`${n(r.skipped, "duplicate transaction")} skipped`, `${n(r.imported, "new transaction")} imported`];
+  if (r.flagged > 0) parts.push(`${r.flagged} of them flagged as possible duplicates for review`);
+  return `${parts.join(", ")}.`;
 }

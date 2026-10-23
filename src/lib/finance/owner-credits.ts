@@ -34,9 +34,10 @@ const ts = (v: string) => v as unknown as TimestampString<3>;
 const varchar = <N extends number>(v: string) => v as unknown as Varchar<N>;
 const isoDay = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? "").slice(0, 10));
 
-export type CreditType = "OVERPAYMENT" | "APPLIED" | "REFUNDED" | "ADJUSTED";
+/** REVERSED: credit taken back out when the receipt that created it is reversed. */
+export type CreditType = "OVERPAYMENT" | "APPLIED" | "REFUNDED" | "ADJUSTED" | "REVERSED";
 /** Credit added (+1) or used (-1) by each movement. ADJUSTED adds credit. */
-const SIGN: Record<CreditType, 1 | -1> = { OVERPAYMENT: 1, ADJUSTED: 1, APPLIED: -1, REFUNDED: -1 };
+const SIGN: Record<CreditType, 1 | -1> = { OVERPAYMENT: 1, ADJUSTED: 1, APPLIED: -1, REFUNDED: -1, REVERSED: -1 };
 
 export interface CreditKey {
   schemeId: string;

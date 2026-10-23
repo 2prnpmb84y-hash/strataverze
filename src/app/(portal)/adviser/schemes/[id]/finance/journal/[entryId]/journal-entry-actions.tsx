@@ -13,12 +13,15 @@ interface Props {
   schemeId: string;
   entryId: string;
   currentStatus: string;
+  /** A levy receipt is reversed from its own panel, with its notices. */
+  hideReverse?: boolean;
 }
 
 export function JournalEntryActions({
   schemeId,
   entryId,
   currentStatus,
+  hideReverse = false,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -60,7 +63,7 @@ export function JournalEntryActions({
   }
 
   const canPost = currentStatus === "DRAFT";
-  const canReverse = currentStatus === "POSTED";
+  const canReverse = currentStatus === "POSTED" && !hideReverse;
 
   return (
     <div className="space-y-4">

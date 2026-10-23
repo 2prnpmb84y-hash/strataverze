@@ -1666,6 +1666,23 @@
                   }
                 }
               },
+              "exclusionReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "fitid": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 255
+                  }
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -1870,6 +1887,12 @@
                 },
                 "description": {
                   "column": "description"
+                },
+                "exclusionReason": {
+                  "column": "exclusion_reason"
+                },
+                "fitid": {
+                  "column": "fitid"
                 },
                 "id": {
                   "column": "id"
@@ -6659,6 +6682,13 @@
                   "kind": "scalar"
                 }
               },
+              "duplicateOfId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "fileName": {
                 "nullable": false,
                 "type": {
@@ -6925,6 +6955,9 @@
                 },
                 "documentType": {
                   "column": "document_type"
+                },
+                "duplicateOfId": {
+                  "column": "duplicate_of_id"
                 },
                 "fileName": {
                   "column": "file_name"
@@ -11220,6 +11253,13 @@
                   "kind": "scalar"
                 }
               },
+              "journalEntryId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "levyNoticeId": {
                 "nullable": false,
                 "type": {
@@ -11252,6 +11292,41 @@
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reversalDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "reversalJournalEntryId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "reversalNote": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reversalReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reversedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
               },
@@ -11292,6 +11367,9 @@
                 "id": {
                   "column": "id"
                 },
+                "journalEntryId": {
+                  "column": "journal_entry_id"
+                },
                 "levyNoticeId": {
                   "column": "levy_notice_id"
                 },
@@ -11306,6 +11384,21 @@
                 },
                 "reference": {
                   "column": "reference"
+                },
+                "reversalDate": {
+                  "column": "reversal_date"
+                },
+                "reversalJournalEntryId": {
+                  "column": "reversal_journal_entry_id"
+                },
+                "reversalNote": {
+                  "column": "reversal_note"
+                },
+                "reversalReason": {
+                  "column": "reversal_reason"
+                },
+                "reversedAt": {
+                  "column": "reversed_at"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -31960,6 +32053,19 @@
                     "length": 500
                   }
                 },
+                "exclusion_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "fitid": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 255
+                  }
+                },
                 "id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -35634,6 +35740,11 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "duplicate_of_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "file_name": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
@@ -39006,6 +39117,11 @@
                   },
                   "nullable": false
                 },
+                "journal_entry_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "levy_notice_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -39029,6 +39145,31 @@
                 "reference": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reversal_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "reversal_journal_entry_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "reversal_note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reversal_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reversed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
                   "nullable": true
                 },
                 "scheme_id": {
@@ -52752,7 +52893,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f5855c0c9db4d0c254a62821c67aa023472d859d6fdb019dea3d00817b7979e2"
+    "storageHash": "3c7bcbec4d66974913f22d40c342e60199c90ecc86423631aaf0183bd409a700"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

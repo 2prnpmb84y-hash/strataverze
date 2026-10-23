@@ -5,6 +5,10 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { db } from "@/prisma/db";
 import { logActivity } from "@/lib/queries/activity-log";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { sendEmail } from "@/lib/email";
+import { possibleDuplicatePaymentEmail } from "@/lib/email-templates/payment-confirmation";
+import { findDuplicateConfirmation, paymentConfirmationPathProblem } from "@/lib/finance/payment-confirmations";
 import type { Varchar, TimestampString, Numeric } from "@prisma/orm-postgres/target/codec-types";
 
 function toVarchar<N extends number>(value: string): Varchar<N> {
@@ -72,11 +76,42 @@ export async function uploadPaymentConfirmationAction(
     const scheme = schemes.find((s) => s.id === schemeId);
     if (!scheme) return { error: "You do not have access to this scheme." };
 
-    // Find the owner's lot in this scheme
-    const lotMembership = scheme.memberships.find(
-      (m) => m.role === "OWNER" && m.lotId,
+    // The file must be in this scheme's payments folder (where the upload form puts it).
+    const pathProblem = paymentConfirmationPathProblem(schemeId, data.fileUrl);
+    if (pathProblem) return { error: pathProblem };
+
+    // The owner's own lots. A notice, when chosen, must be on one of them.
+    const ownLots = scheme.memberships.filter((m) => m.profileId === profile.id && m.role === "OWNER" && m.lotId).map((m) => m.lotId!);
+    let lotId: string | null = ownLots.length === 1 ? ownLots[0] : null;
+    let noticeNumber: string | null = null;
+    if (data.levyNoticeId) {
+      const notice = await db.orm.public.LevyNotice.where((n) => and(n.id.eq(data.levyNoticeId!), n.schemeId.eq(schemeId))).first();
+      if (!notice || !ownLots.includes(notice.lotId)) return { error: "Choose one of your own levy notices." };
+      lotId = notice.lotId;
+      noticeNumber = String(notice.noticeNumber);
+    }
+
+    // TC-001: the same owner, notice, amount and date as an earlier upload is a possible duplicate.
+    const amountCents = data.amount !== undefined && Number.isFinite(data.amount) ? Math.round(data.amount * 100) : null;
+    const documentDate = data.documentDate ? String(data.documentDate).slice(0, 10) : null;
+    const earlier = await db.orm.public.FinancialDocument.where((d) =>
+      and(d.schemeId.eq(schemeId), d.documentType.eq("PAYMENT_CONFIRMATION"), d.uploadedBy.eq(profile.id)),
+    )
+      .limit(500)
+      .all();
+    const duplicate = findDuplicateConfirmation(
+      { uploadedBy: profile.id, levyNoticeId: data.levyNoticeId ?? null, lotId, amountCents, documentDate },
+      earlier.map((e) => ({
+        id: e.id,
+        uploadedBy: e.uploadedBy,
+        levyNoticeId: e.levyNoticeId ?? null,
+        lotId: e.lotId ?? null,
+        amountCents: e.amount == null ? null : Math.round(Number(e.amount) * 100),
+        documentDate: e.documentDate ? String(e.documentDate).slice(0, 10) : null,
+        documentStatus: String(e.documentStatus),
+        uploadedAt: String(e.uploadedAt),
+      })),
     );
-    const lotId = lotMembership?.lotId ?? null;
 
     const doc = await db.orm.public.FinancialDocument.create({
       schemeId,
@@ -100,6 +135,8 @@ export async function uploadPaymentConfirmationAction(
         : undefined,
       documentStatus: "UPLOADED",
       verificationStatus: "PENDING",
+      duplicateOfId: duplicate?.id ?? null,
+      reviewNotes: duplicate ? "Possible duplicate of an earlier upload with the same notice, amount and date." : null,
     });
 
     await logActivity({
@@ -111,11 +148,48 @@ export async function uploadPaymentConfirmationAction(
       metadata: {
         fileName: data.fileName,
         levyNoticeId: data.levyNoticeId ?? null,
+        possibleDuplicateOf: duplicate?.id ?? null,
       },
     });
 
+    if (duplicate) {
+      await logActivity({
+        schemeId,
+        actorId: profile.id,
+        action: "PAYMENT_CONFIRMATION_POSSIBLE_DUPLICATE",
+        entityType: "FinancialDocument",
+        entityId: doc.id,
+        metadata: { duplicateOf: duplicate.id, levyNoticeId: data.levyNoticeId ?? null, amountCents, documentDate },
+      });
+      // Tell the scheme's advisers. A failure to email never stops the upload.
+      try {
+        const advisers = await db.orm.public.SchemeMembership.where((m) => and(m.schemeId.eq(schemeId), m.role.eq("ADVISER"), m.isActive.eq(true)))
+          .include("profile")
+          .limit(20)
+          .all();
+        const emails = advisers.map((a) => (a.profile?.email ? String(a.profile.email) : "")).filter(Boolean);
+        const lot = lotId ? scheme.memberships.find((m) => m.lotId === lotId)?.lot : null;
+        if (emails.length) {
+          await sendEmail(
+            possibleDuplicatePaymentEmail({
+              recipientEmails: emails,
+              schemeName: String(scheme.name),
+              lotLabel: lot ? `Lot ${String(lot.lotNumber)}` : "a lot",
+              noticeNumber,
+              amount: amountCents != null ? (amountCents / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD" }) : "",
+              documentDate: documentDate ? new Date(`${documentDate}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "",
+              earlierUploadedAt: new Date(duplicate.uploadedAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" }),
+              reviewUrl: `${process.env.APP_URL ?? "https://strataverze.vercel.app"}/adviser/schemes/${schemeId}/finance/documents/${doc.id}`,
+            }),
+          );
+        }
+      } catch (err) {
+        console.error("Could not email advisers about a possible duplicate:", err);
+      }
+    }
+
     revalidatePath("/owner/finance");
-    return { success: true };
+    return { success: true, data: { possibleDuplicate: !!duplicate } };
   } catch (err) {
     const msg =
       err instanceof Error ? err.message : "Failed to upload payment confirmation.";

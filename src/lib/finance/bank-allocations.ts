@@ -18,7 +18,7 @@ import {
   unallocatedCents,
   type AllocationRequest,
 } from "./reconciliation";
-import { LevyReceiptError, receiptLevyPayment, suspenseAccount } from "./levy-receipts";
+import { LevyReceiptError, receiptLevyPayment, receiptLevyPayments, suspenseAccount } from "./levy-receipts";
 
 export class ReconciliationError extends Error {}
 
@@ -107,7 +107,7 @@ export async function getAllocationCandidates(schemeId: string, limit = 300): Pr
 // ─── Allocating ─────────────────────────────────────────────────────────────
 
 /** Recompute a transaction's status from its allocations. */
-async function syncTransaction(orm: typeof db.orm, transactionId: string, actorId: string | null) {
+export async function syncTransaction(orm: typeof db.orm, transactionId: string, actorId: string | null) {
   const txn = await orm.public.BankTransaction.where((t) => t.id.eq(transactionId)).first();
   if (!txn) return;
   const rows = await orm.public.BankTransactionAllocation.where((a) => a.bankTransactionId.eq(transactionId)).limit(500).all();
@@ -208,9 +208,9 @@ export async function clearAllocations(input: { schemeId: string; transactionId:
 // ─── Receipting a deposit across levy notices ───────────────────────────────
 
 /**
- * Split a bank deposit across several levy notices: each is receipted (with
- * its own journal) and the deposit is allocated to those journals. The
- * StrataVerze transaction fee, if any, is charged once for the deposit.
+ * Split a bank deposit across several levy notices: one receipt journal with
+ * a line for each notice, and the deposit allocated to it. The StrataVerze
+ * transaction fee, if any, is charged once for the deposit.
  */
 export async function receiptDepositToNotices(input: {
   schemeId: string;
@@ -263,26 +263,22 @@ export async function receiptDepositToNotices(input: {
     });
   });
 
-  const allocations: AllocationRequest[] = [];
-  for (const r of input.receipts) {
-    const result = await receiptLevyPayment({
-      schemeId: input.schemeId,
-      levyNoticeId: r.levyNoticeId,
-      amountCents: r.amountCents,
-      paymentDate: isoDay(txn.transactionDate),
-      actorId: input.actorId,
-      reference: String(txn.reference ?? txn.description).slice(0, 100),
-      confirmOverpayment: input.confirmOverpayment,
-      captureFee: false,
-    });
-    if (!result.journalEntryId) {
-      throw new ReconciliationError(
-        `Notice ${result.noticeNumber} was receipted but no journal could be posted. Check the chart of accounts has the bank and levies receivable accounts.`,
-      );
-    }
-    allocations.push({ journalEntryId: result.journalEntryId, amountCents: r.amountCents });
+  // One receipt journal for the whole deposit, with a line for each notice (TC-004).
+  const result = await receiptLevyPayments({
+    schemeId: input.schemeId,
+    receipts: input.receipts,
+    paymentDate: isoDay(txn.transactionDate),
+    actorId: input.actorId,
+    reference: String(txn.reference ?? txn.description).slice(0, 100),
+    confirmOverpayment: input.confirmOverpayment,
+    captureFee: false,
+  });
+  if (!result.journalEntryId) {
+    throw new ReconciliationError(
+      "The notices were receipted but no journal could be posted. Check the chart of accounts has the bank, levies receivable and levies paid in advance accounts.",
+    );
   }
-  await allocateBankTransaction({ schemeId: input.schemeId, transactionId: txn.id, requests: allocations, actorId: input.actorId });
+  await allocateBankTransaction({ schemeId: input.schemeId, transactionId: txn.id, requests: [{ journalEntryId: result.journalEntryId, amountCents: total }], actorId: input.actorId });
 }
 
 // ─── Suspense ───────────────────────────────────────────────────────────────

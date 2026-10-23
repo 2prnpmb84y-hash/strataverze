@@ -8,6 +8,11 @@ import { formatAud } from "@/lib/billing/money";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { JournalEntryActions } from "./journal-entry-actions";
+import { LevyReceiptPanel } from "./levy-receipt-panel";
+import { getLevyReceipt, receiptReversalProblem } from "@/lib/finance/levy-receipt-reversal";
+import { toCents } from "@/lib/billing/money";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { connection } from "next/server";
 
 function formatCurrency(value: number | string | null): string {
@@ -93,6 +98,35 @@ export default async function JournalEntryDetailPage({
   })();
 
   const status = String(entry.status);
+  // A levy receipt is reversed or moved with its notices (TC-003, TC-008).
+  const receipt = entry.sourceType === "PAYMENT" ? await getLevyReceipt(id, entry.id) : null;
+  const isLevyReceipt = !!receipt && receipt.payments.length > 0;
+  const receiptPanel =
+    receipt && isLevyReceipt && status === "POSTED" && !receipt.payments.some((p) => p.reversedAt)
+      ? await (async () => {
+          const [openNotices, expenseAccounts] = await Promise.all([
+            db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(id), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE", "PAID"]))).include("lot").orderBy((n) => n.dueDate.desc()).limit(2000).all(),
+            db.orm.public.AccountCode.where((a) => and(a.schemeId.eq(id), a.accountType.eq("EXPENSE"), a.isActive.eq(true))).orderBy((a) => a.code.asc()).limit(500).all(),
+          ]);
+          const current = new Set(receipt.payments.map((p) => p.levyNoticeId));
+          return {
+            totalCents: receipt.payments.reduce((s2, p) => s2 + toCents(String(p.amount)), 0) + receipt.credits.reduce((s2, c) => s2 + c.amountCents, 0),
+            payments: receipt.payments.map((p) => {
+              const n = receipt.notices.find((x) => x.id === p.levyNoticeId);
+              return { id: p.id, label: `Notice ${String(n?.noticeNumber ?? "?")}, Lot ${String(n?.lot?.lotNumber ?? "?")}`, amountCents: toCents(String(p.amount)) };
+            }).concat(receipt.credits.map((c) => ({ id: `credit-${c.id}`, label: `Held as Lot ${c.lotNumber}'s credit`, amountCents: c.amountCents }))),
+            problems: {
+              WRONG_LOT: receiptReversalProblem(receipt, "WRONG_LOT"),
+              DISHONOURED: receiptReversalProblem(receipt, "DISHONOURED"),
+              ENTERED_IN_ERROR: receiptReversalProblem(receipt, "ENTERED_IN_ERROR"),
+            },
+            notices: openNotices
+              .filter((n) => !current.has(n.id))
+              .map((n) => ({ id: n.id, label: `Lot ${String(n.lot?.lotNumber ?? "?")}, notice ${String(n.noticeNumber)} (owing $${String(n.balanceOutstanding)})` })),
+            expenseAccounts: expenseAccounts.map((a) => ({ id: a.id, label: `${String(a.code)} ${String(a.name)}` })),
+          };
+        })()
+      : null;
   const lines = entry.lines ?? [];
 
   const totalDebits = lines.reduce(
@@ -252,6 +286,13 @@ export default async function JournalEntryDetailPage({
         )}
       </Card>
 
+      {receiptPanel && (
+        <Card>
+          <CardHeader title="Levy receipt" description="Reverse or move this receipt. Its notices are put back too, and the owner's statement shows the reversal." />
+          <LevyReceiptPanel schemeId={id} entryId={entryId} {...receiptPanel} />
+        </Card>
+      )}
+
       {/* Actions */}
       {(status === "DRAFT" || status === "POSTED") && (
         <Card>
@@ -261,6 +302,7 @@ export default async function JournalEntryDetailPage({
               schemeId={id}
               entryId={entryId}
               currentStatus={status}
+              hideReverse={isLevyReceipt}
             />
           </div>
         </Card>

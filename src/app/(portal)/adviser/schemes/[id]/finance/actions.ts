@@ -12,6 +12,7 @@ import {
   type AuditTrailFilters,
 } from "@/lib/queries/activity-log";
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 // ── Invoice extraction ───────────────────────────────────────
 import {
@@ -45,6 +46,8 @@ import {
   postJournalEntry,
   reverseJournalEntry,
   getNextEntryNumber,
+  getJournalEntryById,
+  validatePeriodForPosting,
 } from "@/lib/queries/journal-entries";
 
 // ── Bank transactions ─────────────────────────────────────────
@@ -78,6 +81,7 @@ import {
 import { checkBankDetailsForPayment } from "@/lib/finance/payment-controls";
 import { applyOwnerCredit } from "@/lib/finance/owner-credits";
 import { LevyReceiptError, receiptLevyPayment } from "@/lib/finance/levy-receipts";
+import { getLevyReceipt, reallocateLevyReceipt, ReceiptReversalError, reverseLevyReceipt } from "@/lib/finance/levy-receipt-reversal";
 import {
   ReconciliationError,
   allocateBankTransaction,
@@ -156,6 +160,7 @@ import {
   checkInvoiceDuplicates,
   checkDocumentDuplicates,
 } from "@/lib/queries/duplicate-detection";
+import { importSummary } from "@/lib/bank-import-parser";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -533,6 +538,25 @@ export async function reverseJournalEntryAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
+    // The entry must be this scheme's.
+    const original = await getJournalEntryById(originalEntryId);
+    if (!original || original.schemeId !== schemeId) return { error: "Journal entry not found." };
+
+    // A levy receipt is reversed with its notices, not just its ledger lines (TC-003, TC-008).
+    if (original.sourceType === "PAYMENT") {
+      const receipt = await getLevyReceipt(schemeId, originalEntryId);
+      if (receipt && receipt.payments.length > 0) {
+        const done = await reverseLevyReceipt({ schemeId, journalEntryId: originalEntryId, reason: "ENTERED_IN_ERROR", note: description ?? null, actorId: profile.id });
+        revalidatePath(financePath(schemeId));
+        return { success: true, data: { reversalId: done.reversalEntryId } };
+      }
+      const notice = original.sourceId ? await db.orm.public.LevyNotice.where((n) => n.id.eq(original.sourceId!)).first() : null;
+      if (notice) {
+        return { error: "This levy receipt was recorded before receipts were linked to their payments. Record a correcting entry instead of reversing it." };
+      }
+    }
+
+    await validatePeriodForPosting(schemeId, new Date().toISOString().slice(0, 10), "REVERSAL");
     const entryNumber = await getNextEntryNumber(schemeId);
 
     const reversal = await reverseJournalEntry(originalEntryId, {
@@ -559,6 +583,60 @@ export async function reverseJournalEntryAction(
   }
 }
 
+/** Reverse a levy receipt with its notices: dishonoured, or entered in error (TC-008). */
+export async function reverseLevyReceiptAction(
+  schemeId: string,
+  journalEntryId: string,
+  input: { reason: string; note?: string; reversalDate?: string; feeCents?: number; feeAccountCodeId?: string },
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (input.reason !== "DISHONOURED" && input.reason !== "ENTERED_IN_ERROR") return { error: "Choose why the receipt is being reversed." };
+    const fee = input.feeCents && input.feeCents > 0 && input.feeAccountCodeId ? { amountCents: Math.round(input.feeCents), accountCodeId: input.feeAccountCodeId } : null;
+    const done = await reverseLevyReceipt({
+      schemeId,
+      journalEntryId,
+      reason: input.reason,
+      note: input.note ?? null,
+      reversalDate: input.reversalDate || null,
+      fee: input.reason === "DISHONOURED" ? fee : null,
+      actorId: profile.id,
+    });
+    revalidatePath(financePath(schemeId));
+    return { success: true, data: { ...done } };
+  } catch (err) {
+    if (err instanceof AuthorisationError || err instanceof ReceiptReversalError) return { error: err.message };
+    return { error: err instanceof Error ? err.message : "Failed to reverse the receipt." };
+  }
+}
+
+/** Move a levy receipt to the right lot's notices (TC-003). */
+export async function reallocateLevyReceiptAction(
+  schemeId: string,
+  journalEntryId: string,
+  receipts: Array<{ levyNoticeId: string; amountCents: number }>,
+  confirmOverpayment: boolean,
+  note?: string,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const done = await reallocateLevyReceipt({
+      schemeId,
+      journalEntryId,
+      receipts: receipts.map((r) => ({ levyNoticeId: r.levyNoticeId, amountCents: Math.round(r.amountCents) })),
+      confirmOverpayment,
+      note: note ?? null,
+      actorId: profile.id,
+    });
+    revalidatePath(financePath(schemeId));
+    return { success: true, data: { ...done } };
+  } catch (err) {
+    if (err instanceof AuthorisationError || err instanceof ReceiptReversalError) return { error: err.message };
+    if (err instanceof LevyReceiptError) return { error: err.message, data: err.data };
+    return { error: err instanceof Error ? err.message : "Failed to move the receipt." };
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 4. BANK TRANSACTIONS
 // ═══════════════════════════════════════════════════════════════
@@ -572,6 +650,7 @@ export async function importBankTransactionsAction(
     description: string;
     reference?: string;
     balance?: number;
+    fitId?: string;
   }>,
   importSource: string,
 ): Promise<ActionState> {
@@ -581,10 +660,12 @@ export async function importBankTransactionsAction(
     if (!transactions || transactions.length === 0) {
       return { error: "No transactions to import." };
     }
+    const account = await db.orm.public.SchemeBankAccount.where((b) => and(b.id.eq(bankAccountId), b.schemeId.eq(schemeId))).first();
+    if (!account) return { error: "Bank account not found." };
 
     const importBatchId = crypto.randomUUID();
 
-    const created = await importBankTransactions(
+    const { created, skipped } = await importBankTransactions(
       transactions.map((txn) => ({
         ...txn,
         bankAccountId,
@@ -596,6 +677,7 @@ export async function importBankTransactionsAction(
 
     const duplicateCount = created.filter((t) => t.isDuplicate).length;
     const newCount = created.length - duplicateCount;
+    const summary = importSummary({ skipped, imported: created.length, flagged: duplicateCount });
 
     await logActivity({
       schemeId,
@@ -607,6 +689,7 @@ export async function importBankTransactionsAction(
         total: created.length,
         new: newCount,
         duplicates: duplicateCount,
+        skipped,
         source: importSource,
       },
     });
@@ -617,6 +700,8 @@ export async function importBankTransactionsAction(
       data: {
         imported: newCount,
         duplicates: duplicateCount,
+        skipped,
+        summary,
         batchId: importBatchId,
       },
     };
@@ -697,16 +782,19 @@ export async function reconcileTransactionAction(
 export async function excludeTransactionAction(
   schemeId: string,
   transactionId: string,
+  reason: string,
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const why = (reason ?? "").trim().slice(0, 300);
+    if (why.length < 3) return { error: "Give a reason for excluding the transaction." };
     const txn = await schemeTransaction(schemeId, transactionId);
     if (!txn) return { error: "Bank transaction not found." };
     if (((await allocatedByTransaction([txn.id])).get(txn.id) ?? 0) > 0) {
       return { error: "Part of this transaction is already allocated. Unmatch it before excluding it." };
     }
 
-    await excludeTransaction(transactionId);
+    await excludeTransaction(transactionId, why);
 
     await logActivity({
       schemeId,
@@ -714,7 +802,7 @@ export async function excludeTransactionAction(
       action: "BANK_TRANSACTION_EXCLUDED",
       entityType: "BankTransaction",
       entityId: transactionId,
-      metadata: {},
+      metadata: { reason: why },
     });
 
     revalidatePath(financePath(schemeId));

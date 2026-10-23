@@ -148,6 +148,10 @@ export async function getEntrySources(
     db.orm.public.JournalLine.where((x) => and(x.journalEntryId.in(entryIds), x.bankTransactionId.isNotNull())).limit(20000).all(),
   ]);
 
+  const receiptPayments = await db.orm.public.LevyPayment.where((p) => and(p.schemeId.eq(schemeId), p.journalEntryId.in(entryIds))).limit(20000).all();
+  const receiptNoticeIds = [...new Set(receiptPayments.map((p) => p.levyNoticeId))];
+  const receiptNotices = receiptNoticeIds.length ? await db.orm.public.LevyNotice.where((n) => n.id.in(receiptNoticeIds)).include("lot").limit(20000).all() : [];
+
   // Bank transactions reached through allocations or journal lines, not yet loaded.
   const loaded = new Set([...txns, ...matched].map((t) => t.id));
   const moreTxnIds = [...allocations.map((a) => a.bankTransactionId), ...lineTxns.map((l) => l.bankTransactionId), ...suspense.map((s) => s.bankTransactionId)].filter(
@@ -223,6 +227,14 @@ export async function getEntrySources(
           if (o) source = { kind, id: o.id, label: `Reverses journal entry ${String(o.entryNumber)}` };
         }
         if (source) break;
+      }
+    }
+    // A receipt for several notices has no single source: its payments name the notices.
+    if (!source && e.sourceType === "PAYMENT") {
+      const own = receiptPayments.filter((p) => p.journalEntryId === e.id);
+      if (own.length) {
+        const nums = own.map((p) => receiptNotices.find((n) => n.id === p.levyNoticeId)).filter((n) => !!n).map((n) => `${String(n!.noticeNumber)} (Lot ${String(n!.lot?.lotNumber ?? "?")})`);
+        source = { kind: "LEVY_NOTICE", id: own[0].levyNoticeId, label: `Levy receipt for notices ${nums.join(", ")}`, levyScheduleId: receiptNotices.find((n) => n.id === own[0].levyNoticeId)?.levyScheduleId };
       }
     }
     for (const t of matched) if (t.matchedJournalEntryId === e.id) txnIds.add(t.id);

@@ -93,6 +93,16 @@ export default async function DocumentDetailPage({
         backLabel="Documents"
       />
 
+      {doc.duplicateOfId && (
+        <div className="rounded-[var(--radius-card)] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Possible duplicate: the same owner uploaded a confirmation for the same notice, amount and date earlier.{" "}
+          <a href={`${basePath}/${doc.duplicateOfId}`} className="underline">
+            Open the earlier upload
+          </a>
+          . Check both against the bank statement before matching either.
+        </div>
+      )}
+
       {/* Status badges */}
       <div className="flex items-center gap-3">
         <span

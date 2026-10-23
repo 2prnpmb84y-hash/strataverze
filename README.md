@@ -91,8 +91,10 @@ The finance code is in `src/lib/finance` (rules, mostly pure and unit tested), `
 ### Bank and reconciliation
 
 - **Import.** Statements come in as CSV (column mapping saved per account) or OFX. Possible duplicates are flagged. A statement's running balance is checked for gaps.
-- **Allocation.** A bank transaction is allocated to one or more ledger entries (`BankTransactionAllocation`). It is Matched only when its allocations add up to its amount.
-- **Deposits.** A deposit can be receipted across several levy notices.
+- **OFX repeats.** An OFX transaction whose FITID is already recorded for the account is skipped.
+- **Allocation.** A bank transaction is allocated to one or more ledger entries (`BankTransactionAllocation`). It is Matched only when its allocations add up to its amount. Excluding a transaction needs a reason.
+- **Deposits.** A deposit can be receipted across several levy notices, as one receipt journal with a line for each lot.
+- **Correcting receipts.** A receipt can be moved to the right lot, recorded as dishonoured (with the bank's fee), or reversed as entered in error. Its notices are put back, and the owner's statement shows the reversal.
 - **Unidentified items.** An item that can't be identified is posted to suspense. A period cannot close while a suspense item from that period is still open.
 - **Three-way reconciliation.** The ledger is compared with the payment provider wallet and the bank statement, with every difference listed. Advisers, accountants and the treasurer can see it.
 
@@ -100,7 +102,7 @@ The finance code is in `src/lib/finance` (rules, mostly pure and unit tested), `
 
 - **Generated PDFs:** levy notices, owner statements, remittance advice, the committee pack and the statutory statements. Each is stored as a `FinancialDocument` with its SHA-256 hash, and identical copies are stored once.
 - **Uploaded supplier invoices** are stored the same way.
-- **Serving:** both are served through `/api/finance/documents/[id]`, which checks access by document type and lot.
+- **Serving:** both are served through `/api/finance/documents/[id]`, which checks access by document type and lot. A refused request gets 403 and is logged.
 - **Other uploads** are in the private `documents` bucket and are served by short-lived signed links.
 
 ## Posting rules
@@ -108,7 +110,9 @@ The finance code is in `src/lib/finance` (rules, mostly pure and unit tested), `
 | Event | Source type | Debit | Credit | Where |
 |---|---|---|---|---|
 | Levy notices issued | `LEVY_RAISED` (schedule) | Levies receivable (fund) | Levy income (fund) | `postLevyRaisedJournal`, finance `actions.ts` |
-| Levy payment received | `PAYMENT` (notice) | Bank, or suspense when clearing it | Levies receivable, up to what the notice owes. Levies paid in advance for any excess. | `receiptLevyPayment`, `levy-receipts.ts` |
+| Levy payment received (one or more notices) | `PAYMENT` (the notice, when there is one) | Bank, or suspense when clearing it, per fund | Levies receivable for each notice, with its lot. Levies paid in advance for any excess. | `receiptLevyPayments`, `levy-receipts.ts` |
+| Levy receipt reversed (wrong lot, dishonoured, entered in error) | `REVERSAL` (the receipt) | The receipt's credits | The receipt's debits | `reverseLevyReceipt`, `levy-receipt-reversal.ts`: also restores the notices and takes back any credit |
+| Dishonour fee | `MANUAL`, entry type `BANK_FEE` | Chosen expense account | Bank | `reverseLevyReceipt` |
 | Interest charged | `INTEREST` (notice) | Levies receivable | Interest income | `interest.ts` |
 | Owner credit applied to a notice | `OWNER_CREDIT` | Levies paid in advance | Levies receivable | `owner-credits.ts` |
 | Owner credit refunded | `OWNER_CREDIT` (refund) | Levies paid in advance | Bank | `owner-credits.ts` |
@@ -241,14 +245,10 @@ The 13 acceptance cases (TC-001 to TC-013) from the *Financial Management Requir
 
 ## Known gaps
 
-As at 23 October 2026:
+As at 23 October 2026, the 13 acceptance cases are met (see [`docs/finance/acceptance-tests.md`](docs/finance/acceptance-tests.md)). Still open:
 
-- **TC-001 duplicate receipts.** Owner payment confirmations are not checked for duplicates.
-- **TC-003 wrong lot and TC-008 dishonour.** Reversing a levy receipt journal does not reverse the levy payment or restore the notice. There is no reallocate or dishonour action yet.
-- **TC-007 exclusion reason.** Excluding a bank transaction does not record a reason.
-- **TC-011 access logging.** Refused document requests are not logged, and return 404 rather than 403.
-- **TC-012 FITID.** OFX imports flag duplicates rather than skip them by FITID.
-- **Payment confirmation checks.** The owner upload does not check that the chosen notice belongs to one of the owner's lots.
+- **End to end runs.** The database flows (receipt reversal, cutover, imports) are unit tested by their rules but not yet run end to end against a test scheme.
+- **Earlier receipts.** Levy receipts recorded before receipts were linked to their payments cannot be reversed with their notices. Correct them with an adjusting entry. Production had no journal entries when the link was added.
 - **Not yet chosen.** No payment provider or bank feed provider has been chosen, so neither is integrated.
 - **Templates unconfirmed.** The StrataMax and Strata Master templates need sample exports.
 - **Existing schemes.** The four schemes created before the default chart was seeded automatically need their chart of accounts seeded.

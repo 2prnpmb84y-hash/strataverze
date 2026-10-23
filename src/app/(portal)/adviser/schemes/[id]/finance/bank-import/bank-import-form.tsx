@@ -81,6 +81,7 @@ export function BankImportForm({
   const [importResult, setImportResult] = useState<{
     imported: number;
     duplicates: number;
+    summary: string;
   }>();
 
   const handleFileUpload = useCallback(
@@ -293,6 +294,7 @@ export function BankImportForm({
       setImportResult({
         imported: (result.data?.imported as number) ?? 0,
         duplicates: (result.data?.duplicates as number) ?? 0,
+        summary: String(result.data?.summary ?? ""),
       });
       setStep("result");
     });
@@ -671,7 +673,7 @@ export function BankImportForm({
                     className="grid grid-cols-1 sm:grid-cols-[120px_1fr_100px_100px] gap-2 sm:gap-4 px-6 py-3 items-center"
                   >
                     <div className="text-sm text-ink-muted">
-                      {new Date(txn.transactionDate).toLocaleDateString(
+                      {new Date(`${txn.transactionDate.slice(0, 10)}T00:00:00`).toLocaleDateString(
                         "en-AU",
                       )}
                     </div>
@@ -802,15 +804,7 @@ export function BankImportForm({
           <CardHeader title="Import Complete" />
           <div className="px-6 pb-6 space-y-4">
             <div className="rounded-[var(--radius-card)] bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-              Successfully imported {importResult.imported} new transaction
-              {importResult.imported !== 1 ? "s" : ""}.
-              {importResult.duplicates > 0 && (
-                <span>
-                  {" "}
-                  {importResult.duplicates} duplicate
-                  {importResult.duplicates !== 1 ? "s were" : " was"} flagged.
-                </span>
-              )}
+              {importResult.summary}
             </div>
 
             <div className="flex gap-3">

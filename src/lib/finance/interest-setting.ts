@@ -3,6 +3,7 @@
  * notices (server side).
  */
 import { db } from "@/prisma/db";
+import { livePayments } from "./levy-reversal";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { statutoryInterest, type InterestResult } from "./statutory-interest";
@@ -52,7 +53,8 @@ export async function statutoryInterestForScheme(schemeId: string, asAt = sydney
     .all();
   if (notices.length === 0) return [];
   const ids = notices.map((n) => n.id);
-  const payments = await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all();
+  // A reversed payment (dishonoured, wrong lot) never paid the notice, so interest runs as if it had not been made.
+  const payments = livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all());
   return notices.map((n) => {
     const result = statutoryInterest({
       levyCents: toCents(String(n.amountDue)),
