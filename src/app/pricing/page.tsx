@@ -131,7 +131,7 @@ export default function Page() {
               {/* CTA */}
               <a
                 href="/contact"
-                className="mt-8 block rounded-full bg-brand-teal py-3 text-center text-lg font-semibold text-white transition-colors hover:bg-brand-teal-dark"
+                className="mt-8 block rounded-full bg-brand-amber py-3 text-center text-lg font-semibold text-slate-900 transition-colors hover:bg-brand-amber-dark"
               >
                 Apply now
               </a>

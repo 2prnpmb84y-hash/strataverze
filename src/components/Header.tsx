@@ -24,9 +24,9 @@ export default function Header() {
             <Image
               src="https://www.strataverze.com/brand/logo-horizontal-gradient.png"
               alt="StrataVerze"
-              width={160}
-              height={36}
-              className="h-8 w-auto"
+              width={200}
+              height={48}
+              className="h-12 w-auto"
               priority
             />
           </Link>
@@ -54,7 +54,7 @@ export default function Header() {
             </Link>
             <Link
               href="/pricing"
-              className="inline-flex items-center rounded-full bg-brand-teal px-5 py-2 text-sm font-semibold text-white hover:bg-brand-teal-dark transition-colors"
+              className="inline-flex items-center rounded-full bg-brand-amber px-5 py-2 text-sm font-semibold text-slate-900 hover:bg-brand-amber-dark transition-colors"
             >
               Get started
             </Link>
@@ -100,7 +100,7 @@ export default function Header() {
               </Link>
               <Link
                 href="/pricing"
-                className="inline-flex items-center justify-center rounded-full bg-brand-teal px-5 py-2.5 text-base font-semibold text-white"
+                className="inline-flex items-center justify-center rounded-full bg-brand-amber px-5 py-2.5 text-base font-semibold text-slate-900"
               >
                 Get started
               </Link>

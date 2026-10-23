@@ -219,7 +219,7 @@ function ContactForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-teal px-6 py-3.5 font-semibold text-white transition-colors hover:bg-brand-teal-dark disabled:cursor-not-allowed disabled:opacity-70"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-amber px-6 py-3.5 font-semibold text-slate-900 transition-colors hover:bg-brand-amber-dark disabled:cursor-not-allowed disabled:opacity-70"
       >
         {status === "submitting" ? (
           <>

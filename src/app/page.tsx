@@ -126,7 +126,7 @@ export default function Page() {
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href="/pricing"
-                  className="inline-flex items-center rounded-full bg-brand-teal px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-teal-dark transition-colors"
+                  className="inline-flex items-center rounded-full bg-brand-amber px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-brand-amber-dark transition-colors"
                 >
                   Apply for Founding Schemes
                 </Link>
@@ -354,7 +354,7 @@ export default function Page() {
             <div className="mt-10">
               <Link
                 href="/suppliers"
-                className="inline-flex items-center rounded-full bg-brand-teal px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-teal-dark transition-colors"
+                className="inline-flex items-center rounded-full bg-brand-amber px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-brand-amber-dark transition-colors"
               >
                 Register as a supplier
               </Link>

@@ -70,7 +70,7 @@ export default function SuppliersPage() {
             <div className="mt-10">
               <Link
                 href="/contact?type=supplier"
-                className="inline-flex items-center rounded-xl bg-brand-teal px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-brand-teal-dark"
+                className="inline-flex items-center rounded-xl bg-brand-amber px-8 py-4 text-lg font-semibold text-slate-900 transition-colors hover:bg-brand-amber-dark"
               >
                 Register as a supplier
                 <svg
