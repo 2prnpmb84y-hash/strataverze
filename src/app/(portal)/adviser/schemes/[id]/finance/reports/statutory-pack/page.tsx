@@ -84,7 +84,7 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
         </div>
       </Card>
 
-      <StatutoryPackView pack={pack} />
+      <StatutoryPackView pack={pack} reportsBase={`/adviser/schemes/${id}/finance/reports`} />
 
       {!pack.adopted && (
         <Card>

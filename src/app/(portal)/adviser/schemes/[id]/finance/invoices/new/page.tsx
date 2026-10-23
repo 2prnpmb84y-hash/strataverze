@@ -33,7 +33,7 @@ export default async function NewInvoicePage({
   ]);
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-6xl">
       <PageHeader
         title="New Supplier Invoice"
         description="Create a new supplier invoice for this scheme."
@@ -45,6 +45,7 @@ export default async function NewInvoicePage({
         suppliers={suppliers.map((s) => ({
           id: String(s.id),
           companyName: String(s.companyName),
+          abn: s.abn ? String(s.abn) : null,
         }))}
         accountCodes={accountCodes.map((a) => ({
           id: String(a.id),

@@ -124,6 +124,11 @@ export default async function OwnerFinancePage() {
               StrataVerze Fees
             </Button>
             {isTreasurer && (
+              <Button variant="primary" href="/owner/finance/treasurer">
+                Treasurer home
+              </Button>
+            )}
+            {isTreasurer && (
               <Button variant="secondary" href="/owner/finance/reconciliation">
                 Reconciliation
               </Button>

@@ -3708,3 +3708,29 @@ model FinancialDocumentFile {
 
   @@map("financial_document_files")
 }
+
+/// TC-009: the fields read from an uploaded supplier invoice, kept unchanged,
+/// and the values the adviser created the invoice with after reviewing them.
+model InvoiceExtraction {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId            String    @map("scheme_id") @db.Uuid
+  financialDocumentId String    @map("financial_document_id") @db.Uuid
+  supplierInvoiceId   String?   @map("supplier_invoice_id") @db.Uuid
+  /// TEXT or OCR.
+  method              String
+  confidence          String
+  /// The extracted fields, as read. Never updated.
+  extracted           Json
+  /// The values the invoice was created with.
+  accepted            Json?
+  /// The fields changed in review: [{ field, label, extracted, accepted }].
+  corrections         Json?
+  createdBy           String    @map("created_by") @db.Uuid
+  createdAt           DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  reviewedBy          String?   @map("reviewed_by") @db.Uuid
+  reviewedAt          DateTime? @db.Timestamptz @map("reviewed_at")
+
+  @@index([schemeId])
+  @@index([supplierInvoiceId])
+  @@map("invoice_extractions")
+}

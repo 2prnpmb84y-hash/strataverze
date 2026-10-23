@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { drillDownHref } from "@/lib/finance/drill-down";
+
 import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { SelectField } from "@/components/ui/form-field";
@@ -40,12 +43,14 @@ interface CommitteeArrearsSnapshot {
 }
 
 interface CommitteeBudgetComparison {
+  fundId: string;
   fundName: string;
   totalBudget: number;
   totalActual: number;
   totalVariance: number;
   variancePercent: number;
   lines: Array<{
+    accountCodeId: string;
     accountCode: string;
     accountName: string;
     budgetAmount: number;
@@ -152,6 +157,10 @@ export function CommitteePackClient({
 }) {
   const router = useRouter();
   const resolvedBasePath = basePath ?? `/adviser/schemes/${schemeId}/finance/reports/committee-pack`;
+  const reportsBase = resolvedBasePath.replace(/\/committee-pack$/, "");
+  // The budget comparison is for the financial year (1 July to 30 June).
+  const actualHref = (fundId: string, accountCodeId: string) =>
+    drillDownHref(reportsBase, { accountId: accountCodeId, fundId, start: `${financialYear}-07-01`, end: `${financialYear + 1}-06-30` });
 
   function updateParams(updates: Record<string, string>) {
     const params = new URLSearchParams();
@@ -452,7 +461,9 @@ export function CommitteePackClient({
                                 {formatCurrency(line.budgetAmount)}
                               </td>
                               <td className="py-2 pr-4 text-right tabular-nums text-ink">
-                                {formatCurrency(line.actualAmount)}
+                                <Link href={actualHref(comp.fundId, line.accountCodeId)} className="text-turquoise underline" title="Show the journal entries behind this amount">
+                                  {formatCurrency(line.actualAmount)}
+                                </Link>
                               </td>
                               <td
                                 className={`py-2 pr-4 text-right tabular-nums ${varianceColour(line.variance)}`}

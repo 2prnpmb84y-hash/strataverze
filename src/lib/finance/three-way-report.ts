@@ -10,6 +10,7 @@ import { toCents } from "@/lib/billing/money";
 import { allocatedByTransaction, getAllocationCandidates, getSuspenseItems } from "./bank-allocations";
 import { threeWayReconciliation, type ThreeWayInput, type ThreeWayResult } from "./reconciliation";
 import { walletBalanceProvider } from "./wallet-provider";
+import { LEDGER_STATUSES } from "@/lib/finance/ledger-status";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
@@ -24,7 +25,7 @@ export async function getThreeWayReconciliationReport(schemeId: string, asAt: st
     db.orm.public.Fund.where((f) => f.schemeId.eq(schemeId)).limit(20).all(),
     db.orm.public.SchemeBankAccount.where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true))).limit(50).all(),
     db.orm.public.JournalEntry
-      .where((je) => and(je.schemeId.eq(schemeId), je.status.eq("POSTED"), je.transactionDate.lte(ts(asAt))))
+      .where((je) => and(je.schemeId.eq(schemeId), je.status.in(LEDGER_STATUSES), je.transactionDate.lte(ts(asAt))))
       .include("lines", (l) => l.include("accountCode"))
       .limit(50000)
       .all(),

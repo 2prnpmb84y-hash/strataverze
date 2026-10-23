@@ -4,7 +4,8 @@ import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { currentBudgetLines } from "@/lib/finance/budgets";
 import { getAdoptedPlan, isCapitalWorksFund } from "@/lib/finance/capital-works-plans";
 import { spendByYear } from "@/lib/finance/capital-works-plan";
-import { recognisedIncomeExpense, type AccountingBasis, type BasisEntry, type RecognisedLine } from "@/lib/finance/accounting-basis";
+import { levyIncomeAccountPicker, recognisedIncomeExpense, type AccountingBasis, type BasisEntry, type RecognisedLine } from "@/lib/finance/accounting-basis";
+import { LEDGER_STATUSES, inLedger } from "@/lib/finance/ledger-status";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -51,7 +52,7 @@ export async function getIncomeExpenseReport(
   const lastEnd = endDate > compEndDate ? endDate : compEndDate;
   const [entries, funds, accounts] = await Promise.all([
     db.orm.public.JournalEntry
-      .where((je) => and(je.schemeId.eq(schemeId), je.status.eq("POSTED"), je.transactionDate.lte(toTimestamp(lastEnd))))
+      .where((je) => and(je.schemeId.eq(schemeId), je.status.in(LEDGER_STATUSES), je.transactionDate.lte(toTimestamp(lastEnd))))
       .include("lines", (l) => l.include("accountCode"))
       .limit(50000)
       .all(),
@@ -60,10 +61,7 @@ export async function getIncomeExpenseReport(
   ]);
   const fundById = new Map(funds.map((f) => [f.id, f]));
   const basisEntries = toBasisEntries(entries, fundId);
-  const levyIncomeAccount = (fid: string) => {
-    const a = accounts.find((x) => x.fundId === fid) ?? accounts[0];
-    return a ? { accountId: a.id, accountCode: String(a.code), accountName: String(a.name) } : null;
-  };
+  const levyIncomeAccount = levyIncomeAccountPicker(accounts);
   const basisForFund = (fid: string) => (fundById.get(fid)?.accountingBasis === "ACCRUAL" ? "ACCRUAL" : "CASH") as AccountingBasis;
   const toTotals = (lines: RecognisedLine[]) => {
     const out: Record<string, AccountAggregate> = {};
@@ -199,6 +197,77 @@ interface AccountAggregate {
   fundName: string;
   accountType: string;
   amount: number;
+}
+
+// ─── Ledger income and expenditure (adviser and accountant report) ─────
+
+export interface LedgerAccountLine {
+  accountCodeId: string;
+  code: string;
+  name: string;
+  accountType: string;
+  fundId: string | null;
+  fundName: string;
+  totalDebit: number;
+  totalCredit: number;
+  netAmount: number;
+}
+
+/**
+ * Income and expense accounts as posted in the ledger, per account and fund,
+ * for a period. Every ledger entry is included (a reversed entry and its
+ * reversal net to zero), with no row limit, so each figure matches its
+ * drill-down.
+ */
+export async function getLedgerIncomeExpenditure(
+  schemeId: string,
+  filters: { fundId?: string | null; startDate?: string | null; endDate?: string | null },
+) {
+  let q = db.orm.public.JournalEntry.where((je) => and(je.schemeId.eq(schemeId), je.status.in(LEDGER_STATUSES)));
+  if (filters.startDate) q = q.where((je) => je.transactionDate.gte(toTimestamp(filters.startDate!)));
+  if (filters.endDate) q = q.where((je) => je.transactionDate.lte(toTimestamp(filters.endDate!)));
+  const entries = await q.include("lines", (l) => l.include("accountCode").include("fund")).limit(50000).all();
+
+  const map = new Map<string, LedgerAccountLine & { debitCents: number; creditCents: number }>();
+  for (const e of entries) {
+    for (const line of e.lines ?? []) {
+      if (filters.fundId && line.fundId !== filters.fundId) continue;
+      const a = line.accountCode;
+      if (!a) continue;
+      const type = String(a.accountType);
+      if (type !== "INCOME" && type !== "EXPENSE") continue;
+      const key = `${a.id}:${line.fundId}`;
+      const row = map.get(key) ?? {
+        accountCodeId: a.id,
+        code: String(a.code),
+        name: String(a.name),
+        accountType: type,
+        fundId: line.fundId ?? null,
+        fundName: line.fund ? String(line.fund.name) : "Unallocated",
+        totalDebit: 0,
+        totalCredit: 0,
+        netAmount: 0,
+        debitCents: 0,
+        creditCents: 0,
+      };
+      row.debitCents += Math.round(Number(line.debit ?? 0) * 100);
+      row.creditCents += Math.round(Number(line.credit ?? 0) * 100);
+      map.set(key, row);
+    }
+  }
+  const rows: LedgerAccountLine[] = [...map.values()].map(({ debitCents, creditCents, ...r }) => ({
+    ...r,
+    totalDebit: debitCents / 100,
+    totalCredit: creditCents / 100,
+    netAmount: (r.accountType === "INCOME" ? creditCents - debitCents : debitCents - creditCents) / 100,
+  }));
+  const byCode = (a: LedgerAccountLine, b: LedgerAccountLine) => a.code.localeCompare(b.code) || a.fundName.localeCompare(b.fundName);
+  const incomeAccounts = rows.filter((r) => r.accountType === "INCOME").sort(byCode);
+  const expenseAccounts = rows.filter((r) => r.accountType === "EXPENSE").sort(byCode);
+  const sum = (xs: LedgerAccountLine[]) => Math.round(xs.reduce((s, r) => s + r.netAmount * 100, 0)) / 100;
+  const totalIncome = sum(incomeAccounts);
+  const totalExpenses = sum(expenseAccounts);
+  return { incomeAccounts, expenseAccounts, totalIncome, totalExpenses, netSurplus: Math.round((totalIncome - totalExpenses) * 100) / 100 };
 }
 
 // ─── Aged Arrears Report ────────────────────────────────────────
@@ -413,6 +482,8 @@ export async function getLevyRegisterReport(
 // ─── Trial Balance Report ──────────────────────────────────────
 
 export interface TrialBalanceLineItem {
+  accountCodeId: string;
+  fundId: string | null;
   accountCode: string;
   accountName: string;
   accountType: string;
@@ -445,18 +516,20 @@ export async function getTrialBalanceReport(
     .where((je) =>
       and(
         je.schemeId.eq(schemeId),
-        je.status.eq("POSTED"),
+        je.status.in(LEDGER_STATUSES),
         je.transactionDate.lte(toTimestamp(asAtDate)),
       ),
     )
     .include("lines", (l) => l.include("accountCode").include("fund"))
-    .limit(5000)
+    .limit(50000)
     .all();
 
   // Aggregate by account code
   const accountTotals = new Map<
     string,
     {
+      accountCodeId: string;
+      fundId: string | null;
       accountCode: string;
       accountName: string;
       accountType: string;
@@ -472,7 +545,7 @@ export async function getTrialBalanceReport(
       if (!line.accountCode) continue;
 
       const code = String(line.accountCode.code);
-      const key = `${code}-${line.fundId ?? "none"}`;
+      const key = `${line.accountCode.id}-${line.fundId ?? "none"}`;
 
       const existing = accountTotals.get(key);
       const debit = Number(line.debit ?? 0);
@@ -483,6 +556,8 @@ export async function getTrialBalanceReport(
         existing.totalCredit += credit;
       } else {
         accountTotals.set(key, {
+          accountCodeId: line.accountCode.id,
+          fundId: line.fundId ?? null,
           accountCode: code,
           accountName: String(line.accountCode.name),
           accountType: String(line.accountCode.accountType),
@@ -502,6 +577,8 @@ export async function getTrialBalanceReport(
     if (Math.abs(net) < 0.005) continue; // Skip zero-balance accounts
 
     lines.push({
+      accountCodeId: acc.accountCodeId,
+      fundId: acc.fundId,
       accountCode: acc.accountCode,
       accountName: acc.accountName,
       accountType: acc.accountType,
@@ -574,7 +651,7 @@ export async function getFundSummaryReport(
     .where((je) =>
       and(
         je.schemeId.eq(schemeId),
-        je.status.eq("POSTED"),
+        je.status.in(LEDGER_STATUSES),
         je.transactionDate.gte(toTimestamp(startDate)),
         je.transactionDate.lte(toTimestamp(endDate)),
       ),
@@ -588,7 +665,7 @@ export async function getFundSummaryReport(
     .where((je) =>
       and(
         je.schemeId.eq(schemeId),
-        je.status.eq("POSTED"),
+        je.status.in(LEDGER_STATUSES),
         je.transactionDate.lt(toTimestamp(startDate)),
       ),
     )
@@ -895,7 +972,7 @@ export async function getBankReconciliationReport(
 
     for (const line of lines) {
       // Only count posted entries
-      if (line.journalEntry && String(line.journalEntry.status) === "POSTED") {
+      if (line.journalEntry && inLedger(line.journalEntry.status)) {
         // Check date filter
         if (asAtDate) {
           const entryDate = String(line.journalEntry.transactionDate);
@@ -984,12 +1061,14 @@ export interface CommitteeArrearsSnapshot {
 }
 
 export interface CommitteeBudgetComparison {
+  fundId: string;
   fundName: string;
   totalBudget: number;
   totalActual: number;
   totalVariance: number;
   variancePercent: number;
   lines: Array<{
+    accountCodeId: string;
     accountCode: string;
     accountName: string;
     budgetAmount: number;
@@ -1126,7 +1205,7 @@ export async function getCommitteeReportingPack(
     const journalLines = await db.orm.public.JournalLine
       .where((jl) => jl.fundId.eq(fund.id))
       .include("journalEntry")
-      .limit(10000)
+      .limit(50000)
       .all();
 
     const fyStart = `${financialYear}-07-01`;
@@ -1134,22 +1213,26 @@ export async function getCommitteeReportingPack(
 
     const postedLines = journalLines.filter((jl) => {
       const entry = jl.journalEntry;
-      if (!entry || entry.status !== "POSTED") return false;
+      if (!entry || entry.schemeId !== schemeId || !inLedger(entry.status)) return false;
       const txDate = String(entry.transactionDate).slice(0, 10);
       return txDate >= fyStart && txDate <= fyEnd;
     });
 
-    const actualsByAccount = new Map<string, number>();
+    // Net of credits, so a reversed invoice and its reversal cancel out (and
+    // the figure matches the drill-down behind it).
+    const actualCents = new Map<string, number>();
     for (const line of postedLines) {
       const account = accountMap.get(line.accountCodeId);
       if (!account) continue;
-      const current = actualsByAccount.get(line.accountCodeId) ?? 0;
+      const net = Math.round(Number(line.debit ?? 0) * 100) - Math.round(Number(line.credit ?? 0) * 100);
+      const current = actualCents.get(line.accountCodeId) ?? 0;
       if (account.accountType === "EXPENSE") {
-        actualsByAccount.set(line.accountCodeId, current + Number(line.debit ?? 0));
+        actualCents.set(line.accountCodeId, current + net);
       } else if (account.accountType === "INCOME") {
-        actualsByAccount.set(line.accountCodeId, current + Number(line.credit ?? 0));
+        actualCents.set(line.accountCodeId, current - net);
       }
     }
+    const actualsByAccount = new Map([...actualCents].map(([k, c]) => [k, c / 100]));
 
     const lines = allBudgetLines.map((bl) => {
       const account = accountMap.get(bl.accountCodeId);
@@ -1157,6 +1240,7 @@ export async function getCommitteeReportingPack(
       const actualAmount = actualsByAccount.get(bl.accountCodeId) ?? 0;
       const variance = budgetAmount - actualAmount;
       return {
+        accountCodeId: bl.accountCodeId,
         accountCode: account ? String(account.code) : "",
         accountName: account ? String(account.name) : "Unknown",
         budgetAmount,
@@ -1171,6 +1255,7 @@ export async function getCommitteeReportingPack(
     const totalVariance = totalBudget - totalActual;
 
     budgetComparisons.push({
+      fundId: fund.id,
       fundName: String(fund.name),
       totalBudget: Math.round(totalBudget * 100) / 100,
       totalActual: Math.round(totalActual * 100) / 100,
@@ -1776,7 +1861,7 @@ export async function getGstSummaryReport(
     .where((je) =>
       and(
         je.schemeId.eq(schemeId),
-        je.status.eq("POSTED"),
+        je.status.in(LEDGER_STATUSES),
         je.transactionDate.gte(toTimestamp(startDate)),
         je.transactionDate.lte(toTimestamp(endDate)),
       ),
@@ -1969,7 +2054,7 @@ export async function getDashboardFinancialSummary(
       .where((je) =>
         and(
           je.schemeId.eq(schemeId),
-          je.status.eq("POSTED"),
+          je.status.in(LEDGER_STATUSES),
           je.transactionDate.gte(toTimestamp(monthStart)),
           je.transactionDate.lte(toTimestamp(monthEnd)),
         ),

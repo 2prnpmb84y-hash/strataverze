@@ -2,6 +2,7 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import { workingBudgets } from "@/lib/finance/budget-status";
+import { inLedger } from "@/lib/finance/ledger-status";
 
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
@@ -160,7 +161,7 @@ export async function getBudgetVsActual(
   // Filter to posted entries within the date range
   const postedLines = journalLines.filter((jl) => {
     const entry = jl.journalEntry;
-    if (!entry || entry.status !== "POSTED") return false;
+    if (!entry || !inLedger(entry.status)) return false;
     const txDate = String(entry.transactionDate).slice(0, 10);
     return txDate >= startDate && txDate <= endDate;
   });

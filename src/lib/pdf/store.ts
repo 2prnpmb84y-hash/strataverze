@@ -67,6 +67,41 @@ export async function storeGeneratedPdf(input: {
   return { id, hash, reused: false };
 }
 
+/**
+ * Store an uploaded supplier invoice PDF the same way: bytes in the database
+ * (not the public documents bucket), hashed, once per scheme. It stays
+ * UNDER_REVIEW until an invoice is created from it.
+ */
+export async function storeUploadedInvoicePdf(input: { schemeId: string; fileName: string; bytes: Uint8Array; actorId: string }): Promise<{ id: string; hash: string; reused: boolean }> {
+  const hash = sha256(input.bytes);
+  const existing = await db.orm.public.FinancialDocument
+    .where((d) => and(d.schemeId.eq(input.schemeId), d.documentType.eq("SUPPLIER_INVOICE"), d.contentHash.eq(hash)))
+    .first();
+  if (existing) return { id: existing.id, hash, reused: true };
+  const id = randomUUID();
+  await db.transaction(async (tx) => {
+    await tx.orm.public.FinancialDocument.create({
+      id,
+      schemeId: input.schemeId,
+      documentType: "SUPPLIER_INVOICE",
+      uploadedBy: input.actorId,
+      fileName: varchar<500>((input.fileName || "invoice.pdf").slice(0, 500)),
+      fileUrl: `/api/finance/documents/${id}`,
+      fileSize: input.bytes.byteLength,
+      mimeType: varchar<100>("application/pdf"),
+      documentStatus: "UNDER_REVIEW",
+      verificationStatus: "PENDING",
+      contentHash: hash,
+      reviewNotes: `Uploaded for invoice entry. SHA-256 ${hash}.`,
+    });
+    await tx.orm.public.FinancialDocumentFile.create({
+      financialDocumentId: id,
+      contentBase64: Buffer.from(input.bytes).toString("base64"),
+    });
+  });
+  return { id, hash, reused: false };
+}
+
 /** The stored bytes of a generated document, or null. */
 export async function loadGeneratedPdf(documentId: string) {
   const [doc, file] = await Promise.all([
