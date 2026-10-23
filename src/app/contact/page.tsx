@@ -280,19 +280,6 @@ export default function ContactPage() {
             {/* Company details */}
             <div className="lg:col-span-2">
               <div className="space-y-8">
-                {/* Company info */}
-                <div>
-                  <h2 className="mb-4 text-xl font-semibold">
-                    Company details
-                  </h2>
-                  <div className="space-y-3 text-[var(--muted)]">
-                    <p className="font-medium text-[var(--foreground)]">
-                      StrataVerze Pty Ltd
-                    </p>
-                    <p>ABN 25 680 401 450</p>
-                  </div>
-                </div>
-
                 {/* Contact */}
                 <div>
                   <h2 className="mb-4 text-xl font-semibold">Email</h2>
