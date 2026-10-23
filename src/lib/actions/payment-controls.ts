@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
+import { revokeAllSessions } from "@/lib/auth/session-register";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
@@ -54,6 +55,10 @@ export async function setTreasurerAction(schemeId: string, membershipId: string,
     await db.orm.public.SchemeMembership
       .where((m) => and(m.id.eq(membershipId), m.schemeId.eq(schemeId)))
       .update({ isTreasurer });
+    // Losing the treasurer office is a role change: end that person's
+    // sessions (security stage S5). Gaining it needs no sign-out, as the
+    // shorter session limits and MFA apply from the next request.
+    if (!isTreasurer && membership.isTreasurer) await revokeAllSessions(membership.profileId);
     await logActivity({
       schemeId,
       actorId: profile.id,

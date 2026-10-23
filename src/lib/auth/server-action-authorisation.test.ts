@@ -29,6 +29,7 @@ const ALLOWED: Record<string, string> = {
   "src/lib/actions/contractor-onboarding.ts#registerContractorAccount": "supplier self-registration",
   // Act only on the caller's own records.
   "src/app/(portal)/settings/actions.ts#updateProfileAction": "updates only the caller's own profile, from an explicit field list",
+  "src/lib/actions/sessions.ts#signOutEverywhereAction": "ends only the caller's own sessions",
   "src/app/(portal)/invitations/actions.ts#acceptInvitationAction": "requires the invitation to be for the caller's email",
   "src/app/(portal)/invitations/actions.ts#declineInvitationAction": "requires the invitation to be for the caller's email",
   "src/lib/actions/scheme-selection.ts#selectScheme": "checks the caller's own memberships",

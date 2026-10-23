@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { safeNextPath } from "@/lib/auth/mfa-policy";
+import { loadSessionState } from "@/lib/auth/session-state";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -102,8 +103,35 @@ export async function proxy(request: NextRequest) {
   // Refresh the session. This reads + writes cookies, so it must run
   // before we inspect the user.
   const {
-    data: { user },
+    data: { user: authUser },
   } = await supabase.auth.getUser();
+  let user = authUser;
+  let endedReason: string | null = null;
+
+  // Session timeouts and revocation (security stage S5). The same check
+  // runs in getCurrentSession; here it can also clear the cookies.
+  if (user) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    let state: Awaited<ReturnType<typeof loadSessionState>> | null = null;
+    try {
+      state = await loadSessionState(user, session?.access_token, { createProfile: false });
+    } catch (err) {
+      // getCurrentSession repeats this check and fails closed, so a database
+      // error here does not let an ended session through.
+      console.error("[proxy] session check failed:", err instanceof Error ? err.name : "error");
+    }
+    if (state?.kind === "ended") {
+      endedReason = state.reason;
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch {
+        // Already gone; the cookies are cleared either way.
+      }
+      user = null;
+    }
+  }
 
   const { pathname } = request.nextUrl;
 
@@ -115,8 +143,10 @@ export async function proxy(request: NextRequest) {
   if (!user && isProtected) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
+    loginUrl.search = "";
     loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    if (endedReason) loginUrl.searchParams.set("reason", endedReason);
+    return withCookies(NextResponse.redirect(loginUrl), supabaseResponse);
   }
 
   // --- Auth pages: redirect logged-in users to their portal ---
@@ -127,7 +157,7 @@ export async function proxy(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = destination;
     redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+    return withCookies(NextResponse.redirect(redirectUrl), supabaseResponse);
   }
 
   // Apply CSP header to the response
@@ -138,6 +168,12 @@ export async function proxy(request: NextRequest) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/** Carry any cookies Supabase set (a refresh, or clearing on sign-out) onto a redirect. */
+function withCookies(response: NextResponse, from: NextResponse): NextResponse {
+  for (const cookie of from.cookies.getAll()) response.cookies.set(cookie);
+  return response;
+}
 
 /**
  * Sanitise a redirect path so it cannot be used for open-redirect

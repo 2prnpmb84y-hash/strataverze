@@ -1,12 +1,14 @@
 import { cache } from "react";
-import { db } from "@/prisma/db";
 import { createClient } from "@/lib/supabase/server";
-import { assuranceFromClaims, decodeJwtPayload } from "./mfa-policy";
+import { loadSessionState } from "./session-state";
 
 /**
  * The signed-in user for this request: their Supabase user (validated with
  * the Auth server), their StrataVerze profile, the session's assurance level,
- * and their verified authenticators.
+ * their verified authenticators, and whether MFA is mandatory for them.
+ *
+ * Returns null when nobody is signed in, and also when the session has timed
+ * out or been ended (security stage S5); the session is then signed out.
  *
  * This does NOT enforce MFA. Use getCurrentProfile (which does) everywhere
  * except the MFA pages themselves.
@@ -18,28 +20,21 @@ export const getCurrentSession = cache(async () => {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // getUser has just validated this session's access token with the Auth
-  // server, so its claims can be read without verifying it again. They are
-  // used only when they belong to the same user.
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const claims = decodeJwtPayload(session?.access_token);
-  const assurance = assuranceFromClaims(claims && claims.sub === user.id ? claims : null);
-  const verifiedFactors = (user.factors ?? []).filter(
-    (f) => f.status === "verified" && f.factor_type === "totp",
-  );
+  const state = await loadSessionState(user, session?.access_token, { createProfile: true });
 
-  let profile = await db.orm.public.Profile.where((p) => p.authId.eq(user.id)).first();
-  if (!profile) {
-    // First sign-in.
-    profile = await db.orm.public.Profile.create({
-      authId: user.id,
-      email: user.email ?? "",
-      firstName: "",
-      lastName: "",
-    });
+  if (state.kind !== "active") {
+    // Revoke it with the Auth server and clear the cookies where this
+    // context allows (a server component cannot set cookies; the proxy
+    // clears them on the next page load).
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // Already gone.
+    }
+    return null;
   }
-
-  return { user, profile, assurance, verifiedFactors };
+  return state.session;
 });

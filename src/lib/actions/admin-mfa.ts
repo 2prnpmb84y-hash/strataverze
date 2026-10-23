@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-membership";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { grantFactorRemoval } from "@/lib/auth/mfa-grants";
+import { revokeAllSessions } from "@/lib/auth/session-register";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfileById } from "@/lib/queries/profiles";
 
@@ -57,6 +58,9 @@ export async function resetUserMfaAction(
     // Recorded in the server log until the security audit log (stage S6)
     // exists. The reason is not logged, since it can hold personal details
     // from the identity check; S6 stores it in the audit log instead.
+    // Removing a verified authenticator signs the user out in Supabase Auth;
+    // end the app's sessions too, so every device has to sign in again.
+    await revokeAllSessions(target.id);
     console.info(`[admin-mfa] reset by=${admin.id} target=${target.id} removed=${removed}`);
     revalidatePath("/admin/security");
     return { removed };

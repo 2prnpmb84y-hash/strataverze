@@ -24,6 +24,10 @@
       "model": "Announcement",
       "namespace": "public"
     },
+    "app_sessions": {
+      "model": "AppSession",
+      "namespace": "public"
+    },
     "applied_rule_sets": {
       "model": "AppliedRuleSet",
       "namespace": "public"
@@ -1539,6 +1543,87 @@
               },
               "namespaceId": "public",
               "table": "announcements"
+            }
+          },
+          "AppSession": {
+            "fields": {
+              "authenticatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "firstSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastSeenAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "revokedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "revokedReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "authenticatedAt": {
+                  "column": "authenticated_at"
+                },
+                "firstSeenAt": {
+                  "column": "first_seen_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastSeenAt": {
+                  "column": "last_seen_at"
+                },
+                "profileId": {
+                  "column": "profile_id"
+                },
+                "revokedAt": {
+                  "column": "revoked_at"
+                },
+                "revokedReason": {
+                  "column": "revoked_reason"
+                }
+              },
+              "namespaceId": "public",
+              "table": "app_sessions"
             }
           },
           "AppliedRuleSet": {
@@ -17129,6 +17214,13 @@
                   "kind": "scalar"
                 }
               },
+              "sessionsRevokedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -18097,6 +18189,9 @@
                 },
                 "phone": {
                   "column": "phone"
+                },
+                "sessionsRevokedAt": {
+                  "column": "sessions_revoked_at"
                 },
                 "updatedAt": {
                   "column": "updated_at"
@@ -31943,6 +32038,69 @@
               },
               "uniques": []
             },
+            "app_sessions": {
+              "columns": {
+                "authenticated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                },
+                "first_seen_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "last_seen_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "profile_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "revoked_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "revoked_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "profile_id"
+                  ],
+                  "name": "app_sessions_profile_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "applied_rule_sets": {
               "columns": {
                 "applied_at": {
@@ -43342,6 +43500,11 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "sessions_revoked_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "updated_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -53043,7 +53206,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "0f3ee913ce04edfa0ad2686eb4425c50412e53a66752439bf08b2b462e4ad4bd"
+    "storageHash": "e857737e2424cfd7d52aae3f02c055ac5b61b48fb21f3250fe68c2e2a25b3804"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

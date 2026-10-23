@@ -16,6 +16,7 @@ import {
   removeOwnerFromLot,
 } from "@/lib/queries/lots";
 import { logActivity } from "@/lib/queries/activity-log";
+import { revokeAllSessions } from "@/lib/auth/session-register";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 
@@ -190,7 +191,7 @@ export async function removeOwnerAction(
   membershipId: string,
 ) {
   try {
-    await requireSchemeAccess(schemeId, "lots.manage");
+    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
@@ -210,6 +211,9 @@ export async function removeOwnerAction(
     }
 
     await removeOwnerFromLot(membershipId);
+    // A role was removed: end the person's sessions so every device signs in
+    // again under their remaining access (security stage S5).
+    if (target.profileId !== actor.id) await revokeAllSessions(target.profileId);
     revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
