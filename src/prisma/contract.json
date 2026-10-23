@@ -260,6 +260,10 @@
       "model": "Meeting",
       "namespace": "public"
     },
+    "migration_batches": {
+      "model": "MigrationBatch",
+      "namespace": "public"
+    },
     "minutes": {
       "model": "Minutes",
       "namespace": "public"
@@ -10959,6 +10963,13 @@
                   "kind": "scalar"
                 }
               },
+              "migrationBatchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "noticeNumber": {
                 "nullable": false,
                 "type": {
@@ -11149,6 +11160,9 @@
                 },
                 "lotId": {
                   "column": "lot_id"
+                },
+                "migrationBatchId": {
+                  "column": "migration_batch_id"
                 },
                 "noticeNumber": {
                   "column": "notice_number"
@@ -11391,6 +11405,13 @@
                   "kind": "scalar"
                 }
               },
+              "migrationBatchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -11524,6 +11545,9 @@
                 },
                 "levyType": {
                   "column": "levy_type"
+                },
+                "migrationBatchId": {
+                  "column": "migration_batch_id"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -13851,6 +13875,167 @@
               "table": "meeting_templates"
             }
           },
+          "MigrationBatch": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "cutoverDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "executedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "executedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "files": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "results": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "signOff": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "signedOffAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "signedOffBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sourceSystem": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "createdBy": {
+                  "column": "created_by"
+                },
+                "cutoverDate": {
+                  "column": "cutover_date"
+                },
+                "executedAt": {
+                  "column": "executed_at"
+                },
+                "executedBy": {
+                  "column": "executed_by"
+                },
+                "files": {
+                  "column": "files"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "results": {
+                  "column": "results"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "signOff": {
+                  "column": "sign_off"
+                },
+                "signedOffAt": {
+                  "column": "signed_off_at"
+                },
+                "signedOffBy": {
+                  "column": "signed_off_by"
+                },
+                "sourceSystem": {
+                  "column": "source_system"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "migration_batches"
+            }
+          },
           "Minutes": {
             "fields": {
               "confirmedAt": {
@@ -15371,6 +15556,13 @@
                   "kind": "scalar"
                 }
               },
+              "migrationBatchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "note": {
                 "nullable": true,
                 "type": {
@@ -15439,6 +15631,9 @@
                 },
                 "lotId": {
                   "column": "lot_id"
+                },
+                "migrationBatchId": {
+                  "column": "migration_batch_id"
                 },
                 "note": {
                   "column": "note"
@@ -20923,6 +21118,13 @@
                   "kind": "scalar"
                 }
               },
+              "migrationBatchId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "preparedById": {
                 "nullable": true,
                 "type": {
@@ -21105,6 +21307,9 @@
                 },
                 "journalEntryId": {
                   "column": "journal_entry_id"
+                },
+                "migrationBatchId": {
+                  "column": "migration_batch_id"
                 },
                 "preparedById": {
                   "column": "prepared_by_id"
@@ -38599,6 +38804,11 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "migration_batch_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "notice_number": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
@@ -38958,6 +39168,11 @@
                     "value": "ORDINARY"
                   },
                   "nullable": false
+                },
+                "migration_batch_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
                 },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
@@ -40564,6 +40779,121 @@
               },
               "uniques": []
             },
+            "migration_batches": {
+              "columns": {
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "created_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "cutover_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "executed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "executed_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "files": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "default": {
+                    "kind": "literal",
+                    "value": {}
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "results": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "sign_off": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
+                },
+                "signed_off_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "signed_off_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "source_system": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "DRAFT"
+                  },
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id"
+                  ],
+                  "name": "migration_batches_scheme_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "minutes": {
               "columns": {
                 "confirmed_at": {
@@ -41666,6 +41996,11 @@
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
                   "nullable": false
+                },
+                "migration_batch_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
                 },
                 "note": {
                   "codecId": "pg/text@1",
@@ -44461,6 +44796,11 @@
                   }
                 },
                 "journal_entry_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "migration_batch_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
                   "nullable": true
@@ -52412,7 +52752,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "06c96ffaf4237c0403a4b04ba6ed4e363610d495772511e1359af688c915d8b8"
+    "storageHash": "f5855c0c9db4d0c254a62821c67aa023472d859d6fdb019dea3d00817b7979e2"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

@@ -20,6 +20,7 @@ const STATUS_LABELS: Record<string, string> = {
   APPROVED: "Approved",
   ACTIVE: "Issued",
   SUPERSEDED: "Superseded",
+  MIGRATED: "Brought forward",
 };
 
 const statusStyles: Record<string, string> = {
@@ -27,6 +28,7 @@ const statusStyles: Record<string, string> = {
   APPROVED: "bg-blue-100 text-blue-700",
   ACTIVE: "bg-green-100 text-green-700",
   SUPERSEDED: "bg-amber-100 text-amber-700",
+  MIGRATED: "bg-purple-100 text-purple-700",
 };
 
 export default async function LevySchedulesPage({
@@ -110,13 +112,17 @@ export default async function LevySchedulesPage({
                     <h3 className="text-lg font-medium text-ink">
                       {schedule.levyType === "SPECIAL"
                         ? `Special levy: ${String(schedule.title ?? "Untitled")}`
-                        : `FY ${schedule.financialYear} budget levy`}
+                        : schedule.levyType === "BROUGHT_FORWARD"
+                          ? String(schedule.title ?? "Levies brought forward")
+                          : `FY ${schedule.financialYear} budget levy`}
                     </h3>
                     <p className="text-sm text-ink-muted">
                       {schedule.fund.name} &middot;{" "}
                       {schedule.levyType === "SPECIAL"
                         ? "One-off"
-                        : (FREQUENCY_LABELS[String(schedule.frequency)] ?? schedule.frequency)}
+                        : schedule.levyType === "BROUGHT_FORWARD"
+                          ? "Outstanding at cutover"
+                          : (FREQUENCY_LABELS[String(schedule.frequency)] ?? schedule.frequency)}
                     </p>
                   </div>
                   <span

@@ -8,11 +8,20 @@ import {
 import {
   importLots,
   importChartOfAccounts,
-  importOpeningBalances,
   validateLots,
   validateChartOfAccounts,
   validateOpeningBalances,
 } from "@/lib/queries/data-migration";
+import {
+  createCutover,
+  CutoverError,
+  executeCutover,
+  removeCutoverFile,
+  setCutoverDate,
+  signOffCutover,
+  stageCutoverFile,
+} from "@/lib/finance/migration-batches";
+import { CUTOVER_DATA_TYPES, type CutoverDataType } from "@/lib/finance/migration-cutover";
 
 type ActionState = {
   error?: string;
@@ -30,14 +39,31 @@ export async function processMigrationAction(
     errors: string[];
     warnings: string[];
   }>,
-  cutoverDate?: string,
+  _cutoverDate?: string,
 ): Promise<ActionState> {
   try {
     const { membership } = await requireSchemeMembership(schemeId, [
       "ADVISER",
     ]);
 
-    const validRows = rows.filter((r) => r.errors.length === 0);
+    if (dataType === "opening_balances") {
+      return {
+        error:
+          "Opening balances now go through the cutover, which checks that the trial balance nets to zero and needs a sign-off before anything is posted. Use Cutover.",
+      };
+    }
+
+    // Validate again here: the rows come from the browser, so their own error lists are not trusted.
+    const required: Record<string, string[]> = { lots: ["lotNumber", "entitlement"], chart_of_accounts: ["code", "name", "accountType"] };
+    if (!required[dataType]) return { error: `Unknown data type: ${dataType}` };
+    const fresh = rows.map((r) => ({
+      rowNumber: r.rowNumber,
+      data: r.data,
+      warnings: [] as string[],
+      errors: required[dataType].filter((f) => !String(r.data[f] ?? "").trim()).map((f) => `Required field "${f}" is missing or empty`),
+    }));
+    const checked = dataType === "lots" ? await validateLots(schemeId, fresh) : await validateChartOfAccounts(schemeId, fresh);
+    const validRows = checked.filter((r) => r.errors.length === 0);
 
     if (validRows.length === 0) {
       return { error: "No valid rows to import." };
@@ -62,19 +88,6 @@ export async function processMigrationAction(
           membership.profileId,
         );
         created = result.created;
-        break;
-      }
-      case "opening_balances": {
-        if (!cutoverDate) {
-          return { error: "Cutover date is required for opening balances." };
-        }
-        const result = await importOpeningBalances(
-          schemeId,
-          validRows,
-          cutoverDate,
-          membership.profileId,
-        );
-        created = result.lineCount;
         break;
       }
       default:
@@ -158,5 +171,91 @@ export async function validateMigrationAction(
           ? err.message
           : "An unexpected error occurred during validation.",
     };
+  }
+}
+
+// ─── Financial cutover (Stage 7) ──────────────────────────────────────────
+
+function cutoverError(err: unknown): ActionState {
+  if (err instanceof AuthorisationError || err instanceof CutoverError) return { error: err.message };
+  console.error("Cutover error:", err);
+  return { error: err instanceof Error ? err.message : "Something went wrong with the cutover." };
+}
+
+const cutoverPath = (schemeId: string) => `/adviser/schemes/${schemeId}/finance/migration/cutover`;
+
+export async function createCutoverAction(schemeId: string, sourceSystem: string, cutoverDate: string): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const id = await createCutover({ schemeId, sourceSystem, cutoverDate: cutoverDate || null, actorId: profile.id });
+    revalidatePath(cutoverPath(schemeId));
+    return { success: true, data: { id } };
+  } catch (err) {
+    return cutoverError(err);
+  }
+}
+
+export async function setCutoverDateAction(schemeId: string, batchId: string, cutoverDate: string): Promise<ActionState> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await setCutoverDate(schemeId, batchId, cutoverDate);
+    revalidatePath(cutoverPath(schemeId));
+    return { success: true };
+  } catch (err) {
+    return cutoverError(err);
+  }
+}
+
+export async function stageCutoverFileAction(
+  schemeId: string,
+  batchId: string,
+  dataType: string,
+  fileName: string,
+  content: string,
+  mapping?: Record<string, number>,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!CUTOVER_DATA_TYPES.includes(dataType as CutoverDataType)) return { error: "Unknown file type." };
+    const result = await stageCutoverFile({ schemeId, batchId, dataType: dataType as CutoverDataType, fileName, content, mapping, actorId: profile.id });
+    revalidatePath(cutoverPath(schemeId));
+    return { success: true, data: { ...result } };
+  } catch (err) {
+    return cutoverError(err);
+  }
+}
+
+export async function removeCutoverFileAction(schemeId: string, batchId: string, dataType: string): Promise<ActionState> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!CUTOVER_DATA_TYPES.includes(dataType as CutoverDataType)) return { error: "Unknown file type." };
+    await removeCutoverFile(schemeId, batchId, dataType as CutoverDataType);
+    revalidatePath(cutoverPath(schemeId));
+    return { success: true };
+  } catch (err) {
+    return cutoverError(err);
+  }
+}
+
+export async function signOffCutoverAction(schemeId: string, batchId: string, acknowledged: string[], note: string): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await signOffCutover({ schemeId, batchId, actorId: profile.id, acknowledged, note });
+    revalidatePath(cutoverPath(schemeId));
+    return { success: true };
+  } catch (err) {
+    return cutoverError(err);
+  }
+}
+
+export async function executeCutoverAction(schemeId: string, batchId: string): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const results = await executeCutover({ schemeId, batchId, actorId: profile.id });
+    revalidatePath(`/adviser/schemes/${schemeId}/finance`);
+    revalidatePath(cutoverPath(schemeId));
+    return { success: true, data: { ...results } };
+  } catch (err) {
+    return cutoverError(err);
   }
 }

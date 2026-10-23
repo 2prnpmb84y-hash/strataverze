@@ -89,4 +89,24 @@ describe("accounting basis", () => {
     });
     expect(incomeExpenseTotals(accrual)).toEqual({ incomeCents: 1_000_000, expenseCents: 0, surplusCents: 1_000_000 });
   });
+
+  it("recognises the payment of an invoice brought across in a cutover", () => {
+    // The invoice's payable came in with the opening balances, so it has no approval entry in the ledger.
+    const migrated: BasisEntry = { id: "mig-inv", date: "2026-06-15", sourceType: "INVOICE", sourceId: "old-1", lines: [line(REPAIRS, 100_000, 0), line(AP, 0, 110_000)] };
+    const payment: BasisEntry = { id: "pay-old", date: "2026-07-20", sourceType: "PAYMENT", sourceId: "old-1", lines: [line(AP, 55_000, 0), line(BANK, 0, 55_000)] };
+    const run2 = (extra?: BasisEntry[]) =>
+      incomeExpenseTotals(
+        recognisedIncomeExpense({
+          entries: [payment],
+          start: "2026-07-01",
+          end: "2027-06-30",
+          basisForFund: () => "CASH",
+          levyIncomeAccount: () => null,
+          extraInvoices: extra,
+        }),
+      ).expenseCents;
+    expect(run2()).toBe(0);
+    // Half the invoice is paid, so half its GST-exclusive expense is recognised.
+    expect(run2([migrated])).toBe(50_000);
+  });
 });
