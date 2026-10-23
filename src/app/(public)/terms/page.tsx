@@ -38,7 +38,7 @@ export default function TermsOfServicePage() {
         <ul className="list-disc pl-6 space-y-1">
           <li>
             <strong>&ldquo;Platform&rdquo;</strong> means the StrataVerze web
-            application available at www.strataverze.com and any associated
+            application available at app.strataverze.com and any associated
             services.
           </li>
           <li>
