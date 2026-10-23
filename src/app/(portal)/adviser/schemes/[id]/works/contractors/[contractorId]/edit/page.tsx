@@ -1,8 +1,8 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getContractorBusinessById } from "@/lib/queries/works";
+import { getContractorBusinessById, isContractorVisibleToScheme } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { ContractorForm } from "../../new/contractor-form";
@@ -15,8 +15,10 @@ export default async function EditContractorPage({
   await connection();
   const { id, contractorId } = await params;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.read");
+  if (!access) return null;
+  const { profile } = access;
   // Contractor identity details are maintained by StrataVerze staff only.
   if (!profile.isPlatformAdmin) notFound();
 
@@ -24,7 +26,7 @@ export default async function EditContractorPage({
   if (!scheme) notFound();
 
   const contractor = await getContractorBusinessById(contractorId);
-  if (!contractor) notFound();
+  if (!contractor || !(await isContractorVisibleToScheme(contractor, id))) notFound();
 
   return (
     <div className="max-w-3xl">

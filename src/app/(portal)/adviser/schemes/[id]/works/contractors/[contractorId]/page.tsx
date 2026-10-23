@@ -1,8 +1,8 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getContractorBusinessById } from "@/lib/queries/works";
+import { getContractorBusinessById, isContractorVisibleToScheme } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
@@ -33,14 +33,20 @@ export default async function ContractorDetailPage({
   await connection();
   const { id, contractorId } = await params;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.read");
+  if (!access) return null;
+  const { profile } = access;
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
+  // Contractor businesses are platform wide: a scheme sees only approved
+  // contractors and those linked to it by its works records.
   const contractor = await getContractorBusinessById(contractorId);
-  if (!contractor) notFound();
+  if (!contractor || !(await isContractorVisibleToScheme(contractor, id))) notFound();
+  // Only this scheme's compliance checks, not those for other schemes.
+  const complianceChecks = contractor.complianceChecks.filter((c) => c.requirement?.schemeId === id);
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -256,11 +262,11 @@ export default async function ContractorDetailPage({
       )}
 
       {/* Compliance checks */}
-      {contractor.complianceChecks.length > 0 && (
+      {complianceChecks.length > 0 && (
         <Card>
           <CardHeader title="Compliance Checks" />
           <div className="flex flex-col gap-2 px-5 pb-5">
-            {contractor.complianceChecks.map((check) => (
+            {complianceChecks.map((check) => (
               <div
                 key={check.id}
                 className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted p-4"

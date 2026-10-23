@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import {
   getWorksContractsForScheme,
@@ -18,8 +18,9 @@ export default async function NewInvoicePage({
   await connection();
   const { id } = await params;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.manage");
+  if (!access) return null;
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();

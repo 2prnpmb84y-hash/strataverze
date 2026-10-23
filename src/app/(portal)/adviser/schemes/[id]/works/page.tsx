@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import {
   getWorksRequestsForScheme,
@@ -70,8 +70,9 @@ export default async function WorksDashboardPage({
   const { id } = await params;
   const { status, priority, search } = await searchParams;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.read");
+  if (!access) return null;
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
