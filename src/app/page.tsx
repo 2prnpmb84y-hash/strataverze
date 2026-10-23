@@ -129,51 +129,45 @@ export default function Page() {
       {/* ============================================================ */}
       <section className="relative overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left column — copy */}
-            <div className="max-w-xl">
-              <p className="text-sm font-semibold tracking-wide uppercase text-brand-teal">
-                Owner-first strata management
-              </p>
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold tracking-widest uppercase text-brand-teal">
+              Owner-first strata management, New South Wales
+            </p>
 
-              <h1 className="mt-4 font-heading text-4xl sm:text-5xl font-bold leading-tight tracking-tight">
-                Your scheme&rsquo;s finances, records and compliance&nbsp;&mdash;{" "}
-                <span className="gradient-text">in one place</span>
-              </h1>
+            <h1 className="mt-4 font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
+              Your scheme.
+              <br />
+              Your records.
+              <br />
+              <span className="gradient-text">Your call.</span>
+            </h1>
 
-              <p className="mt-6 text-lg text-[var(--muted)] leading-relaxed">
-                StrataVerze gives NSW Owners Corporations the tools to manage
-                levies, store records securely, and stay compliant&nbsp;&mdash;
-                without depending on a strata manager for visibility.
-              </p>
+            <p className="mt-6 text-lg text-[var(--muted)] leading-relaxed max-w-2xl">
+              StrataVerze is the owners corporation&rsquo;s own management
+              platform. Finances, documents, meetings and compliance in one
+              place that the committee controls, with a strata manager,
+              accountant or other adviser invited in on your terms.
+            </p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center rounded-full bg-brand-amber px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-brand-amber-dark transition-colors"
-                >
-                  Apply for Founding Schemes
-                </Link>
-                <Link
-                  href="/features"
-                  className="inline-flex items-center rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
-                >
-                  See how it works
-                </Link>
-              </div>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                href="/pricing"
+                className="inline-flex items-center rounded-full bg-brand-amber px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm hover:bg-brand-amber-dark transition-colors"
+              >
+                Apply for the Founding Schemes programme
+              </Link>
+              <Link
+                href="/features"
+                className="inline-flex items-center rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
+              >
+                See how it works
+              </Link>
             </div>
 
-            {/* Right column — hero image */}
-            <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden gradient-bg">
-              <Image
-                src="/images/hero-lobby-residents.webp"
-                alt="Diverse group of apartment residents chatting in a modern strata building lobby"
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
-            </div>
+            <p className="mt-6 text-sm text-[var(--muted)]">
+              Free for founding schemes until 30&nbsp;June&nbsp;2027. Assisted
+              migration included. No lock-in.
+            </p>
           </div>
         </div>
       </section>
@@ -211,7 +205,7 @@ export default function Page() {
       {/* ============================================================ */}
       {/* 3. THE PLATFORM — What the committee can do                   */}
       {/* ============================================================ */}
-      <section className="py-20 lg:py-28">
+      <section className="py-20 lg:py-28 bg-[var(--surface-alt)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-sm font-semibold tracking-widest uppercase text-[var(--muted)] mb-3">
@@ -250,7 +244,105 @@ export default function Page() {
       </section>
 
       {/* ============================================================ */}
-      {/* 4. RECORDS SECTION                                           */}
+      {/* 4. FIND YOUR STARTING POINT                                  */}
+      {/* ============================================================ */}
+      <section className="py-20 lg:py-28 bg-[#EEF3F7] dark:bg-slate-800/40">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <p className="text-sm font-semibold tracking-widest uppercase text-[var(--muted)] mb-3">
+              Find your starting point
+            </p>
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight">
+              Which situation sounds like yours?
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Card 1 — Self-managed */}
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 flex flex-col">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal mb-5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <h3 className="font-heading text-xl font-bold mb-3">
+                We manage our own scheme
+              </h3>
+              <p className="text-sm text-[var(--muted)] leading-relaxed mb-6 flex-1">
+                Levies, ledger, bank reconciliation, meetings and records built
+                for volunteer committees.
+              </p>
+              <Link
+                href="/features"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-brand-teal hover:text-brand-teal-dark transition-colors"
+              >
+                Self-managed schemes
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Card 2 — With a manager */}
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 flex flex-col">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal mb-5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+              <h3 className="font-heading text-xl font-bold mb-3">
+                We have a manager and want visibility
+              </h3>
+              <p className="text-sm text-[var(--muted)] leading-relaxed mb-6 flex-1">
+                Hold your own record of the scheme while your manager does the
+                work, or through a change of manager.
+              </p>
+              <Link
+                href="/features"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-brand-teal hover:text-brand-teal-dark transition-colors"
+              >
+                Committees with a manager
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Card 3 — Owner */}
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 flex flex-col">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-amber/10 text-brand-amber mb-5">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <h3 className="font-heading text-xl font-bold mb-3">
+                I am an owner, not on the committee
+              </h3>
+              <p className="text-sm text-[var(--muted)] leading-relaxed mb-6 flex-1">
+                See where levies go and what was decided. Ask your committee
+                about StrataVerze, or read the owner guide.
+              </p>
+              <Link
+                href="/about"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-brand-teal hover:text-brand-teal-dark transition-colors"
+              >
+                Owner guide
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================ */}
+      {/* 5. RECORDS SECTION                                           */}
       {/* ============================================================ */}
       <section className="py-20 lg:py-28 bg-[var(--surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -308,7 +400,7 @@ export default function Page() {
       </section>
 
       {/* ============================================================ */}
-      {/* 5. SUPPLIERS TEASER                                          */}
+      {/* 6. SUPPLIERS TEASER                                          */}
       {/* ============================================================ */}
       <section className="py-20 lg:py-28 bg-[var(--surface-alt)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -397,9 +489,9 @@ export default function Page() {
       </section>
 
       {/* ============================================================ */}
-      {/* 6. ABOUT / FOUNDER TEASER                                    */}
+      {/* 7. ABOUT / FOUNDER TEASER                                    */}
       {/* ============================================================ */}
-      <section className="py-20 lg:py-28">
+      <section className="py-20 lg:py-28 bg-[var(--surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center gap-10 max-w-3xl mx-auto">
             {/* Photo */}
@@ -449,7 +541,7 @@ export default function Page() {
       </section>
 
       {/* ============================================================ */}
-      {/* 7. CTA SECTION                                               */}
+      {/* 8. CTA SECTION                                               */}
       {/* ============================================================ */}
       <section className="gradient-bg">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-24 text-center">
