@@ -1,4 +1,4 @@
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -19,7 +19,7 @@ export default async function OwnerInsurancePage() {
 
   const schemes = scopeToSelectedScheme(
     await getSchemesForOwner(profile.id),
-    await getSelectedSchemeId(),
+    await getVerifiedSelectedSchemeId(),
   );
   const schemeIds = schemes.map((s) => s.id);
   const policies = await getInsuranceForSchemes(schemeIds);

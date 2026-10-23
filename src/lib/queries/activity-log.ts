@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import {
   normalisePagination,
@@ -469,16 +470,25 @@ export async function getAuditTrailActors(schemeId: string) {
 
 
 /**
- * Get recent activity across multiple schemes.
+ * Get recent activity across multiple schemes. Pass `actions` to return only
+ * those action types (an empty list returns nothing). Pages that show
+ * activity to owners must pass an allow-list (see
+ * src/lib/owner/notification-feed.ts) and filter per viewer.
  */
 export async function getActivityForSchemes(
   schemeIds: string[],
   limit = 50,
+  actions?: readonly string[],
 ) {
   if (schemeIds.length === 0) return [];
+  if (actions && actions.length === 0) return [];
 
   return db.orm.public.ActivityLog
-    .where((a) => a.schemeId.in(schemeIds))
+    .where((a) =>
+      actions
+        ? and(a.schemeId.in(schemeIds), a.action.in([...actions]))
+        : a.schemeId.in(schemeIds),
+    )
     .include("actor")
     .include("scheme")
     .orderBy((a) => a.createdAt.desc())

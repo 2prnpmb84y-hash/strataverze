@@ -1,5 +1,6 @@
 import { db } from "@/prisma/db";
 import { and, or } from "@prisma/orm-postgres/orm-client";
+import { isQuoteRequestOpen, toSupplierQuoteView } from "@/lib/supplier/quote-visibility";
 
 /**
  * Get OPEN quote requests visible to a specific supplier, scoped to
@@ -20,7 +21,7 @@ export async function getOpenQuoteRequests(supplierProfileId: string) {
   const schemeIds = memberships.map((m) => m.schemeId);
   if (schemeIds.length === 0) return [];
 
-  return db.orm.public.QuoteRequest
+  const requests = await db.orm.public.QuoteRequest
     .where((qr) =>
       and(
         qr.status.eq("OPEN"),
@@ -33,19 +34,29 @@ export async function getOpenQuoteRequests(supplierProfileId: string) {
     .orderBy((qr) => qr.createdAt.desc())
     .limit(200)
     .all();
+
+  // Past its closing time is not open. Competitors' quotes are reduced to a
+  // count; only the supplier's own quote is returned (F3).
+  const now = new Date();
+  return requests
+    .filter((qr) => isQuoteRequestOpen(qr, now))
+    .map((qr) => toSupplierQuoteView(qr, supplierProfileId));
 }
 
 /**
- * Get a single quote request by ID with its quotes and scheme.
+ * Get a single quote request as a given supplier may see it: the request,
+ * its scheme and work order, the supplier's own quote and a count of other
+ * quotes (never their amounts, descriptions or supplier names). Callers must
+ * still check the supplier's active SUPPLIER membership on the scheme and
+ * supplierMaySeeQuoteRequest.
  */
-export async function getQuoteRequestById(quoteRequestId: string) {
-  return db.orm.public.QuoteRequest
+export async function getQuoteRequestForSupplier(quoteRequestId: string, supplierId: string) {
+  const qr = await db.orm.public.QuoteRequest
     .include("scheme")
     .include("workOrder")
-    .include("quotes", (q) =>
-      q.include("supplier").orderBy((qt) => qt.createdAt.desc()),
-    )
+    .include("quotes")
     .first({ id: quoteRequestId });
+  return qr ? toSupplierQuoteView(qr, supplierId) : null;
 }
 
 /**

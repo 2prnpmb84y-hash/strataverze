@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { db } from "@/prisma/db";
+import { requirePlatformAdminPage } from "@/lib/auth/require-access";
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatAud } from "@/lib/billing/money";
@@ -10,6 +11,7 @@ import { ReferralForm } from "./referral-form";
 /** StrataVerze staff: record commission a partner paid on a scheme's policy. */
 export default async function ReferralIncomeAdminPage() {
   await connection();
+  await requirePlatformAdminPage();
   const enabled = referralIncomeEnabled();
 
   const header = (

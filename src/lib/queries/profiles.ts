@@ -180,7 +180,11 @@ export async function getProfileWithMemberships(profileId: string) {
 }
 
 /**
- * Check whether a profile has at least one active COMMITTEE membership.
+ * Check whether a profile has at least one active COMMITTEE membership, on
+ * ANY scheme. Only for navigation (whether to show committee menu items).
+ * Never use it to authorise scheme-specific data (SEC-023): check the
+ * committee role on the scheme in hand instead (requireSchemeAccess, or the
+ * roles from getSelectedOwnerScheme).
  */
 export async function hasCommitteeRole(profileId: string): Promise<boolean> {
   const membership = await db.orm.public.SchemeMembership

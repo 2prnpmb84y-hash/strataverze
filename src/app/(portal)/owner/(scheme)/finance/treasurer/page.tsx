@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getTreasurerMonth } from "@/lib/finance/treasurer-home-data";
 import { formatAud } from "@/lib/billing/money";
@@ -59,7 +57,9 @@ export default async function TreasurerHomePage() {
   await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
-  const schemeId = await getSelectedSchemeId();
+  // The selected scheme, verified: the treasurer of THIS scheme only.
+  const selected = await getSelectedOwnerScheme(["COMMITTEE"]);
+  const schemeId = selected?.schemeId ?? null;
   const header = (
     <PageHeader
       title="Treasurer"
@@ -68,14 +68,7 @@ export default async function TreasurerHomePage() {
       backLabel="Finance"
     />
   );
-  const isTreasurer = schemeId
-    ? (
-        await db.orm.public.SchemeMembership
-          .where((m) => and(m.schemeId.eq(schemeId), m.profileId.eq(profile.id), m.isActive.eq(true), m.role.eq("COMMITTEE")))
-          .limit(5)
-          .all()
-      ).some((m) => m.isTreasurer)
-    : false;
+  const isTreasurer = !!selected?.memberships.some((m) => m.role === "COMMITTEE" && m.isTreasurer);
   if (!schemeId || !isTreasurer) {
     return (
       <div className="space-y-6">

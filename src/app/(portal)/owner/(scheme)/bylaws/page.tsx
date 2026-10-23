@@ -1,4 +1,4 @@
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
@@ -37,7 +37,7 @@ export default async function OwnerBylawsPage() {
 
   const schemes = scopeToSelectedScheme(
     await getSchemesForOwner(profile.id),
-    await getSelectedSchemeId(),
+    await getVerifiedSelectedSchemeId(),
   );
   const schemeIds = schemes.map((s) => s.id);
   const bylaws = await getBylawsForSchemes(schemeIds);
