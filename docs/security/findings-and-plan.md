@@ -400,7 +400,7 @@ Uploads never used are removed daily once their link has expired (run from the e
 - **Notifications.** Nobody is yet told by email when their phone number, authenticators or sessions change, or when an admin resets their MFA. This waits on email (S2).
 - **Durable record of admin actions.** Admin MFA resets and admin sign-outs are only in the short-lived server log until the audit log (S6). The reason typed by the admin is not logged, because it can hold personal details.
 - **Exports.** Decided 23 Oct: the committee pack, statutory pack, owner statement, levy notice and remittance PDFs stay without a fresh authenticator check. Only the audit export needs one.
-- **Insurance document access level.** `InsuranceDocument.accessLevel` (default RESTRICTED) is not enforced: owners see every current policy document. This predates S3. Decide whether owners should see policy documents marked restricted.
+- **Insurance document access level.** Decided 23 Oct: owners see every current policy document of their building, including those marked restricted (as today). `InsuranceDocument.accessLevel` therefore does not limit owners. It is not shown to suppliers or accountants, who have no access to insurance documents.
 - **Contractor document links.** The contractor onboarding and works document fields are free text, not stored files, and are not shown anywhere today. Any future link must go through the server signing.
 - **Money actions not on the step-up list.** Decided 23 Oct: levy receipts and reversals, journal entries, special levies, levy schedule approval, debt recovery write-offs and owner credit application stay as they are. They need MFA for the roles that hold them, but not a check in the last 15 minutes.
 
