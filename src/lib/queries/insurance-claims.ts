@@ -95,7 +95,16 @@ export type UpdateClaimData = Partial<
   }
 >;
 
-export async function updateClaim(claimId: string, data: UpdateClaimData) {
+/** The scheme's live (not deleted) claim with this id, or null. */
+export async function getSchemeClaim(schemeId: string, claimId: string) {
+  if (!schemeId || !claimId) return null;
+  return db.orm.public.InsuranceClaim
+    .where((c) => and(c.id.eq(claimId), c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
+    .first();
+}
+
+/** Update a claim. Scheme-scoped: returns null when the claim is not this scheme's. */
+export async function updateClaim(schemeId: string, claimId: string, data: UpdateClaimData) {
   const u: Record<string, unknown> = {};
   const s = (k: string, v: unknown) => {
     u[k] = v;
@@ -138,7 +147,9 @@ export async function updateClaim(claimId: string, data: UpdateClaimData) {
   if (data.settlementDetails !== undefined) s("settlementDetails", data.settlementDetails);
   if (data.decisionReason !== undefined) s("decisionReason", data.decisionReason);
 
-  return db.orm.public.InsuranceClaim.where({ id: claimId }).update(u);
+  return db.orm.public.InsuranceClaim
+    .where((c) => and(c.id.eq(claimId), c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
+    .update(u);
 }
 
 export async function setClaimStatus(

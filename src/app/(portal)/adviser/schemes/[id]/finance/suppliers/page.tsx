@@ -4,6 +4,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 export default async function SuppliersPage({
   params,
@@ -12,6 +13,8 @@ export default async function SuppliersPage({
 }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
   const suppliers = await getFinancialSuppliersForScheme(id);
 
   const activeCount = suppliers.filter(

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { connection } from "next/server";
 import { FundsCard } from "../_sections/funds-card";
 import { LeviesCard } from "../_sections/levies-card";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -29,6 +30,8 @@ export default async function FinanceDashboardPage({
 }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
 
   const [
     funds,

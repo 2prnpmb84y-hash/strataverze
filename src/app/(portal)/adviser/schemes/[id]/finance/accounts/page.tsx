@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { seedChartOfAccountsAction } from "../actions";
 import { connection } from "next/server";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 async function handleSeedAction(formData: FormData) {
   "use server";
@@ -43,6 +44,8 @@ export default async function ChartOfAccountsPage({
 }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
 
   const [accounts, funds] = await Promise.all([
     getAccountCodesForScheme(id),

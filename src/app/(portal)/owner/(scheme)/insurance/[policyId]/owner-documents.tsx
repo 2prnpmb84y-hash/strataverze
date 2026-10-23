@@ -31,9 +31,9 @@ export function OwnerDocuments({
 }) {
   const [error, setError] = useState<string | null>(null);
 
-  async function download(fileUrl: string) {
+  async function download(documentId: string) {
     setError(null);
-    const res = await getOwnerInsuranceDocumentUrlAction(schemeId, fileUrl);
+    const res = await getOwnerInsuranceDocumentUrlAction(schemeId, documentId);
     if (res.url) window.open(res.url, "_blank", "noopener");
     else setError(res.error ?? "Could not open the document.");
   }
@@ -62,7 +62,7 @@ export function OwnerDocuments({
             <button
               type="button"
               className="text-turquoise text-xs hover:underline shrink-0"
-              onClick={() => download(d.fileUrl)}
+              onClick={() => download(d.id)}
             >
               Download
             </button>

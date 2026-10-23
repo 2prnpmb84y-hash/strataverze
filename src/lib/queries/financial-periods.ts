@@ -103,51 +103,39 @@ export async function createFinancialPeriod(data: {
 /**
  * Close a financial period, recording who closed it and when.
  */
-export async function closePeriod(periodId: string, closedBy: string) {
-  try {
-    return db.orm.public.FinancialPeriod
-      .where({ id: periodId })
-      .update({
-        status: "CLOSED",
-        closedAt: toTimestamp(new Date().toISOString()),
-        closedBy,
-      });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+export async function closePeriod(schemeId: string, periodId: string, closedBy: string) {
+  // Scheme-scoped and only from OPEN: returns null otherwise.
+  return db.orm.public.FinancialPeriod
+    .where((p) => and(p.id.eq(periodId), p.schemeId.eq(schemeId), p.status.eq("OPEN")))
+    .update({
+      status: "CLOSED",
+      closedAt: toTimestamp(new Date().toISOString()),
+      closedBy,
+    });
 }
 
 /**
- * Lock a financial period (prevents any further changes).
+ * Lock a closed financial period (prevents any further changes).
+ * Scheme-scoped and only from CLOSED: returns null otherwise.
  */
-export async function lockPeriod(periodId: string) {
-  try {
-    return db.orm.public.FinancialPeriod
-      .where({ id: periodId })
-      .update({ status: "LOCKED" });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+export async function lockPeriod(schemeId: string, periodId: string) {
+  return db.orm.public.FinancialPeriod
+    .where((p) => and(p.id.eq(periodId), p.schemeId.eq(schemeId), p.status.eq("CLOSED")))
+    .update({ status: "LOCKED" });
 }
 
 /**
- * Reopen a previously closed or locked period.
+ * Reopen a closed period. A LOCKED period cannot be reopened here.
+ * Scheme-scoped and only from CLOSED: returns null otherwise.
  */
-export async function reopenPeriod(periodId: string) {
-  try {
-    return db.orm.public.FinancialPeriod
-      .where({ id: periodId })
-      .update({
-        status: "OPEN",
-        closedAt: null,
-        closedBy: null,
-      });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+export async function reopenPeriod(schemeId: string, periodId: string) {
+  return db.orm.public.FinancialPeriod
+    .where((p) => and(p.id.eq(periodId), p.schemeId.eq(schemeId), p.status.eq("CLOSED")))
+    .update({
+      status: "OPEN",
+      closedAt: null,
+      closedBy: null,
+    });
 }
 
 /**

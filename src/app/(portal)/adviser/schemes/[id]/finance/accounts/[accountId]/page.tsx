@@ -26,7 +26,7 @@ export default async function EditAccountCodePage({
   if (!isAdviser) notFound();
 
   const account = await getAccountCodeById(accountId);
-  if (!account) notFound();
+  if (!account || account.schemeId !== id) notFound();
 
   const funds = await getFundsForScheme(id);
 

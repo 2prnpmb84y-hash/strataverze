@@ -206,10 +206,20 @@ export type UpdatePolicyData = Partial<
   }
 >;
 
+/** The scheme's live (not deleted) policy with this id, or null. */
+export async function getSchemePolicy(schemeId: string, policyId: string) {
+  if (!schemeId || !policyId) return null;
+  return db.orm.public.InsurancePolicy
+    .where((p) => and(p.id.eq(policyId), p.schemeId.eq(schemeId), p.deletedAt.eq(null)))
+    .first();
+}
+
 /**
  * Update an existing insurance policy. Only provided fields are changed.
+ * Scheme-scoped: returns null when the policy is not this scheme's.
  */
 export async function updateInsurancePolicy(
+  schemeId: string,
   policyId: string,
   data: UpdatePolicyData,
 ) {
@@ -258,15 +268,18 @@ export async function updateInsurancePolicy(
     set("paymentDate", data.paymentDate ? toTimestamp(data.paymentDate) : null);
   if (data.paymentReference !== undefined) set("paymentReference", data.paymentReference);
 
-  return db.orm.public.InsurancePolicy.where({ id: policyId }).update(u);
+  return db.orm.public.InsurancePolicy
+    .where((p) => and(p.id.eq(policyId), p.schemeId.eq(schemeId), p.deletedAt.eq(null)))
+    .update(u);
 }
 
 /**
- * Soft-delete an insurance policy.
+ * Soft-delete an insurance policy. Scheme-scoped: returns null when the
+ * policy is not this scheme's.
  */
-export async function deleteInsurancePolicy(policyId: string) {
+export async function deleteInsurancePolicy(schemeId: string, policyId: string) {
   return db.orm.public.InsurancePolicy
-    .where({ id: policyId })
+    .where((p) => and(p.id.eq(policyId), p.schemeId.eq(schemeId), p.deletedAt.eq(null)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 
@@ -287,11 +300,17 @@ export async function getCoverageItems(policyId: string) {
     .all();
 }
 
-/** Replace all coverage items for a policy (delete then recreate in order). */
+/**
+ * Replace all coverage items for a policy (delete then recreate in order).
+ * Scheme-scoped: changes nothing and returns false when the policy is not
+ * this scheme's.
+ */
 export async function replaceCoverageItems(
+  schemeId: string,
   policyId: string,
   items: CoverageItemInput[],
-) {
+): Promise<boolean> {
+  if (!(await getSchemePolicy(schemeId, policyId))) return false;
   await db.orm.public.InsuranceCoverageItem
     .where((c) => c.policyId.eq(policyId))
     .delete();
@@ -307,6 +326,7 @@ export async function replaceCoverageItems(
       position: i,
     } as never);
   }
+  return true;
 }
 
 // ─── Premium line items ──────────────────────────────────────────
@@ -324,11 +344,16 @@ export async function getPremiumLineItems(policyId: string) {
     .all();
 }
 
-/** Replace all premium line items for a policy. */
+/**
+ * Replace all premium line items for a policy. Scheme-scoped: changes nothing
+ * and returns false when the policy is not this scheme's.
+ */
 export async function replacePremiumLineItems(
+  schemeId: string,
   policyId: string,
   items: PremiumLineItemInput[],
-) {
+): Promise<boolean> {
+  if (!(await getSchemePolicy(schemeId, policyId))) return false;
   await db.orm.public.InsurancePremiumLineItem
     .where((l) => l.policyId.eq(policyId))
     .delete();
@@ -342,6 +367,7 @@ export async function replacePremiumLineItems(
       position: i,
     } as never);
   }
+  return true;
 }
 
 // ─── Overview ────────────────────────────────────────────────────

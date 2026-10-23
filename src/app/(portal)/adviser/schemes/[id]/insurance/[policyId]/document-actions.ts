@@ -2,17 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { createClient } from "@/lib/supabase/server";
 import { validateFileUpload } from "@/lib/upload/validate-mime";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
   createInsuranceDocument,
-  getInsuranceDocumentById,
+  getDownloadableInsuranceDocument,
+  getSchemeInsuranceDocument,
   markDocumentNotCurrent,
   markDocumentCurrent,
   softDeleteInsuranceDocument,
 } from "@/lib/queries/insurance-documents";
+import { getSchemePolicy } from "@/lib/queries/insurance";
 import { DOCUMENT_CATEGORIES } from "@/lib/insurance/constants";
 
 const CATEGORY_SET = new Set<string>(DOCUMENT_CATEGORIES);
@@ -48,12 +51,16 @@ export async function uploadInsuranceDocumentAction(
     if (mimeError) return { error: mimeError };
     if (file.size > MAX_BYTES) return { error: "File must be smaller than 30 MB." };
 
+    // The policy must be this scheme's (SEC-004).
+    const policy = await getSchemePolicy(schemeId, policyId);
+    if (!policy) return { error: "Insurance policy not found." };
+
     // Resolve versioning against any superseded document.
     let version = 1;
-    let prev: Awaited<ReturnType<typeof getInsuranceDocumentById>> = null;
+    let prev: Awaited<ReturnType<typeof getSchemeInsuranceDocument>> = null;
     if (supersedesId) {
-      prev = await getInsuranceDocumentById(supersedesId);
-      if (!prev || prev.policyId !== policyId) {
+      prev = await getSchemeInsuranceDocument(schemeId, supersedesId);
+      if (!prev || prev.policyId !== policy.id) {
         return { error: "The document being superseded could not be found." };
       }
       version = prev.version + 1;
@@ -61,7 +68,7 @@ export async function uploadInsuranceDocumentAction(
 
     const supabase = await createClient();
     const ext = file.name.split(".").pop() ?? "bin";
-    const storagePath = `schemes/${schemeId}/insurance/${policyId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    const storagePath = `schemes/${schemeId}/insurance/${policy.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("documents")
@@ -71,7 +78,7 @@ export async function uploadInsuranceDocumentAction(
 
     const doc = await createInsuranceDocument({
       schemeId,
-      policyId,
+      policyId: policy.id,
       category,
       title: title || file.name.replace(/\.[^.]+$/, ""),
       fileUrl: storagePath,
@@ -84,7 +91,7 @@ export async function uploadInsuranceDocumentAction(
       notes: notes || null,
     });
 
-    if (prev) await markDocumentNotCurrent(prev.id);
+    if (prev) await markDocumentNotCurrent(schemeId, prev.id);
 
     await logActivity({
       schemeId,
@@ -103,23 +110,27 @@ export async function uploadInsuranceDocumentAction(
   }
 }
 
-/** Short-lived signed URL for previewing or downloading a policy document. */
+/**
+ * Short-lived signed URL for previewing or downloading a policy document.
+ * Takes the document's id, never a path: the record's own stored path is
+ * signed, once the document is confirmed to be this scheme's. The adviser
+ * policy page is the only caller.
+ */
 export async function getInsuranceDocumentUrlAction(
   schemeId: string,
-  fileUrl: string,
+  documentId: string,
 ): Promise<{ url?: string; error?: string }> {
+  let doc: Awaited<ReturnType<typeof getDownloadableInsuranceDocument>>;
   try {
-    await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-      "OWNER",
-    ]);
+    await requireSchemeAccess(schemeId, "insurance.manage");
+    doc = await getDownloadableInsuranceDocument(schemeId, documentId, "manager");
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;
   }
+  if (!doc) return { error: "Document not found." };
   try {
-    const url = await resolveDocumentUrl(fileUrl, 600);
+    const url = await resolveDocumentUrl(String(doc.fileUrl), 600, { schemeId });
     return { url };
   } catch {
     return { error: "Failed to generate document URL." };
@@ -134,14 +145,15 @@ export async function deleteInsuranceDocumentAction(
 ): Promise<{ error?: string }> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    const doc = await getInsuranceDocumentById(documentId);
-    if (!doc || doc.policyId !== policyId) return { error: "Document not found." };
+    // The document must be this scheme's, and filed against this policy.
+    const doc = await getSchemeInsuranceDocument(schemeId, documentId);
+    if (!doc || !policyId || doc.policyId !== policyId) return { error: "Document not found." };
 
-    await softDeleteInsuranceDocument(documentId);
+    await softDeleteInsuranceDocument(schemeId, doc.id);
     // Promote the immediate previous version to current, if any.
     if (doc.supersedesId) {
-      const prev = await getInsuranceDocumentById(doc.supersedesId);
-      if (prev) await markDocumentCurrent(prev.id);
+      const prev = await getSchemeInsuranceDocument(schemeId, doc.supersedesId);
+      if (prev && prev.policyId === doc.policyId) await markDocumentCurrent(schemeId, prev.id);
     }
 
     await logActivity({

@@ -34,7 +34,7 @@ export default async function AdjustmentEntryPage({
   }
 
   const period = await getFinancialPeriodById(periodId);
-  if (!period || period.status === "LOCKED") {
+  if (!period || period.schemeId !== id || period.status === "LOCKED") {
     redirect(`/adviser/schemes/${id}/finance/periods`);
   }
 

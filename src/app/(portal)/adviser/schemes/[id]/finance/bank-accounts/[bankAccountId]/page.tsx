@@ -25,7 +25,7 @@ export default async function EditBankAccountPage({
   if (!isAdviser) notFound();
 
   const bankAccount = await getBankAccountById(bankAccountId);
-  if (!bankAccount) notFound();
+  if (!bankAccount || bankAccount.schemeId !== id) notFound();
 
   const defaultValues = {
     bankName: String(bankAccount.bankName ?? ""),
