@@ -147,14 +147,18 @@ export function DocumentList({
                           {formatFileSize(doc.fileSize)}
                         </p>
                       </div>
-                      <a
-                        href={doc.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors"
-                      >
-                        Download
-                      </a>
+                      {doc.fileUrl ? (
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors"
+                        >
+                          Download
+                        </a>
+                      ) : (
+                        <span className="text-xs text-ink-muted">Unavailable</span>
+                      )}
                     </div>
                   );
                 })}

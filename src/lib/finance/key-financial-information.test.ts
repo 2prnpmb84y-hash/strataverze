@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { auditRequired, keyFinancialInformation, ownersFundsCents, unpaidAt } from "./key-financial-information";
+import { auditRequired, keyFinancialInformation, leviesRaisedForYear, ownersFundsCents, unpaidAt } from "./key-financial-information";
 import type { BasisEntry, BasisLine } from "./accounting-basis";
 
 const l = (accountType: string, accountSubType: string, debit: number, credit: number): BasisLine => ({
@@ -62,10 +62,45 @@ describe("statement of key financial information", () => {
 });
 
 describe("audit requirement", () => {
-  const t = { lotsMoreThan: 100, annualBudgetMoreThanCents: 25_000_000 };
-  it("applies to more than 100 lots or a budget above the amount", () => {
-    expect(auditRequired({ ...t, lots: 101, annualBudgetCents: 0 })).toMatchObject({ required: true, byLots: true });
-    expect(auditRequired({ ...t, lots: 100, annualBudgetCents: 25_000_000 }).required).toBe(false);
-    expect(auditRequired({ ...t, lots: 20, annualBudgetCents: 25_000_001 })).toMatchObject({ required: true, byBudget: true });
+  const t = { lotsMoreThan: 100, leviesRaisedMoreThanCents: 25_000_000 };
+  it("applies to more than 100 lots or levies raised above $250,000", () => {
+    expect(auditRequired({ ...t, lots: 101, leviesRaisedCents: 0 })).toMatchObject({ required: true, byLots: true });
+    expect(auditRequired({ ...t, lots: 100, leviesRaisedCents: 25_000_000 }).required).toBe(false);
+    expect(auditRequired({ ...t, lots: 20, leviesRaisedCents: 25_000_001 })).toMatchObject({ required: true, byBudget: true });
+  });
+
+  it("totals the levies resolved to be raised for the year", () => {
+    // $80,000 administrative and $20,000 capital works: $100,000 raised, below the threshold.
+    const plain = leviesRaisedForYear({
+      schedules: [
+        { fundId: "admin", status: "ACTIVE", budgetAmountCents: 8_000_000 },
+        { fundId: "cw", status: "ACTIVE", budgetAmountCents: 2_000_000 },
+        { fundId: "admin", status: "DRAFT", budgetAmountCents: 99_000_000 },
+      ],
+      notices: [{ fundId: "admin", amountDueCents: 2_000_000 }],
+    });
+    expect(plain).toEqual({ totalCents: 10_000_000, byFund: { admin: 8_000_000, cw: 2_000_000 } });
+    // A special levy of $160,000 takes the year to $260,000, above it.
+    const special = leviesRaisedForYear({
+      schedules: [
+        { fundId: "admin", status: "ACTIVE", budgetAmountCents: 8_000_000 },
+        { fundId: "cw", status: "ACTIVE", budgetAmountCents: 2_000_000 },
+        { fundId: "cw", status: "APPROVED", budgetAmountCents: 16_000_000 },
+      ],
+      notices: [],
+    });
+    expect(special.totalCents).toBe(26_000_000);
+    expect(auditRequired({ ...t, lots: 20, leviesRaisedCents: special.totalCents }).required).toBe(true);
+  });
+
+  it("counts notices raised when they come to more than the schedules", () => {
+    const r = leviesRaisedForYear({
+      schedules: [{ fundId: "admin", status: "SUPERSEDED", budgetAmountCents: 8_000_000 }],
+      notices: [
+        { fundId: "admin", amountDueCents: 2_000_000 },
+        { fundId: "admin", amountDueCents: 2_100_000 },
+      ],
+    });
+    expect(r.totalCents).toBe(4_100_000);
   });
 });

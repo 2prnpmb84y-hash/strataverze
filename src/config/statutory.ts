@@ -77,14 +77,21 @@ export const CAPITAL_WORKS_PLAN = {
  * Audit of the accounts and financial statements.
  *
  * SSMA 2015 s 95: required for a scheme of more than 100 lots, or with an
- * annual budget of more than $250,000 (thresholds confirmed by StrataVerze,
- * 23 October 2026). How the budget is worked out is in the Strata Schemes
- * Management Regulation 2016 cl 21: contributions levied for the year, other
- * income, and other amounts held. Other schemes consider an audit at each AGM.
+ * annual budget of more than the prescribed amount, $250,000 (Strata Schemes
+ * Management Regulation 2016 cl 21). Other schemes consider an audit at each
+ * AGM. Thresholds confirmed by StrataVerze, 23 October 2026.
+ *
+ * The amount tested is the total levies raised for the financial year
+ * (administrative and capital works fund contributions, and any special
+ * levies), as confirmed by StrataVerze on 23 October 2026: "all buildings over
+ * 100 lots or raise more than 250K require an audit". Other income and money
+ * already held are not counted. If the Regulation's own definition of the
+ * annual budget is later found to include them, change `leviesRaisedForYear`.
  */
 export const AUDIT_THRESHOLD = {
   lotsMoreThan: 100,
-  annualBudgetMoreThanCents: 25_000_000,
+  leviesRaisedMoreThanCents: 25_000_000,
+  measure: "total levies raised for the financial year",
   source: "Strata Schemes Management Act 2015 (NSW) s 95; Strata Schemes Management Regulation 2016 cl 21",
 } as const;
 

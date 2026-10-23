@@ -158,14 +158,18 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
                   {formatDate(doc.createdAt)}
                 </p>
               </div>
-              <a
-                href={doc.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-medium text-turquoise hover:bg-mint-soft transition-colors"
-              >
-                View
-              </a>
+              {doc.fileUrl ? (
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-medium text-turquoise hover:bg-mint-soft transition-colors"
+                >
+                  View
+                </a>
+              ) : (
+                <span className="shrink-0 px-3 py-1.5 text-xs text-ink-muted">Unavailable</span>
+              )}
             </div>
           ))}
         </div>
