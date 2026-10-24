@@ -10,7 +10,6 @@ import {
   emptyOpeningBalances,
   formatMoney,
   parseMoney,
-  splitInterest,
   todayInSydney,
   yearStartFor,
   type OpeningBalancesInput,
@@ -138,6 +137,12 @@ describe("lots and unit entitlements", () => {
     expect(c.rowErrors[3]!.join(" ")).toContain("line break");
   });
 
+  it("needs every lot's owner name as on the strata roll", () => {
+    const c = checkLots([{ ...rows[0], ownerName: "   " }, rows[1]], 2, 100);
+    expect(c.ok).toBe(false);
+    expect(c.rowErrors[0]).toContain("Enter the owner's name as it appears on the strata roll.");
+  });
+
   it("makes blank rows numbered 1 to n", () => {
     expect(blankLots(3).map((l) => l.lotNumber)).toEqual(["1", "2", "3"]);
     expect(blankLots(0)).toEqual([]);
@@ -214,46 +219,38 @@ describe("building opening balances", () => {
 describe("lot opening balances", () => {
   const lots = [{ lotNumber: "1" }, { lotNumber: "2" }];
 
-  it("splits interest by the lot's arrears in each fund, with no cent lost", () => {
-    expect(splitInterest(100, 300, 100)).toEqual({ admin: 75, capitalWorks: 25 });
-    expect(splitInterest(101, 1, 1)).toEqual({ admin: 51, capitalWorks: 50 });
-    expect(splitInterest(50, 0, 0)).toEqual({ admin: 50, capitalWorks: 0 });
-    expect(splitInterest(0, 10, 10)).toEqual({ admin: 0, capitalWorks: 0 });
-    expect(splitInterest(1, 1, 1)).toEqual({ admin: 1, capitalWorks: 0 }); // a half cent rounds up, to admin
-  });
-
-  it("passes when the lots add up to receivables and paid in advance", () => {
+  it("passes when each fund's levies and interest add up to its receivables, and unallocated to paid in advance", () => {
     const sheet = checkOpeningBalances(goodBalances(), "2027-06-30", TODAY);
+    // The sheet: admin receivable 1,500, capital works 800, paid in advance 500.
     const c = checkLotBalances(
       [
-        { lotNumber: "1", admin: "1,200", capitalWorks: "600", interest: "180", unallocated: "" },
-        { lotNumber: "2", admin: "", capitalWorks: "", interest: "", unallocated: "500" },
+        { lotNumber: "1", admin: "1,200", interestAdmin: "120", capitalWorks: "600", interestCapitalWorks: "60", unallocated: "" },
+        { lotNumber: "2", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "500" },
       ],
       lots,
       sheet,
     );
-    // Lot 1: interest 180 split 2:1 = 120 admin, 60 capital works.
-    // Admin 1,200 + 120 = 1,320 ... the sheet says 1,500, so this does not tie.
     expect(c.ok).toBe(false);
     expect(c.errors.join(" ")).toContain("Administrative fund levies and interest on the lots come to $1,320.00");
+    expect(c.errors.join(" ")).toContain("Capital works fund levies and interest on the lots come to $660.00");
 
+    // Interest as the previous system charged it, per fund: ties to the cent.
     const tied = checkLotBalances(
       [
-        { lotNumber: "1", admin: "1,200", capitalWorks: "640", interest: "460", unallocated: "" },
-        { lotNumber: "2", admin: "", capitalWorks: "", interest: "", unallocated: "500" },
+        { lotNumber: "1", admin: "1,200", interestAdmin: "300", capitalWorks: "640", interestCapitalWorks: "160", unallocated: "" },
+        { lotNumber: "2", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "500" },
       ],
       lots,
       sheet,
     );
-    // Interest 460 split 1,200:640 = 300 admin, 160 capital works: 1,500 and 800.
     expect(tied.ok).toBe(true);
     expect(tied.rows[0]).toMatchObject({ interestAdmin: 30000, interestCapitalWorks: 16000 });
-    expect(tied.totals).toMatchObject({ receivableAdmin: 150000, receivableCapitalWorks: 80000, unallocated: 50000 });
+    expect(tied.totals).toMatchObject({ receivableAdmin: 150000, receivableCapitalWorks: 80000, interestAdmin: 30000, interestCapitalWorks: 16000, unallocated: 50000 });
   });
 
   it("writes each lot number as the lot is numbered, whatever case was typed", () => {
     const sheet = checkOpeningBalances({ ...emptyOpeningBalances(), takeoverDate: "2026-10-01" }, "2027-06-30", TODAY);
-    const c = checkLotBalances([{ lotNumber: " a1 ", admin: "", capitalWorks: "", interest: "", unallocated: "" }], [{ lotNumber: "A1" }], sheet);
+    const c = checkLotBalances([{ lotNumber: " a1 ", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" }], [{ lotNumber: "A1" }], sheet);
     expect(c.ok).toBe(true);
     expect(c.rows[0].lotNumber).toBe("A1");
   });
@@ -262,9 +259,9 @@ describe("lot opening balances", () => {
     const sheet = checkOpeningBalances({ ...emptyOpeningBalances(), takeoverDate: "2026-10-01" }, "2027-06-30", TODAY);
     const c = checkLotBalances(
       [
-        { lotNumber: "1", admin: "-1", capitalWorks: "", interest: "", unallocated: "" },
-        { lotNumber: "1", admin: "", capitalWorks: "", interest: "", unallocated: "" },
-        { lotNumber: "9", admin: "", capitalWorks: "", interest: "", unallocated: "" },
+        { lotNumber: "1", admin: "-1", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" },
+        { lotNumber: "1", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" },
+        { lotNumber: "9", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" },
       ],
       lots,
       sheet,
@@ -317,8 +314,8 @@ describe("the draft cutover", () => {
     const sheet = checkOpeningBalances(goodBalances(), "2027-06-30", TODAY);
     const lotsCheck = checkLotBalances(
       [
-        { lotNumber: "1", admin: "1,200", capitalWorks: "640", interest: "460", unallocated: "" },
-        { lotNumber: "2", admin: "", capitalWorks: "", interest: "", unallocated: "500" },
+        { lotNumber: "1", admin: "1,200", interestAdmin: "300", capitalWorks: "640", interestCapitalWorks: "160", unallocated: "" },
+        { lotNumber: "2", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "500" },
       ],
       lookups.lots,
       sheet,

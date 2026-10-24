@@ -75,7 +75,8 @@ export type RollOwnerNameState = { error?: string; saved?: boolean };
 /**
  * The owner's name exactly as it appears on the strata roll (onboarding,
  * 24 Oct). Kept up to date by the Adviser and the committee. Only leading
- * and trailing spaces are removed; blank clears it.
+ * and trailing spaces are removed. Every lot needs one, so it cannot be
+ * cleared.
  */
 export async function updateRollOwnerNameAction(
   schemeId: string,
@@ -84,13 +85,14 @@ export async function updateRollOwnerNameAction(
   formData: FormData,
 ): Promise<RollOwnerNameState> {
   const value = String(formData.get("rollOwnerName") ?? "").trim();
+  if (!value) return { error: "Enter the owner's name as it appears on the strata roll." };
   if (value.length > 500) return { error: "The owner name can be at most 500 characters." };
   if (/[\u0000-\u001F\u007F]/.test(value)) return { error: "The owner name cannot contain line breaks or control characters." };
   try {
     const { profile } = await requireSchemeAccess(schemeId, "roll.manage");
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
-    await upsertLotDetail(lotId, { rollOwnerName: value || null });
+    await upsertLotDetail(lotId, { rollOwnerName: value });
     await logActivity({
       schemeId,
       actorId: profile.id,

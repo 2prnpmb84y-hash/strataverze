@@ -14,10 +14,11 @@
  *    administrative fund and the capital works fund, each backed by a short
  *    balance sheet that must come to the fund balance.
  *  - Each lot's opening balance: administrative fund, capital works fund,
- *    interest and unallocated (a credit held for the lot). The lots must add
- *    up to the levies receivable and levies paid in advance on the balance
- *    sheet. Interest is split between the funds in proportion to the lot's
- *    arrears in each, and unallocated credits are held in the admin fund.
+ *    interest owing in each fund, and unallocated (a credit held for the
+ *    lot). Interest is entered per fund from the handover, as the previous
+ *    system charged it, so the lots tie exactly to each fund's levies
+ *    receivable (24 Oct). Unallocated credits are held in the admin fund and
+ *    must add up to levies paid in advance.
  *
  * The balances then become a draft cutover (see buildCutoverFiles), which the
  * Adviser signs off and posts in Finance with the existing cutover checks.
@@ -205,7 +206,8 @@ export function checkLots(rows: readonly OnboardingLot[], totalLots: number, tot
     if (!entText) problems.push("Enter the unit entitlement.");
     else if (!Number.isInteger(entitlement) || entitlement < 1) problems.push("The unit entitlement must be a whole number of at least 1.");
     else if (entitlement > MAX_ENTITLEMENT) problems.push("The unit entitlement is too large.");
-    if (ownerName.length > MAX_OWNER_NAME) problems.push(`The owner name can be at most ${MAX_OWNER_NAME} characters.`);
+    if (!ownerName) problems.push("Enter the owner's name as it appears on the strata roll.");
+    else if (ownerName.length > MAX_OWNER_NAME) problems.push(`The owner name can be at most ${MAX_OWNER_NAME} characters.`);
     else if (controlChars.test(ownerName)) problems.push("The owner name contains a line break or other character that is not allowed.");
 
     if (Number.isInteger(entitlement) && entitlement > 0) entitlementSum += entitlement;
@@ -346,9 +348,14 @@ export function checkOpeningBalances(input: OpeningBalancesInput, yearEnd: strin
 
 export interface LotBalanceInput {
   lotNumber: string;
+  /** Levies owing to the administrative fund. */
   admin: string;
+  /** Interest owing on administrative fund levies. */
+  interestAdmin: string;
+  /** Levies owing to the capital works fund. */
   capitalWorks: string;
-  interest: string;
+  /** Interest owing on capital works fund levies. */
+  interestCapitalWorks: string;
   /** A credit held for the lot: money paid but not yet applied to a levy. */
   unallocated: string;
 }
@@ -357,7 +364,6 @@ export interface LotBalanceCents {
   lotNumber: string;
   admin: number;
   capitalWorks: number;
-  interest: number;
   unallocated: number;
   interestAdmin: number;
   interestCapitalWorks: number;
@@ -368,24 +374,25 @@ export interface LotBalancesCheck {
   rows: LotBalanceCents[];
   rowErrors: Record<number, string[]>;
   errors: string[];
-  totals: { admin: number; capitalWorks: number; interest: number; unallocated: number; receivableAdmin: number; receivableCapitalWorks: number };
+  totals: {
+    admin: number;
+    interestAdmin: number;
+    capitalWorks: number;
+    interestCapitalWorks: number;
+    unallocated: number;
+    receivableAdmin: number;
+    receivableCapitalWorks: number;
+  };
 }
 
-export const blankLotBalance = (lotNumber: string): LotBalanceInput => ({ lotNumber, admin: "", capitalWorks: "", interest: "", unallocated: "" });
-
-/**
- * A lot's interest split between the funds in proportion to its arrears in
- * each (24 Oct). With no arrears in either fund it is all admin. The admin
- * share is rounded to the nearest cent (a half cent rounds up) and capital
- * works takes the rest, so the two parts always add up to the whole.
- */
-export function splitInterest(interest: number, admin: number, capitalWorks: number): { admin: number; capitalWorks: number } {
-  const arrears = admin + capitalWorks;
-  if (interest === 0) return { admin: 0, capitalWorks: 0 };
-  if (arrears <= 0) return { admin: interest, capitalWorks: 0 };
-  const a = Math.round((interest * admin) / arrears);
-  return { admin: a, capitalWorks: interest - a };
-}
+export const blankLotBalance = (lotNumber: string): LotBalanceInput => ({
+  lotNumber,
+  admin: "",
+  interestAdmin: "",
+  capitalWorks: "",
+  interestCapitalWorks: "",
+  unallocated: "",
+});
 
 export function checkLotBalances(
   rows: readonly LotBalanceInput[],
@@ -416,13 +423,13 @@ export function checkLotBalances(
       }
       return c;
     };
-    const admin = amount("Administrative fund", row.admin);
-    const capitalWorks = amount("Capital works fund", row.capitalWorks);
-    const interest = amount("Interest", row.interest);
+    const admin = amount("Administrative fund levies", row.admin);
+    const interestAdmin = amount("Administrative fund interest", row.interestAdmin);
+    const capitalWorks = amount("Capital works fund levies", row.capitalWorks);
+    const interestCapitalWorks = amount("Capital works fund interest", row.interestCapitalWorks);
     const unallocated = amount("Unallocated", row.unallocated);
-    const split = splitInterest(interest, admin, capitalWorks);
     if (problems.length) rowErrors[i] = problems;
-    else out.push({ lotNumber, admin, capitalWorks, interest, unallocated, interestAdmin: split.admin, interestCapitalWorks: split.capitalWorks });
+    else out.push({ lotNumber, admin, interestAdmin, capitalWorks, interestCapitalWorks, unallocated });
   });
   const missing = lots.filter((l) => !seen.has(l.lotNumber.trim().toLowerCase())).map((l) => l.lotNumber);
   if (missing.length) errors.push(`These lots have no opening balance row: ${missing.slice(0, 10).join(", ")}${missing.length > 10 ? ` and ${missing.length - 10} more` : ""}.`);
@@ -431,7 +438,8 @@ export function checkLotBalances(
   const totals = {
     admin: sum((r) => r.admin),
     capitalWorks: sum((r) => r.capitalWorks),
-    interest: sum((r) => r.interest),
+    interestAdmin: sum((r) => r.interestAdmin),
+    interestCapitalWorks: sum((r) => r.interestCapitalWorks),
     unallocated: sum((r) => r.unallocated),
     receivableAdmin: sum((r) => r.admin + r.interestAdmin),
     receivableCapitalWorks: sum((r) => r.capitalWorks + r.interestCapitalWorks),

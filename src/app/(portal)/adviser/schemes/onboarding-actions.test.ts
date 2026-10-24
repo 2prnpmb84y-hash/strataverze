@@ -99,8 +99,8 @@ function form(overrides: { lots?: unknown; balances?: unknown; lotBalances?: unk
     "lotBalancesJson",
     JSON.stringify(
       overrides.lotBalances ?? [
-        { lotNumber: "1", admin: "300", capitalWorks: "100", interest: "", unallocated: "" },
-        { lotNumber: "2", admin: "", capitalWorks: "", interest: "", unallocated: "100" },
+        { lotNumber: "1", admin: "300", capitalWorks: "100", interestAdmin: "", interestCapitalWorks: "", unallocated: "" },
+        { lotNumber: "2", admin: "", capitalWorks: "", interestAdmin: "", interestCapitalWorks: "", unallocated: "100" },
       ],
     ),
   );
@@ -154,6 +154,21 @@ describe("createSchemeAction (property onboarding)", () => {
     expect(mocks.createScheme).not.toHaveBeenCalled();
   });
 
+  it("refuses a lot with no owner name", async () => {
+    const r = await createSchemeAction(
+      {},
+      form({
+        lots: [
+          { lotNumber: "1", unitNumber: "1", entitlement: "40", ownerName: "" },
+          { lotNumber: "2", unitNumber: "2", entitlement: "60", ownerName: "ACME PTY LTD" },
+        ],
+      }),
+    );
+    expect(r.step).toBe("lots");
+    expect(r.stepErrors?.join(" ")).toContain("Row 1: Enter the owner's name as it appears on the strata roll.");
+    expect(mocks.createScheme).not.toHaveBeenCalled();
+  });
+
   it("refuses unit entitlements that do not add up to the total", async () => {
     const r = await createSchemeAction({}, form({ fields: { totalEntitlement: "99" } }));
     expect(r.step).toBe("lots");
@@ -183,8 +198,8 @@ describe("createSchemeAction (property onboarding)", () => {
       {},
       form({
         lotBalances: [
-          { lotNumber: "1", admin: "250", capitalWorks: "100", interest: "", unallocated: "" },
-          { lotNumber: "2", admin: "", capitalWorks: "", interest: "", unallocated: "100" },
+          { lotNumber: "1", admin: "250", capitalWorks: "100", interestAdmin: "", interestCapitalWorks: "", unallocated: "" },
+          { lotNumber: "2", admin: "", capitalWorks: "", interestAdmin: "", interestCapitalWorks: "", unallocated: "100" },
         ],
       }),
     );

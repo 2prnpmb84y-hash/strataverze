@@ -377,6 +377,14 @@ export function BalancesStep({
 
 // ─── Lot opening balances ───────────────────────────────────────────────────
 
+const LOT_FIELDS = [
+  { key: "admin", label: "Admin levies", aria: "Administrative fund levies" },
+  { key: "interestAdmin", label: "Admin interest", aria: "Administrative fund interest" },
+  { key: "capitalWorks", label: "Capital works levies", aria: "Capital works fund levies" },
+  { key: "interestCapitalWorks", label: "Capital works interest", aria: "Capital works fund interest" },
+  { key: "unallocated", label: "Unallocated", aria: "Unallocated" },
+] as const;
+
 export function LotBalancesStep({
   rows,
   ownerNames,
@@ -399,8 +407,8 @@ export function LotBalancesStep({
     <div>
       <h2 className="font-heading font-semibold text-ink mb-1">Lot Opening Balances</h2>
       <p className="text-sm text-ink-muted mb-5">
-        What each owner owes at the takeover date, by fund, plus interest owing. Unallocated is money an owner has paid that is not yet applied to a
-        levy: it is held as a credit in the administrative fund. Interest is shared between the funds in proportion to the lot&apos;s arrears in each.
+        What each owner owes at the takeover date: the levies and the interest owing in each fund, as shown in the previous manager&apos;s handover.
+        Unallocated is money an owner has paid that is not yet applied to a levy: it is held as a credit in the administrative fund.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
@@ -418,21 +426,21 @@ export function LotBalancesStep({
       {showErrors && <StepProblems problems={check.errors} />}
 
       <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[880px] text-sm">
           <thead>
             <tr className="bg-muted/50 text-left">
-              <th scope="col" className="px-3 py-2 font-medium text-ink-muted w-20">Lot</th>
+              <th scope="col" className="px-3 py-2 font-medium text-ink-muted w-16">Lot</th>
               <th scope="col" className="px-3 py-2 font-medium text-ink-muted">Owner</th>
-              <th scope="col" className="px-3 py-2 font-medium text-ink-muted text-right w-36">Administrative fund</th>
-              <th scope="col" className="px-3 py-2 font-medium text-ink-muted text-right w-36">Capital works fund</th>
-              <th scope="col" className="px-3 py-2 font-medium text-ink-muted text-right w-32">Interest</th>
-              <th scope="col" className="px-3 py-2 font-medium text-ink-muted text-right w-32">Unallocated</th>
+              {LOT_FIELDS.map((f) => (
+                <th key={f.key} scope="col" className="px-3 py-2 font-medium text-ink-muted text-right w-32">
+                  {f.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => {
               const problems = showErrors ? check.rowErrors[i] : undefined;
-              const label = `lot ${row.lotNumber}`;
               return (
                 <tr key={row.lotNumber + ":" + i} className="border-t border-line/60 align-top">
                   <td className="px-3 py-2 pt-4 font-medium text-ink">{row.lotNumber}</td>
@@ -440,15 +448,15 @@ export function LotBalancesStep({
                     {ownerNames[row.lotNumber] || "—"}
                     {problems && <p className="mt-1 text-xs text-red-600">{problems.join(" ")}</p>}
                   </td>
-                  {(["admin", "capitalWorks", "interest", "unallocated"] as const).map((f) => (
-                    <td key={f} className="px-3 py-2">
+                  {LOT_FIELDS.map((f) => (
+                    <td key={f.key} className="px-3 py-2">
                       <input
-                        aria-label={`${{ admin: "Administrative fund", capitalWorks: "Capital works fund", interest: "Interest", unallocated: "Unallocated" }[f]}, ${label}`}
+                        aria-label={`${f.aria}, lot ${row.lotNumber}`}
                         inputMode="decimal"
                         placeholder="0.00"
                         className={money}
-                        value={row[f]}
-                        onChange={(e) => set(i, f, e.target.value)}
+                        value={row[f.key]}
+                        onChange={(e) => set(i, f.key, e.target.value)}
                       />
                     </td>
                   ))}
@@ -461,10 +469,11 @@ export function LotBalancesStep({
               <td className="px-3 py-2 text-ink" colSpan={2}>
                 Total
               </td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatMoney(t.admin)}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatMoney(t.capitalWorks)}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatMoney(t.interest)}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatMoney(t.unallocated)}</td>
+              {LOT_FIELDS.map((f) => (
+                <td key={f.key} className="px-3 py-2 text-right tabular-nums">
+                  {formatMoney(t[f.key])}
+                </td>
+              ))}
             </tr>
           </tfoot>
         </table>

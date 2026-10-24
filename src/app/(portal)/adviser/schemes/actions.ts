@@ -183,7 +183,14 @@ export async function createSchemeAction(
   if (!lotBalanceRows) return { step: "lotBalances", stepErrors: ["Enter each lot's opening balance."] };
   const lotBalancesInput: LotBalanceInput[] = lotBalanceRows.map((r) => {
     const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
-    return { lotNumber: str(o.lotNumber), admin: str(o.admin), capitalWorks: str(o.capitalWorks), interest: str(o.interest), unallocated: str(o.unallocated) };
+    return {
+      lotNumber: str(o.lotNumber),
+      admin: str(o.admin),
+      interestAdmin: str(o.interestAdmin),
+      capitalWorks: str(o.capitalWorks),
+      interestCapitalWorks: str(o.interestCapitalWorks),
+      unallocated: str(o.unallocated),
+    };
   });
   const lotBalances = checkLotBalances(lotBalancesInput, lots.lots, balances);
   if (!lotBalances.ok) {

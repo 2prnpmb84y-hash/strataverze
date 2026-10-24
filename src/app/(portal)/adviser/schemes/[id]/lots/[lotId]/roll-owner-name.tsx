@@ -43,6 +43,7 @@ export function RollOwnerName({ schemeId, lotId, value }: { schemeId: string; lo
           id="rollOwnerName"
           name="rollOwnerName"
           defaultValue={value ?? ""}
+          required
           maxLength={500}
           autoFocus
           className="mt-1 w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise"
