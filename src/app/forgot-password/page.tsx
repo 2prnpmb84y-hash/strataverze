@@ -1,6 +1,7 @@
 import { resetPassword } from "./actions";
 import { Logo } from "@/components/logo";
 import { authPageError, authPageMessage } from "@/lib/auth/page-messages";
+import { MARKETING_SITE_URL } from "@/lib/site-url";
 
 export const instant = false;
 
@@ -19,7 +20,9 @@ export default async function ForgotPasswordPage({
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <Logo size="lg" variant="gradient" />
+          <a href={MARKETING_SITE_URL} aria-label="StrataVerze home page">
+            <Logo size="lg" variant="gradient" />
+          </a>
         </div>
 
         {/* Card */}

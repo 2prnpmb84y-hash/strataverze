@@ -17,6 +17,8 @@ import {
   Shield,
   Calculator,
   Users,
+  ArrowLeftRight,
+  LayoutDashboard,
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { SearchDialog } from "@/components/search-dialog";
@@ -39,6 +41,7 @@ const portalLabel: Record<string, string> = {
   adviser: "Adviser",
   supplier: "Supplier",
   accountant: "Accountant",
+  admin: "StrataVerze Admin",
 };
 
 const portalIcon: Record<string, LucideIcon> = {
@@ -47,6 +50,7 @@ const portalIcon: Record<string, LucideIcon> = {
   adviser: Briefcase,
   supplier: Shield,
   accountant: Calculator,
+  admin: LayoutDashboard,
 };
 
 /* ------------------------------------------------------------------ */
@@ -58,9 +62,12 @@ export function TopBar({
   portal,
   pageTitle,
   pendingInvitationCount = 0,
+  otherPortals = [],
 }: {
   user: SupabaseUser;
   portal: string;
+  /** The other portals this person can use, for "Switch portal". */
+  otherPortals?: string[];
   pageTitle?: string;
   pendingInvitationCount?: number;
 }) {
@@ -212,6 +219,35 @@ export function TopBar({
                 <User size={16} strokeWidth={1.5} />
                 Profile
               </Link>
+              {otherPortals.some((p) => portalLabel[p]) && (
+                <div className="border-t border-line py-1" role="group" aria-label="Switch portal">
+                  <p className="flex items-center gap-2 px-4 pt-2 pb-1 text-xs font-medium uppercase tracking-wide text-ink-muted">
+                    <ArrowLeftRight size={12} strokeWidth={1.5} />
+                    Switch portal
+                  </p>
+                  {otherPortals.map((key) => {
+                    const label = portalLabel[key];
+                    if (!label) return null;
+                    const Icon = portalIcon[key] ?? Home;
+                    return (
+                      <Link
+                        key={key}
+                        href={`/${key}`}
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-ink hover:bg-muted transition-colors"
+                      >
+                        <span
+                          className="flex items-center justify-center w-5 h-5 rounded"
+                          style={{ backgroundColor: accentByPortal[key] ?? "var(--color-turquoise)" }}
+                        >
+                          <Icon size={12} strokeWidth={1.5} className="text-white" />
+                        </span>
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-danger hover:bg-muted transition-colors"

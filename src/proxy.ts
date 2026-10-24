@@ -168,7 +168,11 @@ export async function proxy(request: NextRequest) {
   }
 
   // --- Auth pages: redirect logged-in users to their portal ---
-  if (user && authRoutes.has(pathname)) {
+  // A signed-in person who opens the sign-in page without a "next" link
+  // sees it with a choice of their portals instead of being sent to the
+  // owner portal (they may have meant the adviser or supplier portal).
+  const choosingPortal = pathname === "/login" && !request.nextUrl.searchParams.get("next");
+  if (user && authRoutes.has(pathname) && !choosingPortal) {
     const next = request.nextUrl.searchParams.get("next");
     const destination = sanitisePath(next) ?? "/owner/dashboard";
 
