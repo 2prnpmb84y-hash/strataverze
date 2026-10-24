@@ -328,3 +328,62 @@ export function levyRegister(notices: RegisterNotice[], today: string): Register
   }
   return [...groups.values()].sort((a, b) => b.dueDate.localeCompare(a.dueDate));
 }
+
+// ─── An owner's levy list ───────────────────────────────────────────────────
+
+/** One levy notice as the owner's levies page shows it. */
+export interface LevyItem {
+  id: string;
+  lotId: string;
+  lotLabel: string;
+  schemeId: string;
+  title: string;
+  noticeNumber: string;
+  fundName: string;
+  dueDate: string;
+  status: string;
+  /** Levy plus interest charged. */
+  amountDue: number;
+  amountPaid: number;
+  balance: number;
+  interestCharged: number;
+}
+
+/**
+ * The owner's levy list: issued notices only (never planned ones, DRAFT),
+ * newest first. Used by the owner's levies page and the Adviser's view of a
+ * lot as its owner sees it.
+ */
+export function levyItems(
+  notices: Array<LedgerNotice & { schemeId: string }>,
+  today: string,
+  lots: Map<string, { label: string; schemeId: string }>,
+): LevyItem[] {
+  const items = notices
+    .filter((n) => String(n.status) !== "DRAFT")
+    .map((n) => ({
+      id: n.id,
+      lotId: n.lotId,
+      lotLabel: lots.get(n.lotId)?.label ?? "",
+      schemeId: lots.get(n.lotId)?.schemeId ?? n.schemeId,
+      title: noticeLabel(n),
+      noticeNumber: String(n.noticeNumber),
+      fundName: n.fund ? String(n.fund.name) : "",
+      dueDate: toIsoDay(n.dueDate),
+      status: effectiveStatus(n, today),
+      amountDue: Number(n.amountDue ?? 0) + Number(n.interestCharged ?? 0),
+      amountPaid: Number(n.amountPaid ?? 0),
+      balance: Number(n.balanceOutstanding ?? 0),
+      interestCharged: Number(n.interestCharged ?? 0),
+    }));
+  items.sort((a, b) => b.dueDate.localeCompare(a.dueDate));
+  return items;
+}
+
+export function levyItemTotals(items: LevyItem[]) {
+  return {
+    totalDue: items.reduce((s, i) => s + i.amountDue, 0),
+    totalPaid: items.reduce((s, i) => s + i.amountPaid, 0),
+    totalOutstanding: items.reduce((s, i) => s + i.balance, 0),
+  };
+}

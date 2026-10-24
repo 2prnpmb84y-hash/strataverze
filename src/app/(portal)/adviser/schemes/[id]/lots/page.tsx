@@ -1,11 +1,9 @@
 import { connection } from "next/server";
 import { getLotsForScheme, getStrataRollData } from "@/lib/queries/lots";
 import { getContactsForScheme } from "@/lib/queries/contacts";
-import { Button } from "@/components/ui/button";
 import { StrataRollTable } from "../strata-roll-table";
 import { ContactsCard } from "../_sections/contacts-card";
 import { requireAdviserScheme } from "../_sections/require-adviser-scheme";
-import { getCurrentProfile } from "@/lib/queries/profiles";
 
 /** Lots / Owners pill: the strata roll, with scheme contacts nested here. */
 export default async function LotsSectionPage({
@@ -18,14 +16,12 @@ export default async function LotsSectionPage({
   const scheme = await requireAdviserScheme(id);
   if (!scheme) return null;
 
-  const [lots, strataRollRows, contacts, profile] = await Promise.all([
+  // Lots are created when the building is onboarded, so there is no Add Lot here.
+  const [lots, strataRollRows, contacts] = await Promise.all([
     getLotsForScheme(id),
     getStrataRollData(id),
     getContactsForScheme(id),
-    getCurrentProfile(),
   ]);
-  // Adding lots changes the locked building record: StrataVerze only.
-  const isPlatformAdmin = !!profile?.isPlatformAdmin;
 
   return (
     <div>
@@ -36,11 +32,6 @@ export default async function LotsSectionPage({
             {lots.length} of {scheme.totalLots} lots registered
           </p>
         </div>
-        {isPlatformAdmin && (
-          <Button href={`/adviser/schemes/${id}/lots/new`} variant="secondary">
-            Add Lot
-          </Button>
-        )}
       </div>
       <StrataRollTable rows={strataRollRows} schemeId={id} />
       <div className="mt-6">

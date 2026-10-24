@@ -92,7 +92,7 @@ export default async function SchemeDetailPage({
     <div>
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={scheme.funds} />
-      <LotsCard id={id} lots={lots} totalLots={scheme.totalLots} canAddLots={!!profile?.isPlatformAdmin} />
+      <LotsCard id={id} lots={lots} totalLots={scheme.totalLots} />
       <LeviesCard id={id} schedules={levies} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} />
