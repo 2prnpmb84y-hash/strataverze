@@ -21,6 +21,8 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: "@prisma/*"
         update-types: [version-update:semver-major]
+      # pg is pinned to the exact version @prisma/orm-postgres uses; move them together.
+      - dependency-name: "pg"
 
   - package-ecosystem: github-actions
     directory: /

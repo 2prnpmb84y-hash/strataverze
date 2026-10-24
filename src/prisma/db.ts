@@ -10,7 +10,14 @@ import { databaseConnection } from './connection';
 const connection = databaseConnection();
 if (connection.warning) console.warn(`[db] ${connection.warning}`);
 
-const pool = new Pool({ connectionString: connection.connectionString, ssl: connection.ssl });
+// The same timeouts Prisma's own pool uses, so a busy or unreachable pooler
+// fails after 20 seconds instead of waiting until the function times out.
+const pool = new Pool({
+  connectionString: connection.connectionString,
+  ssl: connection.ssl,
+  connectionTimeoutMillis: 20_000,
+  idleTimeoutMillis: 30_000,
+});
 
 export const db = postgres<Contract>({
   contractJson,
