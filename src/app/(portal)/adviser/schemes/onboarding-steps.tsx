@@ -442,7 +442,9 @@ export function LotBalancesStep({
       <h2 className="font-heading font-semibold text-ink mb-1">Lot Opening Balances</h2>
       <p className="text-sm text-ink-muted mb-5">
         What each owner owes at the takeover date: the levies and the interest owing in each fund, as shown in the previous manager&apos;s handover.
-        Unallocated is money an owner has paid that is not yet applied to a levy: it is held as a credit in the administrative fund.
+        Unallocated is money an owner has paid that is not yet applied to a levy: it is held as a credit in the administrative fund. Type the
+        amounts as the handover prints them: a minus sign is fine (Urbanise shows an amount owing as -250.12), because each column already says
+        whether the amount is owed or a credit.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
@@ -474,7 +476,8 @@ export function LotBalancesStep({
           </thead>
           <tbody>
             {rows.map((row, i) => {
-              const problems = showErrors ? check.rowErrors[i] : undefined;
+              // Shown as typed: a total that silently leaves a row out is worse than an early warning.
+              const problems = check.rowErrors[i];
               return (
                 <tr key={row.lotNumber + ":" + i} className="border-t border-line/60 align-top">
                   <td className="px-3 py-2 pt-4 font-medium text-ink">{row.lotNumber}</td>
