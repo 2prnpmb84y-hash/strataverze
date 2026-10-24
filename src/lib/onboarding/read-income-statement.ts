@@ -133,12 +133,12 @@ export function parseIncomeStatement(lines: LayoutLine[]): IncomeStatement {
     const amounts = cells.slice(1).map(statementAmount);
     const firstAmount = amounts.find((a): a is number => a !== null) ?? null;
 
-    if (/^Total .* Income$/i.test(first)) {
+    if (/^Total(\s.*)?\sIncome$/i.test(first)) {
       current.printedIncomeCents = firstAmount;
       section = null;
       continue;
     }
-    if (/^Total .* Expenditure$/i.test(first)) {
+    if (/^Total(\s.*)?\s(Expenditure|Expenses)$/i.test(first)) {
       current.printedExpenditureCents = firstAmount;
       section = null;
       continue;

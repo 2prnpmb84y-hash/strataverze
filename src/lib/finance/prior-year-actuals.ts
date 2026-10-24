@@ -7,6 +7,7 @@
  */
 import { db } from "@/prisma/db";
 import { yearRange } from "@/lib/onboarding/income-budget";
+import { logError } from "@/lib/log";
 
 export interface PriorYearActualLine {
   fundId: string;
@@ -40,8 +41,9 @@ export async function priorYearActualLines(schemeId: string, start: string, end:
       if (!a || (a.accountType !== "INCOME" && a.accountType !== "EXPENSE")) return [];
       return [{ fundId: r.fundId, accountId: a.id, accountCode: String(a.code), accountName: String(a.name), accountType: a.accountType, amountCents: Math.round(Number(r.amount) * 100) }];
     });
-  } catch {
-    // The table may not exist yet.
+  } catch (err) {
+    // Comparatives are left out rather than failing the report, but not silently.
+    logError("priorYearActualLines: last year's actuals could not be read:", err);
     return [];
   }
 }

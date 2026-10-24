@@ -108,7 +108,16 @@ export interface FundIncomeBudgetInput {
 export interface IncomeBudgetInput {
   funds: FundIncomeBudgetInput[];
   adoption: { kind: "before_takeover" | "draft"; meetingDate: string };
-  levies: { frequency: string; firstDueDate: string };
+  levies: {
+    frequency: string;
+    firstDueDate: string;
+    /**
+     * Whether the previous manager raised any of this year's levy notices
+     * before the takeover: "none", "some", or "" (not answered). Notices are
+     * generated for a whole year, so a schedule is made only for "none".
+     */
+    raisedBeforeTakeover: string;
+  };
 }
 
 // ─── Context (from the server) ──────────────────────────────────────────────
@@ -164,7 +173,8 @@ export interface ParsedFund {
 export interface ParsedIncomeBudget {
   funds: ParsedFund[];
   adoption: { kind: "before_takeover"; meetingDate: string } | { kind: "draft" };
-  levies: { frequency: OnboardingLevyFrequency; firstDueDate: string };
+  /** `makeSchedules` is false when some of the year's notices were raised before the takeover. */
+  levies: { frequency: OnboardingLevyFrequency; firstDueDate: string; makeSchedules: boolean };
 }
 
 export interface IncomeBudgetCheck {
@@ -341,14 +351,22 @@ export function checkIncomeBudget(input: IncomeBudgetInput, ctx: IncomeBudgetCon
   let levies: ParsedIncomeBudget["levies"] | null = null;
   const frequency = LEVY_FREQUENCIES.find((f) => f === input.levies.frequency);
   const due = input.levies.firstDueDate.trim();
-  const anyLevies = parsedFunds.some((f) => f.levyCents > 0);
+  const raised = input.levies.raisedBeforeTakeover;
+  if (raised !== "none" && raised !== "some") problems.push(`Say whether the previous manager raised any levy notices for ${yearLabel(budgetYear)} before the takeover.`);
+  if (raised === "some") {
+    notes.push(
+      `Some of this year's levy notices were raised before the takeover. StrataVerze generates a whole year's instalments, so no levy schedule is made here, as it would charge those instalments again. ` +
+        `Bring any unpaid ones across as outstanding levy notices in the cutover, and raise the remaining instalments once that is supported.`,
+    );
+  }
+  const anyLevies = raised !== "some" && parsedFunds.some((f) => f.levyCents > 0);
   if (!frequency) problems.push("Choose how often levies are raised.");
   if (anyLevies) {
     if (!parseIsoDate(due)) problems.push("Enter the due date of the first levy instalment.");
     else if (due < budgetYear.start || due > budgetYear.end) problems.push(`The first levy instalment must fall due in ${yearLabel(budgetYear)}.`);
   }
   if (frequency && (!anyLevies || (parseIsoDate(due) && due >= budgetYear.start && due <= budgetYear.end))) {
-    levies = { frequency, firstDueDate: anyLevies ? due : "" };
+    if (raised === "none" || raised === "some") levies = { frequency, firstDueDate: anyLevies ? due : "", makeSchedules: raised === "none" };
   }
 
   const ok = problems.length === 0 && Object.values(fundProblems).every((l) => l.length === 0) && adoption && levies;

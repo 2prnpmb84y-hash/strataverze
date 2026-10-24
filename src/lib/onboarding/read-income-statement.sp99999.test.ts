@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { readIncomeStatementPDF, statementAmount } from "./read-income-statement";
+import { parseIncomeStatement, readIncomeStatementPDF, statementAmount } from "./read-income-statement";
+import type { LayoutLine } from "@/lib/pdf/layout-text";
 
 /**
  * SP 99999 (the test building's handover from Urbanise Strata): the
@@ -45,5 +46,22 @@ describe("statement amounts", () => {
     expect(statementAmount("0")).toBe(0);
     expect(statementAmount("Note 7")).toBeNull();
     expect(statementAmount("1,03.00")).toBeNull();
+  });
+});
+
+describe("statement totals", () => {
+  const line = (page: number, ...cells: string[]): LayoutLine => ({ page, y: 0, cells: cells.map((text, i) => ({ x: i * 100, text })), text: cells.join("   ") });
+  it("takes a plain 'Total Income' line as the total, not as an account", () => {
+    const s = parseIncomeStatement([
+      line(1, "Income and Expenditure Statement", "Administrative Fund"),
+      line(1, "Income"),
+      line(1, "Levies", "100.00", "0.00"),
+      line(1, "Total Income", "100.00", "0.00"),
+      line(1, "Expenditure"),
+      line(1, "Insurance", "40.00", "0.00"),
+      line(1, "Total Expenses", "40.00", "0.00"),
+    ]);
+    expect(s.funds[0].income).toEqual([{ name: "Levies", actualCents: 10000, shortened: false }]);
+    expect(s.funds[0]).toMatchObject({ printedIncomeCents: 10000, printedExpenditureCents: 4000 });
   });
 });

@@ -81,7 +81,7 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
 
   const [funds, accounts, actuals, budgets, schedules, lots] = await Promise.all([
     db.orm.public.Fund.where((f) => and(f.schemeId.eq(schemeId), f.isActive.eq(true))).limit(20).all(),
-    db.orm.public.AccountCode.where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true))).limit(2000).all(),
+    db.orm.public.AccountCode.where((a) => a.schemeId.eq(schemeId)).limit(5000).all(),
     db.orm.public.PriorYearActual.where((p) => and(p.schemeId.eq(schemeId), p.financialYear.eq(years.lastYear.financialYear))).limit(2000).all(),
     db.orm.public.Budget.where((b) => and(b.schemeId.eq(schemeId), b.financialYear.eq(years.budgetYear.financialYear))).limit(100).all(),
     db.orm.public.LevySchedule.where((l) => and(l.schemeId.eq(schemeId), l.financialYear.eq(years.budgetYear.financialYear), l.levyType.eq("ORDINARY"))).limit(100).all(),
@@ -95,26 +95,31 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
     equity.set(r.value.fundId, (equity.get(r.value.fundId) ?? 0) + r.value.creditCents - r.value.debitCents);
   }
 
+  const working = workingBudgets(budgets);
+  const lines = working.length ? await db.orm.public.BudgetLine.where((l) => l.budgetId.in(working.map((b) => b.id))).limit(2000).all() : [];
+
+  // A fund's accounts: its own and the shared ones (no fund), active, plus any
+  // account its saved figures already use, so nothing saved is hidden.
   const ctxFunds: ContextFund[] = funds
     .filter((f) => f.fundType === "ADMINISTRATIVE" || f.fundType === "CAPITAL_WORKS")
     .sort((a, b) => (a.fundType === "ADMINISTRATIVE" ? -1 : 1) - (b.fundType === "ADMINISTRATIVE" ? -1 : 1))
     .map((f) => {
-      const own = accounts.filter((a) => a.fundId === f.id);
+      const used = new Set([...actuals.filter((x) => x.fundId === f.id).map((x) => x.accountCodeId), ...lines.filter((x) => x.fundId === f.id).map((x) => x.accountCodeId)]);
+      const usable = accounts.filter(
+        (a) => (a.accountType === "INCOME" || a.accountType === "EXPENSE") && (used.has(a.id) || (a.isActive && (a.fundId === f.id || a.fundId === null))),
+      );
+      const levy = usable.find((a) => a.accountSubType === "LEVY_INCOME" && a.fundId === f.id) ?? usable.find((a) => a.accountSubType === "LEVY_INCOME" && a.fundId === null);
       return {
         id: f.id,
         name: String(f.name),
         fundType: f.fundType as FundKind,
         balanceAtTakeoverCents: equity.has(f.id) ? equity.get(f.id)! : null,
-        levyIncomeAccountId: own.find((a) => a.accountSubType === "LEVY_INCOME")?.id ?? null,
-        accounts: own
-          .filter((a) => a.accountType === "INCOME" || a.accountType === "EXPENSE")
+        levyIncomeAccountId: levy?.id ?? null,
+        accounts: usable
           .map((a) => ({ id: a.id, code: String(a.code), name: String(a.name), accountType: a.accountType as LineType }))
           .sort((a, b) => a.code.localeCompare(b.code)),
       };
     });
-
-  const working = workingBudgets(budgets);
-  const lines = working.length ? await db.orm.public.BudgetLine.where((l) => l.budgetId.in(working.map((b) => b.id))).limit(2000).all() : [];
   const liveSchedules = schedules.filter((s) => s.status !== "SUPERSEDED");
   const noticeCounts = new Map<string, number>();
   if (liveSchedules.length) {
@@ -171,6 +176,8 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
     levies: {
       frequency: firstSchedule ? String(firstSchedule.frequency) : "QUARTERLY",
       firstDueDate: firstSchedule?.firstDueDate ? toIsoDay(firstSchedule.firstDueDate) : "",
+      // A schedule was made only when none of the year's notices had been raised.
+      raisedBeforeTakeover: liveSchedules.length ? "none" : "",
     },
   };
 
@@ -242,7 +249,8 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
 
     // 2. Last year's actuals: replace what onboarding saved for that year.
     await tx.orm.public.PriorYearActual
-      .where((p) => and(p.schemeId.eq(schemeId), p.financialYear.eq(lastYear.financialYear), p.source.eq("onboarding")))
+      // Every year: if the takeover date has changed, the old year's figures go too.
+      .where((p) => and(p.schemeId.eq(schemeId), p.source.eq("onboarding")))
       .deleteAndCount();
     const actualRows = parsed.funds.flatMap((f) =>
       f.rows
@@ -305,7 +313,7 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
         status,
         adoptedMeetingId: null,
         adoptedMotionId: null,
-        adoptedAt: adoption.kind === "before_takeover" ? ts(`${adoption.meetingDate}T00:00:00+10:00`) : null,
+        adoptedAt: adoption.kind === "before_takeover" ? ts(adoption.meetingDate) : null,
         adoptedBy: adoption.kind === "before_takeover" ? actorId : null,
         adoptedBeforeTakeoverOn: adoption.kind === "before_takeover" ? ts(adoption.meetingDate) : null,
         updatedAt: ts(now),
@@ -315,13 +323,16 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
 
     // 4. The levy schedule for each fund, from the budget's levy income line.
     const schedulesOut: Array<{ fundId: string; scheduleId: string | null; levyCents: number }> = [];
-    for (const f of parsed.funds) {
-      const existing = (
-        await tx.orm.public.LevySchedule
-          .where((l) => and(l.fundId.eq(f.fundId), l.financialYear.eq(budgetYear.financialYear), l.levyType.eq("ORDINARY")))
-          .limit(50)
-          .all()
-      ).filter((s) => s.status === "DRAFT" || s.status === "APPROVED");
+    for (const f of parsed.levies.makeSchedules ? parsed.funds : []) {
+      const all = await tx.orm.public.LevySchedule
+        .where((l) => and(l.fundId.eq(f.fundId), l.financialYear.eq(budgetYear.financialYear), l.levyType.eq("ORDINARY")))
+        .limit(50)
+        .all();
+      // Checked again here, in case notices were raised since the page loaded.
+      const ids = all.filter((s) => s.status !== "SUPERSEDED").map((s) => s.id);
+      const raised = ids.length ? await tx.orm.public.LevyNotice.where((n) => n.levyScheduleId.in(ids)).limit(1).all() : [];
+      if (raised.length || all.some((s) => s.status === "ACTIVE")) throw new IncomeBudgetError("Levy notices have been raised for this year since the page was opened. Reload the page.");
+      const existing = all.filter((s) => s.status === "DRAFT" || s.status === "APPROVED");
       const keep = existing[0] ?? null;
       for (const extra of existing.slice(1)) {
         await tx.orm.public.LevySchedule.where((l) => l.id.eq(extra.id)).update({ status: "SUPERSEDED" });
@@ -338,7 +349,7 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
         totalEntitlement: String(data.totalEntitlement) as unknown as Numeric<10, 2>,
         firstDueDate: ts(parsed.levies.firstDueDate),
         status: adoption.kind === "before_takeover" ? "APPROVED" : "DRAFT",
-        approvedAt: adoption.kind === "before_takeover" ? ts(`${adoption.meetingDate}T00:00:00+10:00`) : null,
+        approvedAt: adoption.kind === "before_takeover" ? ts(adoption.meetingDate) : null,
         approvedBy: adoption.kind === "before_takeover" ? actorId : null,
       };
       if (keep) {

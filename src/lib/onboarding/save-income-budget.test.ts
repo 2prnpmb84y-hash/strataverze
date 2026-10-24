@@ -144,7 +144,7 @@ function input(over: Partial<Input> = {}): Input {
       { fundId: "cw", openingBalance: "85,457.96", rows: [r("c-levy", "5,555.68", "8,000.00"), r("", "6.86", "", "Mutual Revenue - penalty interest", "INCOME"), r("", "6,594.50", "5,000.00", "Windows")] },
     ],
     adoption: { kind: "before_takeover", meetingDate: "2026-05-20" },
-    levies: { frequency: "QUARTERLY", firstDueDate: "2026-07-01" },
+    levies: { frequency: "QUARTERLY", firstDueDate: "2026-07-01", raisedBeforeTakeover: "none" },
     ...over,
   };
 }
@@ -193,7 +193,7 @@ describe("saveIncomeBudget", () => {
     expect(data.saved.funds[1].openingBalance).toBe("85457.96");
     expect(data.saved.funds[0].rows).toHaveLength(4);
     expect(data.saved.adoption).toEqual({ kind: "before_takeover", meetingDate: "2026-05-20" });
-    expect(data.saved.levies).toEqual({ frequency: "QUARTERLY", firstDueDate: "2026-07-01" });
+    expect(data.saved.levies).toEqual({ frequency: "QUARTERLY", firstDueDate: "2026-07-01", raisedBeforeTakeover: "none" });
 
     const res = await saveIncomeBudget("s1", "me", { ...data.saved, adoption: { kind: "draft", meetingDate: "" } });
     expect(res.saved).toBe(true);
@@ -231,6 +231,47 @@ describe("saveIncomeBudget", () => {
     const res = await saveIncomeBudget("s1", "me", input());
     expect(res.saved).toBe(false);
     expect(res.check.fundProblems.admin.join(" ")).toContain("Levy notices have been raised");
+  });
+
+  it("records the meeting date as a plain date", async () => {
+    await saveIncomeBudget("s1", "me", input());
+    expect(tables.Budget[0].adoptedAt).toBe("2026-05-20");
+    expect(tables.LevySchedule[0].approvedAt).toBe("2026-05-20");
+  });
+
+  it("makes no levy schedule, and leaves any alone, when some notices were raised before the takeover", async () => {
+    const res = await saveIncomeBudget("s1", "me", input({ levies: { frequency: "QUARTERLY", firstDueDate: "", raisedBeforeTakeover: "some" } }));
+    expect(res.saved).toBe(true);
+    expect(tables.LevySchedule).toHaveLength(0);
+    expect(tables.Budget).toHaveLength(2);
+  });
+
+  it("keeps and shows budget lines on a shared account (no fund)", async () => {
+    tables.AccountCode.push({ id: "shared", schemeId: "s1", code: "5-9000", name: "Strata management fee", accountType: "EXPENSE", accountSubType: null, fundId: null, isActive: true });
+    tables.Budget.push({ id: "b0", schemeId: "s1", fundId: "admin", financialYear: 2026, version: 1, status: "DRAFT", adoptedMeetingId: null, adoptedBeforeTakeoverOn: null });
+    tables.BudgetLine.push({ id: "l0", fundId: "admin", accountCodeId: "shared", financialYear: 2026, budgetId: "b0", budgetAmount: "1200.00" });
+    const data = await loadIncomeBudget("s1");
+    if ("problem" in data) throw new Error(data.problem);
+    expect(data.ctx.funds[0].accounts.map((a) => a.id)).toContain("shared");
+    expect(data.saved.funds[0].rows).toContainEqual(expect.objectContaining({ accountId: "shared", budget: "1200.00" }));
+  });
+
+  it("checks again for notices raised after the page was opened", async () => {
+    await saveIncomeBudget("s1", "me", input());
+    const data = await loadIncomeBudget("s1");
+    if ("problem" in data) throw new Error(data.problem);
+    // A notice is raised after the page loads (no lock then) and before the save's transaction.
+    const notices = fakeDb.orm.public.LevyNotice;
+    const real = notices.where.bind(notices);
+    let calls = 0;
+    fakeDb.orm.public.LevyNotice = {
+      ...notices,
+      where: (fn: never) => {
+        if (++calls === 2) tables.LevyNotice.push({ id: "n9", levyScheduleId: tables.LevySchedule[0].id });
+        return real(fn);
+      },
+    } as never;
+    await expect(saveIncomeBudget("s1", "me", data.saved)).rejects.toThrow("since the page was opened");
   });
 
   it("needs the opening balances first", async () => {

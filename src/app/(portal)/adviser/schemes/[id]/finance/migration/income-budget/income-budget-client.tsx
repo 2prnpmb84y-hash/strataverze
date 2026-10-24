@@ -122,9 +122,26 @@ export function IncomeBudgetClient({
   const [reading, startReading] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // A new account named in a row may exist by now (it was created when the
+  // form was saved): send it as that account, so saving again works.
   const input: IncomeBudgetInput = useMemo(
-    () => ({ funds: funds.map((f) => ({ fundId: f.fundId, openingBalance: f.openingBalance, rows: f.rows.map(({ key: _k, ...r }) => r) })), adoption, levies }),
-    [funds, adoption, levies],
+    () => ({
+      funds: funds.map((f) => {
+        const fund = ctx.funds.find((x) => x.id === f.fundId);
+        const byName = new Map((fund?.accounts ?? []).map((a) => [a.name.trim().toLowerCase(), a]));
+        return {
+          fundId: f.fundId,
+          openingBalance: f.openingBalance,
+          rows: f.rows.map(({ key: _k, ...r }) => {
+            const a = !r.accountId && r.newAccountName.trim() ? byName.get(r.newAccountName.trim().replace(/\s+/g, " ").toLowerCase()) : undefined;
+            return a && a.accountType === r.accountType ? { ...r, accountId: a.id, newAccountName: "" } : r;
+          }),
+        };
+      }),
+      adoption,
+      levies,
+    }),
+    [funds, adoption, levies, ctx],
   );
   const check = useMemo(() => checkIncomeBudget(input, ctx), [input, ctx]);
   const [state, formAction, saving] = useActionState<SaveIncomeBudgetState, FormData>(saveIncomeBudgetAction.bind(null, schemeId), {});
@@ -150,21 +167,20 @@ export function IncomeBudgetClient({
       if (s.period && (s.period.start !== lastYear.start || s.period.end !== lastYear.end)) {
         issues.unshift(`This statement is for ${yearLabel(s.period)}, but last year here is ${yearLabel(lastYear)}. Check you chose the right statement.`);
       }
-      setFunds((prev) =>
-        prev.map((f) => {
-          const fund = ctx.funds.find((x) => x.id === f.fundId)!;
-          const sf = s.funds.find((x) => x.fundType === fund.fundType);
-          if (!sf) {
-            issues.push(`No statement was found for the ${fund.name}.`);
-            return f;
-          }
-          return {
-            ...f,
-            openingBalance: sf.openingBalanceCents !== null ? (sf.openingBalanceCents / 100).toFixed(2) : f.openingBalance,
-            rows: rowsFromStatement(fund, sf, f.rows),
-          };
-        }),
-      );
+      const next = funds.map((f) => {
+        const fund = ctx.funds.find((x) => x.id === f.fundId)!;
+        const sf = s.funds.find((x) => x.fundType === fund.fundType);
+        if (!sf) {
+          issues.push(`No statement was found for the ${fund.name}.`);
+          return f;
+        }
+        return {
+          ...f,
+          openingBalance: sf.openingBalanceCents !== null ? (sf.openingBalanceCents / 100).toFixed(2) : f.openingBalance,
+          rows: rowsFromStatement(fund, sf, f.rows),
+        };
+      });
+      setFunds(next);
       setStatement({ fileName: file.name, issues, period: s.period ? yearLabel(s.period) : null });
     });
   }
@@ -476,6 +492,17 @@ export function IncomeBudgetClient({
           Each fund&apos;s levies are the budget on its levy income line, shared between the lots by unit entitlement when the notices are generated. The
           notices are generated on the Levies page once the cutover has been run.
         </p>
+        <fieldset className="space-y-2 text-sm">
+          <legend className="text-ink">Did the previous manager raise any levy notices for {yearLabel(budgetYear)} before the takeover?</legend>
+          <label className="flex items-start gap-2">
+            <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "none"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "none" })} className="mt-1" />
+            <span>No, none of this year&apos;s notices were raised. Make the levy schedules for the whole year.</span>
+          </label>
+          <label className="flex items-start gap-2">
+            <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "some"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "some" })} className="mt-1" />
+            <span>Yes, some were raised. No levy schedule is made, so those instalments are not charged again.</span>
+          </label>
+        </fieldset>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl text-sm">
           <label className="block">
             <span className="text-ink-muted">How often</span>
@@ -495,7 +522,7 @@ export function IncomeBudgetClient({
               min={budgetYear.start}
               max={budgetYear.end}
               value={levies.firstDueDate}
-              disabled={!anyLevies}
+              disabled={!anyLevies || levies.raisedBeforeTakeover === "some"}
               onChange={(e) => setLevies({ ...levies, firstDueDate: e.target.value })}
             />
           </label>
