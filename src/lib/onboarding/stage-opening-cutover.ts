@@ -2,6 +2,7 @@ import {
   CutoverError,
   ONBOARDING_SOURCE,
   createCutover,
+  discardDraftCutover,
   loadCutoverLookups,
   stageCutoverFile,
 } from "@/lib/finance/migration-batches";
@@ -63,23 +64,33 @@ export async function stageOnboardingCutover(input: {
   });
   if (!files) return null;
 
-  const batchId = await createCutover({
-    schemeId: input.schemeId,
-    sourceSystem: ONBOARDING_SOURCE.value,
-    cutoverDate: input.takeoverDate,
-    actorId: input.actorId,
-  });
-  for (const [dataType, file] of Object.entries(files) as [CutoverDataType, NonNullable<(typeof files)[keyof typeof files]>][]) {
-    const result = await stageCutoverFile({
+  const batchId = await createCutover(
+    {
       schemeId: input.schemeId,
-      batchId,
-      dataType,
-      fileName: file.fileName,
-      content: file.content,
-      mapping: file.mapping,
+      sourceSystem: ONBOARDING_SOURCE.value,
+      cutoverDate: input.takeoverDate,
       actorId: input.actorId,
-    });
-    if (!result.staged) throw new CutoverError(`The ${dataType} file could not be staged (missing ${result.missing.join(", ")}).`);
+    },
+    { onboarding: true },
+  );
+  try {
+    for (const [dataType, file] of Object.entries(files) as [CutoverDataType, NonNullable<(typeof files)[keyof typeof files]>][]) {
+      const result = await stageCutoverFile({
+        schemeId: input.schemeId,
+        batchId,
+        dataType,
+        fileName: file.fileName,
+        content: file.content,
+        mapping: file.mapping,
+        actorId: input.actorId,
+      });
+      if (!result.staged) throw new CutoverError(`The ${dataType} file could not be staged (missing ${result.missing.join(", ")}).`);
+    }
+  } catch (err) {
+    // All the files or none: a draft with only some of them could be signed
+    // off with receivables that have no notices behind them.
+    await discardDraftCutover(input.schemeId, batchId).catch(() => {});
+    throw err;
   }
   return batchId;
 }

@@ -53,6 +53,9 @@ describe("financial year end", () => {
     expect(currentYearEnd("12-31", TODAY)).toBe("2026-12-31");
     expect(currentYearEnd("10-24", TODAY)).toBe("2026-10-24");
     expect(currentYearEnd("02-29", TODAY)).toBe("2027-02-28");
+    // A legacy 29 February year end never becomes a date the edit form refuses, even in a leap year.
+    expect(currentYearEnd("02-29", "2027-03-01")).toBe("2028-02-28");
+    expect(checkYearEnd(currentYearEnd("02-29", "2027-03-01"), "2027-03-01")).toMatchObject({ ok: true });
   });
 
   it("gives today's date in Sydney", () => {
@@ -79,6 +82,9 @@ describe("money", () => {
     expect(parseMoney("abc")).toBeNull();
     expect(parseMoney("1e5")).toBeNull();
     expect(parseMoney("1234567890123")).toBeNull();
+    // Ledger amounts are numeric(12,2): 10 whole digits at most.
+    expect(parseMoney("9,999,999,999.99")).toBe(999_999_999_999);
+    expect(parseMoney("10,000,000,000")).toBeNull();
   });
 
   it("formats cents", () => {
@@ -213,6 +219,7 @@ describe("lot opening balances", () => {
     expect(splitInterest(101, 1, 1)).toEqual({ admin: 51, capitalWorks: 50 });
     expect(splitInterest(50, 0, 0)).toEqual({ admin: 50, capitalWorks: 0 });
     expect(splitInterest(0, 10, 10)).toEqual({ admin: 0, capitalWorks: 0 });
+    expect(splitInterest(1, 1, 1)).toEqual({ admin: 1, capitalWorks: 0 }); // a half cent rounds up, to admin
   });
 
   it("passes when the lots add up to receivables and paid in advance", () => {
@@ -242,6 +249,13 @@ describe("lot opening balances", () => {
     expect(tied.ok).toBe(true);
     expect(tied.rows[0]).toMatchObject({ interestAdmin: 30000, interestCapitalWorks: 16000 });
     expect(tied.totals).toMatchObject({ receivableAdmin: 150000, receivableCapitalWorks: 80000, unallocated: 50000 });
+  });
+
+  it("writes each lot number as the lot is numbered, whatever case was typed", () => {
+    const sheet = checkOpeningBalances({ ...emptyOpeningBalances(), takeoverDate: "2026-10-01" }, "2027-06-30", TODAY);
+    const c = checkLotBalances([{ lotNumber: " a1 ", admin: "", capitalWorks: "", interest: "", unallocated: "" }], [{ lotNumber: "A1" }], sheet);
+    expect(c.ok).toBe(true);
+    expect(c.rows[0].lotNumber).toBe("A1");
   });
 
   it("refuses unknown lots, repeated lots, negative amounts and missing lots", () => {
@@ -340,6 +354,8 @@ describe("the draft cutover", () => {
       expect.objectContaining({ lotNumber: "1", fundId: "cw", levyOutstandingCents: 64000, interestChargedCents: 16000 }),
     ]);
     expect(credits.map((r) => r.value)).toEqual([expect.objectContaining({ lotNumber: "2", fundId: "admin", amountCents: 50000 })]);
+    // Each brought-forward notice has its own short number, so long lot numbers cannot clash.
+    expect(arrears.map((r) => r.value!.noticeNumber)).toEqual(["OB0001A", "OB0001C"]);
   });
 
   it("posts a deficit as a debit and an overdraft as a credit", () => {

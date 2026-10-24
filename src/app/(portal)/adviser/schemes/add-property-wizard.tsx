@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useMemo, useRef } from "react";
+import { useState, useActionState, useMemo, useRef, startTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   FormField,
@@ -137,8 +137,10 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
 
   // A problem found by the server sends the wizard back to its step.
   const [seenState, setSeenState] = useState(state);
+  const [serverDismissed, setServerDismissed] = useState(false);
   if (state !== seenState) {
     setSeenState(state);
+    setServerDismissed(false);
     if (state.step) {
       setCurrentStep(state.step);
       setTried((t) => ({ ...t, [state.step as OnboardingStep]: true }));
@@ -209,7 +211,21 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
       }
     }
     setClientProblems([]);
+    setServerDismissed(true);
     setCurrentStep(step);
+  }
+
+  /**
+   * Submit only from the Review step, and without React's automatic form
+   * reset: a <form action> is reset after every submit, even one the server
+   * refuses, which would put the typed fields back to their defaults while
+   * the wizard still showed the typed values (review of 24 Oct).
+   */
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (currentStep !== "review" || isPending) return;
+    const fd = new FormData(e.currentTarget);
+    startTransition(() => formAction(fd));
   }
 
   function handleNext() {
@@ -261,7 +277,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
     setCurrentStep("details");
   }
 
-  const serverProblems = state.step === currentStep && state.stepErrors ? state.stepErrors : [];
+  const serverProblems = !serverDismissed && state.step === currentStep && state.stepErrors ? state.stepErrors : [];
   const problems = clientProblems.length ? clientProblems : serverProblems;
 
   const nav = (nextLabel?: string, submit = false) => (
@@ -273,7 +289,8 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
         Back
       </Button>
       {submit ? (
-        <Button type="submit" disabled={isPending}>
+        // Only on the Review step, so pressing Enter on another step never submits.
+        currentStep === "review" && <Button type="submit" disabled={isPending}>
           {isPending ? "Creating..." : "Create Property"}
         </Button>
       ) : (
@@ -337,7 +354,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
       </div>
 
       {/* The form wraps the later steps so every field is submitted together. */}
-      <form key={formKey} ref={formRef} action={formAction}>
+      <form key={formKey} ref={formRef} onSubmit={handleSubmit} noValidate>
         <input type="hidden" name="lotsJson" value={JSON.stringify(lots)} />
         <input type="hidden" name="balancesJson" value={JSON.stringify(balances)} />
         <input type="hidden" name="lotBalancesJson" value={JSON.stringify(lotBalances)} />

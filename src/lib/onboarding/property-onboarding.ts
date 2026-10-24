@@ -69,13 +69,14 @@ export function yearStartFor(yearEnd: string): string {
 
 /**
  * The end of the financial year that `today` falls in, for a year end stored
- * as "MM-DD". A legacy "02-29" is read as the last day of February.
+ * as "MM-DD". A legacy "02-29" is read as 28 February in every year, so the
+ * edit form never offers a date that checkYearEnd refuses.
  */
 export function currentYearEnd(mmdd: string | null | undefined, today: string): string {
   const match = (mmdd ?? "").match(/^(\d{2})-(\d{2})$/);
   const t = parseIsoDate(today)!;
   const m = match ? Number(match[1]) : 6;
-  const d = match ? Number(match[2]) : 30;
+  const d = match ? (Number(match[1]) === 2 && Number(match[2]) === 29 ? 28 : Number(match[2])) : 30;
   const make = (y: number) => {
     const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
     return iso(new Date(Date.UTC(y, m - 1, Math.min(d, last))));
@@ -115,7 +116,8 @@ export function parseMoney(value: string | null | undefined, opts: { allowNegati
   if (v.startsWith("$")) v = v.slice(1);
   if (!/^(\d{1,3}(,\d{3})+|\d+)(\.\d{1,2})?$/.test(v)) return null;
   const [whole, fraction = ""] = v.replace(/,/g, "").split(".");
-  if (whole.length > 12) return null;
+  // Ledger amounts are numeric(12,2): at most 10 whole digits.
+  if (whole.replace(/^0+(?=\d)/, "").length > 10) return null;
   const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
   if (negative && cents !== 0 && !opts.allowNegative) return null;
   return negative ? -cents : cents;
@@ -373,8 +375,9 @@ export const blankLotBalance = (lotNumber: string): LotBalanceInput => ({ lotNum
 
 /**
  * A lot's interest split between the funds in proportion to its arrears in
- * each (24 Oct). With no arrears in either fund it is all admin. Any rounding
- * cent goes to capital works so the two parts always add up to the whole.
+ * each (24 Oct). With no arrears in either fund it is all admin. The admin
+ * share is rounded to the nearest cent (a half cent rounds up) and capital
+ * works takes the rest, so the two parts always add up to the whole.
  */
 export function splitInterest(interest: number, admin: number, capitalWorks: number): { admin: number; capitalWorks: number } {
   const arrears = admin + capitalWorks;
@@ -392,14 +395,17 @@ export function checkLotBalances(
   const rowErrors: Record<number, string[]> = {};
   const errors: string[] = [];
   const out: LotBalanceCents[] = [];
-  const known = new Set(lots.map((l) => l.lotNumber.trim().toLowerCase()));
+  // Matched without regard to case, but always written as the lot itself is
+  // numbered, because the cutover matches lot numbers exactly.
+  const known = new Map(lots.map((l) => [l.lotNumber.trim().toLowerCase(), l.lotNumber.trim()]));
   const seen = new Set<string>();
 
   rows.forEach((row, i) => {
     const problems: string[] = [];
-    const lotNumber = String(row.lotNumber ?? "").trim();
-    const key = lotNumber.toLowerCase();
-    if (!known.has(key)) problems.push(`Lot ${lotNumber || "(blank)"} is not one of the building's lots.`);
+    const typed = String(row.lotNumber ?? "").trim();
+    const key = typed.toLowerCase();
+    const lotNumber = known.get(key) ?? typed;
+    if (!known.has(key)) problems.push(`Lot ${typed || "(blank)"} is not one of the building's lots.`);
     else if (seen.has(key)) problems.push(`Lot ${lotNumber} has two opening balances.`);
     seen.add(key);
     const amount = (label: string, value: string) => {
@@ -523,17 +529,21 @@ export function buildCutoverFiles(input: {
     opening_balances: { fileName: "onboarding-opening-balances.csv", content: csv(openingHeaders, lines), mapping: mappingFor(openingHeaders) },
   };
 
-  const arrearsHeaders = ["lotNumber", "fundName", "dueDate", "levyOutstanding", "interestCharged", "interestPaid", "description"];
+  // Each brought-forward notice gets a short number of its own ("OB0001A",
+  // "OB0001C"), which the cutover marks "BF-". Without one the cutover makes
+  // a number from the lot number, which can clash for long lot numbers.
+  const arrearsHeaders = ["lotNumber", "fundName", "noticeNumber", "dueDate", "levyOutstanding", "interestCharged", "interestPaid", "description"];
   const arrears: string[][] = [];
-  for (const r of input.lotBalances) {
-    for (const [levy, interest, fund] of [
-      [r.admin, r.interestAdmin, fundNames.admin],
-      [r.capitalWorks, r.interestCapitalWorks, fundNames.capitalWorks],
+  input.lotBalances.forEach((r, i) => {
+    for (const [levy, interest, fund, suffix] of [
+      [r.admin, r.interestAdmin, fundNames.admin, "A"],
+      [r.capitalWorks, r.interestCapitalWorks, fundNames.capitalWorks, "C"],
     ] as const) {
       if (levy === 0 && interest === 0) continue;
-      arrears.push([r.lotNumber, fund, takeoverDate, plainMoney(levy), plainMoney(interest), "0.00", "Brought forward at takeover (onboarding)"]);
+      const noticeNumber = `OB${String(i + 1).padStart(4, "0")}${suffix}`;
+      arrears.push([r.lotNumber, fund, noticeNumber, takeoverDate, plainMoney(levy), plainMoney(interest), "0.00", "Brought forward at takeover (onboarding)"]);
     }
-  }
+  });
   if (arrears.length) files.levy_arrears = { fileName: "onboarding-lot-arrears.csv", content: csv(arrearsHeaders, arrears), mapping: mappingFor(arrearsHeaders) };
 
   const creditHeaders = ["lotNumber", "fundName", "creditAmount", "note"];

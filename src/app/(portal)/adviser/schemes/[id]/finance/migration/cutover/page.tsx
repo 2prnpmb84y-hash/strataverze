@@ -73,7 +73,8 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
         <div className="rounded-[var(--radius-card)] border border-line bg-mint-soft/40 px-4 py-3 text-sm text-ink">
           These opening balances were entered when the building was onboarded. Check them against the previous manager&apos;s handover, then sign off
           and post. The lot arrears carry the takeover date as their due date; to keep each levy&apos;s original due date (for ageing and interest),
-          replace the outstanding levy notices file with the notices from the previous system before signing off.
+          replace the outstanding levy notices file with the notices from the previous system before signing off. If the balance sheet had
+          creditors, sign-off asks you to acknowledge the accounts payable difference until the unpaid supplier invoices are loaded.
         </div>
       )}
       <CutoverClient

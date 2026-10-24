@@ -136,8 +136,13 @@ export async function listCutovers(schemeId: string) {
   return db.orm.public.MigrationBatch.where((b) => b.schemeId.eq(schemeId)).orderBy((b) => b.createdAt.desc()).limit(50).all();
 }
 
-export async function createCutover(input: { schemeId: string; sourceSystem: string; cutoverDate: string | null; actorId: string }): Promise<string> {
-  if (!SOURCE_SYSTEMS.some((s) => s.value === input.sourceSystem) && input.sourceSystem !== ONBOARDING_SOURCE.value) throw new CutoverError("Choose the system the data comes from.");
+export async function createCutover(
+  input: { schemeId: string; sourceSystem: string; cutoverDate: string | null; actorId: string },
+  /** Property onboarding only: allows the "StrataVerze onboarding" source. Never set from a form. */
+  internal: { onboarding?: boolean } = {},
+): Promise<string> {
+  const onboarding = internal.onboarding === true && input.sourceSystem === ONBOARDING_SOURCE.value;
+  if (!SOURCE_SYSTEMS.some((s) => s.value === input.sourceSystem) && !onboarding) throw new CutoverError("Choose the system the data comes from.");
   const date = input.cutoverDate ? parseCutoverDate(input.cutoverDate) : null;
   if (input.cutoverDate && !date) throw new CutoverError("The cutover date is not a date.");
   const row = await db.orm.public.MigrationBatch.create({
@@ -218,6 +223,15 @@ export async function stageCutoverFile(input: {
   };
   await saveDraft(batch.id, { files: json({ ...stagedOf(batch), [input.dataType]: file }) });
   return { headers, mapping, missing, staged: true };
+}
+
+/**
+ * Remove a draft cutover that was never signed off. Used only when property
+ * onboarding could not stage all of its files, so no half-filled draft is
+ * left for someone to sign off.
+ */
+export async function discardDraftCutover(schemeId: string, batchId: string) {
+  await db.orm.public.MigrationBatch.where((b) => and(b.id.eq(batchId), b.schemeId.eq(schemeId), b.status.eq("DRAFT"))).deleteAndCount();
 }
 
 export async function removeCutoverFile(schemeId: string, batchId: string, dataType: CutoverDataType) {
