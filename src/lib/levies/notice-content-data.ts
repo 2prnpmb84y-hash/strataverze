@@ -3,6 +3,7 @@
  * rules, and send the notices (server side).
  */
 import { db } from "@/prisma/db";
+import { siteUrl } from "@/lib/site-url";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { sendEmail } from "@/lib/email";
 import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
@@ -11,7 +12,7 @@ import { validateLevyNoticeContent, type MissingItem } from "@/lib/finance/levy-
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { generateLevyNoticePdf } from "@/lib/pdf/generate";
 
-const APP_URL = process.env.APP_URL ?? "https://strataverze.com.au";
+const APP_URL = siteUrl();
 
 export interface PlannedNotice {
   /** Set once the notice exists, so its PDF can be attached to the email. */

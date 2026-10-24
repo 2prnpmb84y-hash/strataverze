@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeMembership, requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createScheme,
   updateScheme,
@@ -86,7 +86,8 @@ export async function createSchemeAction(
   if (!isValid) return { fieldErrors: errors };
 
   try {
-    const profile = await requireAuth();
+    // Buildings are onboarded by StrataVerze administrators only (SEC-002).
+    const profile = await requirePlatformAdmin();
 
     const scheme = await createScheme(data, profile.id);
     redirect(`/adviser/schemes/${scheme.id}`);
@@ -170,7 +171,8 @@ export async function parseStrataRollAction(
 ): Promise<StrataRollParseResult> {
 
   try {
-    await requireAuth();
+    // Part of building onboarding, which only StrataVerze administrators do.
+    await requirePlatformAdmin();
   } catch (err) {
     if (err instanceof AuthorisationError) return { success: false, error: err.message };
     throw err;

@@ -75,7 +75,7 @@ export async function deleteCommentAction(
   }
 
   try {
-    await deleteComment(commentId);
+    await deleteComment(commentId, workOrderId);
     revalidatePath(`/owner/maintenance/${workOrderId}`);
     return {};
   } catch {

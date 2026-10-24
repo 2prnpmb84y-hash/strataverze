@@ -39,7 +39,10 @@ export async function requireSchemeMembership(
     );
   }
 
-  return { profile, membership };
+  // Every active role this person holds on this scheme (they can hold several).
+  const roles = memberships.map((m) => m.role as PortalRole);
+
+  return { profile, membership, roles };
 }
 
 /**

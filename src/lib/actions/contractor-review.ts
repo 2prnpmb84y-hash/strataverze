@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requirePlatformAdmin } from "@/lib/auth/require-membership";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { chargeComplianceVerification } from "@/lib/billing/contractor-fees";
@@ -32,13 +33,7 @@ function toTimestamp(value: string): TimestampString<3> {
  * Contractor applications are reviewed by StrataVerze staff only (platform
  * admins). Previously any signed-in user, including the contractor, could.
  */
-async function requireAuth() {
-  const { getCurrentProfile } = await import("@/lib/queries/profiles");
-  const profile = await getCurrentProfile();
-  if (!profile) throw new Error("Not authenticated.");
-  if (!profile.isPlatformAdmin) throw new Error("Not authorised to review contractors.");
-  return profile;
-}
+const requireReviewer = () => requirePlatformAdmin();
 
 /** Whether the reviewer is a contact of the contractor they are reviewing. */
 async function isOwnContractor(profileId: string, contractorId: string) {
@@ -55,7 +50,7 @@ export async function approveContractor(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await requireAuth();
+    const profile = await requireReviewer();
     const contractorId = formData.get("contractorId") as string;
     const notes = (formData.get("notes") as string)?.trim() || null;
 
@@ -117,7 +112,7 @@ export async function rejectContractor(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await requireAuth();
+    const profile = await requireReviewer();
     const contractorId = formData.get("contractorId") as string;
     const reason = (formData.get("reason") as string)?.trim();
 
@@ -173,7 +168,7 @@ export async function requestClarification(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await requireAuth();
+    const profile = await requireReviewer();
     const contractorId = formData.get("contractorId") as string;
     const message = (formData.get("message") as string)?.trim();
 
@@ -212,7 +207,7 @@ export async function suspendContractor(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    await requireAuth();
+    await requireReviewer();
     const contractorId = formData.get("contractorId") as string;
     const reason = (formData.get("reason") as string)?.trim();
 
@@ -239,7 +234,7 @@ export async function resolveReviewItem(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const profile = await requireAuth();
+    const profile = await requireReviewer();
     const reviewItemId = formData.get("reviewItemId") as string;
     const outcome = formData.get("outcome") as string;
     const notes = (formData.get("notes") as string)?.trim() || null;

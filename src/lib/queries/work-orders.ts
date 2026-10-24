@@ -136,11 +136,12 @@ export async function getCommentsForWorkOrder(workOrderId: string, limit = 200) 
 }
 
 /**
- * Delete a comment.
+ * Delete a comment on the given work order. The work order id is required so
+ * a comment id from another work order (or scheme) can never match.
  */
-export async function deleteComment(commentId: string) {
+export async function deleteComment(commentId: string, workOrderId: string) {
   return db.orm.public.Comment
-    .where({ id: commentId })
+    .where((c) => and(c.id.eq(commentId), c.workOrderId.eq(workOrderId)))
     .delete();
 }
 

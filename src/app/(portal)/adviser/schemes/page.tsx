@@ -28,7 +28,11 @@ export default async function AdviserSchemesPage({
       <PageHeader
         title="Schemes"
         description="Manage the Owners Corporations you advise."
-        action={<Button href="/adviser/schemes/new">Add Scheme</Button>}
+        action={
+          profile.isPlatformAdmin ? (
+            <Button href="/adviser/schemes/new">Add Scheme</Button>
+          ) : undefined
+        }
       />
 
       {schemes.length === 0 ? (

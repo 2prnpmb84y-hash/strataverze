@@ -62,6 +62,7 @@ export function ContractorForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
+      <input type="hidden" name="schemeId" value={schemeId} />
       {isEditing && (
         <input type="hidden" name="contractorId" value={contractor.id} />
       )}

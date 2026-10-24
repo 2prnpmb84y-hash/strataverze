@@ -56,7 +56,11 @@ export default async function OwnerSchemePicker() {
 
   return (
     <div className="max-w-5xl">
-      <SchemeGrid schemes={cards} firstName={profile.firstName} />
+      <SchemeGrid
+        schemes={cards}
+        firstName={profile.firstName}
+        canAddProperty={profile.isPlatformAdmin}
+      />
     </div>
   );
 }

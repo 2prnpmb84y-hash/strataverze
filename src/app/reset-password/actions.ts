@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { validatePassword } from "@/lib/auth/password-policy";
 import { createClient } from "@/lib/supabase/server";
 
 export async function updatePassword(formData: FormData) {
@@ -17,17 +18,19 @@ export async function updatePassword(formData: FormData) {
     redirect("/reset-password?error=Passwords+do+not+match");
   }
 
-  if (password.length < 8) {
-    redirect(
-      "/reset-password?error=Password+must+be+at+least+8+characters"
-    );
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    redirect("/reset-password?error=" + encodeURIComponent(passwordError));
   }
 
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {
+    // Supabase's own message can describe its internals; keep it server-side.
+    console.error("[reset-password] updateUser failed:", error.code ?? error.name);
     redirect(
-      "/reset-password?error=" + encodeURIComponent(error.message)
+      "/reset-password?error=" +
+        encodeURIComponent("Unable to update your password. The reset link may have expired. Please request a new one."),
     );
   }
 

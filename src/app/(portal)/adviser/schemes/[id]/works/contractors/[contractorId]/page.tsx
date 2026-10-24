@@ -54,12 +54,14 @@ export default async function ContractorDetailPage({
         backHref={`/adviser/schemes/${id}/works/contractors`}
         backLabel="Contractors"
         action={
-          <Button
-            href={`/adviser/schemes/${id}/works/contractors/${contractorId}/edit`}
-            variant="secondary"
-          >
-            Edit
-          </Button>
+          profile.isPlatformAdmin ? (
+            <Button
+              href={`/adviser/schemes/${id}/works/contractors/${contractorId}/edit`}
+              variant="secondary"
+            >
+              Edit
+            </Button>
+          ) : undefined
         }
       />
 
