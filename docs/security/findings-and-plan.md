@@ -165,7 +165,7 @@ Each of these is listed in the residual risks. Vercel's hosting terms (Hobby pla
    - Owner and committee accounts are created on the server when someone accepts an invitation, for the invited email only.
    - Supplier sign-up runs through a server action with rate limiting, creating an account that has no building access until StrataVerze approves it and a building assigns work.
 
-## Permissions matrix (draft for approval)
+## Permissions matrix (approved 24 Oct)
 
 Legend:
 - **V** view, **C** create, **U** update, **D** delete, **X** download or export
@@ -175,9 +175,9 @@ Legend:
 
 | Information | Owner | Committee | Adviser (invited strata manager) | Accountant | Supplier | Platform admin |
 |---|---|---|---|---|---|---|
-| Building profile | V | V | V U | V | V (assigned buildings, name and address only) | V C U D |
-| Lots, entitlements | V (own lot detail, others' lot number and entitlement only) | V | V C U D | V | none | V |
-| Owner contact details | V U own | V (owners' names and lot numbers, contact details pending decision 3) | V U | none | none | V (audited) |
+| Building profile | V | V | V; U display name, ABN and financial year end only (locked record, 24 Oct) | V | V (assigned buildings, name and address only) | V C U D (only admins create or delete a building, or change its plan number, address, total lots or total entitlement) |
+| Lots, entitlements | V (own lot detail, others' lot number and entitlement only) | V | V; U lot details other than number and entitlement | V | none | V C U D (only admins add, remove or renumber lots or change an entitlement, 24 Oct) |
+| Owner contact details and owners on the strata roll | V U own | V U: names, lots, emails and phones (decided 24 Oct); may record a change of owner | V U, may record a change of owner | none | none | V (audited) |
 | Levy notices, owner ledger, statements | V X own | V X (summary and arrears) | V C U X | V X | none | V |
 | General ledger, journals, bank, reconciliation | none | V X (reports) | V C U X | V X | none | V |
 | Supplier invoices and payments | none | V, approve (per payment controls) | V C U | V | V C own (own invoices) | V |
@@ -190,6 +190,8 @@ Legend:
 | Debt recovery | V own case (no internal notes) | V | V C U | V | none | V |
 | Memberships and invitations | none | Chair or secretary: invite Adviser | V C U D (owner, committee, accountant) | none | none | V C U D |
 | Security audit log | none | none | V (own building, read-only) | none | none | V X |
+
+**The locked building record (decided 24 Oct).** Only administrators create a building and enter its unit entitlements and strata roll. Once created, the plan number, address, total lots, total entitlement, the lots themselves and each lot's entitlement change only through StrataVerze. The Adviser and committee keep the roll's owners up to date. Built in PR #48.
 
 Every rule here is enforced on the server by checking the role **on that building** and checking that the record **belongs to that building** (and to the lot or assignment where marked "own"). A person with different roles on different buildings gets each building's rules separately. Hidden buttons are not relied on.
 
