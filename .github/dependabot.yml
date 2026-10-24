@@ -12,6 +12,12 @@ updates:
       timezone: Australia/Sydney
     open-pull-requests-limit: 5
     groups:
+      # Prisma 8 packages move together, in one pull request, so the CLI and
+      # the runtime never differ. Each release candidate has its own upgrade
+      # notes (prisma skills, references/upgrade-app.md): follow them before
+      # merging. Listed first, so these never land in minor-and-patch.
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
       # Minor and patch updates arrive as one pull request; majors stay separate.
       minor-and-patch:
         update-types: [minor, patch]
@@ -20,6 +26,14 @@ updates:
       - dependency-name: "prisma"
         update-types: [version-update:semver-major]
       - dependency-name: "@prisma/*"
+        update-types: [version-update:semver-major]
+      # TypeScript majors wait until Next.js and the lint tooling support them
+      # (TypeScript 7 failed lint and build, #54, 24 Oct 2026).
+      - dependency-name: "typescript"
+        update-types: [version-update:semver-major]
+      # Node type definitions follow the Node version the app runs on, not the
+      # newest release (#53, 24 Oct 2026). Move them with the runtime.
+      - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
       # pg is pinned to the exact version @prisma/orm-postgres uses; move them together.
       - dependency-name: "pg"
