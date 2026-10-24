@@ -59,7 +59,7 @@ SEC-004 also includes mass assignment. `createMatchingRule({ schemeId, ...data }
 | SEC-010 | No MFA in the app. TOTP is enabled in Supabase, but there is no enrolment, challenge or enforcement, and 0 factors are enrolled. | Auth | V | See MFA design below | Fixed in code (PR #42, with the review fixes). Storage policy and authenticator guard applied 23 Oct |
 | SEC-011 | Sessions never expire. Time-box and inactivity settings need the Supabase Pro plan, and the app enforces no timeout. | Auth | V | App-enforced idle and absolute timeouts (see Sessions below) | Fixed in code (PR #43). Register and triggers applied 23 Oct |
 | SEC-012 | Auth configuration is weak | Supabase Auth | V | See the list below | **Partly fixed 23 Oct**: Site URL, redirect list, and minimum 8 characters with all four character types. Open sign-up and CAPTCHA wait for S2. |
-| SEC-013 | No database backups. The Supabase Free plan includes no backups. | Supabase plan | V | Upgrade to Pro (daily backups, PITR available as an add-on), or run a scheduled encrypted export as an interim measure | Open, needs decision |
+| SEC-013 | No database backups. The Supabase Free plan includes no backups. | Supabase plan | V | Upgrade to Pro (daily backups, PITR available as an add-on), or run a scheduled encrypted export as an interim measure | Open. **Decided 24 Oct: decide later.** No backups until then. |
 | SEC-014 | Governance and role integrity | owner and adviser governance actions, `payment-controls.ts:28` | R | See the list below | **Fixed 23 Oct** (S1, PR #41), including the independent review items (co-owner conflicts, committee and owner votes kept apart, own-lot refunds) |
 | SEC-033 | **Email links pointed at an unregistered domain.** Invitation, levy and notification emails linked to `https://strataverze.com.au` (DNS: does not exist). Anyone registering it would receive owners' clicks. No app emails have been sent yet, because `RESEND_API_KEY` is not set in Vercel. | `lib/notifications.ts`, `levies/notice-content-data.ts`, `email.ts` sender | V | `siteUrl()` falls back to the production deployment. Register the domain before using it as the sender or link domain. | **Fixed in code 23 Oct** (S0, PR #40). Domain decision open. |
 | SEC-034 | **Multi-row writes changed only one row.** In Prisma 8, `update()` and `delete()` change only the first matching row. A receipt covering several levy payments linked only one of them. Moving or unmatching a receipt left other bank allocations behind. Insurance item replacement left old items. Budget, plan and notice supersession could miss rows. | finance, insurance, meetings queries | V (Prisma type definitions) | `updateAndCount` / `deleteAndCount`, plus a guard test | **Fixed 23 Oct** (S1, PR #41) |
@@ -95,7 +95,7 @@ SEC-014 covers these integrity gaps:
 | SEC-015 | Admin pages and 10 finance list pages rely on the layout check only | R | Check in every page **Fixed 23 Oct (S1, PR #41).** |
 | SEC-016 | **Audit logging gaps.** `activity_logs` needs a scheme, so there are no auth, MFA or platform events. Rows can be altered or deleted. No outcome, IP or request context. No downloads, contact views or access denials recorded (except finance documents). Supabase Auth audit-to-database is off. Owners see the scheme's whole activity log. | V | New append-only security audit log (see Audit below) | **Fixed 23 Oct** (S6, PR #44). Tables, triggers, schedules and the Auth audit setting applied. The owner feed was already restricted in S1. |
 | SEC-017 | **Database TLS not enforced.** Supabase "Enforce SSL on incoming connections" is off. The local `DATABASE_URL` has no `sslmode`, and the production value is unconfirmed. | V | Enforce SSL (brief database reboot), add `sslmode` to the connection strings and test on a preview deployment |
-| SEC-018 | **Preview deployments use production database credentials.** All variables are scoped "Production and Preview", none marked Sensitive. | V | Separate preview database, or remove production credentials from Preview. Mark the variables Sensitive. |
+| SEC-018 | **Preview deployments use production database credentials.** All variables are scoped "Production and Preview", none marked Sensitive. | V | Separate preview database, or remove production credentials from Preview. Mark the variables Sensitive. **Fixed 24 Oct: database and service role credentials are Secret and Production only; DIRECT_URL removed from Vercel.** |
 | SEC-019 | Email templates insert user text into HTML unescaped (announcements, invitations, meetings, levies, work orders). This is a phishing vector from the StrataVerze sending address. | R | One shared escape for every value, and validate link targets **Fixed in code 23 Oct (S7, PR #46).** |
 | SEC-020 | Rate limiting is per serverless instance and in memory, applied only to login | R | Database-backed limiter on login, sign-up, forgot and reset password, invitation acceptance and search **Fixed in code 23 Oct (S7, PR #46).** Table applied to production. Supabase's own Auth API limits still apply to direct calls (see S7 as built). |
 | SEC-021 | **Dependency management.** No Dependabot, no audit in CI, Actions not pinned. `npm audit` (production) lists 14 findings: 8 high, 6 moderate. Most sit in the Prisma CLI toolchain (hono, lodash, alchemy), which is installed as a runtime dependency. `fflate` 0.8.2 has a moderate denial-of-service issue (fix 0.8.3). An unused `@prisma/client` 7 is installed. | V | Dependabot, an audit gate in CI, move the CLI to devDependencies, bump `fflate`, remove the unused client |
@@ -408,15 +408,15 @@ CAPTCHA (Attack Protection) is off. See Decisions needed.
 5. **Timeouts.** Idle users are signed out.
 6. **Storage changes.** Upload and download flows change. The 3 existing files stay in place. SVG files can no longer be uploaded. A file whose contents do not match its name is refused.
 
-## Decisions needed
+## Decisions (recorded 24 Oct)
 
-1. Approve the findings, the plan and the settings above (or amend any value).
+1. **Findings, plan and settings: approved as they stand** (24 Oct), including the values already applied: session timeouts of 30 minutes idle and 12 hours absolute for advisers and admins, 4 hours idle and 14 days for other users, and a 60 minute access token.
 2. **Plans.**
-   - Supabase Pro (backups, session settings, leaked password check).
-   - Whether Vercel Hobby is acceptable for a commercial service. Please check Vercel's current terms, as I can't confirm them.
-3. **Committee access to owner contact details.** Names and lot numbers only, or emails and phones too?
-4. **A separate Supabase project for preview deployments**, or preview runs without database credentials.
-5. **CAPTCHA on sign-in, sign-up and password reset.** Supabase can require a Cloudflare Turnstile or hCaptcha check on those calls, including direct calls that bypass the app. It needs a free Turnstile site key and secret (you add them), and the forms then show the check. Recommended before onboarding real buildings, because it also stops someone locking an account by failing sign-ins from many addresses.
+   - **Backups: decide later.** No backups until then (see SEC-013 and residual risks). To be settled before real buildings are onboarded.
+   - **Vercel: stay on Hobby for now.** Accepted by you. Vercel's terms may restrict Hobby to non-commercial use; this was not confirmed and remains a commercial risk to check before launch.
+3. **Committee access to owner contact details: names, lot numbers, emails and phone numbers.** No committee view of owner contact details exists yet; this applies when the owner directory is built (S2).
+4. **Preview deployments: no database access for now** (24 Oct). Production database and service role credentials are Production only. A test building will be set up on production once the S stages are complete.
+5. **CAPTCHA: yes.** Claude builds Cloudflare Turnstile into sign-in, sign-up and password reset; you create the free Turnstile key and add it.
 6. **The domain.** Decided: `strataverze.com`. Still to do: verify the domain in Resend (add its DNS records in Cloudflare), add `RESEND_API_KEY` to Vercel, and add MX records if mail to support@ and staff addresses should be received.
 
 ## Open items raised in S1 (for decision or a later stage)
@@ -437,6 +437,9 @@ CAPTCHA (Attack Protection) is off. See Decisions needed.
 - **Money actions not on the step-up list.** Decided 23 Oct: levy receipts and reversals, journal entries, special levies, levy schedule approval, debt recovery write-offs and owner credit application stay as they are. They need MFA for the roles that hold them, but not a check in the last 15 minutes.
 
 ## Residual risks and limitations
+
+- **No database backups** until the backup decision is made (SEC-013). Data lost or damaged before then cannot be recovered.
+- **Vercel Hobby plan.** Kept by your decision. Its terms may not allow commercial use (not confirmed).
 
 - Encryption at rest is provider-attested only. Assurance reports need a Supabase Team plan.
 - No independent penetration test has been done. This review was by code reading and configuration inspection.
