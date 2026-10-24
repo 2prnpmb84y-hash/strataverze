@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { generateLevyNoticePdf } from "@/lib/pdf/generate";
@@ -18,5 +19,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     return forbidden({ schemeId: notice.schemeId, actorId: profile.id, entityType: "LevyNotice", entityId: notice.id, what: "Levy notice PDF" });
   }
   const pdf = await generateLevyNoticePdf(noticeId, profile.id);
+  if (pdf) {
+    await recordSecurityEventLater({
+      action: "export.pdf",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      schemeId: notice.schemeId,
+      resourceType: "LevyNotice",
+      resourceId: noticeId,
+      metadata: { kind: "levy_notice" },
+    });
+  }
   return pdf ? pdfResponse(pdf) : notFound();
 }

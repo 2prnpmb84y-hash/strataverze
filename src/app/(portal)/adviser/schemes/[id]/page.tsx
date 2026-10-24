@@ -107,9 +107,14 @@ export default async function SchemeDetailPage({
           title="Recent Activity"
           description="Actions taken on this scheme."
           action={
-            <Button variant="secondary" href={`/adviser/schemes/${id}/activity`}>
-              View All
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" href={`/adviser/schemes/${id}/security-log`}>
+                Security log
+              </Button>
+              <Button variant="secondary" href={`/adviser/schemes/${id}/activity`}>
+                View All
+              </Button>
+            </div>
           }
         />
         <ActivityTimeline activities={activities} />

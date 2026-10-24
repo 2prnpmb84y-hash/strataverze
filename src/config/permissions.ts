@@ -18,6 +18,8 @@ import type { PortalRole } from "@/lib/auth/require-membership";
 export const CAPABILITIES = {
   /** Building profile, settings, deletion. */
   "scheme.manage": ["ADVISER"],
+  /** The building's security audit log (read-only). Platform admins read every building's. */
+  "audit.read": ["ADVISER"],
   /** Invitations, memberships, roles. */
   "members.manage": ["ADVISER"],
   /** Lots, entitlements, lot workflow records (tenants, proxies, powers of attorney). */

@@ -67,7 +67,7 @@ describe("checkAndTouchSession", () => {
 
   it("ends sessions that signed in before sign out everywhere", async () => {
     await checkAndTouchSession({ ...base, nowMs: now });
-    await revokeAllSessions("p1", now + MIN);
+    await revokeAllSessions("p1", { reason: "test", nowMs: now + MIN });
     const revokedBefore = rows("Profile")[0].sessionsRevokedAt as string;
     expect(revokedBefore).toBe(iso(now + MIN));
     expect(await checkAndTouchSession({ ...base, revokedBefore, nowMs: now + 2 * MIN })).toEqual({

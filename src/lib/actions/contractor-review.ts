@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requirePlatformAdmin } from "@/lib/auth/require-membership";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { chargeComplianceVerification } from "@/lib/billing/contractor-fees";
@@ -105,6 +106,7 @@ export async function approveContractor(
 
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
+    await recordSecurityEvent({ action: "contractor.approved", outcome: "allowed", actorProfileId: profile.id, actorRole: "platform_admin", resourceType: "ContractorBusiness", resourceId: contractorId });
     return { success: true, error: null };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -164,6 +166,7 @@ export async function rejectContractor(
 
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
+    await recordSecurityEvent({ action: "contractor.rejected", outcome: "allowed", actorProfileId: profile.id, actorRole: "platform_admin", resourceType: "ContractorBusiness", resourceId: contractorId });
     return { success: true, error: null };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -206,6 +209,7 @@ export async function requestClarification(
 
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
+    await recordSecurityEvent({ action: "contractor.clarification_requested", outcome: "allowed", actorProfileId: profile.id, actorRole: "platform_admin", resourceType: "ContractorBusiness", resourceId: contractorId });
     return { success: true, error: null };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -220,7 +224,7 @@ export async function suspendContractor(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    await requireReviewer();
+    const reviewer = await requireReviewer();
     const contractorId = formData.get("contractorId") as string;
     const reason = (formData.get("reason") as string)?.trim();
 
@@ -233,6 +237,7 @@ export async function suspendContractor(
 
     revalidatePath("/adviser/contractors");
     revalidatePath(`/adviser/contractors/${contractorId}`);
+    await recordSecurityEvent({ action: "contractor.suspended", outcome: "allowed", actorProfileId: reviewer.id, actorRole: "platform_admin", resourceType: "ContractorBusiness", resourceId: contractorId });
     return { success: true, error: null };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
@@ -275,6 +280,7 @@ export async function resolveReviewItem(
       });
 
     revalidatePath("/adviser/contractors");
+    await recordSecurityEvent({ action: "contractor.review_item_resolved", outcome: "allowed", actorProfileId: profile.id, actorRole: "platform_admin", resourceType: "ContractorReviewItem", resourceId: reviewItemId });
     return { success: true, error: null };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };

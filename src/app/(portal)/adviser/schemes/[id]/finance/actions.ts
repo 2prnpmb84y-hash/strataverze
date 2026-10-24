@@ -1,5 +1,6 @@
 "use server";
 
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revalidatePath } from "next/cache";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import {
@@ -2674,11 +2675,21 @@ export async function exportAuditTrailAction(
   filters: AuditTrailFilters,
 ): Promise<{ error?: string; data?: { csv: string; filename: string } }> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
     const rows = await getAuditTrailForExport(schemeId, filters);
+    await recordSecurityEvent({
+      action: "export.csv",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      actorRole: "ADVISER",
+      schemeId,
+      resourceType: "Scheme",
+      resourceId: schemeId,
+      metadata: { kind: "finance_audit_trail", rows: rows.length },
+    });
     const csv = formatAuditTrailCsv(rows);
 
     const datePart = new Date().toISOString().slice(0, 10);

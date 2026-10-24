@@ -1,5 +1,6 @@
 "use server";
 
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { captureUsageFee } from "@/lib/billing/capture";
 import { confirmedCentsFrom, feeErrorMessage } from "@/lib/billing/disclosure";
@@ -400,8 +401,9 @@ export async function getClaimDocumentUrlAction(
   documentId: string,
 ): Promise<{ url?: string; error?: string }> {
   let doc: Awaited<ReturnType<typeof getDownloadableInsuranceDocument>>;
+  let actorId: string;
   try {
-    await requireSchemeAccess(schemeId, "insurance.manage");
+    actorId = (await requireSchemeAccess(schemeId, "insurance.manage")).profile.id;
     doc = await getDownloadableInsuranceDocument(schemeId, documentId, "manager");
     if (doc && !(doc.claimId && (await getSchemeClaim(schemeId, doc.claimId)))) doc = null;
   } catch (err) {
@@ -410,6 +412,15 @@ export async function getClaimDocumentUrlAction(
   }
   if (!doc) return { error: "Document not found." };
   try {
+    await recordSecurityEventLater({
+      action: "document.download",
+      outcome: "allowed",
+      actorProfileId: actorId,
+      schemeId,
+      resourceType: "InsuranceDocument",
+      resourceId: documentId,
+      metadata: { kind: "claim_evidence" },
+    });
     return { url: await resolveDocumentUrl(String(doc.fileUrl), 600, { schemeId }) };
   } catch {
     return { error: "Failed to generate document URL." };

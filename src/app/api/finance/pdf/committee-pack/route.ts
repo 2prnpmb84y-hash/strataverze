@@ -1,4 +1,5 @@
 import { forbidden } from "@/lib/finance/access-denied";
+import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import type { NextRequest } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { generateCommitteePackPdf } from "@/lib/pdf/generate";
@@ -19,5 +20,16 @@ export async function GET(request: NextRequest) {
     return forbidden({ schemeId, actorId: profile.id, entityType: "Scheme", entityId: schemeId, what: "Committee pack PDF" });
   }
   const pdf = await generateCommitteePackPdf({ schemeId, startDate, endDate, financialYear, actorId: profile.id });
+  if (pdf) {
+    await recordSecurityEventLater({
+      action: "export.pdf",
+      outcome: "allowed",
+      actorProfileId: profile.id,
+      schemeId,
+      resourceType: "Scheme",
+      resourceId: schemeId,
+      metadata: { kind: "committee_pack" },
+    });
+  }
   return pdf ? pdfResponse(pdf) : notFound();
 }

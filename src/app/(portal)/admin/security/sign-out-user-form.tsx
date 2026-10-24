@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { adminSignOutUserAction } from "@/lib/actions/sessions";
+import { SIGN_OUT_REASONS } from "@/lib/audit/admin-reasons";
 
 /** End every session of a user (a lost device, or a suspected compromise). */
 export function SignOutUserForm({ profileId, name }: { profileId: string; name: string }) {
@@ -39,16 +40,20 @@ export function SignOutUserForm({ profileId, name }: { profileId: string; name: 
       <label htmlFor={`signout-${profileId}`} className="text-xs font-medium text-ink">
         Why are you signing {name} out everywhere?
       </label>
-      <textarea
+      <select
         id={`signout-${profileId}`}
         required
-        minLength={10}
-        maxLength={1000}
-        rows={2}
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink"
-      />
+      >
+        <option value="">Choose…</option>
+        {Object.entries(SIGN_OUT_REASONS).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
       {message && (
         <p role="status" className={`text-xs ${message.kind === "error" ? "text-red-600" : "text-ink"}`}>
           {message.text}
@@ -65,7 +70,7 @@ export function SignOutUserForm({ profileId, name }: { profileId: string; name: 
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={pending || reason.trim().length < 10}
+          disabled={pending || !reason}
           className="text-xs font-semibold text-white bg-red-600 rounded-full px-4 h-8 disabled:opacity-50"
         >
           {pending ? "Signing out…" : "Sign out everywhere"}

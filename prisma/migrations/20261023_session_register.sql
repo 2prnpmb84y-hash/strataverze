@@ -89,6 +89,10 @@ CREATE TRIGGER profiles_end_user_sessions
   AFTER UPDATE OF sessions_revoked_at ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.end_user_sessions();
 
+-- NOTE: 20261024_security_audit_db_events.sql replaces this function with a
+-- version that also records the change in the security audit log. If this
+-- file is ever re-run, run that one again afterwards.
+--
 -- A password change (reset link, the app, or an admin) ends every session
 -- of that user, including the one that changed it. The user signs in again
 -- with the new password. All StrataVerze users have passwords hashed by the

@@ -6,6 +6,14 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { authRateLimit } from "@/lib/auth/rate-limit";
+import { decodeJwtPayload } from "@/lib/auth/mfa-policy";
+import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
+
+/** The session id in an access token (not verified: it was just issued to us). */
+function sessionIdOf(token: string): string | null {
+  const claims = decodeJwtPayload(token);
+  return typeof claims?.session_id === "string" ? claims.session_id : null;
+}
 
 /** Basic email format check — prevents obviously invalid submissions. */
 function isValidEmail(email: string): boolean {
@@ -28,6 +36,13 @@ export async function login(formData: FormData) {
 
   const limit = authRateLimit(`login:${ip}:${email}`);
   if (!limit.success) {
+    await recordSecurityEventLater({
+      action: "auth.sign_in",
+      outcome: "denied",
+      reason: "too many attempts",
+      // A keyed hash links attempts on one account without storing the address.
+      metadata: { subject: auditHash(email) },
+    });
     redirect("/login?error=Too+many+attempts.+Please+try+again+later.");
   }
 
@@ -38,11 +53,25 @@ export async function login(formData: FormData) {
     password,
   };
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+  const { data: signedIn, error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
+    await recordSecurityEventLater({
+      action: "auth.sign_in",
+      outcome: "failed",
+      reason: "wrong email or password",
+      metadata: { subject: auditHash(email) },
+    });
     redirect("/login?error=Invalid+email+or+password");
   }
+
+  await recordSecurityEventLater({
+    action: "auth.sign_in",
+    outcome: "allowed",
+    actorAuthId: signedIn.user?.id ?? null,
+    resourceType: "session",
+    resourceId: signedIn.session ? sessionIdOf(signedIn.session.access_token) : null,
+  });
 
   revalidatePath("/", "layout");
 
@@ -85,12 +114,14 @@ export async function signup(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(passwordError)}`);
   }
 
-  const { error } = await supabase.auth.signUp(data);
+  const { data: created, error } = await supabase.auth.signUp(data);
 
   if (error) {
+    await recordSecurityEventLater({ action: "auth.sign_up", outcome: "failed", metadata: { subject: auditHash(email) } });
     // Map to a generic message so Supabase internals are not exposed
     redirect("/login?error=Unable+to+create+account.+Please+try+again.");
   }
+  await recordSecurityEventLater({ action: "auth.sign_up", outcome: "allowed", actorAuthId: created.user?.id ?? null });
 
   revalidatePath("/", "layout");
   redirect("/login?message=Check+your+email+to+confirm+your+account");

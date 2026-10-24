@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e857737e2424cfd7d52aae3f02c055ac5b61b48fb21f3250fe68c2e2a25b3804'>;
+  StorageHashBase<'52189e4326416a9cbc06d15a9dfb8c49364fa32069ddc947227bab8a1f6c12de'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1816,6 +1816,38 @@ export type FieldOutputTypes = {
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly tier: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly SecurityAuditCheck: {
+      readonly checkSeq: CodecTypes['pg/int8@1']['output'];
+      readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly firstBadSeq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly fullCheck: CodecTypes['pg/bool@1']['output'];
+      readonly headHash: CodecTypes['pg/text@1']['output'] | null;
+      readonly headSeq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly ok: CodecTypes['pg/bool@1']['output'];
+      readonly problem: CodecTypes['pg/text@1']['output'] | null;
+      readonly rowsChecked: CodecTypes['pg/int8@1']['output'];
+    };
+    readonly SecurityAuditEvent: {
+      readonly action: CodecTypes['pg/text@1']['output'];
+      readonly actorAuthId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly actorProfileId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly actorRole: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly ipHash: CodecTypes['pg/text@1']['output'] | null;
+      readonly metadata: CodecTypes['pg/jsonb@1']['output'];
+      readonly occurredAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly outcome: CodecTypes['pg/text@1']['output'];
+      readonly prevHash: CodecTypes['pg/text@1']['output'];
+      readonly reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly requestId: CodecTypes['pg/text@1']['output'] | null;
+      readonly resourceId: CodecTypes['pg/text@1']['output'] | null;
+      readonly resourceType: CodecTypes['pg/text@1']['output'] | null;
+      readonly rowHash: CodecTypes['pg/text@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly seq: CodecTypes['pg/int8@1']['output'];
+      readonly userAgent: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly StatutoryPackSnapshot: {
       readonly adoptedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -4165,6 +4197,38 @@ export type FieldInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly tier: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly SecurityAuditCheck: {
+      readonly checkSeq: CodecTypes['pg/int8@1']['input'];
+      readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly firstBadSeq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly fullCheck: CodecTypes['pg/bool@1']['input'];
+      readonly headHash: CodecTypes['pg/text@1']['input'] | null;
+      readonly headSeq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly ok: CodecTypes['pg/bool@1']['input'];
+      readonly problem: CodecTypes['pg/text@1']['input'] | null;
+      readonly rowsChecked: CodecTypes['pg/int8@1']['input'];
+    };
+    readonly SecurityAuditEvent: {
+      readonly action: CodecTypes['pg/text@1']['input'];
+      readonly actorAuthId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly actorProfileId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly actorRole: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly ipHash: CodecTypes['pg/text@1']['input'] | null;
+      readonly metadata: CodecTypes['pg/jsonb@1']['input'];
+      readonly occurredAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly outcome: CodecTypes['pg/text@1']['input'];
+      readonly prevHash: CodecTypes['pg/text@1']['input'];
+      readonly reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly requestId: CodecTypes['pg/text@1']['input'] | null;
+      readonly resourceId: CodecTypes['pg/text@1']['input'] | null;
+      readonly resourceType: CodecTypes['pg/text@1']['input'] | null;
+      readonly rowHash: CodecTypes['pg/text@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly seq: CodecTypes['pg/int8@1']['input'];
+      readonly userAgent: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly StatutoryPackSnapshot: {
       readonly adoptedAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -6516,6 +6580,38 @@ export type StorageColumnTypes = {
       readonly total_lots: CodecTypes['pg/int4@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly security_audit_checks: {
+      readonly check_seq: CodecTypes['pg/int8@1']['output'];
+      readonly checked_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly first_bad_seq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly full_check: CodecTypes['pg/bool@1']['output'];
+      readonly head_hash: CodecTypes['pg/text@1']['output'] | null;
+      readonly head_seq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly ok: CodecTypes['pg/bool@1']['output'];
+      readonly problem: CodecTypes['pg/text@1']['output'] | null;
+      readonly rows_checked: CodecTypes['pg/int8@1']['output'];
+    };
+    readonly security_audit_events: {
+      readonly action: CodecTypes['pg/text@1']['output'];
+      readonly actor_auth_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly actor_profile_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly actor_role: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly ip_hash: CodecTypes['pg/text@1']['output'] | null;
+      readonly metadata: CodecTypes['pg/jsonb@1']['output'];
+      readonly occurred_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly outcome: CodecTypes['pg/text@1']['output'];
+      readonly prev_hash: CodecTypes['pg/text@1']['output'];
+      readonly reason: CodecTypes['pg/text@1']['output'] | null;
+      readonly request_id: CodecTypes['pg/text@1']['output'] | null;
+      readonly resource_id: CodecTypes['pg/text@1']['output'] | null;
+      readonly resource_type: CodecTypes['pg/text@1']['output'] | null;
+      readonly row_hash: CodecTypes['pg/text@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly seq: CodecTypes['pg/int8@1']['output'];
+      readonly user_agent: CodecTypes['pg/text@1']['output'] | null;
+    };
     readonly statutory_pack_snapshots: {
       readonly adopted_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly adopted_by: CodecTypes['pg/uuid@1']['output'];
@@ -8865,6 +8961,38 @@ export type StorageColumnInputTypes = {
       readonly total_entitlement: CodecTypes['pg/int4@1']['input'];
       readonly total_lots: CodecTypes['pg/int4@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly security_audit_checks: {
+      readonly check_seq: CodecTypes['pg/int8@1']['input'];
+      readonly checked_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly first_bad_seq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly full_check: CodecTypes['pg/bool@1']['input'];
+      readonly head_hash: CodecTypes['pg/text@1']['input'] | null;
+      readonly head_seq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly ok: CodecTypes['pg/bool@1']['input'];
+      readonly problem: CodecTypes['pg/text@1']['input'] | null;
+      readonly rows_checked: CodecTypes['pg/int8@1']['input'];
+    };
+    readonly security_audit_events: {
+      readonly action: CodecTypes['pg/text@1']['input'];
+      readonly actor_auth_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly actor_profile_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly actor_role: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly ip_hash: CodecTypes['pg/text@1']['input'] | null;
+      readonly metadata: CodecTypes['pg/jsonb@1']['input'];
+      readonly occurred_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly outcome: CodecTypes['pg/text@1']['input'];
+      readonly prev_hash: CodecTypes['pg/text@1']['input'];
+      readonly reason: CodecTypes['pg/text@1']['input'] | null;
+      readonly request_id: CodecTypes['pg/text@1']['input'] | null;
+      readonly resource_id: CodecTypes['pg/text@1']['input'] | null;
+      readonly resource_type: CodecTypes['pg/text@1']['input'] | null;
+      readonly row_hash: CodecTypes['pg/text@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly seq: CodecTypes['pg/int8@1']['input'];
+      readonly user_agent: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly statutory_pack_snapshots: {
       readonly adopted_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -11829,6 +11957,40 @@ export namespace Models {
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     readonly [RelationKeys]?: never;
   };
+  export type public_SecurityAuditCheck = {
+    checkSeq: CodecTypes['pg/int8@1']['output'];
+    checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    firstBadSeq: CodecTypes['pg/int8@1']['output'] | null;
+    fullCheck: CodecTypes['pg/bool@1']['output'];
+    headHash: CodecTypes['pg/text@1']['output'] | null;
+    headSeq: CodecTypes['pg/int8@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    ok: CodecTypes['pg/bool@1']['output'];
+    problem: CodecTypes['pg/text@1']['output'] | null;
+    rowsChecked: CodecTypes['pg/int8@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_SecurityAuditEvent = {
+    action: CodecTypes['pg/text@1']['output'];
+    actorAuthId: CodecTypes['pg/uuid@1']['output'] | null;
+    actorProfileId: CodecTypes['pg/uuid@1']['output'] | null;
+    actorRole: CodecTypes['pg/text@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    ipHash: CodecTypes['pg/text@1']['output'] | null;
+    metadata: CodecTypes['pg/jsonb@1']['output'];
+    occurredAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    outcome: CodecTypes['pg/text@1']['output'];
+    prevHash: CodecTypes['pg/text@1']['output'];
+    reason: CodecTypes['pg/text@1']['output'] | null;
+    requestId: CodecTypes['pg/text@1']['output'] | null;
+    resourceId: CodecTypes['pg/text@1']['output'] | null;
+    resourceType: CodecTypes['pg/text@1']['output'] | null;
+    rowHash: CodecTypes['pg/text@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'] | null;
+    seq: CodecTypes['pg/int8@1']['output'];
+    userAgent: CodecTypes['pg/text@1']['output'] | null;
+    readonly [RelationKeys]?: never;
+  };
   export type public_StatutoryPackSnapshot = {
     adoptedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     adoptedBy: CodecTypes['pg/uuid@1']['output'];
@@ -12997,6 +13159,8 @@ export declare const models: {
     SchemeMembership: Models.public_SchemeMembership;
     SchemePaymentPolicy: Models.public_SchemePaymentPolicy;
     SchemeSubscription: Models.public_SchemeSubscription;
+    SecurityAuditCheck: Models.public_SecurityAuditCheck;
+    SecurityAuditEvent: Models.public_SecurityAuditEvent;
     StatutoryPackSnapshot: Models.public_StatutoryPackSnapshot;
     Supplier: Models.public_Supplier;
     SupplierBankDetailVersion: Models.public_SupplierBankDetailVersion;
@@ -25588,6 +25752,258 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly security_audit_checks: {
+              columns: {
+                readonly check_seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: '0' };
+                  readonly many: false;
+                };
+                readonly checked_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly first_bad_seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly full_check: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly head_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly head_seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly ok: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly problem: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly rows_checked: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'security_audit_checks_check_seq_key';
+                  readonly columns: readonly ['check_seq'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'security_audit_checks_time_idx';
+                  readonly columns: readonly ['checked_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly security_audit_events: {
+              columns: {
+                readonly action: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly actor_auth_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly actor_profile_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly actor_role: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly ip_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly metadata: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/jsonb@1', {}>;
+                  };
+                  readonly many: false;
+                };
+                readonly occurred_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly outcome: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly prev_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
+                readonly reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly request_id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resource_id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly resource_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly row_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int8@1', '0'>;
+                  };
+                  readonly many: false;
+                };
+                readonly user_agent: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'security_audit_events_action_idx';
+                  readonly columns: readonly ['action', 'occurred_at'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'security_audit_events_actor_idx';
+                  readonly columns: readonly ['actor_profile_id', 'occurred_at'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'security_audit_events_scheme_idx';
+                  readonly columns: readonly ['scheme_id', 'occurred_at'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'security_audit_events_seq_key';
+                  readonly columns: readonly ['seq'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'security_audit_events_time_idx';
+                  readonly columns: readonly ['occurred_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly statutory_pack_snapshots: {
               columns: {
                 readonly adopted_at: {
@@ -33041,6 +33457,14 @@ type ContractBase = Omit<
       readonly model: 'SchemeSubscription';
     };
     readonly schemes: { readonly namespace: 'public' & NamespaceId; readonly model: 'Scheme' };
+    readonly security_audit_checks: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SecurityAuditCheck';
+    };
+    readonly security_audit_events: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'SecurityAuditEvent';
+    };
     readonly statutory_pack_snapshots: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'StatutoryPackSnapshot';
@@ -46066,6 +46490,174 @@ type ContractBase = Omit<
                 readonly status: { readonly column: 'status' };
                 readonly tier: { readonly column: 'tier' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly SecurityAuditCheck: {
+            readonly fields: {
+              readonly checkSeq: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly checkedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly firstBadSeq: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly fullCheck: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly headHash: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly headSeq: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ok: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly problem: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly rowsChecked: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'security_audit_checks';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly checkSeq: { readonly column: 'check_seq' };
+                readonly checkedAt: { readonly column: 'checked_at' };
+                readonly firstBadSeq: { readonly column: 'first_bad_seq' };
+                readonly fullCheck: { readonly column: 'full_check' };
+                readonly headHash: { readonly column: 'head_hash' };
+                readonly headSeq: { readonly column: 'head_seq' };
+                readonly id: { readonly column: 'id' };
+                readonly ok: { readonly column: 'ok' };
+                readonly problem: { readonly column: 'problem' };
+                readonly rowsChecked: { readonly column: 'rows_checked' };
+              };
+            };
+          };
+          readonly SecurityAuditEvent: {
+            readonly fields: {
+              readonly action: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly actorAuthId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly actorProfileId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly actorRole: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ipHash: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly metadata: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly occurredAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly outcome: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly prevHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly requestId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly resourceId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly resourceType: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly rowHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly seq: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly userAgent: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'security_audit_events';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly action: { readonly column: 'action' };
+                readonly actorAuthId: { readonly column: 'actor_auth_id' };
+                readonly actorProfileId: { readonly column: 'actor_profile_id' };
+                readonly actorRole: { readonly column: 'actor_role' };
+                readonly id: { readonly column: 'id' };
+                readonly ipHash: { readonly column: 'ip_hash' };
+                readonly metadata: { readonly column: 'metadata' };
+                readonly occurredAt: { readonly column: 'occurred_at' };
+                readonly outcome: { readonly column: 'outcome' };
+                readonly prevHash: { readonly column: 'prev_hash' };
+                readonly reason: { readonly column: 'reason' };
+                readonly requestId: { readonly column: 'request_id' };
+                readonly resourceId: { readonly column: 'resource_id' };
+                readonly resourceType: { readonly column: 'resource_type' };
+                readonly rowHash: { readonly column: 'row_hash' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly seq: { readonly column: 'seq' };
+                readonly userAgent: { readonly column: 'user_agent' };
               };
             };
           };

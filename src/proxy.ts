@@ -1,7 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { safeNextPath } from "@/lib/auth/mfa-policy";
 import { loadSessionState } from "@/lib/auth/session-state";
-import { NextResponse, type NextRequest } from "next/server";
+import { contextFromHeaders } from "@/lib/audit/security-audit";
+import { canonicalUuid, isPrefetch, viewTargetFor } from "@/lib/audit/view-audit";
+import { recordPageView } from "@/lib/audit/page-views";
+import { after, NextResponse, type NextRequest } from "next/server";
 
 /**
  * Next.js Proxy (formerly middleware) for StrataVerze.
@@ -121,6 +124,17 @@ export async function proxy(request: NextRequest) {
       // getCurrentSession repeats this check and fails closed, so a database
       // error here does not let an ended session through.
       console.error("[proxy] session check failed:", err instanceof Error ? err.name : "error");
+    }
+    // Building pages, and owner pages showing other owners' arrears, are
+    // recorded in the security audit log (S6), after the response is sent.
+    if (state?.kind === "active" && request.method === "GET" && !isPrefetch(request.headers)) {
+      const target = viewTargetFor(request.nextUrl.pathname);
+      if (target) {
+        const context = contextFromHeaders(request.headers);
+        const profile = state.session.profile;
+        const cookieScheme = canonicalUuid(request.cookies.get("sv_selected_scheme")?.value);
+        after(() => recordPageView(target, profile, cookieScheme, context));
+      }
     }
     if (state?.kind === "ended") {
       endedReason = state.reason;
