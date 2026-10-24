@@ -1,6 +1,7 @@
 "use server";
 
 import { feeErrorMessage } from "@/lib/billing/disclosure";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { headers } from "next/headers";
 import {
   PaymentControlError,
@@ -624,6 +625,7 @@ export async function updateContractorBusiness(
     // them here (SEC-008). Contractors maintain their own profile through
     // contractor onboarding.
     await requirePlatformAdmin();
+    await requireRecentMfa();
 
     const tradeCategories = tradeCategoriesRaw
       ? tradeCategoriesRaw.split(",").map((c) => c.trim())
@@ -1329,6 +1331,8 @@ export async function authoriseWorksPayment(
 
   try {
     const { profile } = await requireSchemeAccess(schemeId, "works.payments");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     // Payment controls: the invoice must be approved, and the bank details used
     // must be verified.
@@ -1472,6 +1476,8 @@ export async function recordWorksPayment(
   try {
     // The accountant is read only (M2): recording payments is works.payments.
     const { profile } = await requireSchemeAccess(schemeId, "works.payments");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     if (!/^\d+(\.\d{1,2})?$/.test(amountRaw) || toCents(amountRaw) <= 0) {
       return { error: "Enter the amount in dollars and cents, for example 500 or 500.00." };
@@ -1918,6 +1924,7 @@ export async function createApprovalRoute(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
 
     await db.orm.public.WorksApprovalRoute.create({
       schemeId,
@@ -1973,6 +1980,7 @@ export async function updateApprovalRoute(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
     await approvalRouteInScheme(routeId, schemeId);
 
     await db.orm.public.WorksApprovalRoute
@@ -2027,6 +2035,7 @@ export async function createDelegation(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
     // Authority can only be delegated to someone on this scheme.
     await requireActiveMember(delegatedToId, schemeId, "The delegate");
 
@@ -2068,6 +2077,7 @@ export async function revokeDelegation(
 
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
     await delegationInScheme(delegationId, schemeId);
 
     await db.orm.public.WorksDelegation
@@ -2111,6 +2121,8 @@ export async function submitApprovalDecision(
 
   try {
     const { profile, roles } = await requireSchemeAccess(schemeId, "works.approve");
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     // The workflow must be this scheme's (SEC-004).
     const workflow = await db.orm.public.WorksApprovalWorkflow
@@ -2606,6 +2618,7 @@ async function hasAuthorisations(worksInvoiceId: string) {
 export async function approveWorksInvoiceAction(schemeId: string, invoiceId: string): Promise<ActionResult> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "PAYMENT_AUTHORISER"]);
+    await requireRecentMfa();
     const ip = (await headers()).get("x-forwarded-for");
     const outcome = await authoriseWorksInvoice({ schemeId, worksInvoiceId: invoiceId, actorId: profile.id, ip });
     revalidatePath(`/adviser/schemes/${schemeId}/works/invoices/${invoiceId}`);

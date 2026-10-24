@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import {
   requireSchemeMembership,
   AuthorisationError,
@@ -463,6 +464,8 @@ export async function createBankAccountAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const bankName = (formData.get("bankName") as string)?.trim();
     const accountName = (formData.get("accountName") as string)?.trim();
@@ -516,6 +519,8 @@ export async function updateBankAccountAction(
 ): Promise<ActionState> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const bankName = (formData.get("bankName") as string)?.trim() || undefined;
     const accountName = (formData.get("accountName") as string)?.trim() || undefined;
@@ -544,6 +549,7 @@ export async function deactivateBankAccountAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
 
     const deactivated = await deactivateBankAccount(schemeId, bankAccountId);
     if (!deactivated) return { error: "Bank account not found." };
@@ -1403,8 +1409,8 @@ export async function recordLevyPaymentFormAction(
 ): Promise<ActionState> {
   const amount = Number(formData.get("amount") || 0);
   const paymentDate = String(formData.get("paymentDate") ?? "").trim();
-  const notice = await db.orm.public.LevyNotice.where((ln) => ln.id.eq(levyNoticeId)).first();
-  if (!notice || notice.schemeId !== schemeId) return { error: "Levy notice not found." };
+  // recordLevyPaymentAction authorises the caller and checks the notice
+  // belongs to the scheme; nothing is read here until it has.
   const result = await recordLevyPaymentAction(
     schemeId,
     levyNoticeId,
@@ -1414,7 +1420,10 @@ export async function recordLevyPaymentFormAction(
     formData.get("confirmOverpayment") === "on",
   );
   if (result.success) {
-    revalidatePath(financePath(schemeId, `/levies/${notice.levyScheduleId}`));
+    const notice = await db.orm.public.LevyNotice
+      .where((ln) => and(ln.id.eq(levyNoticeId), ln.schemeId.eq(schemeId)))
+      .first();
+    if (notice) revalidatePath(financePath(schemeId, `/levies/${notice.levyScheduleId}`));
   }
   return result;
 }
@@ -1659,6 +1668,8 @@ export async function approveInvoiceAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "PAYMENT_AUTHORISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const ip = (await headers()).get("x-forwarded-for");
     const outcome = await authoriseSupplierInvoice({ schemeId, invoiceId, actorId: profile.id, ip });
     revalidatePath(financePath(schemeId));
@@ -1690,6 +1701,8 @@ export async function recordInvoicePaymentAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     if (amount <= 0) return { error: "Payment amount must be greater than zero." };
     if (!paymentDate) return { error: "Payment date is required." };
@@ -2156,6 +2169,8 @@ export async function reopenPeriodAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const period = await db.orm.public.FinancialPeriod
       .where((p) => and(p.id.eq(periodId), p.schemeId.eq(schemeId)))
       .first();
@@ -2660,6 +2675,8 @@ export async function exportAuditTrailAction(
 ): Promise<{ error?: string; data?: { csv: string; filename: string } }> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     const rows = await getAuditTrailForExport(schemeId, filters);
     const csv = formatAuditTrailCsv(rows);

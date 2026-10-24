@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
@@ -40,6 +41,8 @@ export async function setTreasurerAction(schemeId: string, membershipId: string,
     if (!current) throw new AuthorisationError("You must be signed in.");
     const asPlatformAdmin = !!current.isPlatformAdmin;
     const profile = asPlatformAdmin ? current : (await requireSchemeMembership(schemeId, ["COMMITTEE"])).profile;
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const membership = await db.orm.public.SchemeMembership
       .where((m) => and(m.id.eq(membershipId), m.schemeId.eq(schemeId)))
       .first();
@@ -78,6 +81,8 @@ export async function savePaymentPolicyAction(
 ): Promise<ControlActionState> {
   try {
     const { profile, roles } = await requireSchemeMembership(schemeId, ["COMMITTEE"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const money = (name: string) => {
       const raw = String(formData.get(name) ?? "").trim();
       if (!raw) return null;
@@ -141,6 +146,7 @@ export async function changeSupplierBankDetailsAction(
 ): Promise<ControlActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE"]);
+    await requireRecentMfa();
     const supplier = await db.orm.public.Supplier.where((s) => s.id.eq(supplierId)).first();
     if (!supplier || supplier.schemeId !== schemeId) return { error: "Supplier not found." };
 
@@ -192,6 +198,8 @@ export async function verifySupplierBankDetailsAction(
 ): Promise<ControlActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "PAYMENT_AUTHORISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
     const version = await getBankDetailVersionById(versionId);
     if (!version) return { error: "Bank detail change not found." };
     const row = await db.orm.public.SupplierBankDetailVersion.where((v) => v.id.eq(versionId)).first();

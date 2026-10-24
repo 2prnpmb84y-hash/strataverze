@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-membership";
 import {
@@ -143,6 +144,8 @@ export async function updateSchemeAction(
 export async function deleteSchemeAction(schemeId: string) {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // A sensitive operation: needs an authenticator check in the last 15 minutes.
+    await requireRecentMfa();
 
     await deleteScheme(schemeId);
     revalidatePath("/adviser/schemes");

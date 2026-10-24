@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { updateProfile } from "@/lib/queries/profiles";
 import { requireAuth, AuthorisationError } from "@/lib/auth/require-membership";
+import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 
 export type ProfileFormState = {
   error?: string;
@@ -32,6 +33,17 @@ export async function updateProfileAction(
 
   if (Object.keys(fieldErrors).length > 0) {
     return { fieldErrors };
+  }
+
+  // The phone number is where an admin calls back before resetting someone's
+  // authenticator, so changing it needs a fresh authenticator check (S4 review).
+  if ((profile.phone ?? null) !== phone) {
+    try {
+      await requireRecentMfa();
+    } catch (err) {
+      if (err instanceof AuthorisationError) return { error: err.message };
+      throw err;
+    }
   }
 
   try {

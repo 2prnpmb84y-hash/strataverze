@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError, requireAuth } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { rolesAllow } from "@/config/permissions";
 import { committeeMayTransition } from "@/lib/work-orders/status-transitions";
@@ -23,17 +23,31 @@ async function verifyAccess(workOrderSchemeId: string) {
   return { profile, canManage: rolesAllow(roles, "maintenance.manage") };
 }
 
+/**
+ * Sign-in is checked before the work order is read, and a work order on a
+ * scheme the caller cannot see gets the same "not found" as a missing one,
+ * so ids cannot be probed (S4 review).
+ */
+async function loadWithAccess(workOrderId: string) {
+  await requireAuth();
+  const workOrder = await getWorkOrderById(workOrderId);
+  if (!workOrder) throw new AuthorisationError("Work order not found.");
+  try {
+    return { workOrder, access: await verifyAccess(workOrder.schemeId) };
+  } catch (err) {
+    if (err instanceof AuthorisationError) throw new AuthorisationError("Work order not found.");
+    throw err;
+  }
+}
+
 export async function addCommentAction(
   workOrderId: string,
   _prev: { error?: string },
   formData: FormData,
 ): Promise<{ error?: string }> {
-  const workOrder = await getWorkOrderById(workOrderId);
-  if (!workOrder) return { error: "Work order not found." };
-
   let access;
   try {
-    access = await verifyAccess(workOrder.schemeId);
+    ({ access } = await loadWithAccess(workOrderId));
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;
@@ -59,12 +73,9 @@ export async function deleteCommentAction(
   workOrderId: string,
   commentId: string,
 ): Promise<{ error?: string }> {
-  const workOrder = await getWorkOrderById(workOrderId);
-  if (!workOrder) return { error: "Work order not found." };
-
   let access;
   try {
-    access = await verifyAccess(workOrder.schemeId);
+    ({ access } = await loadWithAccess(workOrderId));
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;
@@ -88,12 +99,9 @@ export async function updateWorkOrderStatusAction(
   workOrderId: string,
   status: string,
 ): Promise<{ error?: string }> {
-  const workOrder = await getWorkOrderById(workOrderId);
-  if (!workOrder) return { error: "Work order not found." };
-
-  let access;
+  let workOrder, access;
   try {
-    access = await verifyAccess(workOrder.schemeId);
+    ({ workOrder, access } = await loadWithAccess(workOrderId));
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;

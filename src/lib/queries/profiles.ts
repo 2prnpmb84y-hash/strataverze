@@ -1,35 +1,24 @@
 import { db } from "@/prisma/db";
 import { and, or } from "@prisma/orm-postgres/orm-client";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentSession } from "@/lib/auth/current-session";
+import { enforceMfaFor } from "@/lib/auth/mfa-enforcement";
 
 /**
- * Get the currently authenticated user's profile.
- * Creates a profile record if one doesn't exist yet (first login).
+ * Get the currently authenticated user's profile, creating it on first
+ * sign-in. Returns null when nobody is signed in.
+ *
+ * Enforces MFA (security stage S4): when the user's session does not meet
+ * the MFA policy, this redirects to /mfa/setup or /mfa instead of returning.
+ * Every page, server action and route handler that loads the current user
+ * goes through here, so MFA cannot be skipped by calling an action directly.
+ * Only the MFA pages use getCurrentSession, which does not enforce it.
  */
 export async function getCurrentProfile() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  // Try to find existing profile
-  const existing = await db.orm.public.Profile
-    .where((p) => p.authId.eq(user.id))
-    .first();
-
-  if (existing) return existing;
-
-  // Auto-create on first login
-  const profile = await db.orm.public.Profile.create({
-    authId: user.id,
-    email: user.email ?? "",
-    firstName: "",
-    lastName: "",
-  });
-
-  return profile;
+  const session = await getCurrentSession();
+  if (!session) return null;
+  // Checked on this same session, so it fails closed (see enforceMfaFor).
+  await enforceMfaFor(session);
+  return session.profile;
 }
 
 /**

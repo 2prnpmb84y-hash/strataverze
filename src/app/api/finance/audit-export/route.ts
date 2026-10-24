@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { buildAuditExport } from "@/lib/finance/audit-export";
 import { canReadSchemeFinance } from "@/lib/finance/finance-access";
 import { logActivity } from "@/lib/queries/activity-log";
+import { requireRecentMfa, StepUpRequiredError } from "@/lib/auth/mfa-enforcement";
 
 /** The audit export zip for a scheme and financial year (?schemeId=&year=). */
 export async function GET(request: NextRequest) {
@@ -14,6 +15,17 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Choose a scheme and financial year.", { status: 400 });
   }
   if (!(await canReadSchemeFinance(profile, schemeId))) return new NextResponse("Not found", { status: 404 });
+  // An export of the whole ledger: needs an authenticator check in the last
+  // 15 minutes. Send the user to verify, then straight back to this download.
+  try {
+    await requireRecentMfa();
+  } catch (err) {
+    if (err instanceof StepUpRequiredError) {
+      const back = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+      return NextResponse.redirect(new URL(`/mfa?next=${encodeURIComponent(back)}`, request.nextUrl), 303);
+    }
+    throw err;
+  }
   const { fileName, zip } = await buildAuditExport(schemeId, year);
   await logActivity({ schemeId, actorId: profile.id, action: "AUDIT_EXPORT_DOWNLOADED", entityType: "Scheme", entityId: schemeId, metadata: { financialYear: year } });
   return new NextResponse(Buffer.from(zip), {
