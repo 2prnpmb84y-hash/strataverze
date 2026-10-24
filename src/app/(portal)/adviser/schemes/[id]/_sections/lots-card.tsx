@@ -1,30 +1,20 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { getLotsForScheme } from "@/lib/queries/lots";
 
 /** Moved unchanged from the scheme main page so it can also back its section page. */
 export function LotsCard({
-  id, lots, totalLots, canAddLots = false,
+  id, lots, totalLots,
 }: {
   id: string;
   lots: Awaited<ReturnType<typeof getLotsForScheme>>;
   totalLots: number;
-  /** Lots are part of the locked building record: StrataVerze only. */
-  canAddLots?: boolean;
 }) {
   return (
     <Card className="mb-6">
       <CardHeader
         title="Lots"
         description={`${lots.length} of ${totalLots} lots registered.`}
-        action={
-          canAddLots ? (
-            <Button href={`/adviser/schemes/${id}/lots/new`} variant="secondary">
-              Add Lot
-            </Button>
-          ) : undefined
-        }
       />
       {lots.length > 0 ? (
         <div className="overflow-x-auto">
@@ -75,7 +65,7 @@ export function LotsCard({
         </div>
       ) : (
         <p className="text-sm text-ink-muted">
-          No lots registered yet. Add lots to start assigning owners.
+          No lots registered yet. Lots are created when the building is onboarded.
         </p>
       )}
     </Card>

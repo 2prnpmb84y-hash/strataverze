@@ -26,6 +26,9 @@ import { TenancyDetails } from "./tenancy-details";
 import { LotActionButtons } from "./lot-action-buttons";
 import { RollOwnerName } from "./roll-owner-name";
 import { connection } from "next/server";
+import { loadLotLevyView } from "@/lib/levies/lot-levy-view";
+import { LevyNoticesView } from "@/components/levies/levy-notices-view";
+import { StatementView } from "@/components/levies/statement-view";
 import {
   FileText,
   Award,
@@ -52,7 +55,8 @@ export default async function LotDetailPage({
   const lot = await getLotDetail(lotId);
   if (!lot || lot.schemeId !== id) notFound();
 
-  const [lotDetailExt, tenants, propertyManager, deliveryPrefs, debtCollection, documents] =
+  const lotLabel = `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${lot.unitNumber})` : ""}`;
+  const [lotDetailExt, tenants, propertyManager, deliveryPrefs, debtCollection, documents, ownerView] =
     await Promise.all([
       getLotDetailExtended(lotId),
       getTenantsForLot(lotId),
@@ -60,6 +64,8 @@ export default async function LotDetailPage({
       getDeliveryPreferences(lotId),
       getDebtCollection(lotId),
       getDocumentsForScheme(id),
+      // What the lot's owner sees for this lot in the owner portal (read only here).
+      loadLotLevyView(id, lotId, lotLabel),
     ]);
 
   // Find the operating bank account for this scheme
@@ -308,6 +314,41 @@ export default async function LotDetailPage({
                 paidAt: lh.paidAt ? String(lh.paidAt) : null,
               }))}
             />
+          ),
+
+          /* ── Owner's view tab ───────────────────────────── */
+          owner: (
+            <div className="space-y-6">
+              <p className="text-sm text-ink-muted">
+                What the owner of this lot sees in their portal: their levies and their statement. Read only.
+              </p>
+              <Card>
+                <CardHeader title="Owner details" description="As recorded for this lot." />
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <DetailRow label="Owner name (strata roll)" value={lotDetailExt?.rollOwnerName ?? "—"} />
+                  <DetailRow
+                    label="Owner account"
+                    value={lot.owners.length ? lot.owners.map((o) => `${o.firstName} ${o.lastName}`.trim() || o.email).join(", ") : "No owner account yet"}
+                  />
+                  <DetailRow label="Email" value={lotDetailExt?.ownerEmail ?? lot.owners[0]?.email ?? "—"} />
+                  <DetailRow label="Phone" value={lotDetailExt?.ownerPhone ?? lot.owners[0]?.phone ?? "—"} />
+                  <DetailRow label="Mobile" value={lotDetailExt?.ownerMobile ?? "—"} />
+                  <DetailRow label="Address for service" value={lotDetailExt?.ownerAddress ?? "—"} />
+                  <DetailRow label="Committee member" value={lotDetailExt?.isCommitteeMember ? "Yes" : "No"} />
+                </dl>
+              </Card>
+              <LevyNoticesView items={ownerView.items} emptyDescription="No levies have been issued for this lot yet." />
+              <StatementView
+                lotLabel={lotLabel}
+                pdfHref={`/api/finance/pdf/owner-statement?schemeId=${id}&lotId=${lotId}`}
+                periodLabel="All periods"
+                openingBalance={ownerView.statement.openingBalance}
+                totalCharges={ownerView.statement.totalCharges}
+                totalPayments={ownerView.statement.totalPayments}
+                closingBalance={ownerView.statement.closingBalance}
+                lines={ownerView.statement.lines}
+              />
+            </div>
           ),
 
           /* ── Tenancy tab ────────────────────────────────── */

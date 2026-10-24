@@ -32,10 +32,12 @@ function formatCurrency(value: number) {
 }
 
 function formatDate(dateStr: string) {
+  // A fixed time zone, so the server and the browser show the same day (React error 418).
   return new Date(dateStr).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "Australia/Sydney",
   });
 }
 

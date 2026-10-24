@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type StrataRollRow = {
   id: string;
@@ -45,12 +46,15 @@ export function StrataRollTable({
   const [activeFilter, setActiveFilter] = useState<FilterTab>("lot");
   const [filterValue, setFilterValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
 
   const filtered = useMemo(() => {
-    if (!filterValue.trim()) return rows;
+    // Lot order as people count: 1, 2, ... 10, not 1, 10, 11, 2.
+    const sorted = [...rows].sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, "en-AU", { numeric: true }));
+    if (!filterValue.trim()) return sorted;
     const q = filterValue.toLowerCase();
 
-    return rows.filter((row) => {
+    return sorted.filter((row) => {
       switch (activeFilter) {
         case "lot":
           return row.lotNumber.toLowerCase().includes(q);
@@ -164,12 +168,15 @@ export function StrataRollTable({
               paged.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-t border-line hover:bg-muted/30 transition-colors"
+                  // The whole row opens the lot; the lot number stays a link for the keyboard and screen readers.
+                  onClick={() => router.push(`/adviser/schemes/${schemeId}/lots/${row.id}`)}
+                  className="border-t border-line hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <td className="px-3 py-2.5">
                     <Link
                       href={`/adviser/schemes/${schemeId}/lots/${row.id}`}
-                      className="font-medium text-ink hover:text-turquoise transition-colors"
+                      className="font-medium text-turquoise underline-offset-2 hover:underline"
+                      aria-label={`Open lot ${row.lotNumber}`}
                     >
                       {row.lotNumber}
                     </Link>
