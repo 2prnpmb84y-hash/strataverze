@@ -4,6 +4,7 @@ import { ALL_FEED_ACTIONS, ownerFeed } from "@/lib/owner/notification-feed";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee, getSchemesForOwner } from "@/lib/queries/schemes";
 import { getActivityForSchemes } from "@/lib/queries/activity-log";
+import { hiddenDocumentIds } from "@/lib/documents/viewers";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { PageHeader } from "@/components/ui/page-header";
@@ -107,8 +108,13 @@ export default async function OwnerNotificationsPage() {
       .all(),
     getActivityForSchemes(schemeIds, 200, ALL_FEED_ACTIONS),
   ]);
+  const hiddenDocuments = await hiddenDocumentIds(
+    profile.id,
+    logged.filter((a) => a.entityType === "Document" && a.entityId).map((a) => a.entityId as string),
+  );
   const activities = ownerFeed(logged, {
     profileId: profile.id,
+    hiddenDocumentIds: hiddenDocuments,
     committeeSchemeIds: new Set(committeeSchemes.map((s) => s.id).filter((id) => schemeIds.includes(id))),
     ownWorkOrderIds: new Set(ownWorkOrders.map((wo) => wo.id)),
   }).slice(0, 100);

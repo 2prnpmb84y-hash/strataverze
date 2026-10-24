@@ -1,5 +1,6 @@
 "use client";
 
+import { stageUpload } from "@/lib/storage/client-upload";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useActionState } from "react";
@@ -108,8 +109,14 @@ export function ClaimWorkspace({
   async function uploadEvidence(files: File[]) {
     setError(null);
     for (const f of files) {
+      // Straight to storage through a one-time link the server issues (S3).
+      const staged = await stageUpload(schemeId, "claim_evidence", f);
+      if ("error" in staged) {
+        setError(staged.error);
+        continue;
+      }
       const fd = new FormData();
-      fd.set("file", f);
+      fd.set("uploadId", staged.uploadId);
       fd.set("category", "CLAIM_EVIDENCE");
       const res = await uploadClaimEvidenceAction(schemeId, claimId, fd);
       if (res.error) setError(res.error);

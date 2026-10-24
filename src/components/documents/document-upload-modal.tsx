@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import type { DocumentMetadata } from "./documents-tab-content";
+import { VISIBILITY_OPTIONS } from "./visibility-options";
 
 type UploadFile = {
   id: string;
@@ -65,6 +66,7 @@ export function DocumentUploadModal({
     lotNumber: "",
     supplier: "",
     comments: "",
+    visibility: "ALL_MEMBERS",
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +81,7 @@ export function DocumentUploadModal({
       lotNumber: "",
       supplier: "",
       comments: "",
+      visibility: "ALL_MEMBERS",
     });
   }, []);
 
@@ -230,7 +233,7 @@ export function DocumentUploadModal({
               ref={inputRef}
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.png,.jpg,.jpeg,.gif,.webp"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) addFiles(e.target.files);
@@ -276,7 +279,7 @@ export function DocumentUploadModal({
               ref={inputRef}
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.png,.jpg,.jpeg,.gif,.webp"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) addFiles(e.target.files);
@@ -317,6 +320,25 @@ export function DocumentUploadModal({
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Who can see it (S3) */}
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">
+                  Who can see it <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={metadata.visibility}
+                  onChange={(e) => updateMetadata("visibility", e.target.value)}
+                  className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise"
+                >
+                  {VISIBILITY_OPTIONS.map((v) => (
+                    <option key={v.value} value={v.value}>{v.label}</option>
+                  ))}
+                </select>
+                {metadata.visibility === "LOT_OWNERS" && !metadata.lotNumber.trim() && (
+                  <p className="mt-1 text-xs text-red-500">Enter the lot number below.</p>
+                )}
               </div>
 
               {/* Document Type */}

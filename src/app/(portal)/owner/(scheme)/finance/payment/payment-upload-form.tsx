@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { stageUpload } from "@/lib/storage/client-upload";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
@@ -74,19 +74,11 @@ export function PaymentUploadForm({
     try {
       setUploading(true);
 
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
-      const storagePath = `schemes/${schemeId}/payments/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-
-      const supabase = createClient();
-      const { error: uploadError } = await supabase.storage
-        .from("documents")
-        .upload(storagePath, file, {
-          contentType: file.type,
-          upsert: false,
-        });
-
-      if (uploadError) {
-        setError(`Upload failed: ${uploadError.message}`);
+      // Straight to storage through a one-time link the server issues; the
+      // server checks what arrived before recording it (S3).
+      const staged = await stageUpload(schemeId, "payment_confirmation", file);
+      if ("error" in staged) {
+        setError(staged.error);
         setUploading(false);
         return;
       }
@@ -96,10 +88,7 @@ export function PaymentUploadForm({
       startTransition(async () => {
         const result = await uploadPaymentConfirmationAction(schemeId, {
           levyNoticeId,
-          fileName: file.name,
-          fileUrl: storagePath,
-          fileSize: file.size,
-          mimeType: file.type,
+          uploadId: staged.uploadId,
           amount: amount ? parseFloat(amount) : undefined,
           documentDate: documentDate || undefined,
           payerName: payerName || undefined,

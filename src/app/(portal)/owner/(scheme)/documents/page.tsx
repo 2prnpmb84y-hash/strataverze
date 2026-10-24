@@ -3,7 +3,7 @@ import { scopeSchemeIds } from "@/lib/owner/scheme-scope";
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner, getSchemesForCommittee } from "@/lib/queries/schemes";
-import { getDocumentsForSchemes } from "@/lib/queries/documents";
+import { getVisibleDocumentsForSchemes } from "@/lib/documents/viewers";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
@@ -38,7 +38,8 @@ export default async function OwnerDocumentsPage({
   const schemeIds = scopeSchemeIds([...schemeMap.keys()], selectedSchemeId);
   // Committee of a scheme in view, not committee of any scheme (SEC-023).
   const isCommittee = committeeSchemes.some((cs) => schemeIds.includes(cs.id));
-  const documents = await getDocumentsForSchemes(schemeIds);
+  // Only the documents this person may see (S3 visibility).
+  const documents = await getVisibleDocumentsForSchemes(profile.id, schemeIds);
 
   const schemeNames = Object.fromEntries(schemeMap);
 

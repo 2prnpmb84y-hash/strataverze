@@ -32,6 +32,17 @@ vi.mock("@/lib/auth/require-membership", async () => {
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// Uploads (S3): verifyUpload checks what arrived in storage.
+const verifyUpload = vi.fn();
+vi.mock("@/lib/storage/uploads", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/storage/uploads")>("@/lib/storage/uploads");
+  return {
+    UploadError: actual.UploadError,
+    uploadErrorMessage: actual.uploadErrorMessage,
+    verifyUpload: (i: unknown) => verifyUpload(i),
+    consumeUpload: async (_id: string, create: () => Promise<unknown>) => create(),
+  };
+});
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/queries/activity-log", () => ({
   logActivity: vi.fn(),
@@ -224,27 +235,49 @@ describe("getBankReconciliationReport", () => {
 });
 
 describe("uploadFinancialDocumentAction", () => {
-  const doc = { documentType: "INVOICE", fileName: "a.pdf", fileSize: 1000, mimeType: "application/pdf" };
-
-  it("is for advisers only", async () => {
-    await actions.uploadFinancialDocumentAction(SCHEME_A, { ...doc, fileUrl: `schemes/${SCHEME_A}/1-a.pdf` });
-    expect(membership).toHaveBeenCalledWith(SCHEME_A, ["ADVISER"]);
+  const doc = { documentType: "INVOICE", uploadId: "11111111-2222-4333-8444-555555555555" };
+  beforeEach(() => {
+    verifyUpload.mockReset();
+    verifyUpload.mockResolvedValue({
+      uploadId: doc.uploadId,
+      path: `schemes/${SCHEME_A}/finance/x.pdf`,
+      fileName: "a.pdf",
+      size: 1000,
+      mimeType: "application/pdf",
+    });
   });
 
-  it("refuses a web address or another scheme's folder as the file", async () => {
-    for (const fileUrl of ["https://evil.example/phish.pdf", `schemes/${SCHEME_B}/1-a.pdf`, `schemes/${SCHEME_A}/../${SCHEME_B}/a.pdf`]) {
-      const r = await actions.uploadFinancialDocumentAction(SCHEME_A, { ...doc, fileUrl });
-      expect(r.error).toMatch(/not in this scheme's folder/);
-    }
+  it("is for advisers only, and checks the upload is theirs for this scheme", async () => {
+    await actions.uploadFinancialDocumentAction(SCHEME_A, doc);
+    expect(membership).toHaveBeenCalledWith(SCHEME_A, ["ADVISER"]);
+    expect(verifyUpload).toHaveBeenCalledWith(
+      expect.objectContaining({ uploadId: doc.uploadId, schemeId: SCHEME_A, purpose: "finance_document" }),
+    );
+  });
+
+  it("refuses an upload the storage check refuses", async () => {
+    const { UploadError } = await import("@/lib/storage/uploads");
+    verifyUpload.mockRejectedValue(new UploadError("The file's contents do not match its type."));
+    const r = await actions.uploadFinancialDocumentAction(SCHEME_A, doc);
+    expect(r.error).toMatch(/do not match/);
     expect(sharedFake.table("FinancialDocument")).toHaveLength(0);
   });
 
-  it("refuses a link to another scheme's bank transaction", async () => {
+  it("records the path, size and type from storage, not from the browser", async () => {
     const r = await actions.uploadFinancialDocumentAction(SCHEME_A, {
       ...doc,
-      fileUrl: `schemes/${SCHEME_A}/1-a.pdf`,
-      bankTransactionId: "bt-b",
+      ...({ fileUrl: "https://evil.example/x.pdf", fileSize: 1, mimeType: "text/html" } as object),
+    } as typeof doc);
+    expect(r.error).toBeUndefined();
+    expect(sharedFake.table("FinancialDocument")[0]).toMatchObject({
+      fileUrl: `schemes/${SCHEME_A}/finance/x.pdf`,
+      fileSize: 1000,
+      mimeType: "application/pdf",
     });
+  });
+
+  it("refuses a link to another scheme's bank transaction", async () => {
+    const r = await actions.uploadFinancialDocumentAction(SCHEME_A, { ...doc, bankTransactionId: "bt-b" });
     expect(r.error).toBe("Bank transaction not found.");
     expect(sharedFake.table("FinancialDocument")).toHaveLength(0);
   });

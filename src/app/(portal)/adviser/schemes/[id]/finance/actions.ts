@@ -1,5 +1,6 @@
 "use server";
 
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revalidatePath } from "next/cache";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
@@ -164,7 +165,6 @@ import {
   checkDocumentDuplicates,
 } from "@/lib/queries/duplicate-detection";
 import { importSummary } from "@/lib/bank-import-parser";
-import { schemeStoragePathProblem } from "@/lib/queries/document-url";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -1840,10 +1840,8 @@ export async function uploadFinancialDocumentAction(
   schemeId: string,
   data: {
     documentType: string;
-    fileName: string;
-    fileUrl: string;
-    fileSize: number;
-    mimeType: string;
+    /** From prepareUploadAction: the file is already in storage (S3). */
+    uploadId: string;
     lotId?: string;
     supplierId?: string;
     supplierInvoiceId?: string;
@@ -1860,23 +1858,9 @@ export async function uploadFinancialDocumentAction(
     // upload payment confirmations through their own portal.
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    if (typeof data?.fileName !== "string" || !data.fileName.trim()) return { error: "File name is required." };
-    if (data.fileName.length > 500) return { error: "File name is too long." };
-    if (!data.fileUrl) return { error: "File URL is required." };
-    // The file must be a storage path in this scheme's folder: never a web
-    // address, another scheme's folder or a path with ".." in it.
-    const pathProblem = schemeStoragePathProblem(schemeId, data.fileUrl);
-    if (pathProblem) return { error: pathProblem };
+    if (typeof data?.uploadId !== "string" || !data.uploadId) return { error: "Choose a file to upload." };
     if (!data.documentType) return { error: "Document type is required." };
     assertOneOf(data.documentType, UPLOAD_DOCUMENT_TYPES, "document type");
-
-    // Validate file size (10 MB max per requirements)
-    if (typeof data.fileSize !== "number" || !Number.isInteger(data.fileSize) || data.fileSize <= 0) {
-      return { error: "File size is required." };
-    }
-    if (data.fileSize > 10 * 1024 * 1024) {
-      return { error: "File size must not exceed 10 MB." };
-    }
     if (data.amount !== undefined && (typeof data.amount !== "number" || !Number.isFinite(data.amount))) {
       return { error: "Enter a valid amount." };
     }
@@ -1887,23 +1871,22 @@ export async function uploadFinancialDocumentAction(
       if (text !== undefined && (typeof text !== "string" || text.length > 200)) return { error: "Payer details are too long." };
     }
 
-    // Validate MIME type
-    const allowedTypes = [
-      "application/pdf",
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/heic",
-    ];
-    if (!allowedTypes.includes(data.mimeType)) {
-      return { error: "Only PDF, PNG, JPG, JPEG, and HEIC files are allowed." };
+    // What actually arrived in storage, checked: its size, and that its
+    // contents match its type (S3). Nothing the browser claims is used.
+    let upload;
+    try {
+      upload = await verifyUpload({ uploadId: data.uploadId, schemeId, purpose: "finance_document", profileId: profile.id });
+    } catch (err) {
+      const message = uploadErrorMessage(err);
+      if (message) return { error: message };
+      throw err;
     }
 
     // Duplicate detection for documents
     const docDuplicates = await checkDocumentDuplicates(
       schemeId,
-      data.fileName,
-      data.fileSize,
+      upload.fileName,
+      upload.size,
       data.documentType,
       data.amount,
       data.documentDate,
@@ -1934,24 +1917,30 @@ export async function uploadFinancialDocumentAction(
     }
 
     // Only the known fields, with the authorised scheme and uploader.
-    const doc = await createFinancialDocument({
-      documentType: data.documentType,
-      fileName: data.fileName.trim(),
-      fileUrl: data.fileUrl,
-      fileSize: data.fileSize,
-      mimeType: data.mimeType,
-      lotId: data.lotId || undefined,
-      supplierId: data.supplierId || undefined,
-      supplierInvoiceId: invoiceId,
-      levyNoticeId: noticeId,
-      bankTransactionId: transactionId,
-      amount: data.amount,
-      documentDate: data.documentDate,
-      payerName: data.payerName,
-      payeeReference: data.payeeReference,
-      schemeId,
-      uploadedBy: profile.id,
-    });
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      data.uploadId,
+      () =>
+        createFinancialDocument({
+        documentType: data.documentType,
+        fileName: upload.fileName,
+        fileUrl: upload.path,
+        fileSize: upload.size,
+        mimeType: upload.mimeType,
+        lotId: data.lotId || undefined,
+        supplierId: data.supplierId || undefined,
+        supplierInvoiceId: invoiceId,
+        levyNoticeId: noticeId,
+        bankTransactionId: transactionId,
+        amount: data.amount,
+        documentDate: data.documentDate,
+        payerName: data.payerName,
+        payeeReference: data.payeeReference,
+        schemeId,
+        uploadedBy: profile.id,
+      }),
+      (d) => `FinancialDocument:${d.id}`,
+    );
 
     await logActivity({
       schemeId,
@@ -1961,7 +1950,7 @@ export async function uploadFinancialDocumentAction(
       entityId: doc.id,
       metadata: {
         documentType: data.documentType,
-        fileName: data.fileName,
+        fileName: upload.fileName,
       },
     });
 

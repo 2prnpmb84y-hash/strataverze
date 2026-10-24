@@ -12,8 +12,9 @@ import {
   deleteDocument,
   getDocumentById,
 } from "@/lib/queries/documents";
-import { createClient } from "@/lib/supabase/server";
-import { validateFileUpload } from "@/lib/upload/validate-mime";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
+import { canSeeDocument, parseVisibility } from "@/lib/documents/visibility";
+import { documentViewers } from "@/lib/documents/viewers";
 import { logActivity } from "@/lib/queries/activity-log";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 
@@ -42,50 +43,48 @@ export async function uploadDocumentAction(
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
     const category = formData.get("category") as string;
-    const file = formData.get("file") as File | null;
+    const uploadId = String(formData.get("uploadId") ?? "");
+    const lotNumber = String(formData.get("lotNumber") ?? "").trim().slice(0, 20) || undefined;
+    const visibility = parseVisibility(formData.get("visibility"), lotNumber);
 
     const errors: Record<string, string> = {};
     if (!title) errors.title = "Title is required.";
     if (!category || !CATEGORIES.includes(category))
       errors.category = "Select a valid category.";
-    if (!file || file.size === 0) {
-      errors.file = "Please select a file to upload.";
-    } else {
-      const mimeError = validateFileUpload(file);
-      if (mimeError) errors.file = mimeError;
-      else if (file.size > 30 * 1024 * 1024)
-        errors.file = "File must be smaller than 30 MB.";
-    }
-
+    if (typeof visibility === "object") errors.visibility = visibility.error;
+    if (!uploadId) errors.file = "Please select a file to upload.";
     if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
-    // Upload to Supabase Storage
-    const supabase = await createClient();
-    const ext = file!.name.split(".").pop() ?? "bin";
-    const storagePath = `schemes/${schemeId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(storagePath, file!, {
-        contentType: file!.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return { error: `Upload failed: ${uploadError.message}` };
+    // The file went straight to storage through a link the server issued;
+    // check what actually arrived before recording it (S3).
+    let upload;
+    try {
+      upload = await verifyUpload({ uploadId, schemeId, purpose: "library", profileId: profile.id });
+    } catch (err) {
+      const message = uploadErrorMessage(err);
+      if (message) return { fieldErrors: { file: message } };
+      throw err;
     }
 
-    const doc = await createDocument({
-      schemeId,
-      title,
-      description: description || undefined,
-      category,
-      fileUrl: storagePath,
-      fileName: file!.name,
-      fileSize: file!.size,
-      mimeType: file!.type || undefined,
-      uploadedBy: profile.id,
-    });
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      uploadId,
+      () =>
+        createDocument({
+          schemeId,
+          title,
+          description: description || undefined,
+          category,
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+          lotNumber,
+          visibility: visibility as string,
+        }),
+      (d) => `Document:${d.id}`,
+    );
 
     await logActivity({
       schemeId,
@@ -93,7 +92,7 @@ export async function uploadDocumentAction(
       action: "DOCUMENT_UPLOADED",
       entityType: "Document",
       entityId: doc.id,
-      metadata: { title, category, fileName: file!.name },
+      metadata: { title, category, fileName: upload.fileName },
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
@@ -124,59 +123,54 @@ export async function uploadFileAction(
   try {
     const { profile } = await requireSchemeAccess(schemeId, "documents.manage");
 
-    const file = formData.get("file") as File | null;
-    if (!file || file.size === 0) {
-      return { id: "", error: "No file provided." };
-    }
-
-    const mimeError = validateFileUpload(file);
-    if (mimeError) return { id: "", error: mimeError };
-
-    if (file.size > 30 * 1024 * 1024) {
-      return { id: "", error: "File must be smaller than 30 MB." };
-    }
-
-    const supabase = await createClient();
-    const ext = file.name.split(".").pop() ?? "bin";
-    const storagePath = `schemes/${schemeId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(storagePath, file, {
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return { id: "", error: `Upload failed: ${uploadError.message}` };
-    }
+    const uploadId = String(formData.get("uploadId") ?? "");
+    if (!uploadId) return { id: "", error: "No file provided." };
 
     // Read optional metadata from form data
     const category = (formData.get("category") as string) || "OTHER";
+    if (!CATEGORIES.includes(category)) return { id: "", error: "Select a valid category." };
     const documentType = (formData.get("documentType") as string) || undefined;
     const strataPlan = (formData.get("strataPlan") as string) || undefined;
     const schedule = (formData.get("schedule") as string) || undefined;
     const lotNumber = (formData.get("lotNumber") as string) || undefined;
     const supplier = (formData.get("supplier") as string) || undefined;
     const comments = (formData.get("comments") as string) || undefined;
-    const title = file.name.replace(/\.[^.]+$/, "");
+    const visibility = parseVisibility(formData.get("visibility"), lotNumber);
+    if (typeof visibility === "object") return { id: "", error: visibility.error };
 
-    const doc = await createDocument({
-      schemeId,
-      title,
-      category,
-      documentType,
-      fileUrl: storagePath,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type || undefined,
-      uploadedBy: profile.id,
-      strataPlan,
-      schedule,
-      lotNumber,
-      supplier,
-      comments,
-    });
+    let upload;
+    try {
+      upload = await verifyUpload({ uploadId, schemeId, purpose: "library", profileId: profile.id });
+    } catch (err) {
+      const message = uploadErrorMessage(err);
+      if (message) return { id: "", error: message };
+      throw err;
+    }
+    const title = upload.fileName.replace(/\.[^.]+$/, "");
+
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      uploadId,
+      () =>
+        createDocument({
+          schemeId,
+          title,
+          category,
+          documentType,
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+          strataPlan,
+          schedule,
+          lotNumber,
+          supplier,
+          comments,
+          visibility: visibility as string,
+        }),
+      (d) => `Document:${d.id}`,
+    );
 
     await logActivity({
       schemeId,
@@ -184,7 +178,7 @@ export async function uploadFileAction(
       action: "DOCUMENT_UPLOADED",
       entityType: "Document",
       entityId: doc.id,
-      metadata: { title, category, fileName: file.name },
+      metadata: { title, category, fileName: upload.fileName },
     });
 
     return { id: doc.id };
@@ -210,7 +204,11 @@ export async function updateDocumentMetadataAction(
     }
 
     assertInScheme(await getDocumentById(documentId), schemeId, "Document");
+    // Visibility changes only when the form sends it (S3).
+    const visibility = data.visibility === undefined ? undefined : parseVisibility(data.visibility, data.lotNumber);
+    if (visibility && typeof visibility === "object") return { error: visibility.error };
     await updateDocument(schemeId, documentId, {
+      ...(visibility ? { visibility } : {}),
       title: data.title.trim(),
       documentType: data.documentType || null,
       documentDate: data.documentDate || null,
@@ -323,9 +321,13 @@ export async function getDocumentSignedUrlAction(
   let fileUrl: string;
   let actorId: string;
   try {
-    actorId = (await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "OWNER"])).profile.id;
+    const access = await requireSchemeMembership(schemeId, ["ADVISER", "COMMITTEE", "OWNER"]);
+    actorId = access.profile.id;
     const document = await getDocumentById(documentId);
     assertInScheme(document, schemeId, "Document");
+    // Its visibility, for this person's roles and lots on this building (S3).
+    const viewer = (await documentViewers(actorId, [schemeId])).get(schemeId);
+    if (!viewer || !canSeeDocument(document, viewer)) throw new AuthorisationError("Document not found.");
     fileUrl = document.fileUrl;
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };

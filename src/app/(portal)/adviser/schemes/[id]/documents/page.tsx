@@ -33,6 +33,7 @@ export default async function DocumentsSectionPage({
         strataPlan: d.strataPlan ?? null,
         schedule: d.schedule ?? null,
         lotNumber: d.lotNumber ?? null,
+        visibility: String(d.visibility ?? "ALL_MEMBERS"),
         supplier: d.supplier ?? null,
         comments: d.comments ?? null,
         description: d.description ?? null,

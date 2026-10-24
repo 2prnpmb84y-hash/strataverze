@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
+import { stageFormFile } from "@/lib/storage/client-upload";
+import { VISIBILITY_OPTIONS } from "@/components/documents/visibility-options";
+
+// The committee chooses between everyone, the committee, or one lot (the
+// manager-only choice is the Adviser's).
+const COMMITTEE_VISIBILITY = VISIBILITY_OPTIONS.filter((o) => o.value !== "MANAGEMENT");
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { uploadDocumentAction, type DocumentFormState } from "../actions";
@@ -31,9 +37,28 @@ export function DocumentUploadForm({
     DocumentFormState,
     FormData
   >(action ?? (async () => ({ error: "Please select a scheme." })), {});
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // The file goes straight to storage through a one-time link the server
+  // issues; the form then submits the upload id, not the file (S3).
+  async function submit(formData: FormData) {
+    setUploadError(null);
+    if (!selectedScheme) return;
+    setUploading(true);
+    const error = await stageFormFile(formData, selectedScheme, "committee_library");
+    setUploading(false);
+    if (error) {
+      setUploadError(error);
+      return;
+    }
+    startTransition(() => formAction(formData));
+  }
+
+  const fileError = uploadError ?? state.fieldErrors?.file;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={submit} className="space-y-4">
       {state.error && (
         <div className="rounded-[var(--radius-card)] bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {state.error}
@@ -88,6 +113,21 @@ export function DocumentUploadForm({
         error={state.fieldErrors?.category}
       />
 
+      <SelectField
+        label="Who can see it"
+        name="visibility"
+        required
+        defaultValue="ALL_MEMBERS"
+        options={COMMITTEE_VISIBILITY}
+        error={state.fieldErrors?.visibility}
+      />
+
+      <FormField
+        label="Lot number"
+        name="lotNumber"
+        placeholder="Only if the document is about one lot"
+      />
+
       <div>
         <label
           htmlFor="file"
@@ -101,12 +141,12 @@ export function DocumentUploadForm({
           name="file"
           type="file"
           required
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,.png,.jpg,.jpeg,.gif,.webp"
           className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-mint-soft file:text-turquoise hover:file:bg-mint focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
         />
-        {state.fieldErrors?.file && (
+        {fileError && (
           <p className="mt-1.5 text-xs text-red-500">
-            {state.fieldErrors.file}
+            {fileError}
           </p>
         )}
         <p className="mt-1.5 text-xs text-ink-muted">
@@ -114,8 +154,8 @@ export function DocumentUploadForm({
         </p>
       </div>
 
-      <Button type="submit" disabled={isPending || !selectedScheme}>
-        {isPending ? "Uploading..." : "Upload Document"}
+      <Button type="submit" disabled={isPending || uploading || !selectedScheme}>
+        {isPending || uploading ? "Uploading..." : "Upload Document"}
       </Button>
     </form>
   );

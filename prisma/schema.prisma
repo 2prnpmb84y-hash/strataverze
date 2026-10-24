@@ -1250,6 +1250,8 @@ model Document {
   lotNumber    String?   @map("lot_number")
   supplier     String?
   comments     String?
+  /// Who may see it (security stage S3): ALL_MEMBERS, COMMITTEE, LOT_OWNERS (owners of lotNumber) or MANAGEMENT.
+  visibility   String    @default("ALL_MEMBERS")
   createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
   deletedAt    DateTime? @db.Timestamptz @map("deleted_at")
 
@@ -3879,4 +3881,31 @@ model SecurityAuditCheck {
 
   @@index([checkedAt], map: "security_audit_checks_time_idx")
   @@map("security_audit_checks")
+}
+
+/// A file upload the server prepared (security stage S3). The server chose
+/// the path and checks what arrived before the file is used. See
+/// src/lib/storage/uploads.ts.
+model StorageUpload {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId     String    @map("scheme_id") @db.Uuid
+  /// library, committee_library, insurance, claim_evidence, finance_document, payment_confirmation.
+  purpose      String
+  path         String    @unique
+  profileId    String    @map("profile_id") @db.Uuid
+  /// The original file name, as the person chose it.
+  fileName     String    @map("file_name")
+  declaredSize Int       @map("declared_size")
+  createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  expiresAt    DateTime  @db.Timestamptz @map("expires_at")
+  verifiedAt   DateTime? @db.Timestamptz @map("verified_at")
+  verifiedSize Int?      @map("verified_size")
+  verifiedMime String?   @map("verified_mime")
+  usedAt       DateTime? @db.Timestamptz @map("used_at")
+  /// The record it became, or "refused".
+  usedFor      String?   @map("used_for")
+
+  @@index([schemeId, createdAt], map: "storage_uploads_scheme_idx")
+  @@index([profileId, createdAt], map: "storage_uploads_profile_idx")
+  @@map("storage_uploads")
 }

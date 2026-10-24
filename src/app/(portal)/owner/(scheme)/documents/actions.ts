@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { createDocument } from "@/lib/queries/documents";
-import { createClient } from "@/lib/supabase/server";
-import { validateFileUpload } from "@/lib/upload/validate-mime";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
+import { parseVisibility } from "@/lib/documents/visibility";
 
 export type DocumentFormState = {
   error?: string;
@@ -42,50 +42,52 @@ export async function uploadDocumentAction(
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const category = formData.get("category") as string;
-  const file = formData.get("file") as File | null;
+  const uploadId = String(formData.get("uploadId") ?? "");
+  const lotNumber = String(formData.get("lotNumber") ?? "").trim().slice(0, 20) || undefined;
+  const visibility = parseVisibility(formData.get("visibility"), lotNumber);
 
   const errors: Record<string, string> = {};
   if (!title) errors.title = "Title is required.";
   if (!category || !CATEGORIES.includes(category))
     errors.category = "Select a valid category.";
-  if (!file || file.size === 0) {
-    errors.file = "Please select a file to upload.";
-  } else {
-    const mimeError = validateFileUpload(file);
-    if (mimeError) errors.file = mimeError;
-    else if (file.size > 10 * 1024 * 1024)
-      errors.file = "File must be smaller than 10 MB.";
-  }
+  if (typeof visibility === "object") errors.visibility = visibility.error;
+  // The committee cannot make a document visible to the manager alone.
+  else if (visibility === "MANAGEMENT") errors.visibility = "Choose who can see this document.";
+  if (!uploadId) errors.file = "Please select a file to upload.";
 
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
   try {
-    const supabase = await createClient();
-    const ext = file!.name.split(".").pop() ?? "bin";
-    const storagePath = `schemes/${schemeId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(storagePath, file!, {
-        contentType: file!.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return { error: `Upload failed: ${uploadError.message}` };
+    // The file went straight to storage through a link the server issued;
+    // check what actually arrived before recording it (S3).
+    let upload;
+    try {
+      upload = await verifyUpload({ uploadId, schemeId, purpose: "committee_library", profileId: profile.id });
+    } catch (err) {
+      const message = uploadErrorMessage(err);
+      if (message) return { fieldErrors: { file: message } };
+      throw err;
     }
 
-    await createDocument({
-      schemeId,
-      title,
-      description: description || undefined,
-      category,
-      fileUrl: storagePath,
-      fileName: file!.name,
-      fileSize: file!.size,
-      mimeType: file!.type || undefined,
-      uploadedBy: profile.id,
-    });
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    await consumeUpload(
+      uploadId,
+      () =>
+        createDocument({
+          schemeId,
+          title,
+          description: description || undefined,
+          category,
+          fileUrl: upload.path,
+          fileName: upload.fileName,
+          fileSize: upload.size,
+          mimeType: upload.mimeType,
+          uploadedBy: profile.id,
+          lotNumber,
+          visibility: visibility as string,
+        }),
+      (d) => `Document:${d.id}`,
+    );
 
     revalidatePath("/owner/documents");
     redirect("/owner/documents");

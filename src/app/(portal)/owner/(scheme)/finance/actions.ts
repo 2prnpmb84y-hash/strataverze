@@ -10,14 +10,8 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { sendEmail } from "@/lib/email";
 import { possibleDuplicatePaymentEmail } from "@/lib/email-templates/payment-confirmation";
 import { findDuplicateConfirmation } from "@/lib/finance/payment-confirmations";
-import {
-  PAYMENT_ALLOWED_EXT,
-  PAYMENT_ALLOWED_MIME,
-  PAYMENT_MAX_BYTES,
-  paymentUploadPathProblem,
-  storedPaymentFileProblem,
-} from "@/lib/owner/payment-upload";
-import { createClient } from "@/lib/supabase/server";
+import { paymentUploadPathProblem } from "@/lib/owner/payment-upload";
+import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import type { Varchar, TimestampString, Numeric } from "@prisma/orm-postgres/target/codec-types";
 
 function toVarchar<N extends number>(value: string): Varchar<N> {
@@ -41,10 +35,8 @@ export async function uploadPaymentConfirmationAction(
   schemeId: string,
   data: {
     levyNoticeId?: string;
-    fileName: string;
-    fileUrl: string;
-    fileSize: number;
-    mimeType: string;
+    /** From prepareUploadAction: the file is already in storage (S3). */
+    uploadId: string;
     amount?: number;
     documentDate?: string;
     payerName?: string;
@@ -55,43 +47,28 @@ export async function uploadPaymentConfirmationAction(
     const profile = await getCurrentProfile();
     if (!profile) return { error: "Not authenticated." };
 
-    // Server-side file validation
-    const ext = data.fileName.split(".").pop()?.toLowerCase() ?? "";
-    if (!PAYMENT_ALLOWED_EXT.has(ext)) {
-      return { error: `File type ".${ext}" is not allowed. Accepted: PDF, PNG, JPG, HEIC.` };
-    }
-    if (!data.mimeType || !PAYMENT_ALLOWED_MIME.has(data.mimeType)) {
-      return { error: "This file type is not permitted. Please upload a PDF or image file." };
-    }
-    if (data.fileSize > PAYMENT_MAX_BYTES) {
-      return { error: "File size exceeds the 10 MB limit." };
-    }
+    if (typeof data?.uploadId !== "string" || !data.uploadId) return { error: "Choose a file to upload." };
 
     // Verify the owner belongs to this scheme
     const schemes = await getSchemesForOwner(profile.id);
     const scheme = schemes.find((s) => s.id === schemeId);
     if (!scheme) return { error: "You do not have access to this scheme." };
 
-    // The file must be directly in this scheme's payments folder (where the
-    // upload form puts it), with an allowed extension.
-    const pathProblem = paymentUploadPathProblem(schemeId, data.fileUrl);
+    // What actually arrived in storage, checked: the server chose the path
+    // (directly in this scheme's payments folder), and the size and type
+    // come from the stored file, never from the browser (S3, F16).
+    let upload;
+    try {
+      upload = await verifyUpload({ uploadId: data.uploadId, schemeId, purpose: "payment_confirmation", profileId: profile.id });
+    } catch (err) {
+      const message = uploadErrorMessage(err);
+      if (message) return { error: message };
+      throw err;
+    }
+    const pathProblem = paymentUploadPathProblem(schemeId, upload.path);
     if (pathProblem) return { error: pathProblem };
-
-    // A file can be registered once: nobody may claim a file that another
-    // payment confirmation already points at (another owner's proof of payment).
-    const alreadyRegistered = await db.orm.public.FinancialDocument
-      .where((d) => d.fileUrl.eq(data.fileUrl))
-      .first();
-    if (alreadyRegistered) return { error: "This file has already been registered. Please upload it again." };
-
-    // Size and type as storage reports them, not as the client claims. Read
-    // with the caller's own session, so storage also checks they may see it.
-    const supabase = await createClient();
-    const { data: stored } = await supabase.storage.from("documents").info(data.fileUrl);
-    const storedProblem = storedPaymentFileProblem(stored ?? null);
-    if (storedProblem) return { error: storedProblem };
-    const fileSize = Number(stored!.size);
-    const mimeType = String(stored!.contentType).split(";")[0].trim().toLowerCase();
+    const fileSize = upload.size;
+    const mimeType = upload.mimeType;
 
     // The owner's own lots. A notice, when chosen, must be on one of them.
     const ownLots = scheme.memberships.filter((m) => m.profileId === profile.id && m.role === "OWNER" && m.lotId).map((m) => m.lotId!);
@@ -126,31 +103,37 @@ export async function uploadPaymentConfirmationAction(
       })),
     );
 
-    const doc = await db.orm.public.FinancialDocument.create({
-      schemeId,
-      documentType: "PAYMENT_CONFIRMATION",
-      uploadedBy: profile.id,
-      fileName: toVarchar<500>(data.fileName),
-      fileUrl: data.fileUrl,
-      fileSize,
-      mimeType: toVarchar<100>(mimeType),
-      lotId: lotId ?? undefined,
-      levyNoticeId: data.levyNoticeId ?? undefined,
-      amount: data.amount !== undefined ? toNumeric(data.amount) : undefined,
-      documentDate: data.documentDate
-        ? toTimestamp(data.documentDate)
-        : undefined,
-      payerName: data.payerName
-        ? toVarchar<200>(data.payerName)
-        : undefined,
-      payeeReference: data.payeeReference
-        ? toVarchar<200>(data.payeeReference)
-        : undefined,
-      documentStatus: "UPLOADED",
-      verificationStatus: "PENDING",
-      duplicateOfId: duplicate?.id ?? null,
-      reviewNotes: duplicate ? "Possible duplicate of an earlier upload with the same notice, amount and date." : null,
-    });
+    // Claimed atomically, so the same upload cannot make two records (S3).
+    const doc = await consumeUpload(
+      data.uploadId,
+      () =>
+        db.orm.public.FinancialDocument.create({
+        schemeId,
+        documentType: "PAYMENT_CONFIRMATION",
+        uploadedBy: profile.id,
+        fileName: toVarchar<500>(upload.fileName),
+        fileUrl: upload.path,
+        fileSize,
+        mimeType: toVarchar<100>(mimeType),
+        lotId: lotId ?? undefined,
+        levyNoticeId: data.levyNoticeId ?? undefined,
+        amount: data.amount !== undefined ? toNumeric(data.amount) : undefined,
+        documentDate: data.documentDate
+          ? toTimestamp(data.documentDate)
+          : undefined,
+        payerName: data.payerName
+          ? toVarchar<200>(data.payerName)
+          : undefined,
+        payeeReference: data.payeeReference
+          ? toVarchar<200>(data.payeeReference)
+          : undefined,
+        documentStatus: "UPLOADED",
+        verificationStatus: "PENDING",
+        duplicateOfId: duplicate?.id ?? null,
+        reviewNotes: duplicate ? "Possible duplicate of an earlier upload with the same notice, amount and date." : null,
+      }),
+      (d) => `FinancialDocument:${d.id}`,
+    );
 
     await logActivity({
       schemeId,
@@ -159,7 +142,7 @@ export async function uploadPaymentConfirmationAction(
       entityType: "FinancialDocument",
       entityId: doc.id,
       metadata: {
-        fileName: data.fileName,
+        fileName: upload.fileName,
         levyNoticeId: data.levyNoticeId ?? null,
         possibleDuplicateOf: duplicate?.id ?? null,
       },

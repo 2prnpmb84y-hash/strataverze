@@ -152,6 +152,11 @@ const documents = {
 vi.mock("@/lib/queries/documents", () => documents);
 const resolveDocumentUrl = vi.fn(async () => "https://signed.example/doc");
 vi.mock("@/lib/queries/document-url", () => ({ resolveDocumentUrl }));
+// Document visibility (S3): the caller's roles on each scheme, no lots.
+vi.mock("@/lib/documents/viewers", () => ({
+  documentViewers: async (_p: string, ids: string[]) =>
+    new Map(ids.map((id) => [id, { roles: callerRoles[id] ?? [], ownLotNumbers: [] }])),
+}));
 
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn() }));
 vi.mock("@/lib/queries/schemes", () => ({
@@ -424,6 +429,16 @@ describe("document signed URLs (L1)", () => {
     expect(r.url).toBeDefined();
     // Signed only within this scheme's folder of the documents bucket.
     expect(resolveDocumentUrl).toHaveBeenCalledWith(path, 600, { schemeId: SCHEME_A });
+  });
+
+  it("refuses a document the caller may not see (S3 visibility)", async () => {
+    callerRoles = { [SCHEME_A]: ["OWNER"] };
+    for (const visibility of ["MANAGEMENT", "COMMITTEE", "LOT_OWNERS"]) {
+      documents.getDocumentById.mockResolvedValue({ id: "doc-a", schemeId: SCHEME_A, fileUrl: `schemes/${SCHEME_A}/x.pdf`, visibility, lotNumber: "9" });
+      const r = await documentActions.getDocumentSignedUrlAction(SCHEME_A, "doc-a");
+      expect(r.error, visibility).toBe("Document not found.");
+    }
+    expect(resolveDocumentUrl).not.toHaveBeenCalled();
   });
 
   it("refuses a supplier", async () => {

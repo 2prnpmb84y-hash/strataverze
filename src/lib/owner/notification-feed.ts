@@ -82,11 +82,14 @@ export type FeedViewer = {
   committeeSchemeIds: ReadonlySet<string>;
   /** Work orders the viewer raised. */
   ownWorkOrderIds: ReadonlySet<string>;
+  /** Library documents kept from the viewer by their visibility (S3). */
+  hiddenDocumentIds?: ReadonlySet<string>;
 };
 
 /** Whether the viewer may see this activity in their feed. */
 export function isFeedVisible(activity: FeedActivity, viewer: FeedViewer): boolean {
   const a = activity.action;
+  if (activity.entityType === "Document" && activity.entityId && viewer.hiddenDocumentIds?.has(activity.entityId)) return false;
   if ((OWNER_FEED_ACTIONS as readonly string[]).includes(a)) return true;
   const committee = viewer.committeeSchemeIds.has(activity.schemeId);
   if ((WORK_ORDER_FEED_ACTIONS as readonly string[]).includes(a)) {

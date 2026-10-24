@@ -1,5 +1,7 @@
 "use server";
 
+import { documentViewers } from "@/lib/documents/viewers";
+import { canSeeDocument } from "@/lib/documents/visibility";
 import { db } from "@/prisma/db";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -121,7 +123,11 @@ export async function globalSearch(
       .limit(MAX_PER_TYPE)
       .all();
 
+    // Only documents this person may see (S3 visibility).
+    const viewers = await documentViewers(profile.id, [...new Set(documents.map((d) => d.schemeId))]);
     for (const doc of documents) {
+      const viewer = viewers.get(doc.schemeId);
+      if (!viewer || !canSeeDocument(doc, viewer)) continue;
       results.push({
         type: "document",
         id: doc.id,

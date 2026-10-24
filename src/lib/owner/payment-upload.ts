@@ -14,10 +14,11 @@ export const PAYMENT_ALLOWED_MIME: ReadonlySet<string> = new Set([
   "image/jpeg",
   "image/jpg",
   "image/heic",
+  "image/heif",
 ]);
 
 /** Allowed file extensions for payment confirmation uploads. */
-export const PAYMENT_ALLOWED_EXT: ReadonlySet<string> = new Set(["pdf", "png", "jpg", "jpeg", "heic"]);
+export const PAYMENT_ALLOWED_EXT: ReadonlySet<string> = new Set(["pdf", "png", "jpg", "jpeg", "heic", "heif"]);
 
 export const PAYMENT_MAX_BYTES = 10 * 1024 * 1024;
 
