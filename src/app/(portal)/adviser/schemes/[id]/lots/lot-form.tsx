@@ -31,11 +31,14 @@ export function LotForm({
   schemeId,
   lotId,
   defaults,
+  lockStructure = false,
 }: {
   mode: "create" | "edit";
   schemeId: string;
   lotId?: string;
   defaults?: LotDefaults;
+  /** Lot number and unit entitlement are locked (24 Oct): StrataVerze only. */
+  lockStructure?: boolean;
 }) {
   const action =
     mode === "create"
@@ -60,6 +63,7 @@ export function LotForm({
           <FormField
             label="Lot Number"
             name="lotNumber"
+            readOnly={lockStructure}
             required
             defaultValue={defaults?.lotNumber}
             placeholder="e.g. 1"
@@ -78,6 +82,7 @@ export function LotForm({
           <FormField
             label="Entitlement"
             name="entitlement"
+            readOnly={lockStructure}
             type="number"
             required
             defaultValue={defaults?.entitlement}

@@ -5,11 +5,13 @@ import type { getLotsForScheme } from "@/lib/queries/lots";
 
 /** Moved unchanged from the scheme main page so it can also back its section page. */
 export function LotsCard({
-  id, lots, totalLots,
+  id, lots, totalLots, canAddLots = false,
 }: {
   id: string;
   lots: Awaited<ReturnType<typeof getLotsForScheme>>;
   totalLots: number;
+  /** Lots are part of the locked building record: StrataVerze only. */
+  canAddLots?: boolean;
 }) {
   return (
     <Card className="mb-6">
@@ -17,9 +19,11 @@ export function LotsCard({
         title="Lots"
         description={`${lots.length} of ${totalLots} lots registered.`}
         action={
-          <Button href={`/adviser/schemes/${id}/lots/new`} variant="secondary">
-            Add Lot
-          </Button>
+          canAddLots ? (
+            <Button href={`/adviser/schemes/${id}/lots/new`} variant="secondary">
+              Add Lot
+            </Button>
+          ) : undefined
         }
       />
       {lots.length > 0 ? (

@@ -6,6 +6,14 @@ import { revalidatePath } from "next/cache";
 import { searchProfiles } from "@/lib/queries/profiles";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { requirePlatformAdmin } from "@/lib/auth/require-membership";
+import {
+  LOCKED_LOT_FIELDS,
+  LOCKED_MESSAGE,
+  changedLockedFields,
+  requireSchemeAccessOrAdmin,
+} from "@/lib/auth/building-lock";
+import { db as schemeDb } from "@/prisma/db";
 import { assertInScheme } from "@/lib/auth/scheme-scope";
 import {
   getLotInScheme,
@@ -63,7 +71,10 @@ export async function createLotAction(
   formData: FormData,
 ): Promise<LotFormState> {
   try {
-    const { profile } = await requireSchemeAccess(schemeId, "lots.manage");
+    // Lots are part of the locked building record: StrataVerze only (24 Oct).
+    const profile = await requirePlatformAdmin();
+    const scheme = await schemeDb.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+    if (!scheme) throw new AuthorisationError("Scheme not found.");
 
     const { errors, isValid, data } = validateLotForm(formData);
     if (!isValid) return { fieldErrors: errors };
@@ -103,7 +114,7 @@ export async function updateLotAction(
   formData: FormData,
 ): Promise<LotFormState> {
   try {
-    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
+    const { profile: actor, isAdmin } = await requireSchemeAccessOrAdmin(schemeId, "lots.manage");
 
     const { errors, isValid, data } = validateLotForm(formData);
     if (!isValid) return { fieldErrors: errors };
@@ -111,12 +122,27 @@ export async function updateLotAction(
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
 
+    // The lot number and unit entitlement are locked: StrataVerze only (24 Oct).
+    const locked = changedLockedFields(LOCKED_LOT_FIELDS, lot as Record<string, unknown>, data);
+    if (locked.length && !isAdmin) {
+      await recordSecurityEvent({
+        action: "access.denied",
+        outcome: "denied",
+        actorProfileId: actor.id,
+        schemeId,
+        resourceType: "Lot",
+        resourceId: lotId,
+        reason: "locked building record",
+      });
+      return { error: LOCKED_MESSAGE };
+    }
+
     await updateLot(schemeId, lotId, data);
     await recordSecurityEvent({
       action: "lot.updated",
       outcome: "allowed",
       actorProfileId: actor.id,
-      actorRole: "ADVISER",
+      actorRole: isAdmin ? "platform_admin" : "ADVISER",
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,
@@ -131,7 +157,8 @@ export async function updateLotAction(
 
 export async function deleteLotAction(schemeId: string, lotId: string) {
   try {
-    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
+    // Removing a lot changes the strata plan: StrataVerze only (24 Oct).
+    const actor = await requirePlatformAdmin();
 
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
@@ -168,7 +195,7 @@ export async function deleteLotAction(schemeId: string, lotId: string) {
  */
 export async function searchProfilesAction(query: string, schemeId: string) {
   try {
-    await requireSchemeAccess(schemeId, "lots.manage");
+    await requireSchemeAccess(schemeId, "roll.manage");
     return searchProfiles(query, schemeId);
   } catch {
     return [];
@@ -184,7 +211,8 @@ export async function assignOwnerAction(
   profileId: string,
 ) {
   try {
-    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
+    // The strata roll's owners: the Adviser and the committee (24 Oct).
+    const { profile: actor, roles } = await requireSchemeAccess(schemeId, "roll.manage");
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
@@ -196,7 +224,7 @@ export async function assignOwnerAction(
       action: "membership.owner_assigned",
       outcome: "allowed",
       actorProfileId: actor.id,
-      actorRole: "ADVISER",
+      actorRole: roles.includes("ADVISER") ? "ADVISER" : "COMMITTEE",
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,
@@ -220,7 +248,7 @@ export async function removeOwnerAction(
   membershipId: string,
 ) {
   try {
-    const { profile: actor } = await requireSchemeAccess(schemeId, "lots.manage");
+    const { profile: actor, roles } = await requireSchemeAccess(schemeId, "roll.manage");
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 
@@ -244,7 +272,7 @@ export async function removeOwnerAction(
       action: "membership.owner_removed",
       outcome: "allowed",
       actorProfileId: actor.id,
-      actorRole: "ADVISER",
+      actorRole: roles.includes("ADVISER") ? "ADVISER" : "COMMITTEE",
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,

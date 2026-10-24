@@ -368,6 +368,7 @@ export default async function LotDetailPage({
                   mode="edit"
                   schemeId={id}
                   lotId={lotId}
+                  lockStructure={!profile?.isPlatformAdmin}
                   defaults={{
                     lotNumber: lot.lotNumber,
                     unitNumber: lot.unitNumber,
@@ -378,17 +379,19 @@ export default async function LotDetailPage({
                 />
               </div>
 
-              <Card className="border-red-200">
-                <CardHeader
-                  title="Danger Zone"
-                  description="Irreversible actions for this lot."
-                />
-                <DeleteLotButton
-                  schemeId={id}
-                  lotId={lotId}
-                  lotNumber={lot.lotNumber}
-                />
-              </Card>
+              {profile?.isPlatformAdmin && (
+                <Card className="border-red-200">
+                  <CardHeader
+                    title="Danger Zone"
+                    description="Irreversible actions for this lot."
+                  />
+                  <DeleteLotButton
+                    schemeId={id}
+                    lotId={lotId}
+                    lotNumber={lot.lotNumber}
+                  />
+                </Card>
+              )}
             </div>
           ),
         }}

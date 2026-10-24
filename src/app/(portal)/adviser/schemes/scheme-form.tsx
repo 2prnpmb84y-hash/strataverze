@@ -38,10 +38,13 @@ export function SchemeForm({
   mode,
   schemeId,
   defaults,
+  lockCore = false,
 }: {
   mode: "create" | "edit";
   schemeId?: string;
   defaults?: SchemeDefaults;
+  /** The locked building record (24 Oct): only StrataVerze changes these. */
+  lockCore?: boolean;
 }) {
   const action =
     mode === "create"
@@ -75,7 +78,9 @@ export function SchemeForm({
 
           <FormField
             label="Plan Number"
+            helpText={lockCore ? "Locked. Only StrataVerze can change the plan number, address, lots and entitlement." : undefined}
             name="planNumber"
+            readOnly={lockCore}
             required
             defaultValue={defaults?.planNumber}
             placeholder="e.g. PS 123456"
@@ -94,6 +99,7 @@ export function SchemeForm({
           <FormField
             label="Street Address"
             name="address"
+            readOnly={lockCore}
             required
             defaultValue={defaults?.address}
             placeholder="e.g. 42 Collins Street"
@@ -104,6 +110,7 @@ export function SchemeForm({
           <FormField
             label="Suburb"
             name="suburb"
+            readOnly={lockCore}
             required
             defaultValue={defaults?.suburb}
             placeholder="e.g. Melbourne"
@@ -114,6 +121,7 @@ export function SchemeForm({
             <SelectField
               label="State"
               name="state"
+            readOnly={lockCore}
               required
               defaultValue={defaults?.state ?? "VIC"}
               options={STATES}
@@ -122,6 +130,7 @@ export function SchemeForm({
             <FormField
               label="Postcode"
               name="postcode"
+            readOnly={lockCore}
               required
               defaultValue={defaults?.postcode}
               placeholder="3000"
@@ -132,6 +141,7 @@ export function SchemeForm({
           <FormField
             label="Total Lots"
             name="totalLots"
+            readOnly={lockCore}
             type="number"
             required
             defaultValue={defaults?.totalLots}
@@ -142,6 +152,7 @@ export function SchemeForm({
           <FormField
             label="Total Entitlement"
             name="totalEntitlement"
+            readOnly={lockCore}
             type="number"
             required
             defaultValue={defaults?.totalEntitlement}
