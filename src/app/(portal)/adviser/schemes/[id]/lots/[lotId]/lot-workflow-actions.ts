@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
+import { getLotInScheme } from "@/lib/queries/lots";
 import {
   upsertLotDetail,
   upsertTenant,
@@ -13,6 +16,17 @@ import {
   createProxy,
   revokeProxy,
 } from "@/lib/queries/lot-workflows";
+
+/**
+ * Authorise lot management on the scheme and confirm the lot belongs to it
+ * (SEC-004). Lot workflow tables have no scheme_id, so the lot is the anchor.
+ */
+async function authoriseLot(schemeId: string, lotId: string) {
+  const access = await requireSchemeAccess(schemeId, "lots.manage");
+  const lot = await getLotInScheme(schemeId, lotId);
+  assertInScheme(lot, schemeId, "Lot");
+  return access;
+}
 
 function revalidateLot(schemeId: string, lotId: string) {
   revalidatePath(`/adviser/schemes/${schemeId}/lots/${lotId}`);
@@ -26,7 +40,7 @@ export async function updateLotDetailAction(
   formData: FormData,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await authoriseLot(schemeId, lotId);
 
     await upsertLotDetail(lotId, {
       ownerPhone: (formData.get("ownerPhone") as string) || null,
@@ -60,7 +74,7 @@ export async function updateTenantAction(
   formData: FormData,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await authoriseLot(schemeId, lotId);
 
     await upsertTenant(lotId, tenantNumber, {
       isOwnerOccupier: formData.get("isOwnerOccupier") === "on",
@@ -99,7 +113,7 @@ export async function updatePropertyManagerAction(
   formData: FormData,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await authoriseLot(schemeId, lotId);
 
     await upsertPropertyManager(lotId, {
       agentName: (formData.get("agentName") as string) || null,
@@ -128,7 +142,7 @@ export async function updateDeliveryPreferenceAction(
   formData: FormData,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await authoriseLot(schemeId, lotId);
 
     await upsertDeliveryPreference(lotId, category, {
       deliveryMethod: (formData.get("deliveryMethod") as string) || "EMAIL",
@@ -157,7 +171,7 @@ export async function updateDebtCollectionAction(
   formData: FormData,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await authoriseLot(schemeId, lotId);
 
     await upsertDebtCollection(lotId, {
       stage: (formData.get("stage") as string) || "NONE",
@@ -185,7 +199,7 @@ export async function createPowerOfAttorneyAction(
   formData: FormData,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await authoriseLot(schemeId, lotId);
 
     await createPowerOfAttorney(lotId, {
       attorneyName: (formData.get("attorneyName") as string) || "",
@@ -215,8 +229,8 @@ export async function revokePowerOfAttorneyAction(
   poaId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await revokePowerOfAttorney(poaId);
+    await authoriseLot(schemeId, lotId);
+    await revokePowerOfAttorney(lotId, poaId);
     revalidateLot(schemeId, lotId);
     return {};
   } catch (err) {
@@ -233,7 +247,7 @@ export async function createProxyAction(
   formData: FormData,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await authoriseLot(schemeId, lotId);
 
     await createProxy(lotId, {
       proxyName: (formData.get("proxyName") as string) || "",
@@ -260,8 +274,8 @@ export async function revokeProxyAction(
   proxyId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await revokeProxy(proxyId);
+    await authoriseLot(schemeId, lotId);
+    await revokeProxy(lotId, proxyId);
     revalidateLot(schemeId, lotId);
     return {};
   } catch (err) {

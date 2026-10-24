@@ -102,6 +102,7 @@ export async function createMatchingRule(data: {
  * Update an existing matching rule.
  */
 export async function updateMatchingRule(
+  schemeId: string,
   ruleId: string,
   data: Partial<{
     name: string;
@@ -156,19 +157,32 @@ export async function updateMatchingRule(
   if (data.priority !== undefined) updateData.priority = data.priority;
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-  return db.orm.public.MatchingRule.where({ id: ruleId }).update(updateData);
+  // Scheme-scoped: returns null when the rule is not this scheme's.
+  return db.orm.public.MatchingRule
+    .where((r) => and(r.id.eq(ruleId), r.schemeId.eq(schemeId)))
+    .update(updateData);
 }
 
 /**
  * Delete a matching rule (hard delete since rules have no financial impact).
+ * Scheme-scoped: returns null, and changes nothing, when the rule is not this
+ * scheme's.
  */
-export async function deleteMatchingRule(ruleId: string) {
+export async function deleteMatchingRule(schemeId: string, ruleId: string) {
+  const rule = await db.orm.public.MatchingRule
+    .where((r) => and(r.id.eq(ruleId), r.schemeId.eq(schemeId)))
+    .first();
+  if (!rule) return null;
+
   // First clear matching_rule_id from any transactions that reference this rule
   await db.orm.public.BankTransaction
-    .where((t) => t.matchingRuleId.eq(ruleId))
-    .update({ matchingRuleId: null });
+    .where((t) => and(t.matchingRuleId.eq(rule.id), t.schemeId.eq(schemeId)))
+    .updateAndCount({ matchingRuleId: null });
 
-  return db.orm.public.MatchingRule.where({ id: ruleId }).delete();
+  await db.orm.public.MatchingRule
+    .where((r) => and(r.id.eq(rule.id), r.schemeId.eq(schemeId)))
+    .delete();
+  return rule;
 }
 
 /**

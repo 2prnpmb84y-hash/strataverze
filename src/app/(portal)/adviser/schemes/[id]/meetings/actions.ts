@@ -2,8 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertBelongsTo, assertInScheme, assertOneOf } from "@/lib/auth/scheme-scope";
 import {
+  getMeetingById,
   updateMeeting,
   deleteMeeting,
 } from "@/lib/queries/meetings";
@@ -11,7 +14,8 @@ import {
   createMotion,
   updateMotion,
   deleteMotion,
-  castVote,
+  getMotionById,
+  MOTION_STATUSES,
 } from "@/lib/queries/motions";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
@@ -61,6 +65,21 @@ function validateMeetingForm(formData: FormData) {
   };
 }
 
+/** Load a meeting and confirm it belongs to the scheme (SEC-004). */
+async function meetingInScheme(schemeId: string, meetingId: string) {
+  const meeting = await getMeetingById(meetingId);
+  assertInScheme(meeting, schemeId, "Meeting");
+  return meeting;
+}
+
+/** Load a motion and confirm it belongs to the scheme and the meeting (SEC-004). */
+async function motionInMeeting(schemeId: string, meetingId: string, motionId: string) {
+  const motion = await getMotionById(motionId);
+  assertInScheme(motion, schemeId, "Motion");
+  assertBelongsTo(motion.meetingId, meetingId, "Motion");
+  return motion;
+}
+
 function toIso(value: FormDataEntryValue | null): string {
   if (!value) return "";
   const d = new Date(value as string);
@@ -73,7 +92,7 @@ export async function createMeetingAction(
   formData: FormData,
 ): Promise<MeetingFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     const scheme = await getSchemeById(schemeId);
     if (!scheme) return { error: "Scheme not found." };
@@ -149,12 +168,13 @@ export async function updateMeetingAction(
   formData: FormData,
 ): Promise<MeetingFormState> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "governance.manage");
 
     const { errors, isValid, data } = validateMeetingForm(formData);
     if (!isValid) return { fieldErrors: errors };
 
-    await updateMeeting(meetingId, data);
+    await meetingInScheme(schemeId, meetingId);
+    await updateMeeting(schemeId, meetingId, data);
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {
@@ -168,9 +188,10 @@ export async function deleteMeetingAction(
   meetingId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "governance.manage");
 
-    await deleteMeeting(meetingId);
+    await meetingInScheme(schemeId, meetingId);
+    await deleteMeeting(schemeId, meetingId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/meetings`);
   } catch (err) {
@@ -193,9 +214,10 @@ export async function completeMeetingAction(
   meetingId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "governance.manage");
 
-    await updateMeeting(meetingId, { status: "COMPLETED" });
+    await meetingInScheme(schemeId, meetingId);
+    await updateMeeting(schemeId, meetingId, { status: "COMPLETED" });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {
@@ -209,9 +231,10 @@ export async function cancelMeetingAction(
   meetingId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "governance.manage");
 
-    await updateMeeting(meetingId, { status: "CANCELLED" });
+    await meetingInScheme(schemeId, meetingId);
+    await updateMeeting(schemeId, meetingId, { status: "CANCELLED" });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {
@@ -234,7 +257,7 @@ export async function createMotionAction(
   formData: FormData,
 ): Promise<MotionFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -248,6 +271,7 @@ export async function createMotionAction(
 
     if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
+    await meetingInScheme(schemeId, meetingId);
     await createMotion({
       schemeId,
       meetingId,
@@ -272,9 +296,14 @@ export async function updateMotionStatusAction(
   outcome?: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "governance.manage");
 
-    await updateMotion(motionId, { status, outcome: outcome ?? null });
+    assertOneOf(status, MOTION_STATUSES, "motion status");
+    await motionInMeeting(schemeId, meetingId, motionId);
+    await updateMotion(schemeId, motionId, {
+      status,
+      outcome: typeof outcome === "string" ? outcome.slice(0, 500) : null,
+    });
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {
@@ -289,9 +318,10 @@ export async function deleteMotionAction(
   motionId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "governance.manage");
 
-    await deleteMotion(motionId);
+    await motionInMeeting(schemeId, meetingId, motionId);
+    await deleteMotion(schemeId, motionId);
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {
@@ -300,24 +330,6 @@ export async function deleteMotionAction(
   }
 }
 
-export async function castVoteAction(
-  schemeId: string,
-  meetingId: string,
-  motionId: string,
-  voteValue: string,
-) {
-  try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-
-    await castVote({
-      motionId,
-      profileId: profile.id,
-      voteValue,
-    });
-    revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
-    return {};
-  } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
-    return { error: "Failed to cast vote. You may have already voted." };
-  }
-}
+// No adviser vote action: advisers do not vote on motions (security review
+// H1). Owners vote per lot in the owner portal (owner/(scheme)/meetings), and
+// committee members vote on committee motions in owner/(scheme)/governance.

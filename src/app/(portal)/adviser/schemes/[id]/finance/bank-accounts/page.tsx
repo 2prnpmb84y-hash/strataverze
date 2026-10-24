@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 function maskAccountNumber(accountNumber: string): string {
   if (accountNumber.length <= 4) return accountNumber;
@@ -37,6 +38,8 @@ export default async function BankAccountsPage({
 }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
   const bankAccounts = await getBankAccountsForScheme(id);
 
   return (

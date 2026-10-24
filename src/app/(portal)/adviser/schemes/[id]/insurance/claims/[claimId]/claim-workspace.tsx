@@ -116,8 +116,8 @@ export function ClaimWorkspace({
     }
     start(() => router.refresh());
   }
-  async function download(fileUrl: string) {
-    const res = await getClaimDocumentUrlAction(schemeId, fileUrl);
+  async function download(documentId: string) {
+    const res = await getClaimDocumentUrlAction(schemeId, documentId);
     if (res.url) window.open(res.url, "_blank", "noopener");
     else setError(res.error ?? "Could not open the document.");
   }
@@ -253,7 +253,7 @@ export function ClaimWorkspace({
                 <button
                   type="button"
                   className="text-turquoise text-xs hover:underline"
-                  onClick={() => download(d.fileUrl)}
+                  onClick={() => download(d.id)}
                 >
                   Download
                 </button>

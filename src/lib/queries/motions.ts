@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 /**
  * Create a motion linked to a meeting.
@@ -22,10 +23,17 @@ export async function createMotion(data: {
   });
 }
 
+/** Motion status vocabulary used by the adviser and owner portals. */
+export const MOTION_STATUSES = ["DRAFT", "OPEN", "CARRIED", "DEFEATED", "PASSED", "WITHDRAWN"] as const;
+
+/** Vote values accepted on motions (schema: FOR, AGAINST, ABSTAIN). */
+export const VOTE_VALUES = ["FOR", "AGAINST", "ABSTAIN"] as const;
+
 /**
- * Update a motion.
+ * Update a motion. Scheme-scoped: a motion from another scheme matches nothing.
  */
 export async function updateMotion(
+  schemeId: string,
   motionId: string,
   data: Partial<{
     title: string;
@@ -35,14 +43,18 @@ export async function updateMotion(
     outcome: string | null;
   }>,
 ) {
-  return db.orm.public.Motion.where({ id: motionId }).update(data);
+  return db.orm.public.Motion
+    .where((m) => and(m.id.eq(motionId), m.schemeId.eq(schemeId)))
+    .update(data);
 }
 
 /**
- * Delete a motion.
+ * Delete a motion. Scheme-scoped: a motion from another scheme matches nothing.
  */
-export async function deleteMotion(motionId: string) {
-  return db.orm.public.Motion.where({ id: motionId }).delete();
+export async function deleteMotion(schemeId: string, motionId: string) {
+  return db.orm.public.Motion
+    .where((m) => and(m.id.eq(motionId), m.schemeId.eq(schemeId)))
+    .delete();
 }
 
 /**

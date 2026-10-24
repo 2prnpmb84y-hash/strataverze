@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
-import { createFund, updateFund, deleteFund } from "@/lib/queries/funds";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
+import { createFund, updateFund, deleteFund, getFundById } from "@/lib/queries/funds";
 import { logActivity } from "@/lib/queries/activity-log";
 
 export type FundFormState = {
@@ -43,7 +45,7 @@ export async function createFundAction(
   formData: FormData,
 ): Promise<FundFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "finance.write");
 
     const { errors, isValid, data } = validateFundForm(formData);
     if (!isValid) return { fieldErrors: errors };
@@ -83,12 +85,13 @@ export async function updateFundAction(
   formData: FormData,
 ): Promise<FundFormState> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "finance.write");
 
     const { errors, isValid, data } = validateFundForm(formData);
     if (!isValid) return { fieldErrors: errors };
 
-    await updateFund(fundId, { name: data.name, balance: data.balance });
+    assertInScheme(await getFundById(fundId), schemeId, "Fund");
+    await updateFund(schemeId, fundId, { name: data.name, balance: data.balance });
     revalidatePath(`/adviser/schemes/${schemeId}/funds/${fundId}`);
     return {};
   } catch (err) {
@@ -99,9 +102,10 @@ export async function updateFundAction(
 
 export async function deleteFundAction(schemeId: string, fundId: string) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "finance.write");
 
-    await deleteFund(fundId);
+    assertInScheme(await getFundById(fundId), schemeId, "Fund");
+    await deleteFund(schemeId, fundId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/finance`);
   } catch (err) {

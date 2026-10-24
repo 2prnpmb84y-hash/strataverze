@@ -7,7 +7,9 @@ const apiKey = process.env.RESEND_API_KEY;
 const resend = apiKey ? new Resend(apiKey) : null;
 
 const FROM_ADDRESS =
-  process.env.EMAIL_FROM ?? "StrataVerze <notifications@strataverze.com.au>";
+  // strataverze.com is the platform's domain (strataverze.com.au is not
+  // registered). Resend sends only once the domain is verified there.
+  process.env.EMAIL_FROM ?? "StrataVerze <notifications@strataverze.com>";
 
 type SendEmailParams = {
   to: string | string[];

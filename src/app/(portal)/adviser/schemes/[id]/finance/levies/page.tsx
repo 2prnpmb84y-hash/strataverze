@@ -6,6 +6,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import Link from "next/link";
 import { connection } from "next/server";
 import { FREQUENCY_LABELS } from "@/lib/levies/notice-plan";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -38,6 +39,8 @@ export default async function LevySchedulesPage({
 }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
 
   const [schedules, overdueNotices] = await Promise.all([
     getLevySchedulesForScheme(id),

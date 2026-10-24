@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { rolesAllow } from "@/config/permissions";
+import { committeeMayTransition } from "@/lib/work-orders/status-transitions";
 import {
   getWorkOrderById,
   addComment,
@@ -10,16 +13,14 @@ import {
 } from "@/lib/queries/work-orders";
 
 /**
- * Verify the current user has OWNER or COMMITTEE membership on the work order's scheme.
- * Returns the profile and role-based access flags, or throws AuthorisationError.
+ * Verify the current user has an OWNER or COMMITTEE membership on the work
+ * order's scheme. Returns the profile and whether they may manage work orders
+ * on THAT scheme (every role they hold there is considered, so an owner who is
+ * also on the committee counts as committee). Throws AuthorisationError.
  */
 async function verifyAccess(workOrderSchemeId: string) {
-  const { profile, membership } = await requireSchemeMembership(workOrderSchemeId, ["OWNER", "COMMITTEE"]);
-
-  const isOwner = membership.role === "OWNER";
-  const isCommittee = membership.role === "COMMITTEE";
-
-  return { profile, isOwner, isCommittee };
+  const { profile, roles } = await requireSchemeAccess(workOrderSchemeId, "maintenance.request");
+  return { profile, canManage: rolesAllow(roles, "maintenance.manage") };
 }
 
 export async function addCommentAction(
@@ -70,7 +71,7 @@ export async function deleteCommentAction(
   }
 
   // Only committee members can delete comments
-  if (!access.isCommittee) {
+  if (!access.canManage) {
     return { error: "Only committee members can delete comments." };
   }
 
@@ -98,17 +99,20 @@ export async function updateWorkOrderStatusAction(
     throw err;
   }
 
-  // Only committee members can update status
-  if (!access.isCommittee) {
+  // Only committee members can update status, and only forward (F16).
+  if (!access.canManage) {
     return { error: "Only committee members can update work order status." };
+  }
+  if (!committeeMayTransition(workOrder.status, status)) {
+    return { error: "That status change is not allowed." };
   }
 
   try {
-    const data: Parameters<typeof updateWorkOrder>[1] = { status };
+    const data: Parameters<typeof updateWorkOrder>[2] = { status };
     if (status === "COMPLETED") {
       data.completedAt = new Date().toISOString();
     }
-    await updateWorkOrder(workOrderId, data);
+    await updateWorkOrder(workOrder.schemeId, workOrderId, data);
     revalidatePath(`/owner/maintenance/${workOrderId}`);
     revalidatePath("/owner/maintenance");
     return {};

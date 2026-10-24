@@ -9,7 +9,15 @@ import { logActivity } from "@/lib/queries/activity-log";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { sendEmail } from "@/lib/email";
 import { possibleDuplicatePaymentEmail } from "@/lib/email-templates/payment-confirmation";
-import { findDuplicateConfirmation, paymentConfirmationPathProblem } from "@/lib/finance/payment-confirmations";
+import { findDuplicateConfirmation } from "@/lib/finance/payment-confirmations";
+import {
+  PAYMENT_ALLOWED_EXT,
+  PAYMENT_ALLOWED_MIME,
+  PAYMENT_MAX_BYTES,
+  paymentUploadPathProblem,
+  storedPaymentFileProblem,
+} from "@/lib/owner/payment-upload";
+import { createClient } from "@/lib/supabase/server";
 import type { Varchar, TimestampString, Numeric } from "@prisma/orm-postgres/target/codec-types";
 
 function toVarchar<N extends number>(value: string): Varchar<N> {
@@ -25,18 +33,6 @@ function toNumeric(value: number): Numeric<12, 2> {
 }
 
 type ActionState = { error?: string; success?: boolean; data?: Record<string, unknown> };
-
-/** Allowed MIME types for payment confirmation uploads. */
-const PAYMENT_ALLOWED_MIME = new Set([
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/heic",
-]);
-
-/** Allowed file extensions for payment confirmation uploads. */
-const PAYMENT_ALLOWED_EXT = new Set(["pdf", "png", "jpg", "jpeg", "heic"]);
 
 /**
  * Upload a payment confirmation document for an owner's levy notice.
@@ -67,8 +63,7 @@ export async function uploadPaymentConfirmationAction(
     if (!data.mimeType || !PAYMENT_ALLOWED_MIME.has(data.mimeType)) {
       return { error: "This file type is not permitted. Please upload a PDF or image file." };
     }
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-    if (data.fileSize > MAX_FILE_SIZE) {
+    if (data.fileSize > PAYMENT_MAX_BYTES) {
       return { error: "File size exceeds the 10 MB limit." };
     }
 
@@ -77,9 +72,26 @@ export async function uploadPaymentConfirmationAction(
     const scheme = schemes.find((s) => s.id === schemeId);
     if (!scheme) return { error: "You do not have access to this scheme." };
 
-    // The file must be in this scheme's payments folder (where the upload form puts it).
-    const pathProblem = paymentConfirmationPathProblem(schemeId, data.fileUrl);
+    // The file must be directly in this scheme's payments folder (where the
+    // upload form puts it), with an allowed extension.
+    const pathProblem = paymentUploadPathProblem(schemeId, data.fileUrl);
     if (pathProblem) return { error: pathProblem };
+
+    // A file can be registered once: nobody may claim a file that another
+    // payment confirmation already points at (another owner's proof of payment).
+    const alreadyRegistered = await db.orm.public.FinancialDocument
+      .where((d) => d.fileUrl.eq(data.fileUrl))
+      .first();
+    if (alreadyRegistered) return { error: "This file has already been registered. Please upload it again." };
+
+    // Size and type as storage reports them, not as the client claims. Read
+    // with the caller's own session, so storage also checks they may see it.
+    const supabase = await createClient();
+    const { data: stored } = await supabase.storage.from("documents").info(data.fileUrl);
+    const storedProblem = storedPaymentFileProblem(stored ?? null);
+    if (storedProblem) return { error: storedProblem };
+    const fileSize = Number(stored!.size);
+    const mimeType = String(stored!.contentType).split(";")[0].trim().toLowerCase();
 
     // The owner's own lots. A notice, when chosen, must be on one of them.
     const ownLots = scheme.memberships.filter((m) => m.profileId === profile.id && m.role === "OWNER" && m.lotId).map((m) => m.lotId!);
@@ -120,8 +132,8 @@ export async function uploadPaymentConfirmationAction(
       uploadedBy: profile.id,
       fileName: toVarchar<500>(data.fileName),
       fileUrl: data.fileUrl,
-      fileSize: data.fileSize,
-      mimeType: toVarchar<100>(data.mimeType),
+      fileSize,
+      mimeType: toVarchar<100>(mimeType),
       lotId: lotId ?? undefined,
       levyNoticeId: data.levyNoticeId ?? undefined,
       amount: data.amount !== undefined ? toNumeric(data.amount) : undefined,

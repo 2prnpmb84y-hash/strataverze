@@ -57,17 +57,48 @@ export async function getInsuranceDocumentById(documentId: string) {
     .first();
 }
 
-/** Mark a document as no longer the current version. */
-export async function markDocumentNotCurrent(documentId: string) {
+/** The scheme's live (not deleted) insurance document with this id, or null. */
+export async function getSchemeInsuranceDocument(schemeId: string, documentId: string) {
+  if (!schemeId || !documentId) return null;
   return db.orm.public.InsuranceDocument
-    .where({ id: documentId })
+    .where((d) => and(d.id.eq(documentId), d.schemeId.eq(schemeId), d.deletedAt.eq(null)))
+    .first();
+}
+
+/**
+ * A document the viewer may download, or null (SEC-004, L1).
+ * - "manager" (advisers): any live document of the scheme.
+ * - "member" (owners, committee): only the current version of a document
+ *   filed against a live policy of the scheme; never claim evidence or
+ *   renewal papers. This matches what the owner insurance page lists.
+ */
+export async function getDownloadableInsuranceDocument(
+  schemeId: string,
+  documentId: string,
+  audience: "manager" | "member",
+) {
+  const doc = await getSchemeInsuranceDocument(schemeId, documentId);
+  if (!doc) return null;
+  if (audience === "manager") return doc;
+  if (!doc.policyId || doc.claimId || doc.renewalId || !doc.isCurrent) return null;
+  const policyId = doc.policyId;
+  const policy = await db.orm.public.InsurancePolicy
+    .where((p) => and(p.id.eq(policyId), p.schemeId.eq(schemeId), p.deletedAt.eq(null)))
+    .first();
+  return policy ? doc : null;
+}
+
+/** Mark a document as no longer the current version. Scheme-scoped. */
+export async function markDocumentNotCurrent(schemeId: string, documentId: string) {
+  return db.orm.public.InsuranceDocument
+    .where((d) => and(d.id.eq(documentId), d.schemeId.eq(schemeId)))
     .update({ isCurrent: false });
 }
 
-/** Mark a document as the current version (used when a newer one is deleted). */
-export async function markDocumentCurrent(documentId: string) {
+/** Mark a document as the current version (used when a newer one is deleted). Scheme-scoped. */
+export async function markDocumentCurrent(schemeId: string, documentId: string) {
   return db.orm.public.InsuranceDocument
-    .where({ id: documentId })
+    .where((d) => and(d.id.eq(documentId), d.schemeId.eq(schemeId)))
     .update({ isCurrent: true });
 }
 
@@ -79,10 +110,10 @@ export async function getPolicyDocuments(policyId: string) {
     .all();
 }
 
-/** Soft-delete a document (all versions in a chain are deleted by caller). */
-export async function softDeleteInsuranceDocument(documentId: string) {
+/** Soft-delete a document (all versions in a chain are deleted by caller). Scheme-scoped. */
+export async function softDeleteInsuranceDocument(schemeId: string, documentId: string) {
   return db.orm.public.InsuranceDocument
-    .where({ id: documentId })
+    .where((d) => and(d.id.eq(documentId), d.schemeId.eq(schemeId), d.deletedAt.eq(null)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()), isCurrent: false });
 }
 

@@ -177,7 +177,7 @@ export async function reverseLevyReceipt(input: {
 
     // 4. Moving the receipt (wrong lot, error) takes it off the bank transaction.
     if (removeFromBank) {
-      await tx.orm.public.BankTransactionAllocation.where((a) => a.journalEntryId.eq(r.entry.id)).delete();
+      await tx.orm.public.BankTransactionAllocation.where((a) => a.journalEntryId.eq(r.entry.id)).deleteAndCount();
       for (const id of txnIds) await syncTransaction(tx.orm, id, input.actorId);
     }
     return reversal.id;

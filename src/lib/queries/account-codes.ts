@@ -113,9 +113,11 @@ export async function createAccountCode(data: {
 }
 
 /**
- * Update an account code's mutable fields.
+ * Update an account code's mutable fields. Scheme-scoped: returns null when
+ * the account is not this scheme's.
  */
 export async function updateAccountCode(
+  schemeId: string,
   accountCodeId: string,
   data: Partial<{
     name: string;
@@ -141,22 +143,18 @@ export async function updateAccountCode(
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
   return db.orm.public.AccountCode
-    .where({ id: accountCodeId })
+    .where((a) => and(a.id.eq(accountCodeId), a.schemeId.eq(schemeId)))
     .update(updateData);
 }
 
 /**
- * Deactivate an account code (soft-disable, not delete).
+ * Deactivate an account code (soft-disable, not delete). Scheme-scoped:
+ * returns null when the account is not this scheme's.
  */
-export async function deactivateAccountCode(accountCodeId: string) {
-  try {
-    return db.orm.public.AccountCode
-      .where({ id: accountCodeId })
-      .update({ isActive: false });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+export async function deactivateAccountCode(schemeId: string, accountCodeId: string) {
+  return db.orm.public.AccountCode
+    .where((a) => and(a.id.eq(accountCodeId), a.schemeId.eq(schemeId)))
+    .update({ isActive: false });
 }
 
 /**

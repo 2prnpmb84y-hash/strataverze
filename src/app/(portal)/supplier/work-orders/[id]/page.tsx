@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { Card, CardHeader } from "@/components/ui/card";
 import { WorkOrderActions } from "./work-order-actions";
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -36,15 +37,31 @@ export default async function SupplierWorkOrderDetailPage({
   if (!profile) return null;
 
   const workOrder = await db.orm.public.WorkOrder
+    .where((wo) => and(wo.id.eq(id), wo.deletedAt.eq(null)))
     .include("scheme")
     .include("comments", (c) => c.include("author").orderBy((cm) => cm.createdAt.desc()))
-    .include("invoices", (inv) => inv.orderBy((i) => i.createdAt.desc()))
-    .first({ id });
+    // Only the caller's own invoices, even if the job was once awarded to someone else.
+    .include("invoices", (inv) =>
+      inv.where((i) => i.supplierId.eq(profile.id)).orderBy((i) => i.createdAt.desc()),
+    )
+    .first();
 
   if (!workOrder) notFound();
 
-  // Verify the supplier is assigned to this work order
+  // Verify the supplier is assigned to this work order and still an active
+  // supplier on its scheme.
   if (workOrder.supplierId !== profile.id) notFound();
+  const membership = await db.orm.public.SchemeMembership
+    .where((m) =>
+      and(
+        m.profileId.eq(profile.id),
+        m.schemeId.eq(workOrder.schemeId),
+        m.role.eq("SUPPLIER"),
+        m.isActive.eq(true),
+      ),
+    )
+    .first();
+  if (!membership) notFound();
 
   const status = statusConfig[workOrder.status] ?? statusConfig.AWARDED;
   const priority = priorityConfig[workOrder.priority] ?? priorityConfig.MEDIUM;

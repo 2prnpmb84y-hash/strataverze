@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import { connection } from "next/server";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -27,6 +28,8 @@ export default async function JournalEntriesPage({
 }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
   const entries = await getJournalEntriesForScheme(id);
 
   const totalEntries = entries.length;

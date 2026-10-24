@@ -2,11 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme, assertOneOf } from "@/lib/auth/scheme-scope";
 import {
   createComplianceItem,
   updateComplianceItem,
   deleteComplianceItem,
+  getComplianceItemById,
+  COMPLIANCE_STATUSES,
 } from "@/lib/queries/compliance";
 import { logActivity } from "@/lib/queries/activity-log";
 
@@ -23,7 +27,7 @@ export async function createComplianceAction(
   formData: FormData,
 ): Promise<ComplianceFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "compliance.manage");
 
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -81,7 +85,7 @@ export async function updateComplianceAction(
   formData: FormData,
 ): Promise<ComplianceFormState> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "compliance.manage");
 
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -96,7 +100,8 @@ export async function updateComplianceAction(
 
     if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
-    await updateComplianceItem(itemId, {
+    assertInScheme(await getComplianceItemById(itemId), schemeId, "Compliance item");
+    await updateComplianceItem(schemeId, itemId, {
       title,
       description: description || null,
       category,
@@ -118,13 +123,15 @@ export async function updateComplianceStatusAction(
   status: string,
 ) {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "compliance.manage");
 
+    assertOneOf(status, COMPLIANCE_STATUSES, "status");
     const data: { status: string; lastChecked?: string } = { status };
     if (status === "COMPLIANT") {
       data.lastChecked = new Date().toISOString();
     }
-    await updateComplianceItem(itemId, data);
+    assertInScheme(await getComplianceItemById(itemId), schemeId, "Compliance item");
+    await updateComplianceItem(schemeId, itemId, data);
 
     await logActivity({
       schemeId,
@@ -150,9 +157,10 @@ export async function deleteComplianceAction(
   itemId: string,
 ) {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireSchemeAccess(schemeId, "compliance.manage");
 
-    await deleteComplianceItem(itemId);
+    assertInScheme(await getComplianceItemById(itemId), schemeId, "Compliance item");
+    await deleteComplianceItem(schemeId, itemId);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     revalidatePath("/adviser/compliance");
     redirect(`/adviser/schemes/${schemeId}/compliance`);

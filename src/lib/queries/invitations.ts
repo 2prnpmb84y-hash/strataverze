@@ -25,10 +25,15 @@ export async function getInvitationsForScheme(schemeId: string, limit = 200) {
  * Used when a user logs in to check if they have pending invitations.
  */
 export async function getPendingInvitationsForEmail(email: string) {
+  // Exact match on the lowercased address. Invitations are stored lowercased
+  // (createInvitation), and ilike would treat % and _ in an address as
+  // wildcards and match other people's invitations (SEC finding F14).
+  const normalised = email.trim().toLowerCase();
+  if (!normalised) return [];
   return db.orm.public.Invitation
     .where((i) =>
       and(
-        i.email.ilike(email),
+        i.email.eq(normalised),
         i.status.eq("PENDING"),
         i.expiresAt.gt(toTimestamp(new Date().toISOString())),
       ),
@@ -164,12 +169,13 @@ export async function declineInvitation(invitationId: string) {
 }
 
 /**
- * Revoke (cancel) a pending invitation.
+ * Revoke (cancel) a pending invitation. Scheme-scoped: an invitation on
+ * another scheme matches nothing.
  */
-export async function revokeInvitation(invitationId: string) {
+export async function revokeInvitation(schemeId: string, invitationId: string) {
   await db.orm.public.Invitation
     .where((i) =>
-      and(i.id.eq(invitationId), i.status.eq("PENDING")),
+      and(i.id.eq(invitationId), i.schemeId.eq(schemeId), i.status.eq("PENDING")),
     )
     .update({ status: "EXPIRED" });
 }

@@ -8,6 +8,8 @@ import {
   AuthorisationError,
 } from "@/lib/auth/require-membership";
 import { logActivity } from "@/lib/queries/activity-log";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { supplierMayTransition } from "@/lib/work-orders/status-transitions";
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
@@ -21,24 +23,34 @@ function toTimestamp(value: string): TimestampString<3> {
   return value as unknown as TimestampString<3>;
 }
 
-const SUPPLIER_ALLOWED_STATUSES = ["IN_PROGRESS", "COMPLETED"];
+/**
+ * Load a work order the caller may act on as its supplier: it exists, is not
+ * deleted, is awarded to the caller, and the caller holds an active SUPPLIER
+ * membership on its scheme (F16). The same "not found" whether the work order
+ * is missing or someone else's.
+ */
+async function loadAwardedWorkOrder(workOrderId: string) {
+  const profile = await requireAuth();
+  const workOrder = await db.orm.public.WorkOrder
+    .where((wo) => and(wo.id.eq(workOrderId), wo.deletedAt.eq(null)))
+    .first();
+  if (!workOrder || workOrder.supplierId !== profile.id) {
+    throw new AuthorisationError("Work order not found.");
+  }
+  await requireSchemeMembership(workOrder.schemeId, ["SUPPLIER"]);
+  return { profile, workOrder };
+}
 
 export async function updateWorkOrderStatusAction(
   workOrderId: string,
   status: string,
 ): Promise<{ error?: string }> {
   try {
-    const profile = await requireAuth();
+    const { profile, workOrder } = await loadAwardedWorkOrder(workOrderId);
 
-    // Validate status
-    if (!SUPPLIER_ALLOWED_STATUSES.includes(status))
-      return { error: "Suppliers can only set status to In Progress or Completed." };
-
-    // Fetch and verify ownership
-    const workOrder = await db.orm.public.WorkOrder.first({ id: workOrderId });
-    if (!workOrder) return { error: "Work order not found." };
-    if (workOrder.supplierId !== profile.id)
-      return { error: "You can only update work orders assigned to you." };
+    // Forward moves only: AWARDED -> IN_PROGRESS -> COMPLETED.
+    if (!supplierMayTransition(workOrder.status, status))
+      return { error: "That status change is not allowed." };
 
     // Build update
     const data: Record<string, unknown> = { status };
@@ -71,8 +83,6 @@ export async function createInvoiceAction(
   formData: FormData,
 ): Promise<{ error?: string }> {
   try {
-    const profile = await requireAuth();
-
     // Validate inputs
     const invoiceNumber = (formData.get("invoiceNumber") as string)?.trim();
     const amountStr = (formData.get("amount") as string)?.trim();
@@ -104,14 +114,12 @@ export async function createInvoiceAction(
       dueDate = d.toISOString();
     }
 
-    // Fetch work order and verify ownership
-    const workOrder = await db.orm.public.WorkOrder.first({ id: workOrderId });
-    if (!workOrder) return { error: "Work order not found." };
-    if (workOrder.supplierId !== profile.id)
-      return { error: "You can only submit invoices for work orders assigned to you." };
-
-    // Verify supplier has membership on the scheme
-    await requireSchemeMembership(workOrder.schemeId, ["SUPPLIER"]);
+    // The work order must be awarded to the caller, with an active SUPPLIER membership.
+    const { profile, workOrder } = await loadAwardedWorkOrder(workOrderId);
+    // Work must have started; a cancelled job cannot be invoiced.
+    if (!["IN_PROGRESS", "COMPLETED"].includes(String(workOrder.status))) {
+      return { error: "You can invoice once the work is in progress or completed." };
+    }
 
     // Create the invoice
     const invoice = await db.orm.public.Invoice.create({

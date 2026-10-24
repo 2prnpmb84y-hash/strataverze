@@ -7,6 +7,15 @@ function toTimestamp(value: string): TimestampString<3> {
   return value as unknown as TimestampString<3>;
 }
 
+/** Compliance status vocabulary used across the adviser and owner portals. */
+export const COMPLIANCE_STATUSES = [
+  "PENDING",
+  "PENDING_REVIEW",
+  "COMPLIANT",
+  "NON_COMPLIANT",
+  "EXPIRED",
+] as const;
+
 /**
  * Fetch all compliance items for a scheme, ordered by due date.
  */
@@ -52,6 +61,7 @@ export async function createComplianceItem(data: {
  * Update a compliance item.
  */
 export async function updateComplianceItem(
+  schemeId: string,
   itemId: string,
   data: {
     title?: string;
@@ -75,16 +85,16 @@ export async function updateComplianceItem(
   if (data.notes !== undefined) update.notes = data.notes;
 
   return db.orm.public.ComplianceItem
-    .where({ id: itemId })
+    .where((r) => and(r.id.eq(itemId), r.schemeId.eq(schemeId)))
     .update(update);
 }
 
 /**
  * Soft-delete a compliance item.
  */
-export async function deleteComplianceItem(itemId: string) {
+export async function deleteComplianceItem(schemeId: string, itemId: string) {
   return db.orm.public.ComplianceItem
-    .where({ id: itemId })
+    .where((r) => and(r.id.eq(itemId), r.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 

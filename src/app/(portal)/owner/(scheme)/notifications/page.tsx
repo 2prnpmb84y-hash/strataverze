@@ -1,8 +1,11 @@
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
+import { ALL_FEED_ACTIONS, ownerFeed } from "@/lib/owner/notification-feed";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForOwner } from "@/lib/queries/schemes";
+import { getSchemesForCommittee, getSchemesForOwner } from "@/lib/queries/schemes";
 import { getActivityForSchemes } from "@/lib/queries/activity-log";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -74,7 +77,7 @@ export default async function OwnerNotificationsPage() {
 
   const schemes = scopeToSelectedScheme(
     await getSchemesForOwner(profile.id),
-    await getSelectedSchemeId(),
+    await getVerifiedSelectedSchemeId(),
   );
   if (schemes.length === 0) {
     return (
@@ -92,7 +95,23 @@ export default async function OwnerNotificationsPage() {
   }
 
   const schemeIds = schemes.map((s) => s.id);
-  const activities = await getActivityForSchemes(schemeIds, 100);
+
+  // Only allow-listed, owner-visible activity (F13): scheme-wide notices,
+  // events on work orders this owner raised, and committee business for the
+  // schemes where they sit on the committee.
+  const [committeeSchemes, ownWorkOrders, logged] = await Promise.all([
+    getSchemesForCommittee(profile.id),
+    db.orm.public.WorkOrder
+      .where((wo) => and(wo.schemeId.in(schemeIds), wo.raisedById.eq(profile.id)))
+      .limit(2000)
+      .all(),
+    getActivityForSchemes(schemeIds, 200, ALL_FEED_ACTIONS),
+  ]);
+  const activities = ownerFeed(logged, {
+    profileId: profile.id,
+    committeeSchemeIds: new Set(committeeSchemes.map((s) => s.id).filter((id) => schemeIds.includes(id))),
+    ownWorkOrderIds: new Set(ownWorkOrders.map((wo) => wo.id)),
+  }).slice(0, 100);
 
   const schemeNames = new Map(schemes.map((s) => [s.id, String(s.name)]));
 
@@ -132,9 +151,12 @@ export default async function OwnerNotificationsPage() {
                   item.action.replace(/_/g, " ").toLowerCase();
                 const icon = actionIcons[item.action] ?? "📌";
                 const schemeName = schemeNames.get(item.schemeId) ?? "";
-                const actorName = item.actor
-                  ? `${String(item.actor.firstName)} ${String(item.actor.lastName)}`
-                  : "System";
+                // Financial events do not name other people.
+                const actorName = !item.showActor
+                  ? ""
+                  : item.actor
+                    ? `${String(item.actor.firstName)} ${String(item.actor.lastName)}`
+                    : "System";
 
                 return (
                   <div
@@ -147,7 +169,8 @@ export default async function OwnerNotificationsPage() {
                         {label}
                       </p>
                       <p className="text-xs text-ink-muted mt-0.5">
-                        {schemeName} &middot; {actorName}
+                        {schemeName}
+                        {actorName && <> &middot; {actorName}</>}
                       </p>
                     </div>
                     <span className="text-xs text-ink-muted whitespace-nowrap shrink-0">

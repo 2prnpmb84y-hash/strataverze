@@ -18,6 +18,7 @@ import {
   addQuote,
   getQuoteById,
   deleteQuote,
+  getSchemeRenewal,
 } from "@/lib/queries/insurance-renewals";
 import {
   canAdvanceRenewal,
@@ -101,13 +102,15 @@ export async function updateRenewalPrepAction(
 ): Promise<RenewalFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await updateRenewal(renewalId, {
+    // Scheme-scoped: another scheme's renewal id matches nothing (SEC-004).
+    const updated = await updateRenewal(schemeId, renewalId, {
       dueDate: isoOrNull(str(formData, "dueDate")),
       reminderLeadDays: intOrNull(formData, "reminderLeadDays"),
       declaredChanges: optStr(formData, "declaredChanges"),
       outstandingInfo: optStr(formData, "outstandingInfo"),
       notes: optStr(formData, "notes"),
     });
+    if (!updated) return { error: "Renewal not found." };
     await logActivity({
       schemeId,
       actorId: profile.id,
@@ -136,7 +139,8 @@ export async function saveDeclarationAction(
     for (const [key, value] of formData.entries()) {
       if (typeof value === "string") declaration[key] = value;
     }
-    await updateRenewal(renewalId, { declaration });
+    const updated = await updateRenewal(schemeId, renewalId, { declaration });
+    if (!updated) return { error: "Renewal not found." };
     revalidatePath(`/adviser/schemes/${schemeId}/insurance/renewals/${renewalId}`);
     return {};
   } catch (err) {
@@ -226,9 +230,12 @@ export async function deleteQuoteAction(
 ): Promise<{ error?: string }> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // The renewal must be this scheme's, and the quote that renewal's.
+    const renewal = await getSchemeRenewal(schemeId, renewalId);
+    if (!renewal) return { error: "Renewal not found." };
     const quote = await getQuoteById(quoteId);
-    if (!quote || quote.renewalId !== renewalId) return { error: "Quote not found." };
-    await deleteQuote(quoteId);
+    if (!quote || quote.renewalId !== renewal.id) return { error: "Quote not found." };
+    await deleteQuote(quote.id);
     revalidatePath(`/adviser/schemes/${schemeId}/insurance/renewals/${renewalId}`);
     return {};
   } catch (err) {
@@ -245,11 +252,14 @@ export async function selectQuoteAction(
 ): Promise<{ error?: string }> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // The renewal must be this scheme's, and the quote that renewal's.
+    const renewal = await getSchemeRenewal(schemeId, renewalId);
+    if (!renewal) return { error: "Renewal not found." };
     const quote = await getQuoteById(quoteId);
-    if (!quote || quote.renewalId !== renewalId) return { error: "Quote not found." };
-    await updateRenewal(renewalId, {
-      selectedQuoteId: quoteId,
-      selectionRationale: rationale.trim() || null,
+    if (!quote || quote.renewalId !== renewal.id) return { error: "Quote not found." };
+    await updateRenewal(schemeId, renewal.id, {
+      selectedQuoteId: quote.id,
+      selectionRationale: (typeof rationale === "string" ? rationale.trim() : "") || null,
     });
     revalidatePath(`/adviser/schemes/${schemeId}/insurance/renewals/${renewalId}`);
     return {};
@@ -267,10 +277,11 @@ export async function recordApprovalAction(
 ): Promise<RenewalFormState> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await updateRenewal(renewalId, {
+    const updated = await updateRenewal(schemeId, renewalId, {
       approvedBy: optStr(formData, "approvedBy"),
       placementInstructions: optStr(formData, "placementInstructions"),
     });
+    if (!updated) return { error: "Renewal not found." };
     revalidatePath(`/adviser/schemes/${schemeId}/insurance/renewals/${renewalId}`);
     return {};
   } catch (err) {
@@ -308,7 +319,9 @@ export async function completeRenewalAction(
     if (!renewal.selectedQuoteId)
       return { error: "Select the accepted quote before completing." };
 
-    const quote = await getQuoteById(renewal.selectedQuoteId);
+    const selected = await getQuoteById(renewal.selectedQuoteId);
+    // Only a quote recorded on this renewal is used.
+    const quote = selected && selected.renewalId === renewal.id ? selected : null;
     const prev = renewal.expiringPolicy;
     if (!prev) return { error: "The expiring policy could not be found." };
 
@@ -380,7 +393,7 @@ export async function markNotProceedingAction(
     if (!renewal || renewal.schemeId !== schemeId) return { error: "Renewal not found." };
     if (!canAdvanceRenewal(renewal.stage, "NOT_PROCEEDING"))
       return { error: "This renewal cannot be marked as not proceeding." };
-    await updateRenewal(renewalId, { notProceedingReason: reason.trim() || null });
+    await updateRenewal(schemeId, renewal.id, { notProceedingReason: reason.trim() || null });
     await setRenewalStage(renewalId, "NOT_PROCEEDING");
     await logActivity({
       schemeId,

@@ -72,8 +72,8 @@ export default async function QuoteRequestsPage() {
                         </span>
                       )}
                       <span className="text-xs text-ink-muted">
-                        {qr.quotes?.length ?? 0} quote
-                        {(qr.quotes?.length ?? 0) === 1 ? "" : "s"}
+                        {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0)} quote
+                        {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0) === 1 ? "" : "s"}
                       </span>
                     </div>
                   </div>

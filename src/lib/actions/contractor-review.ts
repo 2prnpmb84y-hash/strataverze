@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requirePlatformAdmin } from "@/lib/auth/require-membership";
+import { AuthorisationError, requirePlatformAdmin } from "@/lib/auth/require-membership";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { chargeComplianceVerification } from "@/lib/billing/contractor-fees";
@@ -100,7 +100,7 @@ export async function approveContractor(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to approve contractor." };
   }
 }
@@ -118,6 +118,9 @@ export async function rejectContractor(
 
     if (!contractorId) return { error: "Contractor ID is required." };
     if (!reason) return { error: "A reason for rejection is required." };
+    if (await isOwnContractor(profile.id, contractorId)) {
+      return { error: "You cannot review your own business." };
+    }
 
     // Update business status
     await db.orm.public.ContractorBusiness
@@ -156,7 +159,7 @@ export async function rejectContractor(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to reject contractor." };
   }
 }
@@ -174,6 +177,9 @@ export async function requestClarification(
 
     if (!contractorId) return { error: "Contractor ID is required." };
     if (!message) return { error: "A clarification message is required." };
+    if (await isOwnContractor(profile.id, contractorId)) {
+      return { error: "You cannot review your own business." };
+    }
 
     // Update business status
     await db.orm.public.ContractorBusiness
@@ -195,7 +201,7 @@ export async function requestClarification(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to request clarification." };
   }
 }
@@ -222,7 +228,7 @@ export async function suspendContractor(
     revalidatePath(`/adviser/contractors/${contractorId}`);
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to suspend contractor." };
   }
 }
@@ -242,6 +248,15 @@ export async function resolveReviewItem(
     if (!reviewItemId) return { error: "Review item ID is required." };
     if (!outcome) return { error: "Outcome is required." };
 
+    // A reviewer cannot resolve review items about their own business (L3).
+    const item = await db.orm.public.ContractorReviewItem
+      .where((r) => r.id.eq(reviewItemId))
+      .first();
+    if (!item) return { error: "Review item not found." };
+    if (await isOwnContractor(profile.id, item.contractorBusinessId)) {
+      return { error: "You cannot review your own business." };
+    }
+
     await db.orm.public.ContractorReviewItem
       .where({ id: reviewItemId })
       .update({
@@ -255,7 +270,7 @@ export async function resolveReviewItem(
     revalidatePath("/adviser/contractors");
     return { success: true, error: null };
   } catch (err) {
-    if (err instanceof Error && /^Not (authorised|authenticated)/.test(err.message)) return { error: err.message };
+    if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to resolve review item." };
   }
 }

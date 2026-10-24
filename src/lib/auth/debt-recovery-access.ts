@@ -51,15 +51,18 @@ export type CaseForAccess = {
  *
  * The caller has already been authorised as ADVISER or COMMITTEE on
  * `schemeId`. The case must belong to that scheme, and nobody may act on the
- * case for their own lot (a committee member who is also the debtor).
+ * case for a lot they own or co-own (a committee member who is also liable
+ * for the debt). `lotOwnerIds` are the profiles holding an OWNER membership
+ * on the case's lot, active or recently ended.
  */
 export function caseAccessProblem(
   caseRow: CaseForAccess | null | undefined,
   schemeId: string,
   profileId: string,
+  lotOwnerIds: readonly string[] = [],
 ): string | null {
   if (!caseRow || caseRow.schemeId !== schemeId) return "Case not found.";
-  if (caseRow.ownerId && caseRow.ownerId === profileId) {
+  if ((caseRow.ownerId && caseRow.ownerId === profileId) || lotOwnerIds.includes(profileId)) {
     return "You cannot act on a debt recovery case for your own lot.";
   }
   return null;

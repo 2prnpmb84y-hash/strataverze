@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getQuoteRequestById, hasSupplierQuoted } from "@/lib/queries/supplier";
+import { getQuoteRequestForSupplier } from "@/lib/queries/supplier";
+import { isQuoteRequestOpen, supplierMaySeeQuoteRequest } from "@/lib/supplier/quote-visibility";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -32,7 +33,8 @@ export default async function QuoteRequestDetailPage({
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const quoteRequest = await getQuoteRequestById(id);
+  // Only the caller's own quote and a count of the others (F3).
+  const quoteRequest = await getQuoteRequestForSupplier(id, profile.id);
   if (!quoteRequest) notFound();
 
   // Verify supplier has an active membership on this scheme (F-04)
@@ -49,17 +51,14 @@ export default async function QuoteRequestDetailPage({
 
   if (!membership) notFound();
 
-  const alreadyQuoted = await hasSupplierQuoted(id, profile.id);
+  // The supplier's own quote, if they submitted one.
+  const supplierQuote = quoteRequest.ownQuote;
+  const alreadyQuoted = !!supplierQuote;
 
-  // Get the supplier's own quote if they submitted one
-  let supplierQuote = null;
-  if (alreadyQuoted) {
-    supplierQuote = await db.orm.public.Quote
-      .where((q) =>
-        and(q.quoteRequestId.eq(id), q.supplierId.eq(profile.id)),
-      )
-      .first();
-  }
+  // A request is visible while it is open, or afterwards to a supplier who quoted.
+  if (!supplierMaySeeQuoteRequest(quoteRequest, alreadyQuoted)) notFound();
+  const isOpen = isQuoteRequestOpen(quoteRequest);
+  const otherCount = quoteRequest.otherQuoteCount;
 
   return (
     <div className="max-w-4xl">
@@ -137,59 +136,54 @@ export default async function QuoteRequestDetailPage({
         </div>
       </Card>
 
-      {/* Existing quotes */}
+      {/* The supplier's own quote. Other suppliers' quotes are never shown, only counted. */}
       <Card className="mb-6">
         <CardHeader
-          title="Quotes"
-          description={`${quoteRequest.quotes?.length ?? 0} quote${(quoteRequest.quotes?.length ?? 0) === 1 ? "" : "s"} submitted`}
+          title="Your Quote"
+          description={`${otherCount} other quote${otherCount === 1 ? "" : "s"} submitted`}
         />
 
-        {quoteRequest.quotes && quoteRequest.quotes.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {quoteRequest.quotes.map((quote) => {
-              const status =
-                quoteStatusConfig[quote.status] ?? quoteStatusConfig.SUBMITTED;
-
-              return (
-                <div
-                  key={quote.id}
-                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-ink">
-                      ${Number(quote.amount).toLocaleString("en-AU", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </p>
+        {supplierQuote ? (
+          (() => {
+            const status =
+              quoteStatusConfig[supplierQuote.status] ?? quoteStatusConfig.SUBMITTED;
+            return (
+              <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-ink">
+                    ${Number(supplierQuote.amount).toLocaleString("en-AU", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </p>
+                  {supplierQuote.description && (
                     <p className="text-xs text-ink-muted mt-0.5">
-                      {quote.supplier?.firstName} {quote.supplier?.lastName}
-                      {quote.description && ` — ${quote.description}`}
+                      {supplierQuote.description}
                     </p>
-                    {quote.estimatedDays != null && (
-                      <p className="text-xs text-ink-muted">
-                        Est. {quote.estimatedDays} day
-                        {quote.estimatedDays === 1 ? "" : "s"}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}
-                  >
-                    {status.label}
-                  </span>
+                  )}
+                  {supplierQuote.estimatedDays != null && (
+                    <p className="text-xs text-ink-muted">
+                      Est. {supplierQuote.estimatedDays} day
+                      {supplierQuote.estimatedDays === 1 ? "" : "s"}
+                    </p>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+                <span
+                  className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}
+                >
+                  {status.label}
+                </span>
+              </div>
+            );
+          })()
         ) : (
           <p className="text-sm text-ink-muted">
-            No quotes have been submitted yet. Be the first to respond.
+            You have not submitted a quote for this request yet.
           </p>
         )}
       </Card>
 
       {/* Submit quote form */}
-      {quoteRequest.status === "OPEN" && !alreadyQuoted && (
+      {isOpen && !alreadyQuoted && (
         <Card>
           <CardHeader
             title="Submit Your Quote"

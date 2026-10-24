@@ -49,6 +49,8 @@ export default async function LotDetailPage({
   if (!isAdviser) notFound();
 
   const lot = await getLotDetail(lotId);
+  if (!lot || lot.schemeId !== id) notFound();
+
   const [lotDetailExt, tenants, propertyManager, deliveryPrefs, debtCollection, documents] =
     await Promise.all([
       getLotDetailExtended(lotId),
@@ -58,8 +60,6 @@ export default async function LotDetailPage({
       getDebtCollection(lotId),
       getDocumentsForScheme(id),
     ]);
-
-  if (!lot || lot.schemeId !== id) notFound();
 
   // Find the operating bank account for this scheme
   const operatingAccount = scheme.bankAccounts?.find(
@@ -351,7 +351,7 @@ export default async function LotDetailPage({
                   fileName: String(d.fileName ?? ""),
                   fileSize: Number(d.fileSize ?? 0),
                   createdAt: String(d.createdAt),
-                  fileUrl: await resolveDocumentUrl(String(d.fileUrl)).catch(() => ""),
+                  fileUrl: await resolveDocumentUrl(String(d.fileUrl), 600, { schemeId: id }).catch(() => ""),
                 })),
               )}
             />

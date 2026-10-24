@@ -195,6 +195,7 @@ export async function createFinancialDocument(data: {
  * Review a financial document (update status, reviewer, notes).
  */
 export async function reviewDocument(
+  schemeId: string,
   documentId: string,
   data: {
     documentStatus: string;
@@ -202,8 +203,9 @@ export async function reviewDocument(
     reviewNotes?: string;
   },
 ) {
+  // Scheme-scoped: returns null when the document is not this scheme's.
   return db.orm.public.FinancialDocument
-    .where({ id: documentId })
+    .where((d) => and(d.id.eq(documentId), d.schemeId.eq(schemeId)))
     .update({
       documentStatus: data.documentStatus,
       reviewedBy: data.reviewedBy,
@@ -216,11 +218,13 @@ export async function reviewDocument(
  * Update only the verification status of a document.
  */
 export async function updateVerificationStatus(
+  schemeId: string,
   documentId: string,
   status: string,
 ) {
+  // Scheme-scoped: returns null when the document is not this scheme's.
   return db.orm.public.FinancialDocument
-    .where({ id: documentId })
+    .where((d) => and(d.id.eq(documentId), d.schemeId.eq(schemeId)))
     .update({ verificationStatus: status });
 }
 

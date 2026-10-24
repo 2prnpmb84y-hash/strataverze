@@ -47,43 +47,99 @@ function escapeLikePattern(raw: string): string {
   return raw.replace(/[%_\\]/g, (ch) => `\\${ch}`);
 }
 
+/** The fields owner assignment needs. Never return authId, phone or isPlatformAdmin. */
+export type ProfileSearchResult = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 /**
- * Search profiles by email or name (for owner assignment).
- * Excludes profiles already assigned as OWNER on the given scheme.
+ * Search profiles for owner assignment on a scheme (security finding H6).
+ *
+ * Returns only people the adviser could already know about:
+ *  - a profile whose email equals the query (case-insensitive), or
+ *  - a profile that already has a membership or invitation on this scheme
+ *    and whose name or email contains the query.
+ * Needs at least 3 characters. Excludes profiles that are already active
+ * owners on the scheme. Returns only id, names and email.
  */
-export async function searchProfiles(query: string, schemeId: string) {
+export async function searchProfiles(
+  query: string,
+  schemeId: string,
+): Promise<ProfileSearchResult[]> {
   const trimmed = query.trim().toLowerCase();
-  if (trimmed.length < 2) return [];
+  if (trimmed.length < 3 || !schemeId) return [];
 
   const safe = escapeLikePattern(trimmed);
 
-  // Fetch all profiles matching the search term
-  const profiles = await db.orm.public.Profile
-    .where((p) =>
-      or(
-        p.email.ilike(`%${safe}%`),
-        p.firstName.ilike(`%${safe}%`),
-        p.lastName.ilike(`%${safe}%`),
-      ),
-    )
-    .limit(10)
+  const [memberships, invitations] = await Promise.all([
+    db.orm.public.SchemeMembership
+      .where((m) => m.schemeId.eq(schemeId))
+      .limit(5000)
+      .all(),
+    db.orm.public.Invitation
+      .where((i) => i.schemeId.eq(schemeId))
+      .limit(5000)
+      .all(),
+  ]);
+
+  const ownerProfileIds = new Set(
+    memberships
+      .filter((m) => m.role === "OWNER" && m.isActive)
+      .map((m) => m.profileId),
+  );
+  const knownProfileIds = [...new Set(memberships.map((m) => m.profileId))];
+  const invitedEmails = [
+    ...new Set(
+      invitations.flatMap((i) => {
+        const raw = (i.email ?? "").trim();
+        return raw ? [raw, raw.toLowerCase()] : [];
+      }),
+    ),
+  ];
+
+  // Exact email match: an ILIKE pattern with every metacharacter escaped is a
+  // case-insensitive equality test.
+  const exact = await db.orm.public.Profile
+    .where((p) => p.email.ilike(safe))
+    .limit(5)
     .all();
 
-  // Fetch existing active owner memberships for this scheme
-  const existingOwners = await db.orm.public.SchemeMembership
-    .where((m) =>
-      and(
-        m.schemeId.eq(schemeId),
-        m.role.eq("OWNER"),
-        m.isActive.eq(true),
-      ),
-    )
-    .all();
+  // Partial match, but only among people already connected to this scheme.
+  let known: typeof exact = [];
+  if (knownProfileIds.length > 0 || invitedEmails.length > 0) {
+    known = await db.orm.public.Profile
+      .where((p) => {
+        const text = or(
+          p.email.ilike(`%${safe}%`),
+          p.firstName.ilike(`%${safe}%`),
+          p.lastName.ilike(`%${safe}%`),
+        );
+        if (knownProfileIds.length > 0 && invitedEmails.length > 0) {
+          return and(text, or(p.id.in(knownProfileIds), p.email.in(invitedEmails)));
+        }
+        if (knownProfileIds.length > 0) return and(text, p.id.in(knownProfileIds));
+        return and(text, p.email.in(invitedEmails));
+      })
+      .limit(10)
+      .all();
+  }
 
-  const ownerProfileIds = new Set(existingOwners.map((m) => m.profileId));
-
-  // Filter out profiles already assigned as owners
-  return profiles.filter((p) => !ownerProfileIds.has(p.id));
+  const seen = new Set<string>();
+  const results: ProfileSearchResult[] = [];
+  for (const p of [...exact, ...known]) {
+    if (seen.has(p.id) || ownerProfileIds.has(p.id)) continue;
+    seen.add(p.id);
+    results.push({
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      email: p.email,
+    });
+  }
+  return results.slice(0, 10);
 }
 
 /**
@@ -124,7 +180,11 @@ export async function getProfileWithMemberships(profileId: string) {
 }
 
 /**
- * Check whether a profile has at least one active COMMITTEE membership.
+ * Check whether a profile has at least one active COMMITTEE membership, on
+ * ANY scheme. Only for navigation (whether to show committee menu items).
+ * Never use it to authorise scheme-specific data (SEC-023): check the
+ * committee role on the scheme in hand instead (requireSchemeAccess, or the
+ * roles from getSelectedOwnerScheme).
  */
 export async function hasCommitteeRole(profileId: string): Promise<boolean> {
   const membership = await db.orm.public.SchemeMembership

@@ -5,6 +5,7 @@ import {
   requireSchemeMembership,
   AuthorisationError,
 } from "@/lib/auth/require-membership";
+import { assertOneOf } from "@/lib/auth/scheme-scope";
 import {
   logActivity,
   getAuditTrailForExport,
@@ -161,6 +162,7 @@ import {
   checkDocumentDuplicates,
 } from "@/lib/queries/duplicate-detection";
 import { importSummary } from "@/lib/bank-import-parser";
+import { schemeStoragePathProblem } from "@/lib/queries/document-url";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -185,6 +187,122 @@ function isRedirectError(err: unknown): boolean {
 function financePath(schemeId: string, sub = "") {
   return `/adviser/schemes/${schemeId}/finance${sub}`;
 }
+
+/**
+ * Message for an unexpected error: logged here, never shown to the browser.
+ * Deliberate validation messages from the finance helpers are plain Errors
+ * the UI relies on, so pass those through `keepMessages`.
+ */
+function unexpectedError(err: unknown, fallback: string, keepMessages: readonly RegExp[] = []): string {
+  const feeError = feeErrorMessage(err);
+  if (feeError) return feeError;
+  const message = err instanceof Error ? err.message : "";
+  if (message && keepMessages.some((re) => re.test(message))) return message;
+  console.error(fallback, err);
+  return fallback;
+}
+
+/** Validation messages thrown by the journal and period helpers (journal-entries.ts). */
+const LEDGER_RULE_MESSAGES: readonly RegExp[] = [
+  /^Journal entry is not balanced/,
+  /^Journal entry must have at least one line/,
+  /^This period is locked\./,
+  /^Cannot post to a closed period/,
+  /^Only draft journal entries can be posted\./,
+  /^Only posted journal entries can be reversed/,
+  // Owner credit (owner-credits.ts), applied with receipts and notices.
+  /^Owner credit cannot go below zero\./,
+  /^A credit movement must be more than zero\./,
+  /^There is not enough credit for this\./,
+];
+
+/** Validation messages thrown by the interest helpers (interest.ts). */
+const INTEREST_RULE_MESSAGES: readonly RegExp[] = [
+  /^Interest amount must be greater than zero\./,
+  /^Levy notice not found\./,
+  /^No more than \$[\d,.]+ of interest is owed on this notice to date\./,
+  /^Required system accounts .* not found\./,
+  /^The owners corporation has resolved that contributions bear no interest/,
+];
+
+/** The ids a record refers to, de-duplicated; anything that is not a string is refused. */
+function idList(values: readonly unknown[] | undefined, label: string): string[] {
+  const ids = new Set<string>();
+  for (const v of values ?? []) {
+    if (v === undefined || v === null || v === "") continue;
+    if (typeof v !== "string") throw new AuthorisationError(`${label} not found.`);
+    ids.add(v);
+  }
+  return [...ids];
+}
+
+/**
+ * Throw AuthorisationError unless every referenced account, fund, lot and
+ * supplier belongs to this scheme (SEC-004). One query per table.
+ * `allowPlatformSupplier` also accepts the platform-wide StrataVerze supplier.
+ */
+async function assertLinksInScheme(
+  schemeId: string,
+  links: {
+    accountCodeIds?: readonly unknown[];
+    fundIds?: readonly unknown[];
+    lotIds?: readonly unknown[];
+    supplierIds?: readonly unknown[];
+    allowPlatformSupplier?: boolean;
+  },
+): Promise<void> {
+  const accountCodeIds = idList(links.accountCodeIds, "Account");
+  if (accountCodeIds.length > 0) {
+    const rows = await db.orm.public.AccountCode
+      .where((a) => and(a.id.in(accountCodeIds), a.schemeId.eq(schemeId)))
+      .limit(accountCodeIds.length)
+      .all();
+    if (rows.length !== accountCodeIds.length) throw new AuthorisationError("Account not found.");
+  }
+  const fundIds = idList(links.fundIds, "Fund");
+  if (fundIds.length > 0) {
+    const rows = await db.orm.public.Fund
+      .where((f) => and(f.id.in(fundIds), f.schemeId.eq(schemeId)))
+      .limit(fundIds.length)
+      .all();
+    if (rows.length !== fundIds.length) throw new AuthorisationError("Fund not found.");
+  }
+  const lotIds = idList(links.lotIds, "Lot");
+  if (lotIds.length > 0) {
+    const rows = await db.orm.public.Lot
+      .where((l) => and(l.id.in(lotIds), l.schemeId.eq(schemeId)))
+      .limit(lotIds.length)
+      .all();
+    if (rows.length !== lotIds.length) throw new AuthorisationError("Lot not found.");
+  }
+  const supplierIds = idList(links.supplierIds, "Supplier").filter(
+    (sid) => !(links.allowPlatformSupplier && isStrataVerzeSupplier(sid)),
+  );
+  if (supplierIds.length > 0) {
+    const rows = await db.orm.public.Supplier
+      .where((s) => and(s.id.in(supplierIds), s.schemeId.eq(schemeId)))
+      .limit(supplierIds.length)
+      .all();
+    if (rows.length !== supplierIds.length) throw new AuthorisationError("Supplier not found.");
+  }
+}
+
+/** Entry types an adviser may give a manual journal (journal-entry-form.tsx). */
+const MANUAL_ENTRY_TYPES = ["MANUAL", "ADJUSTMENT", "CLOSING"] as const;
+
+/** Review statuses offered on the document page, plus those in prisma/schema.prisma. */
+const DOCUMENT_STATUSES = ["UPLOADED", "UNDER_REVIEW", "REVIEWED", "VERIFIED", "REJECTED", "SUPERSEDED", "ARCHIVED"] as const;
+const VERIFICATION_STATUSES = ["PENDING", "VERIFIED", "FLAGGED", "MATCHED", "UNMATCHED", "DISPUTED"] as const;
+
+/** Document types on the adviser upload form, plus those in prisma/schema.prisma. */
+const UPLOAD_DOCUMENT_TYPES = [
+  "RECEIPT", "INVOICE", "BANK_STATEMENT", "LEVY_NOTICE", "INSURANCE", "CONTRACTOR_QUOTE", "TAX_DOCUMENT", "OTHER",
+  "SUPPLIER_INVOICE", "SUPPLIER_RECEIPT", "PAYMENT_CONFIRMATION", "RECEIPT_ISSUED",
+] as const;
+
+/** Matching rule criteria (prisma/schema.prisma MatchingRule). */
+const MATCH_TYPES = ["DESCRIPTION", "REFERENCE", "AMOUNT", "DESCRIPTION_AND_AMOUNT"] as const;
+const TRANSACTION_SIGNS = ["CREDIT", "DEBIT", "ANY"] as const;
 
 // ═══════════════════════════════════════════════════════════════
 // 1. CHART OF ACCOUNTS
@@ -211,8 +329,10 @@ export async function seedChartOfAccountsAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    const msg = err instanceof Error ? err.message : "Failed to seed chart of accounts.";
-    return { error: msg };
+    if (err instanceof Error && /has no (ADMINISTRATIVE|CAPITAL_WORKS) fund\./.test(err.message)) {
+      return { error: "Create the administrative and capital works funds before seeding the chart of accounts." };
+    }
+    return { error: unexpectedError(err, "Failed to seed chart of accounts.") };
   }
 }
 
@@ -237,6 +357,7 @@ export async function createAccountCodeAction(
     if (!name) fieldErrors.name = "Account name is required.";
     if (!accountType) fieldErrors.accountType = "Account type is required.";
     if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
+    await assertLinksInScheme(schemeId, { fundIds: [fundId] });
 
     const account = await createAccountCode({
       schemeId,
@@ -283,14 +404,18 @@ export async function updateAccountCodeAction(
       ? formData.get("gstApplicable") === "true"
       : undefined;
     const description = formData.get("description") as string | null;
+    // "No specific fund" is sent as an empty value.
+    const fundIdOrNull = fundId === "" ? null : fundId;
+    await assertLinksInScheme(schemeId, { fundIds: [fundIdOrNull] });
 
-    await updateAccountCode(accountCodeId, {
+    const updated = await updateAccountCode(schemeId, accountCodeId, {
       name,
       accountSubType,
-      fundId,
+      fundId: fundIdOrNull,
       gstApplicable,
       description,
     });
+    if (!updated) return { error: "Account code not found." };
 
     revalidatePath(financePath(schemeId));
     return { success: true };
@@ -307,7 +432,8 @@ export async function deactivateAccountCodeAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    await deactivateAccountCode(accountCodeId);
+    const deactivated = await deactivateAccountCode(schemeId, accountCodeId);
+    if (!deactivated) return { error: "Account code not found." };
 
     await logActivity({
       schemeId,
@@ -396,12 +522,13 @@ export async function updateBankAccountAction(
     const accountType = (formData.get("accountType") as string)?.trim() || undefined;
     const isOperating = formData.get("isOperating") === "true" ? true : formData.get("isOperating") === "false" ? false : undefined;
 
-    await updateBankAccount(bankAccountId, {
+    const updated = await updateBankAccount(schemeId, bankAccountId, {
       bankName: bankName ?? null,
       accountName,
       accountType,
       isOperating,
     });
+    if (!updated) return { error: "Bank account not found." };
 
     revalidatePath(financePath(schemeId));
     return { success: true };
@@ -418,7 +545,8 @@ export async function deactivateBankAccountAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    await deactivateBankAccount(bankAccountId);
+    const deactivated = await deactivateBankAccount(schemeId, bankAccountId);
+    if (!deactivated) return { error: "Bank account not found." };
 
     await logActivity({
       schemeId,
@@ -468,8 +596,32 @@ export async function createJournalEntryAction(
 
     if (!data.transactionDate) return { error: "Transaction date is required." };
     if (!data.description?.trim()) return { error: "Description is required." };
-    if (!data.lines || data.lines.length === 0)
+    if (!Array.isArray(data.lines) || data.lines.length === 0)
       return { error: "At least one journal line is required." };
+    const entryType = data.entryType || "MANUAL";
+    assertOneOf(entryType, MANUAL_ENTRY_TYPES, "entry type");
+    if (data.lines.some((l) => !l?.accountCodeId || !l?.fundId)) {
+      return { error: "Each journal line needs an account and a fund." };
+    }
+    // Every account, fund, lot and supplier on the lines must be this scheme's.
+    await assertLinksInScheme(schemeId, {
+      accountCodeIds: data.lines.map((l) => l.accountCodeId),
+      fundIds: data.lines.map((l) => l.fundId),
+      lotIds: data.lines.map((l) => l.lotId),
+      supplierIds: data.lines.map((l) => l.supplierId),
+      allowPlatformSupplier: true,
+    });
+    // Only the line fields a journal line has: nothing else from the browser.
+    const lines: JournalLineInput[] = data.lines.map((l) => ({
+      accountCodeId: l.accountCodeId,
+      fundId: l.fundId,
+      debit: l.debit,
+      credit: l.credit,
+      description: l.description,
+      lotId: l.lotId,
+      supplierId: l.supplierId,
+      gstAmount: l.gstAmount,
+    }));
 
     const entryNumber = await getNextEntryNumber(schemeId);
 
@@ -478,11 +630,11 @@ export async function createJournalEntryAction(
       entryNumber,
       transactionDate: data.transactionDate,
       description: data.description.trim(),
-      entryType: data.entryType || "MANUAL",
-      sourceType: data.sourceType || "MANUAL",
-      sourceId: data.sourceId,
+      entryType,
+      // A manual journal is always recorded as manual, whatever the browser says.
+      sourceType: "MANUAL",
       createdBy: profile.id,
-      lines: data.lines,
+      lines,
     });
 
     await logActivity({
@@ -491,7 +643,7 @@ export async function createJournalEntryAction(
       action: "JOURNAL_ENTRY_CREATED",
       entityType: "JournalEntry",
       entityId: entry.id,
-      metadata: { entryNumber, entryType: data.entryType },
+      metadata: { entryNumber, entryType },
     });
 
     revalidatePath(financePath(schemeId));
@@ -499,8 +651,7 @@ export async function createJournalEntryAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    const msg = err instanceof Error ? err.message : "Failed to create journal entry.";
-    return { error: msg };
+    return { error: unexpectedError(err, "Failed to create journal entry.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -511,7 +662,13 @@ export async function postJournalEntryAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    await postJournalEntry(entryId, profile.id);
+    // The entry must be this scheme's (SEC-004).
+    const entry = await db.orm.public.JournalEntry
+      .where((je) => and(je.id.eq(entryId), je.schemeId.eq(schemeId)))
+      .first();
+    if (!entry) return { error: "Journal entry not found." };
+
+    await postJournalEntry(entry.id, profile.id);
 
     await logActivity({
       schemeId,
@@ -526,7 +683,7 @@ export async function postJournalEntryAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    return { error: "Failed to post journal entry." };
+    return { error: unexpectedError(err, "Failed to post journal entry.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -578,8 +735,7 @@ export async function reverseJournalEntryAction(
     return { success: true, data: { reversalId: reversal.id } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    const msg = err instanceof Error ? err.message : "Failed to reverse journal entry.";
-    return { error: msg };
+    return { error: unexpectedError(err, "Failed to reverse journal entry.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -606,7 +762,8 @@ export async function reverseLevyReceiptAction(
     return { success: true, data: { ...done } };
   } catch (err) {
     if (err instanceof AuthorisationError || err instanceof ReceiptReversalError) return { error: err.message };
-    return { error: err instanceof Error ? err.message : "Failed to reverse the receipt." };
+    if (err instanceof LevyReceiptError) return { error: err.message, data: err.data };
+    return { error: unexpectedError(err, "Failed to reverse the receipt.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -633,7 +790,7 @@ export async function reallocateLevyReceiptAction(
   } catch (err) {
     if (err instanceof AuthorisationError || err instanceof ReceiptReversalError) return { error: err.message };
     if (err instanceof LevyReceiptError) return { error: err.message, data: err.data };
-    return { error: err instanceof Error ? err.message : "Failed to move the receipt." };
+    return { error: unexpectedError(err, "Failed to move the receipt.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -855,6 +1012,8 @@ export async function createLevyScheduleAction(
     if (totalLots <= 0) fieldErrors.totalLots = "Total lots must be greater than zero.";
     if (totalEntitlement <= 0) fieldErrors.totalEntitlement = "Total entitlement must be greater than zero.";
     if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
+    const fund = await db.orm.public.Fund.where((f) => and(f.id.eq(fundId), f.schemeId.eq(schemeId))).first();
+    if (!fund) return { fieldErrors: { fundId: "Choose a fund of this scheme." } };
 
     const schedule = await createLevySchedule({
       schemeId,
@@ -1293,8 +1452,7 @@ export async function recordLevyPaymentAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof LevyReceiptError) return { error: err.message, data: err.data };
-    const msg = err instanceof Error ? err.message : "Failed to record payment.";
-    return { error: msg };
+    return { error: unexpectedError(err, "Failed to record payment.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -1406,6 +1564,12 @@ export async function createSupplierInvoiceAction(
     if (!data.invoiceDate) return { error: "Invoice date is required." };
     if (!data.dueDate) return { error: "Due date is required." };
     if (data.totalAmount <= 0) return { error: "Total amount must be greater than zero." };
+    // The supplier, account and fund must be this scheme's.
+    await assertLinksInScheme(schemeId, {
+      supplierIds: [data.supplierId],
+      accountCodeIds: [data.accountCodeId],
+      fundIds: [data.fundId],
+    });
 
     // Duplicate detection (warn but allow override via skipDuplicateCheck)
     const duplicates = await checkInvoiceDuplicates(
@@ -1614,8 +1778,8 @@ export async function recordInvoicePaymentAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    const msg = err instanceof Error ? err.message : "Failed to record payment.";
-    return { error: msg };
+    if (err instanceof PaymentControlError) return { error: err.message };
+    return { error: unexpectedError(err, "Failed to record payment.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -1678,19 +1842,35 @@ export async function uploadFinancialDocumentAction(
   },
 ): Promise<ActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, [
-      "ADVISER",
-      "COMMITTEE",
-      "OWNER",
-    ]);
+    // Only the adviser documents page uploads through this action. Owners
+    // upload payment confirmations through their own portal.
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    if (!data.fileName) return { error: "File name is required." };
+    if (typeof data?.fileName !== "string" || !data.fileName.trim()) return { error: "File name is required." };
+    if (data.fileName.length > 500) return { error: "File name is too long." };
     if (!data.fileUrl) return { error: "File URL is required." };
+    // The file must be a storage path in this scheme's folder: never a web
+    // address, another scheme's folder or a path with ".." in it.
+    const pathProblem = schemeStoragePathProblem(schemeId, data.fileUrl);
+    if (pathProblem) return { error: pathProblem };
     if (!data.documentType) return { error: "Document type is required." };
+    assertOneOf(data.documentType, UPLOAD_DOCUMENT_TYPES, "document type");
 
     // Validate file size (10 MB max per requirements)
+    if (typeof data.fileSize !== "number" || !Number.isInteger(data.fileSize) || data.fileSize <= 0) {
+      return { error: "File size is required." };
+    }
     if (data.fileSize > 10 * 1024 * 1024) {
       return { error: "File size must not exceed 10 MB." };
+    }
+    if (data.amount !== undefined && (typeof data.amount !== "number" || !Number.isFinite(data.amount))) {
+      return { error: "Enter a valid amount." };
+    }
+    if (data.documentDate !== undefined && !(typeof data.documentDate === "string" && ISO_DATE.test(data.documentDate))) {
+      return { error: "Enter a valid document date." };
+    }
+    for (const text of [data.payerName, data.payeeReference]) {
+      if (text !== undefined && (typeof text !== "string" || text.length > 200)) return { error: "Payer details are too long." };
     }
 
     // Validate MIME type
@@ -1722,8 +1902,39 @@ export async function uploadFinancialDocumentAction(
       };
     }
 
+    // Every record the document is linked to must be this scheme's.
+    await assertLinksInScheme(schemeId, { lotIds: [data.lotId], supplierIds: [data.supplierId] });
+    const invoiceId = idList([data.supplierInvoiceId], "Invoice")[0];
+    if (invoiceId) {
+      const invoice = await db.orm.public.SupplierInvoice.where((i) => and(i.id.eq(invoiceId), i.schemeId.eq(schemeId))).first();
+      if (!invoice) return { error: "Invoice not found." };
+    }
+    const noticeId = idList([data.levyNoticeId], "Levy notice")[0];
+    if (noticeId) {
+      const notice = await db.orm.public.LevyNotice.where((n) => and(n.id.eq(noticeId), n.schemeId.eq(schemeId))).first();
+      if (!notice) return { error: "Levy notice not found." };
+    }
+    const transactionId = idList([data.bankTransactionId], "Bank transaction")[0];
+    if (transactionId && !(await schemeTransaction(schemeId, transactionId))) {
+      return { error: "Bank transaction not found." };
+    }
+
+    // Only the known fields, with the authorised scheme and uploader.
     const doc = await createFinancialDocument({
-      ...data,
+      documentType: data.documentType,
+      fileName: data.fileName.trim(),
+      fileUrl: data.fileUrl,
+      fileSize: data.fileSize,
+      mimeType: data.mimeType,
+      lotId: data.lotId || undefined,
+      supplierId: data.supplierId || undefined,
+      supplierInvoiceId: invoiceId,
+      levyNoticeId: noticeId,
+      bankTransactionId: transactionId,
+      amount: data.amount,
+      documentDate: data.documentDate,
+      payerName: data.payerName,
+      payeeReference: data.payeeReference,
       schemeId,
       uploadedBy: profile.id,
     });
@@ -1758,12 +1969,15 @@ export async function reviewDocumentAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    assertOneOf(data?.documentStatus, DOCUMENT_STATUSES, "document status");
+    if (data.reviewNotes !== undefined && typeof data.reviewNotes !== "string") return { error: "Invalid review notes." };
 
-    await reviewDocument(documentId, {
+    const reviewed = await reviewDocument(schemeId, documentId, {
       documentStatus: data.documentStatus,
       reviewedBy: profile.id,
       reviewNotes: data.reviewNotes,
     });
+    if (!reviewed) return { error: "Document not found." };
 
     await logActivity({
       schemeId,
@@ -1789,8 +2003,10 @@ export async function updateDocumentVerificationAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    assertOneOf(status, VERIFICATION_STATUSES, "verification status");
 
-    await updateVerificationStatus(documentId, status);
+    const updated = await updateVerificationStatus(schemeId, documentId, status);
+    if (!updated) return { error: "Document not found." };
 
     await logActivity({
       schemeId,
@@ -1846,8 +2062,7 @@ export async function generateFinancialPeriodsAction(
     return { success: true, data: { count: periods.length } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    const msg = err instanceof Error ? err.message : "Failed to generate financial periods.";
-    return { error: msg };
+    return { error: unexpectedError(err, "Failed to generate financial periods.") };
   }
 }
 
@@ -1883,7 +2098,8 @@ export async function closePeriodAction(
       };
     }
 
-    await closePeriod(periodId, profile.id);
+    const closed = await closePeriod(schemeId, periodId, profile.id);
+    if (!closed) return { error: "Only an open period can be closed." };
 
     await logActivity({
       schemeId,
@@ -1908,8 +2124,14 @@ export async function lockPeriodAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const period = await db.orm.public.FinancialPeriod
+      .where((p) => and(p.id.eq(periodId), p.schemeId.eq(schemeId)))
+      .first();
+    if (!period) return { error: "Financial period not found." };
+    if (period.status !== "CLOSED") return { error: "Only a closed period can be locked." };
 
-    await lockPeriod(periodId);
+    const locked = await lockPeriod(schemeId, period.id);
+    if (!locked) return { error: "Only a closed period can be locked." };
 
     await logActivity({
       schemeId,
@@ -1934,8 +2156,15 @@ export async function reopenPeriodAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const period = await db.orm.public.FinancialPeriod
+      .where((p) => and(p.id.eq(periodId), p.schemeId.eq(schemeId)))
+      .first();
+    if (!period) return { error: "Financial period not found." };
+    // A locked period stays locked (TC-010): only a closed one can be reopened.
+    if (period.status !== "CLOSED") return { error: "Only a closed period can be reopened." };
 
-    await reopenPeriod(periodId);
+    const reopened = await reopenPeriod(schemeId, period.id);
+    if (!reopened) return { error: "Only a closed period can be reopened." };
 
     await logActivity({
       schemeId,
@@ -2096,8 +2325,7 @@ export async function chargeInterestAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    const msg = err instanceof Error ? err.message : "Failed to charge interest.";
-    return { error: msg };
+    return { error: unexpectedError(err, "Failed to charge interest.", [...INTEREST_RULE_MESSAGES, ...LEDGER_RULE_MESSAGES]) };
   }
 }
 
@@ -2124,8 +2352,7 @@ export async function chargeInterestBatchAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    const msg = err instanceof Error ? err.message : "Failed to charge interest.";
-    return { error: msg };
+    return { error: unexpectedError(err, "Failed to charge interest.", [...INTEREST_RULE_MESSAGES, ...LEDGER_RULE_MESSAGES]) };
   }
 }
 
@@ -2154,9 +2381,25 @@ export async function createAdjustmentEntryAction(
       return { error: "Description is required." };
     }
 
-    if (data.lines.length < 2) {
+    if (!Array.isArray(data.lines) || data.lines.length < 2) {
       return { error: "At least two journal lines are required for a balanced entry." };
     }
+    if (data.lines.some((l) => !l?.accountCodeId || !l?.fundId)) {
+      return { error: "Each journal line needs an account and a fund." };
+    }
+    // Every account and fund on the lines must be this scheme's.
+    await assertLinksInScheme(schemeId, {
+      accountCodeIds: data.lines.map((l) => l.accountCodeId),
+      fundIds: data.lines.map((l) => l.fundId),
+    });
+    // Only the fields an adjustment line has: nothing else from the browser.
+    const lines = data.lines.map((l) => ({
+      accountCodeId: l.accountCodeId,
+      fundId: l.fundId,
+      debit: l.debit,
+      credit: l.credit,
+      description: l.description,
+    }));
 
     const entryNumber = await getNextEntryNumber(schemeId);
 
@@ -2168,7 +2411,7 @@ export async function createAdjustmentEntryAction(
       entryType: "ADJUSTMENT",
       sourceType: "ADJUSTMENT",
       createdBy: profile.id,
-      lines: data.lines,
+      lines,
     });
 
     // Post immediately — period validation in postJournalEntry allows
@@ -2198,8 +2441,7 @@ export async function createAdjustmentEntryAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    const msg = err instanceof Error ? err.message : "Failed to create adjustment entry.";
-    return { error: msg };
+    return { error: unexpectedError(err, "Failed to create adjustment entry.", LEDGER_RULE_MESSAGES) };
   }
 }
 
@@ -2228,15 +2470,41 @@ export async function createMatchingRuleAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    if (!data.name.trim()) {
+    if (typeof data?.name !== "string" || !data.name.trim()) {
       return { error: "Rule name is required." };
     }
 
     if (!data.matchType) {
       return { error: "Match type is required." };
     }
+    assertOneOf(data.matchType, MATCH_TYPES, "match type");
+    if (data.transactionSign !== undefined && data.transactionSign !== null) {
+      assertOneOf(data.transactionSign, TRANSACTION_SIGNS, "transaction sign");
+    }
+    // The rule posts to these: they must be this scheme's.
+    await assertLinksInScheme(schemeId, {
+      accountCodeIds: [data.targetAccountCodeId],
+      fundIds: [data.targetFundId],
+    });
 
-    const rule = await createMatchingRule({ schemeId, ...data });
+    // Build the rule from the known fields only, with the authorised scheme
+    // last, so nothing the browser sends can set another scheme (SEC-004).
+    const rule = await createMatchingRule({
+      name: data.name,
+      description: data.description,
+      matchType: data.matchType,
+      descriptionPattern: data.descriptionPattern,
+      referencePattern: data.referencePattern,
+      exactAmount: data.exactAmount,
+      minAmount: data.minAmount,
+      maxAmount: data.maxAmount,
+      transactionSign: data.transactionSign,
+      targetAccountCodeId: data.targetAccountCodeId,
+      targetFundId: data.targetFundId,
+      autoPost: data.autoPost === true,
+      priority: data.priority,
+      schemeId,
+    });
 
     await logActivity({
       schemeId,
@@ -2277,8 +2545,32 @@ export async function updateMatchingRuleAction(
 ): Promise<ActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (data.matchType !== undefined) assertOneOf(data.matchType, MATCH_TYPES, "match type");
+    if (data.transactionSign !== undefined && data.transactionSign !== null) {
+      assertOneOf(data.transactionSign, TRANSACTION_SIGNS, "transaction sign");
+    }
+    await assertLinksInScheme(schemeId, {
+      accountCodeIds: [data.targetAccountCodeId],
+      fundIds: [data.targetFundId],
+    });
 
-    await updateMatchingRule(ruleId, data);
+    const updated = await updateMatchingRule(schemeId, ruleId, {
+      name: data.name,
+      description: data.description,
+      matchType: data.matchType,
+      descriptionPattern: data.descriptionPattern,
+      referencePattern: data.referencePattern,
+      exactAmount: data.exactAmount,
+      minAmount: data.minAmount,
+      maxAmount: data.maxAmount,
+      transactionSign: data.transactionSign,
+      targetAccountCodeId: data.targetAccountCodeId,
+      targetFundId: data.targetFundId,
+      autoPost: data.autoPost,
+      priority: data.priority,
+      isActive: data.isActive,
+    });
+    if (!updated) return { error: "Matching rule not found." };
 
     await logActivity({
       schemeId,
@@ -2304,7 +2596,8 @@ export async function deleteMatchingRuleAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    await deleteMatchingRule(ruleId);
+    const deleted = await deleteMatchingRule(schemeId, ruleId);
+    if (!deleted) return { error: "Matching rule not found." };
 
     await logActivity({
       schemeId,

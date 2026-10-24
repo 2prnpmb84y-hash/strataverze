@@ -173,8 +173,8 @@ export async function createInsuranceAction(
       totalPremium: premiumItems.length > 0 ? premiumTotal(premiumItems) : null,
     });
 
-    if (coverageItems.length > 0) await replaceCoverageItems(policy.id, coverageItems);
-    if (premiumItems.length > 0) await replacePremiumLineItems(policy.id, premiumItems);
+    if (coverageItems.length > 0) await replaceCoverageItems(schemeId, policy.id, coverageItems);
+    if (premiumItems.length > 0) await replacePremiumLineItems(schemeId, policy.id, premiumItems);
 
     await logActivity({
       schemeId,
@@ -215,7 +215,8 @@ export async function updateInsuranceAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    await updateInsurancePolicy(policyId, {
+    // Scheme-scoped: another scheme's policy id matches nothing (SEC-004).
+    const updated = await updateInsurancePolicy(schemeId, policyId, {
       policyNumber: str(formData, "policyNumber"),
       policyType: str(formData, "policyType"),
       insurer: str(formData, "insurer"),
@@ -234,9 +235,10 @@ export async function updateInsuranceAction(
       ...detail,
       totalPremium: premiumItems.length > 0 ? premiumTotal(premiumItems) : null,
     });
+    if (!updated) return { error: "Insurance policy not found." };
 
-    await replaceCoverageItems(policyId, coverageItems);
-    await replacePremiumLineItems(policyId, premiumItems);
+    await replaceCoverageItems(schemeId, policyId, coverageItems);
+    await replacePremiumLineItems(schemeId, policyId, premiumItems);
 
     await logActivity({
       schemeId,
@@ -266,7 +268,8 @@ export async function deleteInsuranceAction(
 ) {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
-    await deleteInsurancePolicy(policyId);
+    const deleted = await deleteInsurancePolicy(schemeId, policyId);
+    if (!deleted) return { error: "Insurance policy not found." };
     revalidatePath(`/adviser/schemes/${schemeId}/insurance`);
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/insurance`);

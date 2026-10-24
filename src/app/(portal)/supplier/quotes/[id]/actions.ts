@@ -7,7 +7,8 @@ import {
   requireSchemeMembership,
   AuthorisationError,
 } from "@/lib/auth/require-membership";
-import { hasSupplierQuoted, getQuoteRequestById } from "@/lib/queries/supplier";
+import { hasSupplierQuoted, getQuoteRequestForSupplier } from "@/lib/queries/supplier";
+import { isQuoteRequestOpen } from "@/lib/supplier/quote-visibility";
 import { logActivity } from "@/lib/queries/activity-log";
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -58,19 +59,20 @@ export async function submitQuoteAction(
       validUntil = d.toISOString();
     }
 
+    // The request must exist and the caller must be an active supplier on
+    // its scheme before anything else about it is revealed.
+    const quoteRequest = await getQuoteRequestForSupplier(quoteRequestId, profile.id);
+    if (!quoteRequest) return { error: "Quote request not found." };
+    await requireSchemeMembership(quoteRequest.schemeId, ["SUPPLIER"]);
+
+    // Still open (status OPEN and not past its closing time).
+    if (!isQuoteRequestOpen(quoteRequest))
+      return { error: "This quote request is no longer open." };
+
     // Prevent duplicates
     const alreadyQuoted = await hasSupplierQuoted(quoteRequestId, profile.id);
     if (alreadyQuoted)
       return { error: "You have already submitted a quote for this request." };
-
-    // Verify the request is OPEN
-    const quoteRequest = await getQuoteRequestById(quoteRequestId);
-    if (!quoteRequest) return { error: "Quote request not found." };
-    if (quoteRequest.status !== "OPEN")
-      return { error: "This quote request is no longer open." };
-
-    // Verify supplier has membership on the scheme
-    await requireSchemeMembership(quoteRequest.schemeId, ["SUPPLIER"]);
 
     // Create the quote
     const quote = await db.orm.public.Quote.create({
@@ -120,7 +122,7 @@ export async function withdrawQuoteAction(
     await db.orm.public.Quote.where({ id: quoteId }).update({ status: "WITHDRAWN" });
 
     // Get the quote request for scheme context
-    const quoteRequest = await getQuoteRequestById(quote.quoteRequestId);
+    const quoteRequest = await getQuoteRequestForSupplier(quote.quoteRequestId, profile.id);
     if (quoteRequest) {
       await logActivity({
         schemeId: quoteRequest.schemeId,

@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 export interface CreateMinutesData {
   meetingId: string;
@@ -34,7 +35,9 @@ export async function getLatestMinutes(meetingId: string) {
   return rows[0] ?? null;
 }
 
+/** Meeting-scoped: minutes of another meeting match nothing. */
 export async function updateMinutes(
+  meetingId: string,
   id: string,
   data: Partial<{
     state: string;
@@ -55,5 +58,7 @@ export async function updateMinutes(
   if (data.retentionUntil !== undefined)
     update.retentionUntil = data.retentionUntil;
   if (data.documentUrl !== undefined) update.documentUrl = data.documentUrl;
-  return db.orm.public.Minutes.where({ id }).update(update);
+  return db.orm.public.Minutes
+    .where((m) => and(m.id.eq(id), m.meetingId.eq(meetingId)))
+    .update(update);
 }

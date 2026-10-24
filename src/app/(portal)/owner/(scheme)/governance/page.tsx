@@ -1,4 +1,4 @@
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme, scopeSchemeIds } from "@/lib/owner/scheme-scope";
 import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
@@ -25,7 +25,7 @@ export default async function OwnerGovernancePage({
     );
   }
 
-  const selectedSchemeId = await getSelectedSchemeId();
+  const selectedSchemeId = await getVerifiedSelectedSchemeId(["COMMITTEE"]);
   const schemes = scopeToSelectedScheme(access.schemes, selectedSchemeId);
   const schemeIds = scopeSchemeIds(access.schemeIds, selectedSchemeId);
   const meetings =

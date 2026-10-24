@@ -831,8 +831,9 @@ export async function getBankReconciliationReport(
   asAtDate?: string,
 ): Promise<BankReconciliationReport> {
   try {
+  // Scheme-scoped: another scheme's account id matches nothing (SEC-004).
   const bankAccount = await db.orm.public.SchemeBankAccount
-    .where((ba) => ba.id.eq(bankAccountId))
+    .where((ba) => and(ba.id.eq(bankAccountId), ba.schemeId.eq(schemeId)))
     .first();
 
   if (!bankAccount) {
@@ -865,7 +866,7 @@ export async function getBankReconciliationReport(
 
   // Fetch all bank transactions up to the as-at date
   let txnQuery = db.orm.public.BankTransaction
-    .where((t) => t.bankAccountId.eq(bankAccountId));
+    .where((t) => and(t.bankAccountId.eq(bankAccountId), t.schemeId.eq(schemeId)));
 
   if (asAtDate) {
     txnQuery = txnQuery.where((t) =>

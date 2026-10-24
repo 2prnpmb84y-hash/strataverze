@@ -1,24 +1,33 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { normaliseMeetingType } from "@/lib/meetings/setup";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertBelongsTo, assertInScheme, assertOneOf } from "@/lib/auth/scheme-scope";
+import type { Capability } from "@/config/permissions";
 import { getMeetingById } from "@/lib/queries/meetings";
-import { createMotion, castVote } from "@/lib/queries/motions";
+import { createMotion, castVote, getMotionById, VOTE_VALUES } from "@/lib/queries/motions";
 
 export type MotionFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
 };
 
+/** Meeting statuses in which no further committee business can happen. */
+const CLOSED_MEETING_STATUSES = ["CANCELLED", "COMPLETED", "PUBLISHED"];
+
 /**
- * Validate the current user has OWNER or COMMITTEE membership for the meeting's scheme.
+ * Validate the current user holds the capability on the meeting's scheme.
+ * Committee business is committee-only (security review F6, F8): plain
+ * owners cannot raise or vote on committee motions.
  * Returns the profile and meeting, or throws AuthorisationError.
  */
-async function validateMeetingAccess(meetingId: string) {
+async function validateMeetingAccess(meetingId: string, capability: Capability) {
   const meeting = await getMeetingById(meetingId);
   if (!meeting) return null;
 
-  const { profile } = await requireSchemeMembership(meeting.schemeId, ["OWNER", "COMMITTEE"]);
+  const { profile } = await requireSchemeAccess(meeting.schemeId, capability);
 
   return { profile, meeting };
 }
@@ -30,7 +39,7 @@ export async function createCommitteeMotionAction(
 ): Promise<MotionFormState> {
   let result;
   try {
-    result = await validateMeetingAccess(meetingId);
+    result = await validateMeetingAccess(meetingId, "governance.committee");
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;
@@ -39,6 +48,11 @@ export async function createCommitteeMotionAction(
 
   const { profile, meeting } = result;
 
+  // The committee adds motions to its own meetings only. General meeting
+  // motions are prepared by the adviser with the notice.
+  if (normaliseMeetingType(String(meeting.meetingType)) !== "COMMITTEE") {
+    return { error: "Committee motions can only be added to committee meetings." };
+  }
   if (meeting.status !== "SCHEDULED") {
     return { error: "Motions can only be added to scheduled meetings." };
   }
@@ -84,7 +98,22 @@ export async function castCommitteeVoteAction(
 ) {
   let result;
   try {
-    result = await validateMeetingAccess(meetingId);
+    result = await validateMeetingAccess(meetingId, "governance.vote.committee");
+    // The motion must belong to this meeting (and so this scheme), be open,
+    // and the vote must be one of the allowed values (F6).
+    assertOneOf(voteType, VOTE_VALUES, "vote value");
+    if (result) {
+      const motion = await getMotionById(motionId);
+      assertInScheme(motion, result.meeting.schemeId, "Motion");
+      assertBelongsTo(motion.meetingId, meetingId, "Motion");
+      // Committee votes are for committee meetings. General meeting votes
+      // are cast per lot through the owner meeting actions.
+      if (normaliseMeetingType(String(result.meeting.meetingType)) !== "COMMITTEE")
+        return { error: "This motion is voted on by owners, not the committee." };
+      if (motion.status !== "OPEN") return { error: "This motion is not open for voting." };
+      if (CLOSED_MEETING_STATUSES.includes(result.meeting.status))
+        return { error: "This meeting is closed." };
+    }
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;

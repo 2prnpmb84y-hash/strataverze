@@ -46,7 +46,7 @@ export default async function DocumentDetailPage({
   const document = await getDocumentById(docId);
   if (!document || document.schemeId !== id) notFound();
 
-  const downloadUrl = await resolveDocumentUrl(document.fileUrl);
+  const downloadUrl = await resolveDocumentUrl(document.fileUrl, 600, { schemeId: id }).catch(() => "");
   const uploadDate = new Date(String(document.createdAt));
 
   return (
@@ -72,14 +72,18 @@ export default async function DocumentDetailPage({
                 {document.mimeType && ` · ${document.mimeType}`}
               </p>
             </div>
-            <a
-              href={downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors"
-            >
-              Download
-            </a>
+            {downloadUrl ? (
+              <a
+                href={downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-turquoise hover:text-turquoise transition-colors"
+              >
+                Download
+              </a>
+            ) : (
+              <span className="text-xs text-ink-muted">File unavailable</span>
+            )}
           </div>
           {document.description && (
             <p className="text-sm text-ink-muted px-1">

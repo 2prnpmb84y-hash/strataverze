@@ -80,9 +80,19 @@ export async function createLot(data: {
 }
 
 /**
- * Update an existing lot.
+ * Fetch a lot only if it belongs to the scheme (null otherwise).
+ */
+export async function getLotInScheme(schemeId: string, lotId: string) {
+  return db.orm.public.Lot
+    .where((l) => and(l.id.eq(lotId), l.schemeId.eq(schemeId)))
+    .first();
+}
+
+/**
+ * Update an existing lot. Scheme-scoped: a lot from another scheme matches nothing.
  */
 export async function updateLot(
+  schemeId: string,
   lotId: string,
   data: Partial<{
     lotNumber: string;
@@ -92,14 +102,18 @@ export async function updateLot(
     lotType: string;
   }>,
 ) {
-  return db.orm.public.Lot.where({ id: lotId }).update(data);
+  return db.orm.public.Lot
+    .where((l) => and(l.id.eq(lotId), l.schemeId.eq(schemeId)))
+    .update(data);
 }
 
 /**
- * Delete a lot.
+ * Delete a lot. Scheme-scoped: a lot from another scheme matches nothing.
  */
-export async function deleteLot(lotId: string) {
-  return db.orm.public.Lot.where({ id: lotId }).delete();
+export async function deleteLot(schemeId: string, lotId: string) {
+  return db.orm.public.Lot
+    .where((l) => and(l.id.eq(lotId), l.schemeId.eq(schemeId)))
+    .delete();
 }
 
 /**

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import { connection } from "next/server";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
@@ -67,6 +68,8 @@ export default async function FinanceDocumentsPage({
 }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
   const { type, status, verification } = await searchParams;
 
   const [documents, unreviewedDocs] = await Promise.all([

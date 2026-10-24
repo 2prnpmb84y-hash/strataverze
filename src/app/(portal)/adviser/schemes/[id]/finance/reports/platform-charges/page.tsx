@@ -3,11 +3,14 @@ import { getLotsForScheme } from "@/lib/queries/lots";
 import { getPlatformFeesData } from "@/lib/queries/platform-billing";
 import { PageHeader } from "@/components/ui/page-header";
 import { PlatformChargesReport } from "@/components/billing/platform-charges-report";
+import { requirePageAccess } from "@/lib/auth/require-access";
 
 /** Platform charges report. Adviser access is checked by the finance layout. */
 export default async function PlatformChargesReportPage({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const { id } = await params;
+  // Adviser finance: checked here as well as in the layout.
+  if (!(await requirePageAccess(id, "finance.write"))) return null;
   const lots = await getLotsForScheme(id);
   const data = await getPlatformFeesData(id, lots.length);
   return (

@@ -1,10 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  requireSchemeMembership,
-  AuthorisationError,
-} from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { getMeetingById, updateMeeting } from "@/lib/queries/meetings";
 import {
   getSchemeById,
@@ -35,7 +33,7 @@ export async function assembleMinutesAction(
   meetingId: string,
 ): Promise<MinutesActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     const [meeting, scheme, items, existing] = await Promise.all([
       getMeetingById(meetingId),
       getSchemeById(schemeId),
@@ -94,13 +92,18 @@ export async function confirmMinutesAction(
   meetingId: string,
 ): Promise<MinutesActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    const latest = await getLatestMinutes(meetingId);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
+    const [meeting, latest] = await Promise.all([
+      getMeetingById(meetingId),
+      getLatestMinutes(meetingId),
+    ]);
+    if (!meeting || meeting.schemeId !== schemeId)
+      return { error: "Meeting not found." };
     if (!latest) return { error: "There are no minutes to confirm." };
     if (latest.state === "CONFIRMED")
       return { error: "The minutes are already confirmed." };
 
-    await updateMinutes(latest.id, {
+    await updateMinutes(meetingId, latest.id, {
       state: "CONFIRMED",
       confirmedAt: new Date().toISOString(),
       confirmedById: profile.id,
@@ -124,13 +127,14 @@ export async function publishMinutesAction(
   meetingId: string,
 ): Promise<MinutesActionState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
     const [meeting, scheme, latest] = await Promise.all([
       getMeetingById(meetingId),
       getSchemeById(schemeId),
       getLatestMinutes(meetingId),
     ]);
-    if (!meeting || !scheme) return { error: "Meeting not found." };
+    if (!meeting || !scheme || meeting.schemeId !== schemeId)
+      return { error: "Meeting not found." };
     if (!latest) return { error: "There are no minutes to publish." };
     if (latest.state !== "CONFIRMED")
       return { error: "Confirm the minutes before publishing." };
@@ -143,11 +147,11 @@ export async function publishMinutesAction(
     );
     const retention = retentionUntil(ruleSet, base);
 
-    await updateMinutes(latest.id, {
+    await updateMinutes(meetingId, latest.id, {
       distributedAt: new Date().toISOString(),
       retentionUntil: retention.toISOString().slice(0, 10),
     });
-    await updateMeeting(meetingId, { status: "PUBLISHED" });
+    await updateMeeting(schemeId, meetingId, { status: "PUBLISHED" });
     await recordMeetingEvent({
       meetingId,
       actorId: profile.id,

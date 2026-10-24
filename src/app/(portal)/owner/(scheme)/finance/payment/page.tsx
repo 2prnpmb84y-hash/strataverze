@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots } from "@/lib/queries/levies";
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { noticeLabel } from "@/lib/levies/levy-ledger";
 import { PageHeader } from "@/components/ui/page-header";
@@ -16,7 +16,7 @@ export default async function PaymentUploadPage() {
 
   const schemes = scopeToSelectedScheme(
     await getSchemesForOwner(profile.id),
-    await getSelectedSchemeId(),
+    await getVerifiedSelectedSchemeId(),
   );
   if (schemes.length === 0) notFound();
 

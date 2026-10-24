@@ -150,6 +150,7 @@ export async function createBylawAtomic(data: {
  * Update an existing by-law.
  */
 export async function updateBylaw(
+  schemeId: string,
   bylawId: string,
   data: Partial<{
     title: string;
@@ -179,14 +180,14 @@ export async function updateBylaw(
   if (data.motionRef !== undefined) update.motionRef = data.motionRef;
   if (data.notes !== undefined) update.notes = data.notes;
 
-  return db.orm.public.ByLaw.where({ id: bylawId }).update(update);
+  return db.orm.public.ByLaw.where((r) => and(r.id.eq(bylawId), r.schemeId.eq(schemeId))).update(update);
 }
 
 /**
  * Soft-delete a by-law.
  */
-export async function deleteBylaw(bylawId: string) {
+export async function deleteBylaw(schemeId: string, bylawId: string) {
   return db.orm.public.ByLaw
-    .where({ id: bylawId })
+    .where((r) => and(r.id.eq(bylawId), r.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }

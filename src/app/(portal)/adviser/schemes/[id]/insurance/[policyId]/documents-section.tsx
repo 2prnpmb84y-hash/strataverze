@@ -101,8 +101,8 @@ export function InsuranceDocumentsSection({
     return documents.find((d) => d.id === docId)?.category ?? "OTHER";
   }
 
-  async function download(fileUrl: string) {
-    const res = await getInsuranceDocumentUrlAction(schemeId, fileUrl);
+  async function download(documentId: string) {
+    const res = await getInsuranceDocumentUrlAction(schemeId, documentId);
     if (res.url) window.open(res.url, "_blank", "noopener");
     else setError(res.error ?? "Could not open the document.");
   }
@@ -297,7 +297,7 @@ export function InsuranceDocumentsSection({
                     <button
                       type="button"
                       className="text-turquoise hover:underline"
-                      onClick={() => download(d.fileUrl)}
+                      onClick={() => download(d.id)}
                     >
                       Download
                     </button>
@@ -351,7 +351,7 @@ export function InsuranceDocumentsSection({
                         <button
                           type="button"
                           className="text-turquoise hover:underline"
-                          onClick={() => download(v.fileUrl)}
+                          onClick={() => download(v.id)}
                         >
                           Download
                         </button>

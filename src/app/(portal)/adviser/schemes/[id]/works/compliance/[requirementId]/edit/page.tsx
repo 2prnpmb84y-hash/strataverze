@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getComplianceRequirementById } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,14 +15,15 @@ export default async function EditComplianceRequirementPage({
   await connection();
   const { id, requirementId } = await params;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.manage");
+  if (!access) return null;
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
   const requirement = await getComplianceRequirementById(requirementId);
-  if (!requirement) notFound();
+  if (!requirement || requirement.schemeId !== id) notFound();
 
   return (
     <div className="max-w-3xl">

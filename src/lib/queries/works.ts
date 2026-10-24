@@ -98,11 +98,16 @@ export async function getContractorBusinesses(
     status?: string;
     search?: string;
     limit?: number;
+    /**
+     * Only contractors a scheme may see: those StrataVerze has approved, and
+     * any other contractor linked to the scheme by its works records.
+     */
+    visibleToSchemeId?: string;
   } = {},
 ) {
-  const { status, limit = 200 } = options;
+  const { status, limit = 200, visibleToSchemeId } = options;
 
-  const results = await db.orm.public.ContractorBusiness
+  let results = await db.orm.public.ContractorBusiness
     .where((cb) => {
       const cond = cb.deletedAt.eq(null);
       if (status) return and(cond, cb.status.eq(status));
@@ -112,6 +117,11 @@ export async function getContractorBusinesses(
     .orderBy((cb) => cb.companyName.asc())
     .limit(limit)
     .all();
+
+  if (visibleToSchemeId) {
+    const linked = await getSchemeLinkedContractorIds(visibleToSchemeId);
+    results = results.filter((cb) => cb.status === "APPROVED" || linked.has(cb.id));
+  }
 
   if (options.search) {
     const term = options.search.toLowerCase();
@@ -124,6 +134,45 @@ export async function getContractorBusinesses(
   }
 
   return results;
+}
+
+/**
+ * The contractor businesses linked to a scheme by its works records: RFQ
+ * invitations and quotations on the scheme's RFQs, and its contracts, work
+ * orders and invoices. Contractor businesses are platform wide, so a scheme
+ * sees only these and the contractors StrataVerze has approved.
+ */
+export async function getSchemeLinkedContractorIds(schemeId: string): Promise<Set<string>> {
+  const rfqs = await db.orm.public.WorksRfq
+    .where((r) => r.schemeId.eq(schemeId))
+    .select("id")
+    .all();
+  const rfqIds = rfqs.map((r) => r.id);
+  const [invitations, quotations, contracts, workOrders, invoices] = await Promise.all([
+    rfqIds.length
+      ? db.orm.public.WorksRfqInvitation.where((i) => i.rfqId.in(rfqIds)).select("contractorBusinessId").all()
+      : Promise.resolve([]),
+    rfqIds.length
+      ? db.orm.public.WorksQuotation.where((q) => q.rfqId.in(rfqIds)).select("contractorBusinessId").all()
+      : Promise.resolve([]),
+    db.orm.public.WorksContract.where((c) => c.schemeId.eq(schemeId)).select("contractorBusinessId").all(),
+    db.orm.public.WorksWorkOrder.where((wo) => wo.schemeId.eq(schemeId)).select("contractorBusinessId").all(),
+    db.orm.public.WorksInvoice.where((inv) => inv.schemeId.eq(schemeId)).select("contractorBusinessId").all(),
+  ]);
+  const ids = new Set<string>();
+  for (const row of [...invitations, ...quotations, ...contracts, ...workOrders, ...invoices]) {
+    ids.add(row.contractorBusinessId);
+  }
+  return ids;
+}
+
+/** Whether a scheme may see this contractor (approved, or linked to the scheme). */
+export async function isContractorVisibleToScheme(
+  contractor: { id: string; status: string },
+  schemeId: string,
+): Promise<boolean> {
+  if (contractor.status === "APPROVED") return true;
+  return (await getSchemeLinkedContractorIds(schemeId)).has(contractor.id);
 }
 
 /**

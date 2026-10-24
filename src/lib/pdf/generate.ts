@@ -4,6 +4,7 @@
  * FinancialDocument (once per identical file).
  */
 import { db } from "@/prisma/db";
+import { siteUrl } from "@/lib/site-url";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { formatLotLabel } from "@/lib/format";
@@ -24,7 +25,7 @@ import {
 } from "./documents";
 import { storeGeneratedPdf } from "./store";
 
-const APP_URL = process.env.APP_URL ?? "https://strataverze.vercel.app";
+const APP_URL = siteUrl();
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
 const safeName = (s: string) => s.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-");
 

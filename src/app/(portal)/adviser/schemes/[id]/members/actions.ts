@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
+import { AuthorisationError } from "@/lib/auth/require-membership";
+import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { assertInScheme } from "@/lib/auth/scheme-scope";
+import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 import {
   createInvitation,
   revokeInvitation,
@@ -26,7 +30,7 @@ export async function sendInvitationAction(
   formData: FormData,
 ): Promise<InvitationFormState> {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "members.manage");
 
     const email = (formData.get("email") as string)?.trim().toLowerCase();
     const role = formData.get("role") as string;
@@ -103,9 +107,15 @@ export async function revokeInvitationAction(
   invitationId: string,
 ) {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeAccess(schemeId, "members.manage");
 
-    await revokeInvitation(invitationId);
+    // The invitation must belong to this scheme (SEC-004).
+    const invitation = await db.orm.public.Invitation
+      .where((i) => and(i.id.eq(invitationId), i.schemeId.eq(schemeId)))
+      .first();
+    assertInScheme(invitation, schemeId, "Invitation");
+
+    await revokeInvitation(schemeId, invitationId);
 
     await logActivity({
       schemeId,

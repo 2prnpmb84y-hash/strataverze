@@ -76,9 +76,10 @@ export async function createMeeting(data: {
 }
 
 /**
- * Update a meeting.
+ * Update a meeting. Scheme-scoped: a meeting from another scheme matches nothing.
  */
 export async function updateMeeting(
+  schemeId: string,
   meetingId: string,
   data: Partial<{
     title: string;
@@ -104,15 +105,17 @@ export async function updateMeeting(
   if (data.openedAt !== undefined) updateData.openedAt = toTimestamp(data.openedAt);
   if (data.closedAt !== undefined) updateData.closedAt = toTimestamp(data.closedAt);
 
-  return orm.public.Meeting.where({ id: meetingId }).update(updateData);
+  return orm.public.Meeting
+    .where((m) => and(m.id.eq(meetingId), m.schemeId.eq(schemeId)))
+    .update(updateData);
 }
 
 /**
- * Soft-delete a meeting.
+ * Soft-delete a meeting. Scheme-scoped: a meeting from another scheme matches nothing.
  */
-export async function deleteMeeting(meetingId: string) {
+export async function deleteMeeting(schemeId: string, meetingId: string) {
   return db.orm.public.Meeting
-    .where({ id: meetingId })
+    .where((m) => and(m.id.eq(meetingId), m.schemeId.eq(schemeId)))
     .update({ deletedAt: toTimestamp(new Date().toISOString()) });
 }
 

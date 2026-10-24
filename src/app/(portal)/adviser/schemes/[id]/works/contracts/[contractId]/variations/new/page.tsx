@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
+import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getWorksContractById } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,14 +15,15 @@ export default async function NewVariationPage({
   await connection();
   const { id, contractId } = await params;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  // Role check on this scheme (SEC-004 / H5): a page is a privileged read.
+  const access = await requirePageAccess(id, "works.manage");
+  if (!access) return null;
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
   const contract = await getWorksContractById(contractId);
-  if (!contract) notFound();
+  if (!contract || contract.schemeId !== id) notFound();
 
   return (
     <div className="max-w-3xl">

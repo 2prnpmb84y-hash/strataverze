@@ -45,7 +45,9 @@ export async function createAgendaItem(data: CreateAgendaItemData) {
   });
 }
 
+/** Meeting-scoped: an agenda item on another meeting matches nothing. */
 export async function updateAgendaItem(
+  meetingId: string,
   id: string,
   data: Partial<{
     title: string;
@@ -61,11 +63,16 @@ export async function updateAgendaItem(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) update[k] = v;
   }
-  return db.orm.public.AgendaItem.where({ id }).update(update);
+  return db.orm.public.AgendaItem
+    .where((a) => and(a.id.eq(id), a.meetingId.eq(meetingId)))
+    .update(update);
 }
 
-export async function deleteAgendaItem(id: string) {
-  return db.orm.public.AgendaItem.where({ id }).delete();
+/** Meeting-scoped: an agenda item on another meeting matches nothing. */
+export async function deleteAgendaItem(meetingId: string, id: string) {
+  return db.orm.public.AgendaItem
+    .where((a) => and(a.id.eq(id), a.meetingId.eq(meetingId)))
+    .delete();
 }
 
 /** Fetch a single agenda item scoped to its meeting. */

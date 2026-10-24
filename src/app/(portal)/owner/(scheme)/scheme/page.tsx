@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
-import { getSelectedSchemeId } from "@/lib/actions/scheme-selection";
+import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { connection } from "next/server";
 
@@ -15,7 +15,7 @@ export default async function OwnerSchemePage() {
 
   const schemes = scopeToSelectedScheme(
     await getSchemesForOwner(profile.id),
-    await getSelectedSchemeId(),
+    await getVerifiedSelectedSchemeId(),
   );
 
   if (schemes.length === 0) {

@@ -32,7 +32,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const fileUrl = String(doc.fileUrl ?? "");
   // A generated document's own route, with its stored copy missing.
   if (!fileUrl || fileUrl.startsWith("/api/")) return notFound();
-  const url = await resolveDocumentUrl(fileUrl, 300);
+  // Only a path in this scheme's folder of the documents bucket is signed.
+  const url = await resolveDocumentUrl(fileUrl, 300, { schemeId: doc.schemeId }).catch(() => null);
+  if (!url) return notFound();
   const response = NextResponse.redirect(url, 302);
   response.headers.set("Cache-Control", "private, no-store");
   return response;

@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 // ─── Lot Detail (extended owner info) ────────────────────────────
 
@@ -226,9 +227,10 @@ export async function createPowerOfAttorney(
   return db.orm.public.LotPowerOfAttorney.create({ lotId, ...data });
 }
 
-export async function revokePowerOfAttorney(id: string) {
+/** Lot-scoped: a power of attorney on another lot matches nothing. */
+export async function revokePowerOfAttorney(lotId: string, id: string) {
   return db.orm.public.LotPowerOfAttorney
-    .where({ id })
+    .where((poa) => and(poa.id.eq(id), poa.lotId.eq(lotId)))
     .update({ isActive: false });
 }
 
@@ -260,8 +262,9 @@ export async function createProxy(
   return db.orm.public.LotProxy.create({ lotId, ...data });
 }
 
-export async function revokeProxy(id: string) {
+/** Lot-scoped: a proxy on another lot matches nothing. */
+export async function revokeProxy(lotId: string, id: string) {
   return db.orm.public.LotProxy
-    .where({ id })
+    .where((p) => and(p.id.eq(id), p.lotId.eq(lotId)))
     .update({ isActive: false });
 }
