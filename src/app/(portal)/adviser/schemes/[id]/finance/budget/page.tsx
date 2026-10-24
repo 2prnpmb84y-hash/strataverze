@@ -7,6 +7,8 @@ import { getBudgetLinesForScheme, getBudgetVsActual } from "@/lib/queries/budget
 import { PageHeader } from "@/components/ui/page-header";
 import { BudgetClient } from "./budget-client";
 import { connection } from "next/server";
+import { auDate } from "@/lib/onboarding/property-onboarding";
+import { toIsoDay } from "@/lib/levies/notice-plan";
 import { getBudgets } from "@/lib/finance/budgets";
 import { workingBudgets } from "@/lib/finance/budget-status";
 import { resolutionMeetings } from "@/lib/finance/resolutions";
@@ -55,7 +57,11 @@ export default async function BudgetPage({
       budgetId: b?.id ?? null,
       version: b?.version ?? null,
       status: b?.status ?? null,
-      adoptedLabel: b?.adoptedMeetingId ? (meetingLabels.get(b.adoptedMeetingId) ?? "a general meeting") : null,
+      adoptedLabel: b?.adoptedMeetingId
+        ? (meetingLabels.get(b.adoptedMeetingId) ?? "a general meeting")
+        : b?.adoptedBeforeTakeoverOn
+          ? `a general meeting on ${auDate(toIsoDay(b.adoptedBeforeTakeoverOn))}, before StrataVerze took over`
+          : null,
     };
   });
 

@@ -233,7 +233,8 @@ export async function createSchemeAction(
         balances,
         lotBalances: lotBalances.rows,
       });
-      if (batchId) destination = `/adviser/schemes/${scheme.id}/finance/migration/cutover?batch=${batchId}`;
+      // Next: last year's income and expenditure, this year's budget and the levies.
+      if (batchId) destination = `/adviser/schemes/${scheme.id}/finance/migration/income-budget`;
     } catch (err) {
       logError("createSchemeAction: the opening balances could not be staged:", err);
       destination = `/adviser/schemes/${scheme.id}/finance/migration/cutover?onboarding=not-staged`;
