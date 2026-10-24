@@ -18,6 +18,7 @@ import {
   parseStrataRollPDF,
   type ParsedStrataRoll,
 } from "@/lib/parse-strata-roll";
+import { TooManyPagesError } from "@/lib/pdf/layout-text";
 import {
   checkLotBalances,
   checkLots,
@@ -415,15 +416,26 @@ export async function parseStrataRollAction(
       console.warn("parseStrataRollAction: no fields extracted. Text length:", data.rawTextPreview?.length ?? 0);
       return {
         success: false,
-        error:
+        error: data.issues.find((i) => i.code === "no-text")?.message ??
           "The document was read but no scheme data could be extracted. " +
-          "Please check that the file is a strata roll (not a levy notice or meeting minutes) " +
-          "and try again, or skip to enter details manually.",
+            "Please check that the file is a strata roll (not a levy notice or meeting minutes) " +
+            "and try again, or skip to enter details manually.",
       };
     }
 
-    return { success: true, data };
+    // Only what the wizard uses goes to the browser: owners' addresses and
+    // emails, and the raw text, stay on the server until a later step needs
+    // them (review of 24 Oct).
+    return {
+      success: true,
+      data: {
+        ...data,
+        rawTextPreview: undefined,
+        details: data.details.map((d) => ({ lotNumber: d.lotNumber, tablePage: d.tablePage, ownerPage: d.ownerPage })),
+      },
+    };
   } catch (err) {
+    if (err instanceof TooManyPagesError) return { success: false, error: `${err.message} Upload the strata roll on its own.` };
     logError("parseStrataRollAction error:", err);
     return {
       success: false,

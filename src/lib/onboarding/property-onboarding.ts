@@ -146,6 +146,8 @@ export interface OnboardingLot {
   unitNumber: string;
   entitlement: string;
   ownerName: string;
+  /** Where the row was read from ("Roll page 1; owner on page 2"). Shown only; not saved. */
+  source?: string;
 }
 
 export interface CleanLot {

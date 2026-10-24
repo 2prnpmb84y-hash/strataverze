@@ -10,7 +10,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { createSchemeAction, type OnboardingStep, type SchemeFormState } from "./actions";
 import { StrataRollUpload } from "./strata-roll-upload";
-import type { ParsedStrataRoll } from "@/lib/parse-strata-roll";
+import type { ParsedStrataRoll, RollIssue } from "@/lib/parse-strata-roll";
 import {
   auDate,
   blankLotBalance,
@@ -26,7 +26,7 @@ import {
   type OnboardingLot,
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
-import { BalancesStep, LotBalancesStep, LotsStep, StepProblems } from "./onboarding-steps";
+import { BalancesStep, LotBalancesStep, LotsStep, RollNotes, StepProblems } from "./onboarding-steps";
 
 const STEPS = [
   { id: "upload", label: "Strata Roll" },
@@ -117,6 +117,8 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
   const [currentStep, setCurrentStep] = useState<StepId>("upload");
   const [defaults, setDefaults] = useState<Defaults>({});
   const [fromRoll, setFromRoll] = useState(false);
+  // What the roll reader flagged, and where each lot was read from (24 Oct).
+  const [rollIssues, setRollIssues] = useState<RollIssue[]>([]);
   const [formKey, setFormKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -259,21 +261,34 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
       financialYearEnd: s.financialYearEnd ?? undefined,
       buildingType: s.buildingType ?? undefined,
     });
+    // Each row keeps where it was read from, so the note stays with the row
+    // even if its lot number is corrected. A missing entitlement stays blank.
     setLots(
-      data.lots.map((l) => ({
-        lotNumber: l.lotNumber,
-        unitNumber: l.unitNumber ?? "",
-        entitlement: String(l.entitlement),
-        ownerName: l.ownerName ?? "",
-      })),
+      data.lots.map((l, i) => {
+        const d = data.details?.at(i);
+        return {
+          lotNumber: l.lotNumber,
+          unitNumber: l.unitNumber ?? "",
+          entitlement: l.entitlement ? String(l.entitlement) : "",
+          ownerName: l.ownerName ?? "",
+          source: d ? [d.tablePage ? `Roll page ${d.tablePage}` : null, d.ownerPage ? `owner on page ${d.ownerPage}` : null].filter(Boolean).join("; ") : undefined,
+        };
+      }),
     );
     setFromRoll(data.lots.length > 0);
+    setRollIssues(data.issues ?? []);
     setFormKey((k) => k + 1);
     setClientProblems([]);
     setCurrentStep("details");
   }
 
+  // Skipping (even after an upload) starts from a blank building.
   function handleSkip() {
+    setDefaults({});
+    setLots([]);
+    setFromRoll(false);
+    setRollIssues([]);
+    setFormKey((k) => k + 1);
     setCurrentStep("details");
   }
 
@@ -376,6 +391,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               )}
             </p>
             {currentStep === "details" && <StepProblems problems={problems} />}
+            <RollNotes issues={rollIssues.filter((i) => !i.lotNumber && i.field !== "financialYearEnd")} title="From the strata roll: check these" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
               <FormField
@@ -431,6 +447,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
             <h2 className="font-heading font-semibold text-ink mb-1">Address &amp; Settings</h2>
             <p className="text-sm text-ink-muted mb-6">Set the property address, financial settings, and preferences.</p>
             {currentStep === "address" && <StepProblems problems={problems} />}
+            <RollNotes issues={rollIssues.filter((i) => i.field === "financialYearEnd")} title="From the strata roll" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
               <FormField
@@ -485,6 +502,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               check={lotsCheck}
               showErrors={!!tried.lots}
               fromRoll={fromRoll}
+              notes={rollIssues.filter((i) => i.lotNumber)}
             />
             {nav("Next: Opening Balances")}
           </Card>

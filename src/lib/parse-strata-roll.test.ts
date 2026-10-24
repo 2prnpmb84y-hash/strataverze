@@ -274,6 +274,36 @@ Lot 2 Unit 202 Alice Brown 125
       });
     });
 
+    it("never reads a street address, a phone number or an email as a lot", () => {
+      // The failure on the SP 99999 roll (24 Oct): these lines became lots.
+      const text = `
+Lot No  Unit
+1 Bennelong Point, Sydney NSW 2000
+0400 TEST 01
+cblanchett@example.com 1
+Lot 1 Unit 101 John Smith 100
+      `;
+      const result = parseStrataRollText(text);
+      expect(result.lots).toEqual([{ lotNumber: "1", unitNumber: "101", entitlement: 100, ownerName: "John Smith" }]);
+    });
+
+    it("keeps the first of two rows for the same lot and flags the second", () => {
+      const text = `
+Contribution Schedule
+1    Owner A    100
+1    Owner B    150
+      `;
+      const result = parseStrataRollText(text);
+      expect(result.lots).toHaveLength(1);
+      expect(result.issues).toContainEqual(expect.objectContaining({ kind: "conflict", lotNumber: "1" }));
+    });
+
+    it("says when a PDF has no readable text", () => {
+      const result = parseStrataRollText("");
+      expect(result.lots).toEqual([]);
+      expect(result.issues.at(0)?.message).toContain("no text that can be read");
+    });
+
     it("returns empty lots when no schedule section found", () => {
       const result = parseStrataRollText("Just some random text with no lots");
       expect(result.lots).toEqual([]);
@@ -281,7 +311,9 @@ Lot 2 Unit 202 Alice Brown 125
   });
 
   describe("derived fields", () => {
-    it("infers totalLots from parsed lots when not explicitly stated", () => {
+    // 24 Oct: counting the rows read is not the building's total. The totals
+    // stay empty and the reader says what it found, for the person to check.
+    it("does not invent total lots when the roll does not print them", () => {
       const text = `
 Contribution Schedule
 1    Owner A    100
@@ -289,17 +321,31 @@ Contribution Schedule
 3    Owner C    100
       `;
       const result = parseStrataRollText(text);
-      expect(result.scheme.totalLots).toBe(3);
+      expect(result.scheme.totalLots).toBeNull();
+      expect(result.issues).toContainEqual(expect.objectContaining({ kind: "missing", field: "totalLots", message: expect.stringContaining("3 lots were read") }));
     });
 
-    it("infers totalEntitlement from parsed lots when not explicitly stated", () => {
+    it("does not invent a total unit entitlement when the roll does not print one", () => {
       const text = `
 Contribution Schedule
 1    Owner A    100
 2    Owner B    150
       `;
       const result = parseStrataRollText(text);
-      expect(result.scheme.totalEntitlement).toBe(250);
+      expect(result.scheme.totalEntitlement).toBeNull();
+      expect(result.issues).toContainEqual(expect.objectContaining({ kind: "missing", field: "totalEntitlement", message: expect.stringContaining("add up to 250") }));
+    });
+
+    it("flags a printed total that the lots do not add up to", () => {
+      const text = `
+Contribution Schedule
+1    Owner A    100
+2    Owner B    150
+Aggregate Units of Entitlement: 300
+      `;
+      const result = parseStrataRollText(text);
+      expect(result.scheme.totalEntitlement).toBe(300);
+      expect(result.issues).toContainEqual(expect.objectContaining({ kind: "conflict", field: "totalEntitlement" }));
     });
 
     it("infers suburb from address when not explicitly stated", () => {
