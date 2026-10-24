@@ -5,6 +5,7 @@ import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { assertInScheme } from "@/lib/auth/scheme-scope";
 import { getLotInScheme } from "@/lib/queries/lots";
+import { logActivity } from "@/lib/queries/activity-log";
 import {
   upsertLotDetail,
   upsertTenant,
@@ -64,6 +65,46 @@ export async function updateLotDetailAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update owner details." };
+  }
+}
+
+// ─── Owner's name on the strata roll ─────────────────────────────
+
+export type RollOwnerNameState = { error?: string; saved?: boolean };
+
+/**
+ * The owner's name exactly as it appears on the strata roll (onboarding,
+ * 24 Oct). Kept up to date by the Adviser and the committee. Only leading
+ * and trailing spaces are removed; blank clears it.
+ */
+export async function updateRollOwnerNameAction(
+  schemeId: string,
+  lotId: string,
+  _prev: RollOwnerNameState,
+  formData: FormData,
+): Promise<RollOwnerNameState> {
+  const value = String(formData.get("rollOwnerName") ?? "").trim();
+  if (value.length > 500) return { error: "The owner name can be at most 500 characters." };
+  if (/[\u0000-\u001F\u007F]/.test(value)) return { error: "The owner name cannot contain line breaks or control characters." };
+  try {
+    const { profile } = await requireSchemeAccess(schemeId, "roll.manage");
+    const lot = await getLotInScheme(schemeId, lotId);
+    assertInScheme(lot, schemeId, "Lot");
+    await upsertLotDetail(lotId, { rollOwnerName: value || null });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "STRATA_ROLL_UPDATED",
+      entityType: "Lot",
+      entityId: lotId,
+      metadata: { lotNumber: lot?.lotNumber ?? null },
+    });
+    revalidateLot(schemeId, lotId);
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return { saved: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to update the owner name." };
   }
 }
 

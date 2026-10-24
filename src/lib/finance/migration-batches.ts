@@ -52,6 +52,18 @@ export const SOURCE_SYSTEMS: Array<{ value: string; label: string }> = [
   { value: "other", label: "Other" },
 ];
 
+/**
+ * Cutovers prepared by property onboarding from the balances entered there.
+ * Not offered when an Adviser starts a cutover by hand.
+ */
+export const ONBOARDING_SOURCE = { value: "onboarding", label: "StrataVerze onboarding" } as const;
+
+/** The label for a cutover's source system. */
+export function sourceSystemLabel(value: string): string {
+  if (value === ONBOARDING_SOURCE.value) return ONBOARDING_SOURCE.label;
+  return SOURCE_SYSTEMS.find((s) => s.value === value)?.label ?? value;
+}
+
 export interface StagedFile {
   fileName: string;
   sha256: string;
@@ -125,7 +137,7 @@ export async function listCutovers(schemeId: string) {
 }
 
 export async function createCutover(input: { schemeId: string; sourceSystem: string; cutoverDate: string | null; actorId: string }): Promise<string> {
-  if (!SOURCE_SYSTEMS.some((s) => s.value === input.sourceSystem)) throw new CutoverError("Choose the system the data comes from.");
+  if (!SOURCE_SYSTEMS.some((s) => s.value === input.sourceSystem) && input.sourceSystem !== ONBOARDING_SOURCE.value) throw new CutoverError("Choose the system the data comes from.");
   const date = input.cutoverDate ? parseCutoverDate(input.cutoverDate) : null;
   if (input.cutoverDate && !date) throw new CutoverError("The cutover date is not a date.");
   const row = await db.orm.public.MigrationBatch.create({
@@ -238,7 +250,7 @@ export async function getCutoverView(schemeId: string, batchId: string): Promise
   return {
     id: batch.id,
     sourceSystem: batch.sourceSystem,
-    sourceLabel: SOURCE_SYSTEMS.find((s) => s.value === batch.sourceSystem)?.label ?? batch.sourceSystem,
+    sourceLabel: sourceSystemLabel(batch.sourceSystem),
     template: template ? { status: template.status, note: template.note, references: template.references } : null,
     cutoverDate: cutoverOf(batch),
     status: batch.status,
@@ -355,7 +367,7 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
   for (const fundId of new Set(credits.map((c) => c.fundId))) await ensureLeviesInAdvanceAccount(input.schemeId, fundId);
   const entryNumber = await getNextEntryNumber(input.schemeId);
   const fy = financialYearOf(date, String(scheme.financialYearEnd ?? "06-30"));
-  const sourceLabel = SOURCE_SYSTEMS.find((s) => s.value === batch.sourceSystem)?.label ?? batch.sourceSystem;
+  const sourceLabel = sourceSystemLabel(batch.sourceSystem);
   const now = new Date().toISOString();
 
   const results = await db.transaction(async (tx) => {

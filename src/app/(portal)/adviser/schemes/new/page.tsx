@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 import { AddPropertyWizard } from "../add-property-wizard";
 
 export default async function NewSchemePage() {
@@ -11,7 +12,7 @@ export default async function NewSchemePage() {
   if (!profile?.isPlatformAdmin) notFound();
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <PageHeader
         title="Add Property"
         description="Register a new Owners Corporation."
@@ -19,7 +20,7 @@ export default async function NewSchemePage() {
         backLabel="Schemes"
       />
 
-      <AddPropertyWizard />
+      <AddPropertyWizard today={todayInSydney()} />
     </div>
   );
 }

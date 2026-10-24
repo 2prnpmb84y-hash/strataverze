@@ -71,7 +71,7 @@ export function LotForm({
           />
 
           <FormField
-            label="Unit Number"
+            label="Unit No."
             name="unitNumber"
             defaultValue={defaults?.unitNumber ?? ""}
             placeholder="e.g. 101"
@@ -80,7 +80,7 @@ export function LotForm({
           />
 
           <FormField
-            label="Entitlement"
+            label="Unit Entitlement"
             name="entitlement"
             readOnly={lockStructure}
             type="number"

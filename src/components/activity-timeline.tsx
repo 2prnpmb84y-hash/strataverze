@@ -19,6 +19,7 @@ const ACTION_LABELS: Record<string, string> = {
   SCHEME_UPDATED: "updated scheme details",
   FUND_CREATED: "created a fund",
   LOT_CREATED: "added a lot",
+  STRATA_ROLL_UPDATED: "updated an owner's name on the strata roll",
 };
 
 const ACTION_ICONS: Record<string, string> = {
@@ -40,6 +41,7 @@ const ACTION_ICONS: Record<string, string> = {
   SCHEME_UPDATED: "⚙️",
   FUND_CREATED: "🏦",
   LOT_CREATED: "🏠",
+  STRATA_ROLL_UPDATED: "📜",
 };
 
 type ActivityEntry = {
@@ -108,6 +110,7 @@ function getMetadataDetail(action: string, metadata: Record<string, unknown> | n
       if (metadata.name) return String(metadata.name);
       return null;
     case "LOT_CREATED":
+    case "STRATA_ROLL_UPDATED":
       if (metadata.lotNumber) return formatLotLabel(String(metadata.lotNumber));
       return null;
     default:

@@ -280,6 +280,7 @@ model LotDetail {
   isCommitteeMember Boolean   @default(false) @map("is_committee_member")
   paidToDate        DateTime? @db.Date @map("paid_to_date")
   lastSettled       DateTime? @db.Date @map("last_settled")
+  rollOwnerName     String?   @map("roll_owner_name") // as it appears on the strata roll
   createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt         DateTime  @updatedAt @db.Timestamptz @map("updated_at")
 

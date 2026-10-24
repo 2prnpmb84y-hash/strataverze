@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { SchemeForm } from "../scheme-form";
+import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 import { DeleteSchemeButton } from "./delete-button";
 import { AnnouncementsCard } from "./_sections/announcements-card";
 import { FundsCard } from "./_sections/funds-card";
@@ -129,6 +130,7 @@ export default async function SchemeDetailPage({
           mode="edit"
           schemeId={scheme.id}
           lockCore={!profile?.isPlatformAdmin}
+          today={todayInSydney()}
           defaults={{
             name: scheme.name,
             planNumber: scheme.planNumber,

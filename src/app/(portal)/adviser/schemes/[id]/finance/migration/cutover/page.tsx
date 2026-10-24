@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { db } from "@/prisma/db";
 import { requireSchemeMembership } from "@/lib/auth/require-membership";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getCutoverView, listCutovers, SOURCE_SYSTEMS } from "@/lib/finance/migration-batches";
+import { ONBOARDING_SOURCE, getCutoverView, listCutovers, SOURCE_SYSTEMS, sourceSystemLabel } from "@/lib/finance/migration-batches";
 import { CUTOVER_DATA_TYPES, CUTOVER_LABELS } from "@/lib/finance/migration-cutover";
 import { FIELDS } from "@/lib/finance/migration-templates";
 import { PageHeader } from "@/components/ui/page-header";
@@ -12,10 +12,10 @@ import { CutoverClient, type CutoverClientView } from "./cutover-client";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Stage 7: the financial cutover from another system. */
-export default async function CutoverPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ batch?: string }> }) {
+export default async function CutoverPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ batch?: string; onboarding?: string }> }) {
   await connection();
   const { id } = await params;
-  const { batch } = await searchParams;
+  const { batch, onboarding } = await searchParams;
   await requireSchemeMembership(id, ["ADVISER"]);
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
@@ -63,12 +63,25 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
         backHref={`/adviser/schemes/${id}/finance/migration`}
         backLabel="Data Migration"
       />
+      {onboarding === "not-staged" && (
+        <div role="alert" className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          The building and its lots were created, but its opening balances could not be prepared as a cutover. Start a cutover below and load the
+          opening trial balance, or ask StrataVerze support to look into it.
+        </div>
+      )}
+      {selectedId && batches.find((b) => b.id === selectedId)?.sourceSystem === ONBOARDING_SOURCE.value && view?.status !== "EXECUTED" && (
+        <div className="rounded-[var(--radius-card)] border border-line bg-mint-soft/40 px-4 py-3 text-sm text-ink">
+          These opening balances were entered when the building was onboarded. Check them against the previous manager&apos;s handover, then sign off
+          and post. The lot arrears carry the takeover date as their due date; to keep each levy&apos;s original due date (for ageing and interest),
+          replace the outstanding levy notices file with the notices from the previous system before signing off.
+        </div>
+      )}
       <CutoverClient
         schemeId={id}
         sources={SOURCE_SYSTEMS}
         batches={batches.map((b) => ({
           id: b.id,
-          sourceLabel: SOURCE_SYSTEMS.find((s) => s.value === b.sourceSystem)?.label ?? b.sourceSystem,
+          sourceLabel: sourceSystemLabel(b.sourceSystem),
           cutoverDate: b.cutoverDate ? String(b.cutoverDate).slice(0, 10) : null,
           status: b.status,
           createdAt: String(b.createdAt),

@@ -32,9 +32,9 @@ export function LotsCard({
             <thead>
               <tr className="border-b border-line text-left">
                 <th scope="col" className="pb-2 font-medium text-ink-muted">Lot</th>
-                <th scope="col" className="pb-2 font-medium text-ink-muted">Unit</th>
+                <th scope="col" className="pb-2 font-medium text-ink-muted">Unit No.</th>
                 <th scope="col" className="pb-2 font-medium text-ink-muted">Type</th>
-                <th scope="col" className="pb-2 font-medium text-ink-muted text-right">Entitlement</th>
+                <th scope="col" className="pb-2 font-medium text-ink-muted text-right">Unit Entitlement</th>
                 <th scope="col" className="pb-2 font-medium text-ink-muted">Owner</th>
               </tr>
             </thead>
