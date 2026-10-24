@@ -66,7 +66,6 @@ import {
 import {
   createLevySchedule,
   createLevyNoticesBatch,
-  issueLevyNotice,
   approveLevySchedule,
   activateLevySchedule,
   getLevyScheduleById,
@@ -84,7 +83,6 @@ import {
   supplierInvoiceControls,
 } from "@/lib/finance/invoice-approval";
 import { checkBankDetailsForPayment } from "@/lib/finance/payment-controls";
-import { applyOwnerCredit } from "@/lib/finance/owner-credits";
 import { LevyReceiptError, receiptLevyPayment } from "@/lib/finance/levy-receipts";
 import { getLevyReceipt, reallocateLevyReceipt, ReceiptReversalError, reverseLevyReceipt } from "@/lib/finance/levy-receipt-reversal";
 import {
@@ -102,7 +100,9 @@ import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
-import { checkPlannedNotices, sendIssuedNotices } from "@/lib/levies/notice-content-data";
+import { checkPlannedNotices } from "@/lib/levies/notice-content-data";
+import { issueNoticeBatch } from "@/lib/levies/issue-notices";
+import { issueTiming, lateMessage, type IssueTiming } from "@/lib/levies/issue-timing";
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
@@ -1051,41 +1051,6 @@ export async function createLevyScheduleAction(
   }
 }
 
-/** DR Levies Receivable, CR Levy Income for notices raised against a fund. */
-async function postLevyRaisedJournal(args: {
-  schemeId: string;
-  fundId: string;
-  scheduleId: string;
-  totalAmount: number;
-  noticeCount: number;
-  profileId: string;
-}) {
-  if (args.totalAmount <= 0) return;
-  const fund = await db.orm.public.Fund.where((f) => f.id.eq(args.fundId)).first();
-  const fundType = (fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
-  const receivableAccount = await getSystemAccountBySubType(args.schemeId, "ACCOUNTS_RECEIVABLE", fundType);
-  const incomeAccount = await getSystemAccountBySubType(args.schemeId, "LEVY_INCOME", fundType);
-  if (!receivableAccount || !incomeAccount) return;
-
-  const entryNumber = await getNextEntryNumber(args.schemeId);
-  const today = new Date().toISOString().split("T")[0];
-  const entry = await createJournalEntry({
-    schemeId: args.schemeId,
-    entryNumber,
-    transactionDate: today,
-    description: `Levy notices issued — ${args.noticeCount} notice(s), ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
-    entryType: "AUTO",
-    sourceType: "LEVY_RAISED",
-    sourceId: args.scheduleId,
-    createdBy: args.profileId,
-    lines: [
-      { accountCodeId: receivableAccount.id, fundId: args.fundId, debit: args.totalAmount, description: "Levies receivable raised" },
-      { accountCodeId: incomeAccount.id, fundId: args.fundId, credit: args.totalAmount, description: "Levy income recognised" },
-    ],
-  });
-  await postJournalEntry(entry.id, args.profileId);
-}
-
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Load a schedule and confirm it belongs to the scheme. */
@@ -1163,13 +1128,6 @@ export async function issueScheduleNoticesAction(
       budgets: (await getBudgets(schemeId, Number(schedule.financialYear))).filter((b) => b.fundId === schedule.fundId),
     });
     if (activation) return { error: activation };
-    const firstDueDate = isSpecial
-      ? toIsoDay(schedule.dueDate)
-      : String(formData.get("firstDueDate") ?? "").trim();
-    if (!ISO_DATE.test(firstDueDate)) {
-      return { fieldErrors: { firstDueDate: "Enter the due date of the first instalment." } };
-    }
-
     const scheme = await getSchemeById(schemeId);
     if (!scheme) return { error: "Scheme not found." };
     const lots = await loadPlanLots(schemeId);
@@ -1181,9 +1139,14 @@ export async function issueScheduleNoticesAction(
     });
     if (issues.length > 0) return { error: issues.map((i) => i.message).join(" ") };
 
+    const today = sydneyToday();
+    // Levies are paid in advance: a budget levy instalment falls due on the
+    // first day of the period it covers. A special levy has its own date.
     const periodStart = isSpecial
-      ? toIsoDay(schedule.approvedAt) || firstDueDate
+      ? toIsoDay(schedule.approvedAt) || toIsoDay(schedule.dueDate)
       : financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
+    const firstDueDate = isSpecial ? toIsoDay(schedule.dueDate) : periodStart;
+    if (!ISO_DATE.test(firstDueDate)) return { error: "This special levy has no due date." };
     const plan = planNotices({
       lots,
       totalCents,
@@ -1192,28 +1155,32 @@ export async function issueScheduleNoticesAction(
       firstDueDate,
     });
 
+    // When each notice goes out: 5 weeks before it falls due. A special levy
+    // is resolved for one date and goes out now.
+    const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today) }));
+    const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`)!])).values()];
+    if (late.length && formData.get("confirmLate") !== "on") {
+      return { error: "Some instalments cannot be given 5 weeks' notice. Check them below and confirm to go ahead.", data: { late } };
+    }
+
     const first = await getNextNoticeNumber(schemeId);
     let seq = parseInt(first.replace(/\D/g, ""), 10) || 1;
-    const numbered = plan.map((n) => ({ ...n, noticeNumber: `LN-${String(seq++).padStart(4, "0")}` }));
+    const numbered = timed.map(({ n, t }) => ({ ...n, dueDate: t.dueDate, issueOn: t.issueOn, noticeNumber: `LN-${String(seq++).padStart(4, "0")}` }));
+    const goesNow = (x: { issueOn: string }) => x.issueOn <= today;
 
-    // Every notice must carry what a NSW levy notice states before any is issued.
-    const noticeDate = sydneyToday();
-    const contentInput = {
-      schemeId,
-      fundId: schedule.fundId,
-      issuerId: profile.id,
-      noticeDate,
-      isUrgentSpecialLevy: isSpecial && formData.get("urgentSpecialLevy") === "on",
-      notices: numbered.map((n) => ({
-        lotId: n.lotId,
-        lotNumber: n.lotNumber,
-        ownerId: n.ownerId,
-        noticeNumber: n.noticeNumber,
-        dueDate: n.dueDate,
-        amountCents: n.amountCents,
-      })),
-    };
-    const missing = await checkPlannedNotices(contentInput);
+    // Every notice must carry what a NSW levy notice states, checked now for
+    // all of them: those going out today, and those going out later.
+    const urgentSpecialLevy = isSpecial && formData.get("urgentSpecialLevy") === "on";
+    const toContent = (list: typeof numbered) =>
+      list.map((n) => ({ lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents }));
+    const now = numbered.filter(goesNow);
+    const later = numbered.filter((n) => !goesNow(n));
+    const missing = [
+      ...(now.length ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: today, isUrgentSpecialLevy: urgentSpecialLevy, notices: toContent(now) }) : []),
+      ...(later.length
+        ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: later.map((n) => n.issueOn).sort()[0], notices: toContent(later) })
+        : []),
+    ].filter((m, i, all) => all.findIndex((x) => x.code === m.code && x.message === m.message) === i);
     if (missing.length > 0) {
       return {
         error: "The notices cannot be issued yet. Fix the items listed and try again.",
@@ -1235,57 +1202,30 @@ export async function issueScheduleNoticesAction(
         amountDue: fromCents(n.amountCents),
       })),
     );
-    for (const notice of created) await issueLevyNotice(notice.id);
     await activateLevySchedule(scheduleId);
 
-    await postLevyRaisedJournal({
-      schemeId,
-      fundId: schedule.fundId,
-      scheduleId,
-      totalAmount: fromCents(totalCents),
-      noticeCount: created.length,
-      profileId: profile.id,
-    });
-
-    await logActivity({
-      schemeId,
-      actorId: profile.id,
-      action: "LEVY_NOTICES_ISSUED",
-      entityType: "LevySchedule",
-      entityId: scheduleId,
-      metadata: { count: created.length, total: fromCents(totalCents), firstDueDate },
-    });
-
-    // Apply owner credit to the new notices when the scheme has auto-apply on.
-    let creditAppliedCents = 0;
-    if (scheme.autoApplyOwnerCredit !== false) {
-      creditAppliedCents = await applyOwnerCredit({
+    const issueNow = created
+      .map((c, i) => ({ c, n: numbered[i] }))
+      .filter((x) => goesNow(x.n))
+      .map(({ c, n }) => ({ id: c.id, noticeNumber: n.noticeNumber, lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, dueDate: n.dueDate, amountCents: n.amountCents }));
+    const result = await issueNoticeBatch({ schemeId, scheduleId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: today, notices: issueNow, isUrgentSpecialLevy: urgentSpecialLevy });
+    const nextIssueOn = later.map((n) => n.issueOn).sort()[0] ?? null;
+    if (later.length) {
+      await logActivity({
         schemeId,
-        lotIds: [...new Set(created.map((n) => n.lotId))],
         actorId: profile.id,
+        action: "LEVY_NOTICES_PLANNED",
+        entityType: "LevySchedule",
+        entityId: scheduleId,
+        metadata: { count: later.length, issueDates: [...new Set(later.map((n) => n.issueOn))].sort(), late },
       });
     }
-
-    // Email each notice to its owner, with the notice attached as a PDF. A failed email does not undo the issue.
-    const ids = new Map(created.map((n) => [String(n.noticeNumber), n.id]));
-    const emailed = await sendIssuedNotices({
-      ...contentInput,
-      notices: contentInput.notices.map((n) => ({ ...n, noticeId: ids.get(n.noticeNumber) })),
-    });
-    await logActivity({
-      schemeId,
-      actorId: profile.id,
-      action: "LEVY_NOTICES_EMAILED",
-      entityType: "LevySchedule",
-      entityId: scheduleId,
-      metadata: { emailed, notices: created.length },
-    });
 
     revalidatePath(financePath(schemeId, "/levies"));
     revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
     return {
       success: true,
-      data: { count: created.length, emailed, creditApplied: fromCents(creditAppliedCents) },
+      data: { count: result.count, planned: later.length, nextIssueOn, emailed: result.emailed, creditApplied: fromCents(result.creditAppliedCents) },
     };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };

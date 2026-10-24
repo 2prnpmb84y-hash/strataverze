@@ -1,3 +1,4 @@
+import { issueDateFor } from "@/lib/levies/issue-timing";
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -64,7 +65,7 @@ const noticeStatusStyles: Record<string, string> = {
 };
 
 const noticeStatusLabels: Record<string, string> = {
-  DRAFT: "Draft",
+  DRAFT: "Planned",
   ISSUED: "Issued",
   PARTIALLY_PAID: "Part paid",
   PAID: "Paid",
@@ -110,13 +111,15 @@ export default async function LevyScheduleDetailPage({
     (a, b) => String(a.noticeNumber).localeCompare(String(b.noticeNumber)),
   );
 
-  const totalLevied = notices.reduce((s, n) => s + Number(n.amountDue ?? 0), 0);
+  // Planned notices (DRAFT) are not levied until they go out.
+  const issuedNotices = notices.filter((n) => String(n.status) !== "DRAFT");
+  const plannedNotices = notices.filter((n) => String(n.status) === "DRAFT");
+  const totalLevied = issuedNotices.reduce((s, n) => s + Number(n.amountDue ?? 0), 0);
+  const totalPlanned = plannedNotices.reduce((s, n) => s + Number(n.amountDue ?? 0), 0);
   const totalPaid = notices.reduce((s, n) => s + Number(n.amountPaid ?? 0), 0);
 
   // Preview of the notices this schedule will raise (before issue).
   const fyStart = financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
-  // The first due date entered at onboarding, if any.
-  const firstDue = toIsoDay(schedule.firstDueDate) || fyStart;
   const lots = status === "APPROVED" && notices.length === 0 ? await loadPlanLots(id) : [];
   const totalCents = toCents(String(schedule.budgetAmount));
   const planIssues =
@@ -130,7 +133,8 @@ export default async function LevyScheduleDetailPage({
           totalCents,
           frequency,
           periodStart: isSpecial ? toIsoDay(schedule.approvedAt ?? schedule.dueDate) : fyStart,
-          firstDueDate: isSpecial ? toIsoDay(schedule.dueDate) : firstDue,
+          // Paid in advance: each instalment falls due on the first day of its period.
+          firstDueDate: isSpecial ? toIsoDay(schedule.dueDate) : fyStart,
         })
       : [];
   const previewByLot = lots.map((lot) => {
@@ -237,7 +241,6 @@ export default async function LevyScheduleDetailPage({
               schemeId={id}
               scheduleId={scheduleId}
               isSpecial={isSpecial}
-              defaultFirstDueDate={firstDue}
               noticeCount={preview.length}
               blocked={planIssues.length > 0}
             />
@@ -253,6 +256,14 @@ export default async function LevyScheduleDetailPage({
               <span className="text-ink-muted">Total levied</span>
               <span className="text-ink tabular-nums">{formatCurrency(totalLevied)}</span>
             </div>
+            {plannedNotices.length > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-ink-muted">
+                  Planned, not yet sent ({plannedNotices.length} notice{plannedNotices.length === 1 ? "" : "s"}, each 5 weeks before it falls due)
+                </span>
+                <span className="text-ink tabular-nums">{formatCurrency(totalPlanned)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-ink-muted">Total paid</span>
               <span className="text-ink tabular-nums">{formatCurrency(totalPaid)}</span>
@@ -298,7 +309,10 @@ export default async function LevyScheduleDetailPage({
                     <div className="text-ink font-medium">
                       {notice.lot ? `Lot ${String(notice.lot.lotNumber)}` : "—"}
                     </div>
-                    <div className="text-ink-muted">Due {formatDate(notice.dueDate)}</div>
+                    <div className="text-ink-muted">
+                      Due {formatDate(notice.dueDate)}
+                      {noticeStatus === "DRAFT" && <span className="block text-xs">Goes out {formatDate(issueDateFor(toIsoDay(notice.dueDate)))}</span>}
+                    </div>
                     <div className="text-ink text-right tabular-nums">{formatCurrency(notice.amountDue)}</div>
                     <div className="text-ink text-right tabular-nums">
                       {Number(notice.amountPaid) > 0 ? `Paid ${formatCurrency(notice.amountPaid)}` : "—"}

@@ -329,9 +329,13 @@ export async function createLevyNoticesBatch(
 /**
  * Issue a levy notice — sets status to ISSUED with timestamp.
  */
+/**
+ * Issue a planned notice. Only a notice still DRAFT is issued, so two runs
+ * at once cannot both issue it: the one that loses gets null back.
+ */
 export async function issueLevyNotice(noticeId: string) {
   return db.orm.public.LevyNotice
-    .where({ id: noticeId })
+    .where((ln) => and(ln.id.eq(noticeId), ln.status.eq("DRAFT")))
     .update({
       status: "ISSUED",
       issuedAt: toTimestamp(new Date().toISOString()),
@@ -502,8 +506,9 @@ export async function getLevyNoticesForSchemes(
 ) {
   if (schemeIds.length === 0) return [];
 
+  // Issued notices only: planned ones (DRAFT) are not levied yet.
   return db.orm.public.LevyNotice
-    .where((ln) => ln.schemeId.in(schemeIds))
+    .where((ln) => and(ln.schemeId.in(schemeIds), ln.status.neq("DRAFT")))
     .include("fund")
     .orderBy((ln) => ln.dueDate.desc())
     .limit(limit)

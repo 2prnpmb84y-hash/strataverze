@@ -167,7 +167,7 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
 
   const adoptedBefore = working.find((b) => b.adoptedBeforeTakeoverOn);
   const anyDraft = working.some((b) => b.status === "DRAFT" || b.status === "PROPOSED");
-  const firstSchedule = liveSchedules.find((s) => s.firstDueDate) ?? liveSchedules[0];
+  const firstSchedule = liveSchedules[0];
   const saved: IncomeBudgetInput = {
     funds: savedFunds,
     adoption: adoptedBefore
@@ -175,7 +175,6 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
       : { kind: anyDraft ? "draft" : "before_takeover", meetingDate: "" },
     levies: {
       frequency: firstSchedule ? String(firstSchedule.frequency) : "QUARTERLY",
-      firstDueDate: firstSchedule?.firstDueDate ? toIsoDay(firstSchedule.firstDueDate) : "",
       // A schedule was made only when none of the year's notices had been raised.
       raisedBeforeTakeover: liveSchedules.length ? "none" : "",
     },
@@ -347,7 +346,6 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
         frequency: parsed.levies.frequency as OnboardingLevyFrequency,
         totalLots: data.lotCount,
         totalEntitlement: String(data.totalEntitlement) as unknown as Numeric<10, 2>,
-        firstDueDate: ts(parsed.levies.firstDueDate),
         status: adoption.kind === "before_takeover" ? "APPROVED" : "DRAFT",
         approvedAt: adoption.kind === "before_takeover" ? ts(adoption.meetingDate) : null,
         approvedBy: adoption.kind === "before_takeover" ? actorId : null,
@@ -387,7 +385,6 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
       adoption: adoption.kind === "before_takeover" ? `adopted ${adoption.meetingDate}` : "draft",
       levies: summary.schedulesOut.map((s) => ({ fundId: s.fundId, amount: formatMoney(s.levyCents) })),
       frequency: parsed.levies.frequency,
-      firstDueDate: parsed.levies.firstDueDate,
     },
   });
   return { check, saved: true };

@@ -72,7 +72,7 @@ function sp99999(): IncomeBudgetInput {
       },
     ],
     adoption: { kind: "before_takeover", meetingDate: "2026-05-20" },
-    levies: { frequency: "QUARTERLY", firstDueDate: "2026-07-01", raisedBeforeTakeover: "none" },
+    levies: { frequency: "QUARTERLY", raisedBeforeTakeover: "none" },
   };
 }
 
@@ -172,14 +172,8 @@ describe("checkIncomeBudget, SP 99999", () => {
     expect(checkIncomeBudget(input, ctx()).parsed!.adoption).toEqual({ kind: "draft" });
   });
 
-  it("needs the first levy instalment to fall due in the budget year", () => {
-    const input = sp99999();
-    input.levies.firstDueDate = "2026-06-01";
-    expect(checkIncomeBudget(input, ctx()).problems.join(" ")).toContain("must fall due in 1 July 2026 to 30 June 2027");
-  });
-
   it("does not reconcile a mid-year takeover, and says so", () => {
-    const c = checkIncomeBudget({ ...sp99999(), levies: { frequency: "QUARTERLY", firstDueDate: "2026-10-01", raisedBeforeTakeover: "none" } }, ctx("2026-09-30"));
+    const c = checkIncomeBudget({ ...sp99999(), levies: { frequency: "QUARTERLY", raisedBeforeTakeover: "none" } }, ctx("2026-09-30"));
     expect(c.notes[0]).toContain("part way through");
     expect(c.problems).toEqual([]);
     expect(Object.values(c.fundProblems).flat()).toEqual([]);
@@ -195,10 +189,10 @@ describe("levies raised before the takeover", () => {
 
   it("makes no levy schedule when the levies were already raised, so nothing is charged twice", () => {
     const input = sp99999();
-    input.levies = { frequency: "QUARTERLY", firstDueDate: "", raisedBeforeTakeover: "some" };
+    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some" };
     const c = checkIncomeBudget(input, ctx());
     expect(c.problems).toEqual([]);
-    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", firstDueDate: "", makeSchedules: false });
+    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", makeSchedules: false });
     expect(c.notes.join(" ")).toContain("they are not raised again and no levy schedule is made");
   });
 

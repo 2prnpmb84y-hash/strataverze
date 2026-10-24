@@ -9,6 +9,7 @@ import {
   checkIncomeBudget,
   instalments,
   yearLabel,
+  longDate,
   type ContextFund,
   type IncomeBudgetContext,
   type IncomeBudgetInput,
@@ -16,7 +17,13 @@ import {
   type LineType,
 } from "@/lib/onboarding/income-budget";
 import type { IncomeStatement } from "@/lib/onboarding/read-income-statement";
-import { FREQUENCY_LABELS } from "@/lib/levies/notice-plan";
+import { FREQUENCY_LABELS, INSTALMENTS_PER_YEAR, addMonths, type LevyFrequency } from "@/lib/levies/notice-plan";
+
+/** Paid in advance: each instalment falls due on the first day of its period. */
+function dueDatesFor(yearStart: string, frequency: string): string[] {
+  const n = INSTALMENTS_PER_YEAR[frequency as LevyFrequency] ?? 4;
+  return Array.from({ length: n }, (_, k) => addMonths(yearStart, (k * 12) / n));
+}
 import { readIncomeStatementAction, saveIncomeBudgetAction, type SaveIncomeBudgetState } from "./actions";
 
 /**
@@ -197,10 +204,6 @@ export function IncomeBudgetClient({
 
   const serverFundProblems = (id: string) => (state.check && !state.saved ? state.check.fundProblems[id] ?? [] : []);
   const allProblems = [...check.problems, ...Object.values(check.fundProblems).flat()];
-  const anyLevies = funds.some((f) => {
-    const fund = ctx.funds.find((x) => x.id === f.fundId)!;
-    return f.rows.some((r) => r.accountId && r.accountId === fund.levyIncomeAccountId && (parseMoney(r.budget) ?? 0) > 0);
-  });
 
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
@@ -514,19 +517,11 @@ export function IncomeBudgetClient({
               ))}
             </select>
           </label>
-          <label className="block">
-            <span className="text-ink-muted">First instalment due</span>
-            <input
-              type="date"
-              className={`${cell} mt-1`}
-              min={budgetYear.start}
-              max={budgetYear.end}
-              value={levies.firstDueDate}
-              disabled={!anyLevies || levies.raisedBeforeTakeover === "some"}
-              onChange={(e) => setLevies({ ...levies, firstDueDate: e.target.value })}
-            />
-          </label>
         </div>
+        <p className="text-sm text-ink-muted">
+          Levies are paid in advance, so each instalment falls due on the first day of its period:{" "}
+          {dueDatesFor(budgetYear.start, levies.frequency).map((d) => longDate(d)).join(", ")}. Each notice goes out 5 weeks before it falls due.
+        </p>
         <ul className="text-sm text-ink space-y-1">
           {ctx.funds.map((fund) => {
             const f = funds.find((x) => x.fundId === fund.id)!;

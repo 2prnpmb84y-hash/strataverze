@@ -55,14 +55,12 @@ export function IssueNoticesForm({
   schemeId,
   scheduleId,
   isSpecial,
-  defaultFirstDueDate,
   noticeCount,
   blocked,
 }: {
   schemeId: string;
   scheduleId: string;
   isSpecial: boolean;
-  defaultFirstDueDate: string;
   noticeCount: number;
   blocked: boolean;
 }) {
@@ -71,6 +69,7 @@ export function IssueNoticesForm({
     {},
   );
   const missing = Array.isArray(state.data?.missing) ? (state.data.missing as { code: string; message: string }[]) : [];
+  const late = Array.isArray(state.data?.late) ? (state.data.late as string[]) : [];
   return (
     <form action={formAction} className="space-y-4">
       <Message state={state} />
@@ -84,9 +83,26 @@ export function IssueNoticesForm({
           </ul>
         </div>
       )}
+      {late.length > 0 && (
+        <div className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+          <p className="font-medium">These instalments cannot be given 5 weeks&apos; notice:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            {late.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+          <label className="flex items-start gap-2">
+            <input type="checkbox" name="confirmLate" className="mt-1" />
+            <span>I confirm these notices go out today with less than 5 weeks&apos; notice (never less than the statutory 30 days).</span>
+          </label>
+        </div>
+      )}
       {state.success && (
         <p className="text-sm text-green-700">
-          Notices issued.
+          {typeof state.data?.count === "number" && state.data.count > 0 ? `${state.data.count} notice(s) issued today.` : "No notices go out today."}
+          {typeof state.data?.planned === "number" && state.data.planned > 0
+            ? ` ${state.data.planned} planned: each goes out 5 weeks before it falls due${typeof state.data?.nextIssueOn === "string" ? `, the next on ${state.data.nextIssueOn.split("-").reverse().join("/")}` : ""}.`
+            : ""}
           {typeof state.data?.emailed === "number" ? ` ${state.data.emailed} emailed to owners.` : ""}
           {typeof state.data?.creditApplied === "number" && state.data.creditApplied > 0
             ? ` $${state.data.creditApplied.toFixed(2)} of owner credit applied.`
@@ -102,18 +118,13 @@ export function IssueNoticesForm({
         </label>
       )}
       {!isSpecial && (
-        <FormField
-          label="First instalment due"
-          name="firstDueDate"
-          type="date"
-          required
-          defaultValue={defaultFirstDueDate}
-          helpText="Later instalments fall due at the same interval."
-          error={state.fieldErrors?.firstDueDate}
-        />
+        <p className="text-sm text-ink-muted">
+          Levies are paid in advance: each instalment falls due on the first day of the period it covers. Each notice goes out by email 5 weeks before
+          it falls due. Any whose 5-week mark has passed go out today, once you confirm.
+        </p>
       )}
       <Button type="submit" disabled={pending || blocked}>
-        {pending ? "Issuing..." : `Issue ${noticeCount} notice${noticeCount === 1 ? "" : "s"}`}
+        {pending ? "Saving..." : isSpecial ? `Issue ${noticeCount} notice${noticeCount === 1 ? "" : "s"}` : `Plan ${noticeCount} notice${noticeCount === 1 ? "" : "s"}`}
       </Button>
     </form>
   );

@@ -43,6 +43,14 @@ export const STATUTORY_INTEREST = {
  */
 export const LEVY_NOTICE_RULES = {
   minimumNoticeDays: 30,
+  /**
+   * StrataVerze practice, stricter than the Act: each instalment's notice goes
+   * out 5 weeks (35 days) before it falls due. Levies are paid in advance, so
+   * an ordinary levy instalment falls due on the first day of the period it
+   * covers. A notice that cannot be given 5 weeks may still go out with at
+   * least the statutory 30 days, once the Adviser confirms (24 Oct 2026).
+   */
+  issueDaysBeforeDue: 35,
   urgentSpecialLevyNoticeDays: 14,
   hardshipStatementRequiredFrom: "2025-10-27",
   source: "NSW Government, Strata levies and Strata levy notices guidance (2025)",

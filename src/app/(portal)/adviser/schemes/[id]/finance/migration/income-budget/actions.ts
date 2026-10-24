@@ -23,7 +23,7 @@ function parseInput(raw: unknown): IncomeBudgetInput | null {
       if (!str(f.fundId) || !str(f.openingBalance) || !Array.isArray(f.rows) || f.rows.length > 500) return null;
       for (const r of f.rows) if (![r.accountId, r.newAccountName, r.accountType, r.actual, r.budget].every(str)) return null;
     }
-    if (!str(v.adoption.kind) || !str(v.adoption.meetingDate) || !str(v.levies.frequency) || !str(v.levies.firstDueDate) || !str(v.levies.raisedBeforeTakeover)) return null;
+    if (!str(v.adoption.kind) || !str(v.adoption.meetingDate) || !str(v.levies.frequency)  || !str(v.levies.raisedBeforeTakeover)) return null;
     return v;
   } catch {
     return null;
