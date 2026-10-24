@@ -36,7 +36,7 @@ export default async function LoginPage({
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-md">
           <a href={MARKETING_SITE_URL} aria-label="StrataVerze home page" className="rounded-full focus-visible:outline-2 focus-visible:outline-white">
-            <LogoMark size={80} variant="white" />
+            <LogoMark size={120} variant="white" />
           </a>
           <h1 className="mt-8 text-3xl font-bold font-heading text-white leading-tight">
             Owner-first strata management
@@ -54,14 +54,14 @@ export default async function LoginPage({
           {/* Mobile logo — hidden on desktop */}
           <div className="flex justify-center mb-8 lg:hidden">
             <a href={MARKETING_SITE_URL} aria-label="StrataVerze home page">
-              <Logo size="lg" variant="gradient" />
+              <Logo size="xl" variant="dark" />
             </a>
           </div>
 
-          {/* Desktop logo — smaller, hidden on mobile */}
+          {/* Desktop logo — hidden on mobile */}
           <div className="hidden lg:flex justify-center mb-8">
             <a href={MARKETING_SITE_URL} aria-label="StrataVerze home page">
-              <Logo size="md" variant="gradient" />
+              <Logo size="lg" variant="dark" />
             </a>
           </div>
 
