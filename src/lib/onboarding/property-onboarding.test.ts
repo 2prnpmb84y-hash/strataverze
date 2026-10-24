@@ -248,6 +248,27 @@ describe("lot opening balances", () => {
     expect(tied.totals).toMatchObject({ receivableAdmin: 150000, receivableCapitalWorks: 80000, interestAdmin: 30000, interestCapitalWorks: 16000, unallocated: 50000 });
   });
 
+  it("reads amounts typed as Urbanise prints them (owing as negative), SP 99999", () => {
+    // SP 99999's balance sheet: $307.76 levies receivable (lot 14) and $160.78 paid in advance (lot 10).
+    const sheet = {
+      ...checkOpeningBalances({ ...emptyOpeningBalances(), takeoverDate: "2026-10-01" }, "2027-06-30", TODAY),
+      admin: { cashAtBank: 0, leviesReceivable: 26356, leviesInAdvance: 16078, creditors: 0, fundBalance: 0 },
+      capitalWorks: { cashAtBank: 0, leviesReceivable: 4420, leviesInAdvance: 0, creditors: 0, fundBalance: 0 },
+    };
+    const c = checkLotBalances(
+      [
+        { lotNumber: "1", admin: "-250.12", interestAdmin: "-13.44", capitalWorks: "-42.92", interestCapitalWorks: "-1.28", unallocated: "" },
+        { lotNumber: "2", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "160.78" },
+      ],
+      lots,
+      sheet,
+    );
+    expect(c.rowErrors).toEqual({});
+    expect(c.errors).toEqual([]);
+    expect(c.rows[0]).toMatchObject({ admin: 25012, interestAdmin: 1344, capitalWorks: 4292, interestCapitalWorks: 128 });
+    expect(c.totals).toMatchObject({ receivableAdmin: 26356, receivableCapitalWorks: 4420, unallocated: 16078 });
+  });
+
   it("writes each lot number as the lot is numbered, whatever case was typed", () => {
     const sheet = checkOpeningBalances({ ...emptyOpeningBalances(), takeoverDate: "2026-10-01" }, "2027-06-30", TODAY);
     const c = checkLotBalances([{ lotNumber: " a1 ", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" }], [{ lotNumber: "A1" }], sheet);
@@ -255,11 +276,11 @@ describe("lot opening balances", () => {
     expect(c.rows[0].lotNumber).toBe("A1");
   });
 
-  it("refuses unknown lots, repeated lots, negative amounts and missing lots", () => {
+  it("refuses unknown lots, repeated lots, amounts that are not money and missing lots", () => {
     const sheet = checkOpeningBalances({ ...emptyOpeningBalances(), takeoverDate: "2026-10-01" }, "2027-06-30", TODAY);
     const c = checkLotBalances(
       [
-        { lotNumber: "1", admin: "-1", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" },
+        { lotNumber: "1", admin: "12.3.4", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" },
         { lotNumber: "1", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" },
         { lotNumber: "9", admin: "", interestAdmin: "", capitalWorks: "", interestCapitalWorks: "", unallocated: "" },
       ],
@@ -267,7 +288,7 @@ describe("lot opening balances", () => {
       sheet,
     );
     expect(c.ok).toBe(false);
-    expect(c.rowErrors[0]!.join(" ")).toContain("zero or more");
+    expect(c.rowErrors[0]!.join(" ")).toContain('"12.3.4" is not an amount');
     expect(c.rowErrors[1]!.join(" ")).toContain("two opening balances");
     expect(c.rowErrors[2]!.join(" ")).toContain("not one of the building's lots");
     expect(c.errors.join(" ")).toContain("no opening balance row: 2");

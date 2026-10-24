@@ -417,13 +417,17 @@ export function checkLotBalances(
     if (!known.has(key)) problems.push(`Lot ${typed || "(blank)"} is not one of the building's lots.`);
     else if (seen.has(key)) problems.push(`Lot ${lotNumber} has two opening balances.`);
     seen.add(key);
+    // Each column says what the amount is (owed in a fund, or held as a
+    // credit), so the sign it was typed with does not matter. Urbanise, for
+    // one, prints an amount owing as negative (-250.12) and a credit as
+    // positive; other systems do the opposite.
     const amount = (label: string, value: string) => {
-      const c = parseMoney(value);
+      const c = parseMoney(value, { allowNegative: true });
       if (c === null) {
-        problems.push(`${label}: enter an amount of zero or more.`);
+        problems.push(`${label}: "${value.trim()}" is not an amount in dollars and cents.`);
         return 0;
       }
-      return c;
+      return Math.abs(c);
     };
     const admin = amount("Administrative fund levies", row.admin);
     const interestAdmin = amount("Administrative fund interest", row.interestAdmin);
