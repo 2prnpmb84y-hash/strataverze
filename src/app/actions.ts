@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,13 +27,13 @@ export async function joinWaitlistAction(email: string) {
       if (error.code === "23505") {
         return { success: true, message: "You are already on the waitlist." };
       }
-      console.error("Waitlist insert error:", error);
+      logError("Waitlist insert error:", error);
       return { error: "Something went wrong. Please try again." };
     }
 
     return { success: true, message: "You have been added to the waitlist." };
   } catch (err) {
-    console.error("Waitlist error:", err);
+    logError("Waitlist error:", err);
     return { error: "Something went wrong. Please try again." };
   }
 }

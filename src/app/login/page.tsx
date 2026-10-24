@@ -1,6 +1,7 @@
 import { LoginForm } from "./login-form";
 import { LogoMark, Logo } from "@/components/logo";
 import { sessionEndMessage } from "@/lib/auth/session-policy";
+import { authPageError, authPageMessage } from "@/lib/auth/page-messages";
 
 export const instant = false;
 
@@ -9,9 +10,12 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string; message?: string; reason?: string }>;
 }) {
-  const { error, reason } = await searchParams;
+  const params = await searchParams;
+  // Only fixed texts are shown from the address (S7), so a crafted link
+  // cannot put its own words on the sign-in page.
+  const error = authPageError(params.error);
   // Why the last session ended (timeouts, security stage S5), as fixed text.
-  const message = sessionEndMessage(reason) ?? (await searchParams).message;
+  const message = sessionEndMessage(params.reason) ?? authPageMessage(params.message);
 
   return (
     <div className="flex flex-1 min-h-screen">

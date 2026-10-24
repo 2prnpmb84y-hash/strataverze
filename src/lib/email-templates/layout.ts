@@ -1,8 +1,12 @@
+import { html, safeHref, type SafeHtml } from "./html";
+
 /**
  * Shared email layout wrapper.
  * Clean, minimal design following StrataVerze brand colours.
+ * The content must be SafeHtml (built with `html`), so every value in it
+ * has been escaped (S7, SEC-019).
  */
-export function emailLayout(content: string): string {
+export function emailLayout(content: SafeHtml): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,7 +28,7 @@ export function emailLayout(content: string): string {
           <!-- Content Card -->
           <tr>
             <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-              ${content}
+              ${content.value}
             </td>
           </tr>
           <!-- Footer -->
@@ -45,13 +49,14 @@ export function emailLayout(content: string): string {
 }
 
 /**
- * Styled primary action button for emails.
+ * Styled primary action button for emails. The link must be to the app
+ * itself; anything else becomes the app's home page.
  */
-export function emailButton(label: string, href: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+export function emailButton(label: string, href: string): SafeHtml {
+  return html`<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
   <tr>
     <td style="background-color:#00D4BF;border-radius:8px;">
-      <a href="${href}" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+      <a href="${safeHref(href)}" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
         ${label}
       </a>
     </td>

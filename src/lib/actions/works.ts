@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { feeErrorMessage } from "@/lib/billing/disclosure";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
@@ -2627,7 +2628,7 @@ export async function approveWorksInvoiceAction(schemeId: string, invoiceId: str
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof PaymentControlError) return { error: err.message };
-    console.error("approveWorksInvoiceAction error:", err);
+    logError("approveWorksInvoiceAction error:", err);
     return { error: "Failed to approve the invoice." };
   }
 }

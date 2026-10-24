@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'13a7635bbcd429c6e48f3d886f02174be2a98d2cca01aadbaef323d0b573cd4f'>;
+  StorageHashBase<'2ff14fd8da549a8902ad9e74a8cedb5a8e7a0d99dc4a8fdbc996cbf452c1156e'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1687,6 +1687,11 @@ export type FieldOutputTypes = {
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly urgency: CodecTypes['pg/text@1']['output'];
       readonly workOrderId: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly RateLimitHit: {
+      readonly hitAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly keyHash: CodecTypes['pg/text@1']['output'];
     };
     readonly ReferralIncome: {
       readonly amount: Numeric<12, 2>;
@@ -4086,6 +4091,11 @@ export type FieldInputTypes = {
       readonly urgency: CodecTypes['pg/text@1']['input'];
       readonly workOrderId: CodecTypes['pg/uuid@1']['input'];
     };
+    readonly RateLimitHit: {
+      readonly hitAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly keyHash: CodecTypes['pg/text@1']['input'];
+    };
     readonly ReferralIncome: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -6483,6 +6493,11 @@ export type StorageColumnTypes = {
       readonly supplier_id: CodecTypes['pg/uuid@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly valid_until: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    };
+    readonly rate_limit_hits: {
+      readonly hit_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly key_hash: CodecTypes['pg/text@1']['output'];
     };
     readonly referral_income: {
       readonly amount: Numeric<12, 2>;
@@ -8882,6 +8897,11 @@ export type StorageColumnInputTypes = {
       readonly supplier_id: CodecTypes['pg/uuid@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly valid_until: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+    };
+    readonly rate_limit_hits: {
+      readonly hit_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly key_hash: CodecTypes['pg/text@1']['input'];
     };
     readonly referral_income: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -11783,6 +11803,12 @@ export namespace Models {
     workOrder: public_WorkOrder;
     readonly [RelationKeys]?: 'quotes' | 'scheme' | 'workOrder';
   };
+  export type public_RateLimitHit = {
+    hitAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    keyHash: CodecTypes['pg/text@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_ReferralIncome = {
     amount: Numeric<12, 2>;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -13237,6 +13263,7 @@ export declare const models: {
     PropertyManager: Models.public_PropertyManager;
     Quote: Models.public_Quote;
     QuoteRequest: Models.public_QuoteRequest;
+    RateLimitHit: Models.public_RateLimitHit;
     ReferralIncome: Models.public_ReferralIncome;
     Scheme: Models.public_Scheme;
     SchemeBankAccount: Models.public_SchemeBankAccount;
@@ -24911,6 +24938,43 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly rate_limit_hits: {
+              columns: {
+                readonly hit_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly key_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'rate_limit_hits_key_idx';
+                  readonly columns: readonly ['key_hash', 'hit_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly referral_income: {
               columns: {
                 readonly amount: {
@@ -33638,6 +33702,10 @@ type ContractBase = Omit<
       readonly model: 'QuoteRequest';
     };
     readonly quotes: { readonly namespace: 'public' & NamespaceId; readonly model: 'Quote' };
+    readonly rate_limit_hits: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'RateLimitHit';
+    };
     readonly referral_income: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ReferralIncome';
@@ -45398,6 +45466,35 @@ type ContractBase = Omit<
                 readonly updatedAt: { readonly column: 'updated_at' };
                 readonly urgency: { readonly column: 'urgency' };
                 readonly workOrderId: { readonly column: 'work_order_id' };
+              };
+            };
+          };
+          readonly RateLimitHit: {
+            readonly fields: {
+              readonly hitAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly keyHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'rate_limit_hits';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly hitAt: { readonly column: 'hit_at' };
+                readonly id: { readonly column: 'id' };
+                readonly keyHash: { readonly column: 'key_hash' };
               };
             };
           };

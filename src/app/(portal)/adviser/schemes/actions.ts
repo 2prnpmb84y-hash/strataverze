@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { redirect } from "next/navigation";
@@ -116,7 +117,7 @@ export async function createSchemeAction(
     ) {
       throw err;
     }
-    console.error("createSchemeAction error:", err);
+    logError("createSchemeAction error:", err);
     return { error: "Failed to create scheme. Please try again." };
   }
 }
@@ -254,10 +255,9 @@ export async function parseStrataRollAction(
 
     if (fieldsFound === 0 && data.lots.length === 0) {
       // Nothing could be extracted — return debug info
-      console.warn(
-        "parseStrataRollAction: no fields extracted. Raw text preview:",
-        data.rawTextPreview?.slice(0, 500),
-      );
+      // The roll's text holds owners' names and addresses, so only its
+      // length is logged (S7, SEC-026).
+      console.warn("parseStrataRollAction: no fields extracted. Text length:", data.rawTextPreview?.length ?? 0);
       return {
         success: false,
         error:
@@ -269,7 +269,7 @@ export async function parseStrataRollAction(
 
     return { success: true, data };
   } catch (err) {
-    console.error("parseStrataRollAction error:", err);
+    logError("parseStrataRollAction error:", err);
     return {
       success: false,
       error: "Failed to parse the strata roll. Please check the file and try again.",

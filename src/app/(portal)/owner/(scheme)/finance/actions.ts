@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { siteUrl } from "@/lib/site-url";
@@ -180,15 +181,18 @@ export async function uploadPaymentConfirmationAction(
           );
         }
       } catch (err) {
-        console.error("Could not email advisers about a possible duplicate:", err);
+        logError("Could not email advisers about a possible duplicate:", err);
       }
     }
 
     revalidatePath("/owner/finance");
     return { success: true, data: { possibleDuplicate: !!duplicate } };
   } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Failed to upload payment confirmation.";
-    return { error: msg };
+    // Upload and access messages are written for people; anything else
+    // stays in the server log (S7, SEC-025).
+    const known = uploadErrorMessage(err);
+    if (known) return { error: known };
+    logError("uploadPaymentConfirmationAction error:", err);
+    return { error: "Failed to upload payment confirmation." };
   }
 }

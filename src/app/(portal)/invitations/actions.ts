@@ -8,6 +8,7 @@ import {
   getInvitationById,
 } from "@/lib/queries/invitations";
 import { logActivity } from "@/lib/queries/activity-log";
+import { hitRateLimit } from "@/lib/auth/rate-limit-db";
 
 export async function acceptInvitationAction(invitationId: string) {
   let profile;
@@ -16,6 +17,10 @@ export async function acceptInvitationAction(invitationId: string) {
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;
+  }
+
+  if (!(await hitRateLimit("invitationAccept", profile.id))) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
   }
 
   try {

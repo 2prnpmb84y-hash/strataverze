@@ -1,4 +1,5 @@
 import { emailLayout, emailButton } from "./layout";
+import { html, plainSubject } from "./html";
 
 type LevyIssuedParams = {
   recipientEmail: string;
@@ -17,7 +18,7 @@ export function levyIssuedEmail(params: LevyIssuedParams) {
     year: "numeric",
   });
 
-  const content = `
+  const content = html`
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       Levy Notice
     </h1>
@@ -42,7 +43,7 @@ export function levyIssuedEmail(params: LevyIssuedParams) {
 
   return {
     to: params.recipientEmail,
-    subject: `Levy notice: ${params.levyTitle} — $${params.amount} due ${dueDateFormatted}`,
+    subject: plainSubject(`Levy notice: ${params.levyTitle} — $${params.amount} due ${dueDateFormatted}`),
     html: emailLayout(content),
   };
 }

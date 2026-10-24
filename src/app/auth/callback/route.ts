@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { noStore } from "@/lib/http/no-store";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/auth/mfa-policy";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
@@ -24,11 +25,11 @@ export async function GET(request: Request) {
         actorAuthId: data.user?.id ?? null,
         metadata: { next: next.split("?")[0] },
       });
-      return NextResponse.redirect(`${origin}${next}`);
+      return noStore(NextResponse.redirect(`${origin}${next}`));
     }
     await recordSecurityEvent({ action: "auth.link_sign_in", outcome: "failed", reason: "link invalid or expired" });
   }
 
   // If code exchange fails, redirect to login with an error
-  return NextResponse.redirect(`${origin}/login?error=Could+not+authenticate`);
+  return noStore(NextResponse.redirect(`${origin}/login?error=Could+not+authenticate`));
 }

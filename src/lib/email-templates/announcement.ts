@@ -1,4 +1,5 @@
 import { emailLayout, emailButton } from "./layout";
+import { html, plainSubject } from "./html";
 
 type AnnouncementPublishedParams = {
   recipientEmails: string[];
@@ -27,12 +28,12 @@ export function announcementPublishedEmail(params: AnnouncementPublishedParams) 
 
   const urgentBanner =
     params.priority === "URGENT"
-      ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin:0 0 20px;font-size:13px;color:#991b1b;font-weight:600;">
+      ? html`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin:0 0 20px;font-size:13px;color:#991b1b;font-weight:600;">
           ⚠ This is an urgent announcement requiring your immediate attention.
         </div>`
       : "";
 
-  const content = `
+  const content = html`
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       ${priorityLabel}
     </h1>
@@ -59,7 +60,7 @@ ${preview}
 
   return {
     to: params.recipientEmails,
-    subject: `${priorityLabel}: ${params.title} — ${params.schemeName}`,
+    subject: plainSubject(`${priorityLabel}: ${params.title} — ${params.schemeName}`),
     html: emailLayout(content),
   };
 }

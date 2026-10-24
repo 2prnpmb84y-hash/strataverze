@@ -3909,3 +3909,15 @@ model StorageUpload {
   @@index([profileId, createdAt], map: "storage_uploads_profile_idx")
   @@map("storage_uploads")
 }
+
+/// One attempt at a rate-limited action (security stage S7, SEC-020). The key
+/// is a keyed hash (never an email address or IP address in the clear).
+/// Rows older than a day are removed hourly by pg_cron.
+model RateLimitHit {
+  id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keyHash String   @map("key_hash")
+  hitAt   DateTime @default(now()) @db.Timestamptz @map("hit_at")
+
+  @@index([keyHash, hitAt], map: "rate_limit_hits_key_idx")
+  @@map("rate_limit_hits")
+}

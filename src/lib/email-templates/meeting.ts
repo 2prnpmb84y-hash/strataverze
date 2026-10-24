@@ -1,4 +1,5 @@
 import { emailLayout, emailButton } from "./layout";
+import { html, plainSubject } from "./html";
 
 type MeetingScheduledParams = {
   recipientEmails: string[];
@@ -32,13 +33,13 @@ export function meetingScheduledEmail(params: MeetingScheduledParams) {
   });
 
   const locationRow = params.location
-    ? `<tr>
+    ? html`<tr>
         <td style="padding:4px 0;font-size:13px;color:#64748B;width:100px;">Location</td>
         <td style="padding:4px 8px;font-size:13px;color:#1A202C;">${params.location}</td>
       </tr>`
     : "";
 
-  const content = `
+  const content = html`
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       Meeting Scheduled
     </h1>
@@ -70,7 +71,7 @@ export function meetingScheduledEmail(params: MeetingScheduledParams) {
 
   return {
     to: params.recipientEmails,
-    subject: `${typeLabel}: ${params.meetingTitle} — ${dateFormatted}`,
+    subject: plainSubject(`${typeLabel}: ${params.meetingTitle} — ${dateFormatted}`),
     html: emailLayout(content),
   };
 }

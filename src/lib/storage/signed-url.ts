@@ -6,11 +6,11 @@ import { signDownload } from "@/lib/storage/server-storage";
  * publicly accessible URL.
  *
  * @param storagePath - The path within the "documents" bucket
- * @param expiresIn  - Lifetime in seconds (default 3600 = 1 hour)
+ * @param expiresIn  - Lifetime in seconds (default 300 = 5 minutes, S7 SEC-029)
  */
 export async function getSignedDocumentUrl(
   storagePath: string,
-  expiresIn = 3600,
+  expiresIn = 300,
 ): Promise<string> {
   // Signed on the server with the service role (S3): browsers have no
   // storage access of their own. Callers check the document first.

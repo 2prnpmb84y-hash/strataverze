@@ -1,3 +1,4 @@
+import { logError } from "@/lib/log";
 /**
  * Monthly StrataVerze invoice run (server side).
  *
@@ -253,7 +254,7 @@ export async function runMonthlyInvoices(month: string, now: Date = new Date()):
     try {
       results.push(await issueSchemeInvoice(s.schemeId, month, now));
     } catch (err) {
-      console.error(`[platform-invoices] Failed for scheme ${s.schemeId}:`, err);
+      logError(`[platform-invoices] Failed for scheme ${s.schemeId}:`, err);
       results.push({ schemeId: s.schemeId, outcome: "SKIPPED", reason: "Error, see logs" });
     }
   }
@@ -289,7 +290,7 @@ export async function notifyIssuedInvoices(month: string, results: InvoiceRunOut
         needsApproval: r.ledger === "RECORDED",
       });
     } catch (err) {
-      console.error(`[platform-invoices] Could not notify scheme ${r.schemeId}:`, err);
+      logError(`[platform-invoices] Could not notify scheme ${r.schemeId}:`, err);
     }
   }
 }

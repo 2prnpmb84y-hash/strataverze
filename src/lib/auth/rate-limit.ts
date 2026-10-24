@@ -1,12 +1,14 @@
 /**
  * Simple in-memory sliding-window rate limiter for auth endpoints.
  *
- * Production deployments should swap this for a Redis or Upstash-backed
- * store so the limits survive restarts and work across multiple instances.
+ * Per server instance only. The limits that must hold across instances are
+ * in rate-limit-db.ts (S7); this is their cheap first check and fallback.
  */
 
 interface RateLimitEntry {
   timestamps: number[];
+  /** The entry's own window, so clean-up never uses another limit's (S7). */
+  windowMs: number;
 }
 
 const store = new Map<string, RateLimitEntry>();
@@ -16,13 +18,13 @@ const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 let lastCleanup = Date.now();
 
-function cleanup(windowMs: number) {
+function cleanup() {
   const now = Date.now();
   if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
   lastCleanup = now;
 
   for (const [key, entry] of store) {
-    entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs);
+    entry.timestamps = entry.timestamps.filter((t) => now - t < entry.windowMs);
     if (entry.timestamps.length === 0) store.delete(key);
   }
 }
@@ -45,16 +47,17 @@ export function rateLimit(
   limit: number,
   windowMs: number,
 ): RateLimitResult {
-  cleanup(windowMs);
+  cleanup();
 
   const now = Date.now();
   let entry = store.get(key);
 
   if (!entry) {
-    entry = { timestamps: [] };
+    entry = { timestamps: [], windowMs };
     store.set(key, entry);
   }
 
+  entry.windowMs = Math.max(entry.windowMs, windowMs);
   // Remove timestamps outside the current window
   entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs);
 

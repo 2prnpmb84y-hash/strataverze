@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
@@ -200,7 +201,7 @@ function unexpectedError(err: unknown, fallback: string, keepMessages: readonly 
   if (feeError) return feeError;
   const message = err instanceof Error ? err.message : "";
   if (message && keepMessages.some((re) => re.test(message))) return message;
-  console.error(fallback, err);
+  logError(fallback, err);
   return fallback;
 }
 
@@ -1648,7 +1649,7 @@ export async function createSupplierInvoiceAction(
         correctionCount = corrections.length;
       } catch (reviewErr) {
         // The invoice exists: say so, rather than reporting it as not created.
-        console.error("Invoice review record failed:", reviewErr);
+        logError("Invoice review record failed:", reviewErr);
         reviewWarning = "The invoice was created, but the record of the extraction review could not be saved.";
       }
     }
@@ -1687,7 +1688,7 @@ export async function approveInvoiceAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof PaymentControlError) return { error: err.message };
-    console.error("approveInvoiceAction error:", err);
+    logError("approveInvoiceAction error:", err);
     return { error: "Failed to approve invoice." };
   }
 }
@@ -2726,12 +2727,10 @@ export async function extractInvoiceFromPdfAction(
     return { data, extractionId, documentId: stored.id };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    console.error("Invoice extraction error:", err);
+    logError("Invoice extraction error:", err);
     return {
-      error:
-        err instanceof Error
-          ? err.message
-          : "Failed to extract data from the PDF.",
+      // Database and library messages stay in the server log (S7, SEC-025).
+      error: "Failed to extract data from the PDF.",
     };
   }
 }

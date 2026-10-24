@@ -1,5 +1,6 @@
 import { resetPassword } from "./actions";
 import { Logo } from "@/components/logo";
+import { authPageError, authPageMessage } from "@/lib/auth/page-messages";
 
 export const instant = false;
 
@@ -8,7 +9,10 @@ export default async function ForgotPasswordPage({
 }: {
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
-  const { error, message } = await searchParams;
+  // Only fixed texts are shown from the address (S7).
+  const params = await searchParams;
+  const error = authPageError(params.error);
+  const message = authPageMessage(params.message);
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-muted px-4">

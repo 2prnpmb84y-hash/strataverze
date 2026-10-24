@@ -1,4 +1,5 @@
 "use server";
+import { logError } from "@/lib/log";
 
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
@@ -10,7 +11,7 @@ const path = (schemeId: string) => `/adviser/schemes/${schemeId}/finance/budget`
 
 function failure(err: unknown, fallback: string): BudgetActionResult {
   if (err instanceof AuthorisationError || err instanceof BudgetError) return { error: err.message };
-  console.error(fallback, err);
+  logError(fallback, err);
   return { error: fallback };
 }
 

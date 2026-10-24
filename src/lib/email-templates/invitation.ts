@@ -1,4 +1,5 @@
 import { emailLayout, emailButton } from "./layout";
+import { html, plainSubject } from "./html";
 
 const roleLabels: Record<string, string> = {
   OWNER: "Owner",
@@ -23,7 +24,7 @@ export function invitationEmail(params: InvitationEmailParams) {
     year: "numeric",
   });
 
-  const content = `
+  const content = html`
     <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#1a1a2e;">
       You've been invited
     </h1>
@@ -43,7 +44,7 @@ export function invitationEmail(params: InvitationEmailParams) {
 
   return {
     to: params.recipientEmail,
-    subject: `You've been invited to ${params.schemeName}`,
+    subject: plainSubject(`You've been invited to ${params.schemeName}`),
     html: emailLayout(content),
   };
 }
