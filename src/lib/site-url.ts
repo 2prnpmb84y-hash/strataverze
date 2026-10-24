@@ -15,6 +15,9 @@
  */
 export const PRODUCTION_SITE_URL = "https://app.strataverze.com";
 
+/** The public website (landing page), a separate Vercel project. */
+export const MARKETING_SITE_URL = "https://www.strataverze.com";
+
 function clean(url: string | undefined): string | null {
   const value = url?.trim().replace(/\/+$/, "");
   if (!value) return null;

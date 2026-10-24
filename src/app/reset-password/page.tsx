@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
+import { MARKETING_SITE_URL } from "@/lib/site-url";
 import {
   PasswordStrength,
   validatePasswordStrength,
@@ -15,7 +16,9 @@ export default function ResetPasswordPage() {
       <div className="flex flex-col flex-1 items-center justify-center bg-muted px-4">
         <div className="w-full max-w-sm text-center">
           <div className="flex justify-center mb-8">
-            <Logo size="lg" variant="gradient" />
+            <a href={MARKETING_SITE_URL} aria-label="StrataVerze home page">
+              <Logo size="lg" variant="gradient" />
+            </a>
           </div>
           <p className="text-sm text-ink-muted">Loading...</p>
         </div>
