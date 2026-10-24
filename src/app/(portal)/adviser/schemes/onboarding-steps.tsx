@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import type { RollIssue } from "@/lib/parse-strata-roll";
 import {
   auDate,
   blankLots,
@@ -55,6 +56,34 @@ function Check({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   );
 }
 
+// ─── Notes from the strata roll ─────────────────────────────────────────────
+
+const ISSUE_LABEL: Record<RollIssue["kind"], string> = { missing: "Missing", conflict: "Conflicting", uncertain: "Check" };
+
+/**
+ * What the strata roll reader could not settle (24 Oct): missing, conflicting
+ * or uncertain values, for the person to resolve. Nothing here was guessed.
+ */
+export function RollNotes({ issues, title }: { issues: readonly RollIssue[]; title: string }) {
+  if (issues.length === 0) return null;
+  return (
+    <div className="mb-5 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <p className="font-medium mb-1.5">{title}</p>
+      <ul className="space-y-1">
+        {issues.map((issue, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="shrink-0 rounded bg-white/70 px-1.5 text-xs font-medium leading-5">{ISSUE_LABEL[issue.kind]}</span>
+            <span>
+              {issue.message}
+              {issue.page && !issue.message.includes(`page ${issue.page}`) ? ` (roll page ${issue.page})` : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ─── Lots and owners ────────────────────────────────────────────────────────
 
 export function LotsStep({
@@ -65,6 +94,8 @@ export function LotsStep({
   check,
   showErrors,
   fromRoll,
+  sources = {},
+  notes = [],
 }: {
   lots: OnboardingLot[];
   onChange: (next: OnboardingLot[] | ((prev: OnboardingLot[]) => OnboardingLot[])) => void;
@@ -73,6 +104,10 @@ export function LotsStep({
   check: LotsCheck;
   showErrors: boolean;
   fromRoll: boolean;
+  /** Where each lot was read from, by lot number ("Roll page 1; owner page 2"). */
+  sources?: Record<string, string>;
+  /** What the strata roll reader flagged about the lots. */
+  notes?: readonly RollIssue[];
 }) {
   const set = (i: number, field: keyof OnboardingLot, value: string) =>
     onChange((prev) => prev.map((row, j) => (j === i ? { ...row, [field]: value } : row)));
@@ -114,6 +149,7 @@ export function LotsStep({
       </div>
 
       {showErrors && <StepProblems problems={check.errors} />}
+      <RollNotes issues={notes} title="From the strata roll: check these" />
 
       <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
         <table className="w-full min-w-[640px] text-sm">
@@ -157,6 +193,7 @@ export function LotsStep({
                       onChange={(e) => set(i, "ownerName", e.target.value)}
                     />
                     {problems && <p className="mt-1 text-xs text-red-600">{problems.join(" ")}</p>}
+                    {sources[lot.lotNumber.trim()] && <p className="mt-1 text-xs text-ink-muted">{sources[lot.lotNumber.trim()]}</p>}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <button

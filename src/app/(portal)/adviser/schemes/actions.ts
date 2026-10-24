@@ -415,10 +415,11 @@ export async function parseStrataRollAction(
       console.warn("parseStrataRollAction: no fields extracted. Text length:", data.rawTextPreview?.length ?? 0);
       return {
         success: false,
-        error:
-          "The document was read but no scheme data could be extracted. " +
-          "Please check that the file is a strata roll (not a levy notice or meeting minutes) " +
-          "and try again, or skip to enter details manually.",
+        error: /no text that can be read/.test(data.issues.at(0)?.message ?? "")
+          ? data.issues.at(0)!.message
+          : "The document was read but no scheme data could be extracted. " +
+            "Please check that the file is a strata roll (not a levy notice or meeting minutes) " +
+            "and try again, or skip to enter details manually.",
       };
     }
 

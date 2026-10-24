@@ -10,7 +10,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { createSchemeAction, type OnboardingStep, type SchemeFormState } from "./actions";
 import { StrataRollUpload } from "./strata-roll-upload";
-import type { ParsedStrataRoll } from "@/lib/parse-strata-roll";
+import type { ParsedStrataRoll, RollIssue } from "@/lib/parse-strata-roll";
 import {
   auDate,
   blankLotBalance,
@@ -26,7 +26,7 @@ import {
   type OnboardingLot,
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
-import { BalancesStep, LotBalancesStep, LotsStep, StepProblems } from "./onboarding-steps";
+import { BalancesStep, LotBalancesStep, LotsStep, RollNotes, StepProblems } from "./onboarding-steps";
 
 const STEPS = [
   { id: "upload", label: "Strata Roll" },
@@ -117,6 +117,9 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
   const [currentStep, setCurrentStep] = useState<StepId>("upload");
   const [defaults, setDefaults] = useState<Defaults>({});
   const [fromRoll, setFromRoll] = useState(false);
+  // What the roll reader flagged, and where each lot was read from (24 Oct).
+  const [rollIssues, setRollIssues] = useState<RollIssue[]>([]);
+  const [rollSources, setRollSources] = useState<Record<string, string>>({});
   const [formKey, setFormKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -268,6 +271,15 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
       })),
     );
     setFromRoll(data.lots.length > 0);
+    setRollIssues(data.issues ?? []);
+    setRollSources(
+      Object.fromEntries(
+        (data.details ?? []).map((d) => [
+          d.lotNumber,
+          [d.tablePage ? `Roll page ${d.tablePage}` : null, d.ownerPage ? `owner on page ${d.ownerPage}` : null].filter(Boolean).join("; "),
+        ]),
+      ),
+    );
     setFormKey((k) => k + 1);
     setClientProblems([]);
     setCurrentStep("details");
@@ -376,6 +388,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               )}
             </p>
             {currentStep === "details" && <StepProblems problems={problems} />}
+            <RollNotes issues={rollIssues.filter((i) => !i.lotNumber && i.field !== "financialYearEnd")} title="From the strata roll: check these" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
               <FormField
@@ -431,6 +444,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
             <h2 className="font-heading font-semibold text-ink mb-1">Address &amp; Settings</h2>
             <p className="text-sm text-ink-muted mb-6">Set the property address, financial settings, and preferences.</p>
             {currentStep === "address" && <StepProblems problems={problems} />}
+            <RollNotes issues={rollIssues.filter((i) => i.field === "financialYearEnd")} title="From the strata roll" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
               <FormField
@@ -485,6 +499,8 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               check={lotsCheck}
               showErrors={!!tried.lots}
               fromRoll={fromRoll}
+              sources={rollSources}
+              notes={rollIssues.filter((i) => i.lotNumber)}
             />
             {nav("Next: Opening Balances")}
           </Card>
