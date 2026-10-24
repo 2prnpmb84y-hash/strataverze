@@ -190,16 +190,16 @@ describe("levies raised before the takeover", () => {
   it("must be answered", () => {
     const input = sp99999();
     input.levies.raisedBeforeTakeover = "";
-    expect(checkIncomeBudget(input, ctx()).problems.join(" ")).toContain("raised any levy notices for 1 July 2026 to 30 June 2027");
+    expect(checkIncomeBudget(input, ctx()).problems.join(" ")).toContain("raised the levies for 1 July 2026 to 30 June 2027");
   });
 
-  it("makes no levy schedule when some were raised, so no instalment is charged twice", () => {
+  it("makes no levy schedule when the levies were already raised, so nothing is charged twice", () => {
     const input = sp99999();
     input.levies = { frequency: "QUARTERLY", firstDueDate: "", raisedBeforeTakeover: "some" };
     const c = checkIncomeBudget(input, ctx());
     expect(c.problems).toEqual([]);
     expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", firstDueDate: "", makeSchedules: false });
-    expect(c.notes.join(" ")).toContain("no levy schedule is made here");
+    expect(c.notes.join(" ")).toContain("they are not raised again and no levy schedule is made");
   });
 
   it("makes the schedules when none were raised", () => {

@@ -493,14 +493,14 @@ export function IncomeBudgetClient({
           notices are generated on the Levies page once the cutover has been run.
         </p>
         <fieldset className="space-y-2 text-sm">
-          <legend className="text-ink">Did the previous manager raise any levy notices for {yearLabel(budgetYear)} before the takeover?</legend>
+          <legend className="text-ink">Did the previous manager raise the levies for {yearLabel(budgetYear)} before the takeover?</legend>
           <label className="flex items-start gap-2">
             <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "none"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "none" })} className="mt-1" />
-            <span>No, none of this year&apos;s notices were raised. Make the levy schedules for the whole year.</span>
+            <span>No, they were not raised. Make the levy schedules for the whole year.</span>
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "some"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "some" })} className="mt-1" />
-            <span>Yes, some were raised. No levy schedule is made, so those instalments are not charged again.</span>
+            <span>Yes, they were raised. They are not raised again: the unpaid notices, including those not yet due, come across in the cutover.</span>
           </label>
         </fieldset>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl text-sm">

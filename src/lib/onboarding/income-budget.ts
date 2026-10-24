@@ -352,11 +352,11 @@ export function checkIncomeBudget(input: IncomeBudgetInput, ctx: IncomeBudgetCon
   const frequency = LEVY_FREQUENCIES.find((f) => f === input.levies.frequency);
   const due = input.levies.firstDueDate.trim();
   const raised = input.levies.raisedBeforeTakeover;
-  if (raised !== "none" && raised !== "some") problems.push(`Say whether the previous manager raised any levy notices for ${yearLabel(budgetYear)} before the takeover.`);
+  if (raised !== "none" && raised !== "some") problems.push(`Say whether the previous manager raised the levies for ${yearLabel(budgetYear)} before the takeover.`);
   if (raised === "some") {
     notes.push(
-      `Some of this year's levy notices were raised before the takeover. StrataVerze generates a whole year's instalments, so no levy schedule is made here, as it would charge those instalments again. ` +
-        `Bring any unpaid ones across as outstanding levy notices in the cutover, and raise the remaining instalments once that is supported.`,
+      `This year's levies were raised before the takeover, so they are not raised again and no levy schedule is made. ` +
+        `Bring every unpaid notice across in the cutover's outstanding levy notices, including those not yet due, with their original due dates.`,
     );
   }
   const anyLevies = raised !== "some" && parsedFunds.some((f) => f.levyCents > 0);
