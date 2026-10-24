@@ -94,11 +94,11 @@ SEC-014 covers these integrity gaps:
 |---|---|---|---|
 | SEC-015 | Admin pages and 10 finance list pages rely on the layout check only | R | Check in every page **Fixed 23 Oct (S1, PR #41).** |
 | SEC-016 | **Audit logging gaps.** `activity_logs` needs a scheme, so there are no auth, MFA or platform events. Rows can be altered or deleted. No outcome, IP or request context. No downloads, contact views or access denials recorded (except finance documents). Supabase Auth audit-to-database is off. Owners see the scheme's whole activity log. | V | New append-only security audit log (see Audit below) | **Fixed 23 Oct** (S6, PR #44). Tables, triggers, schedules and the Auth audit setting applied. The owner feed was already restricted in S1. |
-| SEC-017 | **Database TLS not enforced.** Supabase "Enforce SSL on incoming connections" is off. The local `DATABASE_URL` has no `sslmode`, and the production value is unconfirmed. | V | Enforce SSL (brief database reboot), add `sslmode` to the connection strings and test on a preview deployment |
+| SEC-017 | **Database TLS not enforced.** Supabase "Enforce SSL on incoming connections" is off. The local `DATABASE_URL` has no `sslmode`, and the production value is unconfirmed. | V | Enforce SSL (brief database reboot), add `sslmode` to the connection strings and test on a preview deployment **Fixed in code 24 Oct (S8, PR #49):** verified TLS for the app and the CLI. Enforce SSL in Supabase follows once #49 is live. |
 | SEC-018 | **Preview deployments use production database credentials.** All variables are scoped "Production and Preview", none marked Sensitive. | V | Separate preview database, or remove production credentials from Preview. Mark the variables Sensitive. **Fixed 24 Oct: database and service role credentials are Secret and Production only; DIRECT_URL removed from Vercel.** |
 | SEC-019 | Email templates insert user text into HTML unescaped (announcements, invitations, meetings, levies, work orders). This is a phishing vector from the StrataVerze sending address. | R | One shared escape for every value, and validate link targets **Fixed in code 23 Oct (S7, PR #46).** |
 | SEC-020 | Rate limiting is per serverless instance and in memory, applied only to login | R | Database-backed limiter on login, sign-up, forgot and reset password, invitation acceptance and search **Fixed in code 23 Oct (S7, PR #46).** Table applied to production. Supabase's own Auth API limits still apply to direct calls (see S7 as built). |
-| SEC-021 | **Dependency management.** No Dependabot, no audit in CI, Actions not pinned. `npm audit` (production) lists 14 findings: 8 high, 6 moderate. Most sit in the Prisma CLI toolchain (hono, lodash, alchemy), which is installed as a runtime dependency. `fflate` 0.8.2 has a moderate denial-of-service issue (fix 0.8.3). An unused `@prisma/client` 7 is installed. | V | Dependabot, an audit gate in CI, move the CLI to devDependencies, bump `fflate`, remove the unused client |
+| SEC-021 | **Dependency management.** No Dependabot, no audit in CI, Actions not pinned. `npm audit` (production) lists 14 findings: 8 high, 6 moderate. Most sit in the Prisma CLI toolchain (hono, lodash, alchemy), which is installed as a runtime dependency. `fflate` 0.8.2 has a moderate denial-of-service issue (fix 0.8.3). An unused `@prisma/client` 7 is installed. | V | Dependabot, an audit gate in CI, move the CLI to devDependencies, bump `fflate`, remove the unused client **Fixed in code 24 Oct (S8, PR #49):** Dependabot, pinned Actions, audit gate, Prisma 7 client removed, CLI moved to dev, fflate 0.8.3. Production audit: 0 vulnerabilities. |
 | SEC-022 | Client-asserted upload details: `fileUrl`, size and MIME type are trusted, and `resolveDocumentUrl` passes external URLs through, which makes an open redirect | R | Covered by the SEC-006 rebuild **Partly fixed 23 Oct (S1): paths limited to the scheme folder, no external URLs. Fixed in code 23 Oct (S3, PR #45): nothing the browser sends is stored, and the stored size, type and bytes are checked.** |
 | SEC-023 | Global `hasCommitteeRole` and similar checks are not tied to the scheme in hand | V | Scheme-scoped role checks **Fixed 23 Oct (S1).** |
 | SEC-024 | The search and profile actions have no rate limit and allow 2-character wildcard searches | R | Minimum length, exact email match, rate limit **Fixed 23 Oct (S1).** |
@@ -209,7 +209,7 @@ Each stage is one PR, green on lint, type-check, tests and build. Production dat
 | **S5 Sessions** (done, PR #43) | App session register, idle and absolute timeouts, revocation on disable, role change and password reset, admin "sign out everywhere" | Migration (applied 23 Oct) |
 | **S6 Audit log** (done, PR #44) | Append-only `security_audit_events` with a hash chain, event coverage, admin viewer, retention job, owner feed restricted | Migration, pg_cron, Auth audit to database (all applied 23 Oct) |
 | **S7 Web hardening** (done, PR #46) | Email escaping, error mapping, log hygiene, database-backed rate limiting, cache headers, cron comparison, signed URL default (SEC-019, 020, 025 to 029, 031, 032) | Rate limit table and purge job (applied 23 Oct) |
-| **S8 Transport and patching** | Enforce SSL and `sslmode`, preview separation, Sensitive variables, Dependabot, CI audit gate, pinned Actions, dependency clean-up (SEC-017, 018, 021) | Database reboot. Vercel settings. |
+| **S8 Transport and patching** (done, PR #49) | Enforce SSL and `sslmode`, preview separation, Sensitive variables, Dependabot, CI audit gate, pinned Actions, dependency clean-up (SEC-017, 018, 021) | Database reboot. Vercel settings. |
 | **S9 Documentation and verification** | Final register, matrix, verification report with evidence, runbook, residual risks | None |
 
 **Automated tests** (added from S0 onwards):
@@ -401,6 +401,24 @@ Uploads never used are removed daily once their link has expired (run from the e
 
 CAPTCHA (Attack Protection) is off. See Decisions needed.
 
+## Transport and patching (stage S8, as built 24 Oct)
+
+- **Database TLS** (`src/prisma/connection.ts`, `src/prisma/db.ts`).
+  - Every connection to a non-local database uses TLS.
+  - The server's certificate and host name are checked against the Supabase Root 2021 CA, bundled in the app and in `prisma/certs/` for the CLI. Fingerprint `80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA`, valid to 26 Apr 2031.
+  - TLS settings, host and port overrides in the connection string are removed.
+  - A missing or unreadable URL never falls back to plain text.
+  - Stop-gap if Supabase changes its certificate: `DATABASE_SSL=require` (encrypted, not verified), or `DATABASE_SSL_CA` with the new certificate.
+- **Verified live.** A preview deployment wrote to the production database over the verified connection (23 Oct).
+- **Enforce SSL** in Supabase is turned on only after S8 is live. Until then the database still accepts plain connections from anything else.
+- **Pipeline.**
+  - CI has a read-only token, Actions pinned to commits, and a production dependency audit that fails on high or critical.
+  - Dependabot runs weekly for npm and Actions. Prisma majors and `pg` stay pinned deliberately.
+- **Vercel (SEC-018, 24 Oct).**
+  - `DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` are Secret and Production only.
+  - `DIRECT_URL` is removed.
+  - Previews get only the two public Supabase values.
+
 ## Changes that could disrupt users
 
 1. **Enforcing database SSL** causes a database reboot of seconds to a few minutes. Best done out of hours.
@@ -458,4 +476,6 @@ CAPTCHA (Attack Protection) is off. See Decisions needed.
 - **Until part 2 of S3 is applied,** members can read and upload in their building's storage folder directly with their own session, outside the visibility rules.
 - **Direct Auth API calls.** Supabase's sign-in, sign-up, reset and code endpoints can be called with the public key, so only Supabase's own per-IP limits apply to them (see S7 as built) until CAPTCHA is on.
 - **Account lockout.** Failed sign-ins from many addresses can still reach an account's limit of 50 an hour. CAPTCHA closes this.
+- **Supabase CA expires 26 April 2031.** Replace the bundled certificate before then, or sooner if Supabase rotates it (stop-gap: `DATABASE_SSL=require`).
+- **Development tools carry advisories.** The Prisma CLI toolchain (development only, not shipped) has open advisories; CI reports them without failing the build.
 - **Session timeouts are checked on the next request.** A page left open shows its content until the next click or reload, which then signs the user out. There is no on-screen countdown.
