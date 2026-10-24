@@ -91,7 +91,7 @@ export default async function SchemeDetailPage({
     <div>
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={scheme.funds} />
-      <LotsCard id={id} lots={lots} totalLots={scheme.totalLots} />
+      <LotsCard id={id} lots={lots} totalLots={scheme.totalLots} canAddLots={!!profile?.isPlatformAdmin} />
       <LeviesCard id={id} schedules={levies} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} />
@@ -128,6 +128,7 @@ export default async function SchemeDetailPage({
         <SchemeForm
           mode="edit"
           schemeId={scheme.id}
+          lockCore={!profile?.isPlatformAdmin}
           defaults={{
             name: scheme.name,
             planNumber: scheme.planNumber,
@@ -143,14 +144,16 @@ export default async function SchemeDetailPage({
         />
       </div>
 
-      {/* Danger zone */}
-      <Card className="border-red-200">
-        <CardHeader
-          title="Danger Zone"
-          description="Irreversible actions for this scheme."
-        />
-        <DeleteSchemeButton schemeId={scheme.id} schemeName={scheme.name} />
-      </Card>
+      {/* Danger zone: deleting a building is for StrataVerze only (24 Oct). */}
+      {profile?.isPlatformAdmin && (
+        <Card className="border-red-200">
+          <CardHeader
+            title="Danger Zone"
+            description="Irreversible actions for this scheme."
+          />
+          <DeleteSchemeButton schemeId={scheme.id} schemeName={scheme.name} />
+        </Card>
+      )}
     </div>
   );
 }

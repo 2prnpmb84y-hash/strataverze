@@ -18,10 +18,8 @@ export default async function NewLotPage({
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
-  const isAdviser = scheme.memberships.some(
-    (m) => m.profileId === profile.id && m.role === "ADVISER",
-  );
-  if (!isAdviser) notFound();
+  // Lots are part of the locked building record: StrataVerze only (24 Oct).
+  if (!profile.isPlatformAdmin) notFound();
 
   return (
     <div className="max-w-3xl">

@@ -24,6 +24,8 @@ export const CAPABILITIES = {
   "members.manage": ["ADVISER"],
   /** Lots, entitlements, lot workflow records (tenants, proxies, powers of attorney). */
   "lots.manage": ["ADVISER"],
+  /** The strata roll's owner details: change of owner, owner contact details (24 Oct). */
+  "roll.manage": ["ADVISER", "COMMITTEE"],
 
   /** Ledger, bank, reconciliation, reports. The treasurer also reads finance through canReadSchemeFinance. */
   "finance.read": ["ADVISER", "ACCOUNTANT"],
