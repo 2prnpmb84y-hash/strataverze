@@ -22,7 +22,7 @@ vi.mock("@/lib/auth/mfa-enforcement", () => ({
 const SCHEME_A = "aaaaaaaa-0000-0000-0000-000000000001";
 const SCHEME_B = "bbbbbbbb-0000-0000-0000-000000000002";
 
-const caller = { id: "caller-profile", firstName: "Casey", lastName: "Caller" };
+const caller = { id: "caller-profile", firstName: "Casey", lastName: "Caller", isPlatformAdmin: false };
 
 // Roles the caller holds, per scheme. The membership mock enforces them the
 // way the real requireSchemeMembership does.
@@ -35,6 +35,11 @@ vi.mock("@/lib/auth/require-membership", async () => {
   return {
     ...actual,
     requireAuth: vi.fn(async () => caller),
+    // The locked building record (24 Oct): lots are added and removed by StrataVerze.
+    requirePlatformAdmin: vi.fn(async () => {
+      if (!caller.isPlatformAdmin) throw new actual.AuthorisationError("Only StrataVerze staff can do this.");
+      return caller;
+    }),
     requireSchemeMembership: vi.fn(async (schemeId: string, allowed: string[]) => {
       const roles = callerRoles[schemeId] ?? [];
       const role = roles.find((r) => allowed.includes(r));
@@ -200,8 +205,8 @@ const { searchProfiles } = await vi.importActual<typeof import("@/lib/queries/pr
 );
 
 // Fixtures: one of each record in scheme A and in scheme B.
-const LOT_A = { id: "lot-a", schemeId: SCHEME_A, entitlement: 10 };
-const LOT_B = { id: "lot-b", schemeId: SCHEME_B, entitlement: 10 };
+const LOT_A = { id: "lot-a", schemeId: SCHEME_A, lotNumber: "1", entitlement: 10 };
+const LOT_B = { id: "lot-b", schemeId: SCHEME_B, lotNumber: "1", entitlement: 10 };
 const MEETING_A = { id: "meeting-a", schemeId: SCHEME_A, status: "SCHEDULED", meetingType: "AGM" };
 const MEETING_A2 = { id: "meeting-a2", schemeId: SCHEME_A, status: "SCHEDULED", meetingType: "AGM" };
 const MEETING_B = { id: "meeting-b", schemeId: SCHEME_B, status: "SCHEDULED", meetingType: "AGM" };
@@ -225,6 +230,7 @@ function lotForm() {
 beforeEach(() => {
   vi.clearAllMocks();
   callerRoles = { [SCHEME_A]: ["ADVISER"] };
+  caller.isPlatformAdmin = false;
   const allLots = [LOT_A, LOT_B];
   lots.getLotInScheme.mockImplementation(async (schemeId: string, lotId: string) =>
     allLots.find((l) => l.id === lotId && l.schemeId === schemeId) ?? null,
@@ -242,6 +248,7 @@ beforeEach(() => {
 
 describe("lots (C1)", () => {
   it("deleteLotAction refuses a lot from another scheme", async () => {
+    caller.isPlatformAdmin = true;
     const r = await lotActions.deleteLotAction(SCHEME_A, LOT_B.id);
     expect(r?.error).toBe("Lot not found.");
     expect(lots.deleteLot).not.toHaveBeenCalled();
@@ -267,9 +274,23 @@ describe("lots (C1)", () => {
 
   it("an adviser of scheme B cannot act through scheme A's id", async () => {
     callerRoles = { [SCHEME_B]: ["ADVISER"], [SCHEME_A]: ["OWNER"] };
-    const r = await lotActions.deleteLotAction(SCHEME_A, LOT_A.id);
+    const r = await lotActions.updateLotAction(SCHEME_A, LOT_A.id, {}, lotForm());
     expect(r?.error).toMatch(/permission/);
+    expect(lots.updateLot).not.toHaveBeenCalled();
+  });
+
+  it("only StrataVerze removes a lot, even the building's Adviser cannot (locked record)", async () => {
+    const r = await lotActions.deleteLotAction(SCHEME_A, LOT_A.id);
+    expect(r?.error).toMatch(/StrataVerze/);
     expect(lots.deleteLot).not.toHaveBeenCalled();
+  });
+
+  it("the Adviser cannot change a lot's number or unit entitlement (locked record)", async () => {
+    const fd = lotForm();
+    fd.set("entitlement", "12");
+    const r = await lotActions.updateLotAction(SCHEME_A, LOT_A.id, {}, fd);
+    expect(r.error).toMatch(/locked building record/);
+    expect(lots.updateLot).not.toHaveBeenCalled();
   });
 });
 

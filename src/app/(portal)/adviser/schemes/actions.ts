@@ -1,11 +1,13 @@
 "use server";
+import { LOCKED_MESSAGE, LOCKED_SCHEME_FIELDS, changedLockedFields, requireRolesOrAdmin } from "@/lib/auth/building-lock";
 import { logError } from "@/lib/log";
+import { db } from "@/prisma/db";
 
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { redirect } from "next/navigation";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import { revalidatePath } from "next/cache";
-import { requireSchemeMembership, requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-membership";
+import { requirePlatformAdmin, AuthorisationError } from "@/lib/auth/require-membership";
 import {
   createScheme,
   updateScheme,
@@ -131,7 +133,26 @@ export async function updateSchemeAction(
   if (!isValid) return { fieldErrors: errors };
 
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile, isAdmin } = await requireRolesOrAdmin(schemeId, ["ADVISER"]);
+
+    // Plan number, address, total lots and total unit entitlement are part of
+    // the locked building record: StrataVerze only (24 Oct). The Adviser may
+    // change the display name, ABN and financial year end.
+    const current = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+    if (!current) return { error: "Scheme not found." };
+    const locked = changedLockedFields(LOCKED_SCHEME_FIELDS, current as Record<string, unknown>, data);
+    if (locked.length && !isAdmin) {
+      await recordSecurityEvent({
+        action: "access.denied",
+        outcome: "denied",
+        actorProfileId: profile.id,
+        schemeId,
+        resourceType: "Scheme",
+        resourceId: schemeId,
+        reason: "locked building record",
+      });
+      return { error: LOCKED_MESSAGE };
+    }
 
     await updateScheme(schemeId, data);
 
@@ -154,7 +175,8 @@ export async function updateSchemeAction(
 
 export async function deleteSchemeAction(schemeId: string) {
   try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // Deleting a building: StrataVerze only (24 Oct).
+    const profile = await requirePlatformAdmin();
     // A sensitive operation: needs an authenticator check in the last 15 minutes.
     await requireRecentMfa();
 

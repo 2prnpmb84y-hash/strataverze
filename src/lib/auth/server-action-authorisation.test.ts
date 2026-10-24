@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 
 const CHECKS =
-  /\b(requireSchemeMembership|requireSchemeAccess|requirePageAccess|requirePlatformAdmin|requireFinancialReadAccess|requireAdviserScheme|requireActiveContractorContact|requireContractorOwnership|requireCommitteeAccess|validateMeetingAccess|verifyAccess|authorise\w*|canView\w*)\s*\(/;
+  /\b(requireSchemeMembership|requireSchemeAccess|requireSchemeAccessOrAdmin|requireRolesOrAdmin|requirePageAccess|requirePlatformAdmin|requireFinancialReadAccess|requireAdviserScheme|requireActiveContractorContact|requireContractorOwnership|requireCommitteeAccess|validateMeetingAccess|verifyAccess|authorise\w*|canView\w*)\s*\(/;
 
 const ALLOWED: Record<string, string> = {
   // Public auth and marketing endpoints.

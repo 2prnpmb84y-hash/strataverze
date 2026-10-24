@@ -40,7 +40,9 @@ export async function updateLotDetailAction(
   formData: FormData,
 ) {
   try {
-    await authoriseLot(schemeId, lotId);
+    // Owner details on the strata roll: the Adviser and the committee (24 Oct).
+    await requireSchemeAccess(schemeId, "roll.manage");
+    assertInScheme(await getLotInScheme(schemeId, lotId), schemeId, "Lot");
 
     await upsertLotDetail(lotId, {
       ownerPhone: (formData.get("ownerPhone") as string) || null,
