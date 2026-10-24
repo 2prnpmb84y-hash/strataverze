@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ResetMfaForm } from "./reset-mfa-form";
+import { SignOutUserForm } from "./sign-out-user-form";
 
 /**
  * Two-step sign-in status for every user, and the administrator-assisted
@@ -18,6 +19,8 @@ export default async function AdminSecurityPage() {
 
   const profiles = await db.orm.public.Profile.orderBy((p) => p.createdAt.asc()).limit(500).all();
   const memberships = await db.orm.public.SchemeMembership.where((m) => and(m.isActive.eq(true))).limit(5000).all();
+  // Sessions the app has seen and not ended (security stage S5).
+  const openSessions = await db.orm.public.AppSession.where((s) => s.revokedAt.eq(null)).limit(5000).all();
   const admin = createAdminClient();
 
   const rows = await Promise.all(
@@ -25,7 +28,9 @@ export default async function AdminSecurityPage() {
       const { data } = await admin.auth.admin.mfa.listFactors({ userId: p.authId });
       const verified = (data?.factors ?? []).filter((f) => f.status === "verified").length;
       const mandatory = mfaMandatory(p.isPlatformAdmin, memberships.filter((m) => m.profileId === p.id));
-      return { p, verified, mandatory };
+      const mine = openSessions.filter((s) => s.profileId === p.id);
+      const lastSeen = mine.map((s) => String(s.lastSeenAt)).sort().at(-1) ?? null;
+      return { p, verified, mandatory, sessions: mine.length, lastSeen };
     }),
   );
 
@@ -35,11 +40,11 @@ export default async function AdminSecurityPage() {
       <div className="max-w-3xl space-y-6">
         <Card>
           <CardHeader
-            title="Two-step sign-in"
-            description="Required for StrataVerze staff, advisers, accountants, payment authorisers and treasurers."
+            title="Two-step sign-in and sessions"
+            description="Two-step sign-in is required for StrataVerze staff, advisers, accountants, payment authorisers and treasurers. Their sessions end after 30 minutes idle or 12 hours; everyone else's after 4 hours idle or 14 days."
           />
           <ul className="divide-y divide-line -mx-6">
-            {rows.map(({ p, verified, mandatory }) => {
+            {rows.map(({ p, verified, mandatory, sessions, lastSeen }) => {
               const name = [p.firstName, p.lastName].filter(Boolean).join(" ") || String(p.email);
               return (
                 <li key={p.id} className="px-6 py-3">
@@ -47,6 +52,11 @@ export default async function AdminSecurityPage() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-ink truncate">{name}</p>
                       <p className="text-xs text-ink-muted truncate">{String(p.email)}</p>
+                      <p className="text-xs text-ink-muted">
+                        {sessions === 0
+                          ? "No open sessions"
+                          : `${sessions} open session${sessions === 1 ? "" : "s"}, last active ${new Date(lastSeen!).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}`}
+                      </p>
                     </div>
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -56,7 +66,12 @@ export default async function AdminSecurityPage() {
                       {verified > 0 ? `On (${verified})` : mandatory ? "Required, not set up" : "Off"}
                     </span>
                   </div>
-                  {verified > 0 && p.id !== me.id && <ResetMfaForm profileId={p.id} name={name} />}
+                  {p.id !== me.id && (
+                    <div className="mt-1 flex flex-wrap gap-4">
+                      {verified > 0 && <ResetMfaForm profileId={p.id} name={name} />}
+                      {sessions > 0 && <SignOutUserForm profileId={p.id} name={name} />}
+                    </div>
+                  )}
                 </li>
               );
             })}

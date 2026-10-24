@@ -1,26 +1,17 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { and } from "@prisma/orm-postgres/orm-client";
-import { db } from "@/prisma/db";
 import { getCurrentSession } from "./current-session";
 import { AuthorisationError } from "./errors";
-import { mfaGate, mfaMandatory, recentlyVerified } from "./mfa-policy";
+import { mfaGate, recentlyVerified } from "./mfa-policy";
 
 type CurrentSession = NonNullable<Awaited<ReturnType<typeof getCurrentSession>>>;
 
 /**
- * MFA status for a session already loaded. Memoised per request for the
- * same session object, so the membership lookup runs once.
+ * MFA status for a session already loaded. Whether MFA is mandatory is
+ * worked out with the session (see session-state.ts).
  */
 export const mfaStatusFor = cache(async (session: CurrentSession) => {
-  let mandatory = !!session.profile.isPlatformAdmin;
-  if (!mandatory) {
-    const memberships = await db.orm.public.SchemeMembership
-      .where((m) => and(m.profileId.eq(session.profile.id), m.isActive.eq(true)))
-      .limit(200)
-      .all();
-    mandatory = mfaMandatory(false, memberships);
-  }
+  const mandatory = session.mfaMandatory;
   const gate = mfaGate({
     mandatory,
     verifiedFactorCount: session.verifiedFactors.length,

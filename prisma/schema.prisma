@@ -38,6 +38,8 @@ model Profile {
   /// StrataVerze staff. Not a scheme role: platform admins see platform billing across schemes.
   isPlatformAdmin Boolean          @default(false) @map("is_platform_admin")
   avatarUrl     String?            @map("avatar_url")
+  /// Every session that signed in before this time is ended (security stage S5).
+  sessionsRevokedAt DateTime?      @db.Timestamptz @map("sessions_revoked_at")
   createdAt     DateTime           @default(now()) @db.Timestamptz @map("created_at")
   updatedAt     DateTime           @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -3804,4 +3806,22 @@ model MfaFactorGrant {
 
   @@index([authUserId, action, createdAt], map: "mfa_factor_grants_user_idx")
   @@map("mfa_factor_grants")
+}
+
+/// A Supabase Auth session the app has seen (security stage S5). The id is
+/// the access token's session_id. Setting revokedAt ends the Auth session too
+/// (a database trigger deletes it from auth.sessions).
+model AppSession {
+  id              String    @id @db.Uuid
+  profileId       String    @map("profile_id") @db.Uuid
+  /// When the user signed in (the earliest amr timestamp).
+  authenticatedAt DateTime  @db.Timestamptz @map("authenticated_at")
+  firstSeenAt     DateTime  @default(now()) @db.Timestamptz @map("first_seen_at")
+  lastSeenAt      DateTime  @default(now()) @db.Timestamptz @map("last_seen_at")
+  revokedAt       DateTime? @db.Timestamptz @map("revoked_at")
+  /// idle, absolute, revoked, signed_out.
+  revokedReason   String?   @map("revoked_reason")
+
+  @@index([profileId], map: "app_sessions_profile_idx")
+  @@map("app_sessions")
 }

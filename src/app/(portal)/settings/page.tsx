@@ -3,7 +3,7 @@ import { getCurrentProfile, getProfileWithMemberships } from "@/lib/queries/prof
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ProfileForm } from "./profile-form";
-import { SignOutButton } from "./sign-out-button";
+import { SignOutButton, SignOutEverywhereButton } from "./sign-out-button";
 import { SecuritySection } from "./security-section";
 import { getMfaStatus } from "@/lib/auth/mfa-enforcement";
 import { MAX_TOTP_FACTORS } from "@/lib/auth/mfa-policy";
@@ -91,9 +91,12 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader
             title="Account"
-            description="Sign out of your StrataVerze account."
+            description="Sign out here, or on every device at once if you think someone else may be signed in to your account."
           />
-          <SignOutButton />
+          <div className="flex flex-wrap gap-3">
+            <SignOutButton />
+            <SignOutEverywhereButton />
+          </div>
         </Card>
       </div>
     </>

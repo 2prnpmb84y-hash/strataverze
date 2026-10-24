@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0f3ee913ce04edfa0ad2686eb4425c50412e53a66752439bf08b2b462e4ad4bd'>;
+  StorageHashBase<'e857737e2424cfd7d52aae3f02c055ac5b61b48fb21f3250fe68c2e2a25b3804'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -320,6 +320,15 @@ export type FieldOutputTypes = {
       readonly ruleSetState: CodecTypes['pg/text@1']['output'];
       readonly ruleSetVersion: CodecTypes['pg/text@1']['output'];
       readonly snapshot: CodecTypes['pg/jsonb@1']['output'];
+    };
+    readonly AppSession: {
+      readonly authenticatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly firstSeenAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly lastSeenAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly profileId: CodecTypes['pg/uuid@1']['output'];
+      readonly revokedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly revokedReason: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly BankTransaction: {
       readonly amount: Numeric<12, 2>;
@@ -1635,6 +1644,7 @@ export type FieldOutputTypes = {
       readonly isPlatformAdmin: CodecTypes['pg/bool@1']['output'];
       readonly lastName: CodecTypes['pg/text@1']['output'];
       readonly phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly sessionsRevokedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly PropertyManager: {
@@ -2659,6 +2669,15 @@ export type FieldInputTypes = {
       readonly ruleSetState: CodecTypes['pg/text@1']['input'];
       readonly ruleSetVersion: CodecTypes['pg/text@1']['input'];
       readonly snapshot: CodecTypes['pg/jsonb@1']['input'];
+    };
+    readonly AppSession: {
+      readonly authenticatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly firstSeenAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly lastSeenAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly profileId: CodecTypes['pg/uuid@1']['input'];
+      readonly revokedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly revokedReason: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly BankTransaction: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -3974,6 +3993,7 @@ export type FieldInputTypes = {
       readonly isPlatformAdmin: CodecTypes['pg/bool@1']['input'];
       readonly lastName: CodecTypes['pg/text@1']['input'];
       readonly phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly sessionsRevokedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly PropertyManager: {
@@ -4990,6 +5010,15 @@ export type StorageColumnTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly app_sessions: {
+      readonly authenticated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly first_seen_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly last_seen_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly profile_id: CodecTypes['pg/uuid@1']['output'];
+      readonly revoked_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly revoked_reason: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly applied_rule_sets: {
       readonly applied_at: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -6313,6 +6342,7 @@ export type StorageColumnTypes = {
       readonly is_platform_admin: CodecTypes['pg/bool@1']['output'];
       readonly last_name: CodecTypes['pg/text@1']['output'];
       readonly phone: CodecTypes['pg/text@1']['output'] | null;
+      readonly sessions_revoked_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly property_managers: {
@@ -7330,6 +7360,15 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly app_sessions: {
+      readonly authenticated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly first_seen_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly last_seen_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly profile_id: CodecTypes['pg/uuid@1']['input'];
+      readonly revoked_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly revoked_reason: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly applied_rule_sets: {
       readonly applied_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -8653,6 +8692,7 @@ export type StorageColumnInputTypes = {
       readonly is_platform_admin: CodecTypes['pg/bool@1']['input'];
       readonly last_name: CodecTypes['pg/text@1']['input'];
       readonly phone: CodecTypes['pg/text@1']['input'] | null;
+      readonly sessions_revoked_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly property_managers: {
@@ -9696,6 +9736,16 @@ export namespace Models {
     author: public_Profile;
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'author' | 'scheme';
+  };
+  export type public_AppSession = {
+    authenticatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    firstSeenAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    lastSeenAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    profileId: CodecTypes['pg/uuid@1']['output'];
+    revokedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    revokedReason: CodecTypes['pg/text@1']['output'] | null;
+    readonly [RelationKeys]?: never;
   };
   export type public_AppliedRuleSet = {
     appliedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -11358,6 +11408,7 @@ export namespace Models {
     isPlatformAdmin: CodecTypes['pg/bool@1']['output'];
     lastName: CodecTypes['pg/text@1']['output'];
     phone: CodecTypes['pg/text@1']['output'] | null;
+    sessionsRevokedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     abnLookups: public_AbnLookupRecord[];
     activityLogs: public_ActivityLog[];
@@ -12856,6 +12907,7 @@ export declare const models: {
     ActivityLog: Models.public_ActivityLog;
     AgendaItem: Models.public_AgendaItem;
     Announcement: Models.public_Announcement;
+    AppSession: Models.public_AppSession;
     AppliedRuleSet: Models.public_AppliedRuleSet;
     BankTransaction: Models.public_BankTransaction;
     BankTransactionAllocation: Models.public_BankTransactionAllocation;
@@ -13672,6 +13724,64 @@ type ContractBase = Omit<
                   };
                 },
               ];
+            };
+            readonly app_sessions: {
+              columns: {
+                readonly authenticated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly first_seen_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly last_seen_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly profile_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly revoked_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly revoked_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'app_sessions_profile_idx';
+                  readonly columns: readonly ['profile_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
             };
             readonly applied_rule_sets: {
               columns: {
@@ -24169,6 +24279,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly sessions_revoked_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly updated_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -32610,6 +32726,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Announcement';
     };
+    readonly app_sessions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AppSession';
+    };
     readonly applied_rule_sets: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AppliedRuleSet';
@@ -33786,6 +33906,64 @@ type ContractBase = Omit<
                 readonly ruleSetState: { readonly column: 'rule_set_state' };
                 readonly ruleSetVersion: { readonly column: 'rule_set_version' };
                 readonly snapshot: { readonly column: 'snapshot' };
+              };
+            };
+          };
+          readonly AppSession: {
+            readonly fields: {
+              readonly authenticatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly firstSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lastSeenAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly profileId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly revokedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly revokedReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'app_sessions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly authenticatedAt: { readonly column: 'authenticated_at' };
+                readonly firstSeenAt: { readonly column: 'first_seen_at' };
+                readonly id: { readonly column: 'id' };
+                readonly lastSeenAt: { readonly column: 'last_seen_at' };
+                readonly profileId: { readonly column: 'profile_id' };
+                readonly revokedAt: { readonly column: 'revoked_at' };
+                readonly revokedReason: { readonly column: 'revoked_reason' };
               };
             };
           };
@@ -43552,6 +43730,13 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly sessionsRevokedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -44254,6 +44439,7 @@ type ContractBase = Omit<
                 readonly isPlatformAdmin: { readonly column: 'is_platform_admin' };
                 readonly lastName: { readonly column: 'last_name' };
                 readonly phone: { readonly column: 'phone' };
+                readonly sessionsRevokedAt: { readonly column: 'sessions_revoked_at' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
             };

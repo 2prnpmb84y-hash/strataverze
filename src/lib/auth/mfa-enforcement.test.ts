@@ -22,8 +22,15 @@ vi.mock("react", async () => ({ ...(await vi.importActual<object>("react")), cac
 const { enforceMfa, requireRecentMfa, StepUpRequiredError } = await import("./mfa-enforcement");
 
 const now = Math.floor(Date.now() / 1000);
-function makeSession(opts: { admin?: boolean; factors?: number; aal?: string; totpAgo?: number | null }) {
+function makeSession(opts: {
+  admin?: boolean;
+  mandatory?: boolean;
+  factors?: number;
+  aal?: string;
+  totpAgo?: number | null;
+}) {
   return {
+    mfaMandatory: opts.mandatory ?? !!opts.admin,
     user: { id: "auth-1" },
     profile: { id: "p1", isPlatformAdmin: !!opts.admin },
     assurance: {
@@ -47,8 +54,7 @@ describe("enforceMfa", () => {
   });
 
   it("sends an adviser without an authenticator to set one up", async () => {
-    session.mockResolvedValue(makeSession({}));
-    memberships.mockResolvedValue([{ role: "ADVISER", isActive: true }]);
+    session.mockResolvedValue(makeSession({ mandatory: true }));
     await expect(enforceMfa()).rejects.toThrow("REDIRECT /mfa/setup");
   });
 
@@ -63,8 +69,7 @@ describe("enforceMfa", () => {
   });
 
   it("lets an owner without an authenticator through", async () => {
-    session.mockResolvedValue(makeSession({}));
-    memberships.mockResolvedValue([{ role: "OWNER", isActive: true }]);
+    session.mockResolvedValue(makeSession({ mandatory: false }));
     await expect(enforceMfa()).resolves.toBeUndefined();
   });
 
@@ -87,8 +92,7 @@ describe("requireRecentMfa", () => {
   });
 
   it("refuses a mandatory user with no authenticator", async () => {
-    session.mockResolvedValue(makeSession({}));
-    memberships.mockResolvedValue([{ role: "PAYMENT_AUTHORISER", isActive: true }]);
+    session.mockResolvedValue(makeSession({ mandatory: true }));
     await expect(requireRecentMfa()).rejects.toBeInstanceOf(StepUpRequiredError);
   });
 
