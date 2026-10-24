@@ -255,6 +255,7 @@ export async function getStrataRollData(schemeId: string, limit = 500) {
         m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
           .include("profile"),
       )
+      .include("lotDetail")
       .include("journalLines")
       .include("levyNotices", (ln) => ln.include("levySchedule"))
       .orderBy((l) => l.lotNumber.asc())
@@ -268,6 +269,7 @@ export async function getStrataRollData(schemeId: string, limit = 500) {
         m.where((sm) => and(sm.isActive.eq(true), sm.role.eq("OWNER")))
           .include("profile"),
       )
+      .include("lotDetail")
       .include("levyNotices", (ln) => ln.include("levySchedule"))
       .orderBy((l) => l.lotNumber.asc())
       .limit(limit)
@@ -303,7 +305,8 @@ export async function getStrataRollData(schemeId: string, limit = 500) {
       lotNumber: lot.lotNumber,
       unitNumber: lot.unitNumber,
       entitlement: lot.entitlement,
-      ownerNames: owners.join(" & "),
+      // The name as recorded on the strata roll, else the owners' accounts.
+      ownerNames: (lot as { lotDetail?: { rollOwnerName?: string | null } | null }).lotDetail?.rollOwnerName || owners.join(" & "),
       opening,
       annual: annualTotal,
       special: specialTotal,

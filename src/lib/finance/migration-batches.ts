@@ -52,6 +52,18 @@ export const SOURCE_SYSTEMS: Array<{ value: string; label: string }> = [
   { value: "other", label: "Other" },
 ];
 
+/**
+ * Cutovers prepared by property onboarding from the balances entered there.
+ * Not offered when an Adviser starts a cutover by hand.
+ */
+export const ONBOARDING_SOURCE = { value: "onboarding", label: "StrataVerze onboarding" } as const;
+
+/** The label for a cutover's source system. */
+export function sourceSystemLabel(value: string): string {
+  if (value === ONBOARDING_SOURCE.value) return ONBOARDING_SOURCE.label;
+  return SOURCE_SYSTEMS.find((s) => s.value === value)?.label ?? value;
+}
+
 export interface StagedFile {
   fileName: string;
   sha256: string;
@@ -124,8 +136,13 @@ export async function listCutovers(schemeId: string) {
   return db.orm.public.MigrationBatch.where((b) => b.schemeId.eq(schemeId)).orderBy((b) => b.createdAt.desc()).limit(50).all();
 }
 
-export async function createCutover(input: { schemeId: string; sourceSystem: string; cutoverDate: string | null; actorId: string }): Promise<string> {
-  if (!SOURCE_SYSTEMS.some((s) => s.value === input.sourceSystem)) throw new CutoverError("Choose the system the data comes from.");
+export async function createCutover(
+  input: { schemeId: string; sourceSystem: string; cutoverDate: string | null; actorId: string },
+  /** Property onboarding only: allows the "StrataVerze onboarding" source. Never set from a form. */
+  internal: { onboarding?: boolean } = {},
+): Promise<string> {
+  const onboarding = internal.onboarding === true && input.sourceSystem === ONBOARDING_SOURCE.value;
+  if (!SOURCE_SYSTEMS.some((s) => s.value === input.sourceSystem) && !onboarding) throw new CutoverError("Choose the system the data comes from.");
   const date = input.cutoverDate ? parseCutoverDate(input.cutoverDate) : null;
   if (input.cutoverDate && !date) throw new CutoverError("The cutover date is not a date.");
   const row = await db.orm.public.MigrationBatch.create({
@@ -208,6 +225,15 @@ export async function stageCutoverFile(input: {
   return { headers, mapping, missing, staged: true };
 }
 
+/**
+ * Remove a draft cutover that was never signed off. Used only when property
+ * onboarding could not stage all of its files, so no half-filled draft is
+ * left for someone to sign off.
+ */
+export async function discardDraftCutover(schemeId: string, batchId: string) {
+  await db.orm.public.MigrationBatch.where((b) => and(b.id.eq(batchId), b.schemeId.eq(schemeId), b.status.eq("DRAFT"))).deleteAndCount();
+}
+
 export async function removeCutoverFile(schemeId: string, batchId: string, dataType: CutoverDataType) {
   const batch = await loadBatch(schemeId, batchId);
   if (batch.status === "EXECUTED") throw new CutoverError("This cutover has already been executed.");
@@ -238,7 +264,7 @@ export async function getCutoverView(schemeId: string, batchId: string): Promise
   return {
     id: batch.id,
     sourceSystem: batch.sourceSystem,
-    sourceLabel: SOURCE_SYSTEMS.find((s) => s.value === batch.sourceSystem)?.label ?? batch.sourceSystem,
+    sourceLabel: sourceSystemLabel(batch.sourceSystem),
     template: template ? { status: template.status, note: template.note, references: template.references } : null,
     cutoverDate: cutoverOf(batch),
     status: batch.status,
@@ -355,7 +381,7 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
   for (const fundId of new Set(credits.map((c) => c.fundId))) await ensureLeviesInAdvanceAccount(input.schemeId, fundId);
   const entryNumber = await getNextEntryNumber(input.schemeId);
   const fy = financialYearOf(date, String(scheme.financialYearEnd ?? "06-30"));
-  const sourceLabel = SOURCE_SYSTEMS.find((s) => s.value === batch.sourceSystem)?.label ?? batch.sourceSystem;
+  const sourceLabel = sourceSystemLabel(batch.sourceSystem);
   const now = new Date().toISOString();
 
   const results = await db.transaction(async (tx) => {

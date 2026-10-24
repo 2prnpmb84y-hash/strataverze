@@ -24,6 +24,8 @@ export async function upsertLotDetail(
     isCommitteeMember?: boolean;
     paidToDate?: string | null;
     lastSettled?: string | null;
+    /** The owner's name exactly as it appears on the strata roll. */
+    rollOwnerName?: string | null;
   },
 ) {
   const existing = await getLotDetailExtended(lotId);

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { Card } from "@/components/ui/card";
+import { currentYearEnd } from "@/lib/onboarding/property-onboarding";
 import {
   createSchemeAction,
   updateSchemeAction,
@@ -39,12 +40,15 @@ export function SchemeForm({
   schemeId,
   defaults,
   lockCore = false,
+  today,
 }: {
   mode: "create" | "edit";
   schemeId?: string;
   defaults?: SchemeDefaults;
   /** The locked building record (24 Oct): only StrataVerze changes these. */
   lockCore?: boolean;
+  /** Today in Sydney (YYYY-MM-DD), from the server page: shows the current year end. */
+  today: string;
 }) {
   const action =
     mode === "create"
@@ -150,23 +154,24 @@ export function SchemeForm({
           />
 
           <FormField
-            label="Total Entitlement"
+            label="Total Unit Entitlement"
             name="totalEntitlement"
             readOnly={lockCore}
             type="number"
             required
             defaultValue={defaults?.totalEntitlement}
             placeholder="e.g. 1000"
-            helpText="Sum of all lot entitlements"
+            helpText="The aggregate unit entitlement: the lots' unit entitlements add up to it"
             error={state.fieldErrors?.totalEntitlement}
           />
 
           <FormField
             label="Financial Year End"
             name="financialYearEnd"
-            defaultValue={defaults?.financialYearEnd ?? "06-30"}
-            placeholder="MM-DD"
-            helpText="Month-day format, e.g. 06-30 for 30 June"
+            type="date"
+            required
+            defaultValue={currentYearEnd(defaults?.financialYearEnd ?? "06-30", today)}
+            helpText="The last day of the building's current financial year (day, month and year). The day and month carry forward each year."
             error={state.fieldErrors?.financialYearEnd}
           />
         </div>

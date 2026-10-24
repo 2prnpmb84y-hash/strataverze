@@ -24,6 +24,7 @@ import { LotDocuments } from "./lot-documents";
 import { DebtCollectionSection } from "./debt-collection-section";
 import { TenancyDetails } from "./tenancy-details";
 import { LotActionButtons } from "./lot-action-buttons";
+import { RollOwnerName } from "./roll-owner-name";
 import { connection } from "next/server";
 import {
   FileText,
@@ -132,7 +133,7 @@ export default async function LotDetailPage({
                     <DetailRow label="S/Plan" value={scheme.planNumber} />
                     <DetailRow label="Lot" value={lot.lotNumber} />
                     <DetailRow
-                      label="Unit"
+                      label="Unit No."
                       value={lot.unitNumber ?? "—"}
                     />
                     <DetailRow
@@ -152,8 +153,12 @@ export default async function LotDetailPage({
                       value={lot.accessoryUnit ?? "—"}
                     />
                     <DetailRow
+                      label="Unit Entitlement"
+                      value={String(lot.entitlement)}
+                    />
+                    <DetailRow
                       label="UOF"
-                      value={lot.uof ?? String(lot.entitlement)}
+                      value={lot.uof ?? "—"}
                     />
                     <DetailRow
                       label="CRN"
@@ -176,7 +181,8 @@ export default async function LotDetailPage({
                     }
                   />
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    <DetailRow label="Owner Name" value={ownerName} />
+                    <RollOwnerName schemeId={id} lotId={lotId} value={lotDetailExt?.rollOwnerName ?? null} />
+                    <DetailRow label="Owner Account" value={ownerName} />
                     <DetailRow
                       label="Phone"
                       value={lotDetailExt?.ownerPhone ?? lot.owners[0]?.phone ?? "—"}

@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'2ff14fd8da549a8902ad9e74a8cedb5a8e7a0d99dc4a8fdbc996cbf452c1156e'>;
+  StorageHashBase<'1a471e26995b885725d7c05e32cd90cf849f2079e8ba09df1980b752cbe299b8'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1209,6 +1209,7 @@ export type FieldOutputTypes = {
       readonly ownerMobile: CodecTypes['pg/text@1']['output'] | null;
       readonly ownerPhone: CodecTypes['pg/text@1']['output'] | null;
       readonly paidToDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly rollOwnerName: CodecTypes['pg/text@1']['output'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly LotPowerOfAttorney: {
@@ -3612,6 +3613,7 @@ export type FieldInputTypes = {
       readonly ownerMobile: CodecTypes['pg/text@1']['input'] | null;
       readonly ownerPhone: CodecTypes['pg/text@1']['input'] | null;
       readonly paidToDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly rollOwnerName: CodecTypes['pg/text@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly LotPowerOfAttorney: {
@@ -6000,6 +6002,7 @@ export type StorageColumnTypes = {
       readonly owner_mobile: CodecTypes['pg/text@1']['output'] | null;
       readonly owner_phone: CodecTypes['pg/text@1']['output'] | null;
       readonly paid_to_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly roll_owner_name: CodecTypes['pg/text@1']['output'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly lot_powers_of_attorney: {
@@ -8404,6 +8407,7 @@ export type StorageColumnInputTypes = {
       readonly owner_mobile: CodecTypes['pg/text@1']['input'] | null;
       readonly owner_phone: CodecTypes['pg/text@1']['input'] | null;
       readonly paid_to_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly roll_owner_name: CodecTypes['pg/text@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly lot_powers_of_attorney: {
@@ -11111,6 +11115,7 @@ export namespace Models {
     ownerMobile: CodecTypes['pg/text@1']['output'] | null;
     ownerPhone: CodecTypes['pg/text@1']['output'] | null;
     paidToDate: CodecTypes['pg/date-string@1']['output'] | null;
+    rollOwnerName: CodecTypes['pg/text@1']['output'] | null;
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     lot: public_Lot;
     readonly [RelationKeys]?: 'lot';
@@ -21224,6 +21229,12 @@ type ContractBase = Omit<
                 readonly paid_to_date: {
                   readonly dataType: 'pg/date';
                   readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly roll_owner_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -41525,6 +41536,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
               };
+              readonly rollOwnerName: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -41559,6 +41574,7 @@ type ContractBase = Omit<
                 readonly ownerMobile: { readonly column: 'owner_mobile' };
                 readonly ownerPhone: { readonly column: 'owner_phone' };
                 readonly paidToDate: { readonly column: 'paid_to_date' };
+                readonly rollOwnerName: { readonly column: 'roll_owner_name' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
             };

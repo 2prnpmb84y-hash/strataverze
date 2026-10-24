@@ -18,10 +18,27 @@ import {
   parseStrataRollPDF,
   type ParsedStrataRoll,
 } from "@/lib/parse-strata-roll";
+import {
+  checkLotBalances,
+  checkLots,
+  checkOpeningBalances,
+  checkYearEnd,
+  todayInSydney,
+  type LotBalanceInput,
+  type OnboardingLot,
+  type OpeningBalancesInput,
+} from "@/lib/onboarding/property-onboarding";
+import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
+
+/** The Add Property steps a server-side problem can send the wizard back to. */
+export type OnboardingStep = "details" | "address" | "lots" | "balances" | "lotBalances";
 
 export type SchemeFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
+  /** Onboarding: the step to show, and the problems found on it. */
+  step?: OnboardingStep;
+  stepErrors?: string[];
 };
 
 export type StrataRollParseResult = {
@@ -52,14 +69,20 @@ function validateSchemeForm(formData: FormData) {
     errors.state = "Select a valid state.";
   if (!postcode?.trim() || !/^\d{4}$/.test(postcode.trim()))
     errors.postcode = "Enter a valid 4-digit postcode.";
-  if (!totalLots || Number(totalLots) < 1)
-    errors.totalLots = "Must have at least 1 lot.";
-  if (!totalEntitlement || Number(totalEntitlement) < 1)
-    errors.totalEntitlement = "Total entitlement must be at least 1.";
+  if (!totalLots || !Number.isInteger(Number(totalLots)) || Number(totalLots) < 1)
+    errors.totalLots = "Must have at least 1 lot (a whole number).";
+  if (!totalEntitlement || !Number.isInteger(Number(totalEntitlement)) || Number(totalEntitlement) < 1)
+    errors.totalEntitlement = "Total unit entitlement must be a whole number of at least 1.";
+
+  // The end of the building's current financial year, as a full date. The
+  // day and month are stored and roll forward each year (24 Oct).
+  const yearEnd = checkYearEnd(formData.get("financialYearEnd") as string | null, todayInSydney());
+  if (!yearEnd.ok) errors.financialYearEnd = yearEnd.message;
 
   return {
     errors,
     isValid: Object.keys(errors).length === 0,
+    yearEnd: yearEnd.ok ? yearEnd.date : null,
     data: {
       name: name?.trim() ?? "",
       planNumber: planNumber?.trim() ?? "",
@@ -69,7 +92,7 @@ function validateSchemeForm(formData: FormData) {
       postcode: postcode?.trim() ?? "",
       totalLots: Number(totalLots),
       totalEntitlement: Number(totalEntitlement),
-      financialYearEnd: (formData.get("financialYearEnd") as string) || "06-30",
+      financialYearEnd: yearEnd.ok ? yearEnd.mmdd : "06-30",
       abnNumber: (formData.get("abnNumber") as string)?.trim() || undefined,
       buildingType: (formData.get("buildingType") as string)?.trim() || undefined,
       buildingClass: (formData.get("buildingClass") as string)?.trim() || undefined,
@@ -83,18 +106,110 @@ function validateSchemeForm(formData: FormData) {
   };
 }
 
+const DETAIL_FIELDS = ["name", "planNumber", "totalLots", "totalEntitlement"];
+
+/** A JSON array posted by the wizard, or null if it is missing, too large or not an array. */
+function readJsonArray(formData: FormData, name: string, maxLength: number): unknown[] | null {
+  const raw = formData.get(name);
+  if (typeof raw !== "string" || raw.length > maxLength) return null;
+  try {
+    const value = JSON.parse(raw);
+    return Array.isArray(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function readJsonObject(formData: FormData, name: string, maxLength: number): Record<string, unknown> | null {
+  const raw = formData.get(name);
+  if (typeof raw !== "string" || raw.length > maxLength) return null;
+  try {
+    const value = JSON.parse(raw);
+    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+const str = (v: unknown) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : "");
+
+function fundSheet(v: unknown) {
+  const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  return {
+    cashAtBank: str(o.cashAtBank),
+    leviesReceivable: str(o.leviesReceivable),
+    leviesInAdvance: str(o.leviesInAdvance),
+    creditors: str(o.creditors),
+    fundBalance: str(o.fundBalance),
+  };
+}
+
 export async function createSchemeAction(
   _prev: SchemeFormState,
   formData: FormData,
 ): Promise<SchemeFormState> {
-  const { errors, isValid, data } = validateSchemeForm(formData);
-  if (!isValid) return { fieldErrors: errors };
+  const { errors, isValid, data, yearEnd } = validateSchemeForm(formData);
+  if (!isValid) {
+    const onDetails = Object.keys(errors).some((k) => DETAIL_FIELDS.includes(k));
+    return { fieldErrors: errors, step: onDetails ? "details" : "address", stepErrors: Object.values(errors) };
+  }
 
+  // The onboarding steps, checked again here with the same rules the wizard
+  // shows (24 Oct). Nothing is saved unless every step passes.
+  const lotRows = readJsonArray(formData, "lotsJson", 2_000_000);
+  if (!lotRows) return { step: "lots", stepErrors: ["Enter the building's lots."] };
+  const lotsInput: OnboardingLot[] = lotRows.map((r) => {
+    const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
+    return { lotNumber: str(o.lotNumber), unitNumber: str(o.unitNumber), entitlement: str(o.entitlement), ownerName: str(o.ownerName) };
+  });
+  const lots = checkLots(lotsInput, data.totalLots, data.totalEntitlement);
+  if (!lots.ok) {
+    const rowProblems = Object.entries(lots.rowErrors).map(([i, p]) => `Row ${Number(i) + 1}: ${p.join(" ")}`);
+    return { step: "lots", stepErrors: [...lots.errors, ...rowProblems].slice(0, 20) };
+  }
+
+  const balancesRaw = readJsonObject(formData, "balancesJson", 20_000);
+  if (!balancesRaw) return { step: "balances", stepErrors: ["Enter the building's opening balances."] };
+  const balancesInput: OpeningBalancesInput = {
+    takeoverDate: str(balancesRaw.takeoverDate),
+    totalBalance: str(balancesRaw.totalBalance),
+    admin: fundSheet(balancesRaw.admin),
+    capitalWorks: fundSheet(balancesRaw.capitalWorks),
+  };
+  const balances = checkOpeningBalances(balancesInput, yearEnd, todayInSydney());
+  if (!balances.ok) return { step: "balances", stepErrors: [...Object.values(balances.fieldErrors), ...balances.errors] };
+
+  const lotBalanceRows = readJsonArray(formData, "lotBalancesJson", 2_000_000);
+  if (!lotBalanceRows) return { step: "lotBalances", stepErrors: ["Enter each lot's opening balance."] };
+  const lotBalancesInput: LotBalanceInput[] = lotBalanceRows.map((r) => {
+    const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
+    return {
+      lotNumber: str(o.lotNumber),
+      admin: str(o.admin),
+      interestAdmin: str(o.interestAdmin),
+      capitalWorks: str(o.capitalWorks),
+      interestCapitalWorks: str(o.interestCapitalWorks),
+      unallocated: str(o.unallocated),
+    };
+  });
+  const lotBalances = checkLotBalances(lotBalancesInput, lots.lots, balances);
+  if (!lotBalances.ok) {
+    const rowProblems = Object.entries(lotBalances.rowErrors).map(([i, p]) => `Lot ${lotBalancesInput[Number(i)]?.lotNumber ?? ""}: ${p.join(" ")}`);
+    return { step: "lotBalances", stepErrors: [...lotBalances.errors, ...rowProblems].slice(0, 20) };
+  }
+
+  let destination: string;
   try {
     // Buildings are onboarded by StrataVerze administrators only (SEC-002).
     const profile = await requirePlatformAdmin();
 
-    const scheme = await createScheme(data, profile.id);
+    const existing = await db.orm.public.Scheme.where((s) => s.planNumber.eq(data.planNumber)).first();
+    if (existing) {
+      const message = "A building with this plan number is already registered.";
+      return { fieldErrors: { planNumber: message }, step: "details", stepErrors: [message] };
+    }
+
+    const scheme = await createScheme(data, profile.id, lots.lots);
     await recordSecurityEvent({
       action: "scheme.created",
       outcome: "allowed",
@@ -104,7 +219,24 @@ export async function createSchemeAction(
       resourceType: "Scheme",
       resourceId: scheme.id,
     });
-    redirect(`/adviser/schemes/${scheme.id}`);
+    destination = `/adviser/schemes/${scheme.id}`;
+
+    // The opening balances become a draft cutover for the Adviser to sign
+    // off and post in Finance. The building stands even if this fails: the
+    // cutover page says so and the balances can be entered there.
+    try {
+      const batchId = await stageOnboardingCutover({
+        schemeId: scheme.id,
+        actorId: profile.id,
+        takeoverDate: balances.takeoverDate!,
+        balances,
+        lotBalances: lotBalances.rows,
+      });
+      if (batchId) destination = `/adviser/schemes/${scheme.id}/finance/migration/cutover?batch=${batchId}`;
+    } catch (err) {
+      logError("createSchemeAction: the opening balances could not be staged:", err);
+      destination = `/adviser/schemes/${scheme.id}/finance/migration/cutover?onboarding=not-staged`;
+    }
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     // redirect() throws a NEXT_REDIRECT error — rethrow it
@@ -122,6 +254,7 @@ export async function createSchemeAction(
     logError("createSchemeAction error:", err);
     return { error: "Failed to create scheme. Please try again." };
   }
+  redirect(destination);
 }
 
 export async function updateSchemeAction(

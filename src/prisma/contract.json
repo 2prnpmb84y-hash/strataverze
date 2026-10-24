@@ -12526,6 +12526,13 @@
                   "kind": "scalar"
                 }
               },
+              "rollOwnerName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -12586,6 +12593,9 @@
                 },
                 "paidToDate": {
                   "column": "paid_to_date"
+                },
+                "rollOwnerName": {
+                  "column": "roll_owner_name"
                 },
                 "updatedAt": {
                   "column": "updated_at"
@@ -40506,6 +40516,11 @@
                   "dataType": "pg/date",
                   "nullable": true
                 },
+                "roll_owner_name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "updated_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -54151,7 +54166,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "2ff14fd8da549a8902ad9e74a8cedb5a8e7a0d99dc4a8fdbc996cbf452c1156e"
+    "storageHash": "1a471e26995b885725d7c05e32cd90cf849f2079e8ba09df1980b752cbe299b8"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

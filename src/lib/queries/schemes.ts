@@ -114,6 +114,12 @@ export async function createScheme(
     debtCollection?: boolean;
   },
   adviserProfileId: string,
+  /**
+   * The building's lots from onboarding, already checked (count and unit
+   * entitlement total match the building). Each owner's name is stored as it
+   * appears on the strata roll.
+   */
+  lots: readonly { lotNumber: string; unitNumber: string | null; entitlement: number; ownerName: string | null }[] = [],
 ) {
   const created = await db.transaction(async (tx) => {
     const scheme = await tx.orm.public.Scheme.create({
@@ -158,6 +164,20 @@ export async function createScheme(
       fundType: "CAPITAL_WORKS",
       accountingBasis: defaultAccountingBasis("CAPITAL_WORKS"),
     });
+
+    // The lots, in batches, with the owner's name as on the strata roll.
+    for (let i = 0; i < lots.length; i += 500) {
+      const batch = lots.slice(i, i + 500);
+      const rows = await tx.orm.public.Lot.createAll(
+        batch.map((l) => ({ schemeId: scheme.id, lotNumber: l.lotNumber, unitNumber: l.unitNumber, entitlement: l.entitlement })),
+      );
+      const idByNumber = new Map(rows.map((r) => [r.lotNumber, r.id]));
+      const details = batch
+        .filter((l) => l.ownerName)
+        .map((l) => ({ lotId: idByNumber.get(l.lotNumber)!, rollOwnerName: l.ownerName }));
+      if (details.some((d) => !d.lotId)) throw new Error("A lot was not created.");
+      if (details.length) await tx.orm.public.LotDetail.createAll(details);
+    }
 
     return scheme;
   });

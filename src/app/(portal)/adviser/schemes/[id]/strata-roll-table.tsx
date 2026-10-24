@@ -21,7 +21,7 @@ const ROWS_PER_PAGE = 15;
 
 const filterTabs = [
   { key: "lot", label: "Lot" },
-  { key: "unit", label: "Unit" },
+  { key: "unit", label: "Unit No." },
   { key: "owner", label: "Owner" },
 ] as const;
 
@@ -120,10 +120,10 @@ export function StrataRollTable({
                 Lot
               </th>
               <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
-                Unit
+                Unit No.
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                UOE
+                Unit Entitlement
               </th>
               <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                 Owner

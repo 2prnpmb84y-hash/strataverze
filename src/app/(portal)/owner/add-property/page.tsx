@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 import { AddPropertyWizard } from "../../adviser/schemes/add-property-wizard";
 
 export default async function OwnerAddPropertyPage() {
@@ -12,7 +13,7 @@ export default async function OwnerAddPropertyPage() {
   if (!profile?.isPlatformAdmin) notFound();
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <PageHeader
         title="Add Property"
         description="Register a new property to your account."
@@ -20,7 +21,7 @@ export default async function OwnerAddPropertyPage() {
         backLabel="Properties"
       />
 
-      <AddPropertyWizard simplified />
+      <AddPropertyWizard simplified today={todayInSydney()} />
     </div>
   );
 }
