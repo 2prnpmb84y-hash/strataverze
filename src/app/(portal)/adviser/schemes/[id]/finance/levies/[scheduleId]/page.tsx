@@ -115,6 +115,8 @@ export default async function LevyScheduleDetailPage({
 
   // Preview of the notices this schedule will raise (before issue).
   const fyStart = financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
+  // The first due date entered at onboarding, if any.
+  const firstDue = toIsoDay(schedule.firstDueDate) || fyStart;
   const lots = status === "APPROVED" && notices.length === 0 ? await loadPlanLots(id) : [];
   const totalCents = toCents(String(schedule.budgetAmount));
   const planIssues =
@@ -128,7 +130,7 @@ export default async function LevyScheduleDetailPage({
           totalCents,
           frequency,
           periodStart: isSpecial ? toIsoDay(schedule.approvedAt ?? schedule.dueDate) : fyStart,
-          firstDueDate: isSpecial ? toIsoDay(schedule.dueDate) : fyStart,
+          firstDueDate: isSpecial ? toIsoDay(schedule.dueDate) : firstDue,
         })
       : [];
   const previewByLot = lots.map((lot) => {
@@ -235,7 +237,7 @@ export default async function LevyScheduleDetailPage({
               schemeId={id}
               scheduleId={scheduleId}
               isSpecial={isSpecial}
-              defaultFirstDueDate={fyStart}
+              defaultFirstDueDate={firstDue}
               noticeCount={preview.length}
               blocked={planIssues.length > 0}
             />

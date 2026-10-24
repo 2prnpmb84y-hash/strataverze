@@ -116,8 +116,8 @@ beforeEach(() => {
 });
 
 describe("createSchemeAction (property onboarding)", () => {
-  it("creates the building with its lots and owner names as on the roll, then opens the draft cutover", async () => {
-    await expect(createSchemeAction({}, form())).rejects.toThrow("REDIRECT /adviser/schemes/scheme-1/finance/migration/cutover?batch=batch-1");
+  it("creates the building with its lots and owner names as on the roll, then goes on to income, expenditure and budget", async () => {
+    await expect(createSchemeAction({}, form())).rejects.toThrow("REDIRECT /adviser/schemes/scheme-1/finance/migration/income-budget");
     expect(mocks.createScheme).toHaveBeenCalledTimes(1);
     const [data, actor, lots] = mocks.createScheme.mock.calls[0] as unknown as [Record<string, unknown>, string, unknown[]];
     expect(data).toMatchObject({ financialYearEnd: "06-30", totalLots: 2, totalEntitlement: 100 });

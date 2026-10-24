@@ -6,6 +6,7 @@
  * notes. Adopting it at the AGM stores a locked snapshot.
  */
 import { createHash } from "node:crypto";
+import { priorYearActualLines } from "./prior-year-actuals";
 import { db } from "@/prisma/db";
 import { formatAud } from "@/lib/billing/money";
 import { and } from "@prisma/orm-postgres/orm-client";
@@ -107,6 +108,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
 
   const basisEntries = toBasisEntries(entries);
   const migratedInvoices = await migratedInvoiceEntries(schemeId);
+  const priorYear = await priorYearActualLines(schemeId, prior.start, prior.end);
   const basisForFund = (fid: string) => (funds.find((f) => f.id === fid)?.accountingBasis === "ACCRUAL" ? "ACCRUAL" : "CASH") as AccountingBasis;
   const levyIncomeAccount = levyIncomeAccountPicker(levyIncomeAccounts);
   const lotNumber = (lotId: string) => String(lots.find((l) => l.id === lotId)?.lotNumber ?? "?");
@@ -115,7 +117,11 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     const onlyFund = basisEntries.map((e) => ({ ...e, lines: e.lines.filter((l) => l.fundId === f.id) }));
     const extraInvoices = migratedInvoices.map((e) => ({ ...e, lines: e.lines.filter((l) => l.fundId === f.id) }));
     const recognised = recognisedIncomeExpense({ entries: onlyFund, start, end, basisForFund, levyIncomeAccount, extraInvoices });
-    const comparative = incomeExpenseTotals(recognisedIncomeExpense({ entries: onlyFund, start: prior.start, end: prior.end, basisForFund, levyIncomeAccount, extraInvoices }));
+    // Plus last year's actuals entered at onboarding (comparatives only, never posted).
+    const comparative = incomeExpenseTotals([
+      ...recognisedIncomeExpense({ entries: onlyFund, start: prior.start, end: prior.end, basisForFund, levyIncomeAccount, extraInvoices }),
+      ...priorYear.filter((l) => l.fundId === f.id).map((l) => ({ ...l, accountSubType: null })),
+    ]);
 
     const fundNotices = notices.filter((n) => n.fundId === f.id);
     const unpaidInput = fundNotices.map((n) => ({

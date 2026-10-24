@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<string, string> = {
   FUND_CREATED: "created a fund",
   LOT_CREATED: "added a lot",
   STRATA_ROLL_UPDATED: "updated an owner's name on the strata roll",
+  ONBOARDING_INCOME_BUDGET_SAVED: "entered last year's income and expenditure and this year's budget",
 };
 
 const ACTION_ICONS: Record<string, string> = {
@@ -42,6 +43,7 @@ const ACTION_ICONS: Record<string, string> = {
   FUND_CREATED: "🏦",
   LOT_CREATED: "🏠",
   STRATA_ROLL_UPDATED: "📜",
+  ONBOARDING_INCOME_BUDGET_SAVED: "📊",
 };
 
 type ActivityEntry = {

@@ -7,6 +7,7 @@ import { spendByYear } from "@/lib/finance/capital-works-plan";
 import { levyIncomeAccountPicker, recognisedIncomeExpense, type AccountingBasis, type BasisEntry, type RecognisedLine } from "@/lib/finance/accounting-basis";
 import { LEDGER_STATUSES, inLedger } from "@/lib/finance/ledger-status";
 import { migratedInvoiceEntries } from "@/lib/finance/migrated-invoices";
+import { priorYearActualLines } from "@/lib/finance/prior-year-actuals";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -81,7 +82,14 @@ export async function getIncomeExpenseReport(
     return out;
   };
   const currentTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: startDate, end: endDate, basisForFund, levyIncomeAccount, extraInvoices }));
-  const compTotals = toTotals(recognisedIncomeExpense({ entries: basisEntries, start: compStartDate, end: compEndDate, basisForFund, levyIncomeAccount, extraInvoices }));
+  // Last year's actuals entered at onboarding (comparatives only, never posted).
+  const priorYear = (await priorYearActualLines(schemeId, compStartDate, compEndDate))
+    .filter((l) => !fundId || l.fundId === fundId)
+    .map((l): RecognisedLine => ({ ...l, accountSubType: null }));
+  const compTotals = toTotals([
+    ...recognisedIncomeExpense({ entries: basisEntries, start: compStartDate, end: compEndDate, basisForFund, levyIncomeAccount, extraInvoices }),
+    ...priorYear,
+  ]);
 
   // Build report lines
   const allCodes = new Set([

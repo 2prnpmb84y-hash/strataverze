@@ -671,7 +671,7 @@ function ReviewSummary({
 
       <p className="rounded-[var(--radius-card)] bg-mint-soft/40 border border-line px-4 py-3 text-sm text-ink">
         {anyBalance
-          ? "Creating the property also prepares a draft cutover with these opening balances. The Adviser checks it, signs it off and posts it in Finance. Nothing is posted to the ledger until then."
+          ? "Creating the property also prepares a draft cutover with these opening balances. Next you enter last year's income and expenditure, this year's budget and the levies, then the Adviser checks the cutover, signs it off and posts it in Finance. Nothing is posted to the ledger until then."
           : "No opening balances were entered, so no cutover is prepared."}
       </p>
     </div>

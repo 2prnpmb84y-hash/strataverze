@@ -336,6 +336,10 @@
       "model": "PlatformPriceBook",
       "namespace": "public"
     },
+    "prior_year_actuals": {
+      "model": "PriorYearActual",
+      "namespace": "public"
+    },
     "profiles": {
       "model": "Profile",
       "namespace": "public"
@@ -2137,6 +2141,13 @@
                   "kind": "scalar"
                 }
               },
+              "adoptedBeforeTakeoverOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
               "adoptedBy": {
                 "nullable": true,
                 "type": {
@@ -2227,6 +2238,9 @@
               "fields": {
                 "adoptedAt": {
                   "column": "adopted_at"
+                },
+                "adoptedBeforeTakeoverOn": {
+                  "column": "adopted_before_takeover_on"
                 },
                 "adoptedBy": {
                   "column": "adopted_by"
@@ -11585,6 +11599,13 @@
                   "kind": "scalar"
                 }
               },
+              "firstDueDate": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
               "frequency": {
                 "nullable": false,
                 "type": {
@@ -11741,6 +11762,9 @@
                 },
                 "financialYear": {
                   "column": "financial_year"
+                },
+                "firstDueDate": {
+                  "column": "first_due_date"
                 },
                 "frequency": {
                   "column": "frequency"
@@ -17183,6 +17207,121 @@
               },
               "namespaceId": "public",
               "table": "platform_price_book"
+            }
+          },
+          "PriorYearActual": {
+            "fields": {
+              "accountCodeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "financialYear": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "fundId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "source": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "accountCodeId": {
+                  "column": "account_code_id"
+                },
+                "amount": {
+                  "column": "amount"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "createdBy": {
+                  "column": "created_by"
+                },
+                "financialYear": {
+                  "column": "financial_year"
+                },
+                "fundId": {
+                  "column": "fund_id"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "source": {
+                  "column": "source"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "prior_year_actuals"
             }
           },
           "Profile": {
@@ -33153,6 +33292,11 @@
                   "dataType": "pg/timestamptz",
                   "nullable": true
                 },
+                "adopted_before_takeover_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
                 "adopted_by": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -40064,6 +40208,11 @@
                   "dataType": "pg/int4",
                   "nullable": false
                 },
+                "first_due_date": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
                 "frequency": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -43975,6 +44124,106 @@
                     "is_active"
                   ],
                   "name": "platform_price_book_code_is_active_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "prior_year_actuals": {
+              "columns": {
+                "account_code_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "created_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "financial_year": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "fund_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "source": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "onboarding"
+                  },
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "fund_id",
+                    "account_code_id",
+                    "financial_year"
+                  ],
+                  "name": "prior_year_actuals_fund_id_account_code_id_financial_year_key",
+                  "unique": true
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "financial_year"
+                  ],
+                  "name": "prior_year_actuals_scheme_id_financial_year_idx",
                   "unique": false
                 }
               ],
@@ -54166,7 +54415,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1a471e26995b885725d7c05e32cd90cf849f2079e8ba09df1980b752cbe299b8"
+    "storageHash": "41886fa5ed9d063a2360a3f962910d83aaebde13b54632bacca5aa82b37c687f"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

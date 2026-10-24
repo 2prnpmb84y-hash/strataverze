@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { db } from "@/prisma/db";
@@ -21,7 +22,10 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
   if (!scheme) notFound();
 
   const batches = await listCutovers(id);
-  const selectedId = batch && UUID.test(batch) && batches.some((b) => b.id === batch) ? batch : null;
+  // With no cutover chosen, open the one that matters: the executed one, else
+  // the draft onboarding prepared (hand-started drafts are easy to open by mistake).
+  const defaultBatch = batches.find((b) => b.status === "EXECUTED") ?? batches.find((b) => b.sourceSystem === ONBOARDING_SOURCE.value);
+  const selectedId = batch && UUID.test(batch) && batches.some((b) => b.id === batch) ? batch : (defaultBatch?.id ?? null);
   let view: CutoverClientView | null = null;
   if (selectedId) {
     const v = await getCutoverView(id, selectedId);
@@ -75,6 +79,15 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
           and post. The lot arrears carry the takeover date as their due date; to keep each levy&apos;s original due date (for ageing and interest),
           replace the outstanding levy notices file with the notices from the previous system before signing off. If the balance sheet had
           creditors, sign-off asks you to acknowledge the accounts payable difference until the unpaid supplier invoices are loaded.
+        </div>
+      )}
+      {selectedId && (
+        <div className="rounded-[var(--radius-card)] border border-line bg-white px-4 py-3 text-sm text-ink">
+          Onboarding also needs last year&apos;s income and expenditure, this year&apos;s budget and the levies.{" "}
+          <Link href={`/adviser/schemes/${id}/finance/migration/income-budget`} className="font-medium text-turquoise underline">
+            Enter income, expenditure and budget
+          </Link>
+          .
         </div>
       )}
       <CutoverClient

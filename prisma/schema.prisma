@@ -1536,6 +1536,8 @@ model LevySchedule {
   title            String?
   description      String?
   dueDate          DateTime?    @db.Date @map("due_date") // special levies: the single due date
+  /// The first instalment's due date, entered at onboarding.
+  firstDueDate     DateTime?    @db.Date @map("first_due_date")
   totalLots        Int          @map("total_lots")
   totalEntitlement Decimal      @db.Decimal(10, 2) @map("total_entitlement")
   status           String       @default("DRAFT") // DRAFT, APPROVED, ACTIVE, SUPERSEDED
@@ -3658,6 +3660,8 @@ model Budget {
   adoptedMotionId  String?   @map("adopted_motion_id") @db.Uuid
   adoptedAt        DateTime? @db.Timestamptz @map("adopted_at")
   adoptedBy        String?   @map("adopted_by") @db.Uuid
+  /// The date of the general meeting, held before StrataVerze took over, that adopted this budget (onboarding).
+  adoptedBeforeTakeoverOn DateTime? @db.Date @map("adopted_before_takeover_on")
   createdBy        String?   @map("created_by") @db.Uuid
   createdAt        DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt        DateTime  @default(now()) @db.Timestamptz @map("updated_at")
@@ -3921,4 +3925,23 @@ model RateLimitHit {
 
   @@index([keyHash, hitAt], map: "rate_limit_hits_key_idx")
   @@map("rate_limit_hits")
+}
+
+/// Last year's income and expenditure by fund and account, from the previous
+/// manager's statements (onboarding). Comparatives only, never posted.
+model PriorYearActual {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId      String   @map("scheme_id") @db.Uuid
+  fundId        String   @map("fund_id") @db.Uuid
+  accountCodeId String   @map("account_code_id") @db.Uuid
+  financialYear Int      @map("financial_year")
+  amount        Decimal  @db.Decimal(12, 2)
+  source        String   @default("onboarding")
+  createdBy     String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@unique([fundId, accountCodeId, financialYear])
+  @@index([schemeId, financialYear])
+  @@map("prior_year_actuals")
 }
