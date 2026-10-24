@@ -40,16 +40,29 @@ interface Item {
   size: number;
 }
 
+/** Text drawn twice at almost the same place (fake bold, shadows) is kept once. */
+function dedupe(items: readonly Item[]): Item[] {
+  const out: Item[] = [];
+  for (const item of items) {
+    if (out.some((o) => o.str === item.str && Math.abs(o.x - item.x) < 1.5 && Math.abs(o.y - item.y) < 1.5)) continue;
+    out.push(item);
+  }
+  return out;
+}
+
 /** Group a page's text items into lines and cells. Pure, so it can be tested without a PDF. */
 export function layoutLines(page: number, items: readonly Item[]): LayoutLine[] {
-  const visible = items.filter((i) => i.str.trim() !== "");
+  const visible = dedupe(items.filter((i) => i.str.trim() !== ""));
   const sorted = [...visible].sort((a, b) => b.y - a.y || a.x - b.x);
   const lines: { y: number; size: number; items: Item[] }[] = [];
   for (const item of sorted) {
     const last = lines.at(-1);
     const tolerance = Math.max(2, Math.min(item.size, last?.size ?? item.size) * 0.4);
-    if (last && Math.abs(last.y - item.y) <= tolerance) last.items.push(item);
-    else lines.push({ y: item.y, size: item.size, items: [item] });
+    if (last && Math.abs(last.y - item.y) <= tolerance) {
+      // A running baseline, so a line drifting a point or two stays one line.
+      last.y = (last.y * last.items.length + item.y) / (last.items.length + 1);
+      last.items.push(item);
+    } else lines.push({ y: item.y, size: item.size, items: [item] });
   }
   return lines.map((line) => {
     const row = [...line.items].sort((a, b) => a.x - b.x);
@@ -58,8 +71,9 @@ export function layoutLines(page: number, items: readonly Item[]): LayoutLine[] 
     for (const item of row) {
       const gap = item.x - end;
       const current = cells.at(-1);
-      // A gap wider than about half a character's height starts a new cell.
-      if (current && gap < Math.max(4, item.size * 0.6)) {
+      // A gap wider than about half a character's height starts a new cell,
+      // and so does a large overlap (text printed over other text).
+      if (current && gap < Math.max(4, item.size * 0.6) && gap > -item.size) {
         current.text += gap > item.size * 0.15 && !current.text.endsWith(" ") && !item.str.startsWith(" ") ? ` ${item.str}` : item.str;
       } else {
         cells.push({ x: item.x, text: item.str });
@@ -71,12 +85,19 @@ export function layoutLines(page: number, items: readonly Item[]): LayoutLine[] 
   });
 }
 
-/** Every page of a PDF as layout lines, top to bottom. */
-export async function readLayoutLines(data: Uint8Array): Promise<{ pages: number; lines: LayoutLine[] }> {
+export class TooManyPagesError extends Error {}
+
+/**
+ * Every page of a PDF as layout lines, top to bottom. Only level text is
+ * kept: rotated text (watermarks, side notes) is left out. A PDF with more
+ * than `maxPages` pages is refused.
+ */
+export async function readLayoutLines(data: Uint8Array, opts: { maxPages?: number } = {}): Promise<{ pages: number; lines: LayoutLine[] }> {
   const { getDocumentProxy } = await import("unpdf");
   const pdf = await getDocumentProxy(data);
   const lines: LayoutLine[] = [];
   try {
+    if (opts.maxPages && pdf.numPages > opts.maxPages) throw new TooManyPagesError(`The PDF has ${pdf.numPages} pages; at most ${opts.maxPages} can be read.`);
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const content = await page.getTextContent();
@@ -85,6 +106,7 @@ export async function readLayoutLines(data: Uint8Array): Promise<{ pages: number
         const i = raw as { str?: unknown; transform?: unknown; width?: unknown; height?: unknown };
         if (typeof i.str !== "string" || !Array.isArray(i.transform)) continue;
         const t = i.transform as number[];
+        if (Math.abs(Number(t[1]) || 0) > 0.01 || Math.abs(Number(t[2]) || 0) > 0.01) continue; // rotated or skewed
         items.push({
           str: i.str,
           x: Number(t[4]) || 0,
@@ -97,6 +119,6 @@ export async function readLayoutLines(data: Uint8Array): Promise<{ pages: number
     }
     return { pages: pdf.numPages, lines };
   } finally {
-    await pdf.cleanup().catch(() => {});
+    await pdf.loadingTask.destroy().catch(() => {});
   }
 }

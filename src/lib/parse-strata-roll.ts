@@ -63,6 +63,8 @@ export type RollIssueKind = "missing" | "conflict" | "uncertain";
 
 export type RollIssue = {
   kind: RollIssueKind;
+  /** A stable code for issues the app acts on. */
+  code?: "no-text" | "no-lots";
   /** The lot it concerns, when it is about one lot. */
   lotNumber?: string;
   field?: string;
@@ -352,15 +354,15 @@ function extractTotalLots(text: string): number | null {
 function extractTotalEntitlement(text: string): number | null {
   // "Aggregate Units of Entitlement: 2400"
   const agg = text.match(
-    /Aggregate\s+(?:Units?\s+(?:of\s+)?)?Entitlement\s*[:–\-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /Aggregate[ \t]+(?:Units?[ \t]+(?:of[ \t]+)?)?Entitlement[ \t]*[:–\-]?[ \t]*(\d[\d,]*(?:\.\d+)?)/i,
   );
-  if (agg) return parseFloat(agg[1].replace(",", ""));
+  if (agg) return parseFloat(agg[1].replace(/,/g, ""));
 
   // "Total Entitlement: 2400" or "Total UOE: 2400"
   const total = text.match(
-    /Total\s+(?:Units?\s+(?:of\s+)?)?(?:Entitlement|UOE)\s*[:–\-]?\s*(\d+(?:[.,]\d+)?)/i,
+    /Total[ \t]+(?:Units?[ \t]+(?:of[ \t]+)?)?(?:Entitlement|UOE)[ \t]*[:–\-]?[ \t]*(\d[\d,]*(?:\.\d+)?)/i,
   );
-  if (total) return parseFloat(total[1].replace(",", ""));
+  if (total) return parseFloat(total[1].replace(/,/g, ""));
 
   return null;
 }
@@ -407,7 +409,7 @@ function linesFromLayout(lines: readonly LayoutLine[]): Line[] {
   return lines.map((l) => ({ page: l.page, text: l.text, cells: l.cells }));
 }
 
-const STATE_RE = /\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\b/;
+const isLabel = (text: string) => /[:?]$/.test(text.trim());
 
 /** "1 Bennelong Point, Sydney NSW 2000" → its parts, or null when it is not that shape. */
 function splitAddress(full: string): { address: string; suburb: string; state: string; postcode: string } | null {
@@ -416,17 +418,27 @@ function splitAddress(full: string): { address: string; suburb: string; state: s
   return { address: m[1].trim(), suburb: m[2].trim(), state: m[3], postcode: m[4] };
 }
 
-/** Label and value pairs on one line: "Lot:", "1", "Unit No:", "1" → {lot: "1", "unit no": "1"}. */
+/**
+ * Label and value pairs on one line: "Lot:", "1", "Unit No:", "1" →
+ * [{lot, 1}, {unit no, 1}]. A value is every cell up to the next label, so
+ * two email addresses printed side by side both stay.
+ */
 function pairsOf(line: Line): { label: string; value: string; valueX: number | null }[] {
   const out: { label: string; value: string; valueX: number | null }[] = [];
   const cells = line.cells;
   for (let i = 0; i < cells.length; i++) {
     const c = cells.at(i)!;
-    if (!/[:?]$/.test(c.text)) continue;
-    const next = cells.at(i + 1);
-    const hasValue = next !== undefined && !/[:?]$/.test(next.text);
-    out.push({ label: c.text.replace(/[:?]$/, "").trim().toLowerCase(), value: hasValue ? next.text.trim() : "", valueX: hasValue ? next.x : null });
-    if (hasValue) i++;
+    if (!isLabel(c.text)) continue;
+    const values: { x: number; text: string }[] = [];
+    while (i + 1 < cells.length && !isLabel(cells.at(i + 1)!.text)) {
+      values.push(cells.at(i + 1)!);
+      i++;
+    }
+    out.push({
+      label: c.text.replace(/[:?]$/, "").trim().toLowerCase(),
+      value: values.map((v) => v.text.trim()).join(" ").trim(),
+      valueX: values.at(0)?.x ?? null,
+    });
   }
   return out;
 }
@@ -435,50 +447,84 @@ function pairsOf(line: Line): { label: string; value: string; valueX: number | n
 /*  Urbanise Strata: Owners Corporation Roll                           */
 /* ------------------------------------------------------------------ */
 
-const URBANISE_LOT_PAGE = /^Owners Corporation Roll - Lot:\s*([^,\s]+)\s*,\s*Unit:\s*(\S*)/i;
+const URBANISE_LOT_PAGE = /^Owners Corporation Roll - Lot:\s*([^,\s]+)\s*,\s*Unit:\s*([^\s(]*)/i;
 
+/** Only a roll with Urbanise's per-lot pages, or its printed-from footer, is read as Urbanise. */
 function isUrbaniseRoll(lines: readonly Line[]): boolean {
-  return lines.some((l) => /OWNERS CORPORATION ROLL/i.test(l.text)) && lines.some((l) => URBANISE_LOT_PAGE.test(l.text) || /Registered Lot Owner/i.test(l.text));
+  return (
+    lines.some((l) => /OWNERS CORPORATION ROLL/i.test(l.text)) &&
+    lines.some((l) => URBANISE_LOT_PAGE.test(l.text) || /Printed from Urbanise/i.test(l.text))
+  );
 }
 
 type TableRow = { lotNumber: string; unitNumber: string | null; entitlement: number; page: number };
 
-/** The roll's lot table: "Lot | Unit | Lot Liab | Lot Ent" rows, then the printed totals. */
-function urbaniseLotTable(lines: readonly Line[]): { rows: TableRow[]; totalEntitlement: number | null; page: number | null } {
-  const headerIndex = lines.findIndex((l) => {
-    const t = l.cells.map((c) => c.text.toLowerCase());
-    return t.length >= 3 && t.at(0) === "lot" && t.includes("unit") && t.some((x) => /lot ent|entitlement/.test(x));
-  });
-  if (headerIndex < 0) return { rows: [], totalEntitlement: null, page: null };
+const NUMBER = /^\d[\d,]*(?:\.\d+)?$/;
+const toNumber = (t: string | undefined) => (t && NUMBER.test(t.replace(/\s/g, "")) ? Number(t.replace(/[,\s]/g, "")) : null);
+
+/** Page furniture that may sit between table rows when the table runs onto a new page. */
+function isFurniture(line: Line): boolean {
+  return /Owners Corporation for Plan|OWNERS CORPORATION ROLL|Printed from|Printed \d|Page \d+|Plan Information|Entitlement Information|Insurance Information/i.test(line.text);
+}
+
+function isTableHeader(line: Line): boolean {
+  const t = line.cells.map((c) => c.text.toLowerCase());
+  return t.length >= 3 && t.at(0) === "lot" && t.includes("unit") && t.some((x) => /lot ent|entitlement/.test(x));
+}
+
+/**
+ * The roll's lot table: "Lot | Unit | Lot Liab | Lot Ent" rows, then the
+ * printed totals. It may run over several pages (page furniture and a
+ * repeated header are skipped). A cell is only taken when it sits under a
+ * column; anything else on the line (an insurance panel beside the table)
+ * is left alone. A row that cannot be read is reported, not used, and does
+ * not end the table.
+ */
+function urbaniseLotTable(lines: readonly Line[]): { rows: TableRow[]; totalEntitlement: number | null; page: number | null; issues: RollIssue[] } {
+  const issues: RollIssue[] = [];
+  const headerIndex = lines.findIndex(isTableHeader);
+  if (headerIndex < 0) return { rows: [], totalEntitlement: null, page: null, issues };
   const header = lines.at(headerIndex)!;
   const col = (pred: (t: string) => boolean) => header.cells.find((c) => pred(c.text.toLowerCase()))?.x ?? null;
-  const xs = {
+  const xs: Record<"lot" | "unit" | "liab" | "ent", number | null> = {
     lot: col((t) => t === "lot"),
     unit: col((t) => t === "unit"),
-    ent: col((t) => /lot ent|entitlement/.test(t)),
     liab: col((t) => /liab/.test(t)),
+    ent: col((t) => /lot ent|entitlement/.test(t)),
   };
-  const columns = (Object.entries(xs).filter(([, x]) => x !== null) as [keyof typeof xs, number][]);
+  const columns = (Object.entries(xs).filter(([, x]) => x !== null) as [keyof typeof xs, number][]).sort((a, b) => a[1] - b[1]);
+  const gaps = columns.slice(1).map((c, i) => c[1] - columns.at(i)![1]);
+  const reach = Math.max(8, Math.min(...gaps) / 2);
+
   const rows: TableRow[] = [];
   let totalEntitlement: number | null = null;
+  let misses = 0;
   for (const line of lines.slice(headerIndex + 1)) {
-    if (line.page !== header.page) break;
+    if (URBANISE_LOT_PAGE.test(line.text)) break; // the lot pages begin
+    if (isTableHeader(line) || isFurniture(line)) continue;
     const byCol: Partial<Record<keyof typeof xs, string>> = {};
+    let clash = false;
     for (const cell of line.cells) {
       const nearest = columns.reduce((best, c) => (Math.abs(c[1] - cell.x) < Math.abs(best[1] - cell.x) ? c : best));
-      byCol[nearest[0]] = cell.text.trim();
+      if (Math.abs(nearest[1] - cell.x) > reach) continue; // not under a column
+      if (byCol[nearest[0]] !== undefined) clash = true;
+      else byCol[nearest[0]] = cell.text.trim();
     }
-    const ent = byCol.ent && /^\d+(?:\.\d+)?$/.test(byCol.ent.replace(/,/g, "")) ? Number(byCol.ent.replace(/,/g, "")) : null;
-    if (byCol.lot && /^[A-Za-z0-9-]{1,10}$/.test(byCol.lot) && ent !== null) {
+    const ent = toNumber(byCol.ent);
+    if (byCol.lot && /^[A-Za-z0-9-]{1,10}$/.test(byCol.lot) && ent !== null && !clash) {
       rows.push({ lotNumber: byCol.lot, unitNumber: byCol.unit || null, entitlement: ent, page: line.page });
-    } else if (!byCol.lot && ent !== null) {
+      misses = 0;
+    } else if (!byCol.lot && ent !== null && !clash) {
       totalEntitlement = ent;
       break;
-    } else {
+    } else if (Object.keys(byCol).length) {
+      issues.push({ kind: "uncertain", page: line.page, message: `A line in the roll's lot table could not be read: "${line.text.replace(/\s{2,}/g, " ")}" (page ${line.page}). Check whether it is a lot.` });
+      if (++misses >= 3) break;
+    } else if (++misses >= 3) {
       break;
     }
   }
-  return { rows, totalEntitlement, page: header.page };
+  return { rows, totalEntitlement, page: header.page, issues };
 }
 
 type LotPage = {
@@ -486,6 +532,8 @@ type LotPage = {
   unitNumber: string | null;
   entitlement: number | null;
   owner: string | null;
+  /** More than one "Registered Lot Owner" line was printed. */
+  ownerLines: number;
   corporateOwner: string | null;
   corporateId: string | null;
   ownerAddress: string | null;
@@ -493,6 +541,8 @@ type LotPage = {
   committeeMember: boolean | null;
   page: number;
 };
+
+const SECTION_HEADING = /^\d+\s+[A-Z][A-Z &/()'-]{5,}$/;
 
 /** Each lot's own pages: "Owners Corporation Roll - Lot: n, Unit: m" and its owner section. */
 function urbaniseLotPages(lines: readonly Line[]): Map<string, LotPage> {
@@ -504,11 +554,14 @@ function urbaniseLotPages(lines: readonly Line[]): Map<string, LotPage> {
     const head = line.text.match(URBANISE_LOT_PAGE);
     if (head) {
       const lotNumber = head[1];
+      // The same lot continuing onto another page keeps its place in it.
+      if ((current as LotPage | null)?.lotNumber === lotNumber) continue;
       current = lots.get(lotNumber) ?? {
         lotNumber,
         unitNumber: head[2] || null,
         entitlement: null,
         owner: null,
+        ownerLines: 0,
         corporateOwner: null,
         corporateId: null,
         ownerAddress: null,
@@ -522,9 +575,23 @@ function urbaniseLotPages(lines: readonly Line[]): Map<string, LotPage> {
       continue;
     }
     if (!current) continue;
-    if (/^\d+\s+PLAN & LOT INFORMATION/i.test(line.text)) section = "lot";
-    else if (/^\d+\s+CURRENT OWNER INFORMATION/i.test(line.text)) section = "owner";
-    else if (/^\d+\s+[A-Z ]{6,}$/.test(line.text.replace(/\s{2,}/g, " "))) section = "other";
+    if (isFurniture(line) && !pairsOf(line).length) continue;
+    const flat = line.text.replace(/\s{2,}/g, " ");
+    if (/^\d+\s+PLAN & LOT INFORMATION/i.test(flat)) {
+      section = "lot";
+      last = null;
+      continue;
+    }
+    if (/^\d+\s+CURRENT OWNER INFORMATION/i.test(flat)) {
+      section = "owner";
+      last = null;
+      continue;
+    }
+    if (SECTION_HEADING.test(flat)) {
+      section = "other";
+      last = null;
+      continue;
+    }
 
     const pairs = pairsOf(line);
     // A line with one cell under the previous value continues it (a long name or address).
@@ -538,11 +605,14 @@ function urbaniseLotPages(lines: readonly Line[]): Map<string, LotPage> {
       if (label === "tenant") section = "tenant";
       if (section === "lot") {
         if (label === "unit no" && value) current.unitNumber = value;
-        if (label === "lot entitlement" && /^\d+$/.test(value.replace(/,/g, ""))) current.entitlement = Number(value.replace(/,/g, ""));
+        if (label === "lot entitlement" && toNumber(value) !== null) current.entitlement = toNumber(value);
       }
       if (section === "owner") {
         if (label === "registered lot owner") {
-          current.owner = value || null;
+          if (value) {
+            current.ownerLines++;
+            current.owner = current.owner ? `${current.owner} and ${value}` : value;
+          }
           if (valueX !== null) last = { field: "owner", x: valueX };
         } else if (label === "corporate owner") {
           current.corporateOwner = value || null;
@@ -563,10 +633,8 @@ function urbaniseLotPages(lines: readonly Line[]): Map<string, LotPage> {
   return lots;
 }
 
-function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
-  const issues: RollIssue[] = [];
-  const schemePages: ParsedStrataRoll["schemePages"] = {};
-  const scheme: ParsedSchemeData = {
+function emptyScheme(): ParsedSchemeData {
+  return {
     name: null,
     planNumber: null,
     address: null,
@@ -579,6 +647,12 @@ function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
     financialYearEnd: null,
     buildingType: null,
   };
+}
+
+function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
+  const issues: RollIssue[] = [];
+  const schemePages: ParsedStrataRoll["schemePages"] = {};
+  const scheme = emptyScheme();
 
   // Scheme details, from the first page that has them.
   for (const line of lines) {
@@ -598,7 +672,7 @@ function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
         schemePages.address = schemePages.suburb = schemePages.state = schemePages.postcode = line.page;
       }
     }
-    const plan = !scheme.planNumber && line.text.match(/\bPlan No\.?\s*([A-Za-z]{0,3}\s*\d{1,7})\b/i);
+    const plan = !scheme.planNumber && line.text.match(/\bPlan No\.?:?\s*((?:SP|PS|CP|DP)?\s*\d{1,7})\b/i);
     if (plan) {
       scheme.planNumber = plan[1].replace(/\s+/g, " ").trim().toUpperCase();
       schemePages.planNumber = line.page;
@@ -615,13 +689,23 @@ function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
   if (scheme.planNumber?.toUpperCase().startsWith("SP")) scheme.buildingType = "STRATA";
 
   const table = urbaniseLotTable(lines);
+  issues.push(...table.issues);
   const pages = urbaniseLotPages(lines);
 
-  // The lot list: the table when there is one, otherwise the lot pages.
-  const order: string[] = table.rows.length ? table.rows.map((r) => r.lotNumber) : [...pages.keys()];
+  // Every lot the roll shows: the table's order first, then any lot that has
+  // a page of its own but no table row (kept, and flagged).
+  const order: string[] = table.rows.map((r) => r.lotNumber);
   if (!table.rows.length && pages.size) {
     issues.push({ kind: "uncertain", message: "The roll's lot table was not found, so the lots were read from each lot's own page only. Check the list is complete." });
   }
+  for (const lotNumber of pages.keys()) {
+    if (!order.includes(lotNumber)) {
+      if (table.rows.length)
+        issues.push({ kind: "conflict", lotNumber, page: pages.get(lotNumber)!.page, message: `Lot ${lotNumber} has its own page in the roll (page ${pages.get(lotNumber)!.page}) but is not in the lot table. Check whether it belongs to this building.` });
+      order.push(lotNumber);
+    }
+  }
+
   const seen = new Set<string>();
   const lots: ParsedLotData[] = [];
   const details: ParsedLotDetail[] = [];
@@ -645,10 +729,15 @@ function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
     if (!page) issues.push({ kind: "missing", lotNumber, field: "ownerName", message: `Lot ${lotNumber} has no page of its own in the roll, so its owner could not be read. Enter the owner's name as it appears on the strata roll.` });
     if (!entitlement) issues.push({ kind: "missing", lotNumber, field: "entitlement", message: `Lot ${lotNumber}: no unit entitlement was found. Enter it from the roll.` });
 
-    // The owner, exactly as recorded. A company owner is used, with its ABN or
-    // ACN, only when no registered owner is printed.
+    // The owner, exactly as printed. A company owner is used as printed only
+    // when no registered owner is printed; its ABN or ACN stays in details.
     let ownerName = page?.owner ?? null;
-    if (!ownerName && page?.corporateOwner) ownerName = page.corporateId ? `${page.corporateOwner} (${page.corporateId})` : page.corporateOwner;
+    if (page && page.ownerLines > 1)
+      issues.push({ kind: "uncertain", lotNumber, field: "ownerName", page: page.page, message: `Lot ${lotNumber}: the roll prints ${page.ownerLines} registered owner lines (page ${page.page}). They were joined as "${page.owner}". Check the name against the roll.` });
+    if (!ownerName && page?.corporateOwner) {
+      ownerName = page.corporateOwner;
+      issues.push({ kind: "uncertain", lotNumber, field: "ownerName", page: page.page, message: `Lot ${lotNumber}: only a corporate owner is recorded ("${page.corporateOwner}"${page.corporateId ? `, ABN/ACN ${page.corporateId}` : ""}). Check how the strata roll should show it.` });
+    }
     if (page && page.owner && page.corporateOwner && page.corporateOwner !== page.owner)
       issues.push({ kind: "uncertain", lotNumber, field: "ownerName", page: page.page, message: `Lot ${lotNumber}: the roll records both "${page.owner}" and a corporate owner "${page.corporateOwner}". Check which name the strata roll should show.` });
     if (page && !ownerName) issues.push({ kind: "missing", lotNumber, field: "ownerName", page: page.page, message: `Lot ${lotNumber}: no registered owner is printed on its page (page ${page.page}). Enter the owner's name as it appears on the strata roll.` });
@@ -664,11 +753,10 @@ function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
       corporateOwner: page?.corporateOwner ?? null,
     });
   }
-  for (const lotNumber of pages.keys()) {
-    if (!seen.has(lotNumber)) issues.push({ kind: "conflict", lotNumber, page: pages.get(lotNumber)!.page, message: `Lot ${lotNumber} has its own page in the roll but is not in the lot table. Check whether it belongs to this building.` });
-  }
 
-  // Totals: only what the roll prints, checked against the lots.
+  // Totals: only what the roll prints, checked against the lots. The roll
+  // does not print the number of lots, so that is left for the person (it is
+  // what the lots read are checked against).
   const sum = lots.reduce((s, l) => s + l.entitlement, 0);
   if (table.totalEntitlement !== null) {
     scheme.totalEntitlement = table.totalEntitlement;
@@ -676,17 +764,17 @@ function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
     if (sum !== table.totalEntitlement)
       issues.push({ kind: "conflict", field: "totalEntitlement", page: table.page ?? undefined, message: `The roll prints a total unit entitlement of ${table.totalEntitlement}, but its lots add up to ${sum}.` });
   } else if (lots.length) {
-    issues.push({ kind: "missing", field: "totalEntitlement", message: "The roll does not print a total unit entitlement. Enter it from the strata plan." });
+    issues.push({ kind: "missing", field: "totalEntitlement", message: `The roll does not print a total unit entitlement. The lots read add up to ${sum}. Enter the total from the strata plan.` });
   }
-  if (table.rows.length) {
-    scheme.totalLots = table.rows.length;
-    schemePages.totalLots = table.page ?? undefined;
+  if (lots.length) {
     issues.push({
-      kind: "uncertain",
+      kind: "missing",
       field: "totalLots",
       page: table.page ?? undefined,
-      message: `The roll does not print the number of lots. ${table.rows.length} is the number of rows in its lot table (page ${table.page}). Check it against the strata plan.`,
+      message: `The roll does not print the number of lots. ${lots.length} lots were read${table.page ? ` (lot table on page ${table.page})` : ""}. Enter the building's total lots from the strata plan.`,
     });
+  } else {
+    issues.push({ kind: "missing", code: "no-lots", message: "No lots could be read from this roll. Enter the lots by hand." });
   }
   issues.push({ kind: "missing", field: "financialYearEnd", message: "The roll does not show the financial year end. Take it from the financial statements." });
 
@@ -697,13 +785,8 @@ function parseUrbaniseRoll(lines: readonly Line[]): ParsedStrataRoll {
 /*  Other rolls: a lot table under a recognised heading                */
 /* ------------------------------------------------------------------ */
 
-/** Lines that look like part of an address, or a phone number, are never lots. */
-function notALot(text: string, lotNumber: string): boolean {
-  if (/^0\d/.test(lotNumber)) return true; // "0400 ..." is a phone number
-  if (new RegExp(`${STATE_RE.source}\\s*\\d{4}\\b`).test(text)) return true; // "... Sydney NSW 2000"
-  if (/@|https?:|www\./i.test(text)) return true;
-  return false;
-}
+const PHONE = /\b0\d{3}[ -]?(?:\d{3}[ -]?\d{3}|[A-Z]{2,6}[ -]?\d{2,3})\b|\b0\d[ -]?\d{4}[ -]?\d{4}\b/;
+const POSTCODE_END = /\b(NSW|VIC|QLD|SA|WA|TAS|NT|ACT)\s*$/;
 
 function extractLots(lines: readonly Line[]): { lots: ParsedLotData[]; pages: number[]; issues: RollIssue[] } {
   const lots: ParsedLotData[] = [];
@@ -725,25 +808,49 @@ function extractLots(lines: readonly Line[]): { lots: ParsedLotData[]; pages: nu
   }
   if (start === -1) return { lots, pages, issues };
 
-  const endPatterns = [/Aggregate\s+Units/i, /Total\s+(?:Units?\s+(?:of\s+)?)?Entitlement/i, /^\s*Total\b/i, /Notes?\s*:/i, /Certified/i, /Secretary/i, /Signature/i];
+  const endPatterns = [/^Aggregate\s+Units/i, /^Total\s+(?:Units?\s+(?:of\s+)?)?Entitlement/i, /^\s*Total\b/i, /^Notes?\s*:/i, /Certified/i, /Secretary/i, /Signature/i];
+  // A column header ("Lot  Unit  Owner  Total Entitlement") is not the end of the table.
+  const looksLikeHeader = (t: string) => /\bLot\b/i.test(t) && /\b(Unit|Owner|Name)\b/i.test(t) && !/\d{2,}/.test(t);
   const seen = new Set<string>();
   for (const line of lines.slice(start + 1, start + 3000)) {
     const trimmed = line.text.replace(/\s+/g, " ").trim();
+    if (looksLikeHeader(trimmed)) continue;
     if (endPatterns.some((p) => p.test(trimmed))) break;
     if (trimmed.length < 3) continue;
 
     let found: ParsedLotData | null = null;
-    const fourCol = trimmed.match(/^(\d+[A-Za-z]?)\s+([\dA-Za-z]+\d*)\s+(.+?)\s+(\d+(?:\.\d+)?)\s*$/);
-    const threeCol = trimmed.match(/^(\d+[A-Za-z]?)\s+(.+?)\s+(\d+(?:\.\d+)?)\s*$/);
-    const labelled = trimmed.match(/Lot\s+(\d+[A-Za-z]?)\s+(?:Unit\s+([\dA-Za-z]+)\s+)?(.+?)\s+(?:Entitlement\s+)?(\d+(?:\.\d+)?)\s*$/i);
-    if (labelled) {
-      found = { lotNumber: labelled[1], unitNumber: labelled[2] || null, entitlement: parseFloat(labelled[4]), ownerName: labelled[3].replace(/[:–\-]\s*$/, "").trim() || null };
-    } else if (fourCol) {
-      found = { lotNumber: fourCol[1], unitNumber: fourCol[2] || null, entitlement: parseFloat(fourCol[4]), ownerName: fourCol[3].trim() || null };
-    } else if (threeCol) {
-      found = { lotNumber: threeCol[1], unitNumber: null, entitlement: parseFloat(threeCol[3]), ownerName: threeCol[2].trim() || null };
+    // With cells (layout or 2+ spaces): lot | name | entitlement, or lot | unit | name | entitlement.
+    const c = line.cells.map((x) => x.text.trim());
+    const isEnt = (t: string | undefined) => toNumber(t) !== null && toNumber(t)! > 0;
+    if (c.length === 3 && /^[A-Za-z0-9-]{1,8}$/.test(c[0]) && isEnt(c[2])) {
+      found = { lotNumber: c[0], unitNumber: null, entitlement: toNumber(c[2])!, ownerName: c[1] || null };
+    } else if (c.length === 4 && /^[A-Za-z0-9-]{1,8}$/.test(c[0]) && /^[A-Za-z0-9/-]{1,10}$/.test(c[1]) && isEnt(c[3])) {
+      found = { lotNumber: c[0], unitNumber: c[1], entitlement: toNumber(c[3])!, ownerName: c[2] || null };
     }
-    if (!found || !(found.entitlement > 0) || notALot(trimmed, found.lotNumber)) continue;
+    if (!found) {
+      const labelled = trimmed.match(/Lot\s+(\d+[A-Za-z]?)\s+(?:Unit\s+([\dA-Za-z]+)\s+)?(.+?)\s+(?:Entitlement\s+)?(\d+(?:\.\d+)?)\s*$/i);
+      const fourCol = trimmed.match(/^(\d+[A-Za-z]?)\s+(\d+[A-Za-z]?)\s+(.+?)\s+(\d+(?:\.\d+)?)\s*$/);
+      const threeCol = trimmed.match(/^(\d+[A-Za-z]?)\s+(.+?)\s+(\d+(?:\.\d+)?)\s*$/);
+      if (labelled) found = { lotNumber: labelled[1], unitNumber: labelled[2] || null, entitlement: parseFloat(labelled[4]), ownerName: labelled[3].replace(/[:–\-]\s*$/, "").trim() || null };
+      else if (fourCol) found = { lotNumber: fourCol[1], unitNumber: fourCol[2], entitlement: parseFloat(fourCol[4]), ownerName: fourCol[3].trim() || null };
+      else if (threeCol) found = { lotNumber: threeCol[1], unitNumber: null, entitlement: parseFloat(threeCol[3]), ownerName: threeCol[2].trim() || null };
+    }
+    if (!found || !(found.entitlement > 0)) continue;
+
+    // Not a lot: a phone number ("0400 TEST 01"), or an address whose
+    // "entitlement" is really its postcode ("1 Bennelong Point, Sydney NSW 2000").
+    const before = trimmed.slice(0, trimmed.lastIndexOf(String(found.entitlement).split(".")[0])).trim();
+    if (PHONE.test(trimmed) && found.ownerName && found.ownerName.replace(/[^A-Za-z]/g, "").length <= 6) {
+      issues.push({ kind: "uncertain", page: line.page, message: `A line in the lot table looks like a phone number and was not read as a lot: "${trimmed}" (page ${line.page}).` });
+      continue;
+    }
+    if (POSTCODE_END.test(before) && found.entitlement >= 200 && found.entitlement <= 9999 && Number.isInteger(found.entitlement)) {
+      issues.push({ kind: "uncertain", page: line.page, message: `A line in the lot table looks like an address and was not read as a lot: "${trimmed}" (page ${line.page}). Check whether it is a lot.` });
+      continue;
+    }
+    if (found.ownerName && (PHONE.test(found.ownerName) || /@/.test(found.ownerName)))
+      issues.push({ kind: "uncertain", lotNumber: found.lotNumber, field: "ownerName", page: line.page, message: `Lot ${found.lotNumber}: the owner name read includes a phone number or email ("${found.ownerName}"). Check the name against the roll.` });
+
     if (seen.has(found.lotNumber)) {
       issues.push({ kind: "conflict", lotNumber: found.lotNumber, page: line.page, message: `Lot ${found.lotNumber} appears twice in the lot table (page ${line.page}). Only the first is used.` });
       continue;
@@ -759,8 +866,22 @@ function extractLots(lines: readonly Line[]): { lots: ParsedLotData[]; pages: nu
 /*  Main parse functions                                               */
 /* ------------------------------------------------------------------ */
 
+/** The document as text, with each "Label:" starting its own line so a value never runs into the next label. */
+function labelledText(lines: readonly Line[]): string {
+  return lines
+    .map((l) => {
+      const parts: string[] = [];
+      for (const c of l.cells) {
+        if (parts.length && isLabel(c.text)) parts.push("\n" + c.text);
+        else parts.push(c.text);
+      }
+      return parts.join("   ").replace(/ {3}\n/g, "\n");
+    })
+    .join("\n");
+}
+
 function parseGeneric(lines: readonly Line[]): ParsedStrataRoll {
-  const normalised = normaliseWhitespace(lines.map((l) => l.text).join("\n"));
+  const normalised = normaliseWhitespace(labelledText(lines));
   const issues: RollIssue[] = [];
   const scheme: ParsedSchemeData = {
     name: extractName(normalised),
@@ -808,7 +929,7 @@ function parseGeneric(lines: readonly Line[]): ParsedStrataRoll {
       issues.push({ kind: "conflict", field: "totalEntitlement", message: `The roll prints a total unit entitlement of ${scheme.totalEntitlement}, but the lots read add up to ${sum}.` });
     for (const l of lots) if (!l.ownerName) issues.push({ kind: "missing", lotNumber: l.lotNumber, field: "ownerName", message: `Lot ${l.lotNumber}: no owner name was read. Enter it as it appears on the strata roll.` });
   } else {
-    issues.push({ kind: "missing", message: "No lot table was found on this roll. Enter the lots by hand." });
+    issues.push({ kind: "missing", code: "no-lots", message: "No lot table was found on this roll. Enter the lots by hand." });
   }
 
   const fieldsFound = Object.values(scheme).filter((v) => v != null).length;
@@ -828,9 +949,20 @@ function parseLines(lines: readonly Line[]): ParsedStrataRoll {
   if (lines.length === 0) {
     const empty = parseGeneric(lines);
     // A scanned roll has pictures of text, not text: say so rather than "no lots found".
-    return { ...empty, issues: [{ kind: "missing", message: "This PDF has no text that can be read. It may be a scanned image. Enter the building and its lots by hand, or upload a PDF exported from the strata system." }] };
+    return {
+      ...empty,
+      issues: [{ kind: "missing", code: "no-text", message: "This PDF has no text that can be read. It may be a scanned image. Enter the building and its lots by hand, or upload a PDF exported from the strata system." }],
+    };
   }
-  return isUrbaniseRoll(lines) ? parseUrbaniseRoll(lines) : parseGeneric(lines);
+  if (isUrbaniseRoll(lines)) {
+    const urbanise = parseUrbaniseRoll(lines);
+    if (urbanise.lots.length) return urbanise;
+    // Not the Urbanise layout after all: try the general reader.
+    const generic = parseGeneric(lines);
+    if (generic.lots.length) return generic;
+    return urbanise;
+  }
+  return parseGeneric(lines);
 }
 
 /** Read a strata roll from plain text (form feeds between pages, as pdftotext writes it). */
@@ -843,8 +975,11 @@ export function parseStrataRollLayout(lines: readonly LayoutLine[]): ParsedStrat
   return parseLines(linesFromLayout(lines));
 }
 
+/** At most this many pages are read from one roll. */
+export const MAX_ROLL_PAGES = 600;
+
 /** Read a strata roll PDF, keeping its layout. */
 export async function parseStrataRollPDF(buffer: Buffer): Promise<ParsedStrataRoll> {
-  const { lines } = await readLayoutLines(new Uint8Array(buffer));
+  const { lines } = await readLayoutLines(new Uint8Array(buffer), { maxPages: MAX_ROLL_PAGES });
   return parseStrataRollLayout(lines);
 }

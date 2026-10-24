@@ -60,7 +60,10 @@ describe("SP 99999 owners corporation roll (Urbanise Strata)", () => {
   it("totals 51,800 units of entitlement, as the roll prints", () => {
     expect(roll.scheme.totalEntitlement).toBe(51800);
     expect(roll.lots.reduce((s, l) => s + l.entitlement, 0)).toBe(51800);
-    expect(roll.scheme.totalLots).toBe(15);
+    // The roll does not print the number of lots: it is left for the person
+    // to enter from the strata plan, and the lots read are checked against it.
+    expect(roll.scheme.totalLots).toBeNull();
+    expect(roll.issues).toContainEqual(expect.objectContaining({ kind: "missing", field: "totalLots", message: expect.stringContaining("15 lots were read") }));
   });
 
   it("finds no conflict between the roll's lot table and its lot pages", () => {
@@ -78,7 +81,6 @@ describe("SP 99999 owners corporation roll (Urbanise Strata)", () => {
     expect(roll.scheme).toMatchObject({ name: "1 Bennelong Point", planNumber: "99999", address: "1 Bennelong Point", suburb: "Sydney", state: "NSW", postcode: "2000", financialYearEnd: null });
     // No "SP" without a source; the plan type, the lot count and the year end are flagged for review.
     expect(roll.issues).toContainEqual(expect.objectContaining({ kind: "uncertain", field: "planNumber" }));
-    expect(roll.issues).toContainEqual(expect.objectContaining({ kind: "uncertain", field: "totalLots" }));
     expect(roll.issues).toContainEqual(expect.objectContaining({ kind: "missing", field: "financialYearEnd" }));
   });
 

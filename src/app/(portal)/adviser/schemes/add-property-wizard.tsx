@@ -119,7 +119,6 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
   const [fromRoll, setFromRoll] = useState(false);
   // What the roll reader flagged, and where each lot was read from (24 Oct).
   const [rollIssues, setRollIssues] = useState<RollIssue[]>([]);
-  const [rollSources, setRollSources] = useState<Record<string, string>>({});
   const [formKey, setFormKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -262,30 +261,34 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
       financialYearEnd: s.financialYearEnd ?? undefined,
       buildingType: s.buildingType ?? undefined,
     });
+    // Each row keeps where it was read from, so the note stays with the row
+    // even if its lot number is corrected. A missing entitlement stays blank.
     setLots(
-      data.lots.map((l) => ({
-        lotNumber: l.lotNumber,
-        unitNumber: l.unitNumber ?? "",
-        entitlement: String(l.entitlement),
-        ownerName: l.ownerName ?? "",
-      })),
+      data.lots.map((l, i) => {
+        const d = data.details?.at(i);
+        return {
+          lotNumber: l.lotNumber,
+          unitNumber: l.unitNumber ?? "",
+          entitlement: l.entitlement ? String(l.entitlement) : "",
+          ownerName: l.ownerName ?? "",
+          source: d ? [d.tablePage ? `Roll page ${d.tablePage}` : null, d.ownerPage ? `owner on page ${d.ownerPage}` : null].filter(Boolean).join("; ") : undefined,
+        };
+      }),
     );
     setFromRoll(data.lots.length > 0);
     setRollIssues(data.issues ?? []);
-    setRollSources(
-      Object.fromEntries(
-        (data.details ?? []).map((d) => [
-          d.lotNumber,
-          [d.tablePage ? `Roll page ${d.tablePage}` : null, d.ownerPage ? `owner on page ${d.ownerPage}` : null].filter(Boolean).join("; "),
-        ]),
-      ),
-    );
     setFormKey((k) => k + 1);
     setClientProblems([]);
     setCurrentStep("details");
   }
 
+  // Skipping (even after an upload) starts from a blank building.
   function handleSkip() {
+    setDefaults({});
+    setLots([]);
+    setFromRoll(false);
+    setRollIssues([]);
+    setFormKey((k) => k + 1);
     setCurrentStep("details");
   }
 
@@ -499,7 +502,6 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               check={lotsCheck}
               showErrors={!!tried.lots}
               fromRoll={fromRoll}
-              sources={rollSources}
               notes={rollIssues.filter((i) => i.lotNumber)}
             />
             {nav("Next: Opening Balances")}

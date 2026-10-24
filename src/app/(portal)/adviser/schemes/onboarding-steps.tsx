@@ -94,7 +94,6 @@ export function LotsStep({
   check,
   showErrors,
   fromRoll,
-  sources = {},
   notes = [],
 }: {
   lots: OnboardingLot[];
@@ -104,8 +103,6 @@ export function LotsStep({
   check: LotsCheck;
   showErrors: boolean;
   fromRoll: boolean;
-  /** Where each lot was read from, by lot number ("Roll page 1; owner page 2"). */
-  sources?: Record<string, string>;
   /** What the strata roll reader flagged about the lots. */
   notes?: readonly RollIssue[];
 }) {
@@ -193,7 +190,7 @@ export function LotsStep({
                       onChange={(e) => set(i, "ownerName", e.target.value)}
                     />
                     {problems && <p className="mt-1 text-xs text-red-600">{problems.join(" ")}</p>}
-                    {sources[lot.lotNumber.trim()] && <p className="mt-1 text-xs text-ink-muted">{sources[lot.lotNumber.trim()]}</p>}
+                    {lot.source && <p className="mt-1 text-xs text-ink-muted">{lot.source}</p>}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <button
