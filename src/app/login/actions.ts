@@ -8,6 +8,9 @@ import { createClient } from "@/lib/supabase/server";
 import { anyRateLimitReached, clientIp, recordRateLimitHits, type RateLimitName } from "@/lib/auth/rate-limit-db";
 import { decodeJwtPayload } from "@/lib/auth/mfa-policy";
 import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
+import { afterSignIn, signInPortals } from "@/lib/auth/post-sign-in";
+import { getAvailablePortals } from "@/lib/queries/profiles";
+import { db } from "@/prisma/db";
 
 /** The session id in an access token (not verified: it was just issued to us). */
 function sessionIdOf(token: string): string | null {
@@ -82,16 +85,13 @@ export async function login(formData: FormData) {
 
   revalidatePath("/", "layout");
 
-  // Use portal hint from the login form to redirect directly
-  const portal = formData.get("portal");
-  if (portal === "adviser") {
-    redirect("/adviser");
-  }
-  if (portal === "supplier") {
-    redirect("/supplier");
-  }
-
-  redirect("/dashboard");
+  // One sign-in for everyone: a safe return-to link wins, one portal goes
+  // straight there, more than one is chosen on the sign-in page.
+  const authId = signedIn.user?.id ?? null;
+  const profile = authId ? await db.orm.public.Profile.where((p) => p.authId.eq(authId)).first() : null;
+  const portals = profile ? signInPortals(await getAvailablePortals(profile.id), !!profile.isPlatformAdmin) : [];
+  const next = afterSignIn(portals, String(formData.get("next") ?? ""));
+  redirect(next.kind === "go" ? next.path : "/login");
 }
 
 
