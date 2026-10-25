@@ -18479,6 +18479,21 @@
                   "model": "WorksWorkOrder",
                   "namespace": "public"
                 }
+              },
+              "worksWorkOrdersIssued": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "issuedById"
+                  ]
+                },
+                "to": {
+                  "model": "WorksWorkOrder",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -25931,6 +25946,17 @@
           },
           "WorksDecision": {
             "fields": {
+              "amount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
               "byDelegation": {
                 "nullable": false,
                 "type": {
@@ -26097,6 +26123,9 @@
             },
             "storage": {
               "fields": {
+                "amount": {
+                  "column": "amount"
+                },
                 "byDelegation": {
                   "column": "by_delegation"
                 },
@@ -30890,6 +30919,21 @@
                   "model": "WorksRequestVersion",
                   "namespace": "public"
                 }
+              },
+              "workOrders": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "requestId"
+                  ]
+                },
+                "to": {
+                  "model": "WorksWorkOrder",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -33048,6 +33092,17 @@
                   "kind": "scalar"
                 }
               },
+              "amountLimit": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
               "authorisedAt": {
                 "nullable": true,
                 "type": {
@@ -33063,7 +33118,7 @@
                 }
               },
               "contractId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
@@ -33083,6 +33138,20 @@
                   "kind": "scalar"
                 }
               },
+              "declineReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "declinedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "description": {
                 "nullable": true,
                 "type": {
@@ -33092,6 +33161,20 @@
               },
               "id": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "issuedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "requestId": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
@@ -33202,7 +33285,7 @@
               },
               "contract": {
                 "cardinality": "N:1",
-                "nullable": false,
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "contractId"
@@ -33247,6 +33330,22 @@
                   "namespace": "public"
                 }
               },
+              "issuedBy": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "issuedById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
               "milestones": {
                 "cardinality": "1:N",
                 "on": {
@@ -33274,6 +33373,22 @@
                 },
                 "to": {
                   "model": "WorksProgressReport",
+                  "namespace": "public"
+                }
+              },
+              "request": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "requestId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "WorksRequest",
                   "namespace": "public"
                 }
               },
@@ -33320,6 +33435,9 @@
                 "actualStart": {
                   "column": "actual_start"
                 },
+                "amountLimit": {
+                  "column": "amount_limit"
+                },
                 "authorisedAt": {
                   "column": "authorised_at"
                 },
@@ -33335,11 +33453,23 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "declineReason": {
+                  "column": "decline_reason"
+                },
+                "declinedAt": {
+                  "column": "declined_at"
+                },
                 "description": {
                   "column": "description"
                 },
                 "id": {
                   "column": "id"
+                },
+                "issuedById": {
+                  "column": "issued_by_id"
+                },
+                "requestId": {
+                  "column": "request_id"
                 },
                 "scheduledEnd": {
                   "column": "scheduled_end"
@@ -51113,6 +51243,15 @@
             },
             "works_decisions": {
               "columns": {
+                "amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
                 "by_delegation": {
                   "codecId": "pg/bool@1",
                   "dataType": "pg/bool",
@@ -56690,6 +56829,15 @@
                   "dataType": "pg/date",
                   "nullable": true
                 },
+                "amount_limit": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
                 "authorised_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -56703,7 +56851,7 @@
                 "contract_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
-                  "nullable": false
+                  "nullable": true
                 },
                 "contractor_business_id": {
                   "codecId": "pg/uuid@1",
@@ -56719,6 +56867,16 @@
                   },
                   "nullable": false
                 },
+                "decline_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "declined_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "description": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -56732,6 +56890,16 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "issued_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "request_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
                 },
                 "scheduled_end": {
                   "codecId": "pg/date-string@1",
@@ -56803,6 +56971,27 @@
                 },
                 {
                   "index": {
+                    "name": "works_work_orders_request_id_idx"
+                  },
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "request_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_work_orders"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_requests"
+                  }
+                },
+                {
+                  "index": {
                     "name": "works_work_orders_scheme_id_work_order_number_key"
                   },
                   "onDelete": "cascade",
@@ -56857,6 +57046,24 @@
                     "namespaceId": "public",
                     "tableName": "profiles"
                   }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "issued_by_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_work_orders"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
                 }
               ],
               "indexes": [
@@ -56865,6 +57072,13 @@
                     "contract_id"
                   ],
                   "name": "works_work_orders_contract_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "request_id"
+                  ],
+                  "name": "works_work_orders_request_id_idx",
                   "unique": false
                 },
                 {
@@ -56917,7 +57131,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5cebfacb9ecdde2171309bb8ca073cc1a17d1010a9d524866405a3d28d324c78"
+    "storageHash": "f4c4deeb7eb9aaf08054bf48a9a3c5da9c70945e3696568dd96c35a197e6c46f"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

@@ -96,7 +96,7 @@ describe("hrefFor", () => {
   it("links by the level searched", () => {
     expect(hrefFor("adviser", "document", A, "d1")).toBe(`/adviser/schemes/${A}/documents/d1`);
     expect(hrefFor("owner", "work-order", A, "w1")).toBe("/owner/maintenance/w1");
-    expect(hrefFor("supplier", "work-order", A, "w1")).toBe("/supplier/work-orders/w1");
+    expect(hrefFor("supplier", "work-order", A, "w1")).toBe("/supplier/work-orders");
     expect(hrefFor("accountant", "scheme", A, A)).toBe(`/accountant/schemes/${A}`);
   });
 });

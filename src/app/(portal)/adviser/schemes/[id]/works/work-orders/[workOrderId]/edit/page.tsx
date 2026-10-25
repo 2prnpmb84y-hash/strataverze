@@ -55,7 +55,7 @@ export default async function EditWorkOrderPage({
           contracts={contracts}
           workOrder={{
             id: wo.id,
-            contractId: wo.contractId,
+            contractId: wo.contractId ?? "",
             contractorBusinessId: wo.contractorBusinessId,
             title: String(wo.title),
             description: wo.description ? String(wo.description) : null,

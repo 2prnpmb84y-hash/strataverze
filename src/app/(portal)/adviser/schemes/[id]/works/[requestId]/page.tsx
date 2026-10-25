@@ -14,6 +14,9 @@ import { WorksRequestActions } from "./works-request-actions";
 import { loadRequestView } from "@/lib/works/view";
 import { DecisionPanel } from "@/components/works/decision-panel";
 import { ruleSentence } from "@/components/works/request-details";
+import { UrgentOrderPanel } from "@/components/works/urgent-order-panel";
+import { orderingState } from "@/lib/works/urgent-orders";
+import { approvedContractors } from "@/lib/works/settings";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -112,6 +115,9 @@ export default async function WorksRequestDetailPage({
     .all();
 
   const view = await loadRequestView(id, requestId, { profileId: access.profile.id, roles: access.roles });
+  const ordering = view?.request.isEmergency ? await orderingState(id, requestId) : null;
+  const mayChoose = access.roles.includes("ADVISER") || access.roles.includes("COMMITTEE");
+  const urgentContractors = ordering?.canIssue && mayChoose ? await approvedContractors(view?.request.trade ?? undefined) : [];
 
   const members = memberships.map((m) => ({
     id: m.profileId,
@@ -185,7 +191,24 @@ export default async function WorksRequestDetailPage({
       {view && (
         <Card>
           <CardHeader title="The committee's decision" description="How this request is handled." />
-          <DecisionPanel schemeId={id} requestId={requestId} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+          <DecisionPanel schemeId={id} requestId={requestId} urgentLimit={view.settings.urgentLimit} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+        </Card>
+      )}
+
+      {view && ordering && (ordering.orders.length > 0 || ordering.canIssue) && (
+        <Card>
+          <CardHeader title="Urgent work order" description="Sent to the contractor straight after the urgent decision." />
+          <UrgentOrderPanel
+            schemeId={id}
+            requestId={requestId}
+            orders={ordering.orders}
+            canIssue={ordering.canIssue}
+            mayChoose={mayChoose}
+            amount={ordering.amount}
+            contractors={urgentContractors.map((c) => ({ id: c.id, name: c.name, suburb: c.suburb, trades: c.trades }))}
+            preferredContractorId={ordering.preferredContractorId}
+            trade={view.request.trade}
+          />
         </Card>
       )}
 

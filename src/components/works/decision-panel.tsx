@@ -13,7 +13,7 @@ import { proposeWorksRouteAction, voteWorksDecisionAction, withdrawWorksDecision
 import type { DecisionView, RequestViewer } from "@/lib/works/view";
 
 const OUTCOME_CHOICES = [
-  { value: "URGENT", label: "Urgent: order the work now", help: "Once the building has set an urgent spending limit, any one committee member can decide this. The Adviser is told at once to arrange the contractor." },
+  { value: "URGENT", label: "Urgent: order the work now", help: "Within the building's urgent spending limit, any one committee member can decide this. The work order goes straight to the preferred contractor for the trade." },
   { value: "QUOTES", label: "Get quotes", help: "The Adviser arranges quotes from contractors in the trade. Over $30,000, two quotes are needed before one is approved." },
   { value: "RETURN", label: "Return to the owner for more detail", help: "The owner is told what to add, and can send it again." },
   { value: "DECLINE", label: "Decline", help: "The request is closed and the owner is told why." },
@@ -25,7 +25,7 @@ function Message({ state }: { state: WorksFormState }) {
   return null;
 }
 
-function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean }) {
+function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLimit }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean; urgentLimit: number | null }) {
   const router = useRouter();
   const [outcome, setOutcome] = useState<string>("");
   const [state, formAction, isPending] = useActionState<WorksFormState, FormData>(async (prev, fd) => {
@@ -49,6 +49,20 @@ function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation }: { sche
           </label>
         ))}
       </fieldset>
+      {outcome === "URGENT" && (
+        <div>
+          <label htmlFor="amount" className="block text-sm font-medium text-ink mb-1.5">Most the work may cost (dollars)<span className="text-red-500 ml-0.5">*</span></label>
+          <input id="amount" name="amount" required inputMode="decimal" placeholder="e.g. 1500" className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise" />
+          <p className="mt-1.5 text-xs text-ink-muted">
+            {byDelegation
+              ? "As Adviser you can decide this up to the limit the committee set for you."
+              : urgentLimit != null
+                ? `Up to $${urgentLimit.toLocaleString("en-AU")}, one member can decide. Over that, it needs the usual votes.`
+                : "The building has no urgent spending limit yet, so this needs the usual votes."}{" "}
+            The contractor sees this as the most they may charge without checking with the building.
+          </p>
+        </div>
+      )}
       {outcome === "RETURN" ? (
         <div>
           <label htmlFor="returnReason" className="block text-sm font-medium text-ink mb-1.5">What does the owner need to add?<span className="text-red-500 ml-0.5">*</span></label>
@@ -129,6 +143,7 @@ export function DecisionRecord({ decision }: { decision: DecisionView }) {
         <span className="text-xs text-ink-muted">{STATUS_TEXT[decision.status] ?? decision.status}</span>
       </div>
       <p className="text-xs text-ink-muted">Proposed by {decision.proposedByName}, {when(decision.createdAt)}{decision.byDelegation ? ", as Adviser under the building's delegation" : ""}</p>
+      {decision.amount != null && <p className="text-sm text-ink">Not to exceed ${decision.amount.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
       {decision.note && <p className="text-sm text-ink whitespace-pre-wrap">{decision.note}</p>}
       <p className="text-sm text-ink">{decision.votesSentence}</p>
       {decision.votes.length > 0 && (
@@ -154,9 +169,12 @@ export function DecisionPanel({
   decisions,
   openDecisionId,
   ruleSentence,
+  urgentLimit = null,
 }: {
   schemeId: string;
   requestId: string;
+  /** The building's urgent spending limit, for the urgent amount hint. */
+  urgentLimit?: number | null;
   can: RequestViewer;
   decisions: DecisionView[];
   openDecisionId: string | null;
@@ -177,7 +195,7 @@ export function DecisionPanel({
           {can.canWithdraw && <WithdrawButton schemeId={schemeId} requestId={requestId} decisionId={open.id} />}
         </div>
       )}
-      {can.canPropose && <ProposeForm schemeId={schemeId} requestId={requestId} ruleSentence={ruleSentence} byDelegation={delegated} />}
+      {can.canPropose && <ProposeForm schemeId={schemeId} requestId={requestId} ruleSentence={ruleSentence} byDelegation={delegated} urgentLimit={urgentLimit} />}
       {past.length > 0 && (
         <details className="group" open={!open && !can.canPropose}>
           <summary className="cursor-pointer text-sm font-medium text-ink">Decision record ({past.length})</summary>

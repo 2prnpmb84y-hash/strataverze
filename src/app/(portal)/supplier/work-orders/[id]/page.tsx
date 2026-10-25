@@ -1,237 +1,113 @@
-import Link from "next/link";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { myContractorBusinessIds, orderForContractor } from "@/lib/works/urgent-orders";
 import { Card, CardHeader } from "@/components/ui/card";
-import { WorkOrderActions } from "./work-order-actions";
-const statusConfig: Record<string, { label: string; className: string }> = {
-  AWARDED: { label: "Awarded", className: "bg-gold-100 text-gold-500" },
-  IN_PROGRESS: { label: "In Progress", className: "bg-mint-soft text-turquoise" },
-  COMPLETED: { label: "Completed", className: "bg-success/10 text-success" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
-};
+import { OrderAnswer } from "@/components/works/order-answer";
 
-const priorityConfig: Record<string, { label: string; className: string }> = {
-  LOW: { label: "Low", className: "bg-muted text-ink-muted" },
-  MEDIUM: { label: "Medium", className: "bg-gold-100 text-gold-500" },
-  HIGH: { label: "High", className: "bg-warning/10 text-warning" },
-  URGENT: { label: "Urgent", className: "bg-danger/10 text-danger" },
-};
+const money = (n: number) => `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const when = (iso: string) => new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const invoiceStatusConfig: Record<string, { label: string; className: string }> = {
-  SUBMITTED: { label: "Submitted", className: "bg-gold-100 text-gold-500" },
-  APPROVED: { label: "Approved", className: "bg-mint-soft text-turquoise" },
-  PAID: { label: "Paid", className: "bg-success/10 text-success" },
-  DISPUTED: { label: "Disputed", className: "bg-danger/10 text-danger" },
-  CANCELLED: { label: "Cancelled", className: "bg-muted text-ink-muted" },
-};
-
-export default async function SupplierWorkOrderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+/**
+ * One work order as its contractor sees it (works marketplace stage 2,
+ * 25 Oct 2026): the building's address, the problem and photos, the most
+ * it may cost, and who to contact. Only active contacts of the business
+ * the order was sent to can open it.
+ */
+export default async function SupplierWorkOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  await connection();
   const { id } = await params;
+  if (!UUID.test(id)) notFound();
   const profile = await getCurrentProfile();
   if (!profile) return null;
-
-  const workOrder = await db.orm.public.WorkOrder
-    .where((wo) => and(wo.id.eq(id), wo.deletedAt.eq(null)))
-    .include("scheme")
-    .include("comments", (c) => c.include("author").orderBy((cm) => cm.createdAt.desc()))
-    // Only the caller's own invoices, even if the job was once awarded to someone else.
-    .include("invoices", (inv) =>
-      inv.where((i) => i.supplierId.eq(profile.id)).orderBy((i) => i.createdAt.desc()),
-    )
-    .first();
-
-  if (!workOrder) notFound();
-
-  // Verify the supplier is assigned to this work order and still an active
-  // supplier on its scheme.
-  if (workOrder.supplierId !== profile.id) notFound();
-  const membership = await db.orm.public.SchemeMembership
-    .where((m) =>
-      and(
-        m.profileId.eq(profile.id),
-        m.schemeId.eq(workOrder.schemeId),
-        m.role.eq("SUPPLIER"),
-        m.isActive.eq(true),
-      ),
-    )
-    .first();
-  if (!membership) notFound();
-
-  const status = statusConfig[workOrder.status] ?? statusConfig.AWARDED;
-  const priority = priorityConfig[workOrder.priority] ?? priorityConfig.MEDIUM;
+  const order = await orderForContractor(id, await myContractorBusinessIds(profile.id));
+  if (!order) notFound();
 
   return (
-    <div className="max-w-4xl">
-      <Link
-        href="/supplier/work-orders"
-        className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink transition-colors mb-6"
-      >
-        &larr; Back to Work Orders
-      </Link>
+    <div className="max-w-3xl space-y-6">
+      <div>
+        <Link href="/supplier/work-orders" className="text-sm text-ink-muted hover:text-ink">← Work orders</Link>
+        <h1 className="text-2xl font-bold font-heading text-ink mt-2 mb-1">{order.title}</h1>
+        <p className="text-sm text-ink-muted">
+          Urgent work order {order.workOrderNumber} · sent {when(order.issuedAt)} · {order.statusLabel}
+        </p>
+      </div>
 
-      {/* Work order details */}
-      <Card className="mb-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-xl font-heading font-bold text-ink">
-              {workOrder.title}
-            </h1>
-            <p className="text-sm text-ink-muted mt-0.5">
-              {workOrder.scheme?.name}
-            </p>
-          </div>
-          <div className="shrink-0 flex items-center gap-2">
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${priority.className}`}
-            >
-              {priority.label}
-            </span>
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}
-            >
-              {status.label}
-            </span>
-          </div>
-        </div>
-
-        {workOrder.description && (
-          <p className="text-sm text-ink whitespace-pre-wrap mb-4">
-            {workOrder.description}
+      {order.status === "AWAITING_ACKNOWLEDGEMENT" && (
+        <Card>
+          <CardHeader title="Can you take this job?" description="The building is waiting for your answer." />
+          <OrderAnswer workOrderId={order.id} />
+        </Card>
+      )}
+      {order.ended && (
+        <Card>
+          <p className="text-sm text-ink">
+            {order.status === "DECLINED" ? `You declined this job${order.declineReason ? `: ${order.declineReason}` : "."}` : `The building cancelled this order${order.declineReason ? `: ${order.declineReason}` : "."}`}
           </p>
-        )}
+          <p className="text-sm text-ink-muted mt-1">The job details are no longer shown.</p>
+        </Card>
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-line">
-          {workOrder.category && (
-            <div>
-              <p className="text-xs text-ink-muted">Category</p>
-              <p className="text-sm font-medium text-ink">
-                {workOrder.category}
-              </p>
-            </div>
-          )}
+      {!order.ended && <Card>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
           <div>
-            <p className="text-xs text-ink-muted">Created</p>
-            <p className="text-sm font-medium text-ink">
-              {new Date(String(workOrder.createdAt)).toLocaleDateString(
-                "en-AU",
-                { day: "numeric", month: "long", year: "numeric" },
+            <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Building</dt>
+            <dd className="text-sm text-ink">
+              {order.building?.name}
+              {order.building?.plan ? ` (${order.building.plan})` : ""}
+              <span className="block text-ink-muted">{order.building?.address}</span>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Where in the building</dt>
+            <dd className="text-sm text-ink">{order.location ?? "Not given"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Kind of work</dt>
+            <dd className="text-sm text-ink">{order.trade ?? "Not given"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Not to exceed</dt>
+            <dd className="text-sm text-ink">{order.amountLimit != null ? `${money(order.amountLimit)}, unless the building agrees more first` : "Not set"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Contact</dt>
+            <dd className="text-sm text-ink">
+              {order.contact ? (
+                <>
+                  {order.contact.name}
+                  {order.contact.email && <span className="block select-all text-ink-muted">{order.contact.email}</span>}
+                  {order.contact.phone && <span className="block select-all text-ink-muted">{order.contact.phone}</span>}
+                </>
+              ) : (
+                "The building's committee"
               )}
-            </p>
+            </dd>
           </div>
-          {workOrder.completedAt && (
-            <div>
-              <p className="text-xs text-ink-muted">Completed</p>
-              <p className="text-sm font-medium text-ink">
-                {new Date(String(workOrder.completedAt)).toLocaleDateString(
-                  "en-AU",
-                  { day: "numeric", month: "long", year: "numeric" },
-                )}
-              </p>
-            </div>
-          )}
+        </dl>
+        <div className="mt-5">
+          <p className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">The problem</p>
+          <p className="text-sm text-ink whitespace-pre-wrap" style={{ overflowWrap: "anywhere" }}>{order.description}</p>
         </div>
-      </Card>
-
-      {/* Actions: status updates + invoice creation */}
-      <WorkOrderActions
-        workOrderId={id}
-        currentStatus={workOrder.status}
-      />
-
-      {/* Comments */}
-      <Card className="mb-6">
-        <CardHeader
-          title="Comments"
-          description={`${workOrder.comments?.length ?? 0} comment${(workOrder.comments?.length ?? 0) === 1 ? "" : "s"}`}
-        />
-
-        {workOrder.comments && workOrder.comments.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {workOrder.comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="rounded-[var(--radius-card)] bg-muted px-4 py-3"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-medium text-ink">
-                    {comment.author?.firstName} {comment.author?.lastName}
-                  </p>
-                  <p className="text-xs text-ink-muted">
-                    {new Date(String(comment.createdAt)).toLocaleDateString(
-                      "en-AU",
-                      { day: "numeric", month: "short", year: "numeric" },
-                    )}
-                  </p>
-                </div>
-                <p className="text-sm text-ink whitespace-pre-wrap">
-                  {comment.content}
-                </p>
-              </div>
-            ))}
+        {order.photos.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">Photos</p>
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {order.photos.map((p) => (
+                <li key={p.id}>
+                  <a href={p.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-[var(--radius-card)] border border-line bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed storage link */}
+                    <img src={p.url} alt={p.fileName} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1.5 text-xs text-ink-muted">Photo links last 15 minutes. Reload the page if one does not open.</p>
           </div>
-        ) : (
-          <p className="text-sm text-ink-muted">
-            No comments yet.
-          </p>
         )}
-      </Card>
-
-      {/* Invoices */}
-      <Card>
-        <CardHeader
-          title="Invoices"
-          description={`${workOrder.invoices?.length ?? 0} invoice${(workOrder.invoices?.length ?? 0) === 1 ? "" : "s"}`}
-        />
-
-        {workOrder.invoices && workOrder.invoices.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {workOrder.invoices.map((inv) => {
-              const invStatus =
-                invoiceStatusConfig[inv.status] ?? invoiceStatusConfig.SUBMITTED;
-
-              return (
-                <div
-                  key={inv.id}
-                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-ink">
-                      {inv.invoiceNumber}
-                    </p>
-                    <p className="text-xs text-ink-muted">
-                      {inv.description}
-                      {inv.dueDate &&
-                        ` · Due ${new Date(String(inv.dueDate)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
-                    </p>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-3">
-                    <span className="text-sm font-medium text-ink">
-                      ${Number(inv.totalAmount).toLocaleString("en-AU", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${invStatus.className}`}
-                    >
-                      {invStatus.label}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-ink-muted">
-            No invoices have been submitted for this work order.
-          </p>
-        )}
-      </Card>
+      </Card>}
     </div>
   );
 }

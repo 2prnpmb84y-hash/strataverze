@@ -46,14 +46,14 @@ describe("the committee decides a works request by vote", () => {
   });
 
   it("needs the usual votes for urgent works until the building sets an urgent limit", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "URGENT", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "URGENT", note: null, amount: 1500 });
     expect(p.status).toBe("OPEN");
     expect(sharedFake.table("WorksDecision")[0]).toMatchObject({ rule: "TWO", requiredVotes: 2 });
   });
 
   it("lets any one member order urgent works once there is an urgent limit", async () => {
     seed({ urgentLimit: "2000.00" });
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "URGENT", note: "Burst pipe" });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "URGENT", note: "Burst pipe", amount: 1500 });
     expect(p.status).toBe("DECIDED");
     expect(request()).toMatchObject({ status: "PROCUREMENT", isEmergency: true, isUrgent: true });
     expect(reviews()[0]).toMatchObject({ outcome: "EMERGENCY_APPROVED", procurementRoute: "EMERGENCY" });
@@ -97,7 +97,7 @@ describe("the committee decides a works request by vote", () => {
   });
 
   it("does not reach another building's request or decision", async () => {
-    await expect(proposeRoute({ schemeId: A, requestId: "reqB", actor: member("m1"), outcome: "URGENT", note: null })).rejects.toThrow(/not found/);
+    await expect(proposeRoute({ schemeId: A, requestId: "reqB", actor: member("m1"), outcome: "URGENT", note: null, amount: 1500 })).rejects.toThrow(/not found/);
     const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
     await expect(vote({ schemeId: B, decisionId: p.decisionId, actor: member("other"), vote: "FOR", comment: null })).rejects.toThrow(/not found/);
   });

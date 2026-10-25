@@ -22,6 +22,8 @@ export interface DecisionView {
   outcome: string;
   outcomeLabel: string;
   note: string | null;
+  /** For an urgent route: the most the work may cost. */
+  amount: number | null;
   proposedByName: string;
   status: string;
   byDelegation: boolean;
@@ -81,6 +83,7 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
       outcome,
       outcomeLabel: isRouteOutcome(outcome) ? ROUTE_OUTCOMES[outcome].label : outcome,
       note: d.note ? String(d.note) : null,
+      amount: d.amount != null ? Number(d.amount) : null,
       proposedByName: who.get(d.proposedById) ?? "A member",
       status: String(d.status),
       byDelegation: !!d.byDelegation,

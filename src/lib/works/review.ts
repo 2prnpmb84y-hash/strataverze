@@ -13,12 +13,13 @@
  * once cannot both decide it. Callers authorise first (works.decide).
  */
 import { and } from "@prisma/orm-postgres/orm-client";
-import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { getWorksSettings } from "./settings";
 import { isRouteOutcome, ROUTE_OUTCOMES, tally, votesRequired, type RouteOutcome } from "./decision-rules";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
+const money = (v: number) => v.toFixed(2) as unknown as Numeric<12, 2>;
 const AWAITING = ["SUBMITTED", "UNDER_REVIEW"];
 
 export class WorksDecisionError extends Error {}
@@ -55,9 +56,14 @@ export const STALE_PROPOSAL_DAYS = 7;
  * (it may be decided at once: an urgent route, a one-member rule, or the
  * Adviser under delegation).
  */
-export async function proposeRoute(input: { schemeId: string; requestId: string; actor: Actor; outcome: string; note: string | null; returnReason?: string | null }) {
+export async function proposeRoute(input: { schemeId: string; requestId: string; actor: Actor; outcome: string; note: string | null; returnReason?: string | null; amount?: number | null }) {
   if (!isRouteOutcome(input.outcome)) throw new WorksDecisionError("Choose how the request is handled.");
   const outcome: RouteOutcome = input.outcome;
+  // An urgent order carries the most it may cost (works stage 2).
+  const amount = outcome === "URGENT" ? input.amount ?? null : null;
+  if (outcome === "URGENT" && (amount == null || !Number.isFinite(amount) || amount <= 0 || amount > 999_999_999)) {
+    throw new WorksDecisionError("Give the most the urgent work may cost, in dollars.");
+  }
   if (outcome === "RETURN" && !input.returnReason?.trim()) throw new WorksDecisionError("Say what the owner needs to add.");
   if (outcome === "DECLINE" && !input.note?.trim()) throw new WorksDecisionError("Give the reason for declining. The owner is told it.");
   const request = await db.orm.public.WorksRequest.where((r) => and(r.id.eq(input.requestId), r.schemeId.eq(input.schemeId), r.deletedAt.isNull())).first();
@@ -73,13 +79,18 @@ export async function proposeRoute(input: { schemeId: string; requestId: string;
   let required: number;
   let byDelegation = false;
   if (isMember) {
-    // Any one member may order urgent works only once the building has set an
-    // urgent spending limit. Until then an urgent order needs the usual rule.
-    const r = votesRequired(settings.approvalRule, members.length, { urgent: outcome === "URGENT" && settings.urgentLimit != null });
+    // Any one member may order urgent works once the building has set an
+    // urgent spending limit, and only for an amount
+    // within the limit. Over it, or with no limit set, it needs the usual rule.
+    const withinUrgentLimit = outcome === "URGENT" && settings.urgentLimit != null && amount != null && amount <= settings.urgentLimit;
+    const r = votesRequired(settings.approvalRule, members.length, { urgent: withinUrgentLimit });
     if (!r) throw new WorksDecisionError("The building has no committee members to decide.");
     rule = r.rule;
     required = r.required;
   } else if (isAdviser && settings.adviserMayDecide) {
+    if (amount != null && settings.adviserLimit != null && amount > settings.adviserLimit) {
+      throw new WorksDecisionError(`That is over the most the committee lets the Adviser approve ($${settings.adviserLimit.toLocaleString("en-AU")}). The committee decides this one.`);
+    }
     rule = "DELEGATED";
     required = 1;
     byDelegation = true;
@@ -113,6 +124,7 @@ export async function proposeRoute(input: { schemeId: string; requestId: string;
         committeeSize: members.length,
         status: "OPEN",
         byDelegation,
+        amount: amount == null ? null : money(amount),
       });
       await tx.orm.public.WorksDecisionVote.create({ decisionId: d.id, voterId: input.actor.profileId, vote: "FOR", comment: null });
       return d;

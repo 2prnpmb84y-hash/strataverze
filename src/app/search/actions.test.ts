@@ -98,7 +98,7 @@ describe("globalSearch", () => {
         expect(conds).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_A] });
         expect(conds.some((c) => c.col === "schemeId" && c.op === "in" && (c.v as string[]).length !== 1)).toBe(false);
         expect(results).toEqual([
-          expect.objectContaining({ type: "work-order", id: "wo-1", href: "/supplier/work-orders/wo-1" }),
+          expect.objectContaining({ type: "work-order", id: "wo-1", href: "/supplier/work-orders" }),
         ]);
       } else {
         // Claiming another portal narrows to nothing; it never widens.
