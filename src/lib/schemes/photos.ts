@@ -1,3 +1,4 @@
+import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { signDownloads } from "@/lib/storage/server-storage";
 import { consumeUpload, verifyUpload } from "@/lib/storage/uploads";
@@ -82,4 +83,35 @@ export async function setSchemePhoto(input: { schemeId: string; uploadId: string
     metadata: { change: "property photo", fileName: upload.fileName },
   });
   return image;
+}
+
+/**
+ * Remove a property photo (25 Oct 2026): the one the page shows first. The
+ * next earlier photo, if any, takes its place. The record is removed; the
+ * file stays in the private bucket with no link to it. The photo must be
+ * this building's.
+ */
+export async function removeSchemePhoto(input: { schemeId: string; imageId: string; actorId: string; actorRole: string }): Promise<{ removed: boolean; remaining: number }> {
+  const images = await db.orm.public.SchemeImage.where((i) => i.schemeId.eq(input.schemeId)).all();
+  const target = images.find((i) => i.id === input.imageId);
+  if (!target) return { removed: false, remaining: images.length };
+  await db.orm.public.SchemeImage.where((i) => and(i.id.eq(target.id), i.schemeId.eq(input.schemeId))).delete();
+  await recordSecurityEvent({
+    action: "scheme.photo_removed",
+    outcome: "allowed",
+    actorProfileId: input.actorId,
+    actorRole: input.actorRole,
+    schemeId: input.schemeId,
+    resourceType: "SchemeImage",
+    resourceId: target.id,
+  });
+  await logActivity({
+    schemeId: input.schemeId,
+    actorId: input.actorId,
+    action: "SCHEME_UPDATED",
+    entityType: "Scheme",
+    entityId: input.schemeId,
+    metadata: { change: "property photo removed" },
+  });
+  return { removed: true, remaining: images.length - 1 };
 }
