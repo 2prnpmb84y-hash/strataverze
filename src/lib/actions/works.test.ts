@@ -531,13 +531,14 @@ describe("works role and status rules", () => {
     expect(model("WorksRequest").update).not.toHaveBeenCalled();
   });
 
-  it("reviews only a request awaiting review", async () => {
-    model("WorksRequest").first.mockResolvedValue({ id: "req-1", schemeId: SCHEME_A, status: "CLOSED" });
+  it("no longer lets one person review a request: the committee votes", async () => {
+    model("WorksRequest").first.mockResolvedValue({ id: "req-1", schemeId: SCHEME_A, status: "SUBMITTED" });
     const r = await actions.reviewWorksRequest(
       form({ requestId: "req-1", schemeId: SCHEME_A, outcome: "EMERGENCY_APPROVED" }),
     );
-    expect(r.error).toMatch(/not awaiting review/);
+    expect(r.error).toMatch(/committee's vote/);
     expect(model("WorksRequest").update).not.toHaveBeenCalled();
+    expect(model("WorksRequestReview").create).not.toHaveBeenCalled();
   });
 
   it("lets an owner submit only a request they raised", async () => {

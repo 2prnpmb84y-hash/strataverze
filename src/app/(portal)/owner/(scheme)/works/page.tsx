@@ -1,254 +1,129 @@
-import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
-import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
+import Link from "next/link";
 import { connection } from "next/server";
-import { notFound } from "next/navigation";
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getSchemesForOwner } from "@/lib/queries/schemes";
-import {
-  getWorksRequestsForScheme,
-  getWorksDashboardData,
-} from "@/lib/queries/works";
+import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
+import { listRequests } from "@/lib/works/requests";
+import { awaitingMyVote, committeeMembers } from "@/lib/works/review";
+import { requestStatusLabel } from "@/lib/works/decision-rules";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
-import { StatusChip } from "@/components/ui/status-chip";
+import { StatusChip, type ChipStatus } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 
-function formatCurrency(value: number | string | null): string {
-  const num = Number(value ?? 0);
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(num);
+function formatDate(value: unknown): string {
+  if (!value) return "";
+  return new Date(String(value)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" });
 }
 
-function formatDate(date: Date | string | null): string {
-  if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+function chip(status: string, returned: boolean): ChipStatus {
+  if (returned) return "warning";
+  if (status === "SUBMITTED" || status === "UNDER_REVIEW") return "warning";
+  if (status === "CLOSED") return "default";
+  return "success";
 }
 
-const statusLabel: Record<string, string> = {
-  DRAFT: "Draft",
-  SUBMITTED: "Submitted",
-  UNDER_REVIEW: "Under Review",
-  APPROVED: "Approved",
-  SCOPING: "Scoping",
-  RFQ_ISSUED: "RFQ Issued",
-  QUOTING: "Quoting",
-  RECOMMENDED: "Recommended",
-  CONTRACTING: "Contracting",
-  IN_PROGRESS: "In Progress",
-  COMPLETED: "Completed",
-  CLOSED: "Closed",
-  REJECTED: "Rejected",
-  CANCELLED: "Cancelled",
-};
+type Row = Awaited<ReturnType<typeof listRequests>>[number];
 
-const priorityLabel: Record<string, string> = {
-  LOW: "Low",
-  MEDIUM: "Medium",
-  HIGH: "High",
-  URGENT: "Urgent",
-};
+function RequestList({ rows, highlight }: { rows: Row[]; highlight?: Set<string> }) {
+  return (
+    <ul className="flex flex-col gap-2">
+      {rows.map((r) => {
+        const returned = r.status === "DRAFT" && !!r.returnReason;
+        return (
+          <li key={r.id}>
+            <Link href={`/owner/works/${r.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-muted p-4 hover:bg-muted/70 transition-colors">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="text-xs font-mono text-ink-muted">{String(r.requestNumber)}</span>
+                  <StatusChip status={requestStatusLabel({ status: String(r.status), isEmergency: !!r.isEmergency, returnReason: r.returnReason ? String(r.returnReason) : null })} variant={chip(String(r.status), returned)} />
+                  {r.isEmergency && <StatusChip status="Urgent" variant="danger" />}
+                  {highlight?.has(r.id) && <StatusChip status="Your vote needed" variant="warning" />}
+                </div>
+                <p className="text-sm font-medium text-ink truncate">{String(r.title)}</p>
+                <p className="text-xs text-ink-muted mt-1">
+                  {r.trade ? `${String(r.trade)} · ` : ""}
+                  {formatDate(r.submittedAt ?? r.createdAt)}
+                </p>
+              </div>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
+/**
+ * Works requests for the selected building (works marketplace stage 1,
+ * 25 Oct 2026). Owners see the requests they raised. Committee members see
+ * every request, with the ones waiting on their vote first.
+ */
 export default async function OwnerWorksPage() {
   await connection();
+  const selected = await getSelectedOwnerScheme(["OWNER", "COMMITTEE"]);
+  if (!selected) {
+    return (
+      <div className="max-w-3xl">
+        <PageHeader title="Works requests" description="Report something in the building that needs fixing." />
+        <EmptyState title="Choose a building" description="Choose a building from My properties to see its works requests." />
+      </div>
+    );
+  }
+  const { schemeId, profile } = selected;
+  const members = await committeeMembers(schemeId);
+  const isCommittee = members.includes(profile.id);
 
-  const profile = await getCurrentProfile();
-  if (!profile) return null;
+  const all = await listRequests(schemeId);
+  const visible = isCommittee ? all : all.filter((r) => r.raisedById === profile.id);
+  const needVote = isCommittee ? new Set((await awaitingMyVote(schemeId, profile.id)).map((d) => d.requestId)) : new Set<string>();
 
-  const schemes = scopeToSelectedScheme(
-    await getSchemesForOwner(profile.id),
-    await getVerifiedSelectedSchemeId(),
-  );
-  if (schemes.length === 0) notFound();
-
-  const schemeId = schemes[0].id;
-
-  const [requests, dashboard] = await Promise.all([
-    getWorksRequestsForScheme(schemeId, { limit: 10 }),
-    getWorksDashboardData(schemeId),
-  ]);
+  const waiting = visible.filter((r) => r.status === "SUBMITTED" || r.status === "UNDER_REVIEW" || needVote.has(r.id));
+  const returnedToMe = visible.filter((r) => r.status === "DRAFT" && r.returnReason && r.raisedById === profile.id);
+  const rest = visible.filter((r) => !waiting.includes(r) && !returnedToMe.includes(r));
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl space-y-6">
       <PageHeader
-        title="Works Overview"
-        description="Current works and maintenance activity for your scheme."
+        title="Works requests"
+        description={isCommittee ? "Requests raised in the building, and the committee's decisions on them." : "Report something in the building that needs fixing, and follow what the committee decides."}
         action={
-          <Button href="/owner/maintenance/new">Report Issue</Button>
+          <div className="flex flex-wrap gap-3">
+            {isCommittee && (
+              <Button href="/owner/works/settings" variant="secondary">
+                Works settings
+              </Button>
+            )}
+            <Button href="/owner/works/new">Report something</Button>
+          </div>
         }
       />
 
-      {/* KPI summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Active Requests"
-          value={dashboard.requests.total}
-          accent="bg-turquoise"
-        />
-        <StatCard
-          label="Active Contracts"
-          value={dashboard.contracts.active}
-          accent="bg-blue-500"
-        />
-        <StatCard
-          label="Pending Invoices"
-          value={dashboard.invoices.pending}
-          accent="bg-amber-500"
-        />
-        <StatCard
-          label="Urgent Items"
-          value={dashboard.requests.urgent + dashboard.requests.emergency}
-          accent="bg-red-500"
-        />
-      </div>
+      {returnedToMe.length > 0 && (
+        <Card>
+          <CardHeader title="Returned to you" description="The committee needs more detail before it can decide." />
+          <RequestList rows={returnedToMe} />
+        </Card>
+      )}
 
-      {/* Recent works requests */}
+      {isCommittee && (
+        <Card>
+          <CardHeader title="For the committee" description="Requests waiting for a decision. Decisions are made by vote here, with no meeting needed." />
+          {waiting.length ? <RequestList rows={waiting} highlight={needVote} /> : <p className="text-sm text-ink-muted">Nothing is waiting for the committee.</p>}
+        </Card>
+      )}
+
       <Card>
-        <CardHeader
-          title="Recent Works Requests"
-          description="Latest works and maintenance activity"
-        />
-        {requests.length === 0 ? (
-          <div className="px-5 pb-5">
-            <EmptyState
-              icon={
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="8"
-                    y="6"
-                    width="32"
-                    height="36"
-                    rx="4"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M16 18h16M16 24h16M16 30h10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              }
-              title="No works requests"
-              description="There are no current works requests for your scheme."
-            />
-          </div>
+        <CardHeader title={isCommittee ? "All requests" : "Your requests"} />
+        {(isCommittee ? rest : [...waiting, ...rest]).length === 0 ? (
+          <EmptyState title="No works requests" description={isCommittee ? "No other requests have been raised." : "You have not reported anything yet."} />
         ) : (
-          <div className="flex flex-col gap-2 px-5 pb-5">
-            {requests.map((req) => (
-              <div
-                key={req.id}
-                className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted p-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-mono text-ink-muted">
-                      {req.requestNumber}
-                    </span>
-                    <StatusChip
-                      status={statusLabel[req.status] ?? req.status}
-                    />
-                    {req.isEmergency && (
-                      <span className="inline-flex items-center rounded-full h-[22px] px-2.5 text-[11px] font-medium bg-red-100 text-red-700">
-                        Emergency
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium text-ink truncate">
-                    {req.title}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-ink-muted">
-                    {req.category && <span>{req.category.name}</span>}
-                    <span>{formatDate(req.createdAt)}</span>
-                    <span>
-                      {priorityLabel[req.priority] ?? req.priority}
-                    </span>
-                  </div>
-                </div>
-                {req.estimatedCost && (
-                  <span className="text-sm font-medium text-ink shrink-0 ml-4">
-                    {formatCurrency(req.estimatedCost)}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+          <RequestList rows={isCommittee ? rest : [...waiting, ...rest]} />
         )}
       </Card>
 
-      {/* Financial overview */}
-      {dashboard.invoices.total > 0 && (
-        <Card>
-          <CardHeader title="Invoice Summary" />
-          <div className="px-5 pb-5">
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-              <div>
-                <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">
-                  Total Invoices
-                </dt>
-                <dd className="text-sm text-ink">{dashboard.invoices.total}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">
-                  Pending Amount
-                </dt>
-                <dd className="text-sm font-semibold text-amber-600">
-                  {formatCurrency(dashboard.invoices.pendingTotal)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">
-                  Overdue Invoices
-                </dt>
-                <dd className="text-sm text-ink">{dashboard.invoices.overdue}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">
-                  Overdue Amount
-                </dt>
-                <dd className="text-sm font-semibold text-red-600">
-                  {formatCurrency(dashboard.invoices.overdueTotal)}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </Card>
-      )}
-
-      {/* Compliance */}
-      {dashboard.compliance.expired > 0 && (
-        <Card>
-          <CardHeader
-            title="Compliance Alerts"
-            description="Items requiring attention"
-          />
-          <div className="px-5 pb-5">
-            <div className="rounded-[var(--radius-card)] bg-red-50 p-4">
-              <p className="text-sm font-medium text-red-700">
-                {dashboard.compliance.expired} expired compliance check
-                {dashboard.compliance.expired === 1 ? "" : "s"}
-              </p>
-              <p className="text-xs text-red-600 mt-1">
-                Contact your strata manager for details.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
+      <p className="text-xs text-ink-muted">
+        Earlier maintenance work orders are still on the <Link href="/owner/maintenance" className="underline">maintenance page</Link>.
+      </p>
     </div>
   );
 }

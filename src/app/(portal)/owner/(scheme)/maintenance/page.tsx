@@ -35,8 +35,6 @@ export default async function OwnerMaintenancePage({
   if (schemeMap.size === 0) notFound();
 
   const schemeIds = scopeSchemeIds([...schemeMap.keys()], selectedSchemeId);
-  // Committee of a scheme in view, not committee of any scheme (SEC-023).
-  const isCommittee = committeeSchemes.some((cs) => schemeIds.includes(cs.id));
   const workOrders = await getWorkOrdersForSchemes(schemeIds);
 
   const schemeNames = Object.fromEntries(schemeMap);
@@ -49,11 +47,9 @@ export default async function OwnerMaintenancePage({
     <div className="max-w-3xl">
       <PageHeader
         title="Maintenance"
-        description="Maintenance requests and work orders for your schemes."
+        description="Earlier maintenance work orders. New requests are raised under Works requests."
         action={
-          <Button href="/owner/maintenance/new">
-            {isCommittee ? "Raise Work Order" : "Report Issue"}
-          </Button>
+          <Button href="/owner/works/new">Report something</Button>
         }
       />
 
