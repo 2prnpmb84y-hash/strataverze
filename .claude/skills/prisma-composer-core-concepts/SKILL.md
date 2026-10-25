@@ -2,7 +2,7 @@
 name: prisma-composer-core-concepts
 metadata:
   library: "@prisma/composer"
-  library_version: "0.29.1"
+  library_version: "0.30.0"
   version: 2026.9.1
 description: >-
   Use when deploying or managing an app that uses Prisma Composer
@@ -319,6 +319,14 @@ Bun under `bunx` or `bun run`: `bunx prisma` gives Node then Bun,
 Bun APIs, `bun node_modules/prisma/dist/prisma.js deploy module.ts` from a
 shell runs `prisma` under Bun with Alchemy on Node.
 
+Services, managed Postgres databases and buckets record their node address as
+`logicalId` on their Branch. Console uses that address to match topology nodes
+to resources and compare them with main. Existing environments receive the
+identity on their next deploy; a conflicting identity fails deploy. Local dev
+creates no platform rows. Changing a node's address (its name without an
+explicit `id`, its `id`, or its module) makes a new entity: the next deploy
+deletes the old rows, and a database's or bucket's data with them.
+
 **Progress.** `prisma deploy` prints each step as it starts and finishes, with
 its duration (`✔ assemble web (3m 42s)`), and ends with the real total
 (`Deployed <app> to <stage> in 5m 25s.`). Steps: load config and app, one
@@ -355,7 +363,7 @@ another stage's resources is kept. Destroy never creates anything:
 destroying a
 never-deployed stage fails rather than standing one up.
 
-**The engine underneath is alchemy.** Convergence is executed by [alchemy](https://alchemy.run), a third-party infrastructure-as-code engine that arrives as an ordinary, exactly-pinned npm dependency of `@prisma/composer` (2.0.0-beta.78 at this library version). Your code never imports or configures it; consult alchemy's own docs for the engine itself. What matters operationally:
+**The engine underneath is alchemy.** Convergence is executed by [alchemy](https://alchemy.run), a third-party infrastructure-as-code engine that arrives as an ordinary, exactly-pinned npm dependency of `@prisma/composer` (2.0.0-beta.83 at this library version). Your code never imports or configures it; consult alchemy's own docs for the engine itself. What matters operationally:
 
 Composer runs the alchemy package installed beside the app's
 `@prisma/composer` and starts it with Node (the first `node` on PATH when `prisma` runs
@@ -433,9 +441,7 @@ that surprise:
 1. It runs the same pipeline as deploy, so **build first**, exactly like
    deploy. It watches built output and restarts a service when its build
    changes.
-2. Ctrl-C stops the app's processes but leaves local databases, buckets, and
-   their data up: the next `dev` is a warm start. Starting clean, wiping
-   this app's local instances and data first, is an explicit opt-in flag.
+2. Ctrl-C stops the app's processes but leaves local databases, buckets, and their data up: the next `dev` is a warm start. Starting clean, wiping this app's local instances and data first, is an explicit opt-in flag. On a fresh start, each service gets the lowest free port from 3000 up, in dependency order: a service before the services that call it, otherwise provision order. A warm start keeps the ports services already have.
 3. `dev` does not print service logs. The `log` operation follows the
    already-running app's merged logs; it never builds, provisions, starts, or
    stops anything:
@@ -581,6 +587,7 @@ today the blocks above plus your own Modules are the whole set, so verify a
     `admin.createUser` from a service wired to the `admin` port. A deployed
     stack's rpc ports are reachable only from inside its graph, so the app
     exposes its own operator route that makes that call.
+11. **`prisma deploy` stops at `ERR_UNKNOWN_FILE_EXTENSION` naming the app's own `.ts` entry.** Node is too old to strip TypeScript types. Composer supports Node.js 22.18 or newer on the 22 line, 24.11 or newer on the 24 line, or 26 or newer, with the npm that Node release ships (npm 10 on Node 22); its packages declare `engines.node` as `^22.18.0 || ^24.11.0 || >=26.0.0`. Upgrade Node.
 
 ## What Composer doesn't do yet
 
