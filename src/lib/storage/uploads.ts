@@ -86,6 +86,16 @@ export const UPLOAD_PURPOSES = {
     maxBytes: 10 * MB,
     authorise: ((schemeId) => requireSchemeAccessOrAdmin(schemeId, "scheme.manage")) as Authorise,
   },
+  /**
+   * Photos on a works request (25 Oct 2026): what the owner reporting it
+   * saw. By any owner or committee member of the building, or its Adviser.
+   */
+  works_photo: {
+    folder: "works",
+    kinds: PHOTO_KINDS,
+    maxBytes: 10 * MB,
+    authorise: ((schemeId) => requireSchemeMembership(schemeId, ["OWNER", "COMMITTEE", "ADVISER"])) as Authorise,
+  },
   /** Financial documents filed by the Adviser (receipts, statements, invoices). */
   finance_document: {
     folder: "finance",

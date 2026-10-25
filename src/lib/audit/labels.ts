@@ -33,6 +33,7 @@ const LABELS: Record<string, string> = {
   "vault.check_failed": "A building vault check found a problem",
   "scheme.created": "Building created",
   "scheme.photo_set": "Property photo added",
+  "works.settings_changed": "Works settings changed",
   "scheme.photo_removed": "Property photo removed",
   "scheme.deleted": "Building deleted",
   "contractor.approved": "Contractor approved",

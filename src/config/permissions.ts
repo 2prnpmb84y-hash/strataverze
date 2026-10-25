@@ -68,6 +68,14 @@ export const CAPABILITIES = {
   "works.read": ["ADVISER", "COMMITTEE", "ACCOUNTANT"],
   /** Approval decisions, further limited by each approval route's approver roles. */
   "works.approve": ["COMMITTEE", "ADVISER"],
+  /** Works marketplace (25 Oct 2026): raising a works request for the committee. */
+  "works.request": ["OWNER", "COMMITTEE"],
+  /** Proposing and voting on works decisions. The Adviser decides only where the building delegates it (checked in src/lib/works/review.ts). */
+  "works.decide": ["COMMITTEE", "ADVISER"],
+  /** The building's works settings: approval rule, urgent limit, Adviser delegation. The committee's, not the Adviser's. */
+  "works.settings": ["COMMITTEE"],
+  /** The building's preferred contractors for urgent works. */
+  "works.preferred": ["COMMITTEE", "ADVISER"],
   /** Recording payments against works invoices. */
   "works.payments": ["ADVISER"],
 

@@ -11,6 +11,9 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import Link from "next/link";
 import { WorksRequestActions } from "./works-request-actions";
+import { loadRequestView } from "@/lib/works/view";
+import { DecisionPanel } from "@/components/works/decision-panel";
+import { ruleSentence } from "@/components/works/request-details";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -108,6 +111,8 @@ export default async function WorksRequestDetailPage({
     .limit(200)
     .all();
 
+  const view = await loadRequestView(id, requestId, { profileId: access.profile.id, roles: access.roles });
+
   const members = memberships.map((m) => ({
     id: m.profileId,
     firstName: m.profile.firstName,
@@ -171,8 +176,34 @@ export default async function WorksRequestDetailPage({
         requestId={requestId}
         schemeId={id}
         status={request.status}
+        returned={!!request.returnReason && request.raisedById !== access.profile.id}
         members={members}
       />
+
+      {/* The committee's decision (works stage 1, 25 Oct 2026): by vote, or
+          by the Adviser only under the building's delegation. */}
+      {view && (
+        <Card>
+          <CardHeader title="The committee's decision" description="How this request is handled." />
+          <DecisionPanel schemeId={id} requestId={requestId} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+        </Card>
+      )}
+
+      {view && view.photos.length > 0 && (
+        <Card>
+          <CardHeader title="Photos" description="Links last 15 minutes. Reload the page if one does not open." />
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {view.photos.map((p) => (
+              <li key={p.id}>
+                <a href={p.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-[var(--radius-card)] border border-line bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed storage link */}
+                  <img src={p.url} alt={p.fileName} className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {/* Details card */}
       <Card>

@@ -22,6 +22,16 @@ const ACTION_LABELS: Record<string, string> = {
   STRATA_ROLL_UPDATED: "updated an owner's name on the strata roll",
   OWNER_CHANGED: "recorded a change of owner",
   ONBOARDING_INCOME_BUDGET_SAVED: "entered last year's income and expenditure and this year's budget",
+  WORKS_REQUEST_SUBMITTED: "raised a works request",
+  WORKS_REQUEST_RESUBMITTED: "sent a works request back to the committee",
+  WORKS_DECISION_PROPOSED: "proposed a works decision",
+  WORKS_DECISION_VOTED: "voted on a works decision",
+  WORKS_DECISION_MADE: "settled a works decision",
+  WORKS_DECISION_NOT_AGREED: "closed a works proposal that was not agreed",
+  WORKS_DECISION_WITHDRAWN: "withdrew a works proposal",
+  WORKS_SETTINGS_UPDATED: "changed the works settings",
+  WORKS_PREFERRED_CONTRACTOR_SET: "set a preferred contractor",
+  WORKS_PREFERRED_CONTRACTOR_REMOVED: "removed a preferred contractor",
 };
 
 const ACTION_ICONS: Record<string, string> = {
@@ -46,6 +56,16 @@ const ACTION_ICONS: Record<string, string> = {
   STRATA_ROLL_UPDATED: "📜",
   OWNER_CHANGED: "🔑",
   ONBOARDING_INCOME_BUDGET_SAVED: "📊",
+  WORKS_REQUEST_SUBMITTED: "🔧",
+  WORKS_REQUEST_RESUBMITTED: "🔧",
+  WORKS_DECISION_PROPOSED: "🗳️",
+  WORKS_DECISION_VOTED: "🗳️",
+  WORKS_DECISION_MADE: "✅",
+  WORKS_DECISION_NOT_AGREED: "❌",
+  WORKS_DECISION_WITHDRAWN: "↩️",
+  WORKS_SETTINGS_UPDATED: "⚙️",
+  WORKS_PREFERRED_CONTRACTOR_SET: "🔧",
+  WORKS_PREFERRED_CONTRACTOR_REMOVED: "🔧",
 };
 
 type ActivityEntry = {

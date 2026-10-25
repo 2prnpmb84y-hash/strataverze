@@ -40,6 +40,8 @@ const ALLOWED: Record<string, string> = {
   "src/app/(portal)/owner/(scheme)/finance/actions.ts#uploadPaymentConfirmationAction": "scoped to the caller's own lots and the scheme's payments folder (src/lib/owner/payment-upload.ts)",
   "src/app/(portal)/supplier/quotes/[id]/actions.ts#withdrawQuoteAction": "checks the quote is the caller's own",
   "src/app/search/actions.ts#globalSearch": "scope worked out per scheme from the caller's own memberships (src/lib/search/scope.ts)",
+  "src/app/(portal)/owner/(scheme)/maintenance/actions.ts#createOwnerWorkOrderAction": "retired 25 Oct 2026: reads nothing and changes nothing, only returns a message (owners raise works requests instead)",
+  "src/lib/actions/works.ts#reviewWorksRequest": "retired 25 Oct 2026: reads nothing and changes nothing, only returns a message (works requests are decided by the committee's vote)",
 };
 
 function walk(dir: string): string[] {
