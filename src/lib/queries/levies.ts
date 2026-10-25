@@ -1,3 +1,4 @@
+import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 
 /*
@@ -14,7 +15,8 @@ import { db } from "@/prisma/db";
 export async function getLevyNoticesForLot(lotId: string, limit = 200) {
   try {
     return await db.orm.public.LevyNotice
-      .where((ln) => ln.lotId.eq(lotId))
+      // Owners see issued notices only, never planned ones (DRAFT).
+      .where((ln) => and(ln.lotId.eq(lotId), ln.status.neq("DRAFT")))
       .include("fund")
       .include("levySchedule")
       .orderBy((ln) => ln.dueDate.desc())
@@ -33,7 +35,7 @@ export async function getLevyNoticesForLots(lotIds: string[], limit = 500) {
   if (lotIds.length === 0) return [];
   try {
     return await db.orm.public.LevyNotice
-      .where((ln) => ln.lotId.in(lotIds))
+      .where((ln) => and(ln.lotId.in(lotIds), ln.status.neq("DRAFT")))
       .include("fund")
       .include("levySchedule")
       .orderBy((ln) => ln.dueDate.desc())

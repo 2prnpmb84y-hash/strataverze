@@ -167,18 +167,21 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
 
   const adoptedBefore = working.find((b) => b.adoptedBeforeTakeoverOn);
   const anyDraft = working.some((b) => b.status === "DRAFT" || b.status === "PROPOSED");
-  const firstSchedule = liveSchedules.find((s) => s.firstDueDate) ?? liveSchedules[0];
+  const firstSchedule = liveSchedules[0];
   const saved: IncomeBudgetInput = {
     funds: savedFunds,
     adoption: adoptedBefore
       ? { kind: "before_takeover", meetingDate: toIsoDay(adoptedBefore.adoptedBeforeTakeoverOn) }
       : { kind: anyDraft ? "draft" : "before_takeover", meetingDate: "" },
-    levies: {
-      frequency: firstSchedule ? String(firstSchedule.frequency) : "QUARTERLY",
-      firstDueDate: firstSchedule?.firstDueDate ? toIsoDay(firstSchedule.firstDueDate) : "",
-      // A schedule was made only when none of the year's notices had been raised.
-      raisedBeforeTakeover: liveSchedules.length ? "none" : "",
-    },
+    levies: (() => {
+      // A schedule records the instalments raised before the takeover, if any.
+      const raisedInstalments = String(firstSchedule?.raisedBeforeTakeover ?? "").split(",").map((x) => Number(x.trim())).filter((x) => x > 0);
+      return {
+        frequency: firstSchedule ? String(firstSchedule.frequency) : "QUARTERLY",
+        raisedBeforeTakeover: !liveSchedules.length ? "" : raisedInstalments.length ? "some" : "none",
+        raisedInstalments,
+      };
+    })(),
   };
 
   return {
@@ -347,10 +350,11 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
         frequency: parsed.levies.frequency as OnboardingLevyFrequency,
         totalLots: data.lotCount,
         totalEntitlement: String(data.totalEntitlement) as unknown as Numeric<10, 2>,
-        firstDueDate: ts(parsed.levies.firstDueDate),
         status: adoption.kind === "before_takeover" ? "APPROVED" : "DRAFT",
         approvedAt: adoption.kind === "before_takeover" ? ts(adoption.meetingDate) : null,
         approvedBy: adoption.kind === "before_takeover" ? actorId : null,
+        // Not raised again when the notices are planned.
+        raisedBeforeTakeover: parsed.levies.raisedInstalments.length ? parsed.levies.raisedInstalments.join(",") : null,
       };
       if (keep) {
         await tx.orm.public.LevySchedule.where((l) => l.id.eq(keep.id)).update(values);
@@ -387,7 +391,6 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
       adoption: adoption.kind === "before_takeover" ? `adopted ${adoption.meetingDate}` : "draft",
       levies: summary.schedulesOut.map((s) => ({ fundId: s.fundId, amount: formatMoney(s.levyCents) })),
       frequency: parsed.levies.frequency,
-      firstDueDate: parsed.levies.firstDueDate,
     },
   });
   return { check, saved: true };

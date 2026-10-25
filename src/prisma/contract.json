@@ -11134,6 +11134,13 @@
                   "kind": "scalar"
                 }
               },
+              "emailedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "fundId": {
                 "nullable": false,
                 "type": {
@@ -11163,6 +11170,13 @@
                 "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "levyPostPending": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -11360,6 +11374,9 @@
                 "dueDate": {
                   "column": "due_date"
                 },
+                "emailedAt": {
+                  "column": "emailed_at"
+                },
                 "fundId": {
                   "column": "fund_id"
                 },
@@ -11371,6 +11388,9 @@
                 },
                 "issuedAt": {
                   "column": "issued_at"
+                },
+                "levyPostPending": {
+                  "column": "levy_post_pending"
                 },
                 "levyScheduleId": {
                   "column": "levy_schedule_id"
@@ -11696,6 +11716,13 @@
                   "kind": "scalar"
                 }
               },
+              "raisedBeforeTakeover": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -11835,6 +11862,9 @@
                 },
                 "migrationBatchId": {
                   "column": "migration_batch_id"
+                },
+                "raisedBeforeTakeover": {
+                  "column": "raised_before_takeover"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -41208,6 +41238,11 @@
                   "dataType": "pg/date",
                   "nullable": false
                 },
+                "emailed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "fund_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -41239,6 +41274,15 @@
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
                   "nullable": true
+                },
+                "levy_post_pending": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
                 },
                 "levy_schedule_id": {
                   "codecId": "pg/uuid@1",
@@ -41653,6 +41697,11 @@
                 "migration_batch_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "raised_before_takeover": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "nullable": true
                 },
                 "scheme_id": {
@@ -56868,7 +56917,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "6489b0848294f069ae8877ec68d6a11ee63b2a2a097ba32e9505965d130c3750"
+    "storageHash": "5cebfacb9ecdde2171309bb8ca073cc1a17d1010a9d524866405a3d28d324c78"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

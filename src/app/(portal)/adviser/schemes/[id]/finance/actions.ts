@@ -66,9 +66,7 @@ import {
 import {
   createLevySchedule,
   createLevyNoticesBatch,
-  issueLevyNotice,
   approveLevySchedule,
-  activateLevySchedule,
   getLevyScheduleById,
   getNextNoticeNumber,
 } from "@/lib/queries/levy-schedules";
@@ -84,7 +82,6 @@ import {
   supplierInvoiceControls,
 } from "@/lib/finance/invoice-approval";
 import { checkBankDetailsForPayment } from "@/lib/finance/payment-controls";
-import { applyOwnerCredit } from "@/lib/finance/owner-credits";
 import { LevyReceiptError, receiptLevyPayment } from "@/lib/finance/levy-receipts";
 import { getLevyReceipt, reallocateLevyReceipt, ReceiptReversalError, reverseLevyReceipt } from "@/lib/finance/levy-receipt-reversal";
 import {
@@ -102,7 +99,9 @@ import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
-import { checkPlannedNotices, sendIssuedNotices } from "@/lib/levies/notice-content-data";
+import { checkPlannedNotices } from "@/lib/levies/notice-content-data";
+import { issueNoticeBatch, issueOverdueDrafts, overdueDrafts } from "@/lib/levies/issue-notices";
+import { issueTiming, lateMessage, type IssueTiming } from "@/lib/levies/issue-timing";
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
@@ -1051,41 +1050,6 @@ export async function createLevyScheduleAction(
   }
 }
 
-/** DR Levies Receivable, CR Levy Income for notices raised against a fund. */
-async function postLevyRaisedJournal(args: {
-  schemeId: string;
-  fundId: string;
-  scheduleId: string;
-  totalAmount: number;
-  noticeCount: number;
-  profileId: string;
-}) {
-  if (args.totalAmount <= 0) return;
-  const fund = await db.orm.public.Fund.where((f) => f.id.eq(args.fundId)).first();
-  const fundType = (fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
-  const receivableAccount = await getSystemAccountBySubType(args.schemeId, "ACCOUNTS_RECEIVABLE", fundType);
-  const incomeAccount = await getSystemAccountBySubType(args.schemeId, "LEVY_INCOME", fundType);
-  if (!receivableAccount || !incomeAccount) return;
-
-  const entryNumber = await getNextEntryNumber(args.schemeId);
-  const today = new Date().toISOString().split("T")[0];
-  const entry = await createJournalEntry({
-    schemeId: args.schemeId,
-    entryNumber,
-    transactionDate: today,
-    description: `Levy notices issued — ${args.noticeCount} notice(s), ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
-    entryType: "AUTO",
-    sourceType: "LEVY_RAISED",
-    sourceId: args.scheduleId,
-    createdBy: args.profileId,
-    lines: [
-      { accountCodeId: receivableAccount.id, fundId: args.fundId, debit: args.totalAmount, description: "Levies receivable raised" },
-      { accountCodeId: incomeAccount.id, fundId: args.fundId, credit: args.totalAmount, description: "Levy income recognised" },
-    ],
-  });
-  await postJournalEntry(entry.id, args.profileId);
-}
-
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Load a schedule and confirm it belongs to the scheme. */
@@ -1163,13 +1127,6 @@ export async function issueScheduleNoticesAction(
       budgets: (await getBudgets(schemeId, Number(schedule.financialYear))).filter((b) => b.fundId === schedule.fundId),
     });
     if (activation) return { error: activation };
-    const firstDueDate = isSpecial
-      ? toIsoDay(schedule.dueDate)
-      : String(formData.get("firstDueDate") ?? "").trim();
-    if (!ISO_DATE.test(firstDueDate)) {
-      return { fieldErrors: { firstDueDate: "Enter the due date of the first instalment." } };
-    }
-
     const scheme = await getSchemeById(schemeId);
     if (!scheme) return { error: "Scheme not found." };
     const lots = await loadPlanLots(schemeId);
@@ -1181,39 +1138,83 @@ export async function issueScheduleNoticesAction(
     });
     if (issues.length > 0) return { error: issues.map((i) => i.message).join(" ") };
 
+    const today = sydneyToday();
+    // Levies are paid in advance: a budget levy instalment falls due on the
+    // first day of the period it covers. A special levy has its own date.
     const periodStart = isSpecial
-      ? toIsoDay(schedule.approvedAt) || firstDueDate
+      ? toIsoDay(schedule.approvedAt) || toIsoDay(schedule.dueDate)
       : financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
+    const firstDueDate = isSpecial ? toIsoDay(schedule.dueDate) : periodStart;
+    if (!ISO_DATE.test(firstDueDate)) return { error: "This special levy has no due date." };
+    // Instalments the previous manager raised before the takeover are not raised again.
+    const raisedBefore = new Set(String(schedule.raisedBeforeTakeover ?? "").split(",").map((x) => Number(x.trim())).filter((x) => x > 0));
     const plan = planNotices({
       lots,
       totalCents,
       frequency: (isSpecial ? "ONE_OFF" : schedule.frequency) as LevyFrequency,
       periodStart,
       firstDueDate,
-    });
+    }).filter((n) => !raisedBefore.has(n.instalment));
+    // Periods already levied by an earlier schedule for this fund and year
+    // (one whose planned notices were stopped) are not levied again, and
+    // instalments the previous manager raised stay excluded.
+    if (!isSpecial) {
+      const sameYear = await db.orm.public.LevySchedule
+        .where((x) => and(x.schemeId.eq(schemeId), x.fundId.eq(schedule.fundId), x.financialYear.eq(Number(schedule.financialYear)), x.levyType.eq("ORDINARY")))
+        .limit(50)
+        .all();
+      if (sameYear.some((x) => x.id !== scheduleId && x.status === "ACTIVE")) {
+        return { error: "This fund already has an active levy schedule for this year. Stop its planned notices first." };
+      }
+      const earlier = sameYear.filter((x) => x.id !== scheduleId && x.status === "SUPERSEDED");
+      const earlierRaised = new Set(earlier.flatMap((x) => String(x.raisedBeforeTakeover ?? "").split(",").map((v) => Number(v.trim())).filter((v) => v > 0)));
+      const issued = earlier.length
+        ? await db.orm.public.LevyNotice.where((n) => and(n.levyScheduleId.in(earlier.map((x) => x.id)), n.status.neq("DRAFT"))).limit(20000).all()
+        : [];
+      const periods = [...new Map(issued.map((n) => [`${toIsoDay(n.periodStart)}|${toIsoDay(n.periodEnd)}`, { start: toIsoDay(n.periodStart), end: toIsoDay(n.periodEnd) }])).values()];
+      const kept = [];
+      for (const n of plan) {
+        const overlaps = periods.filter((p) => p.start <= n.periodEnd && n.periodStart <= p.end);
+        if (!overlaps.length) {
+          // The previous manager's instalments, when the frequency is the same.
+          if (earlierRaised.has(n.instalment) && earlier.some((x) => x.frequency === schedule.frequency && x.raisedBeforeTakeover)) continue;
+          kept.push(n);
+          continue;
+        }
+        // Already levied for exactly this period: skip it. Overlapping differently (another frequency): refuse.
+        if (overlaps.some((p) => p.start === n.periodStart && p.end === n.periodEnd)) continue;
+        return { error: "An earlier schedule for this fund and year levied periods that overlap these instalments differently. Use the same frequency as the earlier schedule." };
+      }
+      plan.splice(0, plan.length, ...kept);
+    }
+    if (plan.length === 0) return { error: "Every instalment of this schedule has already been raised (by the previous manager, or on an earlier schedule), so there is nothing to plan." };
+
+    // When each notice goes out: 5 weeks before it falls due. A special levy
+    // is resolved for one date and goes out now.
+    const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today) }));
+    const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`)!])).values()];
+    if (late.length && formData.get("confirmLate") !== "on") {
+      return { error: "Some instalments cannot be given 5 weeks' notice. Check them below and confirm to go ahead.", data: { late } };
+    }
 
     const first = await getNextNoticeNumber(schemeId);
     let seq = parseInt(first.replace(/\D/g, ""), 10) || 1;
-    const numbered = plan.map((n) => ({ ...n, noticeNumber: `LN-${String(seq++).padStart(4, "0")}` }));
+    const numbered = timed.map(({ n, t }) => ({ ...n, dueDate: t.dueDate, issueOn: t.issueOn, noticeNumber: `LN-${String(seq++).padStart(4, "0")}` }));
+    const goesNow = (x: { issueOn: string }) => x.issueOn <= today;
 
-    // Every notice must carry what a NSW levy notice states before any is issued.
-    const noticeDate = sydneyToday();
-    const contentInput = {
-      schemeId,
-      fundId: schedule.fundId,
-      issuerId: profile.id,
-      noticeDate,
-      isUrgentSpecialLevy: isSpecial && formData.get("urgentSpecialLevy") === "on",
-      notices: numbered.map((n) => ({
-        lotId: n.lotId,
-        lotNumber: n.lotNumber,
-        ownerId: n.ownerId,
-        noticeNumber: n.noticeNumber,
-        dueDate: n.dueDate,
-        amountCents: n.amountCents,
-      })),
-    };
-    const missing = await checkPlannedNotices(contentInput);
+    // Every notice must carry what a NSW levy notice states, checked now for
+    // all of them: those going out today, and those going out later.
+    const urgentSpecialLevy = isSpecial && formData.get("urgentSpecialLevy") === "on";
+    const toContent = (list: typeof numbered) =>
+      list.map((n) => ({ lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents }));
+    const now = numbered.filter(goesNow);
+    const later = numbered.filter((n) => !goesNow(n));
+    const missing = [
+      ...(now.length ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: today, isUrgentSpecialLevy: urgentSpecialLevy, notices: toContent(now) }) : []),
+      ...(later.length
+        ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: later.map((n) => n.issueOn).sort()[0], notices: toContent(later) })
+        : []),
+    ].filter((m, i, all) => all.findIndex((x) => x.code === m.code && x.message === m.message) === i);
     if (missing.length > 0) {
       return {
         error: "The notices cannot be issued yet. Fix the items listed and try again.",
@@ -1234,62 +1235,118 @@ export async function issueScheduleNoticesAction(
         dueDate: n.dueDate,
         amountDue: fromCents(n.amountCents),
       })),
+      { activateScheduleId: scheduleId },
     );
-    for (const notice of created) await issueLevyNotice(notice.id);
-    await activateLevySchedule(scheduleId);
 
-    await postLevyRaisedJournal({
-      schemeId,
-      fundId: schedule.fundId,
-      scheduleId,
-      totalAmount: fromCents(totalCents),
-      noticeCount: created.length,
-      profileId: profile.id,
-    });
-
-    await logActivity({
-      schemeId,
-      actorId: profile.id,
-      action: "LEVY_NOTICES_ISSUED",
-      entityType: "LevySchedule",
-      entityId: scheduleId,
-      metadata: { count: created.length, total: fromCents(totalCents), firstDueDate },
-    });
-
-    // Apply owner credit to the new notices when the scheme has auto-apply on.
-    let creditAppliedCents = 0;
-    if (scheme.autoApplyOwnerCredit !== false) {
-      creditAppliedCents = await applyOwnerCredit({
+    const issueNow = created
+      .map((c, i) => ({ c, n: numbered[i] }))
+      .filter((x) => goesNow(x.n))
+      .map(({ c, n }) => ({ id: c.id, noticeNumber: n.noticeNumber, lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, dueDate: n.dueDate, amountCents: n.amountCents }));
+    const result = await issueNoticeBatch({ schemeId, scheduleId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: today, notices: issueNow, isUrgentSpecialLevy: urgentSpecialLevy });
+    const nextIssueOn = later.map((n) => n.issueOn).sort()[0] ?? null;
+    if (later.length) {
+      await logActivity({
         schemeId,
-        lotIds: [...new Set(created.map((n) => n.lotId))],
         actorId: profile.id,
+        action: "LEVY_NOTICES_PLANNED",
+        entityType: "LevySchedule",
+        entityId: scheduleId,
+        metadata: { count: later.length, issueDates: [...new Set(later.map((n) => n.issueOn))].sort(), late },
       });
     }
-
-    // Email each notice to its owner, with the notice attached as a PDF. A failed email does not undo the issue.
-    const ids = new Map(created.map((n) => [String(n.noticeNumber), n.id]));
-    const emailed = await sendIssuedNotices({
-      ...contentInput,
-      notices: contentInput.notices.map((n) => ({ ...n, noticeId: ids.get(n.noticeNumber) })),
-    });
-    await logActivity({
-      schemeId,
-      actorId: profile.id,
-      action: "LEVY_NOTICES_EMAILED",
-      entityType: "LevySchedule",
-      entityId: scheduleId,
-      metadata: { emailed, notices: created.length },
-    });
 
     revalidatePath(financePath(schemeId, "/levies"));
     revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
     return {
       success: true,
-      data: { count: created.length, emailed, creditApplied: fromCents(creditAppliedCents) },
+      data: { count: result.count, planned: later.length, nextIssueOn, emailed: result.emailed, creditApplied: fromCents(result.creditAppliedCents) },
     };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    // A closed or locked period: the levy could not be posted, so the notices stay planned.
+    if (err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message)) {
+      return { error: `${err.message} The notices were not sent; they stay planned.` };
+    }
     return { error: "Failed to issue levy notices." };
+  }
+}
+
+/**
+ * Send the planned notices whose 5-week mark has passed (they were held, or
+ * the daily job did not run), once the Adviser confirms (25 Oct 2026). Those
+ * with fewer than 30 days left fall due 30 days from today instead.
+ */
+export async function issueOverdueNoticesAction(
+  schemeId: string,
+  scheduleId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const schedule = await loadScheduleForScheme(schemeId, scheduleId);
+    if (!schedule) return { error: "Levy schedule not found." };
+    if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be sent." };
+    const today = sydneyToday();
+    const list = await overdueDrafts(schemeId, scheduleId, today);
+    if (!list.length) return { error: "No planned notice is past its 5-week mark." };
+    const late = [...new Set(list.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`)!))];
+    if (formData.get("confirmLate") !== "on") {
+      return { error: "Confirm that these notices go out today with less than 5 weeks' notice.", data: { late } };
+    }
+    const r = await issueOverdueDrafts({ schemeId, scheduleId, fundId: schedule.fundId, issuerId: profile.id, today });
+    if (r.missing.length) {
+      return { error: "The notices cannot be issued yet. Fix the items listed and try again.", data: { missing: r.missing.map((message) => ({ code: message, message })) } };
+    }
+    revalidatePath(financePath(schemeId, "/levies"));
+    revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
+    return { success: true, data: { count: r.count, emailed: r.emailed } };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    // A closed or locked period: the levy could not be posted, so the notices stay planned.
+    if (err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message)) {
+      return { error: `${err.message} The notices were not sent; they stay planned.` };
+    }
+    return { error: "Failed to send the notices." };
+  }
+}
+
+/**
+ * Stop a schedule's planned notices (25 Oct 2026), for example when the
+ * budget is revised: notices not yet sent are removed (they were never
+ * issued, so nothing is owed or posted) and the schedule is superseded.
+ * Notices already issued stay as they are.
+ */
+export async function stopPlannedNoticesAction(schemeId: string, scheduleId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await requireRecentMfa();
+    const schedule = await loadScheduleForScheme(schemeId, scheduleId);
+    if (!schedule) return { error: "Levy schedule not found." };
+    if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be stopped." };
+    if (formData.get("confirmStop") !== "on") return { error: "Confirm that the planned notices are to be stopped." };
+    const drafts = await db.orm.public.LevyNotice
+      .where((n) => and(n.schemeId.eq(schemeId), n.levyScheduleId.eq(scheduleId), n.status.eq("DRAFT")))
+      .limit(5000)
+      .all();
+    const removed = drafts.length
+      ? await db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.levyScheduleId.eq(scheduleId), n.status.eq("DRAFT"))).deleteAndCount()
+      : 0;
+    await db.orm.public.LevySchedule.where((s) => and(s.id.eq(scheduleId), s.schemeId.eq(schemeId))).update({ status: "SUPERSEDED" });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "LEVY_NOTICES_STOPPED",
+      entityType: "LevySchedule",
+      entityId: scheduleId,
+      metadata: { removed, noticeNumbers: drafts.map((d) => String(d.noticeNumber)) },
+    });
+    revalidatePath(financePath(schemeId, "/levies"));
+    revalidatePath(financePath(schemeId, `/levies/${scheduleId}`));
+    return { success: true, data: { removed } };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    return { error: "Failed to stop the planned notices." };
   }
 }
 

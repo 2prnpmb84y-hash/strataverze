@@ -304,8 +304,9 @@ export async function getAgedArrearsReport(
 ): Promise<AgedArrearsItem[]> {
   try {
   // Fetch all levy notices with outstanding balances
+  // Planned notices (DRAFT) are not owed yet; written-off ones are not owed.
   const notices = await db.orm.public.LevyNotice
-    .where((ln) => ln.schemeId.eq(schemeId))
+    .where((ln) => and(ln.schemeId.eq(schemeId), ln.status.notIn(["DRAFT", "WRITTEN_OFF"])))
     .include("lot")
     .limit(2000)
     .all();
@@ -415,8 +416,9 @@ export async function getLevyRegisterReport(
   status: string | null,
 ): Promise<LevyRegisterItem[]> {
   try {
+  // Planned notices (DRAFT) have not been issued, so they are not on the register.
   let query = db.orm.public.LevyNotice.where((ln) =>
-    ln.schemeId.eq(schemeId),
+    and(ln.schemeId.eq(schemeId), ln.status.neq("DRAFT")),
   );
 
   if (startDate) {
@@ -684,8 +686,9 @@ export async function getFundSummaryReport(
     .all();
 
   // Fetch levy notices for the scheme
+  // Issued notices only: planned ones (DRAFT) are not levied yet.
   const levyNotices = await db.orm.public.LevyNotice
-    .where((ln) => ln.schemeId.eq(schemeId))
+    .where((ln) => and(ln.schemeId.eq(schemeId), ln.status.neq("DRAFT")))
     .include("fund")
     .limit(5000)
     .all();

@@ -298,10 +298,15 @@ export async function createLevyNoticesBatch(
     dueDate: string;
     amountDue: number;
   }>,
+  /** Mark this schedule ACTIVE in the same transaction, so notices and schedule never disagree. */
+  opts: { activateScheduleId?: string } = {},
 ) {
   if (notices.length === 0) return [];
 
   return db.transaction(async (tx) => {
+    if (opts.activateScheduleId) {
+      await tx.orm.public.LevySchedule.where((s) => s.id.eq(opts.activateScheduleId!)).update({ status: "ACTIVE" });
+    }
     const created = [];
     for (const data of notices) {
       const notice = await tx.orm.public.LevyNotice.create({
@@ -329,13 +334,26 @@ export async function createLevyNoticesBatch(
 /**
  * Issue a levy notice — sets status to ISSUED with timestamp.
  */
-export async function issueLevyNotice(noticeId: string) {
-  return db.orm.public.LevyNotice
-    .where({ id: noticeId })
-    .update({
+/**
+ * Issue a planned notice: true when this call issued it. One UPDATE with the
+ * whole filter (id and status DRAFT), so of two runs at once only one issues
+ * it. (A single-row update() in Prisma 8 finds the row first and then updates
+ * it by id alone, so it cannot be used to claim.) The notice goes to the
+ * lot's current owner, with its final due date, and its levy is still to be
+ * posted (levy_post_pending) until the caller posts it. `claimedAt` marks
+ * the rows this run claimed, so only they are put back if posting fails.
+ */
+export async function issueLevyNotice(noticeId: string, opts: { ownerId?: string | null; dueDate?: string; claimedAt?: string } = {}): Promise<boolean> {
+  const n = await db.orm.public.LevyNotice
+    .where((ln) => and(ln.id.eq(noticeId), ln.status.eq("DRAFT")))
+    .updateAndCount({
       status: "ISSUED",
-      issuedAt: toTimestamp(new Date().toISOString()),
+      issuedAt: toTimestamp(opts.claimedAt ?? new Date().toISOString()),
+      levyPostPending: true,
+      ...(opts.ownerId !== undefined ? { ownerId: opts.ownerId } : {}),
+      ...(opts.dueDate ? { dueDate: toTimestamp(opts.dueDate) } : {}),
     });
+  return n === 1;
 }
 
 /**
@@ -502,8 +520,9 @@ export async function getLevyNoticesForSchemes(
 ) {
   if (schemeIds.length === 0) return [];
 
+  // Issued notices only: planned ones (DRAFT) are not levied yet.
   return db.orm.public.LevyNotice
-    .where((ln) => ln.schemeId.in(schemeIds))
+    .where((ln) => and(ln.schemeId.in(schemeIds), ln.status.neq("DRAFT")))
     .include("fund")
     .orderBy((ln) => ln.dueDate.desc())
     .limit(limit)
