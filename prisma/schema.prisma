@@ -4054,6 +4054,8 @@ model VaultCheck {
   filesChecked  Int      @map("files_checked")
   headSeq       BigInt?  @map("head_seq")
   headHash      String?  @map("head_hash")
+  /// JSON array of the version ids the check found missing or changed.
+  failedVersions String  @default("[]") @map("failed_versions")
   problem       String?
 
   @@index([schemeId, checkedAt], map: "vault_checks_scheme_idx")

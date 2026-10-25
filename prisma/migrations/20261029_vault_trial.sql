@@ -127,6 +127,8 @@ CREATE TABLE IF NOT EXISTS public.vault_checks (
   files_checked  integer NOT NULL,
   head_seq       bigint,
   head_hash      text,
+  -- Every version the check found missing or changed, as a JSON array of ids.
+  failed_versions text NOT NULL DEFAULT '[]',
   problem        text CHECK (problem IS NULL OR length(problem) <= 2000)
 );
 CREATE INDEX IF NOT EXISTS vault_checks_scheme_idx ON public.vault_checks (scheme_id, checked_at DESC);
@@ -192,11 +194,16 @@ DECLARE
   last_no integer;
   last_id uuid;
 BEGIN
-  -- Lock the record so two versions added at once cannot share a number.
-  SELECT r.scheme_id INTO rec_scheme FROM public.vault_records r WHERE r.id = NEW.record_id FOR UPDATE;
+  SELECT r.scheme_id INTO rec_scheme FROM public.vault_records r WHERE r.id = NEW.record_id;
   IF rec_scheme IS NULL THEN
     RAISE EXCEPTION 'StrataVerze: vault record not found' USING ERRCODE = '23503';
   END IF;
+  -- Locks in the same order as the event chain (the building's lock first),
+  -- so a version and an event for the same record cannot deadlock. The row
+  -- lock (NO KEY UPDATE, which does not block foreign key checks) stops two
+  -- versions of one record sharing a number.
+  PERFORM pg_advisory_xact_lock(hashtext('strataverze.vault_chain:' || rec_scheme::text));
+  PERFORM 1 FROM public.vault_records r WHERE r.id = NEW.record_id FOR NO KEY UPDATE;
   SELECT v.version_no, v.id INTO last_no, last_id
   FROM public.vault_versions v WHERE v.record_id = NEW.record_id ORDER BY v.version_no DESC LIMIT 1;
   NEW.scheme_id := rec_scheme;

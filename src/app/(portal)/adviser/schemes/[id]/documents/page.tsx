@@ -23,7 +23,13 @@ export default async function DocumentsSectionPage({
 
   // The building vault trial: the library is also the vault's front door.
   const trial = isVaultTrialBuilding(scheme.planNumber);
-  const vault = trial ? await vaultLibraryView(id) : null;
+  // A vault problem must not take the library down with it.
+  const vault = trial
+    ? await vaultLibraryView(id).catch((err) => {
+        console.error("[vault] library view failed:", err instanceof Error ? err.message : "error");
+        return null;
+      })
+    : null;
   const banner: VaultBannerData | null = !vault
     ? null
     : vault.vault
@@ -34,7 +40,10 @@ export default async function DocumentsSectionPage({
       ? Object.fromEntries(
           documents.map((d) => {
             const label = vault.byDocumentId[d.id]?.latest?.labels[0];
-            return [d.id, label ?? { tone: "warning" as const, text: "Not yet in the vault", detail: "Use \u201cBring them in\u201d above to capture it." }];
+            if (label) return [d.id, label];
+            const copy = vault.copyOf[d.id];
+            if (copy) return [d.id, { tone: "neutral" as const, text: "Same file as another document", detail: `The vault keeps this file once, under \u201c${copy}\u201d, and records this copy as received again.` }];
+            return [d.id, { tone: "warning" as const, text: "Not yet in the vault", detail: "Use \u201cBring them in\u201d above to capture it." }];
           }),
         )
       : undefined;

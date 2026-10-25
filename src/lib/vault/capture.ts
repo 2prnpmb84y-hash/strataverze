@@ -1,6 +1,8 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { downloadObject, writeObjectOnce } from "@/lib/storage/server-storage";
+import { recordSecurityEvent } from "@/lib/audit/security-audit";
+import { isVaultTrialBuilding } from "@/config/vault";
 import { canonicalJson, sha256Hex } from "./chain";
 
 /**
@@ -22,6 +24,16 @@ const ts = (v: string) => v as never;
 
 export async function getVault(schemeId: string) {
   return db.orm.public.Vault.where((v) => v.schemeId.eq(schemeId)).first();
+}
+
+/**
+ * The building's vault, only for a trial building. Every other building
+ * never touches the vault tables, so a vault problem cannot reach them.
+ */
+export async function getTrialVault(schemeId: string) {
+  const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+  if (!scheme || !isVaultTrialBuilding(scheme.planNumber)) return null;
+  return getVault(schemeId);
 }
 
 /** Open the building's vault. Safe to call twice: the second call returns the first vault. */
@@ -123,8 +135,16 @@ async function keepOriginal(path: string, bytes: Uint8Array, mimeType: string, c
   const written = await writeObjectOnce(path, bytes, mimeType);
   if (written === "written") return;
   const there = await downloadObject(path);
-  if (!there || sha256Hex(there) !== contentHash) {
-    throw new VaultError("A different file is already stored under this fingerprint. Nothing was captured; StrataVerze support has been told.");
+  if (!there) throw new VaultError("The stored copy could not be confirmed. Nothing was captured. Please try again.");
+  if (sha256Hex(there) !== contentHash) {
+    await recordSecurityEvent({
+      action: "vault.integrity_problem",
+      outcome: "failed",
+      resourceType: "VaultVersion",
+      resourceId: path.slice(0, 200),
+      reason: "the file stored under this fingerprint does not match it",
+    });
+    throw new VaultError("A different file is already stored under this fingerprint. Nothing was captured, and the problem has been logged in the security log.");
   }
 }
 
@@ -233,13 +253,14 @@ export async function captureFile(input: CaptureInput): Promise<CaptureResult> {
       return { kind: isNew ? "new_record" : "new_version", recordId: recordId!, versionId: version.id, contentHash } as CaptureResult;
     });
   } catch (err) {
-    // The same file captured at the same moment by another request: count this as a second receipt.
-    const raced = await findSame();
-    if (raced) return recordDuplicate(input, raced);
+    // Captured at the same moment by another request. The same source first
+    // (it was this very capture), then the same file (a second receipt).
     if (input.sourceRef) {
       const done = await findBySourceRef(input.schemeId, input.sourceRef);
       if (done) return { kind: "already_captured", recordId: done.recordId, versionId: null, contentHash: null };
     }
+    const raced = await findSame();
+    if (raced) return recordDuplicate(input, raced);
     throw err;
   }
 }

@@ -175,7 +175,53 @@ describe("checking a vault", () => {
   });
 });
 
+describe("checks that cannot be fooled", () => {
+  it("still names every failed file when many fail at once", async () => {
+    await openVault(S1, "adviser");
+    const ids: string[] = [];
+    for (let i = 0; i < 60; i++) {
+      const r = await captureFile({ schemeId: S1, actorId: "adviser", bytes: pdf(`report ${i}`), fileName: `A very long file name for report number ${i} of the building.pdf`, mimeType: "application/pdf", source: "UPLOAD", sourceRef: `Document:d${i}`, record: { recordType: "REPORT", title: `Report ${i}` } });
+      ids.push(r.recordId);
+    }
+    for (const v of sharedFake.table("VaultVersion")) storage.objects.set(String(v.storagePath), pdf("restored from the wrong backup"));
+    const result = await runVaultCheck(S1, "adviser");
+    expect(result.failedVersionIds).toHaveLength(60);
+    const last = await vaultRecordDetail(S1, ids[59]);
+    expect(last!.versions[0].labels[0]).toMatchObject({ tone: "bad", text: "Check failed" });
+  });
+
+  it("finds a version whose recorded fingerprint and file were both swapped", async () => {
+    await openVault(S1, "adviser");
+    await captureRoof();
+    const [v] = sharedFake.table("VaultVersion");
+    const { sha256Hex } = await import("./chain");
+    const swapped = pdf("a forged report");
+    v.contentHash = sha256Hex(swapped);
+    storage.objects.set(String(v.storagePath), swapped);
+    const result = await runVaultCheck(S1, "adviser");
+    expect(result.ok).toBe(false);
+    expect(result.problems.join(" ")).toContain("No event in the chain records the capture");
+  });
+});
+
 describe("the evidence package", () => {
+  it("does not disclose earlier exports or other records' security events", async () => {
+    await openVault(S1, "adviser");
+    const roof = await captureRoof();
+    const other = await captureFile({ schemeId: S1, actorId: "adviser", bytes: pdf("private legal advice"), fileName: "Advice.pdf", mimeType: "application/pdf", source: "UPLOAD", sourceRef: "Document:d9", record: { recordType: "CORRESPONDENCE", title: "Legal advice" } });
+    await buildEvidencePackage({ schemeId: S1, actorId: "adviser", actorName: "A", recordIds: [other.recordId], reason: "Confidential dispute with lot 7" });
+    sharedFake.table("SecurityAuditEvent").push(
+      { id: "a1", seq: 1, occurredAt: "2026-10-25T05:00:00.000Z", schemeId: S1, action: "vault.check_failed", outcome: "failed", resourceType: "Vault", resourceId: null, reason: "Advice.pdf changed" },
+      { id: "a2", seq: 2, occurredAt: "2026-10-25T05:00:01.000Z", schemeId: S1, action: "vault.download", outcome: "allowed", resourceType: "VaultVersion", resourceId: sharedFake.table("VaultVersion").find((v) => v.recordId === roof.recordId)!.id },
+    );
+    const pkg = await buildEvidencePackage({ schemeId: S1, actorId: "adviser", actorName: "A", recordIds: [roof.recordId], reason: "Roof" });
+    const files = unzipSync(pkg.zip);
+    const text = Object.values(files).map((b) => new TextDecoder().decode(b)).join("\n");
+    expect(text).not.toContain("Confidential dispute");
+    expect(text).not.toContain("Advice.pdf");
+    expect(new TextDecoder().decode(files["audit.csv"])).toContain("vault.download");
+  });
+
   async function exportAndUnzip(recordIds: string[] | "all") {
     const pkg = await buildEvidencePackage({ schemeId: S1, actorId: "adviser", actorName: "Ada Adviser", recordIds, reason: "Tribunal application" });
     const dir = mkdtempSync(join(tmpdir(), "vault-pkg-"));

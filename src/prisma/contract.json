@@ -22532,6 +22532,13 @@
                   "kind": "scalar"
                 }
               },
+              "failedVersions": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "filesChecked": {
                 "nullable": false,
                 "type": {
@@ -22593,6 +22600,9 @@
                 },
                 "eventsChecked": {
                   "column": "events_checked"
+                },
+                "failedVersions": {
+                  "column": "failed_versions"
                 },
                 "filesChecked": {
                   "column": "files_checked"
@@ -47581,6 +47591,15 @@
                   "dataType": "pg/int4",
                   "nullable": false
                 },
+                "failed_versions": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "[]"
+                  },
+                  "nullable": false
+                },
                 "files_checked": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -55592,7 +55611,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "75673ee7dcae9a6c6e9b2ae784259f4e13b7363b1b418dfef0b642163432ecca"
+    "storageHash": "98ca83cf12ddd7e01285533b3837dd7409585b19abb2b6cf2621fa4f57d07f69"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

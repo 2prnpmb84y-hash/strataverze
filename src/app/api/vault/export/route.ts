@@ -16,8 +16,9 @@ import { buildEvidencePackage } from "@/lib/vault/export";
  */
 export async function POST(request: NextRequest) {
   // Only from StrataVerze's own pages.
+  // Browsers send Origin with every form POST; anything without it, or from elsewhere, is refused.
   const origin = request.headers.get("origin");
-  if (origin && origin !== request.nextUrl.origin) return new NextResponse("Not allowed", { status: 403, headers: NO_STORE });
+  if (!origin || origin !== request.nextUrl.origin) return new NextResponse("Not allowed", { status: 403, headers: NO_STORE });
 
   const profile = await getCurrentProfile();
   if (!profile) return new NextResponse("Sign in to export.", { status: 401, headers: NO_STORE });
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
     await requireRecentMfa();
   } catch (err) {
     if (err instanceof StepUpRequiredError) return noStore(NextResponse.redirect(new URL(`/mfa?next=${encodeURIComponent(back)}`, request.nextUrl), 303));
+    if (err instanceof AuthorisationError) return new NextResponse("Sign in to export.", { status: 401, headers: NO_STORE });
     throw err;
   }
   if (!(await getVault(schemeId))) return backWith("This building's vault has not been opened.");

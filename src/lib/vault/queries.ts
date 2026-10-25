@@ -107,6 +107,8 @@ export async function vaultLibraryView(schemeId: string) {
   const [all, pending] = await Promise.all([loadAll(schemeId), pendingSources(schemeId)]);
   const records = summarise(all);
   const byDocumentId: Record<string, VaultRecordSummary> = {};
+  /** Library documents that are a second copy of another document's file. */
+  const copyOf: Record<string, string> = {};
   for (const r of records) {
     // A record's own source, or a later receipt (the same file added to the library again).
     if (r.sourceRef?.startsWith("Document:")) byDocumentId[r.sourceRef.slice(9)] = r;
@@ -115,13 +117,14 @@ export async function vaultLibraryView(schemeId: string) {
     if (!rc.sourceRef?.startsWith("Document:")) continue;
     const v = all.versions.find((x) => x.id === rc.versionId);
     const rec = v && records.find((x) => x.id === v.recordId);
-    if (rec && !byDocumentId[rc.sourceRef.slice(9)]) byDocumentId[rc.sourceRef.slice(9)] = rec;
+    if (rec && !byDocumentId[rc.sourceRef.slice(9)]) copyOf[rc.sourceRef.slice(9)] = rec.title;
   }
   return {
     vault: { id: vault.id, openedAt: iso(vault.openedAt) },
     lastCheck: all.check ? { ok: all.check.ok, checkedAt: iso(all.check.checkedAt), eventsChecked: all.check.eventsChecked, filesChecked: all.check.filesChecked } : null,
     recordCount: records.length,
     byDocumentId,
+    copyOf,
     issuedByStrataVerze: records.filter((r) => r.source === "STRATAVERZE"),
     pending: pending.map((p) => ({ sourceRef: p.sourceRef, title: p.title, kind: p.kind })),
   } as const;
@@ -154,14 +157,19 @@ export async function vaultRecordDetail(schemeId: string, recordId: string) {
   };
 }
 
-export async function vaultRecordIdForDocument(schemeId: string, documentId: string): Promise<string | null> {
+/**
+ * The vault record for a library document. `own` is false when the
+ * document is a second copy of a file already kept for another document:
+ * the file is kept once, under the first document's record.
+ */
+export async function vaultRecordForDocument(schemeId: string, documentId: string): Promise<{ recordId: string; own: boolean } | null> {
   const ref = `Document:${documentId}`;
   const rec = await db.orm.public.VaultRecord.where((r) => and(r.schemeId.eq(schemeId), r.sourceRef.eq(ref))).first();
-  if (rec) return rec.id;
+  if (rec) return { recordId: rec.id, own: true };
   const receipt = await db.orm.public.VaultReceipt.where((r) => and(r.schemeId.eq(schemeId), r.sourceRef.eq(ref))).first();
   if (!receipt) return null;
   const v = await db.orm.public.VaultVersion.where((x) => and(x.id.eq(receipt.versionId), x.schemeId.eq(schemeId))).first();
-  return v?.recordId ?? null;
+  return v ? { recordId: v.recordId, own: false } : null;
 }
 
 export function safeParse(text: string): Record<string, unknown> {

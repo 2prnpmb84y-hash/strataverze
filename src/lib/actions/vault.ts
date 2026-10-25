@@ -11,9 +11,11 @@ import { getDocumentById, updateDocument } from "@/lib/queries/documents";
 import { consumeUpload, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
 import { downloadObject, signDownload } from "@/lib/storage/server-storage";
 import { annotateRecord, captureFile, getVault, openVault, VaultError } from "@/lib/vault/capture";
+import { sha256Hex } from "@/lib/vault/chain";
 import { runVaultCheck } from "@/lib/vault/check";
 import { bringInPending } from "@/lib/vault/reconcile";
-import { vaultRecordDetail, vaultRecordIdForDocument } from "@/lib/vault/queries";
+import { vaultRecordDetail, vaultRecordForDocument } from "@/lib/vault/queries";
+import { logLibraryChange } from "@/lib/vault/sources";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 
@@ -86,9 +88,9 @@ export async function runVaultCheckAction(schemeId: string): Promise<VaultAction
 export async function getVaultRecordAction(schemeId: string, ref: { documentId?: string; recordId?: string }) {
   try {
     await requireTrialVault(schemeId, "vault.read");
-    const recordId = ref.recordId ?? (ref.documentId ? await vaultRecordIdForDocument(schemeId, ref.documentId) : null);
-    if (!recordId) return { record: null };
-    return { record: await vaultRecordDetail(schemeId, recordId) };
+    const found = ref.recordId ? { recordId: ref.recordId, own: true } : ref.documentId ? await vaultRecordForDocument(schemeId, ref.documentId) : null;
+    if (!found) return { record: null, sharedCopy: false };
+    return { record: await vaultRecordDetail(schemeId, found.recordId), sharedCopy: !found.own };
   } catch (err) {
     return { record: null, ...fail(err) };
   }
@@ -121,15 +123,19 @@ export async function annotateVaultRecordAction(schemeId: string, recordId: stri
 
 /**
  * A new version of a library document: the library shows the new file,
- * and the vault keeps every earlier one, linked.
+ * and the vault keeps every earlier one, linked. A file the vault already
+ * holds for this record (going back to an earlier version) is recorded as
+ * received again and the library switches to it. A file kept for another
+ * record is refused, so two records never share a version.
  */
 export async function addVaultVersionAction(schemeId: string, documentId: string, uploadId: string): Promise<VaultActionResult> {
   try {
     const { profile } = await requireTrialVault(schemeId, "vault.manage");
     const doc = await getDocumentById(documentId);
     assertInScheme(doc, schemeId, "Document");
-    const recordId = await vaultRecordIdForDocument(schemeId, documentId);
-    if (!recordId) throw new VaultError("This document is not in the vault yet. Bring it in first.");
+    const found = await vaultRecordForDocument(schemeId, documentId);
+    if (!found) throw new VaultError("This document is not in the vault yet. Bring it in first.");
+    if (!found.own) throw new VaultError("This document is a second copy of a file kept for another document. Add the new version there.");
     let upload;
     try {
       upload = await verifyUpload({ uploadId: String(uploadId ?? ""), schemeId, purpose: "library", profileId: profile.id });
@@ -140,28 +146,33 @@ export async function addVaultVersionAction(schemeId: string, documentId: string
     }
     const bytes = await downloadObject(upload.path);
     if (!bytes) throw new VaultError("The file could not be read. Please try again.");
-    const result = await consumeUpload(
+    const sha = sha256Hex(bytes);
+    const same = await db.orm.public.VaultVersion.where((v) => and(v.schemeId.eq(schemeId), v.contentHash.eq(sha))).first();
+    if (same && same.recordId !== found.recordId) {
+      throw new VaultError("That file is already in the vault for another document, so it cannot be a version of this one.");
+    }
+    // Claimed first; the library is switched only once the vault has the file.
+    const captured = await consumeUpload(
       upload.uploadId,
-      async () => {
-        const captured = await captureFile({
+      () =>
+        captureFile({
           schemeId,
           actorId: profile.id,
           bytes,
           fileName: upload.fileName,
           mimeType: upload.mimeType,
           source: "UPLOAD",
-          recordId,
+          recordId: found.recordId,
           details: { documentId, newFileFor: "library document" },
-        });
-        if (captured.kind === "new_version") {
-          await updateDocument(schemeId, documentId, { fileUrl: upload.path, fileName: upload.fileName, fileSize: upload.size, mimeType: upload.mimeType });
-        }
-        return captured;
-      },
+        }),
       (c) => `VaultVersion:${c.versionId ?? c.recordId}`,
     );
+    await updateDocument(schemeId, documentId, { fileUrl: upload.path, fileName: upload.fileName, fileSize: upload.size, mimeType: upload.mimeType });
+    if (captured.kind === "duplicate") {
+      await logLibraryChange(schemeId, documentId, profile.id, "new_file", { fileName: upload.fileName, sha256: sha, earlierVersion: true });
+    }
     revalidatePath(libraryPath(schemeId), "layout");
-    if (result.kind === "duplicate") return { ok: true, message: "That file is already in the vault, so it was recorded as received again. The library is unchanged." };
+    if (captured.kind === "duplicate") return { ok: true, message: "That is a version the vault already holds. The library now shows it again, and the vault recorded it as received again." };
     return { ok: true, message: "New version added. The earlier version stays in the vault." };
   } catch (err) {
     return fail(err);

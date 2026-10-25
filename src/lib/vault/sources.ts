@@ -4,7 +4,7 @@ import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { downloadObject } from "@/lib/storage/server-storage";
 import { toStoragePath } from "@/lib/queries/document-url";
 import { LIBRARY_CATEGORY_TO_RECORD_TYPE, VAULT_CAPTURED_FINANCIAL_TYPES } from "@/config/vault";
-import { appendVaultEvent, captureFile, findBySourceRef, getVault, type CaptureResult } from "./capture";
+import { appendVaultEvent, captureFile, getTrialVault, type CaptureResult } from "./capture";
 import { canonicalJson } from "./chain";
 
 /**
@@ -66,7 +66,7 @@ export async function captureGeneratedPdf(input: {
   if (!(VAULT_CAPTURED_FINANCIAL_TYPES as readonly string[]).includes(input.documentType)) return null;
   const sourceRef = `FinancialDocument:${input.financialDocumentId}`;
   return captureQuietly(input.schemeId, sourceRef, async () => {
-    if (!(await getVault(input.schemeId))) return null;
+    if (!(await getTrialVault(input.schemeId))) return null;
     return captureFile({
       schemeId: input.schemeId,
       actorId: input.actorId,
@@ -106,7 +106,7 @@ async function captureConfirmedMinutesInner(minutesId: string, actorId: string |
   if (!meeting) return null;
   const sourceRef = `Minutes:${minutes.id}`;
   return captureQuietly(meeting.schemeId, sourceRef, async () => {
-    if (!(await getVault(meeting.schemeId))) return null;
+    if (!(await getTrialVault(meeting.schemeId))) return null;
     const body = canonicalJson({
       kind: "minutes",
       meeting: { id: meeting.id, title: meeting.title, meetingType: meeting.meetingType, scheduledAt: String(meeting.scheduledAt) },
@@ -137,7 +137,7 @@ async function captureMeetingNoticeInner(noticeId: string, actorId: string | nul
   if (!meeting) return null;
   const sourceRef = `Notice:${notice.id}`;
   return captureQuietly(meeting.schemeId, sourceRef, async () => {
-    if (!(await getVault(meeting.schemeId))) return null;
+    if (!(await getTrialVault(meeting.schemeId))) return null;
     const body = canonicalJson({
       kind: "meeting_notice",
       meeting: { id: meeting.id, title: meeting.title, meetingType: meeting.meetingType, scheduledAt: String(meeting.scheduledAt) },
@@ -198,9 +198,12 @@ export async function captureLibraryDocument(schemeId: string, documentId: strin
 export async function logLibraryChange(schemeId: string, documentId: string, actorId: string, change: "metadata_changed" | "removed" | "new_file", details: Record<string, unknown>) {
   // Never fails the library change itself; a failure is logged.
   try {
-    if (!(await getVault(schemeId))) return;
-    const found = await findBySourceRef(schemeId, `Document:${documentId}`);
-    if (!found) return;
+    if (!(await getTrialVault(schemeId))) return;
+    // Only the document's own record: a document that is a second copy of
+    // another's file must not log against that other record.
+    const own = await db.orm.public.VaultRecord.where((r) => and(r.schemeId.eq(schemeId), r.sourceRef.eq(`Document:${documentId}`))).first();
+    if (!own) return;
+    const found = { recordId: own.id };
     await appendVaultEvent({ schemeId, eventType: `library.${change}`, actorId, recordId: found.recordId, details: { documentId, ...details } });
   } catch (err) {
     console.error("[vault] could not log a library change:", err instanceof Error ? err.message : "error");
@@ -226,6 +229,12 @@ export async function pendingSources(schemeId: string): Promise<Array<{ sourceRe
     db.orm.public.VaultReceipt.where((r) => r.schemeId.eq(schemeId)).all(),
   ]);
   const done = new Set<string>([...records.map((r) => r.sourceRef), ...receipts.map((r) => r.sourceRef)].filter((s): s is string => !!s));
+  // Only documents StrataVerze generated (their bytes are held); a levy
+  // notice an adviser uploaded is not one StrataVerze issued.
+  const finIds = fin.map((d) => d.id);
+  const generated = new Set(
+    finIds.length ? (await db.orm.public.FinancialDocumentFile.where((f) => f.financialDocumentId.in(finIds)).select("financialDocumentId").all()).map((f) => f.financialDocumentId) : [],
+  );
   const meetingIds = meetings.map((m) => m.id);
   const titleOf = new Map(meetings.map((m) => [m.id, m.title]));
   const [minutes, notices] = meetingIds.length
@@ -236,7 +245,7 @@ export async function pendingSources(schemeId: string): Promise<Array<{ sourceRe
     : [[], []];
   const out: Array<{ sourceRef: string; title: string; kind: "library" | "financial" | "minutes" | "notice"; id: string }> = [];
   for (const d of docs) if (!done.has(`Document:${d.id}`)) out.push({ sourceRef: `Document:${d.id}`, title: d.title, kind: "library", id: d.id });
-  for (const d of fin) if (!done.has(`FinancialDocument:${d.id}`)) out.push({ sourceRef: `FinancialDocument:${d.id}`, title: financialTitle(d.documentType, d.fileName), kind: "financial", id: d.id });
+  for (const d of fin) if (generated.has(d.id) && !done.has(`FinancialDocument:${d.id}`)) out.push({ sourceRef: `FinancialDocument:${d.id}`, title: financialTitle(d.documentType, d.fileName), kind: "financial", id: d.id });
   for (const m of minutes) if (!done.has(`Minutes:${m.id}`)) out.push({ sourceRef: `Minutes:${m.id}`, title: `Minutes: ${titleOf.get(m.meetingId) ?? "meeting"} (version ${m.version})`, kind: "minutes", id: m.id });
   for (const n of notices) if (!done.has(`Notice:${n.id}`)) out.push({ sourceRef: `Notice:${n.id}`, title: `Meeting notice: ${titleOf.get(n.meetingId) ?? "meeting"} (version ${n.version})`, kind: "notice", id: n.id });
   return out;

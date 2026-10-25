@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'75673ee7dcae9a6c6e9b2ae784259f4e13b7363b1b418dfef0b642163432ecca'>;
+  StorageHashBase<'98ca83cf12ddd7e01285533b3837dd7409585b19abb2b6cf2621fa4f57d07f69'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1988,6 +1988,7 @@ export type FieldOutputTypes = {
       readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly checkedBy: CodecTypes['pg/uuid@1']['output'] | null;
       readonly eventsChecked: CodecTypes['pg/int4@1']['output'];
+      readonly failedVersions: CodecTypes['pg/text@1']['output'];
       readonly filesChecked: CodecTypes['pg/int4@1']['output'];
       readonly headHash: CodecTypes['pg/text@1']['output'] | null;
       readonly headSeq: CodecTypes['pg/int8@1']['output'] | null;
@@ -4475,6 +4476,7 @@ export type FieldInputTypes = {
       readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly checkedBy: CodecTypes['pg/uuid@1']['input'] | null;
       readonly eventsChecked: CodecTypes['pg/int4@1']['input'];
+      readonly failedVersions: CodecTypes['pg/text@1']['input'];
       readonly filesChecked: CodecTypes['pg/int4@1']['input'];
       readonly headHash: CodecTypes['pg/text@1']['input'] | null;
       readonly headSeq: CodecTypes['pg/int8@1']['input'] | null;
@@ -6957,6 +6959,7 @@ export type StorageColumnTypes = {
       readonly checked_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly checked_by: CodecTypes['pg/uuid@1']['output'] | null;
       readonly events_checked: CodecTypes['pg/int4@1']['output'];
+      readonly failed_versions: CodecTypes['pg/text@1']['output'];
       readonly files_checked: CodecTypes['pg/int4@1']['output'];
       readonly head_hash: CodecTypes['pg/text@1']['output'] | null;
       readonly head_seq: CodecTypes['pg/int8@1']['output'] | null;
@@ -9445,6 +9448,7 @@ export type StorageColumnInputTypes = {
       readonly checked_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly checked_by: CodecTypes['pg/uuid@1']['input'] | null;
       readonly events_checked: CodecTypes['pg/int4@1']['input'];
+      readonly failed_versions: CodecTypes['pg/text@1']['input'];
       readonly files_checked: CodecTypes['pg/int4@1']['input'];
       readonly head_hash: CodecTypes['pg/text@1']['input'] | null;
       readonly head_seq: CodecTypes['pg/int8@1']['input'] | null;
@@ -12572,6 +12576,7 @@ export namespace Models {
     checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     checkedBy: CodecTypes['pg/uuid@1']['output'] | null;
     eventsChecked: CodecTypes['pg/int4@1']['output'];
+    failedVersions: CodecTypes['pg/text@1']['output'];
     filesChecked: CodecTypes['pg/int4@1']['output'];
     headHash: CodecTypes['pg/text@1']['output'] | null;
     headSeq: CodecTypes['pg/int8@1']['output'] | null;
@@ -27550,6 +27555,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly failed_versions: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', '[]'>;
+                  };
                   readonly many: false;
                 };
                 readonly files_checked: {
@@ -48976,6 +48991,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly failedVersions: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly filesChecked: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -49013,6 +49032,7 @@ type ContractBase = Omit<
                 readonly checkedAt: { readonly column: 'checked_at' };
                 readonly checkedBy: { readonly column: 'checked_by' };
                 readonly eventsChecked: { readonly column: 'events_checked' };
+                readonly failedVersions: { readonly column: 'failed_versions' };
                 readonly filesChecked: { readonly column: 'files_checked' };
                 readonly headHash: { readonly column: 'head_hash' };
                 readonly headSeq: { readonly column: 'head_seq' };

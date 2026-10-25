@@ -60,7 +60,16 @@ export async function runVaultCheck(schemeId: string, actorId: string | null): P
 
   const failedVersionIds: string[] = [];
   const problems = [...chain.problems];
+  // Each version must be the one the chain says was captured.
+  const capturedInChain = new Set(
+    events.filter((e) => e.eventType === "record.captured" || e.eventType === "version.added").map((e) => `${e.versionId}|${e.contentHash}`),
+  );
   for (const v of versions) {
+    if (!capturedInChain.has(`${v.id}|${v.contentHash}`)) {
+      failedVersionIds.push(v.id);
+      problems.push(`No event in the chain records the capture of "${v.fileName}" (version ${v.versionNo}) with this fingerprint.`);
+      continue;
+    }
     const bytes = await downloadObject(v.storagePath);
     if (!bytes) {
       failedVersionIds.push(v.id);
@@ -71,7 +80,8 @@ export async function runVaultCheck(schemeId: string, actorId: string | null): P
     }
   }
   const ok = problems.length === 0;
-  const problem = ok ? null : JSON.stringify({ failedVersionIds, problems: problems.slice(0, 10) }).slice(0, 2000);
+  // The ids are kept whole in their own column; the readable text may be cut.
+  const problem = ok ? null : problems.slice(0, 10).join(" ").slice(0, 2000);
   const row = await db.orm.public.VaultCheck.create({
     schemeId,
     checkedBy: actorId,
@@ -80,17 +90,18 @@ export async function runVaultCheck(schemeId: string, actorId: string | null): P
     filesChecked: versions.length,
     headSeq: chain.headSeq == null ? null : (BigInt(chain.headSeq) as never),
     headHash: chain.headHash,
+    failedVersions: JSON.stringify(failedVersionIds),
     problem,
   });
   return { ok, eventsChecked: chain.eventsChecked, filesChecked: versions.length, failedVersionIds, problems, checkedAt: String(row.checkedAt) };
 }
 
-/** The versions a check found wrong, from its stored problem text. */
-export function failedVersionsOf(check: { ok: boolean; problem: string | null } | null): Set<string> {
-  if (!check || check.ok || !check.problem) return new Set();
+/** The versions a check found wrong. */
+export function failedVersionsOf(check: { ok: boolean; failedVersions?: string | null } | null): Set<string> {
+  if (!check || check.ok || !check.failedVersions) return new Set();
   try {
-    const parsed = JSON.parse(check.problem) as { failedVersionIds?: unknown };
-    return new Set(Array.isArray(parsed.failedVersionIds) ? parsed.failedVersionIds.map(String) : []);
+    const parsed = JSON.parse(check.failedVersions) as unknown;
+    return new Set(Array.isArray(parsed) ? parsed.map(String) : []);
   } catch {
     return new Set();
   }

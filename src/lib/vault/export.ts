@@ -65,10 +65,11 @@ export async function buildEvidencePackage(input: {
     manifestFiles.push({ path, sha256: v.contentHash, size: bytes.byteLength, recordId: v.recordId, versionId: v.id, versionNo: v.versionNo, title: rec.title, fileName: v.fileName, capturedAt: iso(v.capturedAt) });
   }
 
-  // Events for the chosen records and for the vault itself in full; the rest
-  // linked only (their details may concern records not in this package).
+  // Events for the chosen records, and the vault's opening, in full. The rest
+  // (other records, earlier exports with their reasons) linked only.
+  const inFull = (e: { recordId: string | null; eventType: string }) => (e.recordId !== null ? selected.has(e.recordId) : e.eventType === "vault.opened");
   const events = chain.map((e) =>
-    e.recordId === null || selected.has(e.recordId)
+    inFull(e)
       ? { ...e, redacted: false }
       : { seq: e.seq, prevHash: e.prevHash, rowHash: e.rowHash, redacted: true },
   );
@@ -97,14 +98,14 @@ export async function buildEvidencePackage(input: {
   const titleOf = new Map(records.map((r) => [r.id, r.title]));
   files["timeline.csv"] = strToU8(csv([
     ["Event", "StrataVerze time (UTC)", "Sydney time", "What happened", "Record", "Fingerprint", "Actor profile"],
-    ...chain.filter((e) => e.recordId === null || selected.has(e.recordId)).map((e) => [
+    ...chain.filter(inFull).map((e) => [
       e.seq, e.occurredAt, auDateTime(e.occurredAt), describeEvent(e.eventType), e.recordId ? titleOf.get(e.recordId) ?? e.recordId : "", e.contentHash ?? "", e.actorProfileId ?? "",
     ]),
   ]));
   files["audit.csv"] = strToU8(csv([
     ["Time (UTC)", "Action", "Outcome", "Actor profile", "Resource", "Reason"],
     ...security
-      .filter((s) => !s.resourceId || s.resourceType === "Vault" || selected.has(s.resourceId) || chosenVersions.some((v) => v.id === s.resourceId))
+      .filter((s) => !!s.resourceId && (selected.has(s.resourceId) || chosenVersions.some((v) => v.id === s.resourceId)))
       .sort((a, b) => Number(a.seq) - Number(b.seq))
       .map((s) => [iso(s.occurredAt), s.action, s.outcome, s.actorProfileId ?? "", `${s.resourceType ?? ""} ${s.resourceId ?? ""}`.trim(), s.reason ?? ""]),
   ]));
@@ -178,7 +179,7 @@ export function verifyReadme(p: { name: string; planNumber: string; exportedAt: 
     "- That a date printed in a document, or reported by another system, is right. Those dates are marked \"as reported\".",
     "- Anything about documents that never reached StrataVerze.",
     "- That the chain was not rewritten as a whole before this export. For that, compare the last event's hash with one recorded earlier (for example in an earlier package, or a check shown in StrataVerze). Off-platform signed checkpoints are planned but not part of this trial.",
-    "- Events for records not in this package are included as links only, so the chain can be checked without disclosing them.",
+    "- Events for records not in this package, and earlier exports, are included as links only, so the chain can be checked without disclosing them.",
     "",
     "Whether this package is accepted as evidence is for the tribunal or court. StrataVerze makes no claim about that.",
     "",

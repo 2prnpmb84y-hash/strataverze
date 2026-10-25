@@ -43,13 +43,22 @@ export function VaultRecordPanel({
   const [busy, startTransition] = useTransition();
   const fileInput = useRef<HTMLInputElement>(null);
 
+  const [sharedCopy, setSharedCopy] = useState(false);
   const load = useCallback(() => {
-    getVaultRecordAction(schemeId, { documentId, recordId }).then((r) => {
-      startTransition(() => {
-        setDetail(r.record ?? null);
-        setError("error" in r && r.error ? r.error : null);
+    getVaultRecordAction(schemeId, { documentId, recordId })
+      .then((r) => {
+        startTransition(() => {
+          setDetail(r.record ?? null);
+          setSharedCopy(!!r.sharedCopy);
+          setError("error" in r && r.error ? r.error : null);
+        });
+      })
+      .catch(() => {
+        startTransition(() => {
+          setDetail(null);
+          setError("The vault record could not be loaded. Please reload the page.");
+        });
       });
-    });
   }, [schemeId, documentId, recordId]);
 
   const preloaded = useRef(!!initialDetail);
@@ -124,7 +133,7 @@ export function VaultRecordPanel({
             {detail.reportedDate ? ` · dated ${auDate(detail.reportedDate)} (as reported)` : ""}
           </p>
         </div>
-        {allowNewVersion && documentId && (
+        {allowNewVersion && documentId && !sharedCopy && (
           <div className="sm:shrink-0">
             <input
               ref={fileInput}
@@ -143,6 +152,12 @@ export function VaultRecordPanel({
           </div>
         )}
       </div>
+
+      {sharedCopy && (
+        <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs text-ink-muted">
+          This document is the same file as &ldquo;{detail.title}&rdquo;, so the vault keeps it once, under that record, and records this copy as received again.
+        </p>
+      )}
 
       {latest && (
         <ul className="mt-3 space-y-2" aria-label="What was checked">

@@ -18,12 +18,12 @@ import { documentViewers } from "@/lib/documents/viewers";
 import { logActivity } from "@/lib/queries/activity-log";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { captureLibraryDocument, captureQuietly, logLibraryChange } from "@/lib/vault/sources";
-import { getVault } from "@/lib/vault/capture";
+import { getTrialVault } from "@/lib/vault/capture";
 
 /** Into the building's vault, if it has one (trial). A failure leaves it listed as not yet in the vault. */
 async function captureIntoVault(schemeId: string, documentId: string, actorId: string) {
   await captureQuietly(schemeId, `Document:${documentId}`, async () =>
-    (await getVault(schemeId)) ? captureLibraryDocument(schemeId, documentId, actorId) : null,
+    (await getTrialVault(schemeId)) ? captureLibraryDocument(schemeId, documentId, actorId) : null,
   );
 }
 
