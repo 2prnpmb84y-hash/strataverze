@@ -33,7 +33,16 @@ describe("applying a change of owner", () => {
   beforeEach(async () => {
     sharedFake = (await import("@/test/fake-orm")).sharedFake;
     sharedFake.reset({
-      LotDetail: [{ id: "ld1", lotId: "L1", rollOwnerName: "Ms Cate Blanchett", ownerEmail: "cate@old.test", ownerMobile: "0400 000 000", ownerAddress: "Old address", isCommitteeMember: true }],
+      Lot: [
+        { id: "L1", schemeId: "S1", lotNumber: "1" },
+        { id: "L2", schemeId: "S1", lotNumber: "2" },
+        { id: "L15", schemeId: "S1", lotNumber: "15" },
+      ],
+      Profile: [{ id: "p-cate", email: "cate@profile.test" }],
+      LotDetail: [
+        { id: "ld1", lotId: "L1", rollOwnerName: "Ms Cate Blanchett", ownerEmail: "cate@old.test", ownerMobile: "0400 000 000", ownerAddress: "Old address", isCommitteeMember: true },
+        { id: "ld2", lotId: "L2", rollOwnerName: "Mr Lot Two", ownerEmail: "two@x.test" },
+      ],
       SchemeMembership: [
         { id: "m1", schemeId: "S1", lotId: "L1", role: "OWNER", isActive: true, profileId: "p-cate" },
         { id: "m2", schemeId: "S1", lotId: "L1", role: "COMMITTEE", isActive: true, profileId: "p-cate" },
@@ -50,13 +59,51 @@ describe("applying a change of owner", () => {
   it("records the new owner, clears the outgoing owner's details, and ends only this lot's owner access", async () => {
     const { applyChangeOwner } = await import("./change-owner");
     const r = await applyChangeOwner("S1", "L1", { ownerName: "Mr New Owner", email: "new@x.test", mobile: null, phone: null, address: null, settlementDate: "2026-10-24" });
-    expect(r).toEqual({ previousOwnerName: "Ms Cate Blanchett", endedMemberships: ["p-cate"], deliveryPreferencesUpdated: 1 });
+    expect(r).toEqual({ previousOwnerName: "Ms Cate Blanchett", endedMemberships: ["p-cate"], movedAccess: [], endedCommitteeSeats: ["p-cate"], keptCommitteeSeats: [], deliveryPreferencesUpdated: 1 });
     expect(sharedFake.table("LotDetail")[0]).toMatchObject({ rollOwnerName: "Mr New Owner", ownerEmail: "new@x.test", ownerMobile: null, ownerAddress: null, isCommitteeMember: false, lastSettled: "2026-10-24T00:00:00.000Z" });
     const m = Object.fromEntries(sharedFake.table("SchemeMembership").map((x) => [x.id, x.isActive]));
-    // The owner membership ends; the committee seat, another building and another lot are untouched.
-    expect(m).toEqual({ m1: false, m2: true, m3: true, m4: true });
+    // The owner access and the committee seat end; another building and another lot are untouched.
+    expect(m).toEqual({ m1: false, m2: false, m3: true, m4: true });
+    expect(sharedFake.table("SchemeMembership").find((x) => x.id === "m2")).toMatchObject({ endDate: "2026-10-24T00:00:00.000Z", isTreasurer: false });
     const [owner, agent] = sharedFake.table("LotDeliveryPreference");
     expect(owner).toMatchObject({ recipientName: "Mr New Owner", recipientEmail: "new@x.test", recipientAddress: null, recipientSuburb: null });
     expect(agent).toMatchObject({ recipientName: "Agent", recipientEmail: "agent@x.test" });
+  });
+
+  const sale = { ownerName: "Mr New Owner", email: null, mobile: null, phone: null, address: null, settlementDate: "2026-10-24" };
+
+  it("keeps the committee seat when the roll shows the same owner on another lot", async () => {
+    sharedFake.table("LotDetail").push({ id: "ld15", lotId: "L15", rollOwnerName: "  ms cate   BLANCHETT ", ownerEmail: null });
+    const { applyChangeOwner } = await import("./change-owner");
+    const r = await applyChangeOwner("S1", "L1", sale);
+    expect(r).toMatchObject({ endedMemberships: [], movedAccess: [{ profileId: "p-cate", lotNumber: "15" }], endedCommitteeSeats: [], keptCommitteeSeats: [{ profileId: "p-cate", lotNumbers: ["15"] }] });
+    expect(sharedFake.table("SchemeMembership").find((x) => x.id === "m2")?.isActive).toBe(true);
+    // Their owner access moves to the lot they still own, rather than ending.
+    expect(sharedFake.table("SchemeMembership").find((x) => x.id === "m1")).toMatchObject({ isActive: true, lotId: "L15" });
+  });
+
+  it("keeps it when another lot carries the owner's email", async () => {
+    sharedFake.table("LotDetail").push({ id: "ld15", lotId: "L15", rollOwnerName: "C Blanchett Pty Ltd", ownerEmail: "Cate@Profile.test" });
+    const { applyChangeOwner } = await import("./change-owner");
+    const r = await applyChangeOwner("S1", "L1", sale);
+    expect(r.keptCommitteeSeats).toEqual([{ profileId: "p-cate", lotNumbers: ["15"] }]);
+  });
+
+  it("ends a seat recorded against this lot even without owner access, and leaves other members alone", async () => {
+    sharedFake.reset({
+      Lot: [{ id: "L1", schemeId: "S1", lotNumber: "1" }, { id: "L2", schemeId: "S1", lotNumber: "2" }],
+      Profile: [{ id: "p-a", email: "a@x.test" }, { id: "p-b", email: "b@x.test" }],
+      LotDetail: [{ id: "ld1", lotId: "L1", rollOwnerName: "A Owner" }, { id: "ld2", lotId: "L2", rollOwnerName: "B Owner" }],
+      SchemeMembership: [
+        { id: "c1", schemeId: "S1", lotId: "L1", role: "COMMITTEE", isActive: true, profileId: "p-a", isTreasurer: true },
+        { id: "c2", schemeId: "S1", lotId: "L2", role: "COMMITTEE", isActive: true, profileId: "p-b" },
+      ],
+      LotDeliveryPreference: [],
+    });
+    const { applyChangeOwner } = await import("./change-owner");
+    const r = await applyChangeOwner("S1", "L1", sale);
+    expect(r).toMatchObject({ endedMemberships: [], endedCommitteeSeats: ["p-a"], keptCommitteeSeats: [] });
+    const m = Object.fromEntries(sharedFake.table("SchemeMembership").map((x) => [x.id, [x.isActive, x.isTreasurer]]));
+    expect(m).toEqual({ c1: [false, false], c2: [true, undefined] });
   });
 });

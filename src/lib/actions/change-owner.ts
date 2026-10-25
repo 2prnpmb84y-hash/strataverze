@@ -120,6 +120,8 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
         settlementDate: input.settlementDate,
         noticeDocumentId,
         invited: invited ?? "no",
+        committeeSeatsEnded: result.endedCommitteeSeats.length,
+        committeeSeatsKept: result.keptCommitteeSeats.map((k) => ({ profileId: k.profileId, otherLots: k.lotNumbers })),
       },
     });
     await recordSecurityEvent({
@@ -130,13 +132,19 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
       schemeId,
       resourceType: "Lot",
       resourceId: lotId,
-      metadata: { endedMemberships: result.endedMemberships.length, invited: invited ?? "no" },
+      metadata: { endedMemberships: result.endedMemberships.length, endedCommitteeSeats: result.endedCommitteeSeats.length, invited: invited ?? "no" },
     });
 
     revalidatePath(`/adviser/schemes/${schemeId}`, "layout");
     revalidatePath("/owner/scheme", "layout");
     const parts = [`${input.ownerName} is now the owner of Lot ${lotNumber} on the strata roll, settled ${input.settlementDate.split("-").reverse().join("/")}.`];
     if (result.endedMemberships.length) parts.push(`The outgoing owner's portal access has ended.`);
+    for (const m of result.movedAccess) parts.push(`The outgoing owner keeps portal access through Lot ${m.lotNumber}, which the strata roll shows they still own.`);
+    if (result.endedCommitteeSeats.length) parts.push(`Their seat on the strata committee has ended from the settlement date, as they are no longer an owner (s 35(1)(a) SSMA 2015).`);
+    for (const k of result.keptCommitteeSeats) {
+      const lots = k.lotNumbers.map((n) => `Lot ${n}`).join(", ");
+      parts.push(`Their committee seat continues, as the strata roll shows them as the owner of ${lots}. If that is wrong, the seat needs to be ended separately.`);
+    }
     if (invited === "sent") parts.push(`An invitation has been sent to ${input.email}.`);
     if (invited === "already") parts.push(`${input.email} already has an invitation waiting.`);
     if (!input.email) parts.push("No email was given, so no invitation was sent.");
