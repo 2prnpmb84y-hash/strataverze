@@ -11,6 +11,7 @@ import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit"
 import { afterSignIn, signInPortals } from "@/lib/auth/post-sign-in";
 import { getAvailablePortals } from "@/lib/queries/profiles";
 import { db } from "@/prisma/db";
+import { CAPTCHA_FAILED_MESSAGE, captchaTokenFrom, isCaptchaFailure } from "@/lib/auth/captcha";
 
 /** The session id in an access token (not verified: it was just issued to us). */
 function sessionIdOf(token: string): string | null {
@@ -57,12 +58,21 @@ export async function login(formData: FormData) {
 
   const supabase = await createClient();
 
+  // The Turnstile token, when CAPTCHA is set up (SEC-020); Supabase checks it.
+  const captchaToken = captchaTokenFrom(formData);
   const data = {
     email,
     password,
+    ...(captchaToken ? { options: { captchaToken } } : {}),
   };
 
   const { data: signedIn, error } = await supabase.auth.signInWithPassword(data);
+
+  if (isCaptchaFailure(error)) {
+    // Not a wrong password: no attempt is counted against the account.
+    await recordSecurityEventLater({ action: "auth.sign_in", outcome: "denied", reason: "captcha failed", metadata: { subject: auditHash(email) } });
+    redirect(`/login?error=${encodeURIComponent(CAPTCHA_FAILED_MESSAGE)}`);
+  }
 
   if (error) {
     await recordRateLimitHits(limits);
@@ -115,9 +125,11 @@ export async function signup(formData: FormData) {
 
   const supabase = await createClient();
 
+  const captchaToken = captchaTokenFrom(formData);
   const data = {
     email,
     password: String(formData.get("password")),
+    ...(captchaToken ? { options: { captchaToken } } : {}),
   };
 
   const passwordError = validatePassword(data.password);
@@ -127,6 +139,11 @@ export async function signup(formData: FormData) {
 
   await recordRateLimitHits(signUpLimits);
   const { data: created, error } = await supabase.auth.signUp(data);
+
+  if (isCaptchaFailure(error)) {
+    await recordSecurityEventLater({ action: "auth.sign_up", outcome: "denied", reason: "captcha failed", metadata: { subject: auditHash(email) } });
+    redirect(`/login?error=${encodeURIComponent(CAPTCHA_FAILED_MESSAGE)}`);
+  }
 
   if (error) {
     await recordSecurityEventLater({ action: "auth.sign_up", outcome: "failed", metadata: { subject: auditHash(email) } });

@@ -1,4 +1,6 @@
 import { resetPassword } from "./actions";
+import { Turnstile } from "@/components/auth/turnstile";
+import { captchaSiteKey } from "@/lib/auth/captcha";
 import { Logo } from "@/components/logo";
 import { authPageError, authPageMessage } from "@/lib/auth/page-messages";
 import { MARKETING_SITE_URL } from "@/lib/site-url";
@@ -65,6 +67,7 @@ export default async function ForgotPasswordPage({
               />
             </div>
 
+            <Turnstile siteKey={captchaSiteKey()} />
             <button
               formAction={resetPassword}
               className="w-full h-11 rounded-full bg-turquoise text-white font-semibold text-sm uppercase tracking-[0.04em] transition-colors hover:bg-turquoise/90 focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 mt-2"

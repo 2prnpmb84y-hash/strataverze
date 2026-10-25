@@ -6,6 +6,7 @@ import { siteUrl } from "@/lib/site-url";
 import { auditHash, recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { headers } from "next/headers";
 import { anyRateLimitReached, clientIp, recordRateLimitHits, type RateLimitName } from "@/lib/auth/rate-limit-db";
+import { CAPTCHA_FAILED_MESSAGE, captchaTokenFrom, isCaptchaFailure } from "@/lib/auth/captcha";
 
 const SENT = "/forgot-password?message=If+that+address+has+an+account%2C+we+have+emailed+a+password+reset+link";
 
@@ -39,10 +40,16 @@ export async function resetPassword(formData: FormData) {
     redirect(SENT);
   }
 
-  await recordRateLimitHits(limits);
+  const captchaToken = captchaTokenFrom(formData);
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl()}/reset-password`,
+    ...(captchaToken ? { captchaToken } : {}),
   });
+  if (isCaptchaFailure(error)) {
+    // Says nothing about the address; nothing was sent, so nothing is counted.
+    redirect(`/forgot-password?error=${encodeURIComponent(CAPTCHA_FAILED_MESSAGE)}`);
+  }
+  await recordRateLimitHits(limits);
 
   if (error) {
     // Keep Supabase's message server-side, and show the same confirmation

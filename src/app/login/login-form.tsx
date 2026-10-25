@@ -6,6 +6,8 @@ import {
   PasswordStrength,
   validatePasswordStrength,
 } from "@/components/ui/password-strength";
+import { Turnstile } from "@/components/auth/turnstile";
+import { captchaSiteKey } from "@/lib/auth/captcha";
 
 /** The one sign-in form (25 Oct 2026): everyone signs in here, then goes to their portal. */
 const BUTTON_CLASS =
@@ -104,6 +106,9 @@ export function LoginForm({
             Forgot password?
           </a>
         </div>
+
+        {/* The security check (SEC-020), when CAPTCHA is set up. */}
+        <Turnstile siteKey={captchaSiteKey()} />
 
         <div className="flex flex-col gap-2 mt-2">
           {isSignUp ? (
