@@ -14,7 +14,7 @@ vi.mock("@/lib/auth/mfa-enforcement", () => ({ requireRecentMfa: stepUp.requireR
 vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async () => {}) }));
 const activity = vi.hoisted(() => ({ logActivity: vi.fn(async () => {}) }));
 vi.mock("@/lib/queries/activity-log", () => activity);
-const notify = vi.hoisted(() => ({ notifyRequestSubmitted: vi.fn(async () => {}), notifyVoteNeeded: vi.fn(async () => {}), notifyDecision: vi.fn(async () => {}), notifySettingsChanged: vi.fn(async () => {}) }));
+const notify = vi.hoisted(() => ({ notifyRequestSubmitted: vi.fn(async () => {}), notifyVoteNeeded: vi.fn(async () => {}), notifyDecision: vi.fn(async () => {}), notifySettingsChanged: vi.fn(async () => {}), notifyOrderIssued: vi.fn(async () => {}), notifyNoContractor: vi.fn(async () => {}), notifyOrderAnswered: vi.fn(async () => {}) }));
 vi.mock("@/lib/works/notify", () => notify);
 vi.mock("@/lib/log", () => ({ logError: vi.fn() }));
 vi.mock("@/lib/storage/server-storage", () => ({ signDownloads: vi.fn(async () => []) }));
@@ -33,10 +33,24 @@ vi.mock("@/lib/auth/require-membership", async () => {
   };
 });
 
+// The signed-in person's contractor businesses (as an active contact).
+const contractor = vi.hoisted(() => ({ businesses: [] as string[] }));
+vi.mock("@/lib/auth/require-contractor", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/auth/require-membership")>("@/lib/auth/require-membership");
+  return {
+    requireActiveContractorContact: async (id: string) => {
+      if (!contractor.businesses.includes(id)) throw new actual.AuthorisationError("You do not have access to this contractor business.");
+      return { profile: { id: "contact" }, contact: {} };
+    },
+  };
+});
+
 import { sharedFake } from "@/test/fake-orm";
 import {
   proposeWorksRouteAction,
   saveWorksSettingsAction,
+  issueUrgentOrderAction,
+  respondToWorkOrderAction,
   setPreferredContractorAction,
   submitWorksRequestAction,
   voteWorksDecisionAction,
@@ -53,6 +67,8 @@ const form = (fields: Record<string, string>) => {
 const request = { title: "Leak in the car park", trade: "Plumbing", description: "Water dripping from the ceiling since Monday." };
 
 beforeEach(() => {
+  vi.clearAllMocks();
+  contractor.businesses = [];
   caller.id = "owner";
   caller.roles = { [A]: ["OWNER"] };
   stepUp.requireRecentMfa.mockReset();
@@ -96,14 +112,14 @@ describe("raising a request", () => {
 describe("deciding", () => {
   it("an owner who is not on the committee cannot propose", async () => {
     caller.roles = { [A]: ["OWNER"] };
-    const r = await proposeWorksRouteAction(A, "reqB", {}, form({ outcome: "URGENT" }));
+    const r = await proposeWorksRouteAction(A, "reqB", {}, form({ outcome: "URGENT", amount: "1500" }));
     expect(r.error).toMatch(/permission/);
   });
 
   it("a committee member cannot reach another building's request through their own", async () => {
     caller.id = "m1";
     caller.roles = { [A]: ["COMMITTEE"] };
-    const r = await proposeWorksRouteAction(A, "reqB", {}, form({ outcome: "URGENT" }));
+    const r = await proposeWorksRouteAction(A, "reqB", {}, form({ outcome: "URGENT", amount: "1500" }));
     expect(r.error).toMatch(/not found/);
     expect(sharedFake.table("WorksRequest")[0].status).toBe("SUBMITTED");
   });
@@ -156,5 +172,61 @@ describe("settings", () => {
     expect((await setPreferredContractorAction(A, {}, form({ trade: "Plumbing", contractorBusinessId: "c-ok" }))).done).toBeTruthy();
     expect((await setPreferredContractorAction(A, {}, form({ trade: "Plumbing", contractorBusinessId: "c-ok" }))).done).toBeTruthy();
     expect(sharedFake.table("WorksPreferredContractor")).toEqual([expect.objectContaining({ schemeId: A, trade: "Plumbing", contractorBusinessId: "c-ok" })]);
+  });
+});
+
+describe("urgent work orders", () => {
+  async function urgentRequest() {
+    caller.id = "owner";
+    caller.roles = { [A]: ["OWNER"] };
+    const created = await submitWorksRequestAction(A, {}, form(request));
+    sharedFake.table("WorksSettings").push({ schemeId: A, approvalRule: "TWO", urgentLimit: "2000.00", adviserMayDecide: false });
+    return created.requestId!;
+  }
+
+  it("goes to the preferred contractor as soon as one member decides within the limit", async () => {
+    const id = await urgentRequest();
+    sharedFake.table("WorksPreferredContractor").push({ schemeId: A, trade: "Plumbing", contractorBusinessId: "c-ok" });
+    caller.id = "m1";
+    caller.roles = { [A]: ["COMMITTEE"] };
+    const r = await proposeWorksRouteAction(A, id, {}, form({ outcome: "URGENT", amount: "$1,500" }));
+    expect(r.done).toMatch(/Decided/);
+    expect(sharedFake.table("WorksWorkOrder")).toEqual([expect.objectContaining({ requestId: id, contractorBusinessId: "c-ok", amountLimit: "1500.00" })]);
+    expect(notify.notifyOrderIssued).toHaveBeenCalled();
+  });
+
+  it("asks the committee to choose when there is no preferred contractor; choosing needs the authenticator", async () => {
+    const id = await urgentRequest();
+    caller.id = "m1";
+    caller.roles = { [A]: ["COMMITTEE"] };
+    await proposeWorksRouteAction(A, id, {}, form({ outcome: "URGENT", amount: "1500" }));
+    expect(notify.notifyNoContractor).toHaveBeenCalled();
+    expect(sharedFake.table("WorksWorkOrder")).toHaveLength(0);
+
+    caller.id = "owner";
+    caller.roles = { [A]: ["OWNER"] };
+    expect((await issueUrgentOrderAction(A, id, {}, form({ contractorBusinessId: "c-ok" }))).error).toMatch(/permission/);
+
+    caller.id = "m2";
+    caller.roles = { [A]: ["COMMITTEE"] };
+    stepUp.requireRecentMfa.mockRejectedValueOnce(new (await import("@/lib/auth/require-membership")).AuthorisationError("For your security, confirm it is you first."));
+    expect((await issueUrgentOrderAction(A, id, {}, form({ contractorBusinessId: "c-ok" }))).error).toMatch(/confirm it is you/);
+    expect((await issueUrgentOrderAction(A, id, {}, form({ contractorBusinessId: "c-ok" }))).done).toMatch(/WO-0001/);
+  });
+
+  it("only a contact of the business it was sent to can answer it", async () => {
+    const id = await urgentRequest();
+    sharedFake.table("WorksPreferredContractor").push({ schemeId: A, trade: "Plumbing", contractorBusinessId: "c-ok" });
+    caller.id = "m1";
+    caller.roles = { [A]: ["COMMITTEE"] };
+    await proposeWorksRouteAction(A, id, {}, form({ outcome: "URGENT", amount: "1500" }));
+    const orderId = String(sharedFake.table("WorksWorkOrder")[0].id);
+
+    contractor.businesses = ["c-pending"];
+    expect((await respondToWorkOrderAction(orderId, {}, form({ answer: "ACCEPT" }))).error).toMatch(/do not have access/);
+    contractor.businesses = ["c-ok"];
+    expect((await respondToWorkOrderAction(orderId, {}, form({ answer: "ACCEPT" }))).done).toMatch(/Accepted/);
+    expect(notify.notifyOrderAnswered).toHaveBeenCalledWith(expect.objectContaining({ accepted: true, contractorName: "Ace Plumbing" }));
+    expect(sharedFake.table("WorksRequest").find((r) => r.id === id)?.status).toBe("DELIVERY");
   });
 });

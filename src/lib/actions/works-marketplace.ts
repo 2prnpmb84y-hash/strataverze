@@ -17,7 +17,10 @@ import { logError } from "@/lib/log";
 import { checkRequest, getRequest, resubmitRequest, submitRequest, WorksRequestError } from "@/lib/works/requests";
 import { proposeRoute, vote, withdraw, WorksDecisionError, decisionsFor } from "@/lib/works/review";
 import { checkWorksSettings, PreferredContractorError, removePreferredContractor, saveWorksSettings, setPreferredContractor } from "@/lib/works/settings";
-import { notifyDecision, notifyRequestSubmitted, notifySettingsChanged, notifyVoteNeeded } from "@/lib/works/notify";
+import { notifyDecision, notifyNoContractor, notifyOrderAnswered, notifyOrderIssued, notifyRequestSubmitted, notifySettingsChanged, notifyVoteNeeded } from "@/lib/works/notify";
+import { issueUrgentOrder, orderingState, respondToOrder, UrgentOrderError } from "@/lib/works/urgent-orders";
+import { requireActiveContractorContact } from "@/lib/auth/require-contractor";
+import { db } from "@/prisma/db";
 import { ROUTE_OUTCOMES, type RouteOutcome } from "@/lib/works/decision-rules";
 
 export type WorksFormState = { error?: string; fieldErrors?: Record<string, string>; done?: string; requestId?: string };
@@ -36,6 +39,13 @@ function failure(err: unknown, fallback: string): WorksFormState {
   if (upload) return { fieldErrors: { photos: upload } };
   logError(`[works] ${fallback}`, err);
   return { error: fallback };
+}
+
+/** Dollars from a form field ("$2,000" or "2000.50"), or null when blank or not a number. */
+function parseDollars(value: FormDataEntryValue | null): number | null {
+  const v = String(value ?? "").replace(/[$,\s]/g, "");
+  if (!v || !/^\d{1,9}(\.\d{1,2})?$/.test(v)) return null;
+  return Number(v);
 }
 
 function requestFields(formData: FormData) {
@@ -98,6 +108,15 @@ async function afterSettle(schemeId: string, requestId: string, actorId: string,
     entityId: requestId,
     metadata: { requestNumber: String(request.requestNumber), outcome: String(decision.outcome), votesFor: decision.votes.filter((v) => v.vote === "FOR").length, votesAgainst: decision.votes.filter((v) => v.vote === "AGAINST").length, byDelegation: !!decision.byDelegation },
   });
+  if (result.status === "DECIDED" && String(decision.outcome) === "URGENT") {
+    // The decision stands whatever happens here; the committee or the
+    // Adviser can send the order from the request page.
+    try {
+      await sendUrgentOrder(schemeId, requestId, actorId, null);
+    } catch (err) {
+      logError("[works] urgent order not sent:", err);
+    }
+  }
   await notifyDecision({
     schemeId,
     requestId,
@@ -124,6 +143,7 @@ export async function proposeWorksRouteAction(schemeId: string, requestId: strin
       outcome,
       note: String(formData.get("note") ?? "").slice(0, 2000) || null,
       returnReason: String(formData.get("returnReason") ?? "").slice(0, 2000) || null,
+      amount: parseDollars(formData.get("amount")),
     });
     await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_PROPOSED", entityType: "WorksRequest", entityId: requestId, metadata: { outcome: r.outcome, decisionId: r.decisionId } });
     if (r.status === "WITHDRAWN") return { error: "This request is no longer waiting for the committee. Reload the page." };
@@ -216,3 +236,63 @@ export async function removePreferredContractorAction(schemeId: string, trade: s
     return failure(err, "The preferred contractor could not be removed.");
   }
 }
+
+// ─── Urgent work orders (stage 2) ──────────────────────────────────────────
+
+/**
+ * Send the urgent order: to the contractor given, or else the preferred one
+ * for the trade. With neither, the committee and the Adviser are asked to
+ * choose. Errors are logged, never undo the decision that led here.
+ */
+async function sendUrgentOrder(schemeId: string, requestId: string, actorId: string, contractorBusinessId: string | null) {
+  const request = await getRequest(schemeId, requestId);
+  if (!request) return null;
+  const r = await issueUrgentOrder({ schemeId, requestId, issuedById: actorId, contractorBusinessId });
+  if (!r.issued) {
+    await logActivity({ schemeId, actorId, action: "WORKS_ORDER_NO_CONTRACTOR", entityType: "WorksRequest", entityId: requestId, metadata: { requestNumber: String(request.requestNumber), trade: request.trade ? String(request.trade) : null } });
+    await notifyNoContractor({ schemeId, requestId, requestNumber: String(request.requestNumber), title: String(request.title), trade: request.trade ? String(request.trade) : null });
+    return r;
+  }
+  const state = await orderingState(schemeId, requestId);
+  await logActivity({ schemeId, actorId, action: "WORKS_ORDER_ISSUED", entityType: "WorksRequest", entityId: requestId, metadata: { workOrderNumber: r.workOrderNumber, contractorBusinessId: r.contractorBusinessId, amountLimit: state?.amount ?? null, chosen: !!contractorBusinessId } });
+  await notifyOrderIssued({ schemeId, workOrderId: r.workOrderId, workOrderNumber: r.workOrderNumber, title: String(request.title), contractorBusinessId: r.contractorBusinessId, amountLimit: state?.amount ?? null });
+  return r;
+}
+
+/** The committee or the Adviser sends the urgent order to a contractor they choose (none preferred, or the first declined). */
+export async function issueUrgentOrderAction(schemeId: string, requestId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
+  try {
+    const { profile } = await requireSchemeAccess(schemeId, "works.decide");
+    await requireRecentMfa();
+    const contractorBusinessId = String(formData.get("contractorBusinessId") ?? "");
+    if (!contractorBusinessId) return { fieldErrors: { contractorBusinessId: "Choose a contractor." } };
+    const r = await sendUrgentOrder(schemeId, requestId, profile.id, contractorBusinessId);
+    revalidateWorks(schemeId, requestId);
+    if (!r || !r.issued) return { error: "The work order could not be sent. Choose a contractor approved on StrataVerze." };
+    return { done: `Work order ${r.workOrderNumber} has been sent. The contractor has been emailed.` };
+  } catch (err) {
+    if (err instanceof UrgentOrderError) return { error: err.message };
+    return failure(err, "The work order could not be sent. Please try again.");
+  }
+}
+
+/** The contractor accepts or declines an urgent order (supplier portal). */
+export async function respondToWorkOrderAction(workOrderId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
+  try {
+    const order = await db.orm.public.WorksWorkOrder.where((o) => o.id.eq(String(workOrderId))).first();
+    if (!order) return { error: "Work order not found." };
+    const { profile } = await requireActiveContractorContact(order.contractorBusinessId);
+    const accept = String(formData.get("answer") ?? "") === "ACCEPT";
+    const r = await respondToOrder({ workOrderId: order.id, contractorBusinessId: order.contractorBusinessId, accept, reason: String(formData.get("reason") ?? "").slice(0, 2000) || null, profileId: profile.id });
+    await logActivity({ schemeId: r.schemeId, actorId: profile.id, action: accept ? "WORKS_ORDER_ACCEPTED" : "WORKS_ORDER_DECLINED", entityType: "WorksRequest", entityId: r.requestId ?? order.id, metadata: { workOrderNumber: r.workOrderNumber, reason: r.reason } });
+    const business = await db.orm.public.ContractorBusiness.where((c) => c.id.eq(order.contractorBusinessId)).first();
+    await notifyOrderAnswered({ schemeId: r.schemeId, requestId: r.requestId, workOrderNumber: r.workOrderNumber, contractorName: String(business?.tradingName || business?.companyName || "The contractor"), accepted: accept, reason: r.reason });
+    revalidatePath("/supplier/work-orders", "layout");
+    if (r.requestId) revalidateWorks(r.schemeId, r.requestId);
+    return { done: accept ? "Accepted. The building has been told." : "Declined. The building has been told, so it can arrange someone else." };
+  } catch (err) {
+    if (err instanceof UrgentOrderError) return { error: err.message };
+    return failure(err, "Your answer could not be recorded. Please try again.");
+  }
+}
+

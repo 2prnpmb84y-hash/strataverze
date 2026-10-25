@@ -32,6 +32,10 @@ const ACTION_LABELS: Record<string, string> = {
   WORKS_SETTINGS_UPDATED: "changed the works settings",
   WORKS_PREFERRED_CONTRACTOR_SET: "set a preferred contractor",
   WORKS_PREFERRED_CONTRACTOR_REMOVED: "removed a preferred contractor",
+  WORKS_ORDER_ISSUED: "issued an urgent work order",
+  WORKS_ORDER_NO_CONTRACTOR: "found no contractor for an urgent order",
+  WORKS_ORDER_ACCEPTED: "accepted an urgent work order",
+  WORKS_ORDER_DECLINED: "declined an urgent work order",
 };
 
 const ACTION_ICONS: Record<string, string> = {
@@ -66,6 +70,10 @@ const ACTION_ICONS: Record<string, string> = {
   WORKS_SETTINGS_UPDATED: "⚙️",
   WORKS_PREFERRED_CONTRACTOR_SET: "🔧",
   WORKS_PREFERRED_CONTRACTOR_REMOVED: "🔧",
+  WORKS_ORDER_ISSUED: "🔧",
+  WORKS_ORDER_NO_CONTRACTOR: "⚠️",
+  WORKS_ORDER_ACCEPTED: "✅",
+  WORKS_ORDER_DECLINED: "❌",
 };
 
 type ActivityEntry = {

@@ -9,6 +9,9 @@ import { StatusChip } from "@/components/ui/status-chip";
 import { DecisionPanel } from "@/components/works/decision-panel";
 import { RequestDetails, ruleSentence } from "@/components/works/request-details";
 import { WorksRequestForm } from "@/components/works/request-form";
+import { UrgentOrderPanel } from "@/components/works/urgent-order-panel";
+import { orderingState } from "@/lib/works/urgent-orders";
+import { approvedContractors } from "@/lib/works/settings";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,6 +37,9 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
 
   const r = view.request;
   const showDecision = view.can.isCommitteeMember;
+  const ordering = r.isEmergency ? await orderingState(row.schemeId, requestId) : null;
+  const showOrders = !!ordering && (ordering.orders.length > 0 || ordering.canIssue);
+  const contractors = showOrders && ordering!.canIssue && showDecision ? await approvedContractors(r.trade ?? undefined) : [];
   const photosSoFar = view.photos.length;
   // The latest decision made (decisions are newest first). Committee notes stay with the committee, except a reason for declining.
   const decided = view.decisions.find((d) => d.status === "DECIDED");
@@ -63,10 +69,31 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
         </Card>
       )}
 
+      {showOrders && (
+        <Card>
+          <CardHeader title="Urgent work order" description="Sent to the contractor straight after the urgent decision." />
+          {showDecision ? (
+            <UrgentOrderPanel
+              schemeId={row.schemeId}
+              requestId={r.id}
+              orders={ordering!.orders}
+              canIssue={ordering!.canIssue}
+              mayChoose
+              amount={ordering!.amount}
+              contractors={contractors.map((c) => ({ id: c.id, name: c.name, suburb: c.suburb, trades: c.trades }))}
+              preferredContractorId={ordering!.preferredContractorId}
+              trade={r.trade}
+            />
+          ) : (
+            <p className="text-sm text-ink">{ordering!.live ? `${ordering!.live.contractorName}: ${ordering!.live.statusLabel.toLowerCase()}.` : "A contractor is being arranged."}</p>
+          )}
+        </Card>
+      )}
+
       {showDecision ? (
         <Card>
           <CardHeader title="The committee's decision" description="How this request is handled." />
-          <DecisionPanel schemeId={row.schemeId} requestId={r.id} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+          <DecisionPanel schemeId={row.schemeId} requestId={r.id} urgentLimit={view.settings.urgentLimit} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
         </Card>
       ) : (
         decided && (

@@ -100,12 +100,16 @@ export default async function WorkOrderDetailPage({
                 Contract
               </dt>
               <dd className="text-sm text-ink">
-                <Link
-                  href={`/adviser/schemes/${id}/works/contracts/${wo.contract.id}`}
-                  className="text-turquoise hover:underline"
-                >
-                  {wo.contract.contractNumber} &mdash; {wo.contract.title}
-                </Link>
+                {wo.contract ? (
+                  <Link
+                    href={`/adviser/schemes/${id}/works/contracts/${wo.contract.id}`}
+                    className="text-turquoise hover:underline"
+                  >
+                    {wo.contract.contractNumber} &mdash; {wo.contract.title}
+                  </Link>
+                ) : (
+                  "None (urgent work order)"
+                )}
               </dd>
             </div>
             <div>

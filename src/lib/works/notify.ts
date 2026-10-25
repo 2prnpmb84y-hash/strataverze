@@ -114,7 +114,7 @@ export async function notifyDecision(input: { schemeId: string; requestId: strin
     }
     const who = input.byDelegation ? "The Adviser, under the committee's delegation," : "The committee";
     const ownerLines: Record<RouteOutcome, string> = {
-      URGENT: `${who} has approved urgent works for your request. A contractor is being arranged.`,
+      URGENT: `${who} has approved urgent works for your request. A work order is going to a contractor.`,
       QUOTES: `${who} has approved your request. Quotes are being sought from contractors.`,
       RETURN: `${who} has returned your request for more detail: ${input.returnReason ?? ""}`.trim(),
       DECLINE: `${who} has declined your request.${input.note ? ` The reason given: ${input.note}` : ""}`,
@@ -146,7 +146,7 @@ export async function notifyDecision(input: { schemeId: string; requestId: strin
     // Until urgent work orders and marketplace quotes are built (stages 2
     // and 3), the Adviser arranges the contractor or the quotes.
     const adviserNext: Record<RouteOutcome, string> = {
-      URGENT: "Please arrange the contractor now.",
+      URGENT: "The urgent work order goes to the preferred contractor for the trade. If there is none, choose one on the request page.",
       QUOTES: "Please arrange the quotes.",
       RETURN: "The request has gone back to whoever raised it for more detail.",
       DECLINE: "The request is closed.",
@@ -197,5 +197,74 @@ export async function notifySettingsChanged(input: { schemeId: string; changedBy
     );
   } catch (err) {
     logError("[works] settings emails failed:", err);
+  }
+}
+
+// ─── Urgent work orders (stage 2) ──────────────────────────────────────────
+
+const dollarsText = (n: number | null) => (n == null ? "" : `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+
+/** A new urgent order: to the contractor's active contacts. */
+export async function notifyOrderIssued(input: { schemeId: string; workOrderId: string; workOrderNumber: string; title: string; contractorBusinessId: string; amountLimit: number | null }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const contacts = await db.orm.public.ContractorContact.where((c) => and(c.contractorBusinessId.eq(input.contractorBusinessId), c.status.eq("ACTIVE"))).limit(20).all();
+    const list = contacts.filter((c) => c.email).map((c) => ({ email: String(c.email), name: String(c.firstName || "there") }));
+    await send(list, (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Urgent work order ${input.workOrderNumber}: ${s.name}`,
+        heading: "Urgent work order",
+        lines: [`Hello ${p.name},`, `${s.name} has sent you urgent work order ${input.workOrderNumber}, "${input.title}".`, input.amountLimit != null ? `Not to exceed ${dollarsText(input.amountLimit)} without checking with the building first.` : "", "Please accept or decline it in StrataVerze as soon as you can."].filter(Boolean),
+        buttonLabel: "Accept or decline",
+        url: `${siteUrl()}/supplier/work-orders/${input.workOrderId}`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] order emails failed:", err);
+  }
+}
+
+async function committeeAndAdvisers(schemeId: string) {
+  return people([...(await roleMembers(schemeId, "COMMITTEE")), ...(await roleMembers(schemeId, "ADVISER"))]);
+}
+
+/** No contractor to send an urgent order to: the committee and the Adviser pick one. */
+export async function notifyNoContractor(input: { schemeId: string; requestId: string; requestNumber: string; title: string; trade: string | null }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await committeeAndAdvisers(input.schemeId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Choose a contractor: urgent request ${input.requestNumber}`,
+        heading: "Urgent works need a contractor",
+        lines: [`Urgent works were agreed for request ${input.requestNumber}, "${input.title}", at ${s.name}.`, `There is no approved preferred contractor for ${input.trade ?? "this kind of work"}, so no work order has gone out yet.`, "Open the request and choose a contractor."],
+        buttonLabel: "Choose a contractor",
+        url: `${siteUrl()}/owner/works/${input.requestId}`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] no-contractor emails failed:", err);
+  }
+}
+
+/** The contractor accepted or declined: to the committee and the Adviser. */
+export async function notifyOrderAnswered(input: { schemeId: string; requestId: string | null; workOrderNumber: string; contractorName: string; accepted: boolean; reason: string | null }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await committeeAndAdvisers(input.schemeId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `${input.accepted ? "Accepted" : "Declined"}: work order ${input.workOrderNumber} at ${s.name}`,
+        heading: input.accepted ? "Work order accepted" : "Work order declined",
+        lines: input.accepted
+          ? [`${input.contractorName} has accepted urgent work order ${input.workOrderNumber} at ${s.name}.`]
+          : [`${input.contractorName} has declined urgent work order ${input.workOrderNumber} at ${s.name}.`, input.reason ? `Their reason: ${input.reason}` : "", "Open the request and choose another contractor."].filter(Boolean),
+        buttonLabel: "Open the request",
+        url: input.requestId ? `${siteUrl()}/owner/works/${input.requestId}` : `${siteUrl()}/owner/works`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] order answer emails failed:", err);
   }
 }

@@ -3,9 +3,9 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import {
   getOpenQuoteRequests,
   getQuotesBySupplier,
-  getWorkOrdersForSupplier,
   getInvoicesBySupplier,
 } from "@/lib/queries/supplier";
+import { myContractorBusinessIds, ordersForContractor } from "@/lib/works/urgent-orders";
 import {
   getContractorBusinessForProfile,
   getContractorOnboarding,
@@ -40,7 +40,7 @@ export default async function SupplierDashboard() {
   const [openRequests, myQuotes, workOrders, invoices, business] = await Promise.all([
     getOpenQuoteRequests(profile.id),
     getQuotesBySupplier(profile.id),
-    getWorkOrdersForSupplier(profile.id),
+    myContractorBusinessIds(profile.id).then(ordersForContractor),
     getInvoicesBySupplier(profile.id),
     getContractorBusinessForProfile(profile.id),
   ]);
@@ -55,9 +55,8 @@ export default async function SupplierDashboard() {
       ])
     : [null, null, [], []];
 
-  const activeWorkOrders = workOrders.filter(
-    (wo) => wo.status === "AWARDED" || wo.status === "IN_PROGRESS",
-  );
+  // Urgent work orders waiting for an answer or accepted (works stage 2).
+  const activeWorkOrders = workOrders.filter((wo) => !["DECLINED", "CANCELLED", "COMPLETE"].includes(wo.status));
   const pendingInvoices = invoices.filter(
     (inv) => inv.status === "SUBMITTED",
   );
@@ -272,17 +271,17 @@ export default async function SupplierDashboard() {
                     {wo.title}
                   </p>
                   <p className="text-xs text-ink-muted">
-                    {wo.scheme?.name}
+                    {wo.building}
                   </p>
                 </div>
                 <span
                   className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    wo.status === "IN_PROGRESS"
-                      ? "bg-mint-soft text-turquoise"
-                      : "bg-gold-100 text-gold-500"
+                    wo.status === "AWAITING_ACKNOWLEDGEMENT"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-mint-soft text-turquoise"
                   }`}
                 >
-                  {wo.status === "IN_PROGRESS" ? "In Progress" : "Awarded"}
+                  {wo.statusLabel}
                 </span>
               </Link>
             ))}
