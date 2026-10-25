@@ -10,6 +10,7 @@ const authorise = vi.fn();
 vi.mock("@/lib/auth/building-lock", () => ({ requireSchemeAccessOrAdmin: (s: string, c: string) => authorise(s, c) }));
 vi.mock("@/lib/auth/require-access", () => ({ requireSchemeAccess: vi.fn() }));
 vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async () => {}) }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(async () => {}) }));
 const signed = vi.hoisted(() => ({ calls: [] as string[][] }));
 vi.mock("@/lib/storage/server-storage", () => ({
@@ -25,7 +26,8 @@ vi.mock("@/lib/storage/server-storage", () => ({
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { prepareUpload } = await import("@/lib/storage/uploads");
-const { setSchemePhoto, signedSchemeImages, schemeThumbnails } = await import("./photos");
+const { setSchemePhoto, removeSchemePhoto, signedSchemeImages, schemeThumbnails } = await import("./photos");
+const { removeSchemePhotoAction } = await import("@/lib/actions/scheme-photo");
 const { photoFileProblem } = await import("./upload-photo");
 const { SchemeThumb } = await import("@/components/schemes/scheme-thumb");
 
@@ -111,5 +113,38 @@ describe("showing photos", () => {
     const withPhoto = renderToStaticMarkup(createElement(SchemeThumb, { url: "https://signed.example/x.jpg", name: "Opera House" }));
     expect(withPhoto).toContain('src="https://signed.example/x.jpg"');
     expect(withPhoto).not.toContain("data-placeholder");
+  });
+});
+
+describe("removing a photo", () => {
+  const seedImages = () =>
+    sharedFake.reset({
+      StorageUpload: [],
+      SchemeImage: [
+        { id: "new", schemeId: A, url: `schemes/${A}/photos/new.jpg`, sortOrder: -1 },
+        { id: "old", schemeId: A, url: `schemes/${A}/photos/old.jpg`, sortOrder: 0 },
+        { id: "other", schemeId: B, url: `schemes/${B}/photos/b.jpg`, sortOrder: 0 },
+      ],
+    });
+
+  it("removes the photo shown first, so the earlier one takes its place", async () => {
+    seedImages();
+    const r = await removeSchemePhoto({ schemeId: A, imageId: "new", actorId: "adviser-a", actorRole: "ADVISER" });
+    expect(r).toEqual({ removed: true, remaining: 1 });
+    expect(sharedFake.table("SchemeImage").map((i) => i.id).sort()).toEqual(["old", "other"]);
+  });
+
+  it("never removes another building's photo", async () => {
+    seedImages();
+    const r = await removeSchemePhoto({ schemeId: A, imageId: "other", actorId: "adviser-a", actorRole: "ADVISER" });
+    expect(r.removed).toBe(false);
+    expect(sharedFake.table("SchemeImage")).toHaveLength(3);
+  });
+
+  it("needs scheme.manage, and says so when the photo has already gone", async () => {
+    seedImages();
+    expect(await removeSchemePhotoAction(A, "new")).toEqual({ ok: true });
+    expect(authorise).toHaveBeenCalledWith(A, "scheme.manage");
+    expect(await removeSchemePhotoAction(A, "new")).toEqual({ error: expect.stringContaining("already been removed") });
   });
 });

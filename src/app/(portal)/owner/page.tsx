@@ -3,6 +3,7 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getSchemeNotificationCounts } from "@/lib/queries/schemes";
 import { SchemeGrid } from "./scheme-grid";
 import { connection } from "next/server";
+import { schemeThumbnails } from "@/lib/schemes/photos";
 
 export default async function OwnerSchemePicker() {
   await connection();
@@ -23,10 +24,12 @@ export default async function OwnerSchemePicker() {
   const schemeIds = ownerSchemes.map((s) => s.id);
 
   // Get notification counts per scheme
-  const notificationCounts = await getSchemeNotificationCounts(
-    schemeIds,
-    ownerLotIds,
-  );
+  // Counts, and each property's photo signed in one request (these are
+  // only the owner's own buildings, so the private photos may be shown).
+  const [notificationCounts, thumbs] = await Promise.all([
+    getSchemeNotificationCounts(schemeIds, ownerLotIds),
+    schemeThumbnails(ownerSchemes),
+  ]);
 
   // Build card data
   const cards = ownerSchemes.map((scheme) => {
@@ -51,6 +54,7 @@ export default async function OwnerSchemePicker() {
       pendingLevies: counts.pendingLevies,
       activeWorkOrders: counts.activeWorkOrders,
       upcomingMeetings: counts.upcomingMeetings,
+      photoUrl: thumbs[scheme.id] ?? null,
     };
   });
 
