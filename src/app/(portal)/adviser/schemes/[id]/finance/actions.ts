@@ -1156,22 +1156,37 @@ export async function issueScheduleNoticesAction(
       firstDueDate,
     }).filter((n) => !raisedBefore.has(n.instalment));
     // Periods already levied by an earlier schedule for this fund and year
-    // (one whose planned notices were stopped) are not levied again.
-    const covered = new Set<string>();
+    // (one whose planned notices were stopped) are not levied again, and
+    // instalments the previous manager raised stay excluded.
     if (!isSpecial) {
-      const earlier = (
-        await db.orm.public.LevySchedule
-          .where((x) => and(x.schemeId.eq(schemeId), x.fundId.eq(schedule.fundId), x.financialYear.eq(Number(schedule.financialYear)), x.levyType.eq("ORDINARY"), x.status.eq("SUPERSEDED")))
-          .limit(50)
-          .all()
-      ).map((x) => x.id);
-      if (earlier.length) {
-        const issued = await db.orm.public.LevyNotice.where((n) => and(n.levyScheduleId.in(earlier), n.status.neq("DRAFT"))).limit(20000).all();
-        for (const n of issued) covered.add(toIsoDay(n.periodStart));
+      const sameYear = await db.orm.public.LevySchedule
+        .where((x) => and(x.schemeId.eq(schemeId), x.fundId.eq(schedule.fundId), x.financialYear.eq(Number(schedule.financialYear)), x.levyType.eq("ORDINARY")))
+        .limit(50)
+        .all();
+      if (sameYear.some((x) => x.id !== scheduleId && x.status === "ACTIVE")) {
+        return { error: "This fund already has an active levy schedule for this year. Stop its planned notices first." };
       }
+      const earlier = sameYear.filter((x) => x.id !== scheduleId && x.status === "SUPERSEDED");
+      const earlierRaised = new Set(earlier.flatMap((x) => String(x.raisedBeforeTakeover ?? "").split(",").map((v) => Number(v.trim())).filter((v) => v > 0)));
+      const issued = earlier.length
+        ? await db.orm.public.LevyNotice.where((n) => and(n.levyScheduleId.in(earlier.map((x) => x.id)), n.status.neq("DRAFT"))).limit(20000).all()
+        : [];
+      const periods = [...new Map(issued.map((n) => [`${toIsoDay(n.periodStart)}|${toIsoDay(n.periodEnd)}`, { start: toIsoDay(n.periodStart), end: toIsoDay(n.periodEnd) }])).values()];
+      const kept = [];
+      for (const n of plan) {
+        const overlaps = periods.filter((p) => p.start <= n.periodEnd && n.periodStart <= p.end);
+        if (!overlaps.length) {
+          // The previous manager's instalments, when the frequency is the same.
+          if (earlierRaised.has(n.instalment) && earlier.some((x) => x.frequency === schedule.frequency && x.raisedBeforeTakeover)) continue;
+          kept.push(n);
+          continue;
+        }
+        // Already levied for exactly this period: skip it. Overlapping differently (another frequency): refuse.
+        if (overlaps.some((p) => p.start === n.periodStart && p.end === n.periodEnd)) continue;
+        return { error: "An earlier schedule for this fund and year levied periods that overlap these instalments differently. Use the same frequency as the earlier schedule." };
+      }
+      plan.splice(0, plan.length, ...kept);
     }
-    const planned = plan.filter((n) => !covered.has(n.periodStart));
-    plan.splice(0, plan.length, ...planned);
     if (plan.length === 0) return { error: "Every instalment of this schedule has already been raised (by the previous manager, or on an earlier schedule), so there is nothing to plan." };
 
     // When each notice goes out: 5 weeks before it falls due. A special levy

@@ -1578,6 +1578,10 @@ model LevyNotice {
   interestCharged    Decimal             @default(0) @db.Decimal(12, 2) @map("interest_charged")
   status             String              @default("DRAFT") // DRAFT, ISSUED, PARTIALLY_PAID, PAID, OVERDUE, WRITTEN_OFF
   issuedAt           DateTime?           @db.Timestamptz @map("issued_at")
+  /// Issued, and its levy not yet posted in the ledger (25 Oct 2026). Set
+  /// when a notice is issued and cleared once the levy is posted; the daily
+  /// job posts any left pending by a run that stopped part way.
+  levyPostPending    Boolean             @default(false) @map("levy_post_pending")
   /// When the notice was emailed to the owner (from 25 Oct 2026), so a
   /// failed email is sent again.
   emailedAt          DateTime?           @db.Timestamptz @map("emailed_at")

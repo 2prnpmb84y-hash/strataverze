@@ -11142,6 +11142,13 @@
                   "kind": "scalar"
                 }
               },
+              "levyPostPending": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "levyScheduleId": {
                 "nullable": false,
                 "type": {
@@ -11350,6 +11357,9 @@
                 },
                 "issuedAt": {
                   "column": "issued_at"
+                },
+                "levyPostPending": {
+                  "column": "levy_post_pending"
                 },
                 "levyScheduleId": {
                   "column": "levy_schedule_id"
@@ -40526,6 +40536,15 @@
                   "dataType": "pg/timestamptz",
                   "nullable": true
                 },
+                "levy_post_pending": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "levy_schedule_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -55641,7 +55660,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "c3e08907190e24f24bed1ede68c03e772b5b6a6a847000f72ea3d371e4df230e"
+    "storageHash": "c995d91db80aeee72f491a543ac766fd88ce5867b9bb80da2eb823b523bbd908"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

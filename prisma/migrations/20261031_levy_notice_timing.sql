@@ -6,9 +6,20 @@
 -- this first is safe.
 --
 -- 1. When each notice was emailed to its owner, so a failed email is sent
---    again by the daily job.
+--    again by the daily job; and whether an issued notice's levy is still to
+--    be posted, so the daily job posts any a stopped run left behind.
+--    Notices issued before this change are marked emailed and posted, so
+--    nothing is sent or posted again for them.
 ALTER TABLE public.levy_notices
-  ADD COLUMN IF NOT EXISTS emailed_at timestamptz;
+  ADD COLUMN IF NOT EXISTS emailed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS levy_post_pending boolean NOT NULL DEFAULT false;
+
+UPDATE public.levy_notices
+   SET emailed_at = coalesce(issued_at, created_at)
+ WHERE status <> 'DRAFT' AND emailed_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS levy_notices_levy_post_pending_idx
+  ON public.levy_notices (issued_at) WHERE levy_post_pending;
 
 -- 2. Instalments the previous manager raised before the takeover ("1,2"),
 --    which are not raised again.

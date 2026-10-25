@@ -94,7 +94,7 @@ vi.mock("@/lib/queries/schemes", async () => {
 const { sharedFake } = await import("@/test/fake-orm");
 const { issueScheduleNoticesAction } = await import("@/app/(portal)/adviser/schemes/[id]/finance/actions");
 const { stopPlannedNoticesAction, issueOverdueNoticesAction } = await import("@/app/(portal)/adviser/schemes/[id]/finance/actions");
-const { issueDueNotices, runLevyNoticeDay } = await import("./issue-notices");
+const { issueDueNotices, runLevyNoticeDay, postPendingLevies } = await import("./issue-notices");
 const { recordLevyPayment } = await import("@/lib/queries/levy-schedules");
 
 function seed() {
@@ -281,6 +281,33 @@ describe("the daily job", () => {
     expect(notices().map((n) => n.status)).toEqual(["ISSUED", "ISSUED"]);
     expect(sharedFake.table("LevySchedule")[0].status).toBe("SUPERSEDED");
     expect(journals.posted).toEqual([{ date: "2026-07-01", total: 10000 }]);
+  });
+
+  it("posts the levy for notices an interrupted run issued but did not post, once", async () => {
+    today.value = "2026-05-01";
+    await generate();
+    // As if a run stopped after claiming: issued, levy still pending, nothing posted.
+    const two = notices().filter((n) => n.dueDate === "2026-07-01");
+    for (const n of two) Object.assign(n, { status: "ISSUED", levyPostPending: true, issuedAt: "2026-05-27T20:00:00.000Z" });
+    expect(await postPendingLevies(new Date("2026-05-27T20:10:00.000Z"))).toBe(0); // still within the grace
+    expect(await postPendingLevies(new Date("2026-05-28T20:00:00.000Z"))).toBe(2);
+    expect(journals.posted).toEqual([{ date: "2026-07-01", total: 10000 }]);
+    expect(notices().filter((n) => n.levyPostPending)).toHaveLength(0);
+    expect(await postPendingLevies(new Date("2026-05-29T20:00:00.000Z"))).toBe(0);
+    expect(journals.posted).toHaveLength(1);
+  });
+
+  it("refuses a second active schedule, and a replacement that overlaps differently", async () => {
+    today.value = "2026-05-01";
+    await generate();
+    sharedFake.table("LevySchedule").push({ ...sharedFake.table("LevySchedule")[0], id: "ls3", status: "APPROVED" });
+    expect((await issueScheduleNoticesAction("s1", "ls3", {}, new FormData())).error).toContain("already has an active levy schedule");
+    await issueDueNotices("2026-05-27");
+    const fd = new FormData();
+    fd.set("confirmStop", "on");
+    await stopPlannedNoticesAction("s1", "ls1", {}, fd);
+    sharedFake.table("LevySchedule").find((x) => x.id === "ls3")!.frequency = "MONTHLY";
+    expect((await issueScheduleNoticesAction("s1", "ls3", {}, new FormData())).error).toContain("overlap these instalments differently");
   });
 
   it("a later schedule for the same fund and year does not levy the periods already sent again", async () => {

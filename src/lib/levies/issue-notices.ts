@@ -124,38 +124,26 @@ export async function issueNoticeBatch(input: {
 }): Promise<{ count: number; emailed: number; creditAppliedCents: number }> {
   if (input.notices.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
   const owners = await currentOwners(input.schemeId);
+  // One stamp for this run's claims, so a failure puts back only what this run claimed.
+  const claimedAt = new Date().toISOString();
   const claimed: BatchNotice[] = [];
   for (const n of input.notices) {
     const ownerId = owners.has(n.lotId) ? owners.get(n.lotId)! : n.ownerId;
-    if (await issueLevyNotice(n.id, { ownerId, dueDate: n.dueDate })) claimed.push({ ...n, ownerId });
+    if (await issueLevyNotice(n.id, { ownerId, dueDate: n.dueDate, claimedAt })) claimed.push({ ...n, ownerId });
   }
   if (claimed.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
 
   // The levy raised, one entry per due date, dated the due date. If it cannot
-  // be posted, the claimed notices go back to DRAFT: nothing was sent yet.
-  const byDue = new Map<string, BatchNotice[]>();
-  for (const n of claimed) byDue.set(n.dueDate, [...(byDue.get(n.dueDate) ?? []), n]);
-  const posted: BatchNotice[] = [];
-  try {
-    for (const [dueDate, list] of [...byDue].sort(([a], [b]) => a.localeCompare(b))) {
-      await postLevyRaisedJournal({
-        schemeId: input.schemeId,
-        fundId: input.fundId,
-        scheduleId: input.scheduleId,
-        totalAmount: list.reduce((s, n) => s + n.amountCents, 0) / 100,
-        noticeCount: list.length,
-        profileId: input.issuerId,
-        date: dueDate,
-      });
-      posted.push(...list);
-    }
-  } catch (err) {
+  // be posted, this run's notices go back to DRAFT: nothing was sent yet.
+  const posted = await postLevies(input.schemeId, input.fundId, input.scheduleId, input.issuerId, claimed);
+  if (posted.length < claimed.length) {
     const unposted = claimed.filter((n) => !posted.includes(n));
     for (const n of unposted) {
-      await db.orm.public.LevyNotice.where((x) => and(x.id.eq(n.id), x.status.eq("ISSUED"))).update({ status: "DRAFT", issuedAt: null });
+      await db.orm.public.LevyNotice
+        .where((x) => and(x.id.eq(n.id), x.status.eq("ISSUED"), x.levyPostPending.eq(true), x.issuedAt.eq(ts(claimedAt))))
+        .updateAndCount({ status: "DRAFT", issuedAt: null, levyPostPending: false });
     }
-    logError(`[levy-notices] the levy for schedule ${input.scheduleId} could not be posted; ${unposted.length} notice(s) back to planned:`, err);
-    if (!posted.length) throw err;
+    if (!posted.length) throw postLevies.lastError ?? new Error("The levy could not be posted.");
     claimed.splice(0, claimed.length, ...posted);
   }
 
@@ -172,7 +160,7 @@ export async function issueNoticeBatch(input: {
   let creditAppliedCents = 0;
   const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(input.schemeId)).first();
   if (scheme?.autoApplyOwnerCredit !== false) {
-    creditAppliedCents = await applyOwnerCredit({ schemeId: input.schemeId, lotIds: [...new Set(claimed.map((n) => n.lotId))], actorId: input.issuerId }).catch((err) => {
+    creditAppliedCents = await applyOwnerCredit({ schemeId: input.schemeId, lotIds: [...new Set(claimed.map((n) => n.lotId))], actorId: input.issuerId, date: input.noticeDate }).catch((err) => {
       logError("[levy-notices] owner credit could not be applied:", err);
       return 0;
     });
@@ -195,6 +183,80 @@ export async function issueNoticeBatch(input: {
     metadata: { emailed, notices: claimed.length },
   });
   return { count: claimed.length, emailed, creditAppliedCents };
+}
+
+/**
+ * Post the levy for issued notices, one entry per due date, dated it, and
+ * clear each notice's pending mark. Returns the notices posted; stops at the
+ * first entry that cannot be posted (keeping its error for the caller).
+ */
+async function postLevies(schemeId: string, fundId: string, scheduleId: string, actorId: string, notices: BatchNotice[]): Promise<BatchNotice[]> {
+  postLevies.lastError = null;
+  const byDue = new Map<string, BatchNotice[]>();
+  for (const n of notices) byDue.set(n.dueDate, [...(byDue.get(n.dueDate) ?? []), n]);
+  const posted: BatchNotice[] = [];
+  for (const [dueDate, list] of [...byDue].sort(([a], [b]) => a.localeCompare(b))) {
+    try {
+      await postLevyRaisedJournal({
+        schemeId,
+        fundId,
+        scheduleId,
+        totalAmount: list.reduce((s, n) => s + n.amountCents, 0) / 100,
+        noticeCount: list.length,
+        profileId: actorId,
+        date: dueDate,
+      });
+    } catch (err) {
+      postLevies.lastError = err;
+      logError(`[levy-notices] the levy due ${dueDate} for schedule ${scheduleId} could not be posted:`, err);
+      break;
+    }
+    for (const n of list) await db.orm.public.LevyNotice.where((x) => and(x.id.eq(n.id), x.levyPostPending.eq(true))).updateAndCount({ levyPostPending: false });
+    posted.push(...list);
+  }
+  return posted;
+}
+postLevies.lastError = null as unknown;
+
+/** How long a notice may stay pending before the daily job takes it over (a run lasts at most 5 minutes). */
+const PENDING_GRACE_MS = 30 * 60 * 1000;
+
+/**
+ * Post the levy for notices a run issued but did not get to post (it was
+ * stopped part way). Each is taken over with one conditional UPDATE, so two
+ * sweeps at once do not both post it; if posting fails it is marked pending
+ * again for the next run.
+ */
+export async function postPendingLevies(now = new Date()): Promise<number> {
+  const before = new Date(now.getTime() - PENDING_GRACE_MS).toISOString();
+  const pending = await db.orm.public.LevyNotice
+    .where((n) => and(n.levyPostPending.eq(true), n.issuedAt.lte(ts(before))))
+    .limit(2000)
+    .all();
+  let posted = 0;
+  const bySchedule = new Map<string, typeof pending>();
+  for (const n of pending) bySchedule.set(n.levyScheduleId, [...(bySchedule.get(n.levyScheduleId) ?? []), n]);
+  for (const [scheduleId, list] of bySchedule) {
+    const schedule = await db.orm.public.LevySchedule.where((x) => x.id.eq(scheduleId)).first();
+    const actorId = schedule ? await issuerFor(schedule.schemeId, schedule.approvedBy ?? null) : null;
+    if (!schedule || !actorId) continue;
+    const mine: BatchNotice[] = [];
+    for (const n of list) {
+      // Taken over by this sweep: pending stays true, issuedAt moves, so another sweep's filter no longer matches.
+      const stamp = now.toISOString();
+      const took = await db.orm.public.LevyNotice
+        .where((x) => and(x.id.eq(n.id), x.levyPostPending.eq(true), x.issuedAt.eq(ts(String(n.issuedAt)))))
+        .updateAndCount({ issuedAt: ts(stamp) });
+      if (took === 1) mine.push({ id: n.id, noticeNumber: String(n.noticeNumber), lotId: n.lotId, lotNumber: "", ownerId: n.ownerId ?? null, dueDate: toIsoDay(n.dueDate), amountCents: toCents(String(n.amountDue)) });
+    }
+    if (!mine.length) continue;
+    const done = await postLevies(schedule.schemeId, schedule.fundId, scheduleId, actorId, mine);
+    posted += done.length;
+    if (done.length) {
+      await logActivity({ schemeId: schedule.schemeId, actorId, action: "LEVY_NOTICES_ISSUED", entityType: "LevySchedule", entityId: scheduleId, metadata: { count: done.length, note: "Levy posted by the daily job after an interrupted run." } });
+    }
+  }
+  return posted;
 }
 
 async function markEmailed(noticeId: string) {
@@ -367,6 +429,7 @@ export async function retryNoticeEmails(today: string): Promise<number> {
       and(
         n.status.in(["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"]),
         n.emailedAt.isNull(),
+        n.levyPostPending.eq(false),
         n.ownerId.isNotNull(),
         // Recent ones only: from 25 Oct 2026 every issue records emailedAt.
         n.issuedAt.gte(ts(`${since}T00:00:00.000Z`)),
@@ -413,9 +476,10 @@ function sydneyDay(isoTimestamp: string): string {
   return Number.isNaN(d.getTime()) ? isoTimestamp.slice(0, 10) : d.toLocaleDateString("en-CA", { timeZone: "Australia/Sydney" });
 }
 
-/** The daily job: issue, then resend failed emails. */
+/** The daily job: post any levy an interrupted run left, issue, then resend failed emails. */
 export async function runLevyNoticeDay(today: string) {
+  const recovered = await postPendingLevies();
   const issued = await issueDueNotices(today);
   const resent = await retryNoticeEmails(today);
-  return { issued, resent };
+  return { recovered, issued, resent };
 }

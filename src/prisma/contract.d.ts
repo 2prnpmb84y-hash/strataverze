@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'c3e08907190e24f24bed1ede68c03e772b5b6a6a847000f72ea3d371e4df230e'>;
+  StorageHashBase<'c995d91db80aeee72f491a543ac766fd88ce5867b9bb80da2eb823b523bbd908'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1106,6 +1106,7 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly interestCharged: Numeric<12, 2>;
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly levyPostPending: CodecTypes['pg/bool@1']['output'];
       readonly levyScheduleId: CodecTypes['pg/uuid@1']['output'];
       readonly lotId: CodecTypes['pg/uuid@1']['output'];
       readonly migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -3596,6 +3597,7 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly interestCharged: CodecTypes['pg/numeric@1']['input'];
       readonly issuedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly levyPostPending: CodecTypes['pg/bool@1']['input'];
       readonly levyScheduleId: CodecTypes['pg/uuid@1']['input'];
       readonly lotId: CodecTypes['pg/uuid@1']['input'];
       readonly migrationBatchId: CodecTypes['pg/uuid@1']['input'] | null;
@@ -6086,6 +6088,7 @@ export type StorageColumnTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly interest_charged: Numeric<12, 2>;
       readonly issued_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly levy_post_pending: CodecTypes['pg/bool@1']['output'];
       readonly levy_schedule_id: CodecTypes['pg/uuid@1']['output'];
       readonly lot_id: CodecTypes['pg/uuid@1']['output'];
       readonly migration_batch_id: CodecTypes['pg/uuid@1']['output'] | null;
@@ -8577,6 +8580,7 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly interest_charged: CodecTypes['pg/numeric@1']['input'];
       readonly issued_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly levy_post_pending: CodecTypes['pg/bool@1']['input'];
       readonly levy_schedule_id: CodecTypes['pg/uuid@1']['input'];
       readonly lot_id: CodecTypes['pg/uuid@1']['input'];
       readonly migration_batch_id: CodecTypes['pg/uuid@1']['input'] | null;
@@ -11307,6 +11311,7 @@ export namespace Models {
     id: CodecTypes['pg/uuid@1']['output'];
     interestCharged: Numeric<12, 2>;
     issuedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    levyPostPending: CodecTypes['pg/bool@1']['output'];
     levyScheduleId: CodecTypes['pg/uuid@1']['output'];
     lotId: CodecTypes['pg/uuid@1']['output'];
     migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -20921,6 +20926,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
                   readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly levy_post_pending: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly levy_schedule_id: {
@@ -41763,6 +41778,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly levyPostPending: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly levyScheduleId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -41898,6 +41917,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly interestCharged: { readonly column: 'interest_charged' };
                 readonly issuedAt: { readonly column: 'issued_at' };
+                readonly levyPostPending: { readonly column: 'levy_post_pending' };
                 readonly levyScheduleId: { readonly column: 'levy_schedule_id' };
                 readonly lotId: { readonly column: 'lot_id' };
                 readonly migrationBatchId: { readonly column: 'migration_batch_id' };

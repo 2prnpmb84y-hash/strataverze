@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Unauthorized", { status: 401, headers: NO_STORE });
   }
   const today = sydneyToday();
-  const { issued, resent } = await runLevyNoticeDay(today);
+  const { recovered, issued, resent } = await runLevyNoticeDay(today);
   return NextResponse.json(
     {
       today,
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       held: issued.filter((r) => r.held).map((r) => ({ scheduleId: r.scheduleId, missing: r.held })),
       awaitingConfirmation: issued.reduce((s, r) => s + r.awaitingConfirmation, 0),
       emailsResent: resent,
+      leviesRecovered: recovered,
     },
     { headers: NO_STORE },
   );

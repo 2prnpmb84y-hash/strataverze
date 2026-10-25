@@ -335,19 +335,25 @@ export async function createLevyNoticesBatch(
  * Issue a levy notice — sets status to ISSUED with timestamp.
  */
 /**
- * Issue a planned notice. Only a notice still DRAFT is issued, so two runs
- * at once cannot both issue it: the one that loses gets null back. The
- * notice goes to the lot's current owner, with its final due date.
+ * Issue a planned notice: true when this call issued it. One UPDATE with the
+ * whole filter (id and status DRAFT), so of two runs at once only one issues
+ * it. (A single-row update() in Prisma 8 finds the row first and then updates
+ * it by id alone, so it cannot be used to claim.) The notice goes to the
+ * lot's current owner, with its final due date, and its levy is still to be
+ * posted (levy_post_pending) until the caller posts it. `claimedAt` marks
+ * the rows this run claimed, so only they are put back if posting fails.
  */
-export async function issueLevyNotice(noticeId: string, opts: { ownerId?: string | null; dueDate?: string } = {}) {
-  return db.orm.public.LevyNotice
+export async function issueLevyNotice(noticeId: string, opts: { ownerId?: string | null; dueDate?: string; claimedAt?: string } = {}): Promise<boolean> {
+  const n = await db.orm.public.LevyNotice
     .where((ln) => and(ln.id.eq(noticeId), ln.status.eq("DRAFT")))
-    .update({
+    .updateAndCount({
       status: "ISSUED",
-      issuedAt: toTimestamp(new Date().toISOString()),
+      issuedAt: toTimestamp(opts.claimedAt ?? new Date().toISOString()),
+      levyPostPending: true,
       ...(opts.ownerId !== undefined ? { ownerId: opts.ownerId } : {}),
       ...(opts.dueDate ? { dueDate: toTimestamp(opts.dueDate) } : {}),
     });
+  return n === 1;
 }
 
 /**
