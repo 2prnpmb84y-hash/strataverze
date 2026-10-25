@@ -44,6 +44,7 @@ const LABELS: Record<string, string> = {
   "lot.updated": "Lot changed",
   "lot.deleted": "Lot deleted",
   "membership.owner_assigned": "Owner assigned to a lot",
+  "lot.owner_changed": "Change of owner recorded",
   "membership.owner_removed": "Owner removed from a lot",
   "auth.password_set": "First password set",
   "auth.link_sign_in": "Signed in from an email link",

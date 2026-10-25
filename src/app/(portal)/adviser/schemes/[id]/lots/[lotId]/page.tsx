@@ -25,6 +25,8 @@ import { DebtCollectionSection } from "./debt-collection-section";
 import { TenancyDetails } from "./tenancy-details";
 import { LotActionButtons } from "./lot-action-buttons";
 import { RollOwnerName } from "./roll-owner-name";
+import { ChangeOwnerButton } from "@/components/lots/change-owner-button";
+import { sydneyToday } from "@/lib/finance/interest-setting";
 import { connection } from "next/server";
 import { loadLotLevyView } from "@/lib/levies/lot-levy-view";
 import { LevyNoticesView } from "@/components/levies/levy-notices-view";
@@ -102,6 +104,13 @@ export default async function LotDetailPage({
           Info Certificate
         </Button>
         <LotActionButtons schemeId={id} lotId={lotId} deliveryPrefs={deliveryPrefs} />
+        <ChangeOwnerButton
+          schemeId={id}
+          lotId={lotId}
+          lotLabel={lotLabel}
+          currentOwner={lotDetailExt?.rollOwnerName ?? (lot.owners.length > 0 ? ownerName : null)}
+          today={sydneyToday()}
+        />
       </div>
 
       <LotDetailTabs>

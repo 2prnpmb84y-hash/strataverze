@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getLotsForScheme } from "@/lib/queries/lots";
+import { getStrataRollData } from "@/lib/queries/lots";
 import { getLevySchedulesForScheme } from "@/lib/queries/levy-schedules";
 import { getMeetingsForScheme } from "@/lib/queries/meetings";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
@@ -75,7 +75,7 @@ export default async function SchemeDetailPage({
     contacts,
     activities,
   ] = await Promise.all([
-    getLotsForScheme(id),
+    getStrataRollData(id),
     getLevySchedulesForScheme(id),
     getMeetingsForScheme(id),
     getDocumentsForScheme(id),
@@ -109,7 +109,7 @@ export default async function SchemeDetailPage({
       )}
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={scheme.funds} />
-      <LotsCard id={id} lots={lots} totalLots={scheme.totalLots} />
+      <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} />
       <LeviesCard id={id} schedules={levies} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} />

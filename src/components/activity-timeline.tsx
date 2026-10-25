@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<string, string> = {
   FUND_CREATED: "created a fund",
   LOT_CREATED: "added a lot",
   STRATA_ROLL_UPDATED: "updated an owner's name on the strata roll",
+  OWNER_CHANGED: "recorded a change of owner",
   ONBOARDING_INCOME_BUDGET_SAVED: "entered last year's income and expenditure and this year's budget",
 };
 
@@ -43,6 +44,7 @@ const ACTION_ICONS: Record<string, string> = {
   FUND_CREATED: "🏦",
   LOT_CREATED: "🏠",
   STRATA_ROLL_UPDATED: "📜",
+  OWNER_CHANGED: "🔑",
   ONBOARDING_INCOME_BUDGET_SAVED: "📊",
 };
 
@@ -113,6 +115,7 @@ function getMetadataDetail(action: string, metadata: Record<string, unknown> | n
       return null;
     case "LOT_CREATED":
     case "STRATA_ROLL_UPDATED":
+    case "OWNER_CHANGED":
       if (metadata.lotNumber) return formatLotLabel(String(metadata.lotNumber));
       return null;
     default:

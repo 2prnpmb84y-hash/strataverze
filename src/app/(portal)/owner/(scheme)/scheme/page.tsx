@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { connection } from "next/server";
+import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
+import { getStrataRollData } from "@/lib/queries/lots";
+import { StrataRollTable } from "@/app/(portal)/adviser/schemes/[id]/strata-roll-table";
 
 export default async function OwnerSchemePage() {
   await connection();
@@ -18,7 +21,12 @@ export default async function OwnerSchemePage() {
     await getVerifiedSelectedSchemeId(),
   );
 
-  if (schemes.length === 0) {
+  // Committee members keep the strata roll up to date (roll.manage, 24 Oct),
+  // so they see the roll and each lot (25 Oct 2026).
+  const committee = await getSelectedOwnerScheme(["COMMITTEE"]);
+  const rollRows = committee ? await getStrataRollData(committee.schemeId) : null;
+
+  if (schemes.length === 0 && !committee) {
     return (
       <div className="max-w-4xl">
         <PageHeader
@@ -50,6 +58,13 @@ export default async function OwnerSchemePage() {
 
   // The scheme header and pills come from the shared owner scheme layout.
   return (
+    <>
+    {committee && rollRows && (
+      <Card className="mb-6">
+        <CardHeader title="Strata roll" description="Every lot and its owner, and whether the lot is financial. Open a lot to update its owner." />
+        <StrataRollTable rows={rollRows} schemeId={committee.schemeId} lotHrefBase="/owner/scheme/lots/" showMoney={false} />
+      </Card>
+    )}
     <div>
       {schemes.map((scheme) => {
         const myMembership = scheme.memberships[0];
@@ -125,5 +140,6 @@ export default async function OwnerSchemePage() {
         );
       })}
     </div>
+  </>
   );
 }

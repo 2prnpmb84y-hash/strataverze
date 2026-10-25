@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FinancialStatusChip } from "@/components/lots/financial-status";
 
 type StrataRollRow = {
   id: string;
@@ -16,6 +17,9 @@ type StrataRollRow = {
   paid: number;
   closing: number;
   interestPaid: number;
+  financial: boolean;
+  overdueCents: number;
+  oldestOverdue: string | null;
 };
 
 const ROWS_PER_PAGE = 15;
@@ -39,10 +43,17 @@ function formatCurrency(value: number) {
 export function StrataRollTable({
   rows,
   schemeId,
+  lotHrefBase,
+  showMoney = true,
 }: {
   rows: StrataRollRow[];
   schemeId: string;
+  /** Where a lot opens, followed by the lot id. Defaults to the adviser's lot page. */
+  lotHrefBase?: string;
+  /** The levy columns. The committee's roll shows status only. */
+  showMoney?: boolean;
 }) {
+  const lotHref = (id: string) => `${lotHrefBase ?? `/adviser/schemes/${schemeId}/lots/`}${id}`;
   const [activeFilter, setActiveFilter] = useState<FilterTab>("lot");
   const [filterValue, setFilterValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -132,6 +143,10 @@ export function StrataRollTable({
               <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                 Owner
               </th>
+              <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
+                Status
+              </th>
+              {showMoney && (<>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 Opening
               </th>
@@ -150,13 +165,14 @@ export function StrataRollTable({
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 Interest Paid
               </th>
+              </>)}
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={showMoney ? 11 : 5}
                   className="px-3 py-8 text-center text-ink-muted"
                 >
                   {filterValue
@@ -169,12 +185,12 @@ export function StrataRollTable({
                 <tr
                   key={row.id}
                   // The whole row opens the lot; the lot number stays a link for the keyboard and screen readers.
-                  onClick={() => router.push(`/adviser/schemes/${schemeId}/lots/${row.id}`)}
+                  onClick={() => router.push(lotHref(row.id))}
                   className="border-t border-line hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <td className="px-3 py-2.5">
                     <Link
-                      href={`/adviser/schemes/${schemeId}/lots/${row.id}`}
+                      href={lotHref(row.id)}
                       className="font-medium text-turquoise underline-offset-2 hover:underline"
                       aria-label={`Open lot ${row.lotNumber}`}
                     >
@@ -190,6 +206,10 @@ export function StrataRollTable({
                   <td className="px-3 py-2.5 text-ink-muted max-w-[200px] truncate">
                     {row.ownerNames || "—"}
                   </td>
+                  <td className="px-3 py-2.5">
+                    <FinancialStatusChip financial={row.financial} overdueCents={row.overdueCents} oldestOverdue={row.oldestOverdue} />
+                  </td>
+                  {showMoney && (<>
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-ink-muted">
                     {formatCurrency(row.opening)}
                   </td>
@@ -208,6 +228,7 @@ export function StrataRollTable({
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-ink-muted">
                     {formatCurrency(row.interestPaid)}
                   </td>
+                  </>)}
                 </tr>
               ))
             )}

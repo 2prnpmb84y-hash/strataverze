@@ -4,6 +4,8 @@ import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 import { effectiveStatus, noticeLabel } from "@/lib/levies/levy-ledger";
 import { toIsoDay } from "@/lib/levies/notice-plan";
+import { lotFinancialStatus } from "@/lib/levies/financial-status";
+import { sydneyToday } from "@/lib/finance/interest-setting";
 
 type LotNotice = {
   amountDue: unknown;
@@ -247,6 +249,7 @@ export async function getLotDetail(lotId: string) {
  * Fetch strata roll data for a scheme: lots with owners and levy financials.
  */
 export async function getStrataRollData(schemeId: string, limit = 500) {
+  const today = sydneyToday();
   let lots;
   try {
     lots = await db.orm.public.Lot
@@ -313,6 +316,8 @@ export async function getStrataRollData(schemeId: string, limit = 500) {
       paid: paidTotal,
       closing,
       interestPaid,
+      // Financial or unfinancial (overdue and unpaid), decided 25 Oct 2026.
+      ...lotFinancialStatus(notices, today),
     };
   });
 }
