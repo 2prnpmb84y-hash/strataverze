@@ -88,6 +88,7 @@ model Profile {
   worksContractsSigned          WorksContract[]            @relation("WorksContractSignedBy")
   worksWorkOrdersAuthorised     WorksWorkOrder[]           @relation("WorksWorkOrderAuthorisedBy")
   worksWorkOrdersIssued         WorksWorkOrder[]           @relation("WorksWorkOrderIssuedBy")
+  worksRfqInterests             WorksRfqInterest[]         @relation("WorksRfqInterestCreatedBy")
   worksMilestonesCertified      WorksMilestone[]           @relation("WorksMilestoneCertifiedBy")
   worksSiteVisits               WorksSiteVisit[]           @relation("WorksSiteVisitConductedBy")
   worksProgressReports          WorksProgressReport[]      @relation("WorksProgressReportBy")
@@ -1929,6 +1930,7 @@ model WorksRequest {
   reviews         WorksRequestReview[]
   decisions       WorksDecision[]
   workOrders      WorksWorkOrder[]
+  rfqs            WorksRfq[]
   scopes          WorksScope[]
   contracts       WorksContract[]
   invoices        WorksInvoice[]
@@ -2034,7 +2036,21 @@ model WorksScopeVersion {
 
 model WorksRfq {
   id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  scopeId          String              @map("scope_id") @db.Uuid
+  /// A marketplace RFQ (works stage 3) has no scope; it belongs to its request.
+  scopeId          String?             @map("scope_id") @db.Uuid
+  requestId        String?             @map("request_id") @db.Uuid
+  marketplace      Boolean             @default(false)
+  trade            String?             @db.VarChar(60)
+  suburb           String?             @db.VarChar(100)
+  postcode         String?             @db.VarChar(4)
+  /// Contractors express interest until this; then the committee invites.
+  interestClosesAt DateTime?           @db.Timestamptz @map("interest_closes_at")
+  /// Invited contractors quote until this.
+  quoteClosesAt    DateTime?           @db.Timestamptz @map("quote_closes_at")
+  /// How many contractors the committee means to invite (default 3).
+  inviteLimit      Int                 @default(3) @map("invite_limit")
+  noInterestNotifiedAt DateTime?       @db.Timestamptz @map("no_interest_notified_at")
+  quotesClosedNotifiedAt DateTime?     @db.Timestamptz @map("quotes_closed_notified_at")
   schemeId         String              @map("scheme_id") @db.Uuid
   rfqNumber        String              @map("rfq_number") @db.VarChar(30)
   title            String              @db.VarChar(300)
@@ -2049,10 +2065,12 @@ model WorksRfq {
   createdAt        DateTime            @default(now()) @db.Timestamptz @map("created_at")
   updatedAt        DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 
-  scope            WorksScope          @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  scope            WorksScope?         @relation(fields: [scopeId], references: [id], onDelete: Cascade)
+  request          WorksRequest?       @relation(fields: [requestId], references: [id], onDelete: SetNull)
   scheme           Scheme              @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   issuedBy         Profile?            @relation("WorksRfqIssuedBy", fields: [issuedById], references: [id])
   invitations      WorksRfqInvitation[]
+  interests        WorksRfqInterest[]
   clarifications   WorksRfqClarification[]
   addenda          WorksRfqAddendum[]
   quotations       WorksQuotation[]
@@ -2060,7 +2078,25 @@ model WorksRfq {
 
   @@unique([schemeId, rfqNumber])
   @@index([schemeId, status])
+  @@index([requestId])
   @@map("works_rfqs")
+}
+
+/// A contractor's interest in quoting on a marketplace RFQ (works stage 3).
+model WorksRfqInterest {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId                String             @map("rfq_id") @db.Uuid
+  contractorBusinessId String             @map("contractor_business_id") @db.Uuid
+  createdById          String?            @map("created_by_id") @db.Uuid
+  createdAt            DateTime           @default(now()) @db.Timestamptz @map("created_at")
+  withdrawnAt          DateTime?          @db.Timestamptz @map("withdrawn_at")
+
+  rfq                  WorksRfq           @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  contractorBusiness   ContractorBusiness @relation(fields: [contractorBusinessId], references: [id])
+  createdBy            Profile?           @relation("WorksRfqInterestCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([rfqId, contractorBusinessId])
+  @@map("works_rfq_interests")
 }
 
 model WorksRfqInvitation {
@@ -2142,6 +2178,8 @@ model ContractorBusiness {
   logoUrl               String?                   @map("logo_url")
   specialistServices    String[]                  @map("specialist_services")
   serviceRegions        String[]                  @map("service_regions")
+  /// Postcodes the contractor works in (works stage 3 marketplace).
+  servicePostcodes      String[]                  @default([]) @map("service_postcodes")
   usesSubcontractors    Boolean?                  @map("uses_subcontractors")
   projectExamples       String?                   @map("project_examples")
   quotingContactId      String?                   @map("quoting_contact_id") @db.Uuid
@@ -2155,6 +2193,7 @@ model ContractorBusiness {
   licences              WorksLicence[]
   insurances            WorksInsurance[]
   rfqInvitations        WorksRfqInvitation[]
+  rfqInterests          WorksRfqInterest[]
   quotations            WorksQuotation[]
   contracts             WorksContract[]
   workOrders            WorksWorkOrder[]
@@ -2366,6 +2405,9 @@ model WorksQuotation {
   conditions            String?
   status                String                  @default("DRAFT") // DRAFT, SUBMITTED, UNDER_REVIEW, SHORTLISTED, ACCEPTED, DECLINED, WITHDRAWN, SUPERSEDED
   submittedAt           DateTime?               @db.Timestamptz @map("submitted_at")
+  /// The contractor's own quote document (works stage 3), a storage path.
+  documentPath          String?                 @map("document_path")
+  documentName          String?                 @map("document_name") @db.VarChar(500)
   createdAt             DateTime                @default(now()) @db.Timestamptz @map("created_at")
   updatedAt             DateTime                @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -2374,6 +2416,7 @@ model WorksQuotation {
   versions              WorksQuotationVersion[]
   lineItems             WorksQuotationLineItem[]
   evaluations           WorksEvaluation[]
+  decisions             WorksDecision[]
   recommendations       WorksRecommendation[]
   approvalWorkflows     WorksApprovalWorkflow[]
   contracts             WorksContract[]
@@ -4158,11 +4201,16 @@ model WorksDecision {
   byDelegation        Boolean              @default(false) @map("by_delegation")
   /// For an URGENT route: the most the work order may cost (works stage 2).
   amount              Decimal?             @db.Decimal(12, 2)
+  /// For a QUOTES route: what contractors see before they are invited.
+  summary             String?
+  /// For a QUOTE decision: the quote being approved (works stage 3).
+  quotationId         String?              @map("quotation_id") @db.Uuid
   createdAt           DateTime             @default(now()) @db.Timestamptz @map("created_at")
 
   scheme              Scheme               @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   request             WorksRequest         @relation(fields: [requestId], references: [id], onDelete: Cascade)
   proposedBy          Profile              @relation("WorksDecisionProposedBy", fields: [proposedById], references: [id])
+  quotation           WorksQuotation?      @relation(fields: [quotationId], references: [id], onDelete: SetNull)
   votes               WorksDecisionVote[]
 
   @@index([schemeId, status])

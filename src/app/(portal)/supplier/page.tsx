@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import {
-  getOpenQuoteRequests,
-  getQuotesBySupplier,
   getInvoicesBySupplier,
 } from "@/lib/queries/supplier";
 import { myContractorBusinessIds, ordersForContractor } from "@/lib/works/urgent-orders";
+import { jobsForContractor } from "@/lib/works/marketplace";
 import {
   getContractorBusinessForProfile,
   getContractorOnboarding,
@@ -37,10 +36,11 @@ export default async function SupplierDashboard() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const [openRequests, myQuotes, workOrders, invoices, business] = await Promise.all([
-    getOpenQuoteRequests(profile.id),
-    getQuotesBySupplier(profile.id),
-    myContractorBusinessIds(profile.id).then(ordersForContractor),
+  // Marketplace jobs and quotes (works stage 3).
+  const myBusinessIds = await myContractorBusinessIds(profile.id);
+  const [jobs, workOrders, invoices, business] = await Promise.all([
+    jobsForContractor(myBusinessIds),
+    ordersForContractor(myBusinessIds),
     getInvoicesBySupplier(profile.id),
     getContractorBusinessForProfile(profile.id),
   ]);
@@ -60,9 +60,8 @@ export default async function SupplierDashboard() {
   const pendingInvoices = invoices.filter(
     (inv) => inv.status === "SUBMITTED",
   );
-  const pendingQuotes = myQuotes.filter(
-    (q) => q.status === "SUBMITTED",
-  );
+  const openRequests = jobs.open;
+  const pendingQuotes = jobs.invited.filter((j) => j.quoteStatus === "SUBMITTED");
 
   return (
     <div className="max-w-4xl">
@@ -214,7 +213,7 @@ export default async function SupplierDashboard() {
         />
         {openRequests.length === 0 ? (
           <p className="text-sm text-ink-muted">
-            No open quote requests at the moment. Check back soon.
+            No open jobs in your trades and postcodes right now. Check your trades and service area.
           </p>
         ) : (
           <div className="flex flex-col gap-2">
@@ -229,15 +228,11 @@ export default async function SupplierDashboard() {
                     {qr.title}
                   </p>
                   <p className="text-xs text-ink-muted">
-                    {qr.category}
-                    {qr.budget && ` · ${qr.budget}`}
-                    {" · "}
-                    {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0)} quote
-                    {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0) === 1 ? "" : "s"} submitted
+                    {[qr.trade, qr.suburb].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <span className="shrink-0 inline-flex items-center rounded-full bg-supplier/10 px-2.5 py-0.5 text-xs font-medium text-supplier">
-                  {qr.urgency}
+                  {qr.interested ? "Interested" : "Open"}
                 </span>
               </Link>
             ))}

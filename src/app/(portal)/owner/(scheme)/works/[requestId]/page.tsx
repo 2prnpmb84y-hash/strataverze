@@ -12,6 +12,8 @@ import { WorksRequestForm } from "@/components/works/request-form";
 import { UrgentOrderPanel } from "@/components/works/urgent-order-panel";
 import { orderingState } from "@/lib/works/urgent-orders";
 import { approvedContractors } from "@/lib/works/settings";
+import { contractorsForDirectInvite, rfqForCommittee } from "@/lib/works/marketplace";
+import { OpenForQuotes, QuotesPanel } from "@/components/works/quotes-panel";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -37,10 +39,15 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
 
   const r = view.request;
   const showDecision = view.can.isCommitteeMember;
-  const ordering = r.isEmergency ? await orderingState(row.schemeId, requestId) : null;
+  const ordering = await orderingState(row.schemeId, requestId);
   const showOrders = !!ordering && (ordering.orders.length > 0 || ordering.canIssue);
   const contractors = showOrders && ordering!.canIssue && showDecision ? await approvedContractors(r.trade ?? undefined) : [];
   const photosSoFar = view.photos.length;
+  // Marketplace quotes (stage 3): the committee runs them; the owner sees where they stand.
+  const rfq = !r.isEmergency ? await rfqForCommittee(row.schemeId, requestId) : null;
+  const quotesDecided = view.decisions.some((d) => d.outcome === "QUOTES" && d.status === "DECIDED");
+  const showQuotes = !r.isEmergency && (!!rfq || (quotesDecided && r.status === "PROCUREMENT"));
+  const direct = showQuotes && showDecision && rfq?.canInvite ? await contractorsForDirectInvite(r.trade) : [];
   // The latest decision made (decisions are newest first). Committee notes stay with the committee, except a reason for declining.
   const decided = view.decisions.find((d) => d.status === "DECIDED");
 
@@ -69,9 +76,24 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
         </Card>
       )}
 
+      {showQuotes && (
+        <Card>
+          <CardHeader title="Quotes" description="From approved contractors in the trade who work in this area." />
+          {showDecision ? (
+            rfq ? (
+              <QuotesPanel schemeId={row.schemeId} requestId={r.id} rfq={rfq} canAct canPropose decisionOpen={!!view.openDecisionId} direct={direct} />
+            ) : (
+              <OpenForQuotes schemeId={row.schemeId} requestId={r.id} needsSummary={!view.decisions.some((d) => d.outcome === "QUOTES" && d.status === "DECIDED" && d.summary)} ownerTitle={r.title} ownerDescription={r.description} />
+            )
+          ) : (
+            <p className="text-sm text-ink">{rfq ? `${rfq.statusLabel}. ${rfq.quotes.length} quote${rfq.quotes.length === 1 ? "" : "s"} so far.` : "Quotes are being arranged."}</p>
+          )}
+        </Card>
+      )}
+
       {showOrders && (
         <Card>
-          <CardHeader title="Urgent work order" description="Sent to the contractor straight after the urgent decision." />
+          <CardHeader title="Work order" description={r.isEmergency ? "Sent to the contractor straight after the urgent decision." : "Sent to the contractor whose quote the committee approved."} />
           {showDecision ? (
             <UrgentOrderPanel
               schemeId={row.schemeId}
@@ -93,7 +115,7 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
       {showDecision ? (
         <Card>
           <CardHeader title="The committee's decision" description="How this request is handled." />
-          <DecisionPanel schemeId={row.schemeId} requestId={r.id} urgentLimit={view.settings.urgentLimit} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+          <DecisionPanel schemeId={row.schemeId} requestId={r.id} urgentLimit={view.settings.urgentLimit} requestTitle={view.request.title} requestDescription={view.request.description} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
         </Card>
       ) : (
         decided && (

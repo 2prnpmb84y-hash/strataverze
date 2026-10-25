@@ -60,3 +60,18 @@ export function isApprovalRule(value: unknown): value is ApprovalRule {
 
 /** Photos an owner may attach to one works request. */
 export const WORKS_PHOTOS_MAX = 6;
+
+/**
+ * Marketplace quotes (works stage 3, decided 25 Oct 2026): the committee sets
+ * the deadlines per request; these are the defaults.
+ */
+export const MARKETPLACE_DEFAULTS = {
+  /** Days contractors have to express interest. */
+  interestDays: 3,
+  /** Days invited contractors have to quote. */
+  quoteDays: 7,
+  /** How many contractors the committee invites, by default. */
+  inviteLimit: 3,
+  /** The most the committee may invite to one request. */
+  maxInviteLimit: 10,
+} as const;

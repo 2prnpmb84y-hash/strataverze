@@ -604,6 +604,10 @@
       "model": "WorksRfqClarification",
       "namespace": "public"
     },
+    "works_rfq_interests": {
+      "model": "WorksRfqInterest",
+      "namespace": "public"
+    },
     "works_rfq_invitations": {
       "model": "WorksRfqInvitation",
       "namespace": "public"
@@ -3513,6 +3517,16 @@
                   "kind": "scalar"
                 }
               },
+              "servicePostcodes": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "serviceRegions": {
                 "many": {
                   "elementNullable": false
@@ -3818,6 +3832,21 @@
                   "namespace": "public"
                 }
               },
+              "rfqInterests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "contractorBusinessId"
+                  ]
+                },
+                "to": {
+                  "model": "WorksRfqInterest",
+                  "namespace": "public"
+                }
+              },
               "rfqInvitations": {
                 "cardinality": "1:N",
                 "on": {
@@ -3910,6 +3939,9 @@
                 },
                 "registeredAddress": {
                   "column": "registered_address"
+                },
+                "servicePostcodes": {
+                  "column": "service_postcodes"
                 },
                 "serviceRegions": {
                   "column": "service_regions"
@@ -18330,6 +18362,21 @@
                   "namespace": "public"
                 }
               },
+              "worksRfqInterests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "createdById"
+                  ]
+                },
+                "to": {
+                  "model": "WorksRfqInterest",
+                  "namespace": "public"
+                }
+              },
               "worksRfqInvitations": {
                 "cardinality": "1:N",
                 "on": {
@@ -26020,6 +26067,13 @@
                   "kind": "scalar"
                 }
               },
+              "quotationId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "requestId": {
                 "nullable": false,
                 "type": {
@@ -26054,6 +26108,13 @@
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
+              },
+              "summary": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -26070,6 +26131,22 @@
                 },
                 "to": {
                   "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "quotation": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "quotationId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "WorksQuotation",
                   "namespace": "public"
                 }
               },
@@ -26153,6 +26230,9 @@
                 "proposedById": {
                   "column": "proposed_by_id"
                 },
+                "quotationId": {
+                  "column": "quotation_id"
+                },
                 "requestId": {
                   "column": "request_id"
                 },
@@ -26167,6 +26247,9 @@
                 },
                 "status": {
                   "column": "status"
+                },
+                "summary": {
+                  "column": "summary"
                 }
               },
               "namespaceId": "public",
@@ -29766,6 +29849,23 @@
                   "kind": "scalar"
                 }
               },
+              "documentName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "documentPath": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "estimatedDuration": {
                 "nullable": true,
                 "type": {
@@ -29927,6 +30027,21 @@
                   "namespace": "public"
                 }
               },
+              "decisions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "quotationId"
+                  ]
+                },
+                "to": {
+                  "model": "WorksDecision",
+                  "namespace": "public"
+                }
+              },
               "evaluations": {
                 "cardinality": "1:N",
                 "on": {
@@ -30017,6 +30132,12 @@
                 },
                 "currentVersion": {
                   "column": "current_version"
+                },
+                "documentName": {
+                  "column": "document_name"
+                },
+                "documentPath": {
+                  "column": "document_path"
                 },
                 "estimatedDuration": {
                   "column": "estimated_duration"
@@ -30874,6 +30995,21 @@
                   "namespace": "public"
                 }
               },
+              "rfqs": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "requestId"
+                  ]
+                },
+                "to": {
+                  "model": "WorksRfq",
+                  "namespace": "public"
+                }
+              },
               "scheme": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -31360,6 +31496,20 @@
                   "kind": "scalar"
                 }
               },
+              "interestClosesAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "inviteLimit": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "issuedAt": {
                 "nullable": true,
                 "type": {
@@ -31368,6 +31518,51 @@
                 }
               },
               "issuedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "marketplace": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "noInterestNotifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "postcode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 4
+                  }
+                }
+              },
+              "quoteClosesAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "quotesClosedNotifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "requestId": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
@@ -31392,7 +31587,7 @@
                 }
               },
               "scopeId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
@@ -31412,6 +31607,16 @@
                   "kind": "scalar"
                 }
               },
+              "suburb": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 100
+                  }
+                }
+              },
               "title": {
                 "nullable": false,
                 "type": {
@@ -31419,6 +31624,16 @@
                   "kind": "scalar",
                   "typeParams": {
                     "length": 300
+                  }
+                }
+              },
+              "trade": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 60
                   }
                 }
               },
@@ -31476,6 +31691,21 @@
                   "namespace": "public"
                 }
               },
+              "interests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "rfqId"
+                  ]
+                },
+                "to": {
+                  "model": "WorksRfqInterest",
+                  "namespace": "public"
+                }
+              },
               "invitations": {
                 "cardinality": "1:N",
                 "on": {
@@ -31522,6 +31752,22 @@
                   "namespace": "public"
                 }
               },
+              "request": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "requestId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "WorksRequest",
+                  "namespace": "public"
+                }
+              },
               "scheme": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -31540,7 +31786,7 @@
               },
               "scope": {
                 "cardinality": "N:1",
-                "nullable": false,
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "scopeId"
@@ -31575,11 +31821,35 @@
                 "id": {
                   "column": "id"
                 },
+                "interestClosesAt": {
+                  "column": "interest_closes_at"
+                },
+                "inviteLimit": {
+                  "column": "invite_limit"
+                },
                 "issuedAt": {
                   "column": "issued_at"
                 },
                 "issuedById": {
                   "column": "issued_by_id"
+                },
+                "marketplace": {
+                  "column": "marketplace"
+                },
+                "noInterestNotifiedAt": {
+                  "column": "no_interest_notified_at"
+                },
+                "postcode": {
+                  "column": "postcode"
+                },
+                "quoteClosesAt": {
+                  "column": "quote_closes_at"
+                },
+                "quotesClosedNotifiedAt": {
+                  "column": "quotes_closed_notified_at"
+                },
+                "requestId": {
+                  "column": "request_id"
                 },
                 "rfqNumber": {
                   "column": "rfq_number"
@@ -31596,8 +31866,14 @@
                 "status": {
                   "column": "status"
                 },
+                "suburb": {
+                  "column": "suburb"
+                },
                 "title": {
                   "column": "title"
+                },
+                "trade": {
+                  "column": "trade"
                 },
                 "updatedAt": {
                   "column": "updated_at"
@@ -31872,6 +32148,126 @@
               },
               "namespaceId": "public",
               "table": "works_rfq_clarifications"
+            }
+          },
+          "WorksRfqInterest": {
+            "fields": {
+              "contractorBusinessId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "rfqId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "withdrawnAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "contractorBusiness": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "contractorBusinessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorBusiness",
+                  "namespace": "public"
+                }
+              },
+              "createdBy": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "createdById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "rfq": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "rfqId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "WorksRfq",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "createdById": {
+                  "column": "created_by_id"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "rfqId": {
+                  "column": "rfq_id"
+                },
+                "withdrawnAt": {
+                  "column": "withdrawn_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "works_rfq_interests"
             }
           },
           "WorksRfqInvitation": {
@@ -35792,6 +36188,21 @@
                 "registered_address": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": true
+                },
+                "service_postcodes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": []
+                  },
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "noCheck": [
+                    "elementNotNull"
+                  ],
                   "nullable": true
                 },
                 "service_regions": {
@@ -51313,6 +51724,11 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "quotation_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "request_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -51341,6 +51757,11 @@
                     "value": "OPEN"
                   },
                   "nullable": false
+                },
+                "summary": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -51402,6 +51823,24 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "profiles"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "quotation_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_decisions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_quotations"
                   }
                 }
               ],
@@ -54514,6 +54953,19 @@
                   },
                   "nullable": false
                 },
+                "document_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "document_path": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "estimated_duration": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -55604,6 +56056,123 @@
               },
               "uniques": []
             },
+            "works_rfq_interests": {
+              "columns": {
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "created_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "rfq_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "withdrawn_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "works_rfq_interests_rfq_id_contractor_business_id_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "rfq_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_rfq_interests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_rfqs"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "contractor_business_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_rfq_interests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_businesses"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "created_by_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_rfq_interests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "rfq_id",
+                    "contractor_business_id"
+                  ],
+                  "name": "works_rfq_interests_rfq_id_contractor_business_id_key",
+                  "unique": true
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "works_rfq_invitations": {
               "columns": {
                 "contractor_business_id": {
@@ -55775,12 +56344,63 @@
                   },
                   "nullable": false
                 },
+                "interest_closes_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "invite_limit": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 3
+                  },
+                  "nullable": false
+                },
                 "issued_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
                   "nullable": true
                 },
                 "issued_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "marketplace": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "no_interest_notified_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "postcode": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 4
+                  }
+                },
+                "quote_closes_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "quotes_closed_notified_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "request_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
                   "nullable": true
@@ -55801,7 +56421,7 @@
                 "scope_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
-                  "nullable": false
+                  "nullable": true
                 },
                 "scope_version_used": {
                   "codecId": "pg/int4@1",
@@ -55817,12 +56437,28 @@
                   },
                   "nullable": false
                 },
+                "suburb": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 100
+                  }
+                },
                 "title": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
                   "nullable": false,
                   "typeParams": {
                     "length": 300
+                  }
+                },
+                "trade": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 60
                   }
                 },
                 "updated_at": {
@@ -55848,6 +56484,27 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "works_scopes"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "works_rfqs_request_id_idx"
+                  },
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "request_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_rfqs"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_requests"
                   }
                 },
                 {
@@ -55891,6 +56548,13 @@
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "request_id"
+                  ],
+                  "name": "works_rfqs_request_id_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "scheme_id",
@@ -57131,7 +57795,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f4c4deeb7eb9aaf08054bf48a9a3c5da9c70945e3696568dd96c35a197e6c46f"
+    "storageHash": "363017a76aae70df85ff6de8c3eeb63f10a1366753d42af25d30727b26969579"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

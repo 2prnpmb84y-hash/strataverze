@@ -128,8 +128,8 @@ const adviserNav = [
 
 const supplierNav = [
   { label: "Dashboard", href: "/supplier" },
+  { label: "Trades & Area", href: "/supplier/service-area" },
   { label: "Quote Requests", href: "/supplier/quotes" },
-  { label: "My Quotes", href: "/supplier/my-quotes" },
   { label: "Work Orders", href: "/supplier/work-orders" },
   { label: "Invoices", href: "/supplier/invoices" },
 ];

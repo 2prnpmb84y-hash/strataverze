@@ -14,7 +14,7 @@ vi.mock("@/lib/auth/mfa-enforcement", () => ({ requireRecentMfa: stepUp.requireR
 vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async () => {}) }));
 const activity = vi.hoisted(() => ({ logActivity: vi.fn(async () => {}) }));
 vi.mock("@/lib/queries/activity-log", () => activity);
-const notify = vi.hoisted(() => ({ notifyRequestSubmitted: vi.fn(async () => {}), notifyVoteNeeded: vi.fn(async () => {}), notifyDecision: vi.fn(async () => {}), notifySettingsChanged: vi.fn(async () => {}), notifyOrderIssued: vi.fn(async () => {}), notifyNoContractor: vi.fn(async () => {}), notifyOrderAnswered: vi.fn(async () => {}) }));
+const notify = vi.hoisted(() => ({ notifyRequestSubmitted: vi.fn(async () => {}), notifyVoteNeeded: vi.fn(async () => {}), notifyDecision: vi.fn(async () => {}), notifySettingsChanged: vi.fn(async () => {}), notifyOrderIssued: vi.fn(async () => {}), notifyNoContractor: vi.fn(async () => {}), notifyOrderAnswered: vi.fn(async () => {}), notifyOrderCancelled: vi.fn(async () => {}), notifyRfqOpened: vi.fn(async () => {}), notifyInvited: vi.fn(async () => {}), notifyQuotesIn: vi.fn(async () => {}), notifyQuoteVote: vi.fn(async () => {}), notifyQuoteApproved: vi.fn(async () => {}), notifyNotSelected: vi.fn(async () => {}) }));
 vi.mock("@/lib/works/notify", () => notify);
 vi.mock("@/lib/log", () => ({ logError: vi.fn() }));
 vi.mock("@/lib/storage/server-storage", () => ({ signDownloads: vi.fn(async () => []) }));
@@ -45,11 +45,16 @@ vi.mock("@/lib/auth/require-contractor", async () => {
   };
 });
 
+vi.mock("@/lib/queries/profiles", () => ({ getCurrentProfile: vi.fn(async () => ({ id: caller.id })) }));
+
 import { sharedFake } from "@/test/fake-orm";
 import {
   proposeWorksRouteAction,
   saveWorksSettingsAction,
+  inviteContractorsAction,
   issueUrgentOrderAction,
+  setJobInterestAction,
+  submitJobQuoteAction,
   respondToWorkOrderAction,
   setPreferredContractorAction,
   submitWorksRequestAction,
@@ -130,7 +135,7 @@ describe("deciding", () => {
     const created = await submitWorksRequestAction(A, {}, form(request));
     caller.id = "m1";
     caller.roles = { [A]: ["COMMITTEE"] };
-    const p = await proposeWorksRouteAction(A, created.requestId!, {}, form({ outcome: "QUOTES" }));
+    const p = await proposeWorksRouteAction(A, created.requestId!, {}, form({ outcome: "QUOTES", summaryTitle: "Leak", summary: "Water dripping" }));
     expect(p.done).toMatch(/Proposed/);
     expect(notify.notifyVoteNeeded).toHaveBeenCalled();
     const decisionId = String(sharedFake.table("WorksDecision")[0].id);
@@ -230,3 +235,55 @@ describe("urgent work orders", () => {
     expect(sharedFake.table("WorksRequest").find((r) => r.id === id)?.status).toBe("DELIVERY");
   });
 });
+
+describe("marketplace quotes", () => {
+  async function quotesDecided() {
+    caller.id = "owner";
+    caller.roles = { [A]: ["OWNER"] };
+    const created = await submitWorksRequestAction(A, {}, form(request));
+    sharedFake.table("Scheme").push({ id: A, name: "Opera House", suburb: "Sydney", postcode: "2000", address: "1 Macquarie St" });
+    sharedFake.table("WorksSettings").push({ schemeId: A, approvalRule: "ONE", urgentLimit: null, adviserMayDecide: false });
+    for (const b of sharedFake.table("ContractorBusiness")) Object.assign(b, { servicePostcodes: ["2000"] });
+    caller.id = "m1";
+    caller.roles = { [A]: ["COMMITTEE"] };
+    const r = await proposeWorksRouteAction(A, created.requestId!, {}, form({ outcome: "QUOTES", summaryTitle: "Leaking pipe", summary: "Water from the ceiling" }));
+    expect(r.done).toMatch(/Decided/);
+    return { requestId: created.requestId!, rfqId: String(sharedFake.table("WorksRfq")[0].id) };
+  }
+
+  it("deciding to get quotes opens the job and tells the approved contractors who may quote", async () => {
+    await quotesDecided();
+    expect(sharedFake.table("WorksRfq")[0]).toMatchObject({ status: "INTEREST", title: "Leaking pipe", description: "Water from the ceiling" });
+    expect(notify.notifyRfqOpened).toHaveBeenCalledWith(expect.objectContaining({ businessIds: ["c-ok"] }));
+  });
+
+  it("only the committee or the Adviser invite; only a contact of the business acts for it", async () => {
+    const { requestId, rfqId } = await quotesDecided();
+    caller.id = "owner";
+    caller.roles = { [A]: ["OWNER"] };
+    expect((await inviteContractorsAction(A, requestId, rfqId, {}, form({ businessId: "c-ok" }))).error).toMatch(/permission/);
+
+    // Someone who is not a contact of any business sees nothing.
+    caller.id = "stranger";
+    expect((await setJobInterestAction(rfqId, true)).error).toMatch(/not found/);
+
+    // A contact of the approved plumber can say they are interested.
+    sharedFake.table("ContractorContact").push({ id: "cc1", contractorBusinessId: "c-ok", profileId: "plumber", status: "ACTIVE" });
+    caller.id = "plumber";
+    contractor.businesses = ["c-ok"];
+    expect((await setJobInterestAction(rfqId, true)).done).toMatch(/Interest recorded/);
+    // Not invited yet, so they cannot quote.
+    expect((await submitJobQuoteAction(rfqId, {}, form({ total: "900" }))).error).toMatch(/not invited/);
+
+    caller.id = "m1";
+    caller.roles = { [A]: ["COMMITTEE"] };
+    expect((await inviteContractorsAction(A, requestId, rfqId, {}, form({ businessId: "c-ok" }))).done).toMatch(/Invited 1/);
+    expect(notify.notifyInvited).toHaveBeenCalledWith(expect.objectContaining({ businessIds: ["c-ok"] }));
+
+    caller.id = "plumber";
+    expect((await submitJobQuoteAction(rfqId, {}, form({ total: "900", gst: "81.82" }))).done).toMatch(/Quote submitted/);
+    // The only invited contractor has quoted, so the committee is told straight away.
+    expect(notify.notifyQuotesIn).toHaveBeenCalledWith(expect.objectContaining({ allIn: true, quotes: 1 }));
+  });
+});
+

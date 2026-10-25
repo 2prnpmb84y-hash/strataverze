@@ -17,6 +17,8 @@ import { ruleSentence } from "@/components/works/request-details";
 import { UrgentOrderPanel } from "@/components/works/urgent-order-panel";
 import { orderingState } from "@/lib/works/urgent-orders";
 import { approvedContractors } from "@/lib/works/settings";
+import { contractorsForDirectInvite, rfqForCommittee } from "@/lib/works/marketplace";
+import { OpenForQuotes, QuotesPanel } from "@/components/works/quotes-panel";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -115,9 +117,15 @@ export default async function WorksRequestDetailPage({
     .all();
 
   const view = await loadRequestView(id, requestId, { profileId: access.profile.id, roles: access.roles });
-  const ordering = view?.request.isEmergency ? await orderingState(id, requestId) : null;
+  const ordering = view ? await orderingState(id, requestId) : null;
+  const rfq = view && !view.request.isEmergency ? await rfqForCommittee(id, requestId) : null;
+  const quotesDecided = !!view?.decisions.some((d) => d.outcome === "QUOTES" && d.status === "DECIDED");
+  const showQuotes = !!view && !view.request.isEmergency && (!!rfq || (quotesDecided && view.request.status === "PROCUREMENT"));
   const mayChoose = access.roles.includes("ADVISER") || access.roles.includes("COMMITTEE");
   const urgentContractors = ordering?.canIssue && mayChoose ? await approvedContractors(view?.request.trade ?? undefined) : [];
+  const direct = showQuotes && mayChoose && rfq?.canInvite ? await contractorsForDirectInvite(view?.request.trade ?? null) : [];
+  // The Adviser proposes approving a quote only under the building's delegation.
+  const canProposeQuote = !!view && (view.can.isCommitteeMember || (view.can.isAdviser && view.settings.adviserMayDecide));
 
   const members = memberships.map((m) => ({
     id: m.profileId,
@@ -191,13 +199,26 @@ export default async function WorksRequestDetailPage({
       {view && (
         <Card>
           <CardHeader title="The committee's decision" description="How this request is handled." />
-          <DecisionPanel schemeId={id} requestId={requestId} urgentLimit={view.settings.urgentLimit} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+          <DecisionPanel schemeId={id} requestId={requestId} urgentLimit={view.settings.urgentLimit} requestTitle={view.request.title} requestDescription={view.request.description} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+        </Card>
+      )}
+
+      {view && showQuotes && (
+        <Card>
+          <CardHeader title="Quotes" description="From approved contractors in the trade who work in this area." />
+          {rfq ? (
+            <QuotesPanel schemeId={id} requestId={requestId} rfq={rfq} canAct={mayChoose} canPropose={canProposeQuote} decisionOpen={!!view.openDecisionId} direct={direct} />
+          ) : mayChoose ? (
+            <OpenForQuotes schemeId={id} requestId={requestId} needsSummary={!view.decisions.some((d) => d.outcome === "QUOTES" && d.status === "DECIDED" && d.summary)} ownerTitle={view.request.title} ownerDescription={view.request.description} />
+          ) : (
+            <p className="text-sm text-ink-muted">Not yet open to contractors.</p>
+          )}
         </Card>
       )}
 
       {view && ordering && (ordering.orders.length > 0 || ordering.canIssue) && (
         <Card>
-          <CardHeader title="Urgent work order" description="Sent to the contractor straight after the urgent decision." />
+          <CardHeader title="Work order" description={view.request.isEmergency ? "Sent to the contractor straight after the urgent decision." : "Sent to the contractor whose quote was approved."} />
           <UrgentOrderPanel
             schemeId={id}
             requestId={requestId}

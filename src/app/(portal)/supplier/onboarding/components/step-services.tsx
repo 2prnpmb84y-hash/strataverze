@@ -1,5 +1,7 @@
 "use client";
 
+import { WORKS_TRADES } from "@/config/works";
+
 import { useActionState, useState } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FormField, TextareaField } from "@/components/ui/form-field";
@@ -132,13 +134,19 @@ export function StepServices({ business, profile, onNext, onBack }: StepServices
           <input type="hidden" name="contractorId" value={business.id as string} />
         ) : null}
 
-        <TagInput
-          label="Trade categories"
-          name="tradeCategories"
-          defaultValues={(business?.tradeCategories as string[]) ?? []}
-          placeholder="e.g. Plumbing, Electrical, Painting"
-          helpText="Press Enter or comma to add each category."
-        />
+        {/* The fixed list buildings choose from, so jobs match (works stage 3, 25 Oct 2026). */}
+        <fieldset>
+          <legend className="block text-sm font-medium text-ink mb-1.5">Kinds of work you do</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {WORKS_TRADES.map((t) => (
+              <label key={t} className="flex items-center gap-2 text-sm text-ink">
+                <input type="checkbox" name="tradeCategories" value={t} defaultChecked={((business?.tradeCategories as string[]) ?? []).includes(t)} className="h-4 w-4 accent-turquoise" />
+                {t}
+              </label>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-ink-muted">Set the postcodes you work in under Trades &amp; Area.</p>
+        </fieldset>
 
         <TagInput
           label="Specialist services"

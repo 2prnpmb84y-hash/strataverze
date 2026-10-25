@@ -1,4 +1,5 @@
 import { and } from "@prisma/orm-postgres/orm-client";
+import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { AuthorisationError, requireAuth } from "./require-membership";
 
@@ -50,4 +51,29 @@ export function quotationProblem(
     return "Your business was not invited to quote on this RFQ.";
   }
   return null;
+}
+
+/**
+ * For a contractor's quote document (works stage 3, 25 Oct 2026): the
+ * signed-in person must be an active contact of an approved business that
+ * is invited to quote on an open marketplace RFQ of this building.
+ */
+export async function requireQuotingContractor(schemeId: string) {
+  const profile = await requireAuth();
+  const refuse = () => new AuthorisationError("Only a contractor invited to quote for this building can upload a quote.");
+  const contacts = await db.orm.public.ContractorContact.where((c) => and(c.profileId.eq(profile.id), c.status.eq("ACTIVE"))).limit(50).all();
+  const ids = [...new Set(contacts.map((c) => c.contractorBusinessId))];
+  if (!ids.length) throw refuse();
+  const approved = await db.orm.public.ContractorBusiness.where((b) => and(b.id.in(ids), b.status.eq("APPROVED"), b.deletedAt.isNull())).limit(50).all();
+  if (!approved.length) throw refuse();
+  const invitations = await db.orm.public.WorksRfqInvitation
+    .where((i) => and(i.contractorBusinessId.in(approved.map((b) => b.id)), i.status.in(["PENDING", "ACCEPTED"])))
+    .limit(500)
+    .all();
+  if (!invitations.length) throw refuse();
+  const open = await db.orm.public.WorksRfq
+    .where((r) => and(r.id.in(invitations.map((i) => i.rfqId)), r.schemeId.eq(schemeId), r.marketplace.eq(true), r.status.eq("QUOTING"), r.quoteClosesAt.gt(new Date().toISOString() as unknown as TimestampString<3>)))
+    .first();
+  if (!open) throw refuse();
+  return { profile };
 }

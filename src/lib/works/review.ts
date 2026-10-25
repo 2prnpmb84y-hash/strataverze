@@ -16,6 +16,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { getWorksSettings } from "./settings";
+import { encodeSummary, quoteApprovalProblem } from "./marketplace";
 import { isRouteOutcome, ROUTE_OUTCOMES, tally, votesRequired, type RouteOutcome } from "./decision-rules";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
@@ -35,8 +36,9 @@ export async function committeeMembers(schemeId: string): Promise<string[]> {
 
 export type Actor = { profileId: string; roles: readonly string[] };
 
+/** The request's open decision, of any kind (a route, or approving a quote). */
 export async function openDecision(requestId: string) {
-  return db.orm.public.WorksDecision.where((d) => and(d.requestId.eq(requestId), d.kind.eq("ROUTE"), d.status.eq("OPEN"))).first();
+  return db.orm.public.WorksDecision.where((d) => and(d.requestId.eq(requestId), d.status.eq("OPEN"))).first();
 }
 
 /** True for a Postgres unique violation, wherever the driver puts the code. */
@@ -56,7 +58,7 @@ export const STALE_PROPOSAL_DAYS = 7;
  * (it may be decided at once: an urgent route, a one-member rule, or the
  * Adviser under delegation).
  */
-export async function proposeRoute(input: { schemeId: string; requestId: string; actor: Actor; outcome: string; note: string | null; returnReason?: string | null; amount?: number | null }) {
+export async function proposeRoute(input: { schemeId: string; requestId: string; actor: Actor; outcome: string; note: string | null; returnReason?: string | null; amount?: number | null; summary?: { title: string; body: string } | null }) {
   if (!isRouteOutcome(input.outcome)) throw new WorksDecisionError("Choose how the request is handled.");
   const outcome: RouteOutcome = input.outcome;
   // An urgent order carries the most it may cost (works stage 2).
@@ -66,6 +68,11 @@ export async function proposeRoute(input: { schemeId: string; requestId: string;
   }
   if (outcome === "RETURN" && !input.returnReason?.trim()) throw new WorksDecisionError("Say what the owner needs to add.");
   if (outcome === "DECLINE" && !input.note?.trim()) throw new WorksDecisionError("Give the reason for declining. The owner is told it.");
+  // What contractors see before they are invited (works stage 3).
+  const summary = outcome === "QUOTES" ? input.summary ?? null : null;
+  if (outcome === "QUOTES" && (!summary?.title.trim() || !summary.body.trim())) {
+    throw new WorksDecisionError("Write the title and summary contractors will see. Leave out names and unit numbers.");
+  }
   const request = await db.orm.public.WorksRequest.where((r) => and(r.id.eq(input.requestId), r.schemeId.eq(input.schemeId), r.deletedAt.isNull())).first();
   if (!request) throw new WorksDecisionError("Request not found.");
   if (!AWAITING.includes(String(request.status))) throw new WorksDecisionError("This request is not waiting for the committee.");
@@ -125,6 +132,7 @@ export async function proposeRoute(input: { schemeId: string; requestId: string;
         status: "OPEN",
         byDelegation,
         amount: amount == null ? null : money(amount),
+        summary: summary ? encodeSummary(summary.title, summary.body) : null,
       });
       await tx.orm.public.WorksDecisionVote.create({ decisionId: d.id, voterId: input.actor.profileId, vote: "FOR", comment: null });
       return d;
@@ -226,6 +234,8 @@ export async function settle(decisionId: string): Promise<{ status: string; tall
   const t = tally(Number(decision.requiredVotes), Number(decision.committeeSize), votes);
   if (decision.status !== "OPEN" || t.status === "OPEN") return { status: String(decision.status), tally: t, applied: false };
 
+  if (decision.kind === "QUOTE") return settleQuote(decision, t);
+
   const now = new Date().toISOString();
   const outcome = String(decision.outcome) as RouteOutcome;
   const o = ROUTE_OUTCOMES[outcome];
@@ -288,3 +298,110 @@ export async function awaitingMyVote(schemeId: string, profileId: string) {
   const mine = await db.orm.public.WorksDecisionVote.where((v) => and(v.decisionId.in(open.map((d) => d.id)), v.voterId.eq(profileId))).limit(200).all();
   return open.filter((d) => !mine.some((v) => v.decisionId === d.id));
 }
+
+// ─── Approving a quote (works stage 3) ─────────────────────────────────────
+
+/**
+ * Propose approving a marketplace quote. A committee member's proposal
+ * counts as their vote and needs the building's usual rule; the Adviser may
+ * decide it under a delegation, up to the Adviser's limit. Over $30,000 at
+ * least two quotes are needed (SSMA s 102).
+ */
+export async function proposeQuoteApproval(input: { schemeId: string; requestId: string; quotationId: string; actor: Actor; note: string | null }) {
+  const check = await quoteApprovalProblem(input.quotationId);
+  if (!check.quote || check.schemeId !== input.schemeId || check.requestId !== input.requestId) throw new WorksDecisionError("Quote not found.");
+  if (check.problem) throw new WorksDecisionError(check.problem);
+  if (await openDecision(input.requestId)) throw new WorksDecisionError("A decision on this request is already open. Vote on it, or withdraw it first.");
+  const members = await committeeMembers(input.schemeId);
+  const isMember = members.includes(input.actor.profileId);
+  const settings = await getWorksSettings(input.schemeId);
+  let rule: string;
+  let required: number;
+  let byDelegation = false;
+  if (isMember) {
+    const r = votesRequired(settings.approvalRule, members.length);
+    if (!r) throw new WorksDecisionError("The building has no committee members to decide.");
+    rule = r.rule;
+    required = r.required;
+  } else if (input.actor.roles.includes("ADVISER") && settings.adviserMayDecide) {
+    if (settings.adviserLimit != null && check.quote.total > settings.adviserLimit) {
+      throw new WorksDecisionError(`That is over the most the committee lets the Adviser approve ($${settings.adviserLimit.toLocaleString("en-AU")}). The committee decides this one.`);
+    }
+    rule = "DELEGATED";
+    required = 1;
+    byDelegation = true;
+  } else {
+    throw new WorksDecisionError("Only the committee can approve a quote.");
+  }
+  let decision;
+  try {
+    decision = await db.transaction(async (tx) => {
+      const d = await tx.orm.public.WorksDecision.create({
+        schemeId: input.schemeId,
+        requestId: input.requestId,
+        kind: "QUOTE",
+        outcome: "APPROVE",
+        note: input.note?.trim() || null,
+        proposedById: input.actor.profileId,
+        rule,
+        requiredVotes: required,
+        committeeSize: members.length,
+        status: "OPEN",
+        byDelegation,
+        amount: money(check.quote!.total),
+        quotationId: input.quotationId,
+      });
+      await tx.orm.public.WorksDecisionVote.create({ decisionId: d.id, voterId: input.actor.profileId, vote: "FOR", comment: null });
+      return d;
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new WorksDecisionError("Someone else has just proposed approving a quote. Reload the page to vote on it.");
+    throw err;
+  }
+  const settled = await settle(decision.id);
+  return { decisionId: decision.id, requestId: input.requestId, ...settled };
+}
+
+/**
+ * Settle a QUOTE decision: in one transaction, mark it decided, accept the
+ * quote (still submitted, the two-quote rule still met), decline any quote
+ * accepted before (a re-award after a decline), mark the RFQ awarded and the
+ * request approved. If anything has moved on, nothing is applied and the
+ * decision is withdrawn. The work order is issued by the caller.
+ */
+async function settleQuote(decision: { id: string; requestId: string; quotationId?: string | null; amount?: unknown }, t: ReturnType<typeof tally>): Promise<{ status: string; tally: ReturnType<typeof tally>; applied: boolean }> {
+  const now = new Date().toISOString();
+  try {
+    await db.transaction(async (tx) => {
+      const claimed = await tx.orm.public.WorksDecision.where((d) => and(d.id.eq(decision.id), d.status.eq("OPEN"))).updateAndCount({ status: t.status, decidedAt: ts(now) });
+      if (claimed !== 1) throw new Undo("already settled");
+      if (t.status === "NOT_AGREED") return;
+      if (!decision.quotationId) throw new Undo("request moved on");
+      const check = await quoteApprovalProblem(decision.quotationId);
+      if (check.problem || !check.quote) throw new Undo("request moved on");
+      // Only the quote as it was when proposed: the same total the committee voted on.
+      if (decision.amount == null) throw new Undo("request moved on");
+      const accepted = await tx.orm.public.WorksQuotation
+        .where((q) => and(q.id.eq(decision.quotationId!), q.status.eq("SUBMITTED"), q.totalAmount.eq(decision.amount as unknown as Numeric<12, 2>)))
+        .updateAndCount({ status: "ACCEPTED" });
+      if (accepted !== 1) throw new Undo("request moved on");
+      await tx.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(check.quote!.rfqId), q.status.eq("ACCEPTED"), q.id.neq(decision.quotationId!))).updateAndCount({ status: "DECLINED" });
+      const awarded = await tx.orm.public.WorksRfq.where((r) => and(r.id.eq(check.quote!.rfqId), r.status.in(["QUOTING", "CLOSED"]))).updateAndCount({ status: "AWARDED", closedAt: ts(now) });
+      if (awarded !== 1) throw new Undo("request moved on");
+      const request = await tx.orm.public.WorksRequest
+        .where((r) => and(r.id.eq(decision.requestId), r.status.in(["PROCUREMENT", "APPROVAL"])))
+        .updateAndCount({ status: "APPROVAL" });
+      if (request !== 1) throw new Undo("request moved on");
+    });
+  } catch (err) {
+    if (!(err instanceof Undo)) throw err;
+    if (err.message === "request moved on") {
+      await db.orm.public.WorksDecision.where((d) => and(d.id.eq(decision.id), d.status.eq("OPEN"))).updateAndCount({ status: "WITHDRAWN", decidedAt: ts(now) });
+      return { status: "WITHDRAWN", tally: t, applied: false };
+    }
+    const fresh = await db.orm.public.WorksDecision.where((d) => d.id.eq(decision.id)).first();
+    return { status: String(fresh?.status ?? t.status), tally: t, applied: false };
+  }
+  return { status: t.status, tally: t, applied: true };
+}
+

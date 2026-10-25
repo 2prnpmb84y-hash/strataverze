@@ -37,6 +37,11 @@ const ACTION_LABELS: Record<string, string> = {
   WORKS_ORDER_ACCEPTED: "accepted an urgent work order",
   WORKS_ORDER_DECLINED: "declined an urgent work order",
   WORKS_ORDER_CANCELLED: "cancelled an unanswered work order",
+  WORKS_RFQ_OPENED: "opened a request for quotes",
+  WORKS_CONTRACTORS_INVITED: "invited contractors to quote",
+  WORKS_RFQ_DEADLINE_CHANGED: "changed a quote deadline",
+  WORKS_QUOTE_SUBMITTED: "submitted a quote",
+  WORKS_RFQ_CANCELLED: "took a request off the marketplace",
 };
 
 const ACTION_ICONS: Record<string, string> = {
@@ -76,6 +81,11 @@ const ACTION_ICONS: Record<string, string> = {
   WORKS_ORDER_ACCEPTED: "✅",
   WORKS_ORDER_DECLINED: "❌",
   WORKS_ORDER_CANCELLED: "⏹️",
+  WORKS_RFQ_OPENED: "📣",
+  WORKS_CONTRACTORS_INVITED: "✉️",
+  WORKS_RFQ_DEADLINE_CHANGED: "📅",
+  WORKS_QUOTE_SUBMITTED: "📄",
+  WORKS_RFQ_CANCELLED: "⏹️",
 };
 
 type ActivityEntry = {

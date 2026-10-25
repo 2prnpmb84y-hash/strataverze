@@ -8,6 +8,7 @@ import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-
 import { rateLimit } from "@/lib/auth/rate-limit";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { checkFileBytes, checkFileName, type FileKind } from "@/lib/upload/file-types";
+import { requireQuotingContractor } from "@/lib/auth/require-contractor";
 
 /** The MIME type the server chose for this file name, or null. */
 function expectedMimeFor(fileName: string, kinds: readonly FileKind[]): string | null {
@@ -39,6 +40,7 @@ const DOCUMENT_KINDS: readonly FileKind[] = ["pdf", "png", "jpeg", "gif", "webp"
 const RECEIPT_KINDS: readonly FileKind[] = ["pdf", "png", "jpeg", "heic"];
 /** HEIC is left out: most browsers other than Safari cannot show it. */
 const PHOTO_KINDS: readonly FileKind[] = ["jpeg", "png", "webp"];
+const QUOTE_KINDS: readonly FileKind[] = ["pdf", "jpeg", "png"];
 /** Matches the lifetime of Supabase's signed upload link (2 hours). */
 const UPLOAD_LIFETIME_MS = 2 * 60 * 60 * 1000;
 /** Uploads one person may prepare in a 10 minute window, counted in the database. */
@@ -95,6 +97,17 @@ export const UPLOAD_PURPOSES = {
     kinds: PHOTO_KINDS,
     maxBytes: 10 * MB,
     authorise: ((schemeId) => requireSchemeMembership(schemeId, ["OWNER", "COMMITTEE", "ADVISER"])) as Authorise,
+  },
+  /**
+   * A contractor's own quote document (works stage 3, 25 Oct 2026). PDF or
+   * an image. By a contractor invited to quote on an open marketplace RFQ of
+   * the building.
+   */
+  works_quote: {
+    folder: "works/quotes",
+    kinds: QUOTE_KINDS,
+    maxBytes: 20 * MB,
+    authorise: ((schemeId) => requireQuotingContractor(schemeId)) as Authorise,
   },
   /** Financial documents filed by the Adviser (receipts, statements, invoices). */
   finance_document: {
