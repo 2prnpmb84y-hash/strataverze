@@ -1155,7 +1155,24 @@ export async function issueScheduleNoticesAction(
       periodStart,
       firstDueDate,
     }).filter((n) => !raisedBefore.has(n.instalment));
-    if (plan.length === 0) return { error: "Every instalment of this schedule was raised by the previous manager, so there is nothing to plan." };
+    // Periods already levied by an earlier schedule for this fund and year
+    // (one whose planned notices were stopped) are not levied again.
+    const covered = new Set<string>();
+    if (!isSpecial) {
+      const earlier = (
+        await db.orm.public.LevySchedule
+          .where((x) => and(x.schemeId.eq(schemeId), x.fundId.eq(schedule.fundId), x.financialYear.eq(Number(schedule.financialYear)), x.levyType.eq("ORDINARY"), x.status.eq("SUPERSEDED")))
+          .limit(50)
+          .all()
+      ).map((x) => x.id);
+      if (earlier.length) {
+        const issued = await db.orm.public.LevyNotice.where((n) => and(n.levyScheduleId.in(earlier), n.status.neq("DRAFT"))).limit(20000).all();
+        for (const n of issued) covered.add(toIsoDay(n.periodStart));
+      }
+    }
+    const planned = plan.filter((n) => !covered.has(n.periodStart));
+    plan.splice(0, plan.length, ...planned);
+    if (plan.length === 0) return { error: "Every instalment of this schedule has already been raised (by the previous manager, or on an earlier schedule), so there is nothing to plan." };
 
     // When each notice goes out: 5 weeks before it falls due. A special levy
     // is resolved for one date and goes out now.
@@ -1231,6 +1248,10 @@ export async function issueScheduleNoticesAction(
     };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    // A closed or locked period: the levy could not be posted, so the notices stay planned.
+    if (err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message)) {
+      return { error: `${err.message} The notices were not sent; they stay planned.` };
+    }
     return { error: "Failed to issue levy notices." };
   }
 }
@@ -1267,6 +1288,10 @@ export async function issueOverdueNoticesAction(
     return { success: true, data: { count: r.count, emailed: r.emailed } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    // A closed or locked period: the levy could not be posted, so the notices stay planned.
+    if (err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message)) {
+      return { error: `${err.message} The notices were not sent; they stay planned.` };
+    }
     return { error: "Failed to send the notices." };
   }
 }

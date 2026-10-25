@@ -1,17 +1,14 @@
 -- Levy notices go out 5 weeks before they fall due (25 Oct 2026).
 --
--- 1. A notice issued ahead of its period is raised in the ledger on its due
---    date (raise_pending until then, raised_at once done). Payments received
---    before the due date are held as levies paid in advance. emailed_at lets
---    a failed email be sent again. Existing notices are unaffected
---    (raise_pending defaults to false).
+-- APPLY THIS BEFORE DEPLOYING THE CODE THAT NEEDS IT: the app reads every
+-- column of levy_notices and levy_schedules, so the new code fails against
+-- the old tables. The old code works against the new tables, so applying
+-- this first is safe.
+--
+-- 1. When each notice was emailed to its owner, so a failed email is sent
+--    again by the daily job.
 ALTER TABLE public.levy_notices
-  ADD COLUMN IF NOT EXISTS raise_pending boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS raised_at timestamptz,
   ADD COLUMN IF NOT EXISTS emailed_at timestamptz;
-
-CREATE INDEX IF NOT EXISTS levy_notices_raise_pending_due_idx
-  ON public.levy_notices (due_date) WHERE raise_pending;
 
 -- 2. Instalments the previous manager raised before the takeover ("1,2"),
 --    which are not raised again.

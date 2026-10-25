@@ -337,8 +337,7 @@ export async function createLevyNoticesBatch(
 /**
  * Issue a planned notice. Only a notice still DRAFT is issued, so two runs
  * at once cannot both issue it: the one that loses gets null back. The
- * notice goes to the lot's current owner, with its final due date, and is
- * raised in the ledger on that date (raise_pending).
+ * notice goes to the lot's current owner, with its final due date.
  */
 export async function issueLevyNotice(noticeId: string, opts: { ownerId?: string | null; dueDate?: string } = {}) {
   return db.orm.public.LevyNotice
@@ -346,7 +345,6 @@ export async function issueLevyNotice(noticeId: string, opts: { ownerId?: string
     .update({
       status: "ISSUED",
       issuedAt: toTimestamp(new Date().toISOString()),
-      raisePending: true,
       ...(opts.ownerId !== undefined ? { ownerId: opts.ownerId } : {}),
       ...(opts.dueDate ? { dueDate: toTimestamp(opts.dueDate) } : {}),
     });
@@ -382,11 +380,7 @@ export async function recordLevyPayment(
     const paymentCents = Math.round(paymentAmount * 100);
     const owedCents = toCents(String(notice.amountDue)) + toCents(String(notice.interestCharged ?? 0));
     const paidCents = toCents(String(notice.amountPaid));
-    // Issued ahead and not yet raised (before its due date): the whole payment
-    // is held as levies paid in advance, and applied when the levy is raised.
-    const { appliedCents, excessCents } = notice.raisePending
-      ? { appliedCents: 0, excessCents: paymentCents }
-      : splitLevyPayment(paymentCents, owedCents - paidCents);
+    const { appliedCents, excessCents } = splitLevyPayment(paymentCents, owedCents - paidCents);
 
     let receiptId: string | null = null;
     if (appliedCents > 0) {

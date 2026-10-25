@@ -176,8 +176,7 @@ export async function applyOwnerCredit(input: { schemeId: string; lotIds?: strin
     if (available <= 0) continue;
 
     const notices = await db.orm.public.LevyNotice
-      // A notice issued ahead and not yet due is not raised yet: credit waits for its due date.
-      .where((n) => and(n.schemeId.eq(b.schemeId), n.lotId.eq(b.lotId), n.fundId.eq(b.fundId), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]), n.raisePending.eq(false)))
+      .where((n) => and(n.schemeId.eq(b.schemeId), n.lotId.eq(b.lotId), n.fundId.eq(b.fundId), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"])))
       .limit(500)
       .all();
     const plan = planCreditApplication(

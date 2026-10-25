@@ -24,6 +24,7 @@ const fieldProxy = new Proxy(
     get: (_target, field: string) => ({
       eq: (v: unknown) => (row: Row) => value(row, field) === (v === undefined ? null : v),
       ne: (v: unknown) => (row: Row) => value(row, field) !== v,
+      neq: (v: unknown) => (row: Row) => value(row, field) !== v,
       in: (vs: unknown[]) => (row: Row) => vs.includes(value(row, field)),
       notIn: (vs: unknown[]) => (row: Row) => !vs.includes(value(row, field)),
       isNull: () => (row: Row) => value(row, field) === null,

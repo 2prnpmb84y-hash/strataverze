@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3d25b22c37b002b783d795ce495fe3fa4337a6391a3b4a02d2fce75289e0ac3d'>;
+  StorageHashBase<'c3e08907190e24f24bed1ede68c03e772b5b6a6a847000f72ea3d371e4df230e'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1114,8 +1114,6 @@ export type FieldOutputTypes = {
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly periodEnd: CodecTypes['pg/date-string@1']['output'];
       readonly periodStart: CodecTypes['pg/date-string@1']['output'];
-      readonly raisePending: CodecTypes['pg/bool@1']['output'];
-      readonly raisedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -3606,8 +3604,6 @@ export type FieldInputTypes = {
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly periodEnd: CodecTypes['pg/date-string@1']['input'];
       readonly periodStart: CodecTypes['pg/date-string@1']['input'];
-      readonly raisePending: CodecTypes['pg/bool@1']['input'];
-      readonly raisedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -6098,8 +6094,6 @@ export type StorageColumnTypes = {
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly period_end: CodecTypes['pg/date-string@1']['output'];
       readonly period_start: CodecTypes['pg/date-string@1']['output'];
-      readonly raise_pending: CodecTypes['pg/bool@1']['output'];
-      readonly raised_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -8591,8 +8585,6 @@ export type StorageColumnInputTypes = {
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly period_end: CodecTypes['pg/date-string@1']['input'];
       readonly period_start: CodecTypes['pg/date-string@1']['input'];
-      readonly raise_pending: CodecTypes['pg/bool@1']['input'];
-      readonly raised_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -11323,8 +11315,6 @@ export namespace Models {
     paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     periodEnd: CodecTypes['pg/date-string@1']['output'];
     periodStart: CodecTypes['pg/date-string@1']['output'];
-    raisePending: CodecTypes['pg/bool@1']['output'];
-    raisedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -20980,22 +20970,6 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/date';
                   readonly codecId: 'pg/date-string@1';
                   readonly nullable: false;
-                  readonly many: false;
-                };
-                readonly raise_pending: {
-                  readonly dataType: 'pg/bool';
-                  readonly codecId: 'pg/bool@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
-                  };
-                  readonly many: false;
-                };
-                readonly raised_at: {
-                  readonly dataType: 'pg/timestamptz';
-                  readonly codecId: 'pg/timestamptz-string@1';
-                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly scheme_id: {
@@ -41828,17 +41802,6 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
               };
-              readonly raisePending: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
-              };
-              readonly raisedAt: {
-                readonly nullable: true;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/timestamptz-string@1';
-                };
-              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -41943,8 +41906,6 @@ type ContractBase = Omit<
                 readonly paidInFullAt: { readonly column: 'paid_in_full_at' };
                 readonly periodEnd: { readonly column: 'period_end' };
                 readonly periodStart: { readonly column: 'period_start' };
-                readonly raisePending: { readonly column: 'raise_pending' };
-                readonly raisedAt: { readonly column: 'raised_at' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updated_at' };
