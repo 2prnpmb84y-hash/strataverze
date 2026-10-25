@@ -32,6 +32,22 @@ export async function signDownload(path: string, expiresIn: number): Promise<str
   return data.signedUrl;
 }
 
+/**
+ * Signed download links for several paths in one request, in the same
+ * order (null where one could not be signed). For lists of property
+ * photos, so a page does not sign them one by one.
+ */
+export async function signDownloads(paths: string[], expiresIn: number): Promise<(string | null)[]> {
+  if (paths.length === 0) return [];
+  const { data, error } = await bucket().createSignedUrls(paths, expiresIn);
+  if (error || !data) {
+    console.error("[storage] could not sign downloads:", error?.name ?? "error");
+    return paths.map(() => null);
+  }
+  const byPath = new Map(data.map((d) => [d.path, d.error ? null : d.signedUrl]));
+  return paths.map((p) => byPath.get(p) ?? null);
+}
+
 /** A one-time signed upload link for a path the server chose. */
 export async function signUpload(path: string): Promise<{ signedUrl: string; token: string }> {
   const { data, error } = await bucket().createSignedUploadUrl(path);

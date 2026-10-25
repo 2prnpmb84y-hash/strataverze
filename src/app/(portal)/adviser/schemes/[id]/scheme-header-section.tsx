@@ -1,6 +1,8 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { SchemeDetailHeader } from "@/components/scheme-detail-header";
+import { signedSchemeImages } from "@/lib/schemes/photos";
+import { SchemePhotoButton } from "@/components/schemes/scheme-photo-button";
 import {
   adviserSchemeNav,
   formatBuildingClass,
@@ -30,6 +32,9 @@ export async function SchemeHeaderSection({
   );
   if (!isAdviser) return null;
 
+  // Signed links, made after the access check above (the bucket is private).
+  const images = await signedSchemeImages(scheme.id, scheme.images ?? []);
+
   return (
     <SchemeDetailHeader
       backHref="/adviser/schemes"
@@ -44,11 +49,8 @@ export async function SchemeHeaderSection({
         { label: "Total UOE", value: scheme.totalEntitlement },
         { label: "Building type", value: formatEnumLabel(scheme.buildingType) },
       ]}
-      images={(scheme.images ?? []).map((img) => ({
-        id: img.id,
-        url: img.url,
-        caption: img.caption ?? null,
-      }))}
+      images={images}
+      photoAction={<SchemePhotoButton schemeId={scheme.id} hasPhoto={images.length > 0} />}
       navButtons={adviserSchemeNav(id)}
     />
   );

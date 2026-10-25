@@ -46,7 +46,7 @@ export default async function SchemeDetailPage({
   const { id } = await params;
 
   // Old ?tab= links now have their own sections.
-  const { tab } = await searchParams;
+  const { tab, photo, next } = await searchParams;
   if (tab === "lots") redirect(`/adviser/schemes/${id}/lots`);
   if (tab === "documents") redirect(`/adviser/schemes/${id}/documents`);
 
@@ -88,8 +88,25 @@ export default async function SchemeDetailPage({
     getActivityForScheme(id, 20),
   ]);
 
+  // The wizard created the building but could not save its photo (25 Oct).
+  const photoNotSaved = photo === "not-saved";
+  const nextStep = typeof next === "string" && next.startsWith(`/adviser/schemes/${id}/`) && !next.includes("//") ? next : null;
+
   return (
     <div>
+      {photoNotSaved && (
+        <div role="status" className="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink">
+          The building was created, but its photo could not be saved. Add it with Add photo on the photo above.
+          {nextStep && (
+            <>
+              {" "}
+              <a href={nextStep} className="font-medium text-turquoise underline">
+                Continue setting up the building
+              </a>
+            </>
+          )}
+        </div>
+      )}
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={scheme.funds} />
       <LotsCard id={id} lots={lots} totalLots={scheme.totalLots} />

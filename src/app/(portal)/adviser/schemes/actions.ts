@@ -40,6 +40,11 @@ export type SchemeFormState = {
   /** Onboarding: the step to show, and the problems found on it. */
   step?: OnboardingStep;
   stepErrors?: string[];
+  /**
+   * The building was created and a property photo is waiting in the
+   * browser: it uploads the photo, then goes to `destination`.
+   */
+  created?: { schemeId: string; destination: string };
 };
 
 export type StrataRollParseResult = {
@@ -200,6 +205,7 @@ export async function createSchemeAction(
   }
 
   let destination: string;
+  let createdId = "";
   try {
     // Buildings are onboarded by StrataVerze administrators only (SEC-002).
     const profile = await requirePlatformAdmin();
@@ -221,6 +227,7 @@ export async function createSchemeAction(
       resourceId: scheme.id,
     });
     destination = `/adviser/schemes/${scheme.id}`;
+    createdId = scheme.id;
 
     // The opening balances become a draft cutover for the Adviser to sign
     // off and post in Finance. The building stands even if this fails: the
@@ -256,6 +263,9 @@ export async function createSchemeAction(
     logError("createSchemeAction error:", err);
     return { error: "Failed to create scheme. Please try again." };
   }
+  // A property photo chosen in the wizard is uploaded by the browser now
+  // that the building exists (25 Oct 2026), so it is never sent with the form.
+  if (formData.get("photoPending") === "1") return { created: { schemeId: createdId, destination } };
   redirect(destination);
 }
 

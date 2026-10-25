@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useActionState, useMemo, useRef, startTransition } from "react";
+import { useState, useActionState, useMemo, useRef, useEffect, startTransition } from "react";
+import { useRouter } from "next/navigation";
+import { PropertyPhotoField } from "./property-photo-field";
+import { uploadSchemePhoto } from "@/lib/schemes/upload-photo";
 import { Button } from "@/components/ui/button";
 import {
   FormField,
@@ -136,6 +139,29 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
   const [review, setReview] = useState<ReviewValues | null>(null);
 
   const [state, formAction, isPending] = useActionState<SchemeFormState, FormData>(createSchemeAction, {});
+  const router = useRouter();
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoStatus, setPhotoStatus] = useState<string | null>(null);
+
+  // The building exists: upload the chosen photo, then carry on. If the photo
+  // fails, the building still stands and its page says the photo can be added.
+  useEffect(() => {
+    const created = state.created;
+    if (!created || !photo) return;
+    let cancelled = false;
+    uploadSchemePhoto(created.schemeId, photo).then((r) => {
+      if (cancelled) return;
+      if ("error" in r) {
+        router.push(`/adviser/schemes/${created.schemeId}?photo=not-saved&next=${encodeURIComponent(created.destination)}`);
+      } else {
+        router.push(created.destination);
+      }
+    });
+    startTransition(() => setPhotoStatus("Building created. Uploading the photo…"));
+    return () => {
+      cancelled = true;
+    };
+  }, [state.created, photo, router]);
 
   // A problem found by the server sends the wizard back to its step.
   const [seenState, setSeenState] = useState(state);
@@ -486,6 +512,8 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
                 </div>
               </div>
             )}
+            <PropertyPhotoField value={photo} onChange={setPhoto} />
+            {photo && <input type="hidden" name="photoPending" value="1" />}
             {nav("Next: Lots & Owners")}
           </Card>
         </div>
@@ -546,8 +574,10 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
                 entitlementSum={lotsCheck.entitlementSum}
                 balances={balancesCheck}
                 lotTotals={lotBalancesCheck.totals}
+                photoName={photo?.name ?? null}
               />
             )}
+            {photoStatus && <p role="status" className="mt-4 text-sm text-ink">{photoStatus}</p>}
             {nav(undefined, true)}
           </Card>
         </div>
@@ -563,7 +593,9 @@ function ReviewSummary({
   entitlementSum,
   balances,
   lotTotals,
+  photoName,
 }: {
+  photoName: string | null;
   simplified?: boolean;
   v: ReviewValues;
   lots: ReturnType<typeof checkLots>["lots"];
@@ -597,6 +629,7 @@ function ReviewSummary({
         ["Address", `${val("address")}, ${val("suburb")} ${val("state")} ${val("postcode")}`],
         ["Financial Year End", v.financialYearEnd ? auDate(v.financialYearEnd) : "—"],
         ["Payment Plan", val("paymentPlan")],
+        ["Property Photo", photoName ?? "None (can be added later)"],
         ...(simplified
           ? []
           : ([
