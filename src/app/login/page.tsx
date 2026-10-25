@@ -5,13 +5,14 @@ import { authPageError, authPageMessage } from "@/lib/auth/page-messages";
 import { getAvailablePortals, getCurrentProfile } from "@/lib/queries/profiles";
 import { ContinueAs } from "./continue-as";
 import { MARKETING_SITE_URL } from "@/lib/site-url";
+import { signInPortals } from "@/lib/auth/post-sign-in";
 
 export const instant = false;
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: string; reason?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; reason?: string; next?: string }>;
 }) {
   const params = await searchParams;
   // Only fixed texts are shown from the address (S7), so a crafted link
@@ -22,9 +23,7 @@ export default async function LoginPage({
 
   // Already signed in: offer their portals rather than the form.
   const profile = await getCurrentProfile();
-  const portals = profile
-    ? [...(await getAvailablePortals(profile.id)), ...(profile.isPlatformAdmin ? ["admin"] : [])]
-    : [];
+  const portals = profile ? signInPortals(await getAvailablePortals(profile.id), !!profile.isPlatformAdmin) : [];
 
   return (
     <div className="flex flex-1 min-h-screen">
@@ -70,7 +69,7 @@ export default async function LoginPage({
             {profile ? (
               <ContinueAs email={String(profile.email ?? "")} portals={portals.length ? portals : ["owner"]} />
             ) : (
-              <LoginForm error={error} message={message} />
+              <LoginForm error={error} message={message} next={typeof params.next === "string" ? params.next : undefined} />
             )}
           </div>
 
