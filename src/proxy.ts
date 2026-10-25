@@ -34,9 +34,10 @@ function buildCsp(nonce: string): string {
     "font-src 'self' https://fonts.gstatic.com",
     `img-src 'self' data: blob: https://${SUPABASE_HOST}`,
     `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST}`,
-    // Scheme map embeds (see components/ui/static-map.tsx), and a supplier
-    // invoice PDF the adviser has picked, shown beside the review form (blob:).
-    "frame-src 'self' blob: https://www.google.com https://maps.google.com",
+    // Scheme map embeds (see components/ui/static-map.tsx), a supplier
+    // invoice PDF the adviser has picked, shown beside the review form
+    // (blob:), and the Turnstile security check on the sign-in forms.
+    "frame-src 'self' blob: https://www.google.com https://maps.google.com https://challenges.cloudflare.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
