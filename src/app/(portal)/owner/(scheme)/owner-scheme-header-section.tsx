@@ -2,6 +2,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById, getSchemesForOwner } from "@/lib/queries/schemes";
 import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { SchemeDetailHeader } from "@/components/scheme-detail-header";
+import { signedSchemeImages } from "@/lib/schemes/photos";
 import {
   formatBuildingClass,
   formatEnumLabel,
@@ -35,6 +36,9 @@ export async function OwnerSchemeHeaderSection() {
   if (myMemberships.length === 0) return null;
   const isCommittee = myMemberships.some((m) => m.role === "COMMITTEE");
 
+  // Signed links, made after the access check above (the bucket is private).
+  const images = await signedSchemeImages(scheme.id, scheme.images ?? []);
+
   return (
     <SchemeDetailHeader
       backHref="/owner"
@@ -49,11 +53,7 @@ export async function OwnerSchemeHeaderSection() {
         { label: "Total UOE", value: scheme.totalEntitlement },
         { label: "Building type", value: formatEnumLabel(scheme.buildingType) },
       ]}
-      images={(scheme.images ?? []).map((img) => ({
-        id: img.id,
-        url: img.url,
-        caption: img.caption ?? null,
-      }))}
+      images={images}
       navButtons={ownerSchemeNav({ isCommittee })}
     />
   );

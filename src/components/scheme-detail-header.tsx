@@ -36,6 +36,8 @@ export type SchemeDetailHeaderProps = {
   details: PropertyDetail[];
   /** Images for the photo area */
   images: SchemeImage[];
+  /** Optional control over the photo area, such as "Add photo" for the Adviser. */
+  photoAction?: React.ReactNode;
   /** Section navigation pills, in display order */
   navButtons: SchemeNavItem[];
   /**
@@ -80,6 +82,7 @@ export function SchemeDetailHeader({
   fullAddress,
   details,
   images,
+  photoAction,
   navButtons,
   activeHref,
 }: SchemeDetailHeaderProps) {
@@ -108,10 +111,13 @@ export function SchemeDetailHeader({
 
       {/* 2. Photo area and map, side by side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-        <ImageGallery
-          images={images}
-          className="h-64 w-full rounded-[var(--radius-card)] overflow-hidden"
-        />
+        <div className="relative">
+          <ImageGallery
+            images={images}
+            className="h-64 w-full rounded-[var(--radius-card)] overflow-hidden"
+          />
+          {photoAction && <div className="absolute right-3 top-3">{photoAction}</div>}
+        </div>
         <StaticMap
           address={fullAddress}
           className="h-64 w-full rounded-[var(--radius-card)] overflow-hidden"

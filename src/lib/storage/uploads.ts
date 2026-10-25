@@ -3,6 +3,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
+import { requireSchemeAccessOrAdmin } from "@/lib/auth/building-lock";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
 import { rateLimit } from "@/lib/auth/rate-limit";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
@@ -36,6 +37,8 @@ import { readObjectHead, removeRejectedUpload, signUpload, storedObjectInfo } fr
 const MB = 1024 * 1024;
 const DOCUMENT_KINDS: readonly FileKind[] = ["pdf", "png", "jpeg", "gif", "webp", "ooxml", "ole", "text"];
 const RECEIPT_KINDS: readonly FileKind[] = ["pdf", "png", "jpeg", "heic"];
+/** HEIC is left out: most browsers other than Safari cannot show it. */
+const PHOTO_KINDS: readonly FileKind[] = ["jpeg", "png", "webp"];
 /** Matches the lifetime of Supabase's signed upload link (2 hours). */
 const UPLOAD_LIFETIME_MS = 2 * 60 * 60 * 1000;
 /** Uploads one person may prepare in a 10 minute window, counted in the database. */
@@ -71,6 +74,17 @@ export const UPLOAD_PURPOSES = {
     kinds: DOCUMENT_KINDS,
     maxBytes: 30 * MB,
     authorise: ((schemeId) => requireSchemeAccess(schemeId, "insurance.manage")) as Authorise,
+  },
+  /**
+   * The building's property photo (25 Oct 2026). JPEG, PNG or WebP, which
+   * every browser can show. By the building's Adviser, or StrataVerze
+   * staff while onboarding it.
+   */
+  scheme_photo: {
+    folder: "photos",
+    kinds: PHOTO_KINDS,
+    maxBytes: 10 * MB,
+    authorise: ((schemeId) => requireSchemeAccessOrAdmin(schemeId, "scheme.manage")) as Authorise,
   },
   /** Financial documents filed by the Adviser (receipts, statements, invoices). */
   finance_document: {

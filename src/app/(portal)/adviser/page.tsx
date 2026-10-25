@@ -6,6 +6,8 @@ import { getComplianceForSchemes } from "@/lib/queries/compliance";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader } from "@/components/ui/card";
 import { connection } from "next/server";
+import { schemeThumbnails } from "@/lib/schemes/photos";
+import { SchemeThumb } from "@/components/schemes/scheme-thumb";
 
 export default async function AdviserDashboard() {
   await connection();
@@ -15,12 +17,14 @@ export default async function AdviserDashboard() {
   const schemes = await getSchemesForAdviser(profile.id);
   const schemeIds = schemes.map((s) => s.id);
 
-  const [workOrders, complianceItems] = schemeIds.length > 0
+  const [workOrders, complianceItems, thumbs] = schemeIds.length > 0
     ? await Promise.all([
         getWorkOrdersForSchemes(schemeIds),
         getComplianceForSchemes(schemeIds),
+        // Each building's property photo, signed in one request.
+        schemeThumbnails(schemes),
       ])
-    : [[], []];
+    : [[], [], {} as Record<string, string | null>];
 
   const activeWorkOrders = workOrders.filter(
     (wo) => wo.status === "OPEN" || wo.status === "IN_PROGRESS",
@@ -88,9 +92,11 @@ export default async function AdviserDashboard() {
                 <Link
                   key={scheme.id}
                   href={`/adviser/schemes/${scheme.id}`}
-                  className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
+                  className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors"
                 >
-                  <div>
+                  <div className="flex min-w-0 items-center gap-3">
+                  <SchemeThumb url={thumbs[scheme.id] ?? null} name={scheme.name} />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-ink">
                       {scheme.name}
                     </p>
@@ -99,8 +105,9 @@ export default async function AdviserDashboard() {
                       {schemeWo > 0 && ` · ${schemeWo} active work order${schemeWo === 1 ? "" : "s"}`}
                     </p>
                   </div>
+                  </div>
                   {schemeAlerts > 0 && (
-                    <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                    <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
                       {schemeAlerts} alert{schemeAlerts === 1 ? "" : "s"}
                     </span>
                   )}

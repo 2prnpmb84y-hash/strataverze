@@ -13,6 +13,8 @@ export async function getSchemesForAdviser(profileId: string) {
         .where((sm) => sm.role.eq("ADVISER"))
         .where((sm) => sm.isActive.eq(true)),
     )
+    // The property photo, for the small picture beside each building.
+    .include("images", (i) => i.orderBy((img) => img.sortOrder.asc()))
     .orderBy((s) => s.name.asc())
     .all()
     .then((schemes) =>
