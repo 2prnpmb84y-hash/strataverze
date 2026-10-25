@@ -18,6 +18,7 @@ import {
   AuthorisationError,
 } from "@/lib/auth/require-membership";
 import { db } from "@/prisma/db";
+import { syncContractorSupplierBank } from "@/lib/works/completion";
 import { and, not } from "@prisma/orm-postgres/orm-client";
 import type {
   Numeric,
@@ -668,6 +669,10 @@ export async function saveBankDetails(
       .where((o) => o.contractorBusinessId.eq(contractorId))
       .update({ stepBankingComplete: true });
 
+    // Each building already paying this contractor (works stage 4) gets the
+    // change too, and must verify it before paying again.
+    await propagateContractorBankChange(contractorId);
+
     revalidatePath("/supplier/onboarding");
     return OK;
   } catch (err) {
@@ -1021,4 +1026,14 @@ export async function updateOnboardingStep(
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update onboarding step." };
   }
+}
+
+/**
+ * A contractor changed their bank details: record the change on each
+ * building's finance supplier for them (works stage 4, 25 Oct 2026), so
+ * the building's bank detail controls apply before any further payment.
+ */
+async function propagateContractorBankChange(contractorBusinessId: string) {
+  const suppliers = await db.orm.public.Supplier.where((s) => s.contractorBusinessId.eq(contractorBusinessId)).limit(500).all();
+  for (const supplier of suppliers) await syncContractorSupplierBank(supplier.id, contractorBusinessId);
 }

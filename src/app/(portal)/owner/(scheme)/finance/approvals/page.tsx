@@ -5,7 +5,11 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getApprovalMembers, getBankDetailVersions, getPaymentSettings } from "@/lib/queries/payment-controls";
 import { getInvoiceControlView } from "@/lib/finance/control-view";
 import { getInvoicesAwaitingApproval, getWorksInvoicesAwaitingApproval } from "@/lib/finance/invoice-approval";
-import { canVerifyBankChange, eligibleApprovers } from "@/lib/finance/payment-controls";
+import { businessDaysBetween, canVerifyBankChange, eligibleApprovers } from "@/lib/finance/payment-controls";
+import Link from "next/link";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { signDownloads } from "@/lib/storage/server-storage";
+import { schemeStoragePathProblem } from "@/lib/queries/document-url";
 import { approveWorksInvoiceAction } from "@/lib/actions/works";
 import { formatAud, toCents } from "@/lib/billing/money";
 import { PageHeader } from "@/components/ui/page-header";
@@ -82,9 +86,28 @@ export default async function OwnerApprovalsPage() {
       await db.orm.public.ContractorBusiness.where((b) => b.id.in(worksInvoices.map((w) => w.contractorBusinessId))).limit(500).all()
     ).map((b) => [b.id, b.companyName]),
   );
+  // Waiting for verification, or verified once but still in the cooling-off
+  // period, when a second person must also verify before payment.
+  const nowIso = new Date().toISOString();
   const bankChanges = (
     await Promise.all(suppliers.map(async (s) => ({ supplier: s, latest: (await getBankDetailVersions(s.id))[0] ?? null })))
-  ).filter((x) => x.latest && x.latest.status === "PENDING");
+  ).filter(
+    (x) =>
+      x.latest &&
+      (x.latest.status === "PENDING" ||
+        (x.latest.status === "VERIFIED" && !x.latest.secondVerifiedById && businessDaysBetween(x.latest.changedAt, nowIso) < settings.coolingOffDays)),
+  );
+  // Works invoices from marketplace contractors (stage 4): the contractor's
+  // own tax invoice for every approver, and the job for the committee.
+  const worksRows = await db.orm.public.WorksInvoice.where((w) => and(w.schemeId.eq(schemeId), w.id.in(supplierInvoices.map((i) => i.worksInvoiceId).filter((x): x is string => !!x)))).limit(500).all();
+  const docRows = worksRows.filter((w) => w.documentPath && !schemeStoragePathProblem(schemeId, String(w.documentPath)));
+  const docLinks = docRows.length ? await signDownloads(docRows.map((w) => String(w.documentPath)), 15 * 60) : [];
+  const worksLinks = new Map(
+    worksRows.map((w) => {
+      const i = docRows.indexOf(w);
+      return [w.id, { requestId: w.requestId, documentUrl: i >= 0 ? docLinks[i] ?? null : null }];
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -116,6 +139,20 @@ export default async function OwnerApprovalsPage() {
                     <span className="tabular-nums font-semibold">{formatAud(toCents(String(invoice.totalAmount)))}</span>
                   </div>
                   <p className="text-sm text-ink-muted">{invoice.description}</p>
+                  {invoice.worksInvoiceId && worksLinks.get(invoice.worksInvoiceId) && (
+                    <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                      {worksLinks.get(invoice.worksInvoiceId)!.documentUrl && (
+                        <a href={worksLinks.get(invoice.worksInvoiceId)!.documentUrl!} target="_blank" rel="noopener noreferrer" className="text-turquoise underline">
+                          Open the contractor&apos;s tax invoice
+                        </a>
+                      )}
+                      {isCommittee && worksLinks.get(invoice.worksInvoiceId)!.requestId && (
+                        <Link href={`/owner/works/${worksLinks.get(invoice.worksInvoiceId)!.requestId}`} className="text-turquoise underline">
+                          See the work and the photos
+                        </Link>
+                      )}
+                    </p>
+                  )}
                   {view && <ApprovalPanel view={view} status={invoice.status} />}
                   {view && <ApproveButton action={approve} blockedReason={view.approve.result === "blocked" ? view.approve.reason : null} />}
                 </li>
@@ -188,7 +225,9 @@ export default async function OwnerApprovalsPage() {
                   <p className="font-medium text-ink">{supplier.companyName}</p>
                   <p className="text-ink-muted">
                     New details: BSB {latest!.newBsb ?? "?"}, account ending {String(latest!.newAccountNumber ?? "").slice(-4)},{" "}
-                    {latest!.newAccountName}. Changed by {members.find((m) => m.profileId === latest!.changedById)?.name ?? "a former member"}.
+                    {latest!.newAccountName}. Changed by{" "}
+                    {members.find((m) => m.profileId === latest!.changedById)?.name ?? (supplier.contractorBusinessId ? "the contractor, in StrataVerze" : "a former member")}.
+                    {latest!.status === "VERIFIED" ? " Verified once. Changed recently, so a second person must also verify it before payment." : ""}
                   </p>
                   {check.ok ? (
                     <VerifyBankChangeForm schemeId={schemeId} versionId={latest!.id} slot={check.slot} />

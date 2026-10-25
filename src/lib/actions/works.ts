@@ -1124,6 +1124,7 @@ export async function updateWorksInvoice(
     // has been assessed for approval or anyone has approved it: the payee
     // and amount are what the approvers signed off.
     const existing = await invoiceInScheme(invoiceId, schemeId);
+    if (existing.workOrderId) return { error: "This invoice came through a work order. It is handled on its works request and paid through the building's finance." };
     if (!EDITABLE_INVOICE_STATUSES.includes(String(existing.status)) || (await hasAuthorisations(invoiceId))) {
       return { error: "This invoice has been assessed or approved, so it can no longer be edited." };
     }
@@ -1190,6 +1191,7 @@ export async function assessWorksInvoice(
     const { profile } = await requireSchemeAccess(schemeId, "works.manage");
     const existing = await db.orm.public.WorksInvoice.where((i) => i.id.eq(invoiceId)).first();
     if (!existing || existing.schemeId !== schemeId) return { error: "Invoice not found." };
+    if (existing.workOrderId) return { error: "This invoice came through a work order. It is handled on its works request and paid through the building's finance." };
     if (await hasAuthorisations(invoiceId)) {
       return { error: "This invoice already has approvals, so it cannot be reassessed." };
     }
@@ -1287,6 +1289,7 @@ export async function authoriseWorksPayment(
     const controls = await worksInvoiceControls(invoiceId);
     if (!controls || controls.invoice.schemeId !== schemeId) return { error: "Invoice not found." };
     const invoice = controls.invoice;
+    if (invoice.workOrderId) return { error: "This invoice came through a work order. It is handled on its works request and paid through the building's finance." };
     const sod = await checkInvoiceControl(schemeId, "RECORD_PAYMENT", profile.id, controls.forControls);
     if (sod.result === "blocked") return { error: sod.reason };
 
@@ -1441,6 +1444,7 @@ export async function recordWorksPayment(
       .where((i) => and(i.id.eq(instruction.invoiceId), i.schemeId.eq(schemeId)))
       .first();
     if (!invoice || invoice.schemeId !== schemeId) return { error: "Payment instruction not found." };
+    if (invoice.workOrderId) return { error: "This invoice came through a work order. It is handled on its works request and paid through the building's finance." };
     if (instruction.status === "INVALIDATED") return { error: "This payment instruction was cancelled." };
     const records = await db.orm.public.WorksPaymentRecord
       .where((r) => r.paymentInstructionId.eq(paymentInstructionId))

@@ -20,6 +20,8 @@ export interface DecisionVoteView {
 
 export interface DecisionView {
   id: string;
+  /** ROUTE, QUOTE or VARIATION. */
+  kind: string;
   outcome: string;
   outcomeLabel: string;
   note: string | null;
@@ -92,8 +94,16 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
     const outcome = String(d.outcome);
     return {
       id: d.id,
+      kind: String(d.kind),
       outcome,
-      outcomeLabel: d.kind === "QUOTE" ? quoteLabel(d.quotationId) : isRouteOutcome(outcome) ? ROUTE_OUTCOMES[outcome].label : outcome,
+      outcomeLabel:
+        d.kind === "QUOTE"
+          ? quoteLabel(d.quotationId)
+          : d.kind === "VARIATION"
+            ? `Agree the extra cost: an invoice of $${Number(d.amount ?? 0).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, more than the work order allowed`
+            : isRouteOutcome(outcome)
+              ? ROUTE_OUTCOMES[outcome].label
+              : outcome,
       note: d.note ? String(d.note) : null,
       amount: d.amount != null ? Number(d.amount) : null,
       summary: decodeSummary(d.summary),

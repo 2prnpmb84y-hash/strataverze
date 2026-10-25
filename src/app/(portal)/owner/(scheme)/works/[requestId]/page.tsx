@@ -14,6 +14,8 @@ import { orderingState } from "@/lib/works/urgent-orders";
 import { approvedContractors } from "@/lib/works/settings";
 import { contractorsForDirectInvite, rfqForCommittee } from "@/lib/works/marketplace";
 import { OpenForQuotes, QuotesPanel } from "@/components/works/quotes-panel";
+import { closeOutForCommittee } from "@/lib/works/completion";
+import { CloseOutPanel } from "@/components/works/close-out-panel";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -49,7 +51,9 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
   const showQuotes = !r.isEmergency && (!!rfq || (quotesDecided && r.status === "PROCUREMENT"));
   const direct = showQuotes && showDecision && rfq?.canInvite ? await contractorsForDirectInvite(r.trade) : [];
   // The latest decision made (decisions are newest first). Committee notes stay with the committee, except a reason for declining.
-  const decided = view.decisions.find((d) => d.status === "DECIDED");
+  const decided = view.decisions.find((d) => d.status === "DECIDED" && d.kind === "ROUTE");
+  // Finishing and paying for the work (stage 4): the committee runs it.
+  const closeOut = showDecision ? await closeOutForCommittee(row.schemeId, requestId, { profileId: access.profile.id, roles: access.roles }) : null;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -109,6 +113,13 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
           ) : (
             <p className="text-sm text-ink">{ordering!.live ? `${ordering!.live.contractorName}: ${ordering!.live.statusLabel.toLowerCase()}.` : "A contractor is being arranged."}</p>
           )}
+        </Card>
+      )}
+
+      {closeOut && (
+        <Card>
+          <CardHeader title="Completion and invoice" description="The contractor reports the work done and invoices it. Once confirmed, it goes for the building's payment approvals." />
+          <CloseOutPanel schemeId={row.schemeId} requestId={r.id} view={closeOut} financeHref="/owner/finance/approvals" />
         </Card>
       )}
 

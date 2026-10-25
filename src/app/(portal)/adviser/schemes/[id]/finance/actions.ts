@@ -103,6 +103,7 @@ import { checkPlannedNotices } from "@/lib/levies/notice-content-data";
 import { issueNoticeBatch, issueOverdueDrafts, overdueDrafts } from "@/lib/levies/issue-notices";
 import { issueTiming, lateMessage, type IssueTiming } from "@/lib/levies/issue-timing";
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
+import { afterFinanceChange, contractorOfSupplier } from "@/lib/works/finance-link";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
 import {
   checkPlan,
@@ -1731,6 +1732,7 @@ export async function approveInvoiceAction(
     await requireRecentMfa();
     const ip = (await headers()).get("x-forwarded-for");
     const outcome = await authoriseSupplierInvoice({ schemeId, invoiceId, actorId: profile.id, ip });
+    if (outcome.complete) await afterFinanceChange(invoiceId, ["APPROVED"]);
     revalidatePath(financePath(schemeId));
     revalidatePath(financePath(schemeId, `/invoices/${invoiceId}`));
     return {
@@ -1775,11 +1777,12 @@ export async function recordInvoicePaymentAction(
     const sod = controls ? await checkInvoiceControl(schemeId, "RECORD_PAYMENT", profile.id, controls.forControls) : null;
     if (!sod || sod.result === "blocked") return { error: sod?.reason ?? "Invoice not found." };
     const settings = await getPaymentSettings(schemeId);
-    const bank = checkBankDetailsForPayment(
-      await getLatestBankDetailVersion(invoice.supplierId),
-      new Date().toISOString(),
-      settings.coolingOffDays,
-    );
+    const latestBank = await getLatestBankDetailVersion(invoice.supplierId);
+    // A marketplace contractor is paid only to bank details they gave and the building verified.
+    if (!latestBank && (await contractorOfSupplier(invoice.supplierId))) {
+      return { error: "The contractor has not given bank details yet. Ask them to add them in StrataVerze, then verify them before paying." };
+    }
+    const bank = checkBankDetailsForPayment(latestBank, new Date().toISOString(), settings.coolingOffDays);
     if (bank.result === "blocked") return { error: bank.reason };
     if (sod.result === "exception") {
       await logActivity({
@@ -1845,6 +1848,7 @@ export async function recordInvoicePaymentAction(
       entityId: invoiceId,
       metadata: { amount, paymentDate },
     });
+    await afterFinanceChange(invoiceId, ["PARTIALLY_PAID", "PAID"]);
 
     revalidatePath(financePath(schemeId));
     return { success: true };
@@ -1871,7 +1875,15 @@ export async function cancelInvoiceAction(
       };
     }
 
+    // A works contractor's invoice can be cancelled only before it is
+    // approved: after that it is posted to the ledger, and cancelling it
+    // would let a fresh invoice go past the work order's amount.
+    if (target.worksInvoiceId && !["DRAFT", "AWAITING_APPROVAL"].includes(String(target.status))) {
+      return { error: "This invoice came from a works order and has been approved, so it cannot be cancelled here. Reverse the journal and contact StrataVerze if it must be undone." };
+    }
+
     await cancelInvoice(invoiceId);
+    await afterFinanceChange(invoiceId, ["CANCELLED"]);
 
     await logActivity({
       schemeId,

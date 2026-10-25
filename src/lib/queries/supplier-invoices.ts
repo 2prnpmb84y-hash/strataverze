@@ -1,5 +1,7 @@
 import { db } from "@/prisma/db";
 import { syncPlatformInvoiceStatus } from "@/lib/billing/invoice-run";
+import { syncWorksInvoiceFromFinance } from "@/lib/works/finance-link";
+import { logError } from "@/lib/log";
 import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
 import { captureTransactionFee } from "@/lib/billing/capture";
 import { and, or } from "@prisma/orm-postgres/orm-client";
@@ -300,6 +302,14 @@ export async function approveInvoice(invoiceId: string, approvedBy: string) {
         approvedAt: toTimestamp(new Date().toISOString()),
       });
     await syncPlatformInvoiceStatus(invoiceId, "APPROVED");
+    try {
+      // A marketplace contractor's invoice moves its works invoice on. A
+      // failure here never stops the approval being posted: the works
+      // invoice catches up when it is next shown (reconcileWorksInvoice).
+      await syncWorksInvoiceFromFinance(invoiceId, "APPROVED");
+    } catch (err) {
+      logError("[works] works invoice not moved on after approval:", err);
+    }
     return updated;
   } catch {
     // Table may not exist yet
@@ -341,6 +351,8 @@ export async function recordInvoicePayment(
 
     // A StrataVerze invoice paid in the ledger moves its platform invoice on.
     await syncPlatformInvoiceStatus(invoiceId, newStatus, tx.orm);
+    // Likewise a marketplace contractor's invoice (and, once paid, its request).
+    await syncWorksInvoiceFromFinance(invoiceId, newStatus, tx.orm);
 
     // StrataVerze transaction service fee on the disbursement, in the same
     // transaction. Each payment is identified by the invoice and the running
@@ -365,14 +377,16 @@ export async function recordInvoicePayment(
  * Cancel a supplier invoice.
  */
 export async function cancelInvoice(invoiceId: string) {
-  try {
-    return db.orm.public.SupplierInvoice
+  // A marketplace contractor's invoice is cancelled with it, in the same
+  // transaction; they can then send another. A failure is reported, not
+  // hidden, so the cancel is never shown as done when it was not.
+  return db.transaction(async (tx) => {
+    const updated = await tx.orm.public.SupplierInvoice
       .where({ id: invoiceId })
       .update({ status: "CANCELLED" });
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+    await syncWorksInvoiceFromFinance(invoiceId, "CANCELLED", tx.orm);
+    return updated;
+  });
 }
 
 /**

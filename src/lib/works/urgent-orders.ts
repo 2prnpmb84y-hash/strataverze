@@ -51,8 +51,10 @@ export function orderStatusLabel(status: string): string {
       return "Cancelled";
     case "IN_PROGRESS":
       return "Work under way";
+    case "COMPLETION_REVIEW":
+      return "Reported done: the building is checking";
     case "COMPLETE":
-      return "Complete";
+      return "Work confirmed done";
     default:
       return status;
   }

@@ -16,7 +16,8 @@ import { logActivity } from "@/lib/queries/activity-log";
 import { uploadErrorMessage } from "@/lib/storage/uploads";
 import { logError } from "@/lib/log";
 import { checkRequest, getRequest, resubmitRequest, submitRequest, WorksRequestError } from "@/lib/works/requests";
-import { proposeQuoteApproval, proposeRoute, vote, withdraw, WorksDecisionError, decisionsFor } from "@/lib/works/review";
+import { proposeQuoteApproval, proposeRoute, proposeVariation, vote, withdraw, WorksDecisionError, decisionsFor } from "@/lib/works/review";
+import { notifyVariationDecided, notifyVariationVote } from "@/lib/works/notify";
 import { checkWorksSettings, PreferredContractorError, removePreferredContractor, saveWorksSettings, setPreferredContractor } from "@/lib/works/settings";
 import { notifyInvited, notifyNotSelected, notifyRfqCancelled, notifyQuoteApproved, notifyQuotesIn, notifyQuoteVote, notifyRfqOpened } from "@/lib/works/notify";
 import { notifyDecision, notifyNoContractor, notifyOrderAnswered, notifyOrderCancelled, notifyOrderIssued, notifyRequestSubmitted, notifySettingsChanged, notifyVoteNeeded } from "@/lib/works/notify";
@@ -114,6 +115,12 @@ async function afterSettle(schemeId: string, requestId: string, decisionId: stri
     metadata: { requestNumber: String(request.requestNumber), kind: String(decision.kind), outcome: String(decision.outcome), quotationId: decision.quotationId ?? null, votesFor: decision.votes.filter((v) => v.vote === "FOR").length, votesAgainst: decision.votes.filter((v) => v.vote === "AGAINST").length, byDelegation: !!decision.byDelegation },
   });
 
+  // Agreeing extra cost on an invoice (stage 4): the committee and Adviser are told.
+  if (decision.kind === "VARIATION") {
+    await notifyVariationDecided({ schemeId, requestId, requestNumber: String(request.requestNumber), agreed: result.status === "DECIDED", byDelegation: !!decision.byDelegation });
+    return;
+  }
+
   // Approving a quote (stage 3): the work order goes to that contractor.
   if (decision.kind === "QUOTE") {
     if (result.status === "DECIDED" && decision.quotationId) {
@@ -191,6 +198,9 @@ export async function proposeWorksRouteAction(schemeId: string, requestId: strin
 export async function voteWorksDecisionAction(schemeId: string, requestId: string, decisionId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
   try {
     const { profile, roles } = await requireSchemeAccess(schemeId, "works.decide");
+    // A vote on spending (approving a quote, or extra cost on an invoice) can decide it.
+    const target = await db.orm.public.WorksDecision.where((d) => and(d.id.eq(String(decisionId)), d.schemeId.eq(schemeId))).first();
+    if (target && (target.kind === "QUOTE" || target.kind === "VARIATION")) await requireRecentMfa();
     const v = String(formData.get("vote") ?? "");
     // The request comes from the decision itself; a mismatched id is refused.
     const r = await vote({ schemeId, decisionId, requestId, actor: { profileId: profile.id, roles }, vote: v, comment: String(formData.get("comment") ?? "").slice(0, 2000) || null });
@@ -466,6 +476,32 @@ export async function proposeQuoteApprovalAction(schemeId: string, requestId: st
     await afterSettle(schemeId, requestId, r.decisionId, profile.id, r);
     revalidateWorks(schemeId, requestId);
     return { done: r.status === "DECIDED" ? "Approved. The work order has gone to the contractor." : "Proposed. The committee has been asked to vote." };
+  } catch (err) {
+    return failure(err, "The proposal could not be recorded. Please try again.");
+  }
+}
+
+/**
+ * Propose agreeing an invoice that is more than its work order allowed
+ * (works stage 4). The committee votes under the building's rule.
+ */
+export async function proposeVariationAction(schemeId: string, requestId: string, invoiceId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
+  try {
+    const { profile, roles } = await requireSchemeAccess(schemeId, "works.decide");
+    // Agreeing extra spending can decide it at once (a one-member rule, or the Adviser).
+    await requireRecentMfa();
+    const r = await proposeVariation({ schemeId, requestId, invoiceId, actor: { profileId: profile.id, roles }, note: String(formData.get("note") ?? "").slice(0, 2000) || null });
+    await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_PROPOSED", entityType: "WorksRequest", entityId: requestId, metadata: { kind: "VARIATION", invoiceId, decisionId: r.decisionId, total: r.total, limit: r.limit } });
+    if (r.status === "WITHDRAWN") return { error: "This invoice has changed or moved on. Reload the page." };
+    if (r.status === "OPEN") {
+      const request = await getRequest(schemeId, requestId);
+      const invoice = await db.orm.public.WorksInvoice.where((w) => w.id.eq(invoiceId)).first();
+      const business = invoice ? await db.orm.public.ContractorBusiness.where((c) => c.id.eq(invoice.contractorBusinessId)).first() : null;
+      if (request) await notifyVariationVote({ schemeId, requestId, requestNumber: String(request.requestNumber), contractorName: String(business?.tradingName || business?.companyName || "the contractor"), total: r.total, limit: r.limit, proposedById: profile.id });
+    }
+    await afterSettle(schemeId, requestId, r.decisionId, profile.id, r);
+    revalidateWorks(schemeId, requestId);
+    return { done: r.status === "DECIDED" ? "Agreed. The invoice can now be sent for payment approval." : r.status === "NOT_AGREED" ? "Not agreed." : "Proposed. The committee has been asked to vote." };
   } catch (err) {
     return failure(err, "The proposal could not be recorded. Please try again.");
   }

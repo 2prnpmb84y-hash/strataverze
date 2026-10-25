@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'363017a76aae70df85ff6de8c3eeb63f10a1366753d42af25d30727b26969579'>;
+  StorageHashBase<'775e2eed050e3e1e140bf1556640691d4b76dd350b6d463d10a9c8214b523952'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1909,6 +1909,7 @@ export type FieldOutputTypes = {
       readonly bankBsb: Varchar<7> | null;
       readonly companyName: Varchar<200>;
       readonly contactName: Varchar<200> | null;
+      readonly contractorBusinessId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly email: Varchar<320> | null;
       readonly gstRegistered: CodecTypes['pg/bool@1']['output'];
@@ -1965,6 +1966,7 @@ export type FieldOutputTypes = {
       readonly supplierId: CodecTypes['pg/uuid@1']['output'];
       readonly totalAmount: Numeric<12, 2>;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly worksInvoiceId: CodecTypes['pg/uuid@1']['output'] | null;
     };
     readonly SuspenseItem: {
       readonly amount: Numeric<12, 2>;
@@ -2245,6 +2247,7 @@ export type FieldOutputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly decidedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly invoiceId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly kind: CodecTypes['pg/text@1']['output'];
       readonly note: CodecTypes['pg/text@1']['output'] | null;
       readonly outcome: CodecTypes['pg/text@1']['output'];
@@ -2378,14 +2381,18 @@ export type FieldOutputTypes = {
       readonly assessmentNotes: CodecTypes['pg/text@1']['output'] | null;
       readonly bankDetailChangeFlag: CodecTypes['pg/bool@1']['output'];
       readonly claimedAmount: Numeric<12, 2>;
+      readonly codedById: CodecTypes['pg/uuid@1']['output'] | null;
       readonly contractId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly contractorBusinessId: CodecTypes['pg/uuid@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly dateReceived: CodecTypes['pg/date-string@1']['output'];
       readonly differenceReasons: CodecTypes['pg/text@1']['output'] | null;
+      readonly documentName: Varchar<500> | null;
+      readonly documentPath: CodecTypes['pg/text@1']['output'] | null;
       readonly documentUrl: CodecTypes['pg/text@1']['output'] | null;
       readonly dueDate: CodecTypes['pg/date-string@1']['output'];
       readonly duplicateOfId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly excessReason: CodecTypes['pg/text@1']['output'] | null;
       readonly gstAmount: Numeric<12, 2>;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly invoiceDate: CodecTypes['pg/date-string@1']['output'];
@@ -2396,12 +2403,14 @@ export type FieldOutputTypes = {
       readonly paidAmount: Numeric<12, 2>;
       readonly requestId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly responseDeadline: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly returnReason: CodecTypes['pg/text@1']['output'] | null;
       readonly scheduledAmount: Numeric<12, 2> | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly submittedById: CodecTypes['pg/uuid@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly variationReferences: ReadonlyArray<CodecTypes['pg/text@1']['output']> | null;
+      readonly workOrderId: CodecTypes['pg/uuid@1']['output'] | null;
     };
     readonly WorksLicence: {
       readonly conditions: CodecTypes['pg/text@1']['output'] | null;
@@ -2727,6 +2736,7 @@ export type FieldOutputTypes = {
     };
     readonly WorksSettings: {
       readonly adviserLimit: Numeric<12, 2> | null;
+      readonly adviserMayCodeInvoices: CodecTypes['pg/bool@1']['output'];
       readonly adviserMayDecide: CodecTypes['pg/bool@1']['output'];
       readonly approvalRule: CodecTypes['pg/text@1']['output'];
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
@@ -4472,6 +4482,7 @@ export type FieldInputTypes = {
       readonly bankBsb: CodecTypes['sql/varchar@1']['input'] | null;
       readonly companyName: CodecTypes['sql/varchar@1']['input'];
       readonly contactName: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly contractorBusinessId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly gstRegistered: CodecTypes['pg/bool@1']['input'];
@@ -4528,6 +4539,7 @@ export type FieldInputTypes = {
       readonly supplierId: CodecTypes['pg/uuid@1']['input'];
       readonly totalAmount: CodecTypes['pg/numeric@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly worksInvoiceId: CodecTypes['pg/uuid@1']['input'] | null;
     };
     readonly SuspenseItem: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -4808,6 +4820,7 @@ export type FieldInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly decidedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly invoiceId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly kind: CodecTypes['pg/text@1']['input'];
       readonly note: CodecTypes['pg/text@1']['input'] | null;
       readonly outcome: CodecTypes['pg/text@1']['input'];
@@ -4941,14 +4954,18 @@ export type FieldInputTypes = {
       readonly assessmentNotes: CodecTypes['pg/text@1']['input'] | null;
       readonly bankDetailChangeFlag: CodecTypes['pg/bool@1']['input'];
       readonly claimedAmount: CodecTypes['pg/numeric@1']['input'];
+      readonly codedById: CodecTypes['pg/uuid@1']['input'] | null;
       readonly contractId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly contractorBusinessId: CodecTypes['pg/uuid@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly dateReceived: CodecTypes['pg/date-string@1']['input'];
       readonly differenceReasons: CodecTypes['pg/text@1']['input'] | null;
+      readonly documentName: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly documentPath: CodecTypes['pg/text@1']['input'] | null;
       readonly documentUrl: CodecTypes['pg/text@1']['input'] | null;
       readonly dueDate: CodecTypes['pg/date-string@1']['input'];
       readonly duplicateOfId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly excessReason: CodecTypes['pg/text@1']['input'] | null;
       readonly gstAmount: CodecTypes['pg/numeric@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly invoiceDate: CodecTypes['pg/date-string@1']['input'];
@@ -4959,12 +4976,14 @@ export type FieldInputTypes = {
       readonly paidAmount: CodecTypes['pg/numeric@1']['input'];
       readonly requestId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly responseDeadline: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly returnReason: CodecTypes['pg/text@1']['input'] | null;
       readonly scheduledAmount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly submittedById: CodecTypes['pg/uuid@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly variationReferences: ReadonlyArray<CodecTypes['pg/text@1']['input']> | null;
+      readonly workOrderId: CodecTypes['pg/uuid@1']['input'] | null;
     };
     readonly WorksLicence: {
       readonly conditions: CodecTypes['pg/text@1']['input'] | null;
@@ -5290,6 +5309,7 @@ export type FieldInputTypes = {
     };
     readonly WorksSettings: {
       readonly adviserLimit: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly adviserMayCodeInvoices: CodecTypes['pg/bool@1']['input'];
       readonly adviserMayDecide: CodecTypes['pg/bool@1']['input'];
       readonly approvalRule: CodecTypes['pg/text@1']['input'];
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
@@ -7074,6 +7094,7 @@ export type StorageColumnTypes = {
       readonly supplier_id: CodecTypes['pg/uuid@1']['output'];
       readonly total_amount: Numeric<12, 2>;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly works_invoice_id: CodecTypes['pg/uuid@1']['output'] | null;
     };
     readonly suppliers: {
       readonly abn: Varchar<11> | null;
@@ -7082,6 +7103,7 @@ export type StorageColumnTypes = {
       readonly bank_bsb: Varchar<7> | null;
       readonly company_name: Varchar<200>;
       readonly contact_name: Varchar<200> | null;
+      readonly contractor_business_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly email: Varchar<320> | null;
       readonly gst_registered: CodecTypes['pg/bool@1']['output'];
@@ -7380,6 +7402,7 @@ export type StorageColumnTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly decided_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly invoice_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly kind: CodecTypes['pg/text@1']['output'];
       readonly note: CodecTypes['pg/text@1']['output'] | null;
       readonly outcome: CodecTypes['pg/text@1']['output'];
@@ -7505,14 +7528,18 @@ export type StorageColumnTypes = {
       readonly assessment_notes: CodecTypes['pg/text@1']['output'] | null;
       readonly bank_detail_change_flag: CodecTypes['pg/bool@1']['output'];
       readonly claimed_amount: Numeric<12, 2>;
+      readonly coded_by_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly contract_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly contractor_business_id: CodecTypes['pg/uuid@1']['output'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly date_received: CodecTypes['pg/date-string@1']['output'];
       readonly difference_reasons: CodecTypes['pg/text@1']['output'] | null;
+      readonly document_name: Varchar<500> | null;
+      readonly document_path: CodecTypes['pg/text@1']['output'] | null;
       readonly document_url: CodecTypes['pg/text@1']['output'] | null;
       readonly due_date: CodecTypes['pg/date-string@1']['output'];
       readonly duplicate_of_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly excess_reason: CodecTypes['pg/text@1']['output'] | null;
       readonly gst_amount: Numeric<12, 2>;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly invoice_date: CodecTypes['pg/date-string@1']['output'];
@@ -7523,12 +7550,14 @@ export type StorageColumnTypes = {
       readonly paid_amount: Numeric<12, 2>;
       readonly request_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly response_deadline: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly return_reason: CodecTypes['pg/text@1']['output'] | null;
       readonly scheduled_amount: Numeric<12, 2> | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly submitted_by_id: CodecTypes['pg/uuid@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly variation_references: ReadonlyArray<CodecTypes['pg/text@1']['output']> | null;
+      readonly work_order_id: CodecTypes['pg/uuid@1']['output'] | null;
     };
     readonly works_licences: {
       readonly conditions: CodecTypes['pg/text@1']['output'] | null;
@@ -7854,6 +7883,7 @@ export type StorageColumnTypes = {
     };
     readonly works_settings: {
       readonly adviser_limit: Numeric<12, 2> | null;
+      readonly adviser_may_code_invoices: CodecTypes['pg/bool@1']['output'];
       readonly adviser_may_decide: CodecTypes['pg/bool@1']['output'];
       readonly approval_rule: CodecTypes['pg/text@1']['output'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
@@ -9638,6 +9668,7 @@ export type StorageColumnInputTypes = {
       readonly supplier_id: CodecTypes['pg/uuid@1']['input'];
       readonly total_amount: CodecTypes['pg/numeric@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly works_invoice_id: CodecTypes['pg/uuid@1']['input'] | null;
     };
     readonly suppliers: {
       readonly abn: CodecTypes['sql/varchar@1']['input'] | null;
@@ -9646,6 +9677,7 @@ export type StorageColumnInputTypes = {
       readonly bank_bsb: CodecTypes['sql/varchar@1']['input'] | null;
       readonly company_name: CodecTypes['sql/varchar@1']['input'];
       readonly contact_name: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly contractor_business_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly gst_registered: CodecTypes['pg/bool@1']['input'];
@@ -9944,6 +9976,7 @@ export type StorageColumnInputTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly decided_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly invoice_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly kind: CodecTypes['pg/text@1']['input'];
       readonly note: CodecTypes['pg/text@1']['input'] | null;
       readonly outcome: CodecTypes['pg/text@1']['input'];
@@ -10069,14 +10102,18 @@ export type StorageColumnInputTypes = {
       readonly assessment_notes: CodecTypes['pg/text@1']['input'] | null;
       readonly bank_detail_change_flag: CodecTypes['pg/bool@1']['input'];
       readonly claimed_amount: CodecTypes['pg/numeric@1']['input'];
+      readonly coded_by_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly contract_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly contractor_business_id: CodecTypes['pg/uuid@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly date_received: CodecTypes['pg/date-string@1']['input'];
       readonly difference_reasons: CodecTypes['pg/text@1']['input'] | null;
+      readonly document_name: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly document_path: CodecTypes['pg/text@1']['input'] | null;
       readonly document_url: CodecTypes['pg/text@1']['input'] | null;
       readonly due_date: CodecTypes['pg/date-string@1']['input'];
       readonly duplicate_of_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly excess_reason: CodecTypes['pg/text@1']['input'] | null;
       readonly gst_amount: CodecTypes['pg/numeric@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly invoice_date: CodecTypes['pg/date-string@1']['input'];
@@ -10087,12 +10124,14 @@ export type StorageColumnInputTypes = {
       readonly paid_amount: CodecTypes['pg/numeric@1']['input'];
       readonly request_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly response_deadline: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly return_reason: CodecTypes['pg/text@1']['input'] | null;
       readonly scheduled_amount: CodecTypes['pg/numeric@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly submitted_by_id: CodecTypes['pg/uuid@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly variation_references: ReadonlyArray<CodecTypes['pg/text@1']['input']> | null;
+      readonly work_order_id: CodecTypes['pg/uuid@1']['input'] | null;
     };
     readonly works_licences: {
       readonly conditions: CodecTypes['pg/text@1']['input'] | null;
@@ -10418,6 +10457,7 @@ export type StorageColumnInputTypes = {
     };
     readonly works_settings: {
       readonly adviser_limit: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly adviser_may_code_invoices: CodecTypes['pg/bool@1']['input'];
       readonly adviser_may_decide: CodecTypes['pg/bool@1']['input'];
       readonly approval_rule: CodecTypes['pg/text@1']['input'];
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
@@ -10821,6 +10861,7 @@ export namespace Models {
     contacts: public_ContractorContact[];
     contracts: public_WorksContract[];
     declarations: public_ContractorDeclaration[];
+    financeSuppliers: public_Supplier[];
     insurances: public_WorksInsurance[];
     invoices: public_WorksInvoice[];
     licences: public_WorksLicence[];
@@ -10839,6 +10880,7 @@ export namespace Models {
       | 'contacts'
       | 'contracts'
       | 'declarations'
+      | 'financeSuppliers'
       | 'insurances'
       | 'invoices'
       | 'licences'
@@ -12332,6 +12374,7 @@ export namespace Models {
     worksInspections: public_WorksInspection[];
     worksInsuranceVerifications: public_WorksInsurance[];
     worksInvoicesAssessed: public_WorksInvoice[];
+    worksInvoicesCoded: public_WorksInvoice[];
     worksInvoicesSubmitted: public_WorksInvoice[];
     worksLicenceVerifications: public_WorksLicence[];
     worksMilestonesCertified: public_WorksMilestone[];
@@ -12401,6 +12444,7 @@ export namespace Models {
       | 'worksInspections'
       | 'worksInsuranceVerifications'
       | 'worksInvoicesAssessed'
+      | 'worksInvoicesCoded'
       | 'worksInvoicesSubmitted'
       | 'worksLicenceVerifications'
       | 'worksMilestonesCertified'
@@ -12805,6 +12849,7 @@ export namespace Models {
     bankBsb: Varchar<7> | null;
     companyName: Varchar<200>;
     contactName: Varchar<200> | null;
+    contractorBusinessId: CodecTypes['pg/uuid@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     email: Varchar<320> | null;
     gstRegistered: CodecTypes['pg/bool@1']['output'];
@@ -12815,11 +12860,13 @@ export namespace Models {
     schemeId: CodecTypes['pg/uuid@1']['output'] | null;
     tradingName: Varchar<200> | null;
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    contractorBusiness: public_ContractorBusiness | null;
     financialDocuments: public_FinancialDocument[];
     journalLines: public_JournalLine[];
     scheme: public_Scheme | null;
     supplierInvoices: public_SupplierInvoice[];
-    readonly [RelationKeys]?: 'financialDocuments' | 'journalLines' | 'scheme' | 'supplierInvoices';
+    readonly [RelationKeys]?:
+      'contractorBusiness' | 'financialDocuments' | 'journalLines' | 'scheme' | 'supplierInvoices';
   };
   export type public_SupplierBankDetailVersion = {
     changedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -12867,12 +12914,15 @@ export namespace Models {
     supplierId: CodecTypes['pg/uuid@1']['output'];
     totalAmount: Numeric<12, 2>;
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    worksInvoiceId: CodecTypes['pg/uuid@1']['output'] | null;
     accountCode: public_AccountCode;
     financialDocuments: public_FinancialDocument[];
     fund: public_Fund;
     scheme: public_Scheme;
     supplier: public_Supplier;
-    readonly [RelationKeys]?: 'accountCode' | 'financialDocuments' | 'fund' | 'scheme' | 'supplier';
+    worksInvoice: public_WorksInvoice | null;
+    readonly [RelationKeys]?:
+      'accountCode' | 'financialDocuments' | 'fund' | 'scheme' | 'supplier' | 'worksInvoice';
   };
   export type public_SuspenseItem = {
     amount: Numeric<12, 2>;
@@ -13242,6 +13292,7 @@ export namespace Models {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     decidedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     id: CodecTypes['pg/uuid@1']['output'];
+    invoiceId: CodecTypes['pg/uuid@1']['output'] | null;
     kind: CodecTypes['pg/text@1']['output'];
     note: CodecTypes['pg/text@1']['output'] | null;
     outcome: CodecTypes['pg/text@1']['output'];
@@ -13253,12 +13304,14 @@ export namespace Models {
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
     summary: CodecTypes['pg/text@1']['output'] | null;
+    invoice: public_WorksInvoice | null;
     proposedBy: public_Profile;
     quotation: public_WorksQuotation | null;
     request: public_WorksRequest;
     scheme: public_Scheme;
     votes: public_WorksDecisionVote[];
-    readonly [RelationKeys]?: 'proposedBy' | 'quotation' | 'request' | 'scheme' | 'votes';
+    readonly [RelationKeys]?:
+      'invoice' | 'proposedBy' | 'quotation' | 'request' | 'scheme' | 'votes';
   };
   export type public_WorksDecisionVote = {
     comment: CodecTypes['pg/text@1']['output'] | null;
@@ -13412,14 +13465,18 @@ export namespace Models {
     assessmentNotes: CodecTypes['pg/text@1']['output'] | null;
     bankDetailChangeFlag: CodecTypes['pg/bool@1']['output'];
     claimedAmount: Numeric<12, 2>;
+    codedById: CodecTypes['pg/uuid@1']['output'] | null;
     contractId: CodecTypes['pg/uuid@1']['output'] | null;
     contractorBusinessId: CodecTypes['pg/uuid@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     dateReceived: CodecTypes['pg/date-string@1']['output'];
     differenceReasons: CodecTypes['pg/text@1']['output'] | null;
+    documentName: Varchar<500> | null;
+    documentPath: CodecTypes['pg/text@1']['output'] | null;
     documentUrl: CodecTypes['pg/text@1']['output'] | null;
     dueDate: CodecTypes['pg/date-string@1']['output'];
     duplicateOfId: CodecTypes['pg/uuid@1']['output'] | null;
+    excessReason: CodecTypes['pg/text@1']['output'] | null;
     gstAmount: Numeric<12, 2>;
     id: CodecTypes['pg/uuid@1']['output'];
     invoiceDate: CodecTypes['pg/date-string@1']['output'];
@@ -13430,13 +13487,16 @@ export namespace Models {
     paidAmount: Numeric<12, 2>;
     requestId: CodecTypes['pg/uuid@1']['output'] | null;
     responseDeadline: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    returnReason: CodecTypes['pg/text@1']['output'] | null;
     scheduledAmount: Numeric<12, 2> | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
     submittedById: CodecTypes['pg/uuid@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     variationReferences: ReadonlyArray<CodecTypes['pg/text@1']['output']> | null;
+    workOrderId: CodecTypes['pg/uuid@1']['output'] | null;
     assessedBy: public_Profile | null;
+    codedBy: public_Profile | null;
     contract: public_WorksContract | null;
     contractorBusiness: public_ContractorBusiness;
     documents: public_WorksDocument[];
@@ -13448,8 +13508,12 @@ export namespace Models {
     request: public_WorksRequest | null;
     scheme: public_Scheme;
     submittedBy: public_Profile;
+    supplierInvoices: public_SupplierInvoice[];
+    variationDecisions: public_WorksDecision[];
+    workOrder: public_WorksWorkOrder | null;
     readonly [RelationKeys]?:
       | 'assessedBy'
+      | 'codedBy'
       | 'contract'
       | 'contractorBusiness'
       | 'documents'
@@ -13460,7 +13524,10 @@ export namespace Models {
       | 'paymentInstructions'
       | 'request'
       | 'scheme'
-      | 'submittedBy';
+      | 'submittedBy'
+      | 'supplierInvoices'
+      | 'variationDecisions'
+      | 'workOrder';
   };
   export type public_WorksLicence = {
     conditions: CodecTypes['pg/text@1']['output'] | null;
@@ -13927,6 +13994,7 @@ export namespace Models {
   };
   export type public_WorksSettings = {
     adviserLimit: Numeric<12, 2> | null;
+    adviserMayCodeInvoices: CodecTypes['pg/bool@1']['output'];
     adviserMayDecide: CodecTypes['pg/bool@1']['output'];
     approvalRule: CodecTypes['pg/text@1']['output'];
     schemeId: CodecTypes['pg/uuid@1']['output'];
@@ -14017,6 +14085,7 @@ export namespace Models {
     contract: public_WorksContract | null;
     contractorBusiness: public_ContractorBusiness;
     inspections: public_WorksInspection[];
+    invoices: public_WorksInvoice[];
     issuedBy: public_Profile | null;
     milestones: public_WorksMilestone[];
     progressReports: public_WorksProgressReport[];
@@ -14030,6 +14099,7 @@ export namespace Models {
       | 'contract'
       | 'contractorBusiness'
       | 'inspections'
+      | 'invoices'
       | 'issuedBy'
       | 'milestones'
       | 'progressReports'
@@ -27682,6 +27752,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly works_invoice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
               };
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
@@ -27712,6 +27788,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'supplier_invoices';
+                    readonly columns: readonly ['works_invoice_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_invoices';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -27795,6 +27883,12 @@ type ContractBase = Omit<
                   readonly codecId: 'sql/varchar@1';
                   readonly nullable: true;
                   readonly typeParams: { readonly length: 200 };
+                  readonly many: false;
+                };
+                readonly contractor_business_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly created_at: {
@@ -27893,6 +27987,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'suppliers';
+                    readonly columns: readonly ['contractor_business_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'contractor_businesses';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -30444,6 +30550,12 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly invoice_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly kind: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -30579,6 +30691,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'works_quotations';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_decisions';
+                    readonly columns: readonly ['invoice_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_invoices';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -31609,6 +31733,12 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                   readonly many: false;
                 };
+                readonly coded_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly contract_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -31640,6 +31770,19 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly document_name: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 500 };
+                  readonly many: false;
+                };
+                readonly document_path: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly document_url: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -31655,6 +31798,12 @@ type ContractBase = Omit<
                 readonly duplicate_of_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly excess_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -31741,6 +31890,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly return_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly scheduled_amount: {
                   readonly dataType: 'pg/numeric';
                   readonly codecId: 'pg/numeric@1';
@@ -31782,6 +31937,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: { readonly elementNullable: false };
                 };
+                readonly work_order_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
               };
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
@@ -31801,8 +31962,37 @@ type ContractBase = Omit<
                   readonly columns: readonly ['scheme_id', 'status'];
                   readonly unique: false;
                 },
+                {
+                  readonly name: 'works_invoices_work_order_id_idx';
+                  readonly columns: readonly ['work_order_id'];
+                  readonly unique: false;
+                },
               ];
               foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_invoices';
+                    readonly columns: readonly ['work_order_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_work_orders';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_invoices';
+                    readonly columns: readonly ['coded_by_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
                 {
                   readonly source: {
                     readonly namespaceId: 'public' & NamespaceId;
@@ -34897,6 +35087,16 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/numeric@1';
                   readonly nullable: true;
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly adviser_may_code_invoices: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly adviser_may_decide: {
@@ -38204,6 +38404,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'ContractorDeclaration';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['contractorBusinessId'];
+                };
+              };
+              readonly financeSuppliers: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Supplier';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -47326,6 +47537,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['assessedById'];
                 };
               };
+              readonly worksInvoicesCoded: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksInvoice';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['codedById'];
+                };
+              };
               readonly worksInvoicesSubmitted: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -49705,6 +49927,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 200 };
                 };
               };
+              readonly contractorBusinessId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -49765,6 +49991,18 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly contractorBusiness: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ContractorBusiness';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['contractorBusinessId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly financialDocuments: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -49821,6 +50059,7 @@ type ContractBase = Omit<
                 readonly bankBsb: { readonly column: 'bank_bsb' };
                 readonly companyName: { readonly column: 'company_name' };
                 readonly contactName: { readonly column: 'contact_name' };
+                readonly contractorBusinessId: { readonly column: 'contractor_business_id' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly email: { readonly column: 'email' };
                 readonly gstRegistered: { readonly column: 'gst_registered' };
@@ -50110,6 +50349,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly worksInvoiceId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
             };
             readonly relations: {
               readonly accountCode: {
@@ -50168,6 +50411,18 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly worksInvoice: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksInvoice';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['worksInvoiceId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'supplier_invoices';
@@ -50195,6 +50450,7 @@ type ContractBase = Omit<
                 readonly supplierId: { readonly column: 'supplier_id' };
                 readonly totalAmount: { readonly column: 'total_amount' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+                readonly worksInvoiceId: { readonly column: 'works_invoice_id' };
               };
             };
           };
@@ -52449,6 +52705,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly invoiceId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly kind: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -52495,6 +52755,18 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly invoice: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksInvoice';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['invoiceId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly proposedBy: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -52565,6 +52837,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly decidedAt: { readonly column: 'decided_at' };
                 readonly id: { readonly column: 'id' };
+                readonly invoiceId: { readonly column: 'invoice_id' };
                 readonly kind: { readonly column: 'kind' };
                 readonly note: { readonly column: 'note' };
                 readonly outcome: { readonly column: 'outcome' };
@@ -53604,6 +53877,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                 };
               };
+              readonly codedById: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly contractId: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -53627,6 +53904,18 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly documentName: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 500 };
+                };
+              };
+              readonly documentPath: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly documentUrl: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -53638,6 +53927,10 @@ type ContractBase = Omit<
               readonly duplicateOfId: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly excessReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly gstAmount: {
                 readonly nullable: false;
@@ -53694,6 +53987,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-string@1';
                 };
               };
+              readonly returnReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly scheduledAmount: {
                 readonly nullable: true;
                 readonly type: {
@@ -53726,6 +54023,10 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
                 readonly many: { readonly elementNullable: false };
               };
+              readonly workOrderId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
             };
             readonly relations: {
               readonly assessedBy: {
@@ -53737,6 +54038,18 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly on: {
                   readonly localFields: readonly ['assessedById'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly codedBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['codedById'];
                   readonly targetFields: readonly ['id'];
                 };
               };
@@ -53868,6 +54181,40 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly supplierInvoices: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'SupplierInvoice';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['worksInvoiceId'];
+                };
+              };
+              readonly variationDecisions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksDecision';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['invoiceId'];
+                };
+              };
+              readonly workOrder: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksWorkOrder';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['workOrderId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
             };
             readonly storage: {
               readonly table: 'works_invoices';
@@ -53880,14 +54227,18 @@ type ContractBase = Omit<
                 readonly assessmentNotes: { readonly column: 'assessment_notes' };
                 readonly bankDetailChangeFlag: { readonly column: 'bank_detail_change_flag' };
                 readonly claimedAmount: { readonly column: 'claimed_amount' };
+                readonly codedById: { readonly column: 'coded_by_id' };
                 readonly contractId: { readonly column: 'contract_id' };
                 readonly contractorBusinessId: { readonly column: 'contractor_business_id' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly dateReceived: { readonly column: 'date_received' };
                 readonly differenceReasons: { readonly column: 'difference_reasons' };
+                readonly documentName: { readonly column: 'document_name' };
+                readonly documentPath: { readonly column: 'document_path' };
                 readonly documentUrl: { readonly column: 'document_url' };
                 readonly dueDate: { readonly column: 'due_date' };
                 readonly duplicateOfId: { readonly column: 'duplicate_of_id' };
+                readonly excessReason: { readonly column: 'excess_reason' };
                 readonly gstAmount: { readonly column: 'gst_amount' };
                 readonly id: { readonly column: 'id' };
                 readonly invoiceDate: { readonly column: 'invoice_date' };
@@ -53898,12 +54249,14 @@ type ContractBase = Omit<
                 readonly paidAmount: { readonly column: 'paid_amount' };
                 readonly requestId: { readonly column: 'request_id' };
                 readonly responseDeadline: { readonly column: 'response_deadline' };
+                readonly returnReason: { readonly column: 'return_reason' };
                 readonly scheduledAmount: { readonly column: 'scheduled_amount' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly submittedById: { readonly column: 'submitted_by_id' };
                 readonly updatedAt: { readonly column: 'updated_at' };
                 readonly variationReferences: { readonly column: 'variation_references' };
+                readonly workOrderId: { readonly column: 'work_order_id' };
               };
             };
           };
@@ -56924,6 +57277,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                 };
               };
+              readonly adviserMayCodeInvoices: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly adviserMayDecide: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
@@ -56987,6 +57344,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly adviserLimit: { readonly column: 'adviser_limit' };
+                readonly adviserMayCodeInvoices: { readonly column: 'adviser_may_code_invoices' };
                 readonly adviserMayDecide: { readonly column: 'adviser_may_decide' };
                 readonly approvalRule: { readonly column: 'approval_rule' };
                 readonly schemeId: { readonly column: 'scheme_id' };
@@ -57509,6 +57867,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'WorksInspection';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['workOrderId'];
+                };
+              };
+              readonly invoices: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksInvoice';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
