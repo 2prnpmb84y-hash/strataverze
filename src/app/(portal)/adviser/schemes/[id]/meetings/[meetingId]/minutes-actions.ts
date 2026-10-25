@@ -21,6 +21,7 @@ import { assembleMinutesContent, retentionUntil } from "@/lib/meetings/minutes";
 import { recordMeetingEvent } from "@/lib/meetings/events";
 import { canTransition } from "@/lib/meetings/lifecycle";
 import { notifyMeetingScheduled } from "@/lib/notifications";
+import { captureConfirmedMinutes } from "@/lib/vault/sources";
 
 export type MinutesActionState = { error?: string; ok?: boolean };
 
@@ -114,6 +115,8 @@ export async function confirmMinutesAction(
       eventType: "MINUTES_CONFIRMED",
       payload: { version: latest.version },
     });
+    // Into the building's vault, if it has one (trial). Never fails this.
+    await captureConfirmedMinutes(latest.id, profile.id);
     revalidate(schemeId, meetingId);
     return { ok: true };
   } catch (err) {

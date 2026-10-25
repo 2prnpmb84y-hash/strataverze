@@ -69,3 +69,28 @@ export async function removeRejectedUpload(path: string): Promise<void> {
   const { error } = await bucket().remove([path]);
   if (error) console.error("[storage] could not remove a refused upload:", error.name);
 }
+
+/**
+ * The whole stored object, or null when it is not there. For the building
+ * vault, which fingerprints every byte. Callers must authorise first.
+ */
+export async function downloadObject(path: string): Promise<Uint8Array | null> {
+  const { data, error } = await bucket().download(path);
+  if (error || !data) return null;
+  return new Uint8Array(await data.arrayBuffer());
+}
+
+/**
+ * Write a new object at a path the server chose, never replacing one that
+ * is there (the building vault's originals are written once). Returns
+ * "exists" when the path is already taken, so the caller can check what is
+ * there instead.
+ */
+export async function writeObjectOnce(path: string, bytes: Uint8Array, contentType: string): Promise<"written" | "exists"> {
+  const { error } = await bucket().upload(path, bytes, { contentType, upsert: false });
+  if (!error) return "written";
+  const e = error as { status?: number; statusCode?: string; code?: string };
+  if (e.status === 409 || e.statusCode === "409" || e.code === "ResourceAlreadyExists" || /already exists/i.test(error.message)) return "exists";
+  console.error("[storage] could not write a vault object:", error.name);
+  throw new Error("Could not store the file. Please try again.");
+}
