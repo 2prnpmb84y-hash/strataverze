@@ -23,6 +23,7 @@ import {
   Settings,
   Home,
   Calculator,
+  Wrench,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -57,13 +58,15 @@ const portalIcon: Record<string, LucideIcon> = {
 /*  Navigation configuration per portal                               */
 /* ------------------------------------------------------------------ */
 
-const ownerNav = [
+type NavItem = { label: string; href: string; icon: LucideIcon; match?: string[] };
+
+const ownerNav: NavItem[] = [
   { label: "Properties", href: "/owner/properties", icon: LayoutGrid },
   { label: "My Property", href: "/owner/scheme", icon: Building2 },
   { label: "Compliance", href: "/owner/compliance", icon: CheckSquare },
   { label: "Community", href: "/owner/contacts", icon: Users },
-  { label: "Works Requests", href: "/owner/works", icon: Briefcase },
-  { label: "Past Work Orders", href: "/owner/maintenance", icon: BarChart3 },
+  // One entry for works: new requests, with earlier maintenance work orders linked from that page.
+  { label: "Work Orders", href: "/owner/works", icon: Wrench, match: ["/owner/maintenance"] },
   { label: "Levies & Finance", href: "/owner/levies", icon: ClipboardList },
   { label: "Documents", href: "/owner/documents", icon: FileText },
 ];
@@ -104,7 +107,7 @@ const adminNav = [
   { label: "Audit log", href: "/admin/audit", icon: FileText },
 ];
 
-const navByPortal: Record<string, typeof ownerNav> = {
+const navByPortal: Record<string, NavItem[]> = {
   admin: adminNav,
   owner: ownerNav,
   adviser: adviserNav,
@@ -221,9 +224,11 @@ export function SideRail({ portal, isPlatformAdmin = false }: { portal: string; 
       <nav className="flex-1 flex flex-col gap-1 px-2 overflow-y-auto">
         {nav.map((item) => {
           const Icon = item.icon;
+          const under = (href: string) => pathname === href || pathname.startsWith(href + '/');
           const isActive =
             pathname === item.href ||
-            (item.href !== `/${portal}` && pathname.startsWith(item.href + '/'));
+            (item.href !== `/${portal}` && pathname.startsWith(item.href + '/')) ||
+            (item.match ?? []).some(under);
 
           return (
             <Link
