@@ -453,7 +453,7 @@ async function getNextMatchEntryNumber(schemeId: string): Promise<string> {
         je.sourceType.eq("BANK_IMPORT"),
       ),
     )
-    .count();
+    .aggregate((a) => ({ n: a.count() })).then((r) => r.n);
 
   return `AM-${String(Number(count) + 1).padStart(4, "0")}`;
 }

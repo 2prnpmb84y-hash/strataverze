@@ -95,7 +95,10 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
         return rows[0] ? { ...rows[0] } : null;
       },
       all: async () => matching().map((r) => ({ ...r })),
-      count: async () => matching().length,
+      // No count() here: Prisma 8 has no count() terminal on a collection
+      // (it throws ORM.INCLUDE_INVALID), so a test must not accept one.
+      aggregate: async (spec: (a: { count: () => "count" }) => Record<string, "count">) =>
+        Object.fromEntries(Object.keys(spec({ count: () => "count" })).map((k) => [k, matching().length])),
       update: async (data: Row) => {
         const row = matching()[0];
         if (!row) return null;
