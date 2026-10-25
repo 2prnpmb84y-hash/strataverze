@@ -80,8 +80,8 @@ export function ownerSchemeNav({ isCommittee }: { isCommittee: boolean }): Schem
     { label: "Document", href: "/owner/documents" },
     {
       label: "Work Order",
-      href: "/owner/maintenance",
-      match: ["/owner/works"],
+      href: "/owner/works",
+      match: ["/owner/maintenance"],
       tone: "action",
     },
     { label: "Meetings", href: "/owner/meetings", tone: "action" },

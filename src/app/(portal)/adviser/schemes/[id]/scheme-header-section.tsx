@@ -50,7 +50,7 @@ export async function SchemeHeaderSection({
         { label: "Building type", value: formatEnumLabel(scheme.buildingType) },
       ]}
       images={images}
-      photoAction={<SchemePhotoButton schemeId={scheme.id} hasPhoto={images.length > 0} />}
+      photoAction={<SchemePhotoButton schemeId={scheme.id} hasPhoto={images.length > 0} mainImageId={images[0]?.id ?? null} />}
       navButtons={adviserSchemeNav(id)}
     />
   );

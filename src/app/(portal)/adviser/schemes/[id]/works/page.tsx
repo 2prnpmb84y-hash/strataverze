@@ -90,9 +90,14 @@ export default async function WorksDashboardPage({
         backHref={`/adviser/schemes/${id}/work-orders`}
         backLabel="Work Orders"
         action={
-          <Button href={`/adviser/schemes/${id}/works/new`}>
-            New Request
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button href={`/adviser/schemes/${id}/works/settings`} variant="secondary">
+              Works settings
+            </Button>
+            <Button href={`/adviser/schemes/${id}/works/new`}>
+              New Request
+            </Button>
+          </div>
         }
       />
 

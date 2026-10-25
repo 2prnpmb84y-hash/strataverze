@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'c995d91db80aeee72f491a543ac766fd88ce5867b9bb80da2eb823b523bbd908'>;
+  StorageHashBase<'5cebfacb9ecdde2171309bb8ca073cc1a17d1010a9d524866405a3d28d324c78'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -2237,6 +2237,30 @@ export type FieldOutputTypes = {
       readonly totalValue: Numeric<12, 2>;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly WorksDecision: {
+      readonly byDelegation: CodecTypes['pg/bool@1']['output'];
+      readonly committeeSize: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly decidedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly kind: CodecTypes['pg/text@1']['output'];
+      readonly note: CodecTypes['pg/text@1']['output'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['output'];
+      readonly proposedById: CodecTypes['pg/uuid@1']['output'];
+      readonly requestId: CodecTypes['pg/uuid@1']['output'];
+      readonly requiredVotes: CodecTypes['pg/int4@1']['output'];
+      readonly rule: CodecTypes['pg/text@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+    };
+    readonly WorksDecisionVote: {
+      readonly comment: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly decisionId: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly vote: CodecTypes['pg/text@1']['output'];
+      readonly voterId: CodecTypes['pg/uuid@1']['output'];
+    };
     readonly WorksDefect: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'];
@@ -2471,6 +2495,14 @@ export type FieldOutputTypes = {
       readonly recordedById: CodecTypes['pg/uuid@1']['output'];
       readonly remittanceInfo: CodecTypes['pg/text@1']['output'] | null;
     };
+    readonly WorksPreferredContractor: {
+      readonly contractorBusinessId: CodecTypes['pg/uuid@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdById: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly trade: Varchar<60>;
+    };
     readonly WorksProgressReport: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -2560,10 +2592,12 @@ export type FieldOutputTypes = {
       readonly priority: CodecTypes['pg/text@1']['output'];
       readonly raisedById: CodecTypes['pg/uuid@1']['output'];
       readonly requestNumber: Varchar<30>;
+      readonly returnReason: CodecTypes['pg/text@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly submittedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly title: Varchar<300>;
+      readonly trade: Varchar<60> | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly WorksRequestReview: {
@@ -2666,6 +2700,15 @@ export type FieldOutputTypes = {
       readonly specifications: CodecTypes['pg/text@1']['output'] | null;
       readonly title: Varchar<300>;
       readonly versionNumber: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly WorksSettings: {
+      readonly adviserLimit: Numeric<12, 2> | null;
+      readonly adviserMayDecide: CodecTypes['pg/bool@1']['output'];
+      readonly approvalRule: CodecTypes['pg/text@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly updatedById: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly urgentLimit: Numeric<12, 2> | null;
     };
     readonly WorksSiteVisit: {
       readonly attendees: CodecTypes['pg/text@1']['output'] | null;
@@ -4728,6 +4771,30 @@ export type FieldInputTypes = {
       readonly totalValue: CodecTypes['pg/numeric@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly WorksDecision: {
+      readonly byDelegation: CodecTypes['pg/bool@1']['input'];
+      readonly committeeSize: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly decidedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly kind: CodecTypes['pg/text@1']['input'];
+      readonly note: CodecTypes['pg/text@1']['input'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['input'];
+      readonly proposedById: CodecTypes['pg/uuid@1']['input'];
+      readonly requestId: CodecTypes['pg/uuid@1']['input'];
+      readonly requiredVotes: CodecTypes['pg/int4@1']['input'];
+      readonly rule: CodecTypes['pg/text@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+    };
+    readonly WorksDecisionVote: {
+      readonly comment: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly decisionId: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly vote: CodecTypes['pg/text@1']['input'];
+      readonly voterId: CodecTypes['pg/uuid@1']['input'];
+    };
     readonly WorksDefect: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'];
@@ -4962,6 +5029,14 @@ export type FieldInputTypes = {
       readonly recordedById: CodecTypes['pg/uuid@1']['input'];
       readonly remittanceInfo: CodecTypes['pg/text@1']['input'] | null;
     };
+    readonly WorksPreferredContractor: {
+      readonly contractorBusinessId: CodecTypes['pg/uuid@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdById: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly trade: CodecTypes['sql/varchar@1']['input'];
+    };
     readonly WorksProgressReport: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -5051,10 +5126,12 @@ export type FieldInputTypes = {
       readonly priority: CodecTypes['pg/text@1']['input'];
       readonly raisedById: CodecTypes['pg/uuid@1']['input'];
       readonly requestNumber: CodecTypes['sql/varchar@1']['input'];
+      readonly returnReason: CodecTypes['pg/text@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly submittedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly title: CodecTypes['sql/varchar@1']['input'];
+      readonly trade: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly WorksRequestReview: {
@@ -5157,6 +5234,15 @@ export type FieldInputTypes = {
       readonly specifications: CodecTypes['pg/text@1']['input'] | null;
       readonly title: CodecTypes['sql/varchar@1']['input'];
       readonly versionNumber: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly WorksSettings: {
+      readonly adviserLimit: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly adviserMayDecide: CodecTypes['pg/bool@1']['input'];
+      readonly approvalRule: CodecTypes['pg/text@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly updatedById: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly urgentLimit: CodecTypes['pg/numeric@1']['input'] | null;
     };
     readonly WorksSiteVisit: {
       readonly attendees: CodecTypes['pg/text@1']['input'] | null;
@@ -7220,6 +7306,30 @@ export type StorageColumnTypes = {
       readonly total_value: Numeric<12, 2>;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly works_decision_votes: {
+      readonly comment: CodecTypes['pg/text@1']['output'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly decision_id: CodecTypes['pg/uuid@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly vote: CodecTypes['pg/text@1']['output'];
+      readonly voter_id: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly works_decisions: {
+      readonly by_delegation: CodecTypes['pg/bool@1']['output'];
+      readonly committee_size: CodecTypes['pg/int4@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly decided_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly kind: CodecTypes['pg/text@1']['output'];
+      readonly note: CodecTypes['pg/text@1']['output'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['output'];
+      readonly proposed_by_id: CodecTypes['pg/uuid@1']['output'];
+      readonly request_id: CodecTypes['pg/uuid@1']['output'];
+      readonly required_votes: CodecTypes['pg/int4@1']['output'];
+      readonly rule: CodecTypes['pg/text@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly status: CodecTypes['pg/text@1']['output'];
+    };
     readonly works_defects: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'];
@@ -7454,6 +7564,14 @@ export type StorageColumnTypes = {
       readonly recorded_by_id: CodecTypes['pg/uuid@1']['output'];
       readonly remittance_info: CodecTypes['pg/text@1']['output'] | null;
     };
+    readonly works_preferred_contractors: {
+      readonly contractor_business_id: CodecTypes['pg/uuid@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly trade: Varchar<60>;
+    };
     readonly works_progress_reports: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -7567,10 +7685,12 @@ export type StorageColumnTypes = {
       readonly priority: CodecTypes['pg/text@1']['output'];
       readonly raised_by_id: CodecTypes['pg/uuid@1']['output'];
       readonly request_number: Varchar<30>;
+      readonly return_reason: CodecTypes['pg/text@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly submitted_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly title: Varchar<300>;
+      readonly trade: Varchar<60> | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
     };
     readonly works_rfq_addenda: {
@@ -7649,6 +7769,15 @@ export type StorageColumnTypes = {
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly title: Varchar<300>;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly works_settings: {
+      readonly adviser_limit: Numeric<12, 2> | null;
+      readonly adviser_may_decide: CodecTypes['pg/bool@1']['output'];
+      readonly approval_rule: CodecTypes['pg/text@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly updated_by_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly urgent_limit: Numeric<12, 2> | null;
     };
     readonly works_site_visits: {
       readonly attendees: CodecTypes['pg/text@1']['output'] | null;
@@ -9712,6 +9841,30 @@ export type StorageColumnInputTypes = {
       readonly total_value: CodecTypes['pg/numeric@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
+    readonly works_decision_votes: {
+      readonly comment: CodecTypes['pg/text@1']['input'] | null;
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly decision_id: CodecTypes['pg/uuid@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly vote: CodecTypes['pg/text@1']['input'];
+      readonly voter_id: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly works_decisions: {
+      readonly by_delegation: CodecTypes['pg/bool@1']['input'];
+      readonly committee_size: CodecTypes['pg/int4@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly decided_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly kind: CodecTypes['pg/text@1']['input'];
+      readonly note: CodecTypes['pg/text@1']['input'] | null;
+      readonly outcome: CodecTypes['pg/text@1']['input'];
+      readonly proposed_by_id: CodecTypes['pg/uuid@1']['input'];
+      readonly request_id: CodecTypes['pg/uuid@1']['input'];
+      readonly required_votes: CodecTypes['pg/int4@1']['input'];
+      readonly rule: CodecTypes['pg/text@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly status: CodecTypes['pg/text@1']['input'];
+    };
     readonly works_defects: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'];
@@ -9946,6 +10099,14 @@ export type StorageColumnInputTypes = {
       readonly recorded_by_id: CodecTypes['pg/uuid@1']['input'];
       readonly remittance_info: CodecTypes['pg/text@1']['input'] | null;
     };
+    readonly works_preferred_contractors: {
+      readonly contractor_business_id: CodecTypes['pg/uuid@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly trade: CodecTypes['sql/varchar@1']['input'];
+    };
     readonly works_progress_reports: {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -10059,10 +10220,12 @@ export type StorageColumnInputTypes = {
       readonly priority: CodecTypes['pg/text@1']['input'];
       readonly raised_by_id: CodecTypes['pg/uuid@1']['input'];
       readonly request_number: CodecTypes['sql/varchar@1']['input'];
+      readonly return_reason: CodecTypes['pg/text@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly submitted_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly title: CodecTypes['sql/varchar@1']['input'];
+      readonly trade: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly works_rfq_addenda: {
@@ -10141,6 +10304,15 @@ export type StorageColumnInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['sql/varchar@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly works_settings: {
+      readonly adviser_limit: CodecTypes['pg/numeric@1']['input'] | null;
+      readonly adviser_may_decide: CodecTypes['pg/bool@1']['input'];
+      readonly approval_rule: CodecTypes['pg/text@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly updated_by_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly urgent_limit: CodecTypes['pg/numeric@1']['input'] | null;
     };
     readonly works_site_visits: {
       readonly attendees: CodecTypes['pg/text@1']['input'] | null;
@@ -10537,6 +10709,7 @@ export namespace Models {
     licences: public_WorksLicence[];
     membership: public_ContractorMembership | null;
     onboarding: public_ContractorOnboarding | null;
+    preferredFor: public_WorksPreferredContractor[];
     quotations: public_WorksQuotation[];
     reviewItems: public_ContractorReviewItem[];
     rfqInvitations: public_WorksRfqInvitation[];
@@ -10553,6 +10726,7 @@ export namespace Models {
       | 'licences'
       | 'membership'
       | 'onboarding'
+      | 'preferredFor'
       | 'quotations'
       | 'reviewItems'
       | 'rfqInvitations'
@@ -12031,6 +12205,8 @@ export namespace Models {
     worksCompletionSubmissions: public_WorksCompletionSubmission[];
     worksComplianceVerifications: public_WorksComplianceCheck[];
     worksContractsSigned: public_WorksContract[];
+    worksDecisionVotes: public_WorksDecisionVote[];
+    worksDecisionsProposed: public_WorksDecision[];
     worksDefectsVerified: public_WorksDefect[];
     worksDocuments: public_WorksDocument[];
     worksEvaluations: public_WorksEvaluation[];
@@ -12045,6 +12221,7 @@ export namespace Models {
     worksPaymentInstructions: public_WorksPaymentInstruction[];
     worksPaymentReconciliations: public_WorksPaymentRecord[];
     worksPaymentRecords: public_WorksPaymentRecord[];
+    worksPreferredCreated: public_WorksPreferredContractor[];
     worksProgressReports: public_WorksProgressReport[];
     worksRecommendations: public_WorksRecommendation[];
     worksRequestReviews: public_WorksRequestReview[];
@@ -12055,6 +12232,7 @@ export namespace Models {
     worksRfqsIssued: public_WorksRfq[];
     worksScopeVersions: public_WorksScopeVersion[];
     worksScopesApproved: public_WorksScope[];
+    worksSettingsUpdated: public_WorksSettings[];
     worksSiteVisits: public_WorksSiteVisit[];
     worksVariationsApproved: public_WorksVariation[];
     worksVariationsRequested: public_WorksVariation[];
@@ -12094,6 +12272,8 @@ export namespace Models {
       | 'worksCompletionSubmissions'
       | 'worksComplianceVerifications'
       | 'worksContractsSigned'
+      | 'worksDecisionVotes'
+      | 'worksDecisionsProposed'
       | 'worksDefectsVerified'
       | 'worksDocuments'
       | 'worksEvaluations'
@@ -12108,6 +12288,7 @@ export namespace Models {
       | 'worksPaymentInstructions'
       | 'worksPaymentReconciliations'
       | 'worksPaymentRecords'
+      | 'worksPreferredCreated'
       | 'worksProgressReports'
       | 'worksRecommendations'
       | 'worksRequestReviews'
@@ -12118,6 +12299,7 @@ export namespace Models {
       | 'worksRfqsIssued'
       | 'worksScopeVersions'
       | 'worksScopesApproved'
+      | 'worksSettingsUpdated'
       | 'worksSiteVisits'
       | 'worksVariationsApproved'
       | 'worksVariationsRequested'
@@ -12269,13 +12451,16 @@ export namespace Models {
     worksCategories: public_WorksCategory[];
     worksComplianceRequirements: public_WorksComplianceRequirement[];
     worksContracts: public_WorksContract[];
+    worksDecisions: public_WorksDecision[];
     worksDelegations: public_WorksDelegation[];
     worksDocuments: public_WorksDocument[];
     worksInvoices: public_WorksInvoice[];
     worksNotifications: public_WorksNotification[];
+    worksPreferredContractors: public_WorksPreferredContractor[];
     worksRequests: public_WorksRequest[];
     worksRfqs: public_WorksRfq[];
     worksScopes: public_WorksScope[];
+    worksSettings: public_WorksSettings | null;
     worksWorkOrders: public_WorksWorkOrder[];
     readonly [RelationKeys]?:
       | 'accountCodes'
@@ -12319,13 +12504,16 @@ export namespace Models {
       | 'worksCategories'
       | 'worksComplianceRequirements'
       | 'worksContracts'
+      | 'worksDecisions'
       | 'worksDelegations'
       | 'worksDocuments'
       | 'worksInvoices'
       | 'worksNotifications'
+      | 'worksPreferredContractors'
       | 'worksRequests'
       | 'worksRfqs'
       | 'worksScopes'
+      | 'worksSettings'
       | 'worksWorkOrders';
   };
   export type public_SchemeBankAccount = {
@@ -12924,6 +13112,38 @@ export namespace Models {
       | 'variations'
       | 'workOrders';
   };
+  export type public_WorksDecision = {
+    byDelegation: CodecTypes['pg/bool@1']['output'];
+    committeeSize: CodecTypes['pg/int4@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    decidedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    kind: CodecTypes['pg/text@1']['output'];
+    note: CodecTypes['pg/text@1']['output'] | null;
+    outcome: CodecTypes['pg/text@1']['output'];
+    proposedById: CodecTypes['pg/uuid@1']['output'];
+    requestId: CodecTypes['pg/uuid@1']['output'];
+    requiredVotes: CodecTypes['pg/int4@1']['output'];
+    rule: CodecTypes['pg/text@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    status: CodecTypes['pg/text@1']['output'];
+    proposedBy: public_Profile;
+    request: public_WorksRequest;
+    scheme: public_Scheme;
+    votes: public_WorksDecisionVote[];
+    readonly [RelationKeys]?: 'proposedBy' | 'request' | 'scheme' | 'votes';
+  };
+  export type public_WorksDecisionVote = {
+    comment: CodecTypes['pg/text@1']['output'] | null;
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    decisionId: CodecTypes['pg/uuid@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    vote: CodecTypes['pg/text@1']['output'];
+    voterId: CodecTypes['pg/uuid@1']['output'];
+    decision: public_WorksDecision;
+    voter: public_Profile;
+    readonly [RelationKeys]?: 'decision' | 'voter';
+  };
   export type public_WorksDefect = {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     description: CodecTypes['pg/text@1']['output'];
@@ -13235,6 +13455,18 @@ export namespace Models {
     recordedBy: public_Profile;
     readonly [RelationKeys]?: 'paymentInstruction' | 'reconciledBy' | 'recordedBy';
   };
+  export type public_WorksPreferredContractor = {
+    contractorBusinessId: CodecTypes['pg/uuid@1']['output'];
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdById: CodecTypes['pg/uuid@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    trade: Varchar<60>;
+    contractorBusiness: public_ContractorBusiness;
+    createdBy: public_Profile | null;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'contractorBusiness' | 'createdBy' | 'scheme';
+  };
   export type public_WorksProgressReport = {
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
@@ -13351,15 +13583,18 @@ export namespace Models {
     priority: CodecTypes['pg/text@1']['output'];
     raisedById: CodecTypes['pg/uuid@1']['output'];
     requestNumber: Varchar<30>;
+    returnReason: CodecTypes['pg/text@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
     submittedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     title: Varchar<300>;
+    trade: Varchar<60> | null;
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     assignedTo: public_Profile | null;
     auditEvents: public_WorksAuditEvent[];
     category: public_WorksCategory | null;
     contracts: public_WorksContract[];
+    decisions: public_WorksDecision[];
     documents: public_WorksDocument[];
     invoices: public_WorksInvoice[];
     notifications: public_WorksNotification[];
@@ -13373,6 +13608,7 @@ export namespace Models {
       | 'auditEvents'
       | 'category'
       | 'contracts'
+      | 'decisions'
       | 'documents'
       | 'invoices'
       | 'notifications'
@@ -13527,6 +13763,18 @@ export namespace Models {
     createdBy: public_Profile;
     scope: public_WorksScope;
     readonly [RelationKeys]?: 'createdBy' | 'scope';
+  };
+  export type public_WorksSettings = {
+    adviserLimit: Numeric<12, 2> | null;
+    adviserMayDecide: CodecTypes['pg/bool@1']['output'];
+    approvalRule: CodecTypes['pg/text@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    updatedById: CodecTypes['pg/uuid@1']['output'] | null;
+    urgentLimit: Numeric<12, 2> | null;
+    scheme: public_Scheme;
+    updatedBy: public_Profile | null;
+    readonly [RelationKeys]?: 'scheme' | 'updatedBy';
   };
   export type public_WorksSiteVisit = {
     attendees: CodecTypes['pg/text@1']['output'] | null;
@@ -13746,6 +13994,8 @@ export declare const models: {
     WorksComplianceCheck: Models.public_WorksComplianceCheck;
     WorksComplianceRequirement: Models.public_WorksComplianceRequirement;
     WorksContract: Models.public_WorksContract;
+    WorksDecision: Models.public_WorksDecision;
+    WorksDecisionVote: Models.public_WorksDecisionVote;
     WorksDefect: Models.public_WorksDefect;
     WorksDelegation: Models.public_WorksDelegation;
     WorksDocument: Models.public_WorksDocument;
@@ -13760,6 +14010,7 @@ export declare const models: {
     WorksPaymentAssessment: Models.public_WorksPaymentAssessment;
     WorksPaymentInstruction: Models.public_WorksPaymentInstruction;
     WorksPaymentRecord: Models.public_WorksPaymentRecord;
+    WorksPreferredContractor: Models.public_WorksPreferredContractor;
     WorksProgressReport: Models.public_WorksProgressReport;
     WorksQuotation: Models.public_WorksQuotation;
     WorksQuotationLineItem: Models.public_WorksQuotationLineItem;
@@ -13774,6 +14025,7 @@ export declare const models: {
     WorksRfqInvitation: Models.public_WorksRfqInvitation;
     WorksScope: Models.public_WorksScope;
     WorksScopeVersion: Models.public_WorksScopeVersion;
+    WorksSettings: Models.public_WorksSettings;
     WorksSiteVisit: Models.public_WorksSiteVisit;
     WorksVariation: Models.public_WorksVariation;
     WorksVerificationEvent: Models.public_WorksVerificationEvent;
@@ -29883,6 +30135,243 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly works_decision_votes: {
+              columns: {
+                readonly comment: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly decision_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly vote: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly voter_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'works_decision_votes_decision_id_voter_id_key';
+                  readonly columns: readonly ['decision_id', 'voter_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_decision_votes';
+                    readonly columns: readonly ['decision_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_decisions';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_decision_votes';
+                    readonly columns: readonly ['voter_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly works_decisions: {
+              columns: {
+                readonly by_delegation: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly committee_size: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly decided_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly kind: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'ROUTE'>;
+                  };
+                  readonly many: false;
+                };
+                readonly note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly outcome: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly proposed_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly request_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly required_votes: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'OPEN'>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'works_decisions_request_id_idx';
+                  readonly columns: readonly ['request_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'works_decisions_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_decisions';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_decisions';
+                    readonly columns: readonly ['request_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_requests';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_decisions';
+                    readonly columns: readonly ['proposed_by_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly works_defects: {
               columns: {
                 readonly created_at: {
@@ -32070,6 +32559,99 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly works_preferred_contractors: {
+              columns: {
+                readonly contractor_business_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly trade: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 60 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'works_preferred_contractors_scheme_id_trade_key';
+                  readonly columns: readonly ['scheme_id', 'trade'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_preferred_contractors';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_preferred_contractors';
+                    readonly columns: readonly ['contractor_business_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'contractor_businesses';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_preferred_contractors';
+                    readonly columns: readonly ['created_by_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly works_progress_reports: {
               columns: {
                 readonly created_at: {
@@ -33030,6 +33612,12 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 30 };
                   readonly many: false;
                 };
+                readonly return_reason: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly scheme_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -33057,6 +33645,13 @@ type ContractBase = Omit<
                   readonly codecId: 'sql/varchar@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly length: 300 };
+                  readonly many: false;
+                };
+                readonly trade: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 60 };
                   readonly many: false;
                 };
                 readonly updated_at: {
@@ -33881,6 +34476,92 @@ type ContractBase = Omit<
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'works_scopes';
                     readonly columns: readonly ['approved_by_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly works_settings: {
+              columns: {
+                readonly adviser_limit: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly adviser_may_decide: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly approval_rule: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'TWO'>;
+                  };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly updated_by_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly urgent_limit: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['scheme_id'] };
+              uniques: readonly [];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_settings';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'works_settings';
+                    readonly columns: readonly ['updated_by_id'];
                   };
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
@@ -34932,6 +35613,14 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'WorksContract';
     };
+    readonly works_decision_votes: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'WorksDecisionVote';
+    };
+    readonly works_decisions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'WorksDecision';
+    };
     readonly works_defects: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'WorksDefect';
@@ -34988,6 +35677,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'WorksPaymentRecord';
     };
+    readonly works_preferred_contractors: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'WorksPreferredContractor';
+    };
     readonly works_progress_reports: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'WorksProgressReport';
@@ -35040,6 +35733,10 @@ type ContractBase = Omit<
     readonly works_scopes: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'WorksScope';
+    };
+    readonly works_settings: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'WorksSettings';
     };
     readonly works_site_visits: {
       readonly namespace: 'public' & NamespaceId;
@@ -37092,6 +37789,17 @@ type ContractBase = Omit<
                 };
                 readonly cardinality: '1:1';
                 readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['contractorBusinessId'];
+                };
+              };
+              readonly preferredFor: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksPreferredContractor';
+                };
+                readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['contractorBusinessId'];
@@ -46044,6 +46752,28 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['signedById'];
                 };
               };
+              readonly worksDecisionVotes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksDecisionVote';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['voterId'];
+                };
+              };
+              readonly worksDecisionsProposed: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksDecision';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['proposedById'];
+                };
+              };
               readonly worksDefectsVerified: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -46198,6 +46928,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['recordedById'];
                 };
               };
+              readonly worksPreferredCreated: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksPreferredContractor';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['createdById'];
+                };
+              };
               readonly worksProgressReports: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -46306,6 +47047,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['approvedById'];
+                };
+              };
+              readonly worksSettingsUpdated: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksSettings';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['updatedById'];
                 };
               };
               readonly worksSiteVisits: {
@@ -47400,6 +48152,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly worksDecisions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksDecision';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly worksDelegations: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -47444,6 +48207,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly worksPreferredContractors: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksPreferredContractor';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly worksRequests: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -47472,6 +48246,18 @@ type ContractBase = Omit<
                   readonly model: 'WorksScope';
                 };
                 readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly worksSettings: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksSettings';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['schemeId'];
@@ -51119,6 +51905,210 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly WorksDecision: {
+            readonly fields: {
+              readonly byDelegation: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly committeeSize: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly decidedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly kind: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly note: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly outcome: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly proposedById: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly requestId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly requiredVotes: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly rule: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly proposedBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['proposedById'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly request: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksRequest';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['requestId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly votes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksDecisionVote';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['decisionId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'works_decisions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly byDelegation: { readonly column: 'by_delegation' };
+                readonly committeeSize: { readonly column: 'committee_size' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly decidedAt: { readonly column: 'decided_at' };
+                readonly id: { readonly column: 'id' };
+                readonly kind: { readonly column: 'kind' };
+                readonly note: { readonly column: 'note' };
+                readonly outcome: { readonly column: 'outcome' };
+                readonly proposedById: { readonly column: 'proposed_by_id' };
+                readonly requestId: { readonly column: 'request_id' };
+                readonly requiredVotes: { readonly column: 'required_votes' };
+                readonly rule: { readonly column: 'rule' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly status: { readonly column: 'status' };
+              };
+            };
+          };
+          readonly WorksDecisionVote: {
+            readonly fields: {
+              readonly comment: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly decisionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly vote: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly voterId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly decision: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksDecision';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['decisionId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly voter: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['voterId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'works_decision_votes';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly comment: { readonly column: 'comment' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly decisionId: { readonly column: 'decision_id' };
+                readonly id: { readonly column: 'id' };
+                readonly vote: { readonly column: 'vote' };
+                readonly voterId: { readonly column: 'voter_id' };
+              };
+            };
+          };
           readonly WorksDefect: {
             readonly fields: {
               readonly createdAt: {
@@ -53219,6 +54209,91 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly WorksPreferredContractor: {
+            readonly fields: {
+              readonly contractorBusinessId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdById: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly trade: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 60 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly contractorBusiness: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ContractorBusiness';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['contractorBusinessId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly createdBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['createdById'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'works_preferred_contractors';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly contractorBusinessId: { readonly column: 'contractor_business_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdById: { readonly column: 'created_by_id' };
+                readonly id: { readonly column: 'id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly trade: { readonly column: 'trade' };
+              };
+            };
+          };
           readonly WorksProgressReport: {
             readonly fields: {
               readonly createdAt: {
@@ -53915,6 +54990,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly length: 30 };
                 };
               };
+              readonly returnReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -53936,6 +55015,14 @@ type ContractBase = Omit<
                   readonly kind: 'scalar';
                   readonly codecId: 'sql/varchar@1';
                   readonly typeParams: { readonly length: 300 };
+                };
+              };
+              readonly trade: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 60 };
                 };
               };
               readonly updatedAt: {
@@ -53986,6 +55073,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'WorksContract';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['requestId'];
+                };
+              };
+              readonly decisions: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WorksDecision';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -54106,10 +55204,12 @@ type ContractBase = Omit<
                 readonly priority: { readonly column: 'priority' };
                 readonly raisedById: { readonly column: 'raised_by_id' };
                 readonly requestNumber: { readonly column: 'request_number' };
+                readonly returnReason: { readonly column: 'return_reason' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly submittedAt: { readonly column: 'submitted_at' };
                 readonly title: { readonly column: 'title' };
+                readonly trade: { readonly column: 'trade' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
@@ -55044,6 +56144,88 @@ type ContractBase = Omit<
                 readonly specifications: { readonly column: 'specifications' };
                 readonly title: { readonly column: 'title' };
                 readonly versionNumber: { readonly column: 'version_number' };
+              };
+            };
+          };
+          readonly WorksSettings: {
+            readonly fields: {
+              readonly adviserLimit: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly adviserMayDecide: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly approvalRule: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly updatedById: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly urgentLimit: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly updatedBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['updatedById'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'works_settings';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly adviserLimit: { readonly column: 'adviser_limit' };
+                readonly adviserMayDecide: { readonly column: 'adviser_may_decide' };
+                readonly approvalRule: { readonly column: 'approval_rule' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+                readonly updatedById: { readonly column: 'updated_by_id' };
+                readonly urgentLimit: { readonly column: 'urgent_limit' };
               };
             };
           };

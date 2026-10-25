@@ -119,6 +119,10 @@ model Profile {
   debtRecoveryCasesAsOwner      DebtRecoveryCase[]         @relation("DebtRecoveryCaseOwner")
   debtRecoveryCasesInitiated    DebtRecoveryCase[]         @relation("DebtRecoveryCaseInitiator")
 
+  worksSettingsUpdated   WorksSettings[]            @relation("WorksSettingsUpdatedBy")
+  worksPreferredCreated  WorksPreferredContractor[] @relation("WorksPreferredCreatedBy")
+  worksDecisionsProposed WorksDecision[]            @relation("WorksDecisionProposedBy")
+  worksDecisionVotes     WorksDecisionVote[]        @relation("WorksDecisionVoter")
   @@map("profiles")
 }
 
@@ -213,6 +217,9 @@ model Scheme {
   debtRecoveryCases           DebtRecoveryCase[]
   debtRecoveryPaymentPlans    PaymentPlan[]
 
+  worksSettings          WorksSettings?
+  worksPreferredContractors WorksPreferredContractor[]
+  worksDecisions         WorksDecision[]
   @@map("schemes")
 }
 
@@ -1891,6 +1898,10 @@ model WorksRequest {
   raisedById      String                @map("raised_by_id") @db.Uuid
   assignedToId    String?               @map("assigned_to_id") @db.Uuid
   categoryId      String?               @map("category_id") @db.Uuid
+  /// The trade it is raised under (src/config/works.ts WORKS_TRADES), 25 Oct 2026.
+  trade           String?               @db.VarChar(60)
+  /// Why the committee returned it to the owner, when it did.
+  returnReason    String?               @map("return_reason")
   title           String                @db.VarChar(300)
   description     String
   location        String?               @db.VarChar(500)
@@ -1915,6 +1926,7 @@ model WorksRequest {
   category        WorksCategory?        @relation(fields: [categoryId], references: [id])
   versions        WorksRequestVersion[]
   reviews         WorksRequestReview[]
+  decisions       WorksDecision[]
   scopes          WorksScope[]
   contracts       WorksContract[]
   invoices        WorksInvoice[]
@@ -2153,6 +2165,7 @@ model ContractorBusiness {
   declarations          ContractorDeclaration[]
   reviewItems           ContractorReviewItem[]
 
+  preferredFor          WorksPreferredContractor[]
   @@index([status])
   @@index([abn])
   @@map("contractor_businesses")
@@ -4070,4 +4083,91 @@ model VaultCheck {
 
   @@index([schemeId, checkedAt], map: "vault_checks_scheme_idx")
   @@map("vault_checks")
+}
+
+/// A building's works settings (25 Oct 2026): how many committee members
+/// must agree a works decision, the urgent spending limit, and whether the
+/// Adviser may decide for the committee (and up to what amount).
+model WorksSettings {
+  schemeId          String    @id @map("scheme_id") @db.Uuid
+  /// ONE, TWO or MAJORITY (src/config/works.ts).
+  approvalRule      String    @default("TWO") @map("approval_rule")
+  /// Most an urgent work order may cost without quotes, GST inclusive. Null = not set, no urgent orders.
+  urgentLimit       Decimal?  @db.Decimal(12, 2) @map("urgent_limit")
+  adviserMayDecide  Boolean   @default(false) @map("adviser_may_decide")
+  adviserLimit      Decimal?  @db.Decimal(12, 2) @map("adviser_limit")
+  updatedById       String?   @map("updated_by_id") @db.Uuid
+  updatedAt         DateTime  @default(now()) @db.Timestamptz @map("updated_at")
+
+  scheme            Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  updatedBy         Profile?  @relation("WorksSettingsUpdatedBy", fields: [updatedById], references: [id])
+
+  @@map("works_settings")
+}
+
+/// The building's preferred contractor for a trade, for urgent works (25 Oct 2026).
+model WorksPreferredContractor {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId              String             @map("scheme_id") @db.Uuid
+  trade                 String             @db.VarChar(60)
+  contractorBusinessId  String             @map("contractor_business_id") @db.Uuid
+  createdById           String?            @map("created_by_id") @db.Uuid
+  createdAt             DateTime           @default(now()) @db.Timestamptz @map("created_at")
+
+  scheme                Scheme             @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  contractorBusiness    ContractorBusiness @relation(fields: [contractorBusinessId], references: [id])
+  createdBy             Profile?           @relation("WorksPreferredCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([schemeId, trade])
+  @@map("works_preferred_contractors")
+}
+
+/// A works decision put to the committee (25 Oct 2026): proposed by one
+/// member and agreed by electronic vote under the building's rule, or made
+/// by the Adviser where the building delegates it.
+model WorksDecision {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId            String               @map("scheme_id") @db.Uuid
+  requestId           String               @map("request_id") @db.Uuid
+  /// ROUTE (how a request is handled); later stages add URGENT_ORDER and QUOTE.
+  kind                String               @default("ROUTE")
+  /// For ROUTE: URGENT, QUOTES, RETURN or DECLINE.
+  outcome             String
+  note                String?
+  proposedById        String               @map("proposed_by_id") @db.Uuid
+  /// The building's rule when it was proposed, and what it required then.
+  rule                String
+  requiredVotes       Int                  @map("required_votes")
+  committeeSize       Int                  @map("committee_size")
+  /// OPEN, DECIDED, NOT_AGREED or WITHDRAWN.
+  status              String               @default("OPEN")
+  decidedAt           DateTime?            @db.Timestamptz @map("decided_at")
+  byDelegation        Boolean              @default(false) @map("by_delegation")
+  createdAt           DateTime             @default(now()) @db.Timestamptz @map("created_at")
+
+  scheme              Scheme               @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  request             WorksRequest         @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  proposedBy          Profile              @relation("WorksDecisionProposedBy", fields: [proposedById], references: [id])
+  votes               WorksDecisionVote[]
+
+  @@index([schemeId, status])
+  @@index([requestId])
+  @@map("works_decisions")
+}
+
+/// One committee member's vote on a works decision.
+model WorksDecisionVote {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  decisionId  String         @map("decision_id") @db.Uuid
+  voterId     String         @map("voter_id") @db.Uuid
+  /// FOR or AGAINST.
+  vote        String
+  comment     String?
+  createdAt   DateTime       @default(now()) @db.Timestamptz @map("created_at")
+
+  decision    WorksDecision  @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  voter       Profile        @relation("WorksDecisionVoter", fields: [voterId], references: [id])
+
+  @@unique([decisionId, voterId])
+  @@map("works_decision_votes")
 }

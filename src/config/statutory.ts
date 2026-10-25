@@ -140,3 +140,18 @@ export const DEFAULT_ACCOUNTING_BASIS: Record<string, "CASH" | "ACCRUAL"> = {
 export function defaultAccountingBasis(fundType: string): "CASH" | "ACCRUAL" {
   return fundType === "CAPITAL_WORKS" || fundType === "SINKING" ? "ACCRUAL" : "CASH";
 }
+
+/**
+ * Works spending rules under SSMA 2015 s 102 (applied to works approvals,
+ * 25 Oct 2026). Matthew confirmed the two-quote rule applies to every
+ * building; urgent works are exempt (s 102(5) per PBL Legal, Oct 2025; not
+ * yet checked against the in-force Act text).
+ */
+export const WORKS_SPENDING_RULES = {
+  /** At least this many independent quotes for one item over the threshold. */
+  minimumQuotes: 2,
+  /** In dollars, GST inclusive as quoted. */
+  twoQuoteThreshold: 30_000,
+  urgentWorksExempt: true,
+  source: "SSMA 2015 s 102; PBL Legal, Strata scheme spending limits (Oct 2025); confirmed by Matthew 25 Oct 2026",
+} as const;

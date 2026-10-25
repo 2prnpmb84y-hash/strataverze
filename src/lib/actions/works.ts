@@ -318,7 +318,11 @@ export async function updateWorksRequest(
     const { profile } = await requireSchemeAccess(schemeId, "works.manage");
 
     // The request must belong to the scheme the caller was authorised on.
-    await requestInScheme(requestId, schemeId);
+    const current = await requestInScheme(requestId, schemeId);
+    // Not while the committee is voting on it: members vote on what they read.
+    if (String(current.status) === "UNDER_REVIEW") {
+      return { error: "The committee is voting on this request. Change it once the vote is settled or withdrawn." };
+    }
 
     await db.transaction(async (tx) => {
       // Get current version number
@@ -390,11 +394,20 @@ export async function submitWorksRequest(
     }
     if (request.status !== "DRAFT")
       return { error: "Only draft requests can be submitted." };
+    // A request the committee returned goes back only from whoever raised it
+    // (the owner does this from the owner portal, with the detail added).
+    if (request.returnReason && request.raisedById !== profile.id) {
+      return { error: "The committee returned this request to whoever raised it. They add the detail and send it again." };
+    }
 
-    await db.orm.public.WorksRequest.where((r) => r.id.eq(requestId)).update({
-      status: "SUBMITTED",
-      submittedAt: toTimestamp(new Date().toISOString()),
-    });
+    const sent = await db.orm.public.WorksRequest
+      .where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId), r.status.eq("DRAFT")))
+      .updateAndCount({
+        status: "SUBMITTED",
+        submittedAt: toTimestamp(new Date().toISOString()),
+        returnReason: null,
+      });
+    if (sent !== 1) return { error: "This request has changed. Reload the page." };
 
     await logActivity({
       schemeId,
@@ -414,85 +427,19 @@ export async function submitWorksRequest(
 }
 
 /**
- * Review a works request (APPROVED, RETURNED, or REJECTED).
+ * Retired 25 Oct 2026 (works marketplace stage 1). A works request is now
+ * decided by the committee's electronic vote under the building's rule, or
+ * by the Adviser only where the building delegates it (proposeWorksRouteAction
+ * in works-marketplace.ts). This single-person review bypassed both, so it
+ * changes nothing and points to the new flow.
  */
 export async function reviewWorksRequest(
-  formData: FormData,
+  _formData: FormData,
 ): Promise<ActionResult> {
-  const requestId = formData.get("requestId") as string;
-  const schemeId = formData.get("schemeId") as string;
-  const outcome = formData.get("outcome") as string;
-  const procurementRoute =
-    (formData.get("procurementRoute") as string) || null;
-  const comments = (formData.get("comments") as string)?.trim() || null;
-  const returnReason =
-    (formData.get("returnReason") as string)?.trim() || null;
-
-  if (!requestId || !schemeId) return { error: "Request and scheme required." };
-  const validOutcomes = [
-    "APPROVED",
-    "RETURNED",
-    "REJECTED",
-    "EMERGENCY_APPROVED",
-  ];
-  if (!validOutcomes.includes(outcome))
-    return { error: "Invalid review outcome." };
-
-  try {
-    const { profile } = await requireSchemeAccess(schemeId, "works.approve");
-    const request = await requestInScheme(requestId, schemeId);
-    // Only a request awaiting review can be reviewed (not a draft, a closed
-    // or rejected request, or one already in progress).
-    if (!["SUBMITTED", "UNDER_REVIEW"].includes(String(request.status))) {
-      return { error: "This request is not awaiting review." };
-    }
-
-    await db.transaction(async (tx) => {
-      // Create the review record
-      await tx.orm.public.WorksRequestReview.create({
-        requestId,
-        reviewerId: profile.id,
-        outcome,
-        procurementRoute,
-        comments,
-        returnReason,
-      });
-
-      // Update request status based on outcome
-      const statusMap: Record<string, string> = {
-        APPROVED: "SCOPE_PREPARATION",
-        RETURNED: "DRAFT",
-        REJECTED: "CLOSED",
-        EMERGENCY_APPROVED: "PROCUREMENT",
-      };
-      const newStatus = statusMap[outcome] ?? "UNDER_REVIEW";
-
-      await tx.orm.public.WorksRequest
-        .where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId)))
-        .update({
-          status: newStatus,
-          closedAt:
-            outcome === "REJECTED"
-              ? toTimestamp(new Date().toISOString())
-              : null,
-        });
-    });
-
-    await logActivity({
-      schemeId,
-      actorId: profile.id,
-      action: "WORK_ORDER_STATUS_UPDATED",
-      entityType: "WorkOrder",
-      entityId: requestId,
-      metadata: { outcome, procurementRoute, module: "works" },
-    });
-
-    revalidatePath(`/adviser/schemes/${schemeId}`);
-    return OK;
-  } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
-    return { error: "Failed to review request." };
-  }
+  return {
+    error:
+      "Works requests are now decided by the committee's vote. Open the request to propose a decision or vote.",
+  };
 }
 
 /**

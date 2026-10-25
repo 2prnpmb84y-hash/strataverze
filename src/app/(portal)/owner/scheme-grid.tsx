@@ -6,6 +6,7 @@ import { FilterSelect } from "@/components/ui/filter-select";
 import { formatLotLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { selectScheme } from "@/lib/actions/scheme-selection";
+import { SchemeThumb } from "@/components/schemes/scheme-thumb";
 
 type SchemeCard = {
   id: string;
@@ -21,6 +22,8 @@ type SchemeCard = {
   pendingLevies: number;
   activeWorkOrders: number;
   upcomingMeetings: number;
+  /** The property photo, a short-lived signed link, or null. */
+  photoUrl?: string | null;
 };
 
 const stateOptions = [
@@ -170,8 +173,13 @@ export function SchemeGrid({
               disabled={isPending}
               className="group text-left rounded-[var(--radius-card)] bg-white border border-line overflow-hidden transition-all hover:shadow-md hover:border-mint focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
             >
-              {/* Colour bar */}
-              <div className="h-2 bg-turquoise group-hover:bg-mint-soft0 transition-colors" />
+              {/* The property photo, or the colour bar when there is none */}
+              {scheme.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={scheme.photoUrl} alt={`${scheme.address} property photo`} className="h-32 w-full object-cover bg-muted" />
+              ) : (
+                <div className="h-2 bg-turquoise group-hover:bg-mint-soft0 transition-colors" />
+              )}
 
               <div className="p-5">
                 {/* Plan badge + notification count */}
@@ -246,8 +254,7 @@ export function SchemeGrid({
               disabled={isPending}
               className="group text-left flex items-center gap-4 rounded-[var(--radius-card)] bg-white border border-line px-5 py-4 transition-all hover:shadow-md hover:border-mint focus:outline-none focus:ring-2 focus:ring-turquoise focus:ring-offset-2 disabled:opacity-60"
             >
-              {/* Accent dot */}
-              <div className="w-3 h-3 rounded-full bg-turquoise shrink-0" />
+              <SchemeThumb url={scheme.photoUrl ?? null} name={scheme.address} />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
