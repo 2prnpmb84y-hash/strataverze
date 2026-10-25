@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'41886fa5ed9d063a2360a3f962910d83aaebde13b54632bacca5aa82b37c687f'>;
+  StorageHashBase<'75673ee7dcae9a6c6e9b2ae784259f4e13b7363b1b418dfef0b642163432ecca'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1977,6 +1977,75 @@ export type FieldOutputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly transactionDate: CodecTypes['pg/date-string@1']['output'];
+    };
+    readonly Vault: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly openedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly openedBy: CodecTypes['pg/uuid@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly VaultCheck: {
+      readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly checkedBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly eventsChecked: CodecTypes['pg/int4@1']['output'];
+      readonly filesChecked: CodecTypes['pg/int4@1']['output'];
+      readonly headHash: CodecTypes['pg/text@1']['output'] | null;
+      readonly headSeq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly ok: CodecTypes['pg/bool@1']['output'];
+      readonly problem: CodecTypes['pg/text@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly VaultEvent: {
+      readonly actorProfileId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly contentHash: CodecTypes['pg/text@1']['output'] | null;
+      readonly details: CodecTypes['pg/text@1']['output'];
+      readonly eventType: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly occurredAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly prevHash: CodecTypes['pg/text@1']['output'];
+      readonly recordId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly rowHash: CodecTypes['pg/text@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly seq: CodecTypes['pg/int8@1']['output'];
+      readonly versionId: CodecTypes['pg/uuid@1']['output'] | null;
+    };
+    readonly VaultReceipt: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly originalFileName: CodecTypes['pg/text@1']['output'];
+      readonly receivedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly receivedBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly source: CodecTypes['pg/text@1']['output'];
+      readonly sourceRef: CodecTypes['pg/text@1']['output'] | null;
+      readonly versionId: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly VaultRecord: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly recordType: CodecTypes['pg/text@1']['output'];
+      readonly reportedBy: CodecTypes['pg/text@1']['output'] | null;
+      readonly reportedDate: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly source: CodecTypes['pg/text@1']['output'];
+      readonly sourceRef: CodecTypes['pg/text@1']['output'] | null;
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly vaultId: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly VaultVersion: {
+      readonly capturedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly capturedBy: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly contentHash: CodecTypes['pg/text@1']['output'];
+      readonly fileName: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly mimeType: CodecTypes['pg/text@1']['output'];
+      readonly previousVersionId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly recordId: CodecTypes['pg/uuid@1']['output'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['output'];
+      readonly sizeBytes: CodecTypes['pg/int8@1']['output'];
+      readonly storagePath: CodecTypes['pg/text@1']['output'];
+      readonly versionNo: CodecTypes['pg/int4@1']['output'];
     };
     readonly Vote: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
@@ -4395,6 +4464,75 @@ export type FieldInputTypes = {
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly transactionDate: CodecTypes['pg/date-string@1']['input'];
+    };
+    readonly Vault: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly openedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly openedBy: CodecTypes['pg/uuid@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly VaultCheck: {
+      readonly checkedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly checkedBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly eventsChecked: CodecTypes['pg/int4@1']['input'];
+      readonly filesChecked: CodecTypes['pg/int4@1']['input'];
+      readonly headHash: CodecTypes['pg/text@1']['input'] | null;
+      readonly headSeq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly ok: CodecTypes['pg/bool@1']['input'];
+      readonly problem: CodecTypes['pg/text@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly VaultEvent: {
+      readonly actorProfileId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly contentHash: CodecTypes['pg/text@1']['input'] | null;
+      readonly details: CodecTypes['pg/text@1']['input'];
+      readonly eventType: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly occurredAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly prevHash: CodecTypes['pg/text@1']['input'];
+      readonly recordId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly rowHash: CodecTypes['pg/text@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly seq: CodecTypes['pg/int8@1']['input'];
+      readonly versionId: CodecTypes['pg/uuid@1']['input'] | null;
+    };
+    readonly VaultReceipt: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly originalFileName: CodecTypes['pg/text@1']['input'];
+      readonly receivedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly receivedBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly source: CodecTypes['pg/text@1']['input'];
+      readonly sourceRef: CodecTypes['pg/text@1']['input'] | null;
+      readonly versionId: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly VaultRecord: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly createdBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly recordType: CodecTypes['pg/text@1']['input'];
+      readonly reportedBy: CodecTypes['pg/text@1']['input'] | null;
+      readonly reportedDate: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly source: CodecTypes['pg/text@1']['input'];
+      readonly sourceRef: CodecTypes['pg/text@1']['input'] | null;
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly vaultId: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly VaultVersion: {
+      readonly capturedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly capturedBy: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly contentHash: CodecTypes['pg/text@1']['input'];
+      readonly fileName: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly mimeType: CodecTypes['pg/text@1']['input'];
+      readonly previousVersionId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly recordId: CodecTypes['pg/uuid@1']['input'];
+      readonly schemeId: CodecTypes['pg/uuid@1']['input'];
+      readonly sizeBytes: CodecTypes['pg/int8@1']['input'];
+      readonly storagePath: CodecTypes['pg/text@1']['input'];
+      readonly versionNo: CodecTypes['pg/int4@1']['input'];
     };
     readonly Vote: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -6815,6 +6953,75 @@ export type StorageColumnTypes = {
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly transaction_date: CodecTypes['pg/date-string@1']['output'];
     };
+    readonly vault_checks: {
+      readonly checked_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly checked_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly events_checked: CodecTypes['pg/int4@1']['output'];
+      readonly files_checked: CodecTypes['pg/int4@1']['output'];
+      readonly head_hash: CodecTypes['pg/text@1']['output'] | null;
+      readonly head_seq: CodecTypes['pg/int8@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly ok: CodecTypes['pg/bool@1']['output'];
+      readonly problem: CodecTypes['pg/text@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly vault_events: {
+      readonly actor_profile_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly content_hash: CodecTypes['pg/text@1']['output'] | null;
+      readonly details: CodecTypes['pg/text@1']['output'];
+      readonly event_type: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly occurred_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly prev_hash: CodecTypes['pg/text@1']['output'];
+      readonly record_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly row_hash: CodecTypes['pg/text@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly seq: CodecTypes['pg/int8@1']['output'];
+      readonly version_id: CodecTypes['pg/uuid@1']['output'] | null;
+    };
+    readonly vault_receipts: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly original_file_name: CodecTypes['pg/text@1']['output'];
+      readonly received_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly received_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly source: CodecTypes['pg/text@1']['output'];
+      readonly source_ref: CodecTypes['pg/text@1']['output'] | null;
+      readonly version_id: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly vault_records: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly created_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly record_type: CodecTypes['pg/text@1']['output'];
+      readonly reported_by: CodecTypes['pg/text@1']['output'] | null;
+      readonly reported_date: CodecTypes['pg/date-string@1']['output'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly source: CodecTypes['pg/text@1']['output'];
+      readonly source_ref: CodecTypes['pg/text@1']['output'] | null;
+      readonly title: CodecTypes['pg/text@1']['output'];
+      readonly vault_id: CodecTypes['pg/uuid@1']['output'];
+    };
+    readonly vault_versions: {
+      readonly captured_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly captured_by: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly content_hash: CodecTypes['pg/text@1']['output'];
+      readonly file_name: CodecTypes['pg/text@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly mime_type: CodecTypes['pg/text@1']['output'];
+      readonly previous_version_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly record_id: CodecTypes['pg/uuid@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+      readonly size_bytes: CodecTypes['pg/int8@1']['output'];
+      readonly storage_path: CodecTypes['pg/text@1']['output'];
+      readonly version_no: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly vaults: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly opened_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly opened_by: CodecTypes['pg/uuid@1']['output'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
+    };
     readonly votes: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly motion_id: CodecTypes['pg/uuid@1']['output'];
@@ -9233,6 +9440,75 @@ export type StorageColumnInputTypes = {
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly transaction_date: CodecTypes['pg/date-string@1']['input'];
+    };
+    readonly vault_checks: {
+      readonly checked_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly checked_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly events_checked: CodecTypes['pg/int4@1']['input'];
+      readonly files_checked: CodecTypes['pg/int4@1']['input'];
+      readonly head_hash: CodecTypes['pg/text@1']['input'] | null;
+      readonly head_seq: CodecTypes['pg/int8@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly ok: CodecTypes['pg/bool@1']['input'];
+      readonly problem: CodecTypes['pg/text@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly vault_events: {
+      readonly actor_profile_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly content_hash: CodecTypes['pg/text@1']['input'] | null;
+      readonly details: CodecTypes['pg/text@1']['input'];
+      readonly event_type: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly occurred_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly prev_hash: CodecTypes['pg/text@1']['input'];
+      readonly record_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly row_hash: CodecTypes['pg/text@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly seq: CodecTypes['pg/int8@1']['input'];
+      readonly version_id: CodecTypes['pg/uuid@1']['input'] | null;
+    };
+    readonly vault_receipts: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly original_file_name: CodecTypes['pg/text@1']['input'];
+      readonly received_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly received_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly source: CodecTypes['pg/text@1']['input'];
+      readonly source_ref: CodecTypes['pg/text@1']['input'] | null;
+      readonly version_id: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly vault_records: {
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly created_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly record_type: CodecTypes['pg/text@1']['input'];
+      readonly reported_by: CodecTypes['pg/text@1']['input'] | null;
+      readonly reported_date: CodecTypes['pg/date-string@1']['input'] | null;
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly source: CodecTypes['pg/text@1']['input'];
+      readonly source_ref: CodecTypes['pg/text@1']['input'] | null;
+      readonly title: CodecTypes['pg/text@1']['input'];
+      readonly vault_id: CodecTypes['pg/uuid@1']['input'];
+    };
+    readonly vault_versions: {
+      readonly captured_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly captured_by: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly content_hash: CodecTypes['pg/text@1']['input'];
+      readonly file_name: CodecTypes['pg/text@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly mime_type: CodecTypes['pg/text@1']['input'];
+      readonly previous_version_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly record_id: CodecTypes['pg/uuid@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
+      readonly size_bytes: CodecTypes['pg/int8@1']['input'];
+      readonly storage_path: CodecTypes['pg/text@1']['input'];
+      readonly version_no: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly vaults: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly opened_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly opened_by: CodecTypes['pg/uuid@1']['input'];
+      readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
     };
     readonly votes: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
@@ -12285,6 +12561,81 @@ export namespace Models {
     transactionDate: CodecTypes['pg/date-string@1']['output'];
     readonly [RelationKeys]?: never;
   };
+  export type public_Vault = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    openedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    openedBy: CodecTypes['pg/uuid@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_VaultCheck = {
+    checkedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    checkedBy: CodecTypes['pg/uuid@1']['output'] | null;
+    eventsChecked: CodecTypes['pg/int4@1']['output'];
+    filesChecked: CodecTypes['pg/int4@1']['output'];
+    headHash: CodecTypes['pg/text@1']['output'] | null;
+    headSeq: CodecTypes['pg/int8@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    ok: CodecTypes['pg/bool@1']['output'];
+    problem: CodecTypes['pg/text@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_VaultEvent = {
+    actorProfileId: CodecTypes['pg/uuid@1']['output'] | null;
+    contentHash: CodecTypes['pg/text@1']['output'] | null;
+    details: CodecTypes['pg/text@1']['output'];
+    eventType: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    occurredAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    prevHash: CodecTypes['pg/text@1']['output'];
+    recordId: CodecTypes['pg/uuid@1']['output'] | null;
+    rowHash: CodecTypes['pg/text@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    seq: CodecTypes['pg/int8@1']['output'];
+    versionId: CodecTypes['pg/uuid@1']['output'] | null;
+    readonly [RelationKeys]?: never;
+  };
+  export type public_VaultReceipt = {
+    id: CodecTypes['pg/uuid@1']['output'];
+    originalFileName: CodecTypes['pg/text@1']['output'];
+    receivedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    receivedBy: CodecTypes['pg/uuid@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    source: CodecTypes['pg/text@1']['output'];
+    sourceRef: CodecTypes['pg/text@1']['output'] | null;
+    versionId: CodecTypes['pg/uuid@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_VaultRecord = {
+    createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    createdBy: CodecTypes['pg/uuid@1']['output'] | null;
+    id: CodecTypes['pg/uuid@1']['output'];
+    recordType: CodecTypes['pg/text@1']['output'];
+    reportedBy: CodecTypes['pg/text@1']['output'] | null;
+    reportedDate: CodecTypes['pg/date-string@1']['output'] | null;
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    source: CodecTypes['pg/text@1']['output'];
+    sourceRef: CodecTypes['pg/text@1']['output'] | null;
+    title: CodecTypes['pg/text@1']['output'];
+    vaultId: CodecTypes['pg/uuid@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
+  export type public_VaultVersion = {
+    capturedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    capturedBy: CodecTypes['pg/uuid@1']['output'] | null;
+    contentHash: CodecTypes['pg/text@1']['output'];
+    fileName: CodecTypes['pg/text@1']['output'];
+    id: CodecTypes['pg/uuid@1']['output'];
+    mimeType: CodecTypes['pg/text@1']['output'];
+    previousVersionId: CodecTypes['pg/uuid@1']['output'] | null;
+    recordId: CodecTypes['pg/uuid@1']['output'];
+    schemeId: CodecTypes['pg/uuid@1']['output'];
+    sizeBytes: CodecTypes['pg/int8@1']['output'];
+    storagePath: CodecTypes['pg/text@1']['output'];
+    versionNo: CodecTypes['pg/int4@1']['output'];
+    readonly [RelationKeys]?: never;
+  };
   export type public_Vote = {
     id: CodecTypes['pg/uuid@1']['output'];
     motionId: CodecTypes['pg/uuid@1']['output'];
@@ -13357,6 +13708,12 @@ export declare const models: {
     SupplierBankDetailVersion: Models.public_SupplierBankDetailVersion;
     SupplierInvoice: Models.public_SupplierInvoice;
     SuspenseItem: Models.public_SuspenseItem;
+    Vault: Models.public_Vault;
+    VaultCheck: Models.public_VaultCheck;
+    VaultEvent: Models.public_VaultEvent;
+    VaultReceipt: Models.public_VaultReceipt;
+    VaultRecord: Models.public_VaultRecord;
+    VaultVersion: Models.public_VaultVersion;
     Vote: Models.public_Vote;
     WorkOrder: Models.public_WorkOrder;
     WorksApprovalRecord: Models.public_WorksApprovalRecord;
@@ -27174,6 +27531,510 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
+            readonly vault_checks: {
+              columns: {
+                readonly checked_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly checked_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly events_checked: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly files_checked: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly head_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly head_seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly ok: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly problem: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'vault_checks_scheme_idx';
+                  readonly columns: readonly ['scheme_id', 'checked_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly vault_events: {
+              columns: {
+                readonly actor_profile_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly content_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly details: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', '{}'>;
+                  };
+                  readonly many: false;
+                };
+                readonly event_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly occurred_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly prev_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
+                readonly record_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly row_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', ''>;
+                  };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly seq: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int8@1', '0'>;
+                  };
+                  readonly many: false;
+                };
+                readonly version_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'vault_events_record_idx';
+                  readonly columns: readonly ['record_id', 'seq'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'vault_events_scheme_id_seq_key';
+                  readonly columns: readonly ['scheme_id', 'seq'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly vault_receipts: {
+              columns: {
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly original_file_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly received_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly received_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: "'00000000-0000-0000-0000-000000000000'::uuid";
+                  };
+                  readonly many: false;
+                };
+                readonly source: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly source_ref: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly version_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'vault_receipts_version_idx';
+                  readonly columns: readonly ['version_id', 'received_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly vault_records: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly created_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly record_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly reported_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reported_date: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly source: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly source_ref: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly title: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly vault_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'vault_records_scheme_id_source_ref_key';
+                  readonly columns: readonly ['scheme_id', 'source_ref'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'vault_records_scheme_idx';
+                  readonly columns: readonly ['scheme_id', 'created_at'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly vault_versions: {
+              columns: {
+                readonly captured_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly captured_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly content_hash: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly file_name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly mime_type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly previous_version_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly record_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: "'00000000-0000-0000-0000-000000000000'::uuid";
+                  };
+                  readonly many: false;
+                };
+                readonly size_bytes: {
+                  readonly dataType: 'pg/int8';
+                  readonly codecId: 'pg/int8@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly storage_path: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly version_no: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
+                  };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'vault_versions_record_id_version_no_key';
+                  readonly columns: readonly ['record_id', 'version_no'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'vault_versions_scheme_id_content_hash_key';
+                  readonly columns: readonly ['scheme_id', 'content_hash'];
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'vault_versions_storage_path_key';
+                  readonly columns: readonly ['storage_path'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
+            readonly vaults: {
+              columns: {
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly opened_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly opened_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'vaults_scheme_id_key';
+                  readonly columns: readonly ['scheme_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [];
+            };
             readonly votes: {
               columns: {
                 readonly id: {
@@ -33953,6 +34814,27 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'SuspenseItem';
     };
+    readonly vault_checks: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'VaultCheck';
+    };
+    readonly vault_events: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'VaultEvent';
+    };
+    readonly vault_receipts: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'VaultReceipt';
+    };
+    readonly vault_records: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'VaultRecord';
+    };
+    readonly vault_versions: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'VaultVersion';
+    };
+    readonly vaults: { readonly namespace: 'public' & NamespaceId; readonly model: 'Vault' };
     readonly votes: { readonly namespace: 'public' & NamespaceId; readonly model: 'Vote' };
     readonly work_orders: {
       readonly namespace: 'public' & NamespaceId;
@@ -48040,6 +48922,375 @@ type ContractBase = Omit<
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly transactionDate: { readonly column: 'transaction_date' };
+              };
+            };
+          };
+          readonly Vault: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly openedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly openedBy: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'vaults';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly openedAt: { readonly column: 'opened_at' };
+                readonly openedBy: { readonly column: 'opened_by' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+              };
+            };
+          };
+          readonly VaultCheck: {
+            readonly fields: {
+              readonly checkedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly checkedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly eventsChecked: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly filesChecked: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly headHash: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly headSeq: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly ok: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly problem: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'vault_checks';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly checkedAt: { readonly column: 'checked_at' };
+                readonly checkedBy: { readonly column: 'checked_by' };
+                readonly eventsChecked: { readonly column: 'events_checked' };
+                readonly filesChecked: { readonly column: 'files_checked' };
+                readonly headHash: { readonly column: 'head_hash' };
+                readonly headSeq: { readonly column: 'head_seq' };
+                readonly id: { readonly column: 'id' };
+                readonly ok: { readonly column: 'ok' };
+                readonly problem: { readonly column: 'problem' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+              };
+            };
+          };
+          readonly VaultEvent: {
+            readonly fields: {
+              readonly actorProfileId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly contentHash: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly details: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly eventType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly occurredAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly prevHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly recordId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly rowHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly seq: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly versionId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'vault_events';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly actorProfileId: { readonly column: 'actor_profile_id' };
+                readonly contentHash: { readonly column: 'content_hash' };
+                readonly details: { readonly column: 'details' };
+                readonly eventType: { readonly column: 'event_type' };
+                readonly id: { readonly column: 'id' };
+                readonly occurredAt: { readonly column: 'occurred_at' };
+                readonly prevHash: { readonly column: 'prev_hash' };
+                readonly recordId: { readonly column: 'record_id' };
+                readonly rowHash: { readonly column: 'row_hash' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly seq: { readonly column: 'seq' };
+                readonly versionId: { readonly column: 'version_id' };
+              };
+            };
+          };
+          readonly VaultReceipt: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly originalFileName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly receivedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly receivedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly source: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceRef: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly versionId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'vault_receipts';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly originalFileName: { readonly column: 'original_file_name' };
+                readonly receivedAt: { readonly column: 'received_at' };
+                readonly receivedBy: { readonly column: 'received_by' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly source: { readonly column: 'source' };
+                readonly sourceRef: { readonly column: 'source_ref' };
+                readonly versionId: { readonly column: 'version_id' };
+              };
+            };
+          };
+          readonly VaultRecord: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly createdBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly recordType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reportedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reportedDate: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly source: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sourceRef: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly title: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly vaultId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'vault_records';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
+                readonly id: { readonly column: 'id' };
+                readonly recordType: { readonly column: 'record_type' };
+                readonly reportedBy: { readonly column: 'reported_by' };
+                readonly reportedDate: { readonly column: 'reported_date' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly source: { readonly column: 'source' };
+                readonly sourceRef: { readonly column: 'source_ref' };
+                readonly title: { readonly column: 'title' };
+                readonly vaultId: { readonly column: 'vault_id' };
+              };
+            };
+          };
+          readonly VaultVersion: {
+            readonly fields: {
+              readonly capturedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly capturedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly contentHash: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fileName: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly mimeType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly previousVersionId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly recordId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly sizeBytes: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int8@1' };
+              };
+              readonly storagePath: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly versionNo: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'vault_versions';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly capturedAt: { readonly column: 'captured_at' };
+                readonly capturedBy: { readonly column: 'captured_by' };
+                readonly contentHash: { readonly column: 'content_hash' };
+                readonly fileName: { readonly column: 'file_name' };
+                readonly id: { readonly column: 'id' };
+                readonly mimeType: { readonly column: 'mime_type' };
+                readonly previousVersionId: { readonly column: 'previous_version_id' };
+                readonly recordId: { readonly column: 'record_id' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly sizeBytes: { readonly column: 'size_bytes' };
+                readonly storagePath: { readonly column: 'storage_path' };
+                readonly versionNo: { readonly column: 'version_no' };
               };
             };
           };

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { captureMeetingNotice } from "@/lib/vault/sources";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { getMeetingById, updateMeeting } from "@/lib/queries/meetings";
@@ -116,6 +117,8 @@ export async function issueNoticeAction(
       compliant: validation.compliant,
       content,
     });
+    // Into the building's vault, if it has one (trial). Never fails this.
+    await captureMeetingNotice(notice.id, profile.id);
 
     // Recipients from the active scheme membership (owners and committee).
     const sentAt = new Date().toISOString();

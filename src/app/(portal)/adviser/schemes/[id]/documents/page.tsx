@@ -2,6 +2,11 @@ import { connection } from "next/server";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { DocumentsTabContent } from "@/components/documents/documents-tab-content";
 import { requireAdviserScheme } from "../_sections/require-adviser-scheme";
+import { isVaultTrialBuilding } from "@/config/vault";
+import { vaultLibraryView } from "@/lib/vault/queries";
+import { VaultBanner, type VaultBannerData } from "@/components/vault/vault-banner";
+import { IssuedByStrataVerze } from "@/components/vault/issued-by-strataverze";
+import type { LabelTone } from "@/lib/vault/labels";
 
 /** Documents section (moved from the former Documents tab). */
 export default async function DocumentsSectionPage({
@@ -16,8 +21,29 @@ export default async function DocumentsSectionPage({
 
   const documents = await getDocumentsForScheme(id);
 
+  // The building vault trial: the library is also the vault's front door.
+  const trial = isVaultTrialBuilding(scheme.planNumber);
+  const vault = trial ? await vaultLibraryView(id) : null;
+  const banner: VaultBannerData | null = !vault
+    ? null
+    : vault.vault
+      ? { opened: true, openedAt: vault.vault.openedAt, recordCount: vault.recordCount, lastCheck: vault.lastCheck, pendingCount: vault.pending.length }
+      : { opened: false };
+  const vaultLabels: Record<string, { tone: LabelTone; text: string; detail: string }> | undefined =
+    vault?.vault
+      ? Object.fromEntries(
+          documents.map((d) => {
+            const label = vault.byDocumentId[d.id]?.latest?.labels[0];
+            return [d.id, label ?? { tone: "warning" as const, text: "Not yet in the vault", detail: "Use \u201cBring them in\u201d above to capture it." }];
+          }),
+        )
+      : undefined;
+
   return (
+    <>
+    {banner && <VaultBanner schemeId={id} data={banner} />}
     <DocumentsTabContent
+      vaultLabels={vaultLabels}
       schemeId={id}
       schemePlanNumber={scheme.planNumber}
       documents={documents.map((d) => ({
@@ -40,5 +66,12 @@ export default async function DocumentsSectionPage({
         createdAt: String(d.createdAt),
       }))}
     />
+    {vault?.vault && (
+      <IssuedByStrataVerze
+        schemeId={id}
+        records={vault.issuedByStrataVerze.map((r) => ({ id: r.id, title: r.title, recordType: r.recordType, createdAt: r.createdAt, label: r.latest?.labels[0] ?? null }))}
+      />
+    )}
+    </>
   );
 }

@@ -3945,3 +3945,117 @@ model PriorYearActual {
   @@index([schemeId, financialYear])
   @@map("prior_year_actuals")
 }
+
+// ─── Building vault (trial, 24 Oct 2026) ─────────────────────────────────────
+// prisma/migrations/20261029_vault_trial.sql. Every table is append-only;
+// times, numbers and hashes are set by database triggers.
+
+model Vault {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId  String   @unique @map("scheme_id") @db.Uuid
+  openedBy  String   @map("opened_by") @db.Uuid
+  /// Set by the database.
+  openedAt  DateTime @default(now()) @db.Timestamptz @map("opened_at")
+
+  @@map("vaults")
+}
+
+model VaultRecord {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vaultId      String    @map("vault_id") @db.Uuid
+  schemeId     String    @map("scheme_id") @db.Uuid
+  recordType   String    @map("record_type")
+  title        String
+  /// UPLOAD or STRATAVERZE.
+  source       String
+  sourceRef    String?   @map("source_ref")
+  reportedDate DateTime? @db.Date @map("reported_date")
+  reportedBy   String?   @map("reported_by")
+  createdBy    String?   @map("created_by") @db.Uuid
+  /// Set by the database.
+  createdAt    DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  @@unique([schemeId, sourceRef])
+  @@index([schemeId, createdAt], map: "vault_records_scheme_idx")
+  @@map("vault_records")
+}
+
+model VaultVersion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recordId          String   @map("record_id") @db.Uuid
+  /// Set by the database from the record.
+  schemeId          String   @default(dbgenerated("'00000000-0000-0000-0000-000000000000'::uuid")) @map("scheme_id") @db.Uuid
+  /// Set by the database.
+  versionNo         Int      @default(0) @map("version_no")
+  /// Set by the database.
+  previousVersionId String?  @map("previous_version_id") @db.Uuid
+  contentHash       String   @map("content_hash")
+  sizeBytes         BigInt   @map("size_bytes")
+  mimeType          String   @map("mime_type")
+  fileName          String   @map("file_name")
+  storagePath       String   @unique @map("storage_path")
+  capturedBy        String?  @map("captured_by") @db.Uuid
+  /// Set by the database.
+  capturedAt        DateTime @default(now()) @db.Timestamptz @map("captured_at")
+
+  @@unique([recordId, versionNo])
+  @@unique([schemeId, contentHash])
+  @@map("vault_versions")
+}
+
+model VaultReceipt {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId        String   @map("version_id") @db.Uuid
+  /// Set by the database from the version.
+  schemeId         String   @default(dbgenerated("'00000000-0000-0000-0000-000000000000'::uuid")) @map("scheme_id") @db.Uuid
+  source           String
+  sourceRef        String?  @map("source_ref")
+  originalFileName String   @map("original_file_name")
+  receivedBy       String?  @map("received_by") @db.Uuid
+  /// Set by the database.
+  receivedAt       DateTime @default(now()) @db.Timestamptz @map("received_at")
+
+  @@index([versionId, receivedAt], map: "vault_receipts_version_idx")
+  @@map("vault_receipts")
+}
+
+model VaultEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId       String   @map("scheme_id") @db.Uuid
+  /// Set by the database.
+  seq            BigInt   @default(0)
+  /// Set by the database.
+  occurredAt     DateTime @default(now()) @db.Timestamptz @map("occurred_at")
+  eventType      String   @map("event_type")
+  recordId       String?  @map("record_id") @db.Uuid
+  versionId      String?  @map("version_id") @db.Uuid
+  contentHash    String?  @map("content_hash")
+  actorProfileId String?  @map("actor_profile_id") @db.Uuid
+  /// Canonical JSON, hashed as written.
+  details        String   @default("{}")
+  /// Set by the database.
+  prevHash       String   @default("") @map("prev_hash")
+  /// Set by the database.
+  rowHash        String   @default("") @map("row_hash")
+
+  @@unique([schemeId, seq])
+  @@index([recordId, seq], map: "vault_events_record_idx")
+  @@map("vault_events")
+}
+
+model VaultCheck {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId      String   @map("scheme_id") @db.Uuid
+  /// Set by the database.
+  checkedAt     DateTime @default(now()) @db.Timestamptz @map("checked_at")
+  checkedBy     String?  @map("checked_by") @db.Uuid
+  ok            Boolean
+  eventsChecked Int      @map("events_checked")
+  filesChecked  Int      @map("files_checked")
+  headSeq       BigInt?  @map("head_seq")
+  headHash      String?  @map("head_hash")
+  problem       String?
+
+  @@index([schemeId, checkedAt], map: "vault_checks_scheme_idx")
+  @@map("vault_checks")
+}

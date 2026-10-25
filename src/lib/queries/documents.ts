@@ -89,9 +89,18 @@ export async function updateDocument(
     supplier: string | null;
     comments: string | null;
     visibility: string;
+    /** A new file for the document (the vault keeps every earlier one). */
+    fileUrl: string;
+    fileName: string;
+    fileSize: number | null;
+    mimeType: string | null;
   }>,
 ) {
   const update: Record<string, unknown> = {};
+  if (data.fileUrl !== undefined) update.fileUrl = data.fileUrl;
+  if (data.fileName !== undefined) update.fileName = data.fileName;
+  if (data.fileSize !== undefined) update.fileSize = data.fileSize;
+  if (data.mimeType !== undefined) update.mimeType = data.mimeType;
   if (data.title !== undefined) update.title = data.title;
   if (data.description !== undefined) update.description = data.description;
   if (data.category !== undefined) update.category = data.category;

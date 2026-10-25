@@ -47,6 +47,10 @@ export const CAPABILITIES = {
 
   /** Full control of the scheme document library. */
   "documents.manage": ["ADVISER"],
+  /** The building vault (trial, 24 Oct 2026): reading it, its timeline and checks. */
+  "vault.read": ["ADVISER"],
+  /** Opening the vault, adding versions and notes, running checks and exporting evidence. */
+  "vault.manage": ["ADVISER"],
   /** Publishing official documents (minutes, by-laws, financial). */
   "documents.publish": ["ADVISER", "COMMITTEE"],
 

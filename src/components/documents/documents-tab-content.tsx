@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { DocumentUploadModal } from "./document-upload-modal";
 import { DocumentViewer } from "./document-viewer";
 import { stageUpload } from "@/lib/storage/client-upload";
+import { VaultLabelChip } from "@/components/vault/vault-label";
+import { VaultRecordPanel } from "@/components/vault/vault-record-panel";
+import type { LabelTone } from "@/lib/vault/labels";
 import {
   uploadFileAction,
   updateDocumentMetadataAction,
@@ -50,12 +53,15 @@ type Props = {
   schemeId: string;
   schemePlanNumber: string;
   documents: DocumentRecord[];
+  /** Building vault trial: each document's vault label, when the vault is open. */
+  vaultLabels?: Record<string, { tone: LabelTone; text: string; detail: string }>;
 };
 
 export function DocumentsTabContent({
   schemeId,
   schemePlanNumber,
   documents: initialDocuments,
+  vaultLabels,
 }: Props) {
   const router = useRouter();
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -338,6 +344,7 @@ export function DocumentsTabContent({
               Unable to load document preview.
             </div>
           )}
+          {vaultLabels && <VaultRecordPanel key={selectedDoc.id} schemeId={schemeId} documentId={selectedDoc.id} />}
         </div>
       )}
 
@@ -362,6 +369,11 @@ export function DocumentsTabContent({
                   {formatDate(doc.createdAt)}
                   {doc.fileSize ? ` · ${formatSize(doc.fileSize)}` : ""}
                 </p>
+                {vaultLabels?.[doc.id] && (
+                  <span className="mt-1 block">
+                    <VaultLabelChip {...vaultLabels[doc.id]} />
+                  </span>
+                )}
               </div>
               <span className="flex-shrink-0 ml-3 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
                 {doc.fileName.split(".").pop()?.toUpperCase() ?? "FILE"}

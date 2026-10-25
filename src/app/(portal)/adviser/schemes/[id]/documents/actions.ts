@@ -17,6 +17,15 @@ import { canSeeDocument, parseVisibility } from "@/lib/documents/visibility";
 import { documentViewers } from "@/lib/documents/viewers";
 import { logActivity } from "@/lib/queries/activity-log";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
+import { captureLibraryDocument, captureQuietly, logLibraryChange } from "@/lib/vault/sources";
+import { getVault } from "@/lib/vault/capture";
+
+/** Into the building's vault, if it has one (trial). A failure leaves it listed as not yet in the vault. */
+async function captureIntoVault(schemeId: string, documentId: string, actorId: string) {
+  await captureQuietly(schemeId, `Document:${documentId}`, async () =>
+    (await getVault(schemeId)) ? captureLibraryDocument(schemeId, documentId, actorId) : null,
+  );
+}
 
 export type DocumentFormState = {
   error?: string;
@@ -94,6 +103,7 @@ export async function uploadDocumentAction(
       entityId: doc.id,
       metadata: { title, category, fileName: upload.fileName },
     });
+    await captureIntoVault(schemeId, doc.id, profile.id);
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}/documents/${doc.id}`);
@@ -180,6 +190,7 @@ export async function uploadFileAction(
       entityId: doc.id,
       metadata: { title, category, fileName: upload.fileName },
     });
+    await captureIntoVault(schemeId, doc.id, profile.id);
 
     return { id: doc.id };
   } catch (err) {
@@ -197,7 +208,7 @@ export async function updateDocumentMetadataAction(
   data: Record<string, string>,
 ): Promise<{ error?: string }> {
   try {
-    await requireSchemeAccess(schemeId, "documents.manage");
+    const { profile } = await requireSchemeAccess(schemeId, "documents.manage");
 
     if (!data.title?.trim()) {
       return { error: "Name is required." };
@@ -218,6 +229,12 @@ export async function updateDocumentMetadataAction(
       supplier: data.supplier || null,
       comments: data.comments || null,
     });
+    // The vault keeps the original details; the change is logged against it.
+    await logLibraryChange(schemeId, documentId, profile.id, "metadata_changed", {
+      title: data.title.trim(),
+      documentDate: data.documentDate || null,
+      ...(visibility ? { visibility } : {}),
+    });
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
@@ -235,9 +252,10 @@ export async function removeDocumentAction(
   documentId: string,
 ): Promise<{ error?: string }> {
   try {
-    await requireSchemeAccess(schemeId, "documents.manage");
+    const { profile } = await requireSchemeAccess(schemeId, "documents.manage");
     assertInScheme(await getDocumentById(documentId), schemeId, "Document");
     await deleteDocument(schemeId, documentId);
+    await logLibraryChange(schemeId, documentId, profile.id, "removed", {});
     revalidatePath(`/adviser/schemes/${schemeId}`);
     return {};
   } catch (err) {
@@ -253,7 +271,7 @@ export async function updateDocumentAction(
   formData: FormData,
 ): Promise<DocumentFormState> {
   try {
-    await requireSchemeAccess(schemeId, "documents.manage");
+    const { profile } = await requireSchemeAccess(schemeId, "documents.manage");
 
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -272,6 +290,7 @@ export async function updateDocumentAction(
       description: description || null,
       category,
     });
+    await logLibraryChange(schemeId, documentId, profile.id, "metadata_changed", { title, category });
     revalidatePath(`/adviser/schemes/${schemeId}/documents/${documentId}`);
     return {};
   } catch (err) {
@@ -285,10 +304,11 @@ export async function deleteDocumentAction(
   documentId: string,
 ) {
   try {
-    await requireSchemeAccess(schemeId, "documents.manage");
+    const { profile } = await requireSchemeAccess(schemeId, "documents.manage");
 
     assertInScheme(await getDocumentById(documentId), schemeId, "Document");
     await deleteDocument(schemeId, documentId);
+    await logLibraryChange(schemeId, documentId, profile.id, "removed", {});
     revalidatePath(`/adviser/schemes/${schemeId}`);
     redirect(`/adviser/schemes/${schemeId}`);
   } catch (err) {

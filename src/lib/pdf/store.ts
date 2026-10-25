@@ -8,6 +8,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
+import { captureGeneratedPdf } from "@/lib/vault/sources";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const varchar = <N extends number>(v: string) => v as unknown as Varchar<N>;
@@ -63,6 +64,16 @@ export async function storeGeneratedPdf(input: {
       financialDocumentId: id,
       contentBase64: Buffer.from(input.bytes).toString("base64"),
     });
+  });
+  // Into the building's vault, if it has one (trial). Never fails this.
+  await captureGeneratedPdf({
+    schemeId: input.schemeId,
+    financialDocumentId: id,
+    documentType: input.documentType,
+    fileName: input.fileName,
+    bytes: input.bytes,
+    actorId: input.actorId,
+    documentDate: input.documentDate,
   });
   return { id, hash, reused: false };
 }
