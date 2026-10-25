@@ -41,6 +41,7 @@ const ACTION_LABELS: Record<string, string> = {
   WORKS_CONTRACTORS_INVITED: "invited contractors to quote",
   WORKS_RFQ_DEADLINE_CHANGED: "changed a quote deadline",
   WORKS_QUOTE_SUBMITTED: "submitted a quote",
+  WORKS_RFQ_CANCELLED: "took a request off the marketplace",
 };
 
 const ACTION_ICONS: Record<string, string> = {
@@ -84,6 +85,7 @@ const ACTION_ICONS: Record<string, string> = {
   WORKS_CONTRACTORS_INVITED: "✉️",
   WORKS_RFQ_DEADLINE_CHANGED: "📅",
   WORKS_QUOTE_SUBMITTED: "📄",
+  WORKS_RFQ_CANCELLED: "⏹️",
 };
 
 type ActivityEntry = {

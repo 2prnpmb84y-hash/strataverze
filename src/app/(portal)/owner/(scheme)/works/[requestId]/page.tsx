@@ -83,7 +83,7 @@ export default async function OwnerWorksRequestPage({ params }: { params: Promis
             rfq ? (
               <QuotesPanel schemeId={row.schemeId} requestId={r.id} rfq={rfq} canAct canPropose decisionOpen={!!view.openDecisionId} direct={direct} />
             ) : (
-              <OpenForQuotes schemeId={row.schemeId} requestId={r.id} />
+              <OpenForQuotes schemeId={row.schemeId} requestId={r.id} needsSummary={!view.decisions.some((d) => d.outcome === "QUOTES" && d.status === "DECIDED" && d.summary)} ownerTitle={r.title} ownerDescription={r.description} />
             )
           ) : (
             <p className="text-sm text-ink">{rfq ? `${rfq.statusLabel}. ${rfq.quotes.length} quote${rfq.quotes.length === 1 ? "" : "s"} so far.` : "Quotes are being arranged."}</p>

@@ -9,8 +9,10 @@ import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
+  cancelRfqAction,
   inviteContractorsAction,
   openForQuotesAction,
+  sendQuoteOrderAction,
   proposeQuoteApprovalAction,
   setRfqDeadlinesAction,
   type WorksFormState,
@@ -41,28 +43,76 @@ function useRefreshingAction(action: (prev: WorksFormState, fd: FormData) => Pro
   }, {});
 }
 
-export function OpenForQuotes({ schemeId, requestId }: { schemeId: string; requestId: string }) {
+export function OpenForQuotes({ schemeId, requestId, needsSummary, ownerTitle, ownerDescription }: { schemeId: string; requestId: string; needsSummary: boolean; ownerTitle: string; ownerDescription: string }) {
+  const [state, formAction, pending] = useRefreshingAction((p, fd) => openForQuotesAction(schemeId, requestId, p, fd));
+  return (
+    <form action={formAction} className="space-y-3">
+      <p className="text-sm text-ink-muted">The committee decided to get quotes, but the request has not gone to contractors yet.</p>
+      {needsSummary && (
+        <div className="space-y-3 rounded-[var(--radius-card)] border border-line bg-muted p-3">
+          <p className="text-sm text-ink">Write what contractors see before they are invited. Leave out names, unit numbers and anything private.</p>
+          <details className="text-xs text-ink-muted">
+            <summary className="cursor-pointer">The owner&apos;s words, for reference (not shown to contractors)</summary>
+            <p className="mt-1 font-medium">{ownerTitle}</p>
+            <p className="mt-1 whitespace-pre-wrap">{ownerDescription}</p>
+          </details>
+          <div>
+            <label htmlFor="ofq-title" className="block text-sm font-medium text-ink mb-1.5">Title<span className="text-red-500 ml-0.5">*</span></label>
+            <input id="ofq-title" name="summaryTitle" required maxLength={300} className={field} />
+          </div>
+          <div>
+            <label htmlFor="ofq-summary" className="block text-sm font-medium text-ink mb-1.5">Summary<span className="text-red-500 ml-0.5">*</span></label>
+            <textarea id="ofq-summary" name="summary" required rows={4} maxLength={5000} className={field} />
+          </div>
+        </div>
+      )}
+      <Message state={state} />
+      <Button type="submit" disabled={pending}>{pending ? "Opening..." : "Open to contractors"}</Button>
+    </form>
+  );
+}
+
+function SendQuoteOrder({ schemeId, requestId }: { schemeId: string; requestId: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [state, setState] = useState<WorksFormState>({});
   return (
-    <div className="space-y-2">
-      <p className="text-sm text-ink-muted">The committee decided to get quotes, but the request has not gone to contractors yet.</p>
+    <div className="space-y-2 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 p-4">
+      <p className="text-sm text-amber-900">A quote was approved, but its work order has not gone out.</p>
       <Button
         type="button"
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const r = await openForQuotesAction(schemeId, requestId);
+            const r = await sendQuoteOrderAction(schemeId, requestId);
             setState(r);
             if (r.done) router.refresh();
           })
         }
       >
-        {pending ? "Opening..." : "Open to contractors"}
+        {pending ? "Sending..." : "Send the work order"}
       </Button>
       <Message state={state} />
     </div>
+  );
+}
+
+function CancelRfq({ schemeId, requestId, rfqId }: { schemeId: string; requestId: string; rfqId: string }) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction, pending] = useRefreshingAction((p, fd) => cancelRfqAction(schemeId, requestId, rfqId, p, fd));
+  if (state.done) return <Message state={state} />;
+  if (!open) return <Button type="button" variant="ghost" onClick={() => setOpen(true)}>Take off the marketplace</Button>;
+  return (
+    <form action={formAction} className="space-y-2">
+      <p className="text-sm text-ink">Contractors who were interested or invited are told it is no longer going ahead. The request goes back to the committee to decide again.</p>
+      <label htmlFor="rfq-cancel" className="block text-sm text-ink">Reason <span className="text-ink-muted">(for the record)</span></label>
+      <input id="rfq-cancel" name="reason" maxLength={2000} className={field} />
+      <Message state={state} />
+      <div className="flex gap-2">
+        <Button type="submit" variant="danger" disabled={pending}>{pending ? "Saving..." : "Take it off"}</Button>
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Keep it open</Button>
+      </div>
+    </form>
   );
 }
 
@@ -232,12 +282,23 @@ export function QuotesPanel({
         </div>
       )}
 
+      {canAct && rfq.needsOrder && <SendQuoteOrder schemeId={schemeId} requestId={requestId} />}
+
       {canAct && rfq.canInvite && <Invite schemeId={schemeId} requestId={requestId} rfq={rfq} direct={direct} />}
 
       <div>
         <p className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Quotes ({rfq.quotes.length})</p>
         {rfq.quotes.length === 0 ? (
           <p className="text-sm text-ink-muted">No quotes yet.</p>
+        ) : rfq.sealed ? (
+          <div className="space-y-1">
+            <ul className="text-sm text-ink list-disc pl-5">
+              {rfq.quotes.map((q) => (
+                <li key={q.id}>{q.name} has quoted</li>
+              ))}
+            </ul>
+            <p className="text-xs text-ink-muted">Quotes stay sealed until quotes close, or every invited contractor has quoted, so no price can reach a contractor still able to change theirs.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -280,7 +341,8 @@ export function QuotesPanel({
             </table>
           </div>
         )}
-        {rfq.quotes.length > 0 && !rfq.readyToApprove && <p className="mt-2 text-xs text-ink-muted">You can approve a quote once quotes close, or once every invited contractor has quoted.</p>}
+        {rfq.quotes.length > 0 && !rfq.readyToApprove && !rfq.sealed && rfq.status !== "AWARDED" && <p className="mt-2 text-xs text-ink-muted">You can approve a quote once quotes close, or once every invited contractor has quoted.</p>}
+        {canAct && rfq.canCancel && <div className="mt-4"><CancelRfq schemeId={schemeId} requestId={requestId} rfqId={rfq.id} /></div>}
         {over && <p className="mt-2 text-xs text-ink-muted">Over ${rfq.twoQuoteThreshold.toLocaleString("en-AU")}, at least {rfq.minimumQuotes} quotes are needed before one is approved (SSMA s 102).</p>}
         {decisionOpen && <p className="mt-2 text-xs text-ink-muted">A proposal is open above. Vote on it first.</p>}
         <p className="mt-2 text-xs text-ink-muted">Quote links last 15 minutes. Reload the page if one does not open.</p>

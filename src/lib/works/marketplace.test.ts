@@ -11,7 +11,10 @@ vi.mock("@/lib/storage/uploads", () => uploads);
 
 import { sharedFake } from "@/test/fake-orm";
 import {
+  cancelRfq,
   checkQuote,
+  reopenAfterOrderEnded,
+  sydneyEndOfDay,
   closeOutQuotes,
   invite,
   jobForContractor,
@@ -271,3 +274,73 @@ describe("deadlines", () => {
     await expect(setDeadlines({ schemeId: A, rfqId: String(rfq().id), quoteClosesAt: "2020-01-01" })).rejects.toThrow(/future/);
   });
 });
+
+describe("review fixes", () => {
+  beforeEach(async () => {
+    seed();
+    await toQuoting();
+    await submitQuote({ rfqId: String(rfq().id), businessIds: ["c1"], profileId: "p1", quote: quote(900) });
+    await submitQuote({ rfqId: String(rfq().id), businessIds: ["c2"], profileId: "p2", quote: quote(1100) });
+  });
+  const quoteId = (biz: string) => String(sharedFake.table("WorksQuotation").find((q) => q.contractorBusinessId === biz)!.id);
+
+  it("quotes are fixed while an approval vote is open", async () => {
+    await proposeQuoteApproval({ schemeId: A, requestId: "req", quotationId: quoteId("c1"), actor: member("m1"), note: null });
+    await expect(submitQuote({ rfqId: String(rfq().id), businessIds: ["c1"], profileId: "p1", quote: quote(60000) })).rejects.toThrow(/voting on the quotes/);
+    await expect(withdrawQuote({ rfqId: String(rfq().id), businessIds: ["c1"] })).rejects.toThrow(/voting on the quotes/);
+  });
+
+  it("a quote whose total changed after the proposal is not approved", async () => {
+    const p = await proposeQuoteApproval({ schemeId: A, requestId: "req", quotationId: quoteId("c1"), actor: member("m1"), note: null });
+    sharedFake.table("WorksQuotation").find((q) => q.contractorBusinessId === "c1")!.totalAmount = "60000.00";
+    const v = await vote({ schemeId: A, decisionId: p.decisionId, actor: member("m2"), vote: "FOR", comment: null });
+    expect(v.applied).toBe(false);
+    expect(sharedFake.table("WorksQuotation").find((q) => q.contractorBusinessId === "c1")?.status).toBe("SUBMITTED");
+  });
+
+  it("after the chosen contractor declines, the committee can approve another", async () => {
+    const p = await proposeQuoteApproval({ schemeId: A, requestId: "req", quotationId: quoteId("c1"), actor: member("m1"), note: null });
+    await vote({ schemeId: A, decisionId: p.decisionId, actor: member("m2"), vote: "FOR", comment: null });
+    sharedFake.table("WorksWorkOrder").push({ id: "wo1", requestId: "req", schemeId: A, status: "DECLINED", contractorBusinessId: "c1" });
+    expect(await reopenAfterOrderEnded("req")).toBe(true);
+    expect(rfq().status).toBe("CLOSED");
+    expect(sharedFake.table("WorksRequest")[0].status).toBe("PROCUREMENT");
+    expect(sharedFake.table("WorksQuotation").find((q) => q.contractorBusinessId === "c1")?.status).toBe("DECLINED");
+    const again = await proposeQuoteApproval({ schemeId: A, requestId: "req", quotationId: quoteId("c2"), actor: member("m1"), note: null });
+    const v = await vote({ schemeId: A, decisionId: again.decisionId, actor: member("m3"), vote: "FOR", comment: null });
+    expect(v.applied).toBe(true);
+    expect(rfq().status).toBe("AWARDED");
+  });
+
+  it("after a quote is approved, only the chosen contractor keeps the address", async () => {
+    const p = await proposeQuoteApproval({ schemeId: A, requestId: "req", quotationId: quoteId("c1"), actor: member("m1"), note: null });
+    await vote({ schemeId: A, decisionId: p.decisionId, actor: member("m2"), vote: "FOR", comment: null });
+    expect((await jobForContractor(String(rfq().id), ["c1"]))?.building).not.toBeNull();
+    expect((await jobForContractor(String(rfq().id), ["c2"]))).toMatchObject({ building: null, contact: null, location: null, photos: [] });
+  });
+
+  it("a request can be taken off the marketplace and goes back to the committee", async () => {
+    const r = await cancelRfq({ schemeId: A, rfqId: String(rfq().id), reason: "Owner fixed it" });
+    expect(r.businessIds.sort()).toEqual(["c1", "c2"]);
+    expect(rfq().status).toBe("CANCELLED");
+    expect(sharedFake.table("WorksRequest")[0].status).toBe("SUBMITTED");
+  });
+});
+
+describe("sealed quotes and deadlines", () => {
+  it("the committee sees who quoted, but not the prices, until quotes can be compared", async () => {
+    seed();
+    await toQuoting(["c1", "c2"]);
+    await submitQuote({ rfqId: String(rfq().id), businessIds: ["c1"], profileId: "p1", quote: { ...quote(900), uploadId: "u1" } });
+    const view = await rfqForCommittee(A, "req");
+    expect(view?.sealed).toBe(true);
+    expect(view?.quotes[0]).toMatchObject({ name: "Ace Plumbing", total: 0, documentUrl: null, inclusions: "" });
+  });
+
+  it("a deadline is 11.59 pm Sydney time on that day, in or out of daylight saving", () => {
+    expect(sydneyEndOfDay("2026-12-01")?.toISOString()).toBe("2026-12-01T12:59:00.000Z");
+    expect(sydneyEndOfDay("2026-07-01")?.toISOString()).toBe("2026-07-01T13:59:00.000Z");
+    expect(sydneyEndOfDay("not a date")).toBeNull();
+  });
+});
+

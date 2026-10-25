@@ -460,3 +460,22 @@ export async function notifyNotSelected(input: { schemeId: string; title: string
   }
 }
 
+/** A job taken off the marketplace: to the contractors interested or invited. */
+export async function notifyRfqCancelled(input: { schemeId: string; title: string; businessIds: string[] }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await contractorContacts(input.businessIds), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `No longer going ahead: ${input.title}`,
+        heading: "This job is no longer going ahead",
+        lines: [`Hello ${p.name},`, `${s.name} is no longer seeking quotes for "${input.title}". Thank you for your interest.`],
+        buttonLabel: "Your quote requests",
+        url: `${siteUrl()}/supplier/quotes`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] job cancelled emails failed:", err);
+  }
+}
+

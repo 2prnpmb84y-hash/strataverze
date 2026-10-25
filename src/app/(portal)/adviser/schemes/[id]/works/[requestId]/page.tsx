@@ -209,7 +209,7 @@ export default async function WorksRequestDetailPage({
           {rfq ? (
             <QuotesPanel schemeId={id} requestId={requestId} rfq={rfq} canAct={mayChoose} canPropose={canProposeQuote} decisionOpen={!!view.openDecisionId} direct={direct} />
           ) : mayChoose ? (
-            <OpenForQuotes schemeId={id} requestId={requestId} />
+            <OpenForQuotes schemeId={id} requestId={requestId} needsSummary={!view.decisions.some((d) => d.outcome === "QUOTES" && d.status === "DECIDED" && d.summary)} ownerTitle={view.request.title} ownerDescription={view.request.description} />
           ) : (
             <p className="text-sm text-ink-muted">Not yet open to contractors.</p>
           )}

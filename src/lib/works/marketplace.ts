@@ -29,6 +29,22 @@ const vc = <N extends number>(v: string) => v as unknown as Varchar<N>;
 const money = (v: number) => v.toFixed(2) as unknown as Numeric<12, 2>;
 const DAY = 86_400_000;
 
+/**
+ * The last minute (11.59 pm) of a Sydney calendar day, as an instant. Sydney
+ * is UTC+10, or UTC+11 in daylight saving; the right one is the offset at
+ * which that instant reads 11.59 pm on that date in Sydney.
+ */
+export function sydneyEndOfDay(date: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  for (const offset of ["+11:00", "+10:00"]) {
+    const d = new Date(`${date}T23:59:00${offset}`);
+    if (Number.isNaN(d.getTime())) return null;
+    const local = d.toLocaleString("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+    if (local.startsWith(date) && /23:59$/.test(local)) return d;
+  }
+  return null;
+}
+
 export class MarketplaceError extends Error {}
 
 function isUniqueViolation(err: unknown): boolean {
@@ -220,14 +236,16 @@ export async function jobForContractor(rfqId: string, businessIds: string[], now
   const businessId = invitation?.contractorBusinessId ?? eligibleBusiness!.id;
   const interest = await db.orm.public.WorksRfqInterest.where((i) => and(i.rfqId.eq(rfq.id), i.contractorBusinessId.eq(businessId), i.withdrawnAt.isNull())).first();
   const quote = await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.contractorBusinessId.eq(businessId))).first();
-  const showFull = invited;
+  // Invited contractors see the address and a contact while quotes are open
+  // or being compared; after a quote is approved, only the chosen one does.
+  const showFull = invited && (["QUOTING", "CLOSED"].includes(String(rfq.status)) || quote?.status === "ACCEPTED");
   const [scheme, request, inviter] = await Promise.all([
     db.orm.public.Scheme.where((s) => s.id.eq(rfq.schemeId)).first(),
     db.orm.public.WorksRequest.where((r) => and(r.id.eq(rfq.requestId!), r.schemeId.eq(rfq.schemeId))).first(),
     showFull && invitation ? db.orm.public.Profile.where((p) => p.id.eq(invitation.invitedById)).first() : null,
   ]);
   // File names can carry an owner's name, so contractors get only the pictures.
-  const photos = invitation && !invited ? [] : (await requestPhotos(rfq.schemeId, rfq.requestId)).map((p) => ({ id: p.id, url: p.url, fileName: "Photo" }));
+  const photos = (invitation && !invited) || (invited && !showFull) ? [] : (await requestPhotos(rfq.schemeId, rfq.requestId)).map((p) => ({ id: p.id, url: p.url, fileName: "Photo" }));
   const quoteOpen = invited && rfq.status === "QUOTING" && !!rfq.quoteClosesAt && new Date(String(rfq.quoteClosesAt)) > now;
   return {
     id: rfq.id,
@@ -350,6 +368,12 @@ export function checkQuote(raw: Record<string, unknown>): { ok: true; value: Quo
   };
 }
 
+/** Whether a vote on approving a quote is open for this RFQ's request: quotes are then fixed. */
+async function approvalVoteOpen(rfq: { requestId: string | null }) {
+  if (!rfq.requestId) return false;
+  return !!(await db.orm.public.WorksDecision.where((d) => and(d.requestId.eq(rfq.requestId!), d.kind.eq("QUOTE"), d.status.eq("OPEN"))).first());
+}
+
 /** An invited contractor submits (or changes) their quote before the deadline. */
 export async function submitQuote(input: { rfqId: string; businessIds: string[]; profileId: string; quote: QuoteInput; now?: Date }) {
   const now = input.now ?? new Date();
@@ -359,6 +383,7 @@ export async function submitQuote(input: { rfqId: string; businessIds: string[];
   const invitation = await db.orm.public.WorksRfqInvitation.where((i) => and(i.rfqId.eq(rfq.id), i.contractorBusinessId.in(mine.map((b) => b.id)))).first();
   if (!invitation || !ACTIVE_INVITE.includes(String(invitation.status))) throw new MarketplaceError("Your business was not invited to quote on this job.");
   if (rfq.status !== "QUOTING" || !rfq.quoteClosesAt || new Date(String(rfq.quoteClosesAt)) <= now) throw new MarketplaceError("Quotes for this job have closed.");
+  if (await approvalVoteOpen(rfq)) throw new MarketplaceError("The committee is voting on the quotes now, so quotes cannot be changed.");
   const businessId = invitation.contractorBusinessId;
   const upload = input.quote.uploadId ? await verifyUpload({ uploadId: input.quote.uploadId, schemeId: rfq.schemeId, purpose: "works_quote", profileId: input.profileId }) : null;
   const q = input.quote;
@@ -410,6 +435,7 @@ export async function withdrawQuote(input: { rfqId: string; businessIds: string[
   const rfq = await db.orm.public.WorksRfq.where((r) => and(r.id.eq(input.rfqId), r.marketplace.eq(true))).first();
   if (!rfq || !mine.length) throw new MarketplaceError("Job not found.");
   if (rfq.status !== "QUOTING" || !rfq.quoteClosesAt || new Date(String(rfq.quoteClosesAt)) <= now) throw new MarketplaceError("Quotes for this job have closed, so it cannot be withdrawn here. Contact the building.");
+  if (await approvalVoteOpen(rfq)) throw new MarketplaceError("The committee is voting on the quotes now. Contact the building to withdraw.");
   const n = await db.orm.public.WorksQuotation
     .where((x) => and(x.rfqId.eq(rfq.id), x.contractorBusinessId.in(mine.map((b) => b.id)), x.status.eq("SUBMITTED")))
     .updateAndCount({ status: "WITHDRAWN" });
@@ -432,11 +458,18 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
   const businesses = ids.length ? await db.orm.public.ContractorBusiness.where((c) => c.id.in(ids)).limit(500).all() : [];
   const biz = (id: string) => businesses.find((b) => b.id === id);
   const docPaths = quotes.filter((q) => q.documentPath && !schemeStoragePathProblem(schemeId, String(q.documentPath)));
+  // (Links are signed here; sealed quotes do not return them.)
   const links = docPaths.length ? await signDownloads(docPaths.map((q) => String(q.documentPath)), 15 * 60) : [];
   const activeInvites = invitations.filter((i) => ACTIVE_INVITE.includes(String(i.status)));
   const submitted = quotes.filter((q) => q.status === "SUBMITTED" || q.status === "ACCEPTED");
   const quoteDeadlinePassed = !!rfq.quoteClosesAt && new Date(String(rfq.quoteClosesAt)) <= now;
   const allAnswered = activeInvites.length > 0 && activeInvites.every((i) => quotes.some((q) => q.contractorBusinessId === i.contractorBusinessId && (q.status === "SUBMITTED" || q.status === "ACCEPTED")));
+  const liveOrder = rfq.requestId ? await db.orm.public.WorksWorkOrder.where((o) => and(o.requestId.eq(rfq.requestId!), o.status.notIn(["DECLINED", "CANCELLED"]))).first() : null;
+  const acceptedQuote = quotes.find((q) => q.status === "ACCEPTED") ?? null;
+  const ready = (rfq.status === "QUOTING" || rfq.status === "CLOSED") && (quoteDeadlinePassed || allAnswered || rfq.status === "CLOSED");
+  // Quotes stay sealed until they can be compared, so no price can leak to
+  // a contractor still able to change theirs.
+  const sealed = !ready && rfq.status !== "AWARDED";
   return {
     id: rfq.id,
     rfqNumber: String(rfq.rfqNumber),
@@ -458,6 +491,7 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
     }),
     invitations: invitations.map((i) => ({ businessId: i.contractorBusinessId, name: businessName(biz(i.contractorBusinessId)), status: String(i.status), declineReason: i.declineReason ? String(i.declineReason) : null })),
     quotes: submitted
+      .map((q) => (sealed ? { ...q, totalAmount: "0", gstAmount: "0", inclusions: null, exclusions: null, conditions: null, estimatedDuration: null, validUntil: null, documentPath: null, documentName: null } : q))
       .map((q) => {
         const di = docPaths.findIndex((d) => d.id === q.id);
         return {
@@ -473,13 +507,17 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
           exclusions: q.exclusions ? String(q.exclusions) : "",
           conditions: q.conditions ? String(q.conditions) : "",
           documentName: q.documentName ? String(q.documentName) : null,
-          documentUrl: di >= 0 ? links[di] ?? null : null,
+          documentUrl: !sealed && di >= 0 ? links[di] ?? null : null,
           submittedAt: q.submittedAt ? String(q.submittedAt) : null,
         };
       })
       .sort((a, b) => a.total - b.total),
     /** Quotes can be compared and one approved once the deadline passes, or every invited contractor has quoted. */
-    readyToApprove: (rfq.status === "QUOTING" || rfq.status === "CLOSED" || rfq.status === "AWARDED") && (quoteDeadlinePassed || allAnswered || rfq.status === "CLOSED" || rfq.status === "AWARDED"),
+    readyToApprove: ready,
+    sealed,
+    /** A quote was approved but its work order never went out: send it. */
+    needsOrder: rfq.status === "AWARDED" && !!acceptedQuote && !liveOrder ? acceptedQuote.id : null,
+    canCancel: (RFQ_OPEN_STATUSES as readonly string[]).includes(String(rfq.status)),
     twoQuoteThreshold: WORKS_SPENDING_RULES.twoQuoteThreshold,
     minimumQuotes: WORKS_SPENDING_RULES.minimumQuotes,
   };
@@ -499,8 +537,9 @@ export async function invite(input: { schemeId: string; rfqId: string; businessI
   if (businesses.length !== wanted.length || businesses.some((b) => !isApproved(b))) throw new MarketplaceError("Choose contractors approved on StrataVerze.");
   let closes: Date;
   if (input.quoteClosesAt) {
-    closes = new Date(`${input.quoteClosesAt}T23:59:00+10:00`);
-    if (Number.isNaN(closes.getTime()) || closes <= now) throw new MarketplaceError("Choose a quote deadline in the future.");
+    const end = sydneyEndOfDay(input.quoteClosesAt);
+    if (!end || end <= now) throw new MarketplaceError("Choose a quote deadline in the future.");
+    closes = end;
   } else {
     closes = rfq.quoteClosesAt && new Date(String(rfq.quoteClosesAt)) > now ? new Date(String(rfq.quoteClosesAt)) : new Date(now.getTime() + MARKETPLACE_DEFAULTS.quoteDays * DAY);
   }
@@ -528,8 +567,8 @@ export async function setDeadlines(input: { schemeId: string; rfqId: string; int
   const rfq = await db.orm.public.WorksRfq.where((r) => and(r.id.eq(input.rfqId), r.schemeId.eq(input.schemeId), r.marketplace.eq(true))).first();
   if (!rfq) throw new MarketplaceError("Not found.");
   const day = (v: string) => {
-    const d = new Date(`${v}T23:59:00+10:00`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || Number.isNaN(d.getTime()) || d <= now) throw new MarketplaceError("Choose a date in the future.");
+    const d = sydneyEndOfDay(v);
+    if (!d || d <= now) throw new MarketplaceError("Choose a date in the future.");
     return d;
   };
   const data: Record<string, unknown> = {};
@@ -575,7 +614,10 @@ export async function quoteApprovalProblem(quotationId: string, now = new Date()
   const deadlinePassed = !!rfq.quoteClosesAt && new Date(String(rfq.quoteClosesAt)) <= now;
   const allIn = active.length > 0 && active.every((i) => quotes.some((q) => q.contractorBusinessId === i.contractorBusinessId));
   if (rfq.status === "QUOTING" && !deadlinePassed && !allIn) return { problem: "Wait until the quote deadline, or until every invited contractor has quoted, so each has a fair chance.", ...base };
-  if (Number(quote.totalAmount) > WORKS_SPENDING_RULES.twoQuoteThreshold && quotes.filter((q) => q.status === "SUBMITTED").length < WORKS_SPENDING_RULES.minimumQuotes) {
+  // Quotes obtained count, including one approved before whose contractor
+  // then declined the work order; a withdrawn quote does not.
+  const obtained = await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.in(["SUBMITTED", "ACCEPTED", "DECLINED"]))).limit(100).all();
+  if (Number(quote.totalAmount) > WORKS_SPENDING_RULES.twoQuoteThreshold && obtained.length < WORKS_SPENDING_RULES.minimumQuotes) {
     return { problem: `Over $${WORKS_SPENDING_RULES.twoQuoteThreshold.toLocaleString("en-AU")}, at least ${WORKS_SPENDING_RULES.minimumQuotes} quotes are needed before one is approved (SSMA s 102). Invite more contractors, or extend the deadline.`, ...base };
   }
   return { problem: null, ...base };
@@ -667,5 +709,50 @@ export async function closeOutQuotes(requestId: string): Promise<{ schemeId: str
   if (!others.length) return null;
   await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.eq("SUBMITTED"))).updateAndCount({ status: "DECLINED" });
   return { schemeId: rfq.schemeId, title: String(rfq.title), businessIds: others.map((q) => q.contractorBusinessId) };
+}
+
+/**
+ * The approved quote's work order was declined or cancelled: the quotes go
+ * back to the committee (RFQ closed, that quote declined, request getting
+ * quotes again), so it can approve another, invite more or extend.
+ */
+export async function reopenAfterOrderEnded(requestId: string): Promise<boolean> {
+  const rfq = await db.orm.public.WorksRfq.where((r) => and(r.requestId.eq(requestId), r.marketplace.eq(true), r.status.eq("AWARDED"))).first();
+  if (!rfq) return false;
+  const live = await db.orm.public.WorksWorkOrder.where((o) => and(o.requestId.eq(requestId), o.status.notIn(["DECLINED", "CANCELLED"]))).first();
+  if (live) return false;
+  return db.transaction(async (tx) => {
+    const n = await tx.orm.public.WorksRfq.where((r) => and(r.id.eq(rfq.id), r.status.eq("AWARDED"))).updateAndCount({ status: "CLOSED" });
+    if (n !== 1) return false;
+    await tx.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.eq("ACCEPTED"))).updateAndCount({ status: "DECLINED" });
+    await tx.orm.public.WorksRequest.where((r) => and(r.id.eq(requestId), r.status.eq("APPROVAL"))).updateAndCount({ status: "PROCUREMENT" });
+    return true;
+  });
+}
+
+/**
+ * Cancel a marketplace RFQ that is still open (committee or Adviser): it
+ * leaves the marketplace and the request goes back to the committee to
+ * decide again. Returns the contractors to tell.
+ */
+export async function cancelRfq(input: { schemeId: string; rfqId: string; reason: string | null }) {
+  const rfq = await db.orm.public.WorksRfq.where((r) => and(r.id.eq(input.rfqId), r.schemeId.eq(input.schemeId), r.marketplace.eq(true))).first();
+  if (!rfq || !rfq.requestId) throw new MarketplaceError("Not found.");
+  if (await approvalVoteOpen(rfq)) throw new MarketplaceError("A vote on a quote is open. Withdraw it first.");
+  const done = await db.transaction(async (tx) => {
+    const n = await tx.orm.public.WorksRfq
+      .where((r) => and(r.id.eq(rfq.id), r.status.in([...RFQ_OPEN_STATUSES])))
+      .updateAndCount({ status: "CANCELLED", cancelledReason: input.reason?.trim() || null, closedAt: ts(new Date()) });
+    if (n !== 1) return false;
+    await tx.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.eq("SUBMITTED"))).updateAndCount({ status: "DECLINED" });
+    await tx.orm.public.WorksRequest.where((r) => and(r.id.eq(rfq.requestId!), r.status.eq("PROCUREMENT"))).updateAndCount({ status: "SUBMITTED" });
+    return true;
+  });
+  if (!done) throw new MarketplaceError("This request has moved on. Reload the page.");
+  const [interests, invitations] = await Promise.all([
+    db.orm.public.WorksRfqInterest.where((i) => and(i.rfqId.eq(rfq.id), i.withdrawnAt.isNull())).limit(500).all(),
+    db.orm.public.WorksRfqInvitation.where((i) => i.rfqId.eq(rfq.id)).limit(100).all(),
+  ]);
+  return { requestId: rfq.requestId, rfqNumber: String(rfq.rfqNumber), title: String(rfq.title), businessIds: [...new Set([...interests.map((i) => i.contractorBusinessId), ...invitations.map((i) => i.contractorBusinessId)])] };
 }
 

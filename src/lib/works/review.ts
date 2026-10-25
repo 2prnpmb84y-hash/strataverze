@@ -369,7 +369,7 @@ export async function proposeQuoteApproval(input: { schemeId: string; requestId:
  * request approved. If anything has moved on, nothing is applied and the
  * decision is withdrawn. The work order is issued by the caller.
  */
-async function settleQuote(decision: { id: string; requestId: string; quotationId?: string | null }, t: ReturnType<typeof tally>): Promise<{ status: string; tally: ReturnType<typeof tally>; applied: boolean }> {
+async function settleQuote(decision: { id: string; requestId: string; quotationId?: string | null; amount?: unknown }, t: ReturnType<typeof tally>): Promise<{ status: string; tally: ReturnType<typeof tally>; applied: boolean }> {
   const now = new Date().toISOString();
   try {
     await db.transaction(async (tx) => {
@@ -379,10 +379,15 @@ async function settleQuote(decision: { id: string; requestId: string; quotationI
       if (!decision.quotationId) throw new Undo("request moved on");
       const check = await quoteApprovalProblem(decision.quotationId);
       if (check.problem || !check.quote) throw new Undo("request moved on");
-      const accepted = await tx.orm.public.WorksQuotation.where((q) => and(q.id.eq(decision.quotationId!), q.status.eq("SUBMITTED"))).updateAndCount({ status: "ACCEPTED" });
+      // Only the quote as it was when proposed: the same total the committee voted on.
+      if (decision.amount == null) throw new Undo("request moved on");
+      const accepted = await tx.orm.public.WorksQuotation
+        .where((q) => and(q.id.eq(decision.quotationId!), q.status.eq("SUBMITTED"), q.totalAmount.eq(decision.amount as unknown as Numeric<12, 2>)))
+        .updateAndCount({ status: "ACCEPTED" });
       if (accepted !== 1) throw new Undo("request moved on");
       await tx.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(check.quote!.rfqId), q.status.eq("ACCEPTED"), q.id.neq(decision.quotationId!))).updateAndCount({ status: "DECLINED" });
-      await tx.orm.public.WorksRfq.where((r) => and(r.id.eq(check.quote!.rfqId), r.status.in(["QUOTING", "CLOSED", "AWARDED"]))).updateAndCount({ status: "AWARDED", closedAt: ts(now) });
+      const awarded = await tx.orm.public.WorksRfq.where((r) => and(r.id.eq(check.quote!.rfqId), r.status.in(["QUOTING", "CLOSED"]))).updateAndCount({ status: "AWARDED", closedAt: ts(now) });
+      if (awarded !== 1) throw new Undo("request moved on");
       const request = await tx.orm.public.WorksRequest
         .where((r) => and(r.id.eq(decision.requestId), r.status.in(["PROCUREMENT", "APPROVAL"])))
         .updateAndCount({ status: "APPROVAL" });

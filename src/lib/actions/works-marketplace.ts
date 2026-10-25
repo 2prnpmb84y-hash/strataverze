@@ -18,13 +18,13 @@ import { logError } from "@/lib/log";
 import { checkRequest, getRequest, resubmitRequest, submitRequest, WorksRequestError } from "@/lib/works/requests";
 import { proposeQuoteApproval, proposeRoute, vote, withdraw, WorksDecisionError, decisionsFor } from "@/lib/works/review";
 import { checkWorksSettings, PreferredContractorError, removePreferredContractor, saveWorksSettings, setPreferredContractor } from "@/lib/works/settings";
-import { notifyInvited, notifyNotSelected, notifyQuoteApproved, notifyQuotesIn, notifyQuoteVote, notifyRfqOpened } from "@/lib/works/notify";
+import { notifyInvited, notifyNotSelected, notifyRfqCancelled, notifyQuoteApproved, notifyQuotesIn, notifyQuoteVote, notifyRfqOpened } from "@/lib/works/notify";
 import { notifyDecision, notifyNoContractor, notifyOrderAnswered, notifyOrderCancelled, notifyOrderIssued, notifyRequestSubmitted, notifySettingsChanged, notifyVoteNeeded } from "@/lib/works/notify";
 import { cancelUrgentOrder, issueUrgentOrder, myContractorBusinessIds, orderingState, respondToOrder, UrgentOrderError } from "@/lib/works/urgent-orders";
 import { requireActiveContractorContact } from "@/lib/auth/require-contractor";
 import { db } from "@/prisma/db";
 import { ROUTE_OUTCOMES, type RouteOutcome } from "@/lib/works/decision-rules";
-import { checkQuote, closeOutQuotes, declineInvitation, decodeSummary, eligibleBusinesses, invite, issueQuoteOrder, jobForContractor, MarketplaceError, openRfq, parsePostcodes, rfqForRequest, setDeadlines, setInterest, submitQuote, withdrawQuote } from "@/lib/works/marketplace";
+import { cancelRfq, checkQuote, closeOutQuotes, reopenAfterOrderEnded, declineInvitation, decodeSummary, eligibleBusinesses, invite, issueQuoteOrder, jobForContractor, MarketplaceError, openRfq, parsePostcodes, rfqForRequest, setDeadlines, setInterest, submitQuote, withdrawQuote } from "@/lib/works/marketplace";
 import { isWorksTrade } from "@/config/works";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 
@@ -311,6 +311,13 @@ export async function cancelUrgentOrderAction(schemeId: string, workOrderId: str
     const r = await cancelUrgentOrder({ schemeId, workOrderId, reason: String(formData.get("reason") ?? "").slice(0, 2000) || null });
     await logActivity({ schemeId, actorId: profile.id, action: "WORKS_ORDER_CANCELLED", entityType: "WorksRequest", entityId: r.requestId ?? workOrderId, metadata: { workOrderNumber: r.workOrderNumber } });
     await notifyOrderCancelled({ schemeId, workOrderNumber: r.workOrderNumber, contractorBusinessId: r.contractorBusinessId });
+    if (r.requestId) {
+      try {
+        await reopenAfterOrderEnded(r.requestId);
+      } catch (err) {
+        logError("[works] quotes not reopened:", err);
+      }
+    }
     if (r.requestId) revalidateWorks(schemeId, r.requestId);
     return { done: `Work order ${r.workOrderNumber} has been cancelled and the contractor told. You can now send it to another contractor.` };
   } catch (err) {
@@ -330,6 +337,14 @@ export async function respondToWorkOrderAction(workOrderId: string, _prev: Works
     await logActivity({ schemeId: r.schemeId, actorId: profile.id, action: accept ? "WORKS_ORDER_ACCEPTED" : "WORKS_ORDER_DECLINED", entityType: "WorksRequest", entityId: r.requestId ?? order.id, metadata: { workOrderNumber: r.workOrderNumber, reason: r.reason } });
     const business = await db.orm.public.ContractorBusiness.where((c) => c.id.eq(order.contractorBusinessId)).first();
     await notifyOrderAnswered({ schemeId: r.schemeId, requestId: r.requestId, workOrderNumber: r.workOrderNumber, contractorName: String(business?.tradingName || business?.companyName || "The contractor"), accepted: accept, reason: r.reason });
+    // A quote's order declined: the quotes go back to the committee.
+    if (!accept && r.requestId) {
+      try {
+        await reopenAfterOrderEnded(r.requestId);
+      } catch (err) {
+        logError("[works] quotes not reopened:", err);
+      }
+    }
     // A quote's order accepted: the other quotes were not selected.
     if (accept && r.requestId) {
       try {
@@ -354,7 +369,9 @@ export async function respondToWorkOrderAction(workOrderId: string, _prev: Works
 async function openForQuotes(schemeId: string, requestId: string, actorId: string, summary: { title: string; body: string } | null) {
   const request = await getRequest(schemeId, requestId);
   if (!request) return null;
-  const rfq = await openRfq({ schemeId, requestId, openedById: actorId, summary: summary ?? { title: String(request.title), body: String(request.description ?? "") } });
+  // Never the owner's own text: only a summary the committee wrote.
+  if (!summary?.title.trim() || !summary.body.trim()) throw new MarketplaceError("Write the title and summary contractors will see first.");
+  const rfq = await openRfq({ schemeId, requestId, openedById: actorId, summary });
   const businesses = await eligibleBusinesses(rfq);
   await logActivity({ schemeId, actorId, action: "WORKS_RFQ_OPENED", entityType: "WorksRequest", entityId: requestId, metadata: { rfqNumber: String(rfq.rfqNumber), contractorsTold: businesses.length } });
   await notifyRfqOpened({ rfqId: rfq.id, title: String(rfq.title), trade: String(rfq.trade), suburb: rfq.suburb ? String(rfq.suburb) : null, interestClosesAt: String(rfq.interestClosesAt), businessIds: businesses.map((b) => b.id) });
@@ -368,17 +385,21 @@ async function sendQuoteOrder(schemeId: string, requestId: string, quotationId: 
   const order = await issueQuoteOrder({ schemeId, requestId, quotationId, issuedById: actorId });
   const business = await db.orm.public.ContractorBusiness.where((c) => c.id.eq(order.contractorBusinessId)).first();
   await logActivity({ schemeId, actorId, action: "WORKS_ORDER_ISSUED", entityType: "WorksRequest", entityId: requestId, metadata: { workOrderNumber: order.workOrderNumber, contractorBusinessId: order.contractorBusinessId, amountLimit: order.amountLimit, fromQuote: quotationId } });
-  await notifyOrderIssued({ schemeId, workOrderId: order.workOrderId, workOrderNumber: order.workOrderNumber, title: String(request.title), contractorBusinessId: order.contractorBusinessId, amountLimit: order.amountLimit });
+  // The contractor sees the committee's title, never the owner's.
+  const rfq = await rfqForRequest(schemeId, requestId);
+  await notifyOrderIssued({ schemeId, workOrderId: order.workOrderId, workOrderNumber: order.workOrderNumber, title: String(rfq?.title ?? "Works"), contractorBusinessId: order.contractorBusinessId, amountLimit: order.amountLimit });
   await notifyQuoteApproved({ schemeId, requestId, requestNumber: String(request.requestNumber), title: String(request.title), contractorName: String(business?.tradingName || business?.companyName || "the contractor"), amount: order.amountLimit, raisedById: request.raisedById, byDelegation });
 }
 
 /** Open a request for quotes when it did not open with the decision (committee or Adviser). */
-export async function openForQuotesAction(schemeId: string, requestId: string): Promise<WorksFormState> {
+export async function openForQuotesAction(schemeId: string, requestId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
   try {
     const { profile } = await requireSchemeAccess(schemeId, "works.decide");
     const decided = (await decisionsFor(requestId)).find((d) => d.kind === "ROUTE" && d.outcome === "QUOTES" && d.status === "DECIDED");
     if (!decided) return { error: "The committee has not decided to get quotes for this request." };
-    const rfq = await openForQuotes(schemeId, requestId, profile.id, decodeSummary(decided.summary));
+    // The summary agreed with the decision, or (for an older decision) the one written now.
+    const summary = decodeSummary(decided.summary) ?? { title: String(formData.get("summaryTitle") ?? "").slice(0, 300), body: String(formData.get("summary") ?? "").slice(0, 5000) };
+    const rfq = await openForQuotes(schemeId, requestId, profile.id, summary);
     revalidateWorks(schemeId, requestId);
     return rfq ? { done: `${String(rfq.rfqNumber)} is open. Contractors in the trade who work in the area have been told.` } : { error: "Request not found." };
   } catch (err) {
@@ -431,6 +452,8 @@ export async function setRfqDeadlinesAction(schemeId: string, requestId: string,
 export async function proposeQuoteApprovalAction(schemeId: string, requestId: string, quotationId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
   try {
     const { profile, roles } = await requireSchemeAccess(schemeId, "works.decide");
+    // It can issue a work order at once (a one-member rule, or the Adviser).
+    await requireRecentMfa();
     const r = await proposeQuoteApproval({ schemeId, requestId, quotationId, actor: { profileId: profile.id, roles }, note: String(formData.get("note") ?? "").slice(0, 2000) || null });
     await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_PROPOSED", entityType: "WorksRequest", entityId: requestId, metadata: { kind: "QUOTE", quotationId, decisionId: r.decisionId } });
     if (r.status === "WITHDRAWN") return { error: "This quote can no longer be approved. Reload the page." };
@@ -538,6 +561,40 @@ export async function saveServiceAreaAction(businessId: string, _prev: WorksForm
     return { done: `Saved: ${trades.length} kind${trades.length === 1 ? "" : "s"} of work, ${postcodes.value.length} postcode${postcodes.value.length === 1 ? "" : "s"}.` };
   } catch (err) {
     return failure(err, "Your trades and service area could not be saved. Please try again.");
+  }
+}
+
+/** Send the work order for an approved quote when it did not go out with the decision (committee or Adviser). */
+export async function sendQuoteOrderAction(schemeId: string, requestId: string): Promise<WorksFormState> {
+  try {
+    const { profile } = await requireSchemeAccess(schemeId, "works.decide");
+    await requireRecentMfa();
+    const accepted = (await decisionsFor(requestId)).find((d) => d.kind === "QUOTE" && d.status === "DECIDED" && d.quotationId);
+    const rfq = await rfqForRequest(schemeId, requestId);
+    const quote = rfq ? await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.eq("ACCEPTED"))).first() : null;
+    if (!accepted || !quote) return { error: "No approved quote is waiting for its work order." };
+    await sendQuoteOrder(schemeId, requestId, quote.id, profile.id, !!accepted.byDelegation);
+    revalidateWorks(schemeId, requestId);
+    return { done: "The work order has gone to the contractor." };
+  } catch (err) {
+    return failure(err, "The work order could not be sent. Please try again.");
+  }
+}
+
+/** Take a request off the marketplace (committee or Adviser): it goes back to the committee to decide again. */
+export async function cancelRfqAction(schemeId: string, requestId: string, rfqId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
+  try {
+    const { profile } = await requireSchemeAccess(schemeId, "works.decide");
+    await requireRecentMfa();
+    const rfq = await rfqForRequest(schemeId, requestId);
+    if (!rfq || rfq.id !== rfqId) return { error: "Not found." };
+    const r = await cancelRfq({ schemeId, rfqId, reason: String(formData.get("reason") ?? "").slice(0, 2000) || null });
+    await logActivity({ schemeId, actorId: profile.id, action: "WORKS_RFQ_CANCELLED", entityType: "WorksRequest", entityId: requestId, metadata: { rfqNumber: r.rfqNumber } });
+    await notifyRfqCancelled({ schemeId, title: r.title, businessIds: r.businessIds });
+    revalidateWorks(schemeId, requestId);
+    return { done: `${r.rfqNumber} has been taken off the marketplace. The request is back with the committee to decide again.` };
+  } catch (err) {
+    return failure(err, "The request could not be taken off the marketplace. Please try again.");
   }
 }
 

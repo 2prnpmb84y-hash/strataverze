@@ -7,6 +7,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { getWorksSettings } from "./settings";
 import { committeeMembers, decisionsFor, mayWithdraw } from "./review";
+import { decodeSummary } from "./marketplace";
 import { requestPhotos } from "./requests";
 import { ROUTE_OUTCOMES, isRouteOutcome, requestStatusLabel, tally, votesSentence } from "./decision-rules";
 
@@ -24,6 +25,8 @@ export interface DecisionView {
   note: string | null;
   /** For an urgent route: the most the work may cost. */
   amount: number | null;
+  /** For a Get quotes route: what contractors will see before they are invited. */
+  summary: { title: string; body: string } | null;
   proposedByName: string;
   status: string;
   byDelegation: boolean;
@@ -93,6 +96,7 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
       outcomeLabel: d.kind === "QUOTE" ? quoteLabel(d.quotationId) : isRouteOutcome(outcome) ? ROUTE_OUTCOMES[outcome].label : outcome,
       note: d.note ? String(d.note) : null,
       amount: d.amount != null ? Number(d.amount) : null,
+      summary: decodeSummary(d.summary),
       proposedByName: who.get(d.proposedById) ?? "A member",
       status: String(d.status),
       byDelegation: !!d.byDelegation,

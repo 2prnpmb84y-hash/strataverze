@@ -160,6 +160,13 @@ export function DecisionRecord({ decision }: { decision: DecisionView }) {
       <p className="text-xs text-ink-muted">Proposed by {decision.proposedByName}, {when(decision.createdAt)}{decision.byDelegation ? ", as Adviser under the building's delegation" : ""}</p>
       {decision.amount != null && <p className="text-sm text-ink">Not to exceed ${decision.amount.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
       {decision.note && <p className="text-sm text-ink whitespace-pre-wrap">{decision.note}</p>}
+      {decision.summary && (
+        <div className="rounded-[var(--radius-card)] bg-muted p-3 text-sm">
+          <p className="text-xs text-ink-muted mb-1">Contractors will see, before they are invited:</p>
+          <p className="font-medium text-ink">{decision.summary.title}</p>
+          <p className="text-ink whitespace-pre-wrap">{decision.summary.body}</p>
+        </div>
+      )}
       <p className="text-sm text-ink">{decision.votesSentence}</p>
       {decision.votes.length > 0 && (
         <ul className="text-sm divide-y divide-line">
