@@ -193,7 +193,7 @@ describe("saveIncomeBudget", () => {
     expect(data.saved.funds[1].openingBalance).toBe("85457.96");
     expect(data.saved.funds[0].rows).toHaveLength(4);
     expect(data.saved.adoption).toEqual({ kind: "before_takeover", meetingDate: "2026-05-20" });
-    expect(data.saved.levies).toEqual({ frequency: "QUARTERLY", raisedBeforeTakeover: "none" });
+    expect(data.saved.levies).toEqual({ frequency: "QUARTERLY", raisedBeforeTakeover: "none", raisedInstalments: [] });
 
     const res = await saveIncomeBudget("s1", "me", { ...data.saved, adoption: { kind: "draft", meetingDate: "" } });
     expect(res.saved).toBe(true);
@@ -239,11 +239,17 @@ describe("saveIncomeBudget", () => {
     expect(tables.LevySchedule[0].approvedAt).toBe("2026-05-20");
   });
 
-  it("makes no levy schedule, and leaves any alone, when some notices were raised before the takeover", async () => {
-    const res = await saveIncomeBudget("s1", "me", input({ levies: { frequency: "QUARTERLY", raisedBeforeTakeover: "some" } }));
+  it("makes no levy schedule, and leaves any alone, when every instalment was raised before the takeover", async () => {
+    const res = await saveIncomeBudget("s1", "me", input({ levies: { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [1, 2, 3, 4] } }));
     expect(res.saved).toBe(true);
     expect(tables.LevySchedule).toHaveLength(0);
     expect(tables.Budget).toHaveLength(2);
+  });
+
+  it("records the instalments raised before the takeover on the schedule, and shows them again", async () => {
+    const res = await saveIncomeBudget("s1", "me", input({ levies: { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [1, 2] } }));
+    expect(res.saved).toBe(true);
+    expect(tables.LevySchedule.map((l) => l.raisedBeforeTakeover)).toEqual(["1,2", "1,2"]);
   });
 
   it("keeps and shows budget lines on a shared account (no fund)", async () => {

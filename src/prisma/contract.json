@@ -11103,6 +11103,13 @@
                   "kind": "scalar"
                 }
               },
+              "emailedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "fundId": {
                 "nullable": false,
                 "type": {
@@ -11191,6 +11198,20 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "raisePending": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "raisedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
               },
@@ -11329,6 +11350,9 @@
                 "dueDate": {
                   "column": "due_date"
                 },
+                "emailedAt": {
+                  "column": "emailed_at"
+                },
                 "fundId": {
                   "column": "fund_id"
                 },
@@ -11364,6 +11388,12 @@
                 },
                 "periodStart": {
                   "column": "period_start"
+                },
+                "raisePending": {
+                  "column": "raise_pending"
+                },
+                "raisedAt": {
+                  "column": "raised_at"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -11665,6 +11695,13 @@
                   "kind": "scalar"
                 }
               },
+              "raisedBeforeTakeover": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -11804,6 +11841,9 @@
                 },
                 "migrationBatchId": {
                   "column": "migration_batch_id"
+                },
+                "raisedBeforeTakeover": {
+                  "column": "raised_before_takeover"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -40469,6 +40509,11 @@
                   "dataType": "pg/date",
                   "nullable": false
                 },
+                "emailed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
                 "fund_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -40543,6 +40588,20 @@
                   "codecId": "pg/date-string@1",
                   "dataType": "pg/date",
                   "nullable": false
+                },
+                "raise_pending": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "raised_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
                 },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
@@ -40914,6 +40973,11 @@
                 "migration_batch_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "raised_before_takeover": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "nullable": true
                 },
                 "scheme_id": {
@@ -55611,7 +55675,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "98ca83cf12ddd7e01285533b3837dd7409585b19abb2b6cf2621fa4f57d07f69"
+    "storageHash": "3d25b22c37b002b783d795ce495fe3fa4337a6391a3b4a02d2fce75289e0ac3d"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

@@ -1,21 +1,30 @@
 /**
- * Issuing levy notices (server side, 24 Oct 2026).
+ * Issuing levy notices and raising levies (server side, 24 to 25 Oct 2026).
  *
  * A budget levy schedule's notices are planned for the whole year when it is
  * generated, as DRAFT notices. Each goes out 35 days before it falls due
- * (src/lib/levies/issue-timing.ts): `issueDueNotices` runs every day from the
- * levy notices cron and issues those whose day has come. Issuing a batch
- * marks the notices ISSUED, posts the levy raised (DR levies receivable, CR
- * levy income) for that batch on the notice date, applies owner credit and
- * emails each notice to its owner.
+ * (src/lib/levies/issue-timing.ts). The daily job (`runLevyNoticeDay`):
+ *
+ *   1. issues the planned notices whose day has come (`issueDueNotices`):
+ *      marks them ISSUED and emails them to the lot's current owner. A notice
+ *      whose 5-week mark has passed (it was held, or the job did not run) is
+ *      not sent by the job: it waits for the Adviser to confirm, as when the
+ *      schedule was generated;
+ *   2. raises each issued levy in the ledger on its due date (`raiseDueLevies`):
+ *      DR levies receivable, CR levy income, dated the due date, so the
+ *      income falls in the period's own financial year. Owner credit
+ *      (including payments received before the due date, which are held as
+ *      levies paid in advance) is then applied;
+ *   3. sends again any email that failed in the last 3 days.
  *
  * A notice is never issued while it would breach the content rules (for
  * example a missing bank account): it is held and the Adviser is told in the
- * building's activity. If it is then fewer than 30 days from falling due, its
- * due date moves to 30 days after the day it goes out.
+ * building's activity. Every step claims its rows first (DRAFT to ISSUED,
+ * raise_pending true to false), so two runs at once never issue, post or
+ * email the same notice twice.
  */
 import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
 import { createJournalEntry, getNextEntryNumber, postJournalEntry } from "@/lib/queries/journal-entries";
@@ -24,13 +33,17 @@ import { logActivity } from "@/lib/queries/activity-log";
 import { applyOwnerCredit } from "@/lib/finance/owner-credits";
 import { logError } from "@/lib/log";
 import { checkPlannedNotices, sendIssuedNotices } from "./notice-content-data";
+import { loadPlanLots } from "./load-plan-lots";
 import { addDays, toCents, toIsoDay } from "./notice-plan";
-import { issueTiming } from "./issue-timing";
+import { issueTiming, lateMessage } from "./issue-timing";
 import { LEVY_NOTICE_RULES } from "@/config/statutory";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
+const PAGE = 1000;
+/** How long a failed notice email is retried. */
+const EMAIL_RETRY_DAYS = 3;
 
-/** DR Levies Receivable, CR Levy Income for notices raised against a fund. */
+/** DR Levies Receivable, CR Levy Income for levies raised against a fund. */
 export async function postLevyRaisedJournal(args: {
   schemeId: string;
   fundId: string;
@@ -38,22 +51,23 @@ export async function postLevyRaisedJournal(args: {
   totalAmount: number;
   noticeCount: number;
   profileId: string;
-  /** The notice date (YYYY-MM-DD). */
+  /** The date the levy is raised (YYYY-MM-DD): its due date. */
   date: string;
-}) {
-  if (args.totalAmount <= 0) return;
+}): Promise<boolean> {
+  if (args.totalAmount <= 0) return true;
   const fund = await db.orm.public.Fund.where((f) => f.id.eq(args.fundId)).first();
   const fundType = (fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
   const receivableAccount = await getSystemAccountBySubType(args.schemeId, "ACCOUNTS_RECEIVABLE", fundType);
   const incomeAccount = await getSystemAccountBySubType(args.schemeId, "LEVY_INCOME", fundType);
-  if (!receivableAccount || !incomeAccount) return;
+  // A scheme whose chart of accounts is not seeded: nothing to post to, as before.
+  if (!receivableAccount || !incomeAccount) return true;
 
   const entryNumber = await getNextEntryNumber(args.schemeId);
   const entry = await createJournalEntry({
     schemeId: args.schemeId,
     entryNumber,
     transactionDate: args.date,
-    description: `Levy notices issued — ${args.noticeCount} notice(s), ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
+    description: `Levies raised — ${args.noticeCount} notice(s) due ${args.date.split("-").reverse().join("/")}, ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
     entryType: "AUTO",
     sourceType: "LEVY_RAISED",
     sourceId: args.scheduleId,
@@ -64,6 +78,7 @@ export async function postLevyRaisedJournal(args: {
     ],
   });
   await postJournalEntry(entry.id, args.profileId);
+  return true;
 }
 
 export interface BatchNotice {
@@ -76,7 +91,17 @@ export interface BatchNotice {
   amountCents: number;
 }
 
-/** Issue notices that already exist as DRAFT: post, apply credit, email. */
+/** The lot's current owner (an active owner membership), so a sale after planning is followed. */
+async function currentOwners(schemeId: string): Promise<Map<string, string | null>> {
+  const lots = await loadPlanLots(schemeId);
+  return new Map(lots.map((l) => [l.lotId, l.ownerId]));
+}
+
+/**
+ * Issue notices that exist as DRAFT: claim each (DRAFT to ISSUED, addressed
+ * to the lot's current owner, raised later on its due date) and email it.
+ * Levies already due are raised straight away.
+ */
 export async function issueNoticeBatch(input: {
   schemeId: string;
   scheduleId: string;
@@ -86,43 +111,31 @@ export async function issueNoticeBatch(input: {
   notices: BatchNotice[];
   isUrgentSpecialLevy?: boolean;
 }): Promise<{ count: number; emailed: number; creditAppliedCents: number }> {
-  // Claim each notice: only those this run turned from DRAFT to ISSUED are
-  // posted, credited and emailed, so a second run at the same time does nothing twice.
+  if (input.notices.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
+  const owners = await currentOwners(input.schemeId);
   const claimed: BatchNotice[] = [];
-  for (const n of input.notices) if (await issueLevyNotice(n.id)) claimed.push(n);
+  for (const n of input.notices) {
+    const ownerId = owners.has(n.lotId) ? owners.get(n.lotId)! : n.ownerId;
+    if (await issueLevyNotice(n.id, { ownerId, dueDate: n.dueDate })) claimed.push({ ...n, ownerId });
+  }
   if (claimed.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
-  input = { ...input, notices: claimed };
-  const totalCents = input.notices.reduce((s, n) => s + n.amountCents, 0);
-  await postLevyRaisedJournal({
-    schemeId: input.schemeId,
-    fundId: input.fundId,
-    scheduleId: input.scheduleId,
-    totalAmount: totalCents / 100,
-    noticeCount: input.notices.length,
-    profileId: input.issuerId,
-    date: input.noticeDate,
-  });
+  const totalCents = claimed.reduce((s, n) => s + n.amountCents, 0);
   await logActivity({
     schemeId: input.schemeId,
     actorId: input.issuerId,
     action: "LEVY_NOTICES_ISSUED",
     entityType: "LevySchedule",
     entityId: input.scheduleId,
-    metadata: { count: input.notices.length, total: totalCents / 100, dueDates: [...new Set(input.notices.map((n) => n.dueDate))] },
+    metadata: { count: claimed.length, total: totalCents / 100, dueDates: [...new Set(claimed.map((n) => n.dueDate))] },
   });
-
-  let creditAppliedCents = 0;
-  const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(input.schemeId)).first();
-  if (scheme?.autoApplyOwnerCredit !== false) {
-    creditAppliedCents = await applyOwnerCredit({ schemeId: input.schemeId, lotIds: [...new Set(input.notices.map((n) => n.lotId))], actorId: input.issuerId });
-  }
 
   const emailed = await sendIssuedNotices({
     schemeId: input.schemeId,
     fundId: input.fundId,
     issuerId: input.issuerId,
     noticeDate: input.noticeDate,
-    notices: input.notices.map((n) => ({ noticeId: n.id, lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents })),
+    notices: claimed.map((n) => ({ noticeId: n.id, lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents })),
+    onSent: markEmailed,
   });
   await logActivity({
     schemeId: input.schemeId,
@@ -130,62 +143,103 @@ export async function issueNoticeBatch(input: {
     action: "LEVY_NOTICES_EMAILED",
     entityType: "LevySchedule",
     entityId: input.scheduleId,
-    metadata: { emailed, notices: input.notices.length },
+    metadata: { emailed, notices: claimed.length },
   });
-  return { count: input.notices.length, emailed, creditAppliedCents };
+
+  // Normally nothing is due yet; this raises any that are (and applies credit to them).
+  const raised = await raiseDueLevies(input.noticeDate, input.schemeId);
+  return { count: claimed.length, emailed, creditAppliedCents: raised.creditAppliedCents };
 }
+
+async function markEmailed(noticeId: string) {
+  await db.orm.public.LevyNotice.where((n) => n.id.eq(noticeId)).update({ emailedAt: ts(new Date().toISOString()) });
+}
+
+/** Who a scheduled batch is issued by: the Adviser who approved the schedule while still an active Adviser of the scheme, else another active Adviser. */
+export async function issuerFor(schemeId: string, approvedBy: string | null): Promise<string | null> {
+  const advisers = await db.orm.public.SchemeMembership
+    .where((x) => and(x.schemeId.eq(schemeId), x.role.eq("ADVISER"), x.isActive.eq(true)))
+    .limit(50)
+    .all();
+  if (approvedBy && advisers.some((a) => a.profileId === approvedBy)) return approvedBy;
+  return advisers[0]?.profileId ?? null;
+}
+
+// ─── 1. Issuing planned notices on their day ────────────────────────────────
 
 export interface DueRunResult {
   scheduleId: string;
   schemeId: string;
   issued: number;
   held: string[] | null;
-  moved: number;
+  /** Notices past their 5-week mark, waiting for the Adviser to confirm. */
+  awaitingConfirmation: number;
 }
 
-/** Who a scheduled batch is issued by: the Adviser who approved the schedule, else any Adviser of the scheme. */
-async function issuerFor(schemeId: string, approvedBy: string | null): Promise<string | null> {
-  if (approvedBy) return approvedBy;
-  const m = await db.orm.public.SchemeMembership.where((x) => and(x.schemeId.eq(schemeId), x.role.eq("ADVISER"))).first();
-  return m?.profileId ?? null;
+/** Every DRAFT notice of the given schedules due on or before `horizon`, earliest due first, read a page at a time. */
+async function draftNoticesDue(scheduleIds: string[], horizon: string) {
+  const out: Awaited<ReturnType<typeof readPage>> = [];
+  async function readPage(offset: number) {
+    return db.orm.public.LevyNotice
+      .where((n) => and(n.levyScheduleId.in(scheduleIds), n.status.eq("DRAFT"), n.dueDate.lte(ts(horizon))))
+      .orderBy([(n) => n.dueDate.asc(), (n) => n.id.asc()])
+      .offset(offset)
+      .limit(PAGE)
+      .all();
+  }
+  for (let offset = 0; ; offset += PAGE) {
+    const page = await readPage(offset);
+    out.push(...page);
+    if (page.length < PAGE) break;
+  }
+  return out;
 }
 
-/** Issue every planned notice whose day has come (`today`, Sydney). Safe to run more than once a day. */
+/** Issue every planned notice of an active schedule whose day has come (`today`, Sydney). Safe to run more than once a day. */
 export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
+  const schedules = await db.orm.public.LevySchedule.where((s) => s.status.eq("ACTIVE")).limit(5000).all();
+  if (!schedules.length) return [];
   const horizon = addDays(today, LEVY_NOTICE_RULES.issueDaysBeforeDue);
-  const due = await db.orm.public.LevyNotice
-    .where((n) => and(n.status.eq("DRAFT"), n.dueDate.lte(ts(horizon))))
-    .limit(20000)
-    .all();
+  const due = await draftNoticesDue(schedules.map((s) => s.id), horizon);
   if (!due.length) return [];
-  const scheduleIds = [...new Set(due.map((n) => String(n.levyScheduleId)).filter(Boolean))];
-  const schedules = await db.orm.public.LevySchedule.where((s) => and(s.id.in(scheduleIds), s.status.eq("ACTIVE"))).limit(5000).all();
   const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(due.map((n) => n.lotId))])).limit(20000).all();
   const results: DueRunResult[] = [];
 
   for (const schedule of schedules) {
+    const mine = due.filter((n) => n.levyScheduleId === schedule.id);
+    if (!mine.length) continue;
     try {
       const issuerId = await issuerFor(schedule.schemeId, schedule.approvedBy ?? null);
-      const mine = due.filter((n) => n.levyScheduleId === schedule.id);
-      if (!issuerId || !mine.length) continue;
-      // Fewer than 30 days left (it was held, or the job did not run): the due date moves.
-      let moved = 0;
-      const notices: BatchNotice[] = [];
-      for (const n of mine) {
-        const t = issueTiming(toIsoDay(n.dueDate), today);
-        if (t.kind === "moved") {
-          await db.orm.public.LevyNotice.where((x) => and(x.id.eq(n.id), x.status.eq("DRAFT"))).update({ dueDate: ts(t.dueDate) });
-          moved++;
-        }
-        notices.push({
-          id: n.id,
-          noticeNumber: String(n.noticeNumber),
-          lotId: n.lotId,
-          lotNumber: String(lots.find((l) => l.id === n.lotId)?.lotNumber ?? "?"),
-          ownerId: n.ownerId ?? null,
-          dueDate: t.dueDate,
-          amountCents: toCents(String(n.amountDue)),
+      if (!issuerId) {
+        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: ["The building has no active Adviser to issue the notices."], awaitingConfirmation: 0 });
+        continue;
+      }
+      // On time: today is the 5-week mark. Past it: the Adviser confirms first.
+      const onTime = mine.filter((n) => issueTiming(toIsoDay(n.dueDate), today).kind === "planned");
+      const late = mine.filter((n) => issueTiming(toIsoDay(n.dueDate), today).kind !== "planned");
+      if (late.length) {
+        const lines = [...new Set(late.map((n) => lateMessage(issueTiming(toIsoDay(n.dueDate), today), `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`)!))];
+        await logActivity({
+          schemeId: schedule.schemeId,
+          actorId: issuerId,
+          action: "LEVY_NOTICES_HELD",
+          entityType: "LevySchedule",
+          entityId: schedule.id,
+          metadata: { count: late.length, reason: "Past the 5-week mark: confirm on the levy schedule to send them.", missing: lines },
         });
+      }
+      const notices: BatchNotice[] = onTime.map((n) => ({
+        id: n.id,
+        noticeNumber: String(n.noticeNumber),
+        lotId: n.lotId,
+        lotNumber: String(lots.find((l) => l.id === n.lotId)?.lotNumber ?? "?"),
+        ownerId: n.ownerId ?? null,
+        dueDate: toIsoDay(n.dueDate),
+        amountCents: toCents(String(n.amountDue)),
+      }));
+      if (!notices.length) {
+        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: null, awaitingConfirmation: late.length });
+        continue;
       }
       const missing = await checkPlannedNotices({ schemeId: schedule.schemeId, fundId: schedule.fundId, issuerId, noticeDate: today, notices });
       if (missing.length) {
@@ -197,15 +251,186 @@ export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
           entityId: schedule.id,
           metadata: { count: notices.length, missing: missing.map((m) => m.message) },
         });
-        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: missing.map((m) => m.message), moved });
+        results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: missing.map((m) => m.message), awaitingConfirmation: late.length });
         continue;
       }
       const r = await issueNoticeBatch({ schemeId: schedule.schemeId, scheduleId: schedule.id, fundId: schedule.fundId, issuerId, noticeDate: today, notices });
-      results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: r.count, held: null, moved });
+      results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: r.count, held: null, awaitingConfirmation: late.length });
     } catch (err) {
       logError(`[levy-notices] schedule ${schedule.id} could not be issued:`, err);
-      results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: ["The notices could not be issued; see the server log."], moved: 0 });
+      results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: ["The notices could not be issued; see the server log."], awaitingConfirmation: 0 });
     }
   }
   return results;
+}
+
+/**
+ * The planned notices of a schedule whose 5-week mark has passed, as the
+ * Adviser sees them before confirming: each with the day it would go out
+ * (today) and its due date (moved to 30 days away when fewer are left).
+ */
+export async function overdueDrafts(schemeId: string, scheduleId: string, today: string) {
+  const drafts = await db.orm.public.LevyNotice
+    .where((n) => and(n.schemeId.eq(schemeId), n.levyScheduleId.eq(scheduleId), n.status.eq("DRAFT")))
+    .limit(5000)
+    .all();
+  return drafts
+    .map((n) => ({ n, t: issueTiming(toIsoDay(n.dueDate), today) }))
+    .filter((x) => x.t.kind !== "planned");
+}
+
+/**
+ * Send, once the Adviser confirms, the planned notices of a schedule whose
+ * 5-week mark has passed. Those with fewer than 30 days left fall due 30
+ * days from today instead.
+ */
+export async function issueOverdueDrafts(input: { schemeId: string; scheduleId: string; fundId: string; issuerId: string; today: string }) {
+  const list = await overdueDrafts(input.schemeId, input.scheduleId, input.today);
+  if (!list.length) return { count: 0, emailed: 0, missing: [] as string[] };
+  const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(list.map((x) => x.n.lotId))])).limit(5000).all();
+  const notices: BatchNotice[] = list.map(({ n, t }) => ({
+    id: n.id,
+    noticeNumber: String(n.noticeNumber),
+    lotId: n.lotId,
+    lotNumber: String(lots.find((l) => l.id === n.lotId)?.lotNumber ?? "?"),
+    ownerId: n.ownerId ?? null,
+    dueDate: t.dueDate,
+    amountCents: toCents(String(n.amountDue)),
+  }));
+  const missing = await checkPlannedNotices({ schemeId: input.schemeId, fundId: input.fundId, issuerId: input.issuerId, noticeDate: input.today, notices });
+  if (missing.length) return { count: 0, emailed: 0, missing: missing.map((m) => m.message) };
+  const r = await issueNoticeBatch({ ...input, noticeDate: input.today, notices });
+  return { count: r.count, emailed: r.emailed, missing: [] as string[] };
+}
+
+// ─── 2. Raising levies on their due date ────────────────────────────────────
+
+/**
+ * Raise in the ledger every issued notice whose due date has come
+ * (`today`, Sydney), dated its due date. Claimed first; if the journal
+ * cannot be posted the claim is undone, so the next run tries again.
+ */
+export async function raiseDueLevies(today: string, schemeId?: string): Promise<{ raised: number; creditAppliedCents: number }> {
+  const pending = await db.orm.public.LevyNotice
+    .where((n) => and(n.raisePending.eq(true), n.dueDate.lte(ts(today)), ...(schemeId ? [n.schemeId.eq(schemeId)] : [])))
+    .orderBy([(n) => n.dueDate.asc(), (n) => n.id.asc()])
+    .limit(5000)
+    .all();
+  if (!pending.length) return { raised: 0, creditAppliedCents: 0 };
+
+  // One journal per schedule and due date.
+  const groups = new Map<string, typeof pending>();
+  for (const n of pending) {
+    const key = `${n.levyScheduleId}|${toIsoDay(n.dueDate)}`;
+    groups.set(key, [...(groups.get(key) ?? []), n]);
+  }
+  let raised = 0;
+  let creditAppliedCents = 0;
+  const schedules = new Map<string, { approvedBy: string | null }>();
+  for (const [key, notices] of groups) {
+    const [scheduleId, dueDate] = key.split("|");
+    const first = notices[0];
+    const claimed: typeof notices = [];
+    try {
+      if (!schedules.has(scheduleId)) {
+        const s = await db.orm.public.LevySchedule.where((x) => x.id.eq(scheduleId)).first();
+        schedules.set(scheduleId, { approvedBy: s?.approvedBy ?? null });
+      }
+      const actorId = await issuerFor(first.schemeId, schedules.get(scheduleId)!.approvedBy);
+      if (!actorId) continue;
+      for (const n of notices) {
+        const won = await db.orm.public.LevyNotice
+          .where((x) => and(x.id.eq(n.id), x.raisePending.eq(true)))
+          .update({ raisePending: false, raisedAt: ts(new Date().toISOString()) });
+        if (won) claimed.push(n);
+      }
+      if (!claimed.length) continue;
+      const totalCents = claimed.reduce((s, n) => s + toCents(String(n.amountDue)), 0);
+      try {
+        await postLevyRaisedJournal({ schemeId: first.schemeId, fundId: first.fundId, scheduleId, totalAmount: totalCents / 100, noticeCount: claimed.length, profileId: actorId, date: dueDate });
+      } catch (err) {
+        // Undo the claim so the next run raises them.
+        for (const n of claimed) {
+          await db.orm.public.LevyNotice.where((x) => x.id.eq(n.id)).update({ raisePending: true, raisedAt: null });
+        }
+        throw err;
+      }
+      raised += claimed.length;
+      await logActivity({
+        schemeId: first.schemeId,
+        actorId,
+        action: "LEVIES_RAISED",
+        entityType: "LevySchedule",
+        entityId: scheduleId,
+        metadata: { count: claimed.length, total: totalCents / 100, dueDate },
+      });
+      // Credit held for these lots (including payments received in advance) now applies.
+      const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(first.schemeId)).first();
+      if (scheme?.autoApplyOwnerCredit !== false) {
+        creditAppliedCents += await applyOwnerCredit({ schemeId: first.schemeId, lotIds: [...new Set(claimed.map((n) => n.lotId))], actorId, date: dueDate });
+      }
+    } catch (err) {
+      logError(`[levy-notices] levies due ${dueDate} on schedule ${scheduleId} could not be raised:`, err);
+    }
+  }
+  return { raised, creditAppliedCents };
+}
+
+// ─── 3. Sending failed emails again ─────────────────────────────────────────
+
+/** Email again any notice issued in the last few days (by this process) whose email did not go. */
+export async function retryNoticeEmails(today: string): Promise<number> {
+  const since = addDays(today, -EMAIL_RETRY_DAYS);
+  const notices = await db.orm.public.LevyNotice
+    .where((n) =>
+      and(
+        n.status.in(["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"]),
+        n.emailedAt.isNull(),
+        n.ownerId.isNotNull(),
+        n.issuedAt.gte(ts(`${since}T00:00:00.000Z`)),
+        // Issued ahead by this process: raised later, or raised by the job.
+        or(n.raisePending.eq(true), n.raisedAt.isNotNull()),
+      ),
+    )
+    .limit(2000)
+    .all();
+  let sent = 0;
+  const bySchedule = new Map<string, typeof notices>();
+  for (const n of notices) bySchedule.set(n.levyScheduleId, [...(bySchedule.get(n.levyScheduleId) ?? []), n]);
+  for (const [scheduleId, list] of bySchedule) {
+    try {
+      const schedule = await db.orm.public.LevySchedule.where((s) => s.id.eq(scheduleId)).first();
+      if (!schedule) continue;
+      const issuerId = await issuerFor(schedule.schemeId, schedule.approvedBy ?? null);
+      if (!issuerId) continue;
+      const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(list.map((n) => n.lotId))])).limit(5000).all();
+      sent += await sendIssuedNotices({
+        schemeId: schedule.schemeId,
+        fundId: schedule.fundId,
+        issuerId,
+        noticeDate: toIsoDay(list[0].issuedAt) || today,
+        notices: list.map((n) => ({
+          noticeId: n.id,
+          lotId: n.lotId,
+          lotNumber: String(lots.find((l) => l.id === n.lotId)?.lotNumber ?? "?"),
+          ownerId: n.ownerId ?? null,
+          noticeNumber: String(n.noticeNumber),
+          dueDate: toIsoDay(n.dueDate),
+          amountCents: toCents(String(n.amountDue)),
+        })),
+        onSent: markEmailed,
+      });
+    } catch (err) {
+      logError(`[levy-notices] could not resend notices for schedule ${scheduleId}:`, err);
+    }
+  }
+  return sent;
+}
+
+/** The daily job: issue, raise, resend. */
+export async function runLevyNoticeDay(today: string) {
+  const issued = await issueDueNotices(today);
+  const raised = await raiseDueLevies(today);
+  const resent = await retryNoticeEmails(today);
+  return { issued, raised, resent };
 }

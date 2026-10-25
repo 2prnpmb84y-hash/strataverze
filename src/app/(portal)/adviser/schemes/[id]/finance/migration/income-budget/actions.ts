@@ -24,6 +24,7 @@ function parseInput(raw: unknown): IncomeBudgetInput | null {
       for (const r of f.rows) if (![r.accountId, r.newAccountName, r.accountType, r.actual, r.budget].every(str)) return null;
     }
     if (!str(v.adoption.kind) || !str(v.adoption.meetingDate) || !str(v.levies.frequency)  || !str(v.levies.raisedBeforeTakeover)) return null;
+    if (v.levies.raisedInstalments !== undefined && (!Array.isArray(v.levies.raisedInstalments) || v.levies.raisedInstalments.length > 12 || !v.levies.raisedInstalments.every((n) => Number.isInteger(n)))) return null;
     return v;
   } catch {
     return null;

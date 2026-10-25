@@ -112,10 +112,14 @@ export interface IncomeBudgetInput {
     frequency: string;
     /**
      * Whether the previous manager raised any of this year's levy notices
-     * before the takeover: "none", "some", or "" (not answered). Notices are
-     * generated for a whole year, so a schedule is made only for "none".
+     * before the takeover: "none", "some", or "" (not answered).
      */
     raisedBeforeTakeover: string;
+    /**
+     * With "some": the instalments they raised, by number (1 is the first of
+     * the year). Those are not raised again; StrataVerze plans the rest.
+     */
+    raisedInstalments?: number[];
   };
 }
 
@@ -172,9 +176,13 @@ export interface ParsedFund {
 export interface ParsedIncomeBudget {
   funds: ParsedFund[];
   adoption: { kind: "before_takeover"; meetingDate: string } | { kind: "draft" };
-  /** `makeSchedules` is false when some of the year's notices were raised before the takeover. */
-  /** Levies are paid in advance, so instalments fall due on the first day of each period; there is no due date to enter. */
-  levies: { frequency: OnboardingLevyFrequency; makeSchedules: boolean };
+  /**
+   * Levies are paid in advance, so instalments fall due on the first day of
+   * each period; there is no due date to enter. `raisedInstalments` were
+   * raised by the previous manager and are not raised again; `makeSchedules`
+   * is false when every instalment was.
+   */
+  levies: { frequency: OnboardingLevyFrequency; makeSchedules: boolean; raisedInstalments: number[] };
 }
 
 export interface IncomeBudgetCheck {
@@ -352,14 +360,27 @@ export function checkIncomeBudget(input: IncomeBudgetInput, ctx: IncomeBudgetCon
   const frequency = LEVY_FREQUENCIES.find((f) => f === input.levies.frequency);
   const raised = input.levies.raisedBeforeTakeover;
   if (raised !== "none" && raised !== "some") problems.push(`Say whether the previous manager raised the levies for ${yearLabel(budgetYear)} before the takeover.`);
-  if (raised === "some") {
-    notes.push(
-      `This year's levies were raised before the takeover, so they are not raised again and no levy schedule is made. ` +
-        `Bring every unpaid notice across in the cutover's outstanding levy notices, including those not yet due, with their original due dates.`,
-    );
-  }
   if (!frequency) problems.push("Choose how often levies are raised.");
-  if (frequency && (raised === "none" || raised === "some")) levies = { frequency, makeSchedules: raised === "none" };
+  let raisedInstalments: number[] = [];
+  if (raised === "some" && frequency) {
+    const count = INSTALMENTS_PER_YEAR[frequency];
+    raisedInstalments = [...new Set((input.levies.raisedInstalments ?? []).filter((n) => Number.isInteger(n) && n >= 1 && n <= count))].sort((a, b) => a - b);
+    if (!raisedInstalments.length) problems.push("Tick the instalments the previous manager raised.");
+    else if (raisedInstalments.length === count) {
+      notes.push(
+        `Every instalment for ${yearLabel(budgetYear)} was raised before the takeover, so none is raised again and no levy schedule is made. ` +
+          `Bring every unpaid notice across in the cutover's outstanding levy notices, including those not yet due, with their original due dates.`,
+      );
+    } else {
+      notes.push(
+        `Instalment${raisedInstalments.length === 1 ? "" : "s"} ${raisedInstalments.join(", ")} ${raisedInstalments.length === 1 ? "was" : "were"} raised before the takeover and ${raisedInstalments.length === 1 ? "is" : "are"} not raised again; StrataVerze plans the rest. ` +
+          `Bring the unpaid ones across in the cutover's outstanding levy notices, with their original due dates.`,
+      );
+    }
+  }
+  if (frequency && (raised === "none" || (raised === "some" && raisedInstalments.length))) {
+    levies = { frequency, makeSchedules: raisedInstalments.length < INSTALMENTS_PER_YEAR[frequency], raisedInstalments };
+  }
 
   const ok = problems.length === 0 && Object.values(fundProblems).every((l) => l.length === 0) && adoption && levies;
   return { problems, fundProblems, notes, parsed: ok ? { funds: parsedFunds, adoption: adoption!, levies: levies! } : null };

@@ -1538,6 +1538,9 @@ model LevySchedule {
   dueDate          DateTime?    @db.Date @map("due_date") // special levies: the single due date
   /// The first instalment's due date, entered at onboarding.
   firstDueDate     DateTime?    @db.Date @map("first_due_date")
+  /// Instalments the previous manager raised before the takeover, as
+  /// comma-separated instalment numbers ("1,2"); not raised again.
+  raisedBeforeTakeover String?  @map("raised_before_takeover")
   totalLots        Int          @map("total_lots")
   totalEntitlement Decimal      @db.Decimal(10, 2) @map("total_entitlement")
   status           String       @default("DRAFT") // DRAFT, APPROVED, ACTIVE, SUPERSEDED
@@ -1575,6 +1578,14 @@ model LevyNotice {
   interestCharged    Decimal             @default(0) @db.Decimal(12, 2) @map("interest_charged")
   status             String              @default("DRAFT") // DRAFT, ISSUED, PARTIALLY_PAID, PAID, OVERDUE, WRITTEN_OFF
   issuedAt           DateTime?           @db.Timestamptz @map("issued_at")
+  /// Issued ahead of its period and not yet raised: the levy is raised in
+  /// the ledger on its due date, and payments before then are held as paid
+  /// in advance (25 Oct 2026).
+  raisePending       Boolean             @default(false) @map("raise_pending")
+  /// When the levy was raised in the ledger, for notices issued ahead.
+  raisedAt           DateTime?           @db.Timestamptz @map("raised_at")
+  /// When the notice was emailed to the owner, for notices issued ahead.
+  emailedAt          DateTime?           @db.Timestamptz @map("emailed_at")
   paidInFullAt       DateTime?           @db.Timestamptz @map("paid_in_full_at")
   /// The cutover this notice was brought across in, if any.
   migrationBatchId   String?             @map("migration_batch_id") @db.Uuid

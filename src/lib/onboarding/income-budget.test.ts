@@ -187,13 +187,27 @@ describe("levies raised before the takeover", () => {
     expect(checkIncomeBudget(input, ctx()).problems.join(" ")).toContain("raised the levies for 1 July 2026 to 30 June 2027");
   });
 
-  it("makes no levy schedule when the levies were already raised, so nothing is charged twice", () => {
+  it("asks which instalments were raised", () => {
     const input = sp99999();
-    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some" };
+    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [] };
+    expect(checkIncomeBudget(input, ctx()).problems).toContain("Tick the instalments the previous manager raised.");
+  });
+
+  it("makes no levy schedule when every instalment was already raised, so nothing is charged twice", () => {
+    const input = sp99999();
+    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [4, 3, 2, 1, 1] };
     const c = checkIncomeBudget(input, ctx());
     expect(c.problems).toEqual([]);
-    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", makeSchedules: false });
-    expect(c.notes.join(" ")).toContain("they are not raised again and no levy schedule is made");
+    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", makeSchedules: false, raisedInstalments: [1, 2, 3, 4] });
+    expect(c.notes.join(" ")).toContain("none is raised again and no levy schedule is made");
+  });
+
+  it("plans only the instalments not raised before the takeover", () => {
+    const input = sp99999();
+    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [1, 2, 9] };
+    const c = checkIncomeBudget(input, ctx());
+    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", makeSchedules: true, raisedInstalments: [1, 2] });
+    expect(c.notes.join(" ")).toContain("Instalments 1, 2 were raised before the takeover and are not raised again; StrataVerze plans the rest.");
   });
 
   it("makes the schedules when none were raised", () => {

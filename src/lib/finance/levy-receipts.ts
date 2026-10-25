@@ -69,7 +69,8 @@ export async function receiptLevyPayments(input: {
     if (notice.status === "DRAFT" || notice.status === "WRITTEN_OFF") throw new LevyReceiptError(`Notice ${String(notice.noticeNumber)} is not an issued notice.`);
     const owedCents = toCents(String(notice.amountDue)) + toCents(String(notice.interestCharged ?? 0)) - toCents(String(notice.amountPaid));
     const excessCents = Math.max(0, r.amountCents - Math.max(0, owedCents));
-    if (excessCents > 0 && !input.confirmOverpayment) {
+    // A notice not yet due (issued ahead, not raised) takes the payment as paid in advance: no overpayment.
+    if (excessCents > 0 && !notice.raisePending && !input.confirmOverpayment) {
       throw new LevyReceiptError(
         owedCents <= 0
           ? `Notice ${String(notice.noticeNumber)} is already paid. Confirm that the whole payment is to be held as the owner's credit.`

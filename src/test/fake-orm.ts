@@ -79,17 +79,18 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
   reset(seed);
   const table = (name: string) => (tables[name] ??= []);
 
-  function collection(name: string, preds: Predicate[] = [], limit?: number) {
+  function collection(name: string, preds: Predicate[] = [], limit?: number, offset = 0) {
     const matching = () => {
-      const rows = table(name).filter((r) => preds.every((p) => p(r)));
+      const rows = table(name).filter((r) => preds.every((p) => p(r))).slice(offset);
       return limit === undefined ? rows : rows.slice(0, limit);
     };
     const self = {
-      where: (filter: unknown) => collection(name, [...preds, toPredicate(filter)], limit),
+      where: (filter: unknown) => collection(name, [...preds, toPredicate(filter)], limit, offset),
       include: () => self,
       orderBy: () => self,
       select: () => self,
-      limit: (n: number) => collection(name, preds, n),
+      limit: (n: number) => collection(name, preds, n, offset),
+      offset: (n: number) => collection(name, preds, limit, n),
       first: async (filter?: unknown) => {
         const rows = filter === undefined ? matching() : matching().filter(toPredicate(filter));
         return rows[0] ? { ...rows[0] } : null;

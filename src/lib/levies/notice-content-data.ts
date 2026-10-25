@@ -102,6 +102,8 @@ export async function sendIssuedNotices(input: {
   issuerId: string;
   noticeDate: string;
   notices: PlannedNotice[];
+  /** Called for each notice whose email was accepted, so it is not sent again. */
+  onSent?: (noticeId: string) => Promise<void>;
 }): Promise<number> {
   let sent = 0;
   try {
@@ -144,7 +146,10 @@ export async function sendIssuedNotices(input: {
         }),
         attachments,
       });
-      if (ok) sent += 1;
+      if (ok) {
+        sent += 1;
+        if (n.noticeId && input.onSent) await input.onSent(n.noticeId).catch((err) => logError("[levy-notices] Could not mark a notice emailed:", err));
+      }
     }
   } catch (err) {
     logError("[levy-notices] Failed to send notices:", err);

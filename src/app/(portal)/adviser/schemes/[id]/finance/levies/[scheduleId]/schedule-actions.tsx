@@ -10,7 +10,9 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import {
   approveLevyScheduleAction,
+  issueOverdueNoticesAction,
   issueScheduleNoticesAction,
+  stopPlannedNoticesAction,
   recordLevyPaymentFormAction,
   type ActionState,
 } from "../../actions";
@@ -126,6 +128,63 @@ export function IssueNoticesForm({
       <Button type="submit" disabled={pending || blocked}>
         {pending ? "Saving..." : isSpecial ? `Issue ${noticeCount} notice${noticeCount === 1 ? "" : "s"}` : `Plan ${noticeCount} notice${noticeCount === 1 ? "" : "s"}`}
       </Button>
+    </form>
+  );
+}
+
+/** Send, once confirmed, the planned notices past their 5-week mark. */
+export function OverdueNoticesForm({ schemeId, scheduleId, count }: { schemeId: string; scheduleId: string; count: number }) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(issueOverdueNoticesAction.bind(null, schemeId, scheduleId), {});
+  const late = Array.isArray(state.data?.late) ? (state.data.late as string[]) : [];
+  const missing = Array.isArray(state.data?.missing) ? (state.data.missing as { code: string; message: string }[]) : [];
+  return (
+    <form action={formAction} className="space-y-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <p className="font-medium">
+        {count} planned notice{count === 1 ? " is" : "s are"} past {count === 1 ? "its" : "their"} 5-week mark and {count === 1 ? "has" : "have"} not gone out.
+      </p>
+      <p>They go out today once you confirm. Any with fewer than 30 days left fall due 30 days from today instead, the statutory minimum.</p>
+      {late.length > 0 && (
+        <ul className="list-disc space-y-1 pl-5">
+          {late.map((m) => (
+            <li key={m}>{m}</li>
+          ))}
+        </ul>
+      )}
+      {missing.length > 0 && (
+        <ul className="list-disc space-y-1 pl-5">
+          {missing.map((m) => (
+            <li key={m.message}>{m.message}</li>
+          ))}
+        </ul>
+      )}
+      <label className="flex items-start gap-2">
+        <input type="checkbox" name="confirmLate" className="mt-1" />
+        <span>I confirm these notices go out today with less than 5 weeks&apos; notice (never less than the statutory 30 days).</span>
+      </label>
+      {state.error && <p role="alert" className="text-red-700">{state.error}</p>}
+      {state.success && <p className="text-green-700">{String(state.data?.count ?? 0)} notice(s) sent, {String(state.data?.emailed ?? 0)} emailed to owners.</p>}
+      <Button type="submit" disabled={pending}>{pending ? "Sending..." : "Send them now"}</Button>
+    </form>
+  );
+}
+
+/** Stop the planned notices (for example when the budget is revised). */
+export function StopPlannedNoticesForm({ schemeId, scheduleId, count }: { schemeId: string; scheduleId: string; count: number }) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(stopPlannedNoticesAction.bind(null, schemeId, scheduleId), {});
+  if (state.success) {
+    return <p className="text-sm text-green-700">{String(state.data?.removed ?? 0)} planned notice(s) stopped. The schedule is superseded; notices already sent are unchanged.</p>;
+  }
+  return (
+    <form action={formAction} className="space-y-3 text-sm">
+      <p className="text-ink-muted">
+        If the budget changes, stop the {count} planned notice{count === 1 ? "" : "s"} not yet sent. Notices already sent stay as they are.
+      </p>
+      <label className="flex items-start gap-2 text-ink">
+        <input type="checkbox" name="confirmStop" className="mt-1" />
+        <span>Stop the planned notices and supersede this schedule.</span>
+      </label>
+      {state.error && <p role="alert" className="text-red-700">{state.error}</p>}
+      <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Stopping..." : "Stop planned notices"}</Button>
     </form>
   );
 }

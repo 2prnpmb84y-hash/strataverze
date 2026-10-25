@@ -62,7 +62,9 @@ async function syncBalance(orm: Orm, key: CreditKey, ownerId: string | null) {
     .first();
   const values = { balance: num(cents), updatedAt: ts(new Date().toISOString()), ...(ownerId ? { ownerId } : {}) };
   if (existing) await orm.public.OwnerCreditBalance.where((b) => b.id.eq(existing.id)).update(values);
-  else await orm.public.OwnerCreditBalance.create({ ...key, ownerId, balance: num(cents), updatedAt: values.updatedAt });
+  // Only the key's own fields: callers pass a whole movement as the key, and
+  // its other fields (type, amount) are not columns here (25 Oct 2026 fix).
+  else await orm.public.OwnerCreditBalance.create({ schemeId: key.schemeId, lotId: key.lotId, fundId: key.fundId, ownerId, balance: num(cents), updatedAt: values.updatedAt });
   return cents;
 }
 
@@ -174,7 +176,8 @@ export async function applyOwnerCredit(input: { schemeId: string; lotIds?: strin
     if (available <= 0) continue;
 
     const notices = await db.orm.public.LevyNotice
-      .where((n) => and(n.schemeId.eq(b.schemeId), n.lotId.eq(b.lotId), n.fundId.eq(b.fundId), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"])))
+      // A notice issued ahead and not yet due is not raised yet: credit waits for its due date.
+      .where((n) => and(n.schemeId.eq(b.schemeId), n.lotId.eq(b.lotId), n.fundId.eq(b.fundId), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]), n.raisePending.eq(false)))
       .limit(500)
       .all();
     const plan = planCreditApplication(

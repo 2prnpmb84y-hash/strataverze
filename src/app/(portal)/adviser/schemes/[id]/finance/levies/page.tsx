@@ -147,7 +147,12 @@ export default async function LevySchedulesPage({
                   <div className="text-right">
                     <p className="text-sm text-ink-muted">Notices</p>
                     <p className="text-sm font-medium text-ink">
-                      {schedule.levyNotices.length}
+                      {schedule.levyNotices.filter((n) => String(n.status) !== "DRAFT").length}
+                      {schedule.levyNotices.some((n) => String(n.status) === "DRAFT") && (
+                        <span className="block text-xs font-normal text-ink-muted">
+                          + {schedule.levyNotices.filter((n) => String(n.status) === "DRAFT").length} planned
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>

@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'98ca83cf12ddd7e01285533b3837dd7409585b19abb2b6cf2621fa4f57d07f69'>;
+  StorageHashBase<'3d25b22c37b002b783d795ce495fe3fa4337a6391a3b4a02d2fce75289e0ac3d'>;
 export type ExecutionHash =
   ExecutionHashBase<'9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9'>;
 export type ProfileHash =
@@ -1101,6 +1101,7 @@ export type FieldOutputTypes = {
       readonly balanceOutstanding: Numeric<12, 2>;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly dueDate: CodecTypes['pg/date-string@1']['output'];
+      readonly emailedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly fundId: CodecTypes['pg/uuid@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly interestCharged: Numeric<12, 2>;
@@ -1113,6 +1114,8 @@ export type FieldOutputTypes = {
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly periodEnd: CodecTypes['pg/date-string@1']['output'];
       readonly periodStart: CodecTypes['pg/date-string@1']['output'];
+      readonly raisePending: CodecTypes['pg/bool@1']['output'];
+      readonly raisedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -1149,6 +1152,7 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly levyType: CodecTypes['pg/text@1']['output'];
       readonly migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly raisedBeforeTakeover: CodecTypes['pg/text@1']['output'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'] | null;
@@ -3589,6 +3593,7 @@ export type FieldInputTypes = {
       readonly balanceOutstanding: CodecTypes['pg/numeric@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly dueDate: CodecTypes['pg/date-string@1']['input'];
+      readonly emailedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly fundId: CodecTypes['pg/uuid@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly interestCharged: CodecTypes['pg/numeric@1']['input'];
@@ -3601,6 +3606,8 @@ export type FieldInputTypes = {
       readonly paidInFullAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly periodEnd: CodecTypes['pg/date-string@1']['input'];
       readonly periodStart: CodecTypes['pg/date-string@1']['input'];
+      readonly raisePending: CodecTypes['pg/bool@1']['input'];
+      readonly raisedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -3637,6 +3644,7 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly levyType: CodecTypes['pg/text@1']['input'];
       readonly migrationBatchId: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly raisedBeforeTakeover: CodecTypes['pg/text@1']['input'] | null;
       readonly schemeId: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'] | null;
@@ -6077,6 +6085,7 @@ export type StorageColumnTypes = {
       readonly balance_outstanding: Numeric<12, 2>;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly due_date: CodecTypes['pg/date-string@1']['output'];
+      readonly emailed_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly fund_id: CodecTypes['pg/uuid@1']['output'];
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly interest_charged: Numeric<12, 2>;
@@ -6089,6 +6098,8 @@ export type StorageColumnTypes = {
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly period_end: CodecTypes['pg/date-string@1']['output'];
       readonly period_start: CodecTypes['pg/date-string@1']['output'];
+      readonly raise_pending: CodecTypes['pg/bool@1']['output'];
+      readonly raised_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -6125,6 +6136,7 @@ export type StorageColumnTypes = {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly levy_type: CodecTypes['pg/text@1']['output'];
       readonly migration_batch_id: CodecTypes['pg/uuid@1']['output'] | null;
+      readonly raised_before_takeover: CodecTypes['pg/text@1']['output'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'] | null;
@@ -8566,6 +8578,7 @@ export type StorageColumnInputTypes = {
       readonly balance_outstanding: CodecTypes['pg/numeric@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly due_date: CodecTypes['pg/date-string@1']['input'];
+      readonly emailed_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly fund_id: CodecTypes['pg/uuid@1']['input'];
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly interest_charged: CodecTypes['pg/numeric@1']['input'];
@@ -8578,6 +8591,8 @@ export type StorageColumnInputTypes = {
       readonly paid_in_full_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly period_end: CodecTypes['pg/date-string@1']['input'];
       readonly period_start: CodecTypes['pg/date-string@1']['input'];
+      readonly raise_pending: CodecTypes['pg/bool@1']['input'];
+      readonly raised_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly updated_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -8614,6 +8629,7 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly levy_type: CodecTypes['pg/text@1']['input'];
       readonly migration_batch_id: CodecTypes['pg/uuid@1']['input'] | null;
+      readonly raised_before_takeover: CodecTypes['pg/text@1']['input'] | null;
       readonly scheme_id: CodecTypes['pg/uuid@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'] | null;
@@ -11294,6 +11310,7 @@ export namespace Models {
     balanceOutstanding: Numeric<12, 2>;
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     dueDate: CodecTypes['pg/date-string@1']['output'];
+    emailedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     fundId: CodecTypes['pg/uuid@1']['output'];
     id: CodecTypes['pg/uuid@1']['output'];
     interestCharged: Numeric<12, 2>;
@@ -11306,6 +11323,8 @@ export namespace Models {
     paidInFullAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     periodEnd: CodecTypes['pg/date-string@1']['output'];
     periodStart: CodecTypes['pg/date-string@1']['output'];
+    raisePending: CodecTypes['pg/bool@1']['output'];
+    raisedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -11352,6 +11371,7 @@ export namespace Models {
     id: CodecTypes['pg/uuid@1']['output'];
     levyType: CodecTypes['pg/text@1']['output'];
     migrationBatchId: CodecTypes['pg/uuid@1']['output'] | null;
+    raisedBeforeTakeover: CodecTypes['pg/text@1']['output'] | null;
     schemeId: CodecTypes['pg/uuid@1']['output'];
     status: CodecTypes['pg/text@1']['output'];
     title: CodecTypes['pg/text@1']['output'] | null;
@@ -20874,6 +20894,12 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly emailed_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly fund_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -20954,6 +20980,22 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/date';
                   readonly codecId: 'pg/date-string@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly raise_pending: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly raised_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly scheme_id: {
@@ -21280,6 +21322,12 @@ type ContractBase = Omit<
                 readonly migration_batch_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly raised_before_takeover: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -41711,6 +41759,13 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
               };
+              readonly emailedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
               readonly fundId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -41772,6 +41827,17 @@ type ContractBase = Omit<
               readonly periodStart: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly raisePending: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly raisedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
               };
               readonly schemeId: {
                 readonly nullable: false;
@@ -41864,6 +41930,7 @@ type ContractBase = Omit<
                 readonly balanceOutstanding: { readonly column: 'balance_outstanding' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly dueDate: { readonly column: 'due_date' };
+                readonly emailedAt: { readonly column: 'emailed_at' };
                 readonly fundId: { readonly column: 'fund_id' };
                 readonly id: { readonly column: 'id' };
                 readonly interestCharged: { readonly column: 'interest_charged' };
@@ -41876,6 +41943,8 @@ type ContractBase = Omit<
                 readonly paidInFullAt: { readonly column: 'paid_in_full_at' };
                 readonly periodEnd: { readonly column: 'period_end' };
                 readonly periodStart: { readonly column: 'period_start' };
+                readonly raisePending: { readonly column: 'raise_pending' };
+                readonly raisedAt: { readonly column: 'raised_at' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updated_at' };
@@ -42059,6 +42128,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly raisedBeforeTakeover: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -42143,6 +42216,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly levyType: { readonly column: 'levy_type' };
                 readonly migrationBatchId: { readonly column: 'migration_batch_id' };
+                readonly raisedBeforeTakeover: { readonly column: 'raised_before_takeover' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly title: { readonly column: 'title' };

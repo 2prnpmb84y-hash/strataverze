@@ -1,4 +1,5 @@
-import { issueDateFor } from "@/lib/levies/issue-timing";
+import { issueDateFor, issueTiming } from "@/lib/levies/issue-timing";
+import { sydneyToday } from "@/lib/finance/interest-setting";
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -21,6 +22,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import {
   ApproveScheduleForm,
   IssueNoticesForm,
+  OverdueNoticesForm,
+  StopPlannedNoticesForm,
   RecordPaymentForm,
 } from "./schedule-actions";
 import { connection } from "next/server";
@@ -117,6 +120,9 @@ export default async function LevyScheduleDetailPage({
   const totalLevied = issuedNotices.reduce((s, n) => s + Number(n.amountDue ?? 0), 0);
   const totalPlanned = plannedNotices.reduce((s, n) => s + Number(n.amountDue ?? 0), 0);
   const totalPaid = notices.reduce((s, n) => s + Number(n.amountPaid ?? 0), 0);
+  // Planned notices past their 5-week mark wait for the Adviser to confirm.
+  const today = sydneyToday();
+  const overdueCount = status === "ACTIVE" ? plannedNotices.filter((n) => issueTiming(toIsoDay(n.dueDate), today).kind !== "planned").length : 0;
 
   // Preview of the notices this schedule will raise (before issue).
   const fyStart = financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
@@ -272,6 +278,16 @@ export default async function LevyScheduleDetailPage({
               <span className="text-ink">Outstanding</span>
               <span className="text-ink tabular-nums">{formatCurrency(totalLevied - totalPaid)}</span>
             </div>
+          </div>
+        </Card>
+      )}
+
+      {status === "ACTIVE" && plannedNotices.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader title="Planned notices" description="Each goes out by email 5 weeks before it falls due." />
+          <div className="px-6 pb-6 space-y-6">
+            {overdueCount > 0 && <OverdueNoticesForm schemeId={id} scheduleId={scheduleId} count={overdueCount} />}
+            <StopPlannedNoticesForm schemeId={id} scheduleId={scheduleId} count={plannedNotices.length} />
           </div>
         </Card>
       )}

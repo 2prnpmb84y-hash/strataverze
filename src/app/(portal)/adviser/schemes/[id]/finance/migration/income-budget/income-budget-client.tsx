@@ -503,8 +503,34 @@ export function IncomeBudgetClient({
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "some"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "some" })} className="mt-1" />
-            <span>Yes, they were raised. They are not raised again: the unpaid notices, including those not yet due, come across in the cutover.</span>
+            <span>Yes, some or all of them. Tick those raised: they are not raised again, and their unpaid notices come across in the cutover.</span>
           </label>
+          {levies.raisedBeforeTakeover === "some" && (
+            <div className="ml-6 space-y-1">
+              {Array.from({ length: INSTALMENTS_PER_YEAR[levies.frequency as LevyFrequency] ?? 4 }, (_, i) => i + 1).map((k) => {
+                const months = 12 / (INSTALMENTS_PER_YEAR[levies.frequency as LevyFrequency] ?? 4);
+                const due = addMonths(budgetYear.start, (k - 1) * months);
+                const ticked = (levies.raisedInstalments ?? []).includes(k);
+                return (
+                  <label key={k} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={ticked}
+                      onChange={(e) => {
+                        const set = new Set(levies.raisedInstalments ?? []);
+                        if (e.target.checked) set.add(k);
+                        else set.delete(k);
+                        setLevies({ ...levies, raisedInstalments: [...set].sort((a, b) => a - b) });
+                      }}
+                    />
+                    <span>
+                      Instalment {k}, due {due.split("-").reverse().join("/")}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </fieldset>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl text-sm">
           <label className="block">

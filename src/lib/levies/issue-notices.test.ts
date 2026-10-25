@@ -31,7 +31,7 @@ describe("issue timing", () => {
 const today = vi.hoisted(() => ({ value: "2026-05-01" }));
 const content = vi.hoisted(() => ({ missing: [] as { code: string; message: string }[] }));
 const sent = vi.hoisted(() => ({ notices: [] as Array<{ noticeNumber: string; dueDate: string }> }));
-const journals = vi.hoisted(() => ({ posted: [] as Array<{ date: string; total: number }> }));
+const journals = vi.hoisted(() => ({ posted: [] as Array<{ date: string; total: number }>, fail: false }));
 
 vi.mock("@/lib/auth/mfa-enforcement", () => ({
   requireRecentMfa: vi.fn(async () => {}),
@@ -53,20 +53,22 @@ vi.mock("@/lib/finance/interest-setting", async () => {
   const actual = await vi.importActual<typeof import("@/lib/finance/interest-setting")>("@/lib/finance/interest-setting");
   return { ...actual, sydneyToday: () => today.value };
 });
+const owners = vi.hoisted(() => ({ l1: "o1" as string | null }));
 vi.mock("@/lib/levies/load-plan-lots", () => ({
   loadPlanLots: async () => [
-    { lotId: "l1", lotNumber: "1", entitlement: 60, ownerId: "o1" },
+    { lotId: "l1", lotNumber: "1", entitlement: 60, ownerId: owners.l1 },
     { lotId: "l2", lotNumber: "2", entitlement: 40, ownerId: "o2" },
   ],
 }));
 vi.mock("@/lib/levies/notice-content-data", () => ({
   checkPlannedNotices: async () => content.missing,
-  sendIssuedNotices: async (i: { notices: Array<{ noticeNumber: string; dueDate: string }> }) => {
+  sendIssuedNotices: async (i: { notices: Array<{ noticeId?: string; noticeNumber: string; dueDate: string }>; onSent?: (id: string) => Promise<void> }) => {
     sent.notices.push(...i.notices.map((n) => ({ noticeNumber: n.noticeNumber, dueDate: n.dueDate })));
+    for (const n of i.notices) if (n.noticeId) await i.onSent?.(n.noticeId);
     return i.notices.length;
   },
 }));
-vi.mock("@/lib/finance/owner-credits", () => ({ applyOwnerCredit: async () => 0 }));
+vi.mock("@/lib/finance/owner-credits", () => ({ applyOwnerCredit: async () => 0, recordCreditMovement: async () => ({ id: "credit-1" }) }));
 vi.mock("@/lib/queries/account-codes", async () => {
   const actual = await vi.importActual<typeof import("@/lib/queries/account-codes")>("@/lib/queries/account-codes");
   return { ...actual, getSystemAccountBySubType: async (_s: string, sub: string) => ({ id: `acc-${sub}` }) };
@@ -77,6 +79,7 @@ vi.mock("@/lib/queries/journal-entries", async () => {
     ...actual,
     getNextEntryNumber: async () => "JE-1",
     createJournalEntry: async (e: { transactionDate: string; lines: Array<{ debit?: number }> }) => {
+      if (journals.fail) throw new Error("duplicate entry number");
       journals.posted.push({ date: e.transactionDate, total: e.lines.reduce((s, l) => s + (l.debit ?? 0), 0) });
       return { id: "je" };
     },
@@ -90,7 +93,9 @@ vi.mock("@/lib/queries/schemes", async () => {
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { issueScheduleNoticesAction } = await import("@/app/(portal)/adviser/schemes/[id]/finance/actions");
-const { issueDueNotices } = await import("./issue-notices");
+const { stopPlannedNoticesAction, issueOverdueNoticesAction } = await import("@/app/(portal)/adviser/schemes/[id]/finance/actions");
+const { issueDueNotices, raiseDueLevies, runLevyNoticeDay } = await import("./issue-notices");
+const { recordLevyPayment } = await import("@/lib/queries/levy-schedules");
 
 function seed() {
   sharedFake.reset({
@@ -104,11 +109,14 @@ function seed() {
       { id: "ls1", schemeId: "s1", fundId: "admin", financialYear: 2026, budgetAmount: "40000.00", frequency: "QUARTERLY", levyType: "ORDINARY", totalLots: 2, totalEntitlement: "100", status: "APPROVED", approvedBy: "adviser" },
     ],
     Budget: [{ id: "b1", schemeId: "s1", fundId: "admin", financialYear: 2026, version: 1, status: "ADOPTED" }],
+    SchemeMembership: [{ id: "m-adv", schemeId: "s1", profileId: "adviser", role: "ADVISER", isActive: true }],
     LevyNotice: [],
   });
+  owners.l1 = "o1";
   content.missing = [];
   sent.notices = [];
   journals.posted = [];
+  journals.fail = false;
 }
 
 const generate = (confirmLate = false) => {
@@ -148,8 +156,20 @@ describe("generating a budget levy schedule", () => {
     const q1 = notices().filter((n) => n.status === "ISSUED");
     expect(q1.map((n) => n.dueDate)).toEqual(["2026-07-10", "2026-07-10"]);
     expect(sent.notices.map((n) => n.dueDate)).toEqual(["2026-07-10", "2026-07-10"]);
-    // Only what went out is posted: Q1, $10,000, on the notice date.
-    expect(journals.posted).toEqual([{ date: "2026-06-10", total: 10000 }]);
+    // Raised in the ledger on its due date, not on the notice date.
+    expect(journals.posted).toEqual([]);
+    await raiseDueLevies("2026-07-09");
+    expect(journals.posted).toEqual([]);
+    await raiseDueLevies("2026-07-10");
+    expect(journals.posted).toEqual([{ date: "2026-07-10", total: 10000 }]);
+  });
+
+  it("does not plan instalments the previous manager raised before the takeover", async () => {
+    today.value = "2026-05-01";
+    sharedFake.table("LevySchedule")[0].raisedBeforeTakeover = "1,2";
+    const r = await generate();
+    expect(r).toMatchObject({ success: true, data: { planned: 4 } });
+    expect([...new Set(notices().map((n) => n.dueDate))]).toEqual(["2027-01-01", "2027-04-01"]);
   });
 
   it("issues nothing when a notice would be missing required content", async () => {
@@ -162,21 +182,39 @@ describe("generating a budget levy schedule", () => {
 });
 
 describe("the daily job", () => {
-  it("sends each quarter's notices 35 days before they fall due, once", async () => {
+  it("sends each quarter's notices 35 days before they fall due, once, and raises them on the due date", async () => {
     today.value = "2026-05-01";
     await generate();
     expect(await issueDueNotices("2026-05-26")).toEqual([]);
     const r = await issueDueNotices("2026-05-27");
-    expect(r).toEqual([expect.objectContaining({ scheduleId: "ls1", issued: 2, held: null, moved: 0 })]);
+    expect(r).toEqual([expect.objectContaining({ scheduleId: "ls1", issued: 2, held: null, awaitingConfirmation: 0 })]);
     expect(notices().filter((n) => n.status === "ISSUED").map((n) => n.dueDate)).toEqual(["2026-07-01", "2026-07-01"]);
-    expect(journals.posted).toEqual([{ date: "2026-05-27", total: 10000 }]);
+    // Nothing is posted until the levy falls due, in the new financial year.
+    expect(journals.posted).toEqual([]);
     // Run again the same day: nothing more goes out.
     expect(await issueDueNotices("2026-05-27")).toEqual([]);
+    expect(sent.notices).toHaveLength(2);
+    expect(notices().filter((n) => n.emailedAt)).toHaveLength(2);
+    const day = await runLevyNoticeDay("2026-07-01");
+    expect(day.raised.raised).toBe(2);
+    expect(journals.posted).toEqual([{ date: "2026-07-01", total: 10000 }]);
+    expect(notices().filter((n) => n.status === "ISSUED").every((n) => n.raisePending === false && n.raisedAt)).toBe(true);
+    // Raised once only.
+    await runLevyNoticeDay("2026-07-02");
+    expect(journals.posted).toHaveLength(1);
     await issueDueNotices("2026-08-27");
     expect(notices().filter((n) => n.status === "ISSUED")).toHaveLength(4);
   });
 
-  it("holds notices missing required content, and moves the due date if it then has fewer than 30 days", async () => {
+  it("addresses each notice to the lot's owner when it goes out, not when it was planned", async () => {
+    today.value = "2026-05-01";
+    await generate();
+    owners.l1 = "o9";
+    await issueDueNotices("2026-05-27");
+    expect(notices().filter((n) => n.status === "ISSUED" && n.lotId === "l1").map((n) => n.ownerId)).toEqual(["o9"]);
+  });
+
+  it("holds notices missing required content; once past the 5-week mark they wait for the Adviser", async () => {
     today.value = "2026-05-01";
     await generate();
     content.missing = [{ code: "PAYMENT_DETAILS", message: "How to pay" }];
@@ -184,12 +222,21 @@ describe("the daily job", () => {
     expect(held[0]).toMatchObject({ issued: 0, held: ["How to pay"] });
     expect(notices().every((n) => n.status === "DRAFT")).toBe(true);
     content.missing = [];
+    // Fixed, but now late: the job does not send them on its own.
     const r = await issueDueNotices("2026-06-05");
-    expect(r[0]).toMatchObject({ issued: 2, moved: 2 });
+    expect(r[0]).toMatchObject({ issued: 0, awaitingConfirmation: 2 });
+    expect(notices().every((n) => n.status === "DRAFT")).toBe(true);
+    // The Adviser confirms: they go out, due 30 days from today.
+    today.value = "2026-06-05";
+    const unconfirmed = await issueOverdueNoticesAction("s1", "ls1", {}, new FormData());
+    expect(unconfirmed.data?.late).toEqual([expect.stringContaining("fewer than 30 days away")]);
+    const fd = new FormData();
+    fd.set("confirmLate", "on");
+    expect(await issueOverdueNoticesAction("s1", "ls1", {}, fd)).toMatchObject({ success: true, data: { count: 2 } });
     expect(notices().filter((n) => n.status === "ISSUED").map((n) => n.dueDate)).toEqual(["2026-07-05", "2026-07-05"]);
   });
 
-  it("issues, posts and emails a notice once when two runs overlap", async () => {
+  it("issues, emails and raises a notice once when two runs overlap", async () => {
     today.value = "2026-05-01";
     await generate();
     const [a, b] = await Promise.all([issueDueNotices("2026-05-27"), issueDueNotices("2026-05-27")]);
@@ -197,8 +244,31 @@ describe("the daily job", () => {
     expect(notices().filter((n) => n.status === "ISSUED")).toHaveLength(2);
     expect(sent.notices).toHaveLength(2);
     expect(new Set(sent.notices.map((n) => n.noticeNumber)).size).toBe(2);
+    await Promise.all([raiseDueLevies("2026-07-01"), raiseDueLevies("2026-07-01")]);
     // However the runs split the notices, the quarter is raised once: $10,000.
     expect(journals.posted.reduce((s, j) => s + j.total, 0)).toBe(10000);
+  });
+
+  it("raises again next time when the journal cannot be posted", async () => {
+    today.value = "2026-05-01";
+    await generate();
+    await issueDueNotices("2026-05-27");
+    journals.fail = true;
+    expect((await raiseDueLevies("2026-07-01")).raised).toBe(0);
+    expect(notices().filter((n) => n.raisePending)).toHaveLength(2);
+    journals.fail = false;
+    expect((await raiseDueLevies("2026-07-02")).raised).toBe(2);
+    expect(journals.posted).toEqual([{ date: "2026-07-01", total: 10000 }]);
+  });
+
+  it("holds a payment received before the due date as paid in advance", async () => {
+    today.value = "2026-05-01";
+    await generate();
+    await issueDueNotices("2026-05-27");
+    const n = notices().find((x) => x.status === "ISSUED" && x.lotId === "l1")!;
+    const r = await recordLevyPayment(String(n.id), 6000, { paymentDate: "2026-06-15", captureFee: false });
+    expect(r).toMatchObject({ appliedCents: 0, excessCents: 600000 });
+    expect(notices().find((x) => x.id === n.id)).toMatchObject({ status: "ISSUED" });
   });
 
   it("ignores schedules that are not active", async () => {
@@ -206,5 +276,21 @@ describe("the daily job", () => {
     await generate();
     sharedFake.table("LevySchedule")[0].status = "SUPERSEDED";
     expect(await issueDueNotices("2026-05-27")).toEqual([]);
+  });
+
+  it("stops the planned notices, keeping those already sent", async () => {
+    today.value = "2026-05-01";
+    await generate();
+    await issueDueNotices("2026-05-27");
+    const unconfirmed = await stopPlannedNoticesAction("s1", "ls1", {}, new FormData());
+    expect(unconfirmed.error).toContain("Confirm");
+    const fd = new FormData();
+    fd.set("confirmStop", "on");
+    expect(await stopPlannedNoticesAction("s1", "ls1", {}, fd)).toMatchObject({ success: true, data: { removed: 6 } });
+    expect(notices().map((n) => n.status)).toEqual(["ISSUED", "ISSUED"]);
+    expect(sharedFake.table("LevySchedule")[0].status).toBe("SUPERSEDED");
+    // Issued notices are still raised on their due date.
+    await raiseDueLevies("2026-07-01");
+    expect(journals.posted).toEqual([{ date: "2026-07-01", total: 10000 }]);
   });
 });
