@@ -63,22 +63,22 @@ async function generateNumber(
     case "WorksRequest":
       count = Number(await db.orm.public.WorksRequest
         .where((r) => r.schemeId.eq(schemeId))
-        .count());
+        .aggregate((a) => ({ n: a.count() })).then((r) => r.n));
       break;
     case "WorksRfq":
       count = Number(await db.orm.public.WorksRfq
         .where((r) => r.schemeId.eq(schemeId))
-        .count());
+        .aggregate((a) => ({ n: a.count() })).then((r) => r.n));
       break;
     case "WorksContract":
       count = Number(await db.orm.public.WorksContract
         .where((r) => r.schemeId.eq(schemeId))
-        .count());
+        .aggregate((a) => ({ n: a.count() })).then((r) => r.n));
       break;
     case "WorksWorkOrder":
       count = Number(await db.orm.public.WorksWorkOrder
         .where((r) => r.schemeId.eq(schemeId))
-        .count());
+        .aggregate((a) => ({ n: a.count() })).then((r) => r.n));
       break;
   }
   const next = count + 1;
@@ -811,7 +811,7 @@ export async function submitWorksQuotation(
     // Generate quotation number
     const existingCount = await db.orm.public.WorksQuotation
       .where((q) => q.rfqId.eq(rfqId))
-      .count();
+      .aggregate((a) => ({ n: a.count() })).then((r) => r.n);
     const quotationNumber = `Q-${rfq.rfqNumber}-${String(Number(existingCount ?? 0) + 1).padStart(2, "0")}`;
 
     await db.transaction(async (tx) => {

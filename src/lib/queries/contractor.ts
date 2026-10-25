@@ -2,7 +2,7 @@
  * Contractor onboarding query layer.
  *
  * All queries use the Prisma 8 ORM pattern:
- *   db.orm.public.<Model>.where(...).first() / .all() / .count()
+ *   db.orm.public.<Model>.where(...).first() / .all() / .aggregate((a) => ({ n: a.count() }))
  */
 
 import { db } from "@/prisma/db";
@@ -205,12 +205,12 @@ export async function getContractorDashboardData(
   const licenceCount = Number(
     await db.orm.public.WorksLicence
       .where((l) => l.contractorBusinessId.eq(contractorBusinessId))
-      .count(),
+      .aggregate((a) => ({ n: a.count() })).then((r) => r.n),
   );
   const insuranceCount = Number(
     await db.orm.public.WorksInsurance
       .where((i) => i.contractorBusinessId.eq(contractorBusinessId))
-      .count(),
+      .aggregate((a) => ({ n: a.count() })).then((r) => r.n),
   );
   const pendingReviewCount = Number(
     await db.orm.public.ContractorReviewItem
@@ -220,7 +220,7 @@ export async function getContractorDashboardData(
           r.status.eq("PENDING"),
         ),
       )
-      .count(),
+      .aggregate((a) => ({ n: a.count() })).then((r) => r.n),
   );
 
   return {

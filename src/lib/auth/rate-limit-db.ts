@@ -74,7 +74,7 @@ export async function hitRateLimit(name: RateLimitName, subject: string | null |
     const count = Number(
       await db.orm.public.RateLimitHit
         .where((h) => and(h.keyHash.eq(keyHash), h.hitAt.gt(ts(nowMs - windowMs))))
-        .count(),
+        .aggregate((a) => ({ n: a.count() })).then((r) => r.n),
     );
     return count <= limit;
   } catch (err) {
@@ -109,7 +109,7 @@ export async function rateLimitReached(name: RateLimitName, subject: string | nu
     const count = Number(
       await db.orm.public.RateLimitHit
         .where((h) => and(h.keyHash.eq(keyHash), h.hitAt.gt(ts(nowMs - windowMs))))
-        .count(),
+        .aggregate((a) => ({ n: a.count() })).then((r) => r.n),
     );
     return count >= limit;
   } catch (err) {

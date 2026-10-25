@@ -129,7 +129,7 @@ export async function prepareUpload(input: {
   // the one that holds across instances.
   const recent = Number(await db.orm.public.StorageUpload
     .where((u) => and(u.profileId.eq(profile.id), u.createdAt.gte(ts(Date.now() - UPLOAD_WINDOW_MS))))
-    .count());
+    .aggregate((a) => ({ n: a.count() })).then((r) => r.n));
   if (recent >= UPLOADS_PER_WINDOW) throw tooMany;
 
   // The server chooses the path: the building's folder, the purpose's
