@@ -81,7 +81,7 @@ export function ChangeOwnerButton({
             ) : (
               <form action={submit} className="space-y-4 px-6 py-5">
                 <p className="text-sm text-ink-muted">
-                  Current owner on the roll: <span className="font-medium text-ink">{currentOwner || "none recorded"}</span>. Saving records the new owner, removes the outgoing owner&apos;s contact details from this lot, ends their portal access from the settlement date, and sends notices to the new owner.
+                  Current owner on the roll: <span className="font-medium text-ink">{currentOwner || "none recorded"}</span>. Saving records the new owner, removes the outgoing owner&apos;s contact details from this lot, ends their portal access and any committee seat from the settlement date (unless they still own another lot here), and sends notices to the new owner.
                 </p>
 
                 <Field label="New owner's name, as it will appear on the strata roll" error={err.ownerName}>
