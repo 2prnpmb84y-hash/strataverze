@@ -26,7 +26,7 @@ async function scheme(schemeId: string) {
   return { name: String(s?.name ?? "your building"), plan: String(s?.planNumber ?? "") };
 }
 
-async function send(list: Array<{ email: string; name: string }>, build: (p: { email: string; name: string }) => Parameters<typeof sendEmail>[0]) {
+async function send<T extends { email: string; name: string }>(list: T[], build: (p: T) => Parameters<typeof sendEmail>[0]) {
   for (const p of list) {
     try {
       await sendEmail(build(p));
@@ -114,7 +114,7 @@ export async function notifyDecision(input: { schemeId: string; requestId: strin
     }
     const who = input.byDelegation ? "The Adviser, under the committee's delegation," : "The committee";
     const ownerLines: Record<RouteOutcome, string> = {
-      URGENT: `${who} has approved urgent works for your request. A work order is going to a contractor.`,
+      URGENT: `${who} has approved urgent works for your request. A contractor is being arranged.`,
       QUOTES: `${who} has approved your request. Quotes are being sought from contractors.`,
       RETURN: `${who} has returned your request for more detail: ${input.returnReason ?? ""}`.trim(),
       DECLINE: `${who} has declined your request.${input.note ? ` The reason given: ${input.note}` : ""}`,
@@ -209,7 +209,8 @@ export async function notifyOrderIssued(input: { schemeId: string; workOrderId: 
   try {
     const s = await scheme(input.schemeId);
     const contacts = await db.orm.public.ContractorContact.where((c) => and(c.contractorBusinessId.eq(input.contractorBusinessId), c.status.eq("ACTIVE"))).limit(20).all();
-    const list = contacts.filter((c) => c.email).map((c) => ({ email: String(c.email), name: String(c.firstName || "there") }));
+    // Only contacts who can sign in to answer it.
+    const list = contacts.filter((c) => c.email && c.profileId).map((c) => ({ email: String(c.email), name: String(c.firstName || "there") }));
     await send(list, (p) =>
       worksEmail({
         to: p.email,
@@ -225,22 +226,26 @@ export async function notifyOrderIssued(input: { schemeId: string; workOrderId: 
   }
 }
 
-async function committeeAndAdvisers(schemeId: string) {
-  return people([...(await roleMembers(schemeId, "COMMITTEE")), ...(await roleMembers(schemeId, "ADVISER"))]);
+/** The committee and the Adviser, each with the link to the request in their own portal. */
+async function committeeAndAdvisers(schemeId: string, requestId: string | null) {
+  const committee = (await people(await roleMembers(schemeId, "COMMITTEE"))).map((p) => ({ ...p, url: requestId ? ownerLink(requestId) : `${siteUrl()}/owner/works` }));
+  const ids = new Set(committee.map((p) => p.id));
+  const advisers = (await people(await roleMembers(schemeId, "ADVISER"))).filter((p) => !ids.has(p.id)).map((p) => ({ ...p, url: requestId ? adviserLink(schemeId, requestId) : `${siteUrl()}/adviser/schemes/${schemeId}/works` }));
+  return [...committee, ...advisers];
 }
 
 /** No contractor to send an urgent order to: the committee and the Adviser pick one. */
 export async function notifyNoContractor(input: { schemeId: string; requestId: string; requestNumber: string; title: string; trade: string | null }) {
   try {
     const s = await scheme(input.schemeId);
-    await send(await committeeAndAdvisers(input.schemeId), (p) =>
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
       worksEmail({
         to: p.email,
         subject: `Choose a contractor: urgent request ${input.requestNumber}`,
         heading: "Urgent works need a contractor",
         lines: [`Urgent works were agreed for request ${input.requestNumber}, "${input.title}", at ${s.name}.`, `There is no approved preferred contractor for ${input.trade ?? "this kind of work"}, so no work order has gone out yet.`, "Open the request and choose a contractor."],
         buttonLabel: "Choose a contractor",
-        url: `${siteUrl()}/owner/works/${input.requestId}`,
+        url: p.url,
       }),
     );
   } catch (err) {
@@ -252,7 +257,7 @@ export async function notifyNoContractor(input: { schemeId: string; requestId: s
 export async function notifyOrderAnswered(input: { schemeId: string; requestId: string | null; workOrderNumber: string; contractorName: string; accepted: boolean; reason: string | null }) {
   try {
     const s = await scheme(input.schemeId);
-    await send(await committeeAndAdvisers(input.schemeId), (p) =>
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
       worksEmail({
         to: p.email,
         subject: `${input.accepted ? "Accepted" : "Declined"}: work order ${input.workOrderNumber} at ${s.name}`,
@@ -261,10 +266,31 @@ export async function notifyOrderAnswered(input: { schemeId: string; requestId: 
           ? [`${input.contractorName} has accepted urgent work order ${input.workOrderNumber} at ${s.name}.`]
           : [`${input.contractorName} has declined urgent work order ${input.workOrderNumber} at ${s.name}.`, input.reason ? `Their reason: ${input.reason}` : "", "Open the request and choose another contractor."].filter(Boolean),
         buttonLabel: "Open the request",
-        url: input.requestId ? `${siteUrl()}/owner/works/${input.requestId}` : `${siteUrl()}/owner/works`,
+        url: p.url,
       }),
     );
   } catch (err) {
     logError("[works] order answer emails failed:", err);
+  }
+}
+
+/** The building cancelled an order the contractor had not answered: to the contractor. */
+export async function notifyOrderCancelled(input: { schemeId: string; workOrderNumber: string; contractorBusinessId: string }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const contacts = await db.orm.public.ContractorContact.where((c) => and(c.contractorBusinessId.eq(input.contractorBusinessId), c.status.eq("ACTIVE"))).limit(20).all();
+    const list = contacts.filter((c) => c.email).map((c) => ({ email: String(c.email), name: String(c.firstName || "there") }));
+    await send(list, (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Cancelled: work order ${input.workOrderNumber} at ${s.name}`,
+        heading: "Work order cancelled",
+        lines: [`Hello ${p.name},`, `${s.name} has cancelled urgent work order ${input.workOrderNumber}, which had not been answered. Please do not attend.`],
+        buttonLabel: "Your work orders",
+        url: `${siteUrl()}/supplier/work-orders`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] cancel emails failed:", err);
   }
 }

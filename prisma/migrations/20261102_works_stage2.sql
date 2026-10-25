@@ -13,14 +13,15 @@
 -- 1. An urgent work order has no contract; it belongs to its request.
 ALTER TABLE public.works_work_orders ALTER COLUMN contract_id DROP NOT NULL;
 ALTER TABLE public.works_work_orders
-  ADD COLUMN IF NOT EXISTS request_id uuid REFERENCES public.works_requests(id),
+  ADD COLUMN IF NOT EXISTS request_id uuid REFERENCES public.works_requests(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS amount_limit numeric(12, 2) CHECK (amount_limit IS NULL OR amount_limit > 0),
-  ADD COLUMN IF NOT EXISTS issued_by_id uuid REFERENCES public.profiles(id),
+  ADD COLUMN IF NOT EXISTS issued_by_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS declined_at timestamptz,
   ADD COLUMN IF NOT EXISTS decline_reason text;
 CREATE INDEX IF NOT EXISTS works_work_orders_request_idx ON public.works_work_orders (request_id);
 -- One live urgent order per request at a time (a declined or cancelled one
--- can be followed by another).
+-- can be followed by another). "Live" here is exactly what the app treats as
+-- live (src/lib/works/urgent-orders.ts, ENDED_ORDER_STATUSES).
 CREATE UNIQUE INDEX IF NOT EXISTS works_work_orders_one_live_per_request_idx
   ON public.works_work_orders (request_id)
   WHERE request_id IS NOT NULL AND status NOT IN ('DECLINED', 'CANCELLED');

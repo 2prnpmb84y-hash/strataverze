@@ -2584,11 +2584,11 @@ model WorksWorkOrder {
   updatedAt             DateTime               @updatedAt @db.Timestamptz @map("updated_at")
 
   contract              WorksContract?         @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  request               WorksRequest?          @relation(fields: [requestId], references: [id])
+  request               WorksRequest?          @relation(fields: [requestId], references: [id], onDelete: SetNull)
   scheme                Scheme                 @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   contractorBusiness    ContractorBusiness      @relation(fields: [contractorBusinessId], references: [id])
   authorisedBy          Profile?               @relation("WorksWorkOrderAuthorisedBy", fields: [authorisedById], references: [id])
-  issuedBy              Profile?               @relation("WorksWorkOrderIssuedBy", fields: [issuedById], references: [id])
+  issuedBy              Profile?               @relation("WorksWorkOrderIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
   milestones            WorksMilestone[]
   siteVisits            WorksSiteVisit[]
   progressReports       WorksProgressReport[]

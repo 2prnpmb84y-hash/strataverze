@@ -36,6 +36,7 @@ const ACTION_LABELS: Record<string, string> = {
   WORKS_ORDER_NO_CONTRACTOR: "found no contractor for an urgent order",
   WORKS_ORDER_ACCEPTED: "accepted an urgent work order",
   WORKS_ORDER_DECLINED: "declined an urgent work order",
+  WORKS_ORDER_CANCELLED: "cancelled an unanswered work order",
 };
 
 const ACTION_ICONS: Record<string, string> = {
@@ -74,6 +75,7 @@ const ACTION_ICONS: Record<string, string> = {
   WORKS_ORDER_NO_CONTRACTOR: "⚠️",
   WORKS_ORDER_ACCEPTED: "✅",
   WORKS_ORDER_DECLINED: "❌",
+  WORKS_ORDER_CANCELLED: "⏹️",
 };
 
 type ActivityEntry = {

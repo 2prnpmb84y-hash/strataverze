@@ -17,8 +17,8 @@ import { logError } from "@/lib/log";
 import { checkRequest, getRequest, resubmitRequest, submitRequest, WorksRequestError } from "@/lib/works/requests";
 import { proposeRoute, vote, withdraw, WorksDecisionError, decisionsFor } from "@/lib/works/review";
 import { checkWorksSettings, PreferredContractorError, removePreferredContractor, saveWorksSettings, setPreferredContractor } from "@/lib/works/settings";
-import { notifyDecision, notifyNoContractor, notifyOrderAnswered, notifyOrderIssued, notifyRequestSubmitted, notifySettingsChanged, notifyVoteNeeded } from "@/lib/works/notify";
-import { issueUrgentOrder, orderingState, respondToOrder, UrgentOrderError } from "@/lib/works/urgent-orders";
+import { notifyDecision, notifyNoContractor, notifyOrderAnswered, notifyOrderCancelled, notifyOrderIssued, notifyRequestSubmitted, notifySettingsChanged, notifyVoteNeeded } from "@/lib/works/notify";
+import { cancelUrgentOrder, issueUrgentOrder, orderingState, respondToOrder, UrgentOrderError } from "@/lib/works/urgent-orders";
 import { requireActiveContractorContact } from "@/lib/auth/require-contractor";
 import { db } from "@/prisma/db";
 import { ROUTE_OUTCOMES, type RouteOutcome } from "@/lib/works/decision-rules";
@@ -273,6 +273,22 @@ export async function issueUrgentOrderAction(schemeId: string, requestId: string
   } catch (err) {
     if (err instanceof UrgentOrderError) return { error: err.message };
     return failure(err, "The work order could not be sent. Please try again.");
+  }
+}
+
+/** The committee or the Adviser cancels an order the contractor has not answered, so another can go out. */
+export async function cancelUrgentOrderAction(schemeId: string, workOrderId: string, _prev: WorksFormState, formData: FormData): Promise<WorksFormState> {
+  try {
+    const { profile } = await requireSchemeAccess(schemeId, "works.decide");
+    await requireRecentMfa();
+    const r = await cancelUrgentOrder({ schemeId, workOrderId, reason: String(formData.get("reason") ?? "").slice(0, 2000) || null });
+    await logActivity({ schemeId, actorId: profile.id, action: "WORKS_ORDER_CANCELLED", entityType: "WorksRequest", entityId: r.requestId ?? workOrderId, metadata: { workOrderNumber: r.workOrderNumber } });
+    await notifyOrderCancelled({ schemeId, workOrderNumber: r.workOrderNumber, contractorBusinessId: r.contractorBusinessId });
+    if (r.requestId) revalidateWorks(schemeId, r.requestId);
+    return { done: `Work order ${r.workOrderNumber} has been cancelled and the contractor told. You can now send it to another contractor.` };
+  } catch (err) {
+    if (err instanceof UrgentOrderError) return { error: err.message };
+    return failure(err, "The work order could not be cancelled. Please try again.");
   }
 }
 

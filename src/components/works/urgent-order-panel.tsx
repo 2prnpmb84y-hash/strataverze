@@ -5,10 +5,33 @@
  * sending one to a chosen contractor when none is preferred or the first
  * declined (works marketplace stage 2, 25 Oct 2026).
  */
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { issueUrgentOrderAction, type WorksFormState } from "@/lib/actions/works-marketplace";
+import { cancelUrgentOrderAction, issueUrgentOrderAction, type WorksFormState } from "@/lib/actions/works-marketplace";
+
+function CancelOrder({ schemeId, workOrderId }: { schemeId: string; workOrderId: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [state, formAction, isPending] = useActionState<WorksFormState, FormData>(async (prev, fd) => {
+    const r = await cancelUrgentOrderAction(schemeId, workOrderId, prev, fd);
+    if (r.done) router.refresh();
+    return r;
+  }, {});
+  if (state.done) return <p className="text-sm text-emerald-700" role="status">{state.done}</p>;
+  if (!open) return <Button type="button" variant="ghost" onClick={() => setOpen(true)}>No answer? Cancel this order</Button>;
+  return (
+    <form action={formAction} className="space-y-2">
+      <label htmlFor={`cancel-${workOrderId}`} className="block text-sm text-ink">Why cancel? <span className="text-ink-muted">(the contractor is told)</span></label>
+      <input id={`cancel-${workOrderId}`} name="reason" maxLength={2000} placeholder="e.g. No reply after two hours" className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise" />
+      {state.error && <p className="text-sm text-red-600" role="alert">{state.error}</p>}
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" variant="danger" disabled={isPending}>{isPending ? "Cancelling..." : "Cancel the order"}</Button>
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Keep it</Button>
+      </div>
+    </form>
+  );
+}
 
 export interface OrderRow {
   id: string;
@@ -53,7 +76,7 @@ export function UrgentOrderPanel({
   }, {});
   const t = (trade ?? "").toLowerCase();
   const sorted = [...contractors].sort((a, b) => Number(b.trades.some((x) => x.toLowerCase() === t)) - Number(a.trades.some((x) => x.toLowerCase() === t)) || a.name.localeCompare(b.name));
-  const declined = orders.some((o) => o.status === "DECLINED");
+  const declined = orders.some((o) => o.status === "DECLINED" || o.status === "CANCELLED");
 
   return (
     <div className="space-y-4">
@@ -68,7 +91,8 @@ export function UrgentOrderPanel({
                 <span className="text-xs text-ink-muted">{o.statusLabel}</span>
               </div>
               {o.amountLimit != null && <p className="text-xs text-ink-muted">Not to exceed {money(o.amountLimit)}</p>}
-              {o.declineReason && <p className="text-sm text-ink-muted">Their reason: {o.declineReason}</p>}
+              {o.declineReason && <p className="text-sm text-ink-muted">{o.status === "CANCELLED" ? "Cancelled" : "Their reason"}: {o.declineReason}</p>}
+              {mayChoose && o.status === "AWAITING_ACKNOWLEDGEMENT" && <CancelOrder schemeId={schemeId} workOrderId={o.id} />}
             </li>
           ))}
         </ul>
@@ -80,7 +104,7 @@ export function UrgentOrderPanel({
         <div className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 p-4 space-y-3">
           <p className="text-sm text-amber-900">
             {declined
-              ? "The contractor declined. Choose another contractor to send the work order to."
+              ? "The last order was declined or cancelled. Choose a contractor to send the work order to."
               : preferredContractorId
                 ? "The work order has not gone out yet. Check the contractor and send it."
                 : `There is no approved preferred contractor for ${trade ?? "this kind of work"}, so the work order has not gone out yet.`}

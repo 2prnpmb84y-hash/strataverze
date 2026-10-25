@@ -41,13 +41,16 @@ export default async function SupplierWorkOrderPage({ params }: { params: Promis
           <OrderAnswer workOrderId={order.id} />
         </Card>
       )}
-      {order.status === "DECLINED" && order.declineReason && (
+      {order.ended && (
         <Card>
-          <p className="text-sm text-ink">You declined this job: {order.declineReason}</p>
+          <p className="text-sm text-ink">
+            {order.status === "DECLINED" ? `You declined this job${order.declineReason ? `: ${order.declineReason}` : "."}` : `The building cancelled this order${order.declineReason ? `: ${order.declineReason}` : "."}`}
+          </p>
+          <p className="text-sm text-ink-muted mt-1">The job details are no longer shown.</p>
         </Card>
       )}
 
-      <Card>
+      {!order.ended && <Card>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
           <div>
             <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Building</dt>
@@ -104,7 +107,7 @@ export default async function SupplierWorkOrderPage({ params }: { params: Promis
             <p className="mt-1.5 text-xs text-ink-muted">Photo links last 15 minutes. Reload the page if one does not open.</p>
           </div>
         )}
-      </Card>
+      </Card>}
     </div>
   );
 }

@@ -6,7 +6,7 @@ vi.mock("@/lib/storage/server-storage", () => ({ signDownloads: vi.fn(async (p: 
 
 import { sharedFake } from "@/test/fake-orm";
 import { proposeRoute } from "./review";
-import { issueUrgentOrder, orderForContractor, orderingState, ordersForContractor, respondToOrder } from "./urgent-orders";
+import { cancelUrgentOrder, issueUrgentOrder, myContractorBusinessIds, orderForContractor, orderingState, ordersForContractor, respondToOrder } from "./urgent-orders";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -140,5 +140,49 @@ describe("the contractor's answer", () => {
     expect(o).toMatchObject({ workOrderNumber: "WO-0001", trade: "Plumbing", location: "Car park", amountLimit: 1500, building: { address: "1 Macquarie St, Sydney, 2000" }, contact: { name: "Matthew W", email: "m@x.test" } });
     expect((await ordersForContractor(["c-other"])).length).toBe(0);
     expect((await ordersForContractor(["c-ok"])).map((x) => x.statusLabel)).toEqual(["Waiting for the contractor to accept"]);
+  });
+});
+
+describe("when things go wrong", () => {
+  beforeEach(async () => {
+    seed();
+    await decideUrgent();
+    await issueUrgentOrder({ schemeId: A, requestId: "req", issuedById: "m1" });
+  });
+  const id = () => String(orders()[0].id);
+
+  it("an unanswered order can be cancelled so another goes out", async () => {
+    expect((await orderingState(A, "req"))?.canIssue).toBe(false);
+    await expect(cancelUrgentOrder({ schemeId: B, workOrderId: id(), reason: null })).rejects.toThrow(/not found/);
+    await cancelUrgentOrder({ schemeId: A, workOrderId: id(), reason: "No reply" });
+    expect(orders()[0]).toMatchObject({ status: "CANCELLED", declineReason: "No reply" });
+    expect((await orderingState(A, "req"))?.canIssue).toBe(true);
+    await expect(respondToOrder({ workOrderId: id(), contractorBusinessId: "c-ok", accept: true, reason: null, profileId: "c" })).rejects.toThrow(/already been answered or cancelled/);
+    await expect(cancelUrgentOrder({ schemeId: A, workOrderId: id(), reason: null })).rejects.toThrow(/not answered/);
+  });
+
+  it("once declined, the contractor no longer sees the address, photos or contact", async () => {
+    await respondToOrder({ workOrderId: id(), contractorBusinessId: "c-ok", accept: false, reason: "Busy", profileId: "c" });
+    const o = await orderForContractor(id(), ["c-ok"]);
+    expect(o).toMatchObject({ ended: true, description: "", location: null, contact: null, photos: [], building: { address: "" } });
+  });
+
+  it("a business no longer approved cannot see or take the job", async () => {
+    sharedFake.table("ContractorBusiness").find((c) => c.id === "c-ok")!.status = "SUSPENDED";
+    await expect(respondToOrder({ workOrderId: id(), contractorBusinessId: "c-ok", accept: true, reason: null, profileId: "c" })).rejects.toThrow(/not currently approved/);
+    sharedFake.table("ContractorContact").push({ contractorBusinessId: "c-ok", profileId: "c", status: "ACTIVE" });
+    expect(await myContractorBusinessIds("c")).toEqual([]);
+  });
+
+  it("a stale preferred contractor is not offered", async () => {
+    await cancelUrgentOrder({ schemeId: A, workOrderId: id(), reason: null });
+    sharedFake.table("ContractorBusiness").find((c) => c.id === "c-ok")!.status = "SUSPENDED";
+    expect((await orderingState(A, "req"))?.preferredContractorId).toBeNull();
+  });
+
+  it("no order goes out once the request has moved on", async () => {
+    await cancelUrgentOrder({ schemeId: A, workOrderId: id(), reason: null });
+    request().status = "CLOSED";
+    await expect(issueUrgentOrder({ schemeId: A, requestId: "req", issuedById: "m1", contractorBusinessId: "c-other" })).rejects.toThrow(/not waiting/);
   });
 });

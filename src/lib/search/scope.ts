@@ -121,7 +121,9 @@ export function hrefFor(
     }
   }
   if (level === "accountant") return `/accountant/schemes/${schemeId}`;
-  if (level === "supplier") return kind === "work-order" ? `/supplier/work-orders/${id}` : "/supplier";
+  // Supplier search finds the earlier maintenance work orders; their detail
+  // page was replaced by urgent work orders (works stage 2), so go to the list.
+  if (level === "supplier") return kind === "work-order" ? "/supplier/work-orders" : "/supplier";
   if (level === "authoriser") return "/owner/finance/approvals";
   switch (kind) {
     case "scheme":

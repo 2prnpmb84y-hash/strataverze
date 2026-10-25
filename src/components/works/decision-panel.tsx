@@ -54,9 +54,11 @@ function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLi
           <label htmlFor="amount" className="block text-sm font-medium text-ink mb-1.5">Most the work may cost (dollars)<span className="text-red-500 ml-0.5">*</span></label>
           <input id="amount" name="amount" required inputMode="decimal" placeholder="e.g. 1500" className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise" />
           <p className="mt-1.5 text-xs text-ink-muted">
-            {urgentLimit != null
-              ? `Up to $${urgentLimit.toLocaleString("en-AU")}, one member can decide. Over that, it needs the usual votes.`
-              : "The building has no urgent spending limit yet, so this needs the usual votes."}{" "}
+            {byDelegation
+              ? "As Adviser you can decide this up to the limit the committee set for you."
+              : urgentLimit != null
+                ? `Up to $${urgentLimit.toLocaleString("en-AU")}, one member can decide. Over that, it needs the usual votes.`
+                : "The building has no urgent spending limit yet, so this needs the usual votes."}{" "}
             The contractor sees this as the most they may charge without checking with the building.
           </p>
         </div>
