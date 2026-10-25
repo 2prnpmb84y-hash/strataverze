@@ -66,7 +66,7 @@ export function requestStatusLabel(r: { status: string; isEmergency?: boolean | 
     case "DELIVERY":
       return "Work under way";
     case "CLOSE_OUT":
-      return "Finishing off";
+      return "Work done: invoice and payment";
     case "CLOSED":
       return "Closed";
     default:

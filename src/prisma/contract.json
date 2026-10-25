@@ -3710,6 +3710,21 @@
                   "namespace": "public"
                 }
               },
+              "financeSuppliers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "contractorBusinessId"
+                  ]
+                },
+                "to": {
+                  "model": "Supplier",
+                  "namespace": "public"
+                }
+              },
               "insurances": {
                 "cardinality": "1:N",
                 "on": {
@@ -18137,6 +18152,21 @@
                   "namespace": "public"
                 }
               },
+              "worksInvoicesCoded": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "codedById"
+                  ]
+                },
+                "to": {
+                  "model": "WorksInvoice",
+                  "namespace": "public"
+                }
+              },
               "worksInvoicesSubmitted": {
                 "cardinality": "1:N",
                 "on": {
@@ -21768,6 +21798,13 @@
                   }
                 }
               },
+              "contractorBusinessId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -21849,6 +21886,22 @@
               }
             },
             "relations": {
+              "contractorBusiness": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "contractorBusinessId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ContractorBusiness",
+                  "namespace": "public"
+                }
+              },
               "financialDocuments": {
                 "cardinality": "1:N",
                 "on": {
@@ -21930,6 +21983,9 @@
                 },
                 "contactName": {
                   "column": "contact_name"
+                },
+                "contractorBusinessId": {
+                  "column": "contractor_business_id"
                 },
                 "createdAt": {
                   "column": "created_at"
@@ -22376,6 +22432,13 @@
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
+              },
+              "worksInvoiceId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -22457,6 +22520,22 @@
                   "model": "Supplier",
                   "namespace": "public"
                 }
+              },
+              "worksInvoice": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "worksInvoiceId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "WorksInvoice",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -22526,6 +22605,9 @@
                 },
                 "updatedAt": {
                   "column": "updated_at"
+                },
+                "worksInvoiceId": {
+                  "column": "works_invoice_id"
                 }
               },
               "namespaceId": "public",
@@ -26039,6 +26121,13 @@
                   "kind": "scalar"
                 }
               },
+              "invoiceId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "kind": {
                 "nullable": false,
                 "type": {
@@ -26118,6 +26207,22 @@
               }
             },
             "relations": {
+              "invoice": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "invoiceId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "WorksInvoice",
+                  "namespace": "public"
+                }
+              },
               "proposedBy": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -26217,6 +26322,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "invoiceId": {
+                  "column": "invoice_id"
                 },
                 "kind": {
                   "column": "kind"
@@ -27810,6 +27918,13 @@
                   }
                 }
               },
+              "codedById": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "contractId": {
                 "nullable": true,
                 "type": {
@@ -27845,6 +27960,23 @@
                   "kind": "scalar"
                 }
               },
+              "documentName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 500
+                  }
+                }
+              },
+              "documentPath": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "documentUrl": {
                 "nullable": true,
                 "type": {
@@ -27863,6 +27995,13 @@
                 "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "excessReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -27947,6 +28086,13 @@
                   "kind": "scalar"
                 }
               },
+              "returnReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "scheduledAmount": {
                 "nullable": true,
                 "type": {
@@ -27995,6 +28141,13 @@
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
+              },
+              "workOrderId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -28004,6 +28157,22 @@
                 "on": {
                   "localFields": [
                     "assessedById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
+              "codedBy": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "codedById"
                   ],
                   "targetFields": [
                     "id"
@@ -28185,6 +28354,52 @@
                   "model": "Profile",
                   "namespace": "public"
                 }
+              },
+              "supplierInvoices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "worksInvoiceId"
+                  ]
+                },
+                "to": {
+                  "model": "SupplierInvoice",
+                  "namespace": "public"
+                }
+              },
+              "variationDecisions": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "invoiceId"
+                  ]
+                },
+                "to": {
+                  "model": "WorksDecision",
+                  "namespace": "public"
+                }
+              },
+              "workOrder": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "workOrderId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "WorksWorkOrder",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -28210,6 +28425,9 @@
                 "claimedAmount": {
                   "column": "claimed_amount"
                 },
+                "codedById": {
+                  "column": "coded_by_id"
+                },
                 "contractId": {
                   "column": "contract_id"
                 },
@@ -28225,6 +28443,12 @@
                 "differenceReasons": {
                   "column": "difference_reasons"
                 },
+                "documentName": {
+                  "column": "document_name"
+                },
+                "documentPath": {
+                  "column": "document_path"
+                },
                 "documentUrl": {
                   "column": "document_url"
                 },
@@ -28233,6 +28457,9 @@
                 },
                 "duplicateOfId": {
                   "column": "duplicate_of_id"
+                },
+                "excessReason": {
+                  "column": "excess_reason"
                 },
                 "gstAmount": {
                   "column": "gst_amount"
@@ -28264,6 +28491,9 @@
                 "responseDeadline": {
                   "column": "response_deadline"
                 },
+                "returnReason": {
+                  "column": "return_reason"
+                },
                 "scheduledAmount": {
                   "column": "scheduled_amount"
                 },
@@ -28281,6 +28511,9 @@
                 },
                 "variationReferences": {
                   "column": "variation_references"
+                },
+                "workOrderId": {
+                  "column": "work_order_id"
                 }
               },
               "namespaceId": "public",
@@ -32839,6 +33072,13 @@
                   }
                 }
               },
+              "adviserMayCodeInvoices": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "adviserMayDecide": {
                 "nullable": false,
                 "type": {
@@ -32924,6 +33164,9 @@
               "fields": {
                 "adviserLimit": {
                   "column": "adviser_limit"
+                },
+                "adviserMayCodeInvoices": {
+                  "column": "adviser_may_code_invoices"
                 },
                 "adviserMayDecide": {
                   "column": "adviser_may_decide"
@@ -33723,6 +33966,21 @@
                 },
                 "to": {
                   "model": "WorksInspection",
+                  "namespace": "public"
+                }
+              },
+              "invoices": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "workOrderId"
+                  ]
+                },
+                "to": {
+                  "model": "WorksInvoice",
                   "namespace": "public"
                 }
               },
@@ -48513,6 +48771,11 @@
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
                   "nullable": false
+                },
+                "works_invoice_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -48535,6 +48798,23 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "schemes"
+                  }
+                },
+                {
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "works_invoice_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "supplier_invoices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_invoices"
                   }
                 },
                 {
@@ -48677,6 +48957,11 @@
                     "length": 200
                   }
                 },
+                "contractor_business_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -48773,6 +49058,23 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "schemes"
+                  }
+                },
+                {
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "contractor_business_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "suppliers"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contractor_businesses"
                   }
                 }
               ],
@@ -51700,6 +52002,11 @@
                   },
                   "nullable": false
                 },
+                "invoice_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "kind": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -51841,6 +52148,24 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "works_quotations"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "invoice_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_decisions"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_invoices"
                   }
                 }
               ],
@@ -53062,6 +53387,11 @@
                     "scale": 2
                   }
                 },
+                "coded_by_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "contract_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -53091,6 +53421,19 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "document_name": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 500
+                  }
+                },
+                "document_path": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "document_url": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -53104,6 +53447,11 @@
                 "duplicate_of_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "excess_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "nullable": true
                 },
                 "gst_amount": {
@@ -53187,6 +53535,11 @@
                   "dataType": "pg/timestamptz",
                   "nullable": true
                 },
+                "return_reason": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "scheduled_amount": {
                   "codecId": "pg/numeric@1",
                   "dataType": "pg/numeric",
@@ -53230,9 +53583,52 @@
                     "elementNotNull"
                   ],
                   "nullable": true
+                },
+                "work_order_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
+                {
+                  "index": {
+                    "name": "works_invoices_work_order_id_idx"
+                  },
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "work_order_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_invoices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_work_orders"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "coded_by_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "works_invoices"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
+                  }
+                },
                 {
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
@@ -53408,6 +53804,13 @@
                     "status"
                   ],
                   "name": "works_invoices_scheme_id_status_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "work_order_id"
+                  ],
+                  "name": "works_invoices_work_order_id_idx",
                   "unique": false
                 }
               ],
@@ -56917,6 +57320,15 @@
                     "scale": 2
                   }
                 },
+                "adviser_may_code_invoices": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "adviser_may_decide": {
                   "codecId": "pg/bool@1",
                   "dataType": "pg/bool",
@@ -57795,7 +58207,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "363017a76aae70df85ff6de8c3eeb63f10a1366753d42af25d30727b26969579"
+    "storageHash": "775e2eed050e3e1e140bf1556640691d4b76dd350b6d463d10a9c8214b523952"
   },
   "execution": {
     "executionHash": "9afb84c4082b74f988c36fffd82136c60c1e4630c87d6a0bb31f054bfd6e04d9",

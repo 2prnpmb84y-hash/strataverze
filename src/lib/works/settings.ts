@@ -34,6 +34,8 @@ export interface WorksSettingsView {
   urgentLimit: number | null;
   adviserMayDecide: boolean;
   adviserLimit: number | null;
+  /** The Adviser may choose the fund and account for works invoices (stage 4). */
+  adviserMayCodeInvoices: boolean;
   updatedAt: string | null;
 }
 
@@ -44,6 +46,7 @@ export async function getWorksSettings(schemeId: string): Promise<WorksSettingsV
     urgentLimit: row?.urgentLimit != null ? Number(row.urgentLimit) : null,
     adviserMayDecide: !!row?.adviserMayDecide,
     adviserLimit: row?.adviserLimit != null ? Number(row.adviserLimit) : null,
+    adviserMayCodeInvoices: !!row?.adviserMayCodeInvoices,
     updatedAt: row?.updatedAt ? String(row.updatedAt) : null,
   };
 }
@@ -72,8 +75,9 @@ export function checkWorksSettings(raw: Record<string, unknown>): SettingsCheck 
   if (adviserMayDecide && adviserLimit == null && !fieldErrors.adviserLimit) {
     fieldErrors.adviserLimit = "Set the most the Adviser may approve, or leave the delegation off.";
   }
+  const adviserMayCodeInvoices = raw.adviserMayCodeInvoices === "on" || raw.adviserMayCodeInvoices === true;
   if (Object.keys(fieldErrors).length) return { ok: false, fieldErrors };
-  return { ok: true, value: { approvalRule: rule as ApprovalRule, urgentLimit, adviserMayDecide, adviserLimit: adviserMayDecide ? adviserLimit : null } };
+  return { ok: true, value: { approvalRule: rule as ApprovalRule, urgentLimit, adviserMayDecide, adviserLimit: adviserMayDecide ? adviserLimit : null, adviserMayCodeInvoices } };
 }
 
 /** Save the settings, returning what was before (for the activity log). */
@@ -84,6 +88,7 @@ export async function saveWorksSettings(schemeId: string, actorId: string, value
     urgentLimit: value.urgentLimit == null ? null : money(value.urgentLimit),
     adviserMayDecide: value.adviserMayDecide,
     adviserLimit: value.adviserLimit == null ? null : money(value.adviserLimit),
+    adviserMayCodeInvoices: value.adviserMayCodeInvoices,
     updatedById: actorId,
     updatedAt: ts(new Date().toISOString()),
   };

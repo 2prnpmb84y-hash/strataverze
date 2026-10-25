@@ -161,6 +161,14 @@ export async function vote(input: { schemeId: string; decisionId: string; reques
   if (decision.status !== "OPEN") throw new WorksDecisionError("This decision has already been settled.");
   const members = await committeeMembers(input.schemeId);
   if (!members.includes(input.actor.profileId)) throw new WorksDecisionError("Only committee members vote.");
+  // Extra cost on a contractor's invoice: never by someone with an interest in that contractor.
+  if (decision.kind === "VARIATION" && decision.invoiceId) {
+    const invoice = await db.orm.public.WorksInvoice.where((w) => w.id.eq(decision.invoiceId!)).first();
+    const { isContactOf } = await import("./completion");
+    if (invoice && (await isContactOf(input.actor.profileId, invoice.contractorBusinessId))) {
+      throw new WorksDecisionError("You are a contact of the contractor on this invoice, so you cannot vote on it.");
+    }
+  }
   // The unique index on (decision, voter) is what stops a second vote made at the same moment.
   const already = await db.orm.public.WorksDecisionVote.where((v) => and(v.decisionId.eq(decision.id), v.voterId.eq(input.actor.profileId))).first();
   if (already) throw new WorksDecisionError("You have already voted on this decision.");
@@ -235,6 +243,7 @@ export async function settle(decisionId: string): Promise<{ status: string; tall
   if (decision.status !== "OPEN" || t.status === "OPEN") return { status: String(decision.status), tally: t, applied: false };
 
   if (decision.kind === "QUOTE") return settleQuote(decision, t);
+  if (decision.kind === "VARIATION") return settleVariation(decision, t);
 
   const now = new Date().toISOString();
   const outcome = String(decision.outcome) as RouteOutcome;
@@ -405,3 +414,109 @@ async function settleQuote(decision: { id: string; requestId: string; quotationI
   return { status: t.status, tally: t, applied: true };
 }
 
+
+// ─── Agreeing extra cost over a work order (works stage 4) ────────────────
+
+/**
+ * Settle a VARIATION decision: mark it decided only while its invoice is
+ * still being checked, for the same amount the committee voted on. If the
+ * invoice has moved on or changed, the decision is withdrawn. Nothing else
+ * changes: agreeing it lets the invoice be sent for payment.
+ */
+async function settleVariation(decision: { id: string; invoiceId?: string | null; amount?: unknown }, t: ReturnType<typeof tally>): Promise<{ status: string; tally: ReturnType<typeof tally>; applied: boolean }> {
+  const now = new Date().toISOString();
+  try {
+    await db.transaction(async (tx) => {
+      const claimed = await tx.orm.public.WorksDecision.where((d) => and(d.id.eq(decision.id), d.status.eq("OPEN"))).updateAndCount({ status: t.status, decidedAt: ts(now) });
+      if (claimed !== 1) throw new Undo("already settled");
+      if (t.status === "NOT_AGREED") return;
+      if (!decision.invoiceId || decision.amount == null) throw new Undo("request moved on");
+      // Lock the invoice while it is still the one voted on.
+      const same = await tx.orm.public.WorksInvoice
+        .where((w) => and(w.id.eq(decision.invoiceId!), w.status.eq("SUBMITTED"), w.claimedAmount.eq(decision.amount as unknown as Numeric<12, 2>)))
+        .updateAndCount({ status: "SUBMITTED" });
+      if (same !== 1) throw new Undo("request moved on");
+    });
+  } catch (err) {
+    if (!(err instanceof Undo)) throw err;
+    if (err.message === "request moved on") {
+      await db.orm.public.WorksDecision.where((d) => and(d.id.eq(decision.id), d.status.eq("OPEN"))).updateAndCount({ status: "WITHDRAWN", decidedAt: ts(now) });
+      return { status: "WITHDRAWN", tally: t, applied: false };
+    }
+    const fresh = await db.orm.public.WorksDecision.where((d) => d.id.eq(decision.id)).first();
+    return { status: String(fresh?.status ?? t.status), tally: t, applied: false };
+  }
+  return { status: t.status, tally: t, applied: true };
+}
+
+/**
+ * Propose agreeing an invoice that is more than its work order allows. A
+ * committee member's proposal counts as their vote and needs the building's
+ * usual rule; the Adviser may decide it under a delegation, up to the
+ * Adviser's limit (compared with the whole invoice).
+ */
+export async function proposeVariation(input: { schemeId: string; requestId: string; invoiceId: string; actor: Actor; note: string | null }) {
+  const invoice = await db.orm.public.WorksInvoice.where((w) => and(w.id.eq(input.invoiceId), w.schemeId.eq(input.schemeId), w.requestId.eq(input.requestId), w.workOrderId.isNotNull())).first();
+  if (!invoice || !invoice.workOrderId) throw new WorksDecisionError("Invoice not found.");
+  if (String(invoice.status) !== "SUBMITTED") throw new WorksDecisionError("This invoice is no longer being checked.");
+  // Loaded when used: completion.ts imports this module.
+  const { isContactOf, variationState } = await import("./completion");
+  const order = await db.orm.public.WorksWorkOrder.where((o) => o.id.eq(invoice.workOrderId!)).first();
+  if (order && (await isContactOf(input.actor.profileId, order.contractorBusinessId))) {
+    throw new WorksDecisionError("You are a contact of the contractor doing this job, so someone else on the committee must do this.");
+  }
+  const total = Number(invoice.claimedAmount);
+  const state = await variationState(invoice);
+  const limit = state.limit;
+  if (!state.overLimit) throw new WorksDecisionError("This invoice is within the work order's amount, so no vote is needed.");
+  const earlier = await db.orm.public.WorksDecision.where((d) => and(d.invoiceId.eq(invoice.id), d.kind.eq("VARIATION"), d.status.eq("DECIDED"))).first();
+  if (earlier) throw new WorksDecisionError("The committee has already agreed this invoice.");
+  if (await openDecision(input.requestId)) throw new WorksDecisionError("A decision on this request is already open. Vote on it, or withdraw it first.");
+  const members = await committeeMembers(input.schemeId);
+  const settings = await getWorksSettings(input.schemeId);
+  let rule: string;
+  let required: number;
+  let byDelegation = false;
+  if (members.includes(input.actor.profileId)) {
+    const r = votesRequired(settings.approvalRule, members.length);
+    if (!r) throw new WorksDecisionError("The building has no committee members to decide.");
+    rule = r.rule;
+    required = r.required;
+  } else if (input.actor.roles.includes("ADVISER") && settings.adviserMayDecide) {
+    if (settings.adviserLimit != null && total > settings.adviserLimit) {
+      throw new WorksDecisionError(`That is over the most the committee lets the Adviser approve ($${settings.adviserLimit.toLocaleString("en-AU")}). The committee decides this one.`);
+    }
+    rule = "DELEGATED";
+    required = 1;
+    byDelegation = true;
+  } else {
+    throw new WorksDecisionError("Only the committee can agree extra cost.");
+  }
+  let decision;
+  try {
+    decision = await db.transaction(async (tx) => {
+      const d = await tx.orm.public.WorksDecision.create({
+        schemeId: input.schemeId,
+        requestId: input.requestId,
+        kind: "VARIATION",
+        outcome: "APPROVE",
+        note: input.note?.trim() || null,
+        proposedById: input.actor.profileId,
+        rule,
+        requiredVotes: required,
+        committeeSize: members.length,
+        status: "OPEN",
+        byDelegation,
+        amount: money(total),
+        invoiceId: invoice.id,
+      });
+      await tx.orm.public.WorksDecisionVote.create({ decisionId: d.id, voterId: input.actor.profileId, vote: "FOR", comment: null });
+      return d;
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new WorksDecisionError("Someone else has just proposed a decision on this request. Reload the page to vote on it.");
+    throw err;
+  }
+  const settled = await settle(decision.id);
+  return { decisionId: decision.id, requestId: input.requestId, total, limit, ...settled };
+}

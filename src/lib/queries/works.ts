@@ -325,7 +325,9 @@ export async function getWorksInvoicesForScheme(
 
   return db.orm.public.WorksInvoice
     .where((inv) => {
-      const cond = inv.schemeId.eq(schemeId);
+      // Invoices against a marketplace work order (stage 4) are handled on
+      // their request and paid through finance, not on these pages.
+      const cond = and(inv.schemeId.eq(schemeId), inv.workOrderId.isNull());
       if (status) return and(cond, inv.status.eq(status));
       return cond;
     })
@@ -373,8 +375,9 @@ export async function getWorksDashboardData(schemeId: string) {
     db.orm.public.WorksContract
       .where((c) => and(c.schemeId.eq(schemeId), c.deletedAt.eq(null)))
       .all(),
+    // Sent back or cancelled invoices (works stage 4) were replaced, so they are not counted.
     db.orm.public.WorksInvoice
-      .where((inv) => inv.schemeId.eq(schemeId))
+      .where((inv) => and(inv.schemeId.eq(schemeId), inv.status.notIn(["RETURNED", "CANCELLED"])))
       .all(),
     db.orm.public.WorksComplianceCheck
       .where((cc) => cc.status.eq("EXPIRED"))
@@ -753,7 +756,7 @@ export async function getWorksReportData(schemeId: string) {
       .include("contractorBusiness")
       .all(),
     db.orm.public.WorksInvoice
-      .where((inv) => inv.schemeId.eq(schemeId))
+      .where((inv) => and(inv.schemeId.eq(schemeId), inv.status.notIn(["RETURNED", "CANCELLED"])))
       .include("contractorBusiness")
       .all(),
     db.orm.public.WorksRequest

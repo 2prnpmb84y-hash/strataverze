@@ -13,7 +13,8 @@ import {
   secondApproverThresholdCents,
   type ControlDecision,
 } from "./payment-controls";
-import { supplierInvoiceControls, worksInvoiceControls } from "./invoice-approval";
+import { contractorConflict, supplierInvoiceControls, worksInvoiceControls } from "./invoice-approval";
+import { db } from "@/prisma/db";
 import { refundControls } from "./owner-credits";
 
 async function refundAsInvoice(refundId: string) {
@@ -67,7 +68,11 @@ export async function getInvoiceControlView(
     const supplierId = (loaded.invoice as { supplierId: string }).supplierId;
     const latest = await getLatestBankDetailVersion(supplierId);
     const decision = checkBankDetailsForPayment(latest, new Date().toISOString(), settings.coolingOffDays);
-    if (decision.result === "blocked") {
+    const contractor = !latest ? (await db.orm.public.Supplier.where((s) => s.id.eq(supplierId)).first())?.contractorBusinessId : null;
+    if (contractor) {
+      // A marketplace contractor is paid only to bank details they gave (works stage 4).
+      bank = { message: "The contractor has not given bank details yet, so this cannot be paid until they do and someone verifies them.", blocked: true };
+    } else if (decision.result === "blocked") {
       bank = { message: decision.reason, blocked: true };
     } else if (latest?.verifiedById && latest.verifiedAt) {
       bank = {
@@ -85,7 +90,12 @@ export async function getInvoiceControlView(
     thresholdText:
       threshold === 0 ? "Every payment needs two approvers." : `Payments over ${formatAud(threshold)} need two approvers.`,
     exception,
-    approve: checkSegregation("APPROVE", viewerId, loaded.forControls, ctx),
+    approve: await (async () => {
+      const sod = checkSegregation("APPROVE", viewerId, loaded.forControls, ctx);
+      if (sod.result === "blocked" || !("supplierInvoiceId" in target)) return sod;
+      const conflict = await contractorConflict((loaded.invoice as { supplierId: string }).supplierId, viewerId);
+      return conflict ? ({ result: "blocked", reason: conflict } as const) : sod;
+    })(),
     payment: checkSegregation("RECORD_PAYMENT", viewerId, loaded.forControls, ctx),
     bank,
     approverNames: eligible.map(name),

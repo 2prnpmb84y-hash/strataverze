@@ -77,3 +77,26 @@ export async function requireQuotingContractor(schemeId: string) {
   if (!open) throw refuse();
   return { profile };
 }
+
+/** Work order states in which its contractor is doing, or has done, the work (works stage 4). */
+export const WORKING_ORDER_STATUSES = ["AUTHORISED", "COMPLETION_REVIEW", "COMPLETE"] as const;
+
+/**
+ * For a contractor's completion photos and invoice (works stage 4, 25 Oct
+ * 2026): the signed-in person must be an active contact of an approved
+ * business holding an accepted work order of this building.
+ */
+export async function requireWorkingContractor(schemeId: string) {
+  const profile = await requireAuth();
+  const refuse = () => new AuthorisationError("Only the contractor doing work for this building can upload this.");
+  const contacts = await db.orm.public.ContractorContact.where((c) => and(c.profileId.eq(profile.id), c.status.eq("ACTIVE"))).limit(50).all();
+  const ids = [...new Set(contacts.map((c) => c.contractorBusinessId))];
+  if (!ids.length) throw refuse();
+  const approved = await db.orm.public.ContractorBusiness.where((b) => and(b.id.in(ids), b.status.eq("APPROVED"), b.deletedAt.isNull())).limit(50).all();
+  if (!approved.length) throw refuse();
+  const order = await db.orm.public.WorksWorkOrder
+    .where((o) => and(o.schemeId.eq(schemeId), o.contractorBusinessId.in(approved.map((b) => b.id)), o.requestId.isNotNull(), o.status.in([...WORKING_ORDER_STATUSES])))
+    .first();
+  if (!order) throw refuse();
+  return { profile };
+}

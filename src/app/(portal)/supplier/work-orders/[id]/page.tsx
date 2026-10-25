@@ -5,6 +5,8 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { myContractorBusinessIds, orderForContractor } from "@/lib/works/urgent-orders";
 import { Card, CardHeader } from "@/components/ui/card";
 import { OrderAnswer } from "@/components/works/order-answer";
+import { closeOutForContractor, sydneyToday } from "@/lib/works/completion";
+import { ReportDoneForm, WorksInvoiceForm } from "@/components/works/contractor-close-out";
 
 const money = (n: number) => `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const when = (iso: string) => new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
@@ -22,8 +24,12 @@ export default async function SupplierWorkOrderPage({ params }: { params: Promis
   if (!UUID.test(id)) notFound();
   const profile = await getCurrentProfile();
   if (!profile) return null;
-  const order = await orderForContractor(id, await myContractorBusinessIds(profile.id));
+  const businessIds = await myContractorBusinessIds(profile.id);
+  const order = await orderForContractor(id, businessIds);
   if (!order) notFound();
+  // Finishing and invoicing the job (works stage 4).
+  const closeOut = await closeOutForContractor(id, businessIds);
+  const today = sydneyToday();
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -39,6 +45,49 @@ export default async function SupplierWorkOrderPage({ params }: { params: Promis
         <Card>
           <CardHeader title="Can you take this job?" description="The building is waiting for your answer." />
           <OrderAnswer workOrderId={order.id} />
+        </Card>
+      )}
+      {closeOut && (
+        <Card>
+          <CardHeader title="Finishing the job" description="Report the work done, then send your invoice. The building checks both before paying." />
+          <div className="space-y-5">
+            {closeOut.completion && (
+              <div className="text-sm space-y-1">
+                <p className="font-medium text-ink">{closeOut.completion.statusLabel}</p>
+                <p className="text-ink-muted whitespace-pre-wrap" style={{ overflowWrap: "anywhere" }}>{closeOut.completion.summary}</p>
+                {closeOut.completion.reviewComments && <p className="text-ink">The building said: {closeOut.completion.reviewComments}</p>}
+              </div>
+            )}
+            {closeOut.canReport && <ReportDoneForm workOrderId={order.id} schemeId={closeOut.schemeId} today={today} />}
+            {closeOut.invoices.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-ink-muted uppercase tracking-wide">Your invoices</p>
+                <ul className="divide-y divide-line rounded-[var(--radius-card)] border border-line bg-white">
+                  {closeOut.invoices.map((inv) => (
+                    <li key={inv.id} className="px-4 py-3 text-sm space-y-1">
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <span className="font-medium text-ink">Invoice {inv.invoiceNumber}</span>
+                        <span className="tabular-nums text-ink">{money(inv.total)}</span>
+                      </div>
+                      <p className="text-ink-muted">{inv.statusLabel}{inv.paid > 0 ? `, ${money(inv.paid)} paid` : ""}.</p>
+                      {inv.returnReason && <p className="text-ink">Why it was sent back: {inv.returnReason}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {closeOut.canInvoice && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-ink">Send your invoice</p>
+                {!closeOut.hasBankDetails && (
+                  <p className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    You have not given bank details yet, so the building cannot pay you. <Link href="/supplier/onboarding" className="underline">Add them</Link>. The building verifies new bank details before paying.
+                  </p>
+                )}
+                <WorksInvoiceForm workOrderId={order.id} schemeId={closeOut.schemeId} today={today} amountLimit={closeOut.amountLimit} gstRegistered={closeOut.gstRegistered} />
+              </div>
+            )}
+          </div>
         </Card>
       )}
       {order.ended && (

@@ -167,7 +167,7 @@ export async function notifyDecision(input: { schemeId: string; requestId: strin
   }
 }
 
-type SettingsSummary = { approvalRule: string; urgentLimit: number | null; adviserMayDecide: boolean; adviserLimit: number | null };
+type SettingsSummary = { approvalRule: string; urgentLimit: number | null; adviserMayDecide: boolean; adviserLimit: number | null; adviserMayCodeInvoices?: boolean };
 
 function describeSettings(v: SettingsSummary): string[] {
   const dollars = (n: number | null) => (n == null ? "not set" : `$${n.toLocaleString("en-AU", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`);
@@ -176,6 +176,7 @@ function describeSettings(v: SettingsSummary): string[] {
     `Who must agree: ${rule[v.approvalRule] ?? v.approvalRule}.`,
     `Urgent works limit: ${dollars(v.urgentLimit)}.`,
     `Adviser may decide: ${v.adviserMayDecide ? `yes, up to ${dollars(v.adviserLimit)}` : "no"}.`,
+    `Adviser may choose the fund and account for works invoices: ${v.adviserMayCodeInvoices ? "yes" : "no"}.`,
   ];
 }
 
@@ -479,3 +480,192 @@ export async function notifyRfqCancelled(input: { schemeId: string; title: strin
   }
 }
 
+
+// ─── Completion, invoice and payment (stage 4) ─────────────────────────────
+
+const supplierOrder = (workOrderId: string) => `${siteUrl()}/supplier/work-orders/${workOrderId}`;
+
+/** The contractor reported the work done: to the committee and the Adviser to confirm it. */
+export async function notifyCompletionReported(input: { schemeId: string; requestId: string; workOrderNumber: string; contractorName: string }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Work reported done: ${input.workOrderNumber} at ${s.name}`,
+        heading: "Please check the work",
+        lines: [`${input.contractorName} says the work for order ${input.workOrderNumber} at ${s.name} is done.`, "Check it, then confirm it or send it back with what still needs doing. A committee member or the Adviser can do this."],
+        buttonLabel: "Check the work",
+        url: p.url,
+      }),
+    );
+  } catch (err) {
+    logError("[works] completion emails failed:", err);
+  }
+}
+
+/** The building confirmed the work or sent it back: to the contractor. */
+export async function notifyCompletionAnswered(input: { schemeId: string; workOrderId: string; workOrderNumber: string; contractorBusinessId: string; accepted: boolean; comments: string | null }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await contractorContacts([input.contractorBusinessId]), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `${input.accepted ? "Work confirmed" : "More work needed"}: ${input.workOrderNumber} at ${s.name}`,
+        heading: input.accepted ? "The building has confirmed the work" : "The building has sent the job back",
+        lines: input.accepted
+          ? [`Hello ${p.name},`, `${s.name} has confirmed the work for order ${input.workOrderNumber} is done.`, "If you have not invoiced it yet, send your invoice in StrataVerze."]
+          : [`Hello ${p.name},`, `${s.name} says the work for order ${input.workOrderNumber} is not finished yet.`, input.comments ? `What they said: ${input.comments}` : "", "When it is done, report it done again in StrataVerze."].filter(Boolean),
+        buttonLabel: "Open the work order",
+        url: supplierOrder(input.workOrderId),
+      }),
+    );
+  } catch (err) {
+    logError("[works] completion answer emails failed:", err);
+  }
+}
+
+/** A new invoice: to the committee and the Adviser. */
+export async function notifyInvoiceSubmitted(input: { schemeId: string; requestId: string; workOrderNumber: string; contractorName: string; total: number; overLimit: boolean; amountLimit: number | null }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Invoice from ${input.contractorName}: ${input.workOrderNumber} at ${s.name}`,
+        heading: "A contractor has invoiced",
+        lines: [
+          `${input.contractorName} has invoiced ${dollarsText(input.total)} for work order ${input.workOrderNumber} at ${s.name}.`,
+          input.overLimit ? `That is more than the ${dollarsText(input.amountLimit)} the work order allowed. The committee must agree the extra before it can be paid, or send the invoice back.` : "",
+          "Once the work is confirmed done, a committee member chooses the fund and account, and it goes for the building's usual payment approvals.",
+        ].filter(Boolean),
+        buttonLabel: "Open the request",
+        url: p.url,
+      }),
+    );
+  } catch (err) {
+    logError("[works] invoice emails failed:", err);
+  }
+}
+
+/** The building sent an invoice back: to the contractor. */
+export async function notifyInvoiceReturned(input: { schemeId: string; workOrderId: string; invoiceNumber: string; contractorBusinessId: string; reason: string }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await contractorContacts([input.contractorBusinessId]), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Invoice ${input.invoiceNumber} sent back by ${s.name}`,
+        heading: "Your invoice was sent back",
+        lines: [`Hello ${p.name},`, `${s.name} has sent back invoice ${input.invoiceNumber}.`, `Their reason: ${input.reason}`, "You can send a corrected invoice in StrataVerze."],
+        buttonLabel: "Open the work order",
+        url: supplierOrder(input.workOrderId),
+      }),
+    );
+  } catch (err) {
+    logError("[works] invoice returned emails failed:", err);
+  }
+}
+
+/** Extra cost proposed: to the committee members who have not voted. */
+export async function notifyVariationVote(input: { schemeId: string; requestId: string; requestNumber: string; contractorName: string; total: number; limit: number | null; proposedById: string }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const proposer = (await people([input.proposedById]))[0]?.name ?? "A committee member";
+    const list = (await people(await roleMembers(input.schemeId, "COMMITTEE"))).filter((p) => p.id !== input.proposedById);
+    await send(list, (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Your vote: extra cost for ${input.requestNumber} at ${s.name}`,
+        heading: "Your vote is needed",
+        lines: [`Hello ${p.name},`, `${proposer} has proposed agreeing the invoice from ${input.contractorName} for ${dollarsText(input.total)} for works request ${input.requestNumber}. The work order allowed ${dollarsText(input.limit)}.`, "Read the contractor's reason and vote for or against in StrataVerze."],
+        buttonLabel: "Vote",
+        url: ownerLink(input.requestId),
+      }),
+    );
+  } catch (err) {
+    logError("[works] variation vote emails failed:", err);
+  }
+}
+
+/** The extra cost was agreed or not: to the committee and the Adviser. */
+export async function notifyVariationDecided(input: { schemeId: string; requestId: string; requestNumber: string; agreed: boolean; byDelegation: boolean }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const who = input.byDelegation ? "The Adviser, under the committee's delegation," : "The committee";
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Extra cost ${input.agreed ? "agreed" : "not agreed"}: ${input.requestNumber} at ${s.name}`,
+        heading: input.agreed ? "Extra cost agreed" : "Extra cost not agreed",
+        lines: input.agreed
+          ? [`${who} agreed the contractor's invoice for works request ${input.requestNumber}, though it is more than the work order allowed.`, "It can now be sent for payment approval once the work is confirmed done."]
+          : [`The committee did not agree the extra cost on the contractor's invoice for works request ${input.requestNumber}.`, "Send the invoice back to the contractor, saying what the building will pay."],
+        buttonLabel: "Open the request",
+        url: p.url,
+      }),
+    );
+  } catch (err) {
+    logError("[works] variation decided emails failed:", err);
+  }
+}
+
+/** An invoice sent to finance: to the building's payment approvers, and the contractor. */
+export async function notifyInvoiceWithFinance(input: { schemeId: string; workOrderId: string; invoiceNumber: string; contractorName: string; contractorBusinessId: string; total: number; preparedById: string; approverIds: string[] }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const approvers = (await people(input.approverIds)).filter((p) => p.id !== input.preparedById);
+    await send(approvers, (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Payment to approve: ${input.contractorName}, ${dollarsText(input.total)}`,
+        heading: "A works invoice is waiting for your approval",
+        lines: [`Hello ${p.name},`, `Invoice ${input.invoiceNumber} from ${input.contractorName} for ${dollarsText(input.total)} at ${s.name} is waiting for payment approval. The work has been confirmed done.`],
+        buttonLabel: "Payment approvals",
+        url: `${siteUrl()}/owner/finance/approvals`,
+      }),
+    );
+    await send(await contractorContacts([input.contractorBusinessId]), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Invoice ${input.invoiceNumber} accepted by ${s.name}`,
+        heading: "Your invoice is with the building's finance",
+        lines: [`Hello ${p.name},`, `${s.name} has checked invoice ${input.invoiceNumber} and sent it for payment approval. You will be emailed when it is paid.`],
+        buttonLabel: "Your invoices",
+        url: `${siteUrl()}/supplier/invoices`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] with-finance emails failed:", err);
+  }
+}
+
+/** Finance approved, paid or cancelled a works invoice: to the contractor. */
+export async function notifyWorksInvoiceFinance(input: { worksInvoiceId: string; status: string }) {
+  try {
+    const w = await db.orm.public.WorksInvoice.where((x) => x.id.eq(input.worksInvoiceId)).first();
+    if (!w) return;
+    const s = await scheme(w.schemeId);
+    const number = String(w.invoiceNumber);
+    const text: Record<string, { subject: string; heading: string; line: string } | undefined> = {
+      APPROVED: { subject: `Invoice ${number} approved by ${s.name}`, heading: "Your invoice is approved", line: `${s.name} has approved invoice ${number} for payment.` },
+      PARTIALLY_PAID: { subject: `Part payment of invoice ${number} from ${s.name}`, heading: "Part payment recorded", line: `${s.name} has recorded a payment of part of invoice ${number}. ${dollarsText(Number(w.paidAmount ?? 0))} has been paid so far.` },
+      PAID: { subject: `Invoice ${number} paid by ${s.name}`, heading: "Your invoice has been paid", line: `${s.name} has recorded invoice ${number} as paid, ${dollarsText(Number(w.paidAmount ?? 0))}. Allow for normal bank processing times.` },
+      CANCELLED: { subject: `Invoice ${number} cancelled by ${s.name}`, heading: "Your invoice was cancelled", line: `${s.name} has cancelled invoice ${number} in its accounts. Contact the building if you are not sure why. You can send a new invoice for the job in StrataVerze.` },
+    };
+    const t = text[input.status];
+    if (!t) return;
+    await send(await contractorContacts([w.contractorBusinessId]), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: t.subject,
+        heading: t.heading,
+        lines: [`Hello ${p.name},`, t.line],
+        buttonLabel: "Your invoices",
+        url: `${siteUrl()}/supplier/invoices`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] finance emails failed:", err);
+  }
+}

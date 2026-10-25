@@ -19,6 +19,8 @@ import { orderingState } from "@/lib/works/urgent-orders";
 import { approvedContractors } from "@/lib/works/settings";
 import { contractorsForDirectInvite, rfqForCommittee } from "@/lib/works/marketplace";
 import { OpenForQuotes, QuotesPanel } from "@/components/works/quotes-panel";
+import { closeOutForCommittee } from "@/lib/works/completion";
+import { CloseOutPanel } from "@/components/works/close-out-panel";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -54,6 +56,9 @@ const statusLabel: Record<string, string> = {
   UNDER_REVIEW: "Under Review",
   SCOPE_PREPARATION: "Scope Preparation",
   PROCUREMENT: "Procurement",
+  APPROVAL: "Quote approved",
+  DELIVERY: "Work under way",
+  CLOSE_OUT: "Invoice and payment",
   CONTRACT_MANAGEMENT: "Contract Management",
   IN_PROGRESS: "In Progress",
   PRACTICAL_COMPLETION: "Practical Completion",
@@ -126,6 +131,10 @@ export default async function WorksRequestDetailPage({
   const direct = showQuotes && mayChoose && rfq?.canInvite ? await contractorsForDirectInvite(view?.request.trade ?? null) : [];
   // The Adviser proposes approving a quote only under the building's delegation.
   const canProposeQuote = !!view && (view.can.isCommitteeMember || (view.can.isAdviser && view.settings.adviserMayDecide));
+  // Finishing and paying for the work (stage 4).
+  const closeOut = view && mayChoose ? await closeOutForCommittee(id, requestId, { profileId: access.profile.id, roles: access.roles }) : null;
+  // Invoices against a work order are handled in the close-out card and paid through finance.
+  const legacyInvoices = request.invoices.filter((i) => !i.workOrderId);
 
   const members = memberships.map((m) => ({
     id: m.profileId,
@@ -230,6 +239,13 @@ export default async function WorksRequestDetailPage({
             preferredContractorId={ordering.preferredContractorId}
             trade={view.request.trade}
           />
+        </Card>
+      )}
+
+      {closeOut && (
+        <Card>
+          <CardHeader title="Completion and invoice" description="The contractor reports the work done and invoices it. Once confirmed, it goes for the building's payment approvals." />
+          <CloseOutPanel schemeId={id} requestId={requestId} view={closeOut} financeHref={`/adviser/schemes/${id}/finance/invoices`} />
         </Card>
       )}
 
@@ -542,14 +558,14 @@ export default async function WorksRequestDetailPage({
       )}
 
       {/* Related invoices */}
-      {request.invoices.length > 0 && (
+      {legacyInvoices.length > 0 && (
         <Card>
           <CardHeader
             title="Related Invoices"
-            description={`${request.invoices.length} invoice${request.invoices.length === 1 ? "" : "s"}`}
+            description={`${legacyInvoices.length} invoice${legacyInvoices.length === 1 ? "" : "s"}`}
           />
           <div className="flex flex-col gap-2 px-5 pb-5">
-            {request.invoices.map((invoice) => (
+            {legacyInvoices.map((invoice) => (
               <Link
                 key={invoice.id}
                 href={`/adviser/schemes/${id}/works/invoices/${invoice.id}`}

@@ -30,7 +30,7 @@ export function WorksSettingsForm({
   readOnly,
 }: {
   schemeId: string;
-  current: { approvalRule: ApprovalRule; urgentLimit: number | null; adviserMayDecide: boolean; adviserLimit: number | null };
+  current: { approvalRule: ApprovalRule; urgentLimit: number | null; adviserMayDecide: boolean; adviserLimit: number | null; adviserMayCodeInvoices: boolean };
   committeeSize: number;
   readOnly: boolean;
 }) {
@@ -71,7 +71,7 @@ export function WorksSettingsForm({
           <input type="checkbox" name="adviserMayDecide" checked={delegate} onChange={(e) => setDelegate(e.target.checked)} className="mt-1 h-4 w-4 accent-turquoise" />
           <span className="text-sm">
             <span className="font-medium text-ink">Delegate works decisions to the Adviser</span>
-            <span className="block text-ink-muted mt-0.5">Off by default. When on, the Adviser can decide works requests for the committee. Each decision is recorded as made under this delegation. The limit below will apply when quotes and work orders are approved in StrataVerze, which comes in a later stage.</span>
+            <span className="block text-ink-muted mt-0.5">Off by default. When on, the Adviser can decide works requests, approve quotes and agree extra costs for the committee, up to the limit below. Each decision is recorded as made under this delegation.</span>
           </span>
         </label>
         {delegate && (
@@ -84,6 +84,13 @@ export function WorksSettingsForm({
             error={state.fieldErrors?.adviserLimit}
           />
         )}
+        <label className="flex items-start gap-3 rounded-[var(--radius-card)] border border-line bg-white p-3">
+          <input type="checkbox" name="adviserMayCodeInvoices" defaultChecked={current.adviserMayCodeInvoices} className="mt-1 h-4 w-4 accent-turquoise" />
+          <span className="text-sm">
+            <span className="font-medium text-ink">Let the Adviser choose the fund and account for works invoices</span>
+            <span className="block text-ink-muted mt-0.5">Off by default, so a committee member chooses whether each contractor&apos;s invoice is paid from the administrative or capital works fund. Either way, the invoice then needs the building&apos;s usual payment approvals.</span>
+          </span>
+        </label>
       </fieldset>
 
       {!readOnly && (

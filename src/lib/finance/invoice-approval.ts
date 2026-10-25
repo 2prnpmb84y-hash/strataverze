@@ -30,6 +30,19 @@ import {
 
 export class PaymentControlError extends Error {}
 
+/**
+ * Why this person may not approve a payment to this supplier because they
+ * are a contact of the marketplace contractor it is (works stage 4), or null.
+ */
+export async function contractorConflict(supplierId: string, actorId: string): Promise<string | null> {
+  const supplier = await db.orm.public.Supplier.where((s) => s.id.eq(supplierId)).first();
+  if (!supplier?.contractorBusinessId) return null;
+  const contact = await db.orm.public.ContractorContact
+    .where((c) => and(c.profileId.eq(actorId), c.contractorBusinessId.eq(supplier.contractorBusinessId!), c.status.eq("ACTIVE")))
+    .first();
+  return contact ? "You are a contact of this contractor, so someone else must approve the payment." : null;
+}
+
 export interface ApprovalOutcome {
   complete: boolean;
   approvals: number;
@@ -85,6 +98,8 @@ export async function authoriseSupplierInvoice(input: {
   const eligible = eligibleApprovers(members, settings.policy);
   const decision = checkSegregation("APPROVE", input.actorId, forControls, { policy: settings.policy, eligibleApproverIds: eligible });
   if (decision.result === "blocked") throw new PaymentControlError(decision.reason);
+  const conflict = await contractorConflict(loaded.invoice.supplierId, input.actorId);
+  if (conflict) throw new PaymentControlError(conflict);
 
   const asMember = members.find((m) => m.profileId === input.actorId && isEligibleApprover(m, settings.policy));
   const role = asMember ? (asMember.role === "COMMITTEE" ? "TREASURER" : asMember.role) : "UNKNOWN";
@@ -248,6 +263,8 @@ export async function authoriseWorksInvoice(input: {
 }): Promise<ApprovalOutcome> {
   const loaded = await worksInvoiceControls(input.worksInvoiceId);
   if (!loaded || loaded.invoice.schemeId !== input.schemeId) throw new PaymentControlError("Invoice not found.");
+  // A marketplace invoice is approved as the supplier invoice it became (works stage 4).
+  if (loaded.invoice.workOrderId) throw new PaymentControlError("This invoice is approved under Payment approvals as a supplier invoice.");
   if (loaded.invoice.status !== "AWAITING_AUTHORISATION") {
     throw new PaymentControlError("This works invoice must be assessed before it can be approved.");
   }

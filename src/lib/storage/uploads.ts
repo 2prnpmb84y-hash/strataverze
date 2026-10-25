@@ -8,7 +8,7 @@ import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-
 import { rateLimit } from "@/lib/auth/rate-limit";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { checkFileBytes, checkFileName, type FileKind } from "@/lib/upload/file-types";
-import { requireQuotingContractor } from "@/lib/auth/require-contractor";
+import { requireQuotingContractor, requireWorkingContractor } from "@/lib/auth/require-contractor";
 
 /** The MIME type the server chose for this file name, or null. */
 function expectedMimeFor(fileName: string, kinds: readonly FileKind[]): string | null {
@@ -108,6 +108,26 @@ export const UPLOAD_PURPOSES = {
     kinds: QUOTE_KINDS,
     maxBytes: 20 * MB,
     authorise: ((schemeId) => requireQuotingContractor(schemeId)) as Authorise,
+  },
+  /**
+   * Photos of finished work (works stage 4, 25 Oct 2026). By the contractor
+   * holding an accepted work order of the building.
+   */
+  works_completion: {
+    folder: "works/completion",
+    kinds: PHOTO_KINDS,
+    maxBytes: 10 * MB,
+    authorise: ((schemeId) => requireWorkingContractor(schemeId)) as Authorise,
+  },
+  /**
+   * The contractor's tax invoice for a work order (works stage 4). PDF or an
+   * image. By the contractor holding an accepted work order of the building.
+   */
+  works_invoice: {
+    folder: "works/invoices",
+    kinds: QUOTE_KINDS,
+    maxBytes: 20 * MB,
+    authorise: ((schemeId) => requireWorkingContractor(schemeId)) as Authorise,
   },
   /** Financial documents filed by the Adviser (receipts, statements, invoices). */
   finance_document: {
