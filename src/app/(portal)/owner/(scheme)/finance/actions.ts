@@ -77,7 +77,7 @@ export async function uploadPaymentConfirmationAction(
     let noticeNumber: string | null = null;
     if (data.levyNoticeId) {
       const notice = await db.orm.public.LevyNotice.where((n) => and(n.id.eq(data.levyNoticeId!), n.schemeId.eq(schemeId))).first();
-      if (!notice || !ownLots.includes(notice.lotId)) return { error: "Choose one of your own levy notices." };
+      if (!notice || notice.status === "DRAFT" || !ownLots.includes(notice.lotId)) return { error: "Choose one of your own levy notices." };
       lotId = notice.lotId;
       noticeNumber = String(notice.noticeNumber);
     }

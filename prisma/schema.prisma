@@ -1546,6 +1546,9 @@ model LevySchedule {
   dueDate          DateTime?    @db.Date @map("due_date") // special levies: the single due date
   /// The first instalment's due date, entered at onboarding.
   firstDueDate     DateTime?    @db.Date @map("first_due_date")
+  /// Instalments the previous manager raised before the takeover, as
+  /// comma-separated instalment numbers ("1,2"); not raised again.
+  raisedBeforeTakeover String?  @map("raised_before_takeover")
   totalLots        Int          @map("total_lots")
   totalEntitlement Decimal      @db.Decimal(10, 2) @map("total_entitlement")
   status           String       @default("DRAFT") // DRAFT, APPROVED, ACTIVE, SUPERSEDED
@@ -1583,6 +1586,13 @@ model LevyNotice {
   interestCharged    Decimal             @default(0) @db.Decimal(12, 2) @map("interest_charged")
   status             String              @default("DRAFT") // DRAFT, ISSUED, PARTIALLY_PAID, PAID, OVERDUE, WRITTEN_OFF
   issuedAt           DateTime?           @db.Timestamptz @map("issued_at")
+  /// Issued, and its levy not yet posted in the ledger (25 Oct 2026). Set
+  /// when a notice is issued and cleared once the levy is posted; the daily
+  /// job posts any left pending by a run that stopped part way.
+  levyPostPending    Boolean             @default(false) @map("levy_post_pending")
+  /// When the notice was emailed to the owner (from 25 Oct 2026), so a
+  /// failed email is sent again.
+  emailedAt          DateTime?           @db.Timestamptz @map("emailed_at")
   paidInFullAt       DateTime?           @db.Timestamptz @map("paid_in_full_at")
   /// The cutover this notice was brought across in, if any.
   migrationBatchId   String?             @map("migration_batch_id") @db.Uuid

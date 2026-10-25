@@ -72,7 +72,7 @@ function sp99999(): IncomeBudgetInput {
       },
     ],
     adoption: { kind: "before_takeover", meetingDate: "2026-05-20" },
-    levies: { frequency: "QUARTERLY", firstDueDate: "2026-07-01", raisedBeforeTakeover: "none" },
+    levies: { frequency: "QUARTERLY", raisedBeforeTakeover: "none" },
   };
 }
 
@@ -172,14 +172,8 @@ describe("checkIncomeBudget, SP 99999", () => {
     expect(checkIncomeBudget(input, ctx()).parsed!.adoption).toEqual({ kind: "draft" });
   });
 
-  it("needs the first levy instalment to fall due in the budget year", () => {
-    const input = sp99999();
-    input.levies.firstDueDate = "2026-06-01";
-    expect(checkIncomeBudget(input, ctx()).problems.join(" ")).toContain("must fall due in 1 July 2026 to 30 June 2027");
-  });
-
   it("does not reconcile a mid-year takeover, and says so", () => {
-    const c = checkIncomeBudget({ ...sp99999(), levies: { frequency: "QUARTERLY", firstDueDate: "2026-10-01", raisedBeforeTakeover: "none" } }, ctx("2026-09-30"));
+    const c = checkIncomeBudget({ ...sp99999(), levies: { frequency: "QUARTERLY", raisedBeforeTakeover: "none" } }, ctx("2026-09-30"));
     expect(c.notes[0]).toContain("part way through");
     expect(c.problems).toEqual([]);
     expect(Object.values(c.fundProblems).flat()).toEqual([]);
@@ -190,16 +184,30 @@ describe("levies raised before the takeover", () => {
   it("must be answered", () => {
     const input = sp99999();
     input.levies.raisedBeforeTakeover = "";
-    expect(checkIncomeBudget(input, ctx()).problems.join(" ")).toContain("raised any levy notices for 1 July 2026 to 30 June 2027");
+    expect(checkIncomeBudget(input, ctx()).problems.join(" ")).toContain("raised the levies for 1 July 2026 to 30 June 2027");
   });
 
-  it("makes no levy schedule when some were raised, so no instalment is charged twice", () => {
+  it("asks which instalments were raised", () => {
     const input = sp99999();
-    input.levies = { frequency: "QUARTERLY", firstDueDate: "", raisedBeforeTakeover: "some" };
+    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [] };
+    expect(checkIncomeBudget(input, ctx()).problems).toContain("Tick the instalments the previous manager raised.");
+  });
+
+  it("makes no levy schedule when every instalment was already raised, so nothing is charged twice", () => {
+    const input = sp99999();
+    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [4, 3, 2, 1, 1] };
     const c = checkIncomeBudget(input, ctx());
     expect(c.problems).toEqual([]);
-    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", firstDueDate: "", makeSchedules: false });
-    expect(c.notes.join(" ")).toContain("no levy schedule is made here");
+    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", makeSchedules: false, raisedInstalments: [1, 2, 3, 4] });
+    expect(c.notes.join(" ")).toContain("none is raised again and no levy schedule is made");
+  });
+
+  it("plans only the instalments not raised before the takeover", () => {
+    const input = sp99999();
+    input.levies = { frequency: "QUARTERLY", raisedBeforeTakeover: "some", raisedInstalments: [1, 2, 9] };
+    const c = checkIncomeBudget(input, ctx());
+    expect(c.parsed!.levies).toEqual({ frequency: "QUARTERLY", makeSchedules: true, raisedInstalments: [1, 2] });
+    expect(c.notes.join(" ")).toContain("Instalments 1, 2 were raised before the takeover and are not raised again; StrataVerze plans the rest.");
   });
 
   it("makes the schedules when none were raised", () => {

@@ -9,6 +9,7 @@ import {
   checkIncomeBudget,
   instalments,
   yearLabel,
+  longDate,
   type ContextFund,
   type IncomeBudgetContext,
   type IncomeBudgetInput,
@@ -16,7 +17,13 @@ import {
   type LineType,
 } from "@/lib/onboarding/income-budget";
 import type { IncomeStatement } from "@/lib/onboarding/read-income-statement";
-import { FREQUENCY_LABELS } from "@/lib/levies/notice-plan";
+import { FREQUENCY_LABELS, INSTALMENTS_PER_YEAR, addMonths, type LevyFrequency } from "@/lib/levies/notice-plan";
+
+/** Paid in advance: each instalment falls due on the first day of its period. */
+function dueDatesFor(yearStart: string, frequency: string): string[] {
+  const n = INSTALMENTS_PER_YEAR[frequency as LevyFrequency] ?? 4;
+  return Array.from({ length: n }, (_, k) => addMonths(yearStart, (k * 12) / n));
+}
 import { readIncomeStatementAction, saveIncomeBudgetAction, type SaveIncomeBudgetState } from "./actions";
 
 /**
@@ -197,10 +204,6 @@ export function IncomeBudgetClient({
 
   const serverFundProblems = (id: string) => (state.check && !state.saved ? state.check.fundProblems[id] ?? [] : []);
   const allProblems = [...check.problems, ...Object.values(check.fundProblems).flat()];
-  const anyLevies = funds.some((f) => {
-    const fund = ctx.funds.find((x) => x.id === f.fundId)!;
-    return f.rows.some((r) => r.accountId && r.accountId === fund.levyIncomeAccountId && (parseMoney(r.budget) ?? 0) > 0);
-  });
 
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
@@ -493,15 +496,41 @@ export function IncomeBudgetClient({
           notices are generated on the Levies page once the cutover has been run.
         </p>
         <fieldset className="space-y-2 text-sm">
-          <legend className="text-ink">Did the previous manager raise any levy notices for {yearLabel(budgetYear)} before the takeover?</legend>
+          <legend className="text-ink">Did the previous manager raise the levies for {yearLabel(budgetYear)} before the takeover?</legend>
           <label className="flex items-start gap-2">
             <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "none"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "none" })} className="mt-1" />
-            <span>No, none of this year&apos;s notices were raised. Make the levy schedules for the whole year.</span>
+            <span>No, they were not raised. Make the levy schedules for the whole year.</span>
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "some"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "some" })} className="mt-1" />
-            <span>Yes, some were raised. No levy schedule is made, so those instalments are not charged again.</span>
+            <span>Yes, some or all of them. Tick those raised: they are not raised again, and their unpaid notices come across in the cutover.</span>
           </label>
+          {levies.raisedBeforeTakeover === "some" && (
+            <div className="ml-6 space-y-1">
+              {Array.from({ length: INSTALMENTS_PER_YEAR[levies.frequency as LevyFrequency] ?? 4 }, (_, i) => i + 1).map((k) => {
+                const months = 12 / (INSTALMENTS_PER_YEAR[levies.frequency as LevyFrequency] ?? 4);
+                const due = addMonths(budgetYear.start, (k - 1) * months);
+                const ticked = (levies.raisedInstalments ?? []).includes(k);
+                return (
+                  <label key={k} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={ticked}
+                      onChange={(e) => {
+                        const set = new Set(levies.raisedInstalments ?? []);
+                        if (e.target.checked) set.add(k);
+                        else set.delete(k);
+                        setLevies({ ...levies, raisedInstalments: [...set].sort((a, b) => a - b) });
+                      }}
+                    />
+                    <span>
+                      Instalment {k}, due {due.split("-").reverse().join("/")}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </fieldset>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl text-sm">
           <label className="block">
@@ -514,19 +543,11 @@ export function IncomeBudgetClient({
               ))}
             </select>
           </label>
-          <label className="block">
-            <span className="text-ink-muted">First instalment due</span>
-            <input
-              type="date"
-              className={`${cell} mt-1`}
-              min={budgetYear.start}
-              max={budgetYear.end}
-              value={levies.firstDueDate}
-              disabled={!anyLevies || levies.raisedBeforeTakeover === "some"}
-              onChange={(e) => setLevies({ ...levies, firstDueDate: e.target.value })}
-            />
-          </label>
         </div>
+        <p className="text-sm text-ink-muted">
+          Levies are paid in advance, so each instalment falls due on the first day of its period:{" "}
+          {dueDatesFor(budgetYear.start, levies.frequency).map((d) => longDate(d)).join(", ")}. Each notice goes out 5 weeks before it falls due.
+        </p>
         <ul className="text-sm text-ink space-y-1">
           {ctx.funds.map((fund) => {
             const f = funds.find((x) => x.fundId === fund.id)!;
