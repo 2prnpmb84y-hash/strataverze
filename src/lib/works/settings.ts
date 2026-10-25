@@ -13,6 +13,21 @@ const ts = (v: string) => v as unknown as TimestampString<3>;
 const money = (v: number) => v.toFixed(2) as unknown as Numeric<12, 2>;
 const trade60 = (v: string) => v as unknown as Varchar<60>;
 
+/**
+ * Update the row, or create it when there is none. If someone else creates
+ * it at the same moment, the unique key refuses the second create and the
+ * update is tried again.
+ */
+async function upsert(update: () => Promise<number>, create: () => Promise<unknown>) {
+  if ((await update()) > 0) return;
+  try {
+    await create();
+  } catch (err) {
+    const text = err instanceof Error ? `${err.message} ${JSON.stringify((err as { cause?: unknown }).cause ?? "")}` : String(err);
+    if (!/23505|unique|duplicate key/i.test(text) || (await update()) === 0) throw err;
+  }
+}
+
 export interface WorksSettingsView {
   approvalRule: ApprovalRule;
   /** Dollars, or null when not set (no urgent work orders until it is). */
@@ -72,8 +87,8 @@ export async function saveWorksSettings(schemeId: string, actorId: string, value
     updatedById: actorId,
     updatedAt: ts(new Date().toISOString()),
   };
-  const updated = await db.orm.public.WorksSettings.where((s) => s.schemeId.eq(schemeId)).updateAndCount(data);
-  if (updated === 0) await db.orm.public.WorksSettings.create({ schemeId, ...data });
+  const update = () => db.orm.public.WorksSettings.where((s) => s.schemeId.eq(schemeId)).updateAndCount(data);
+  await upsert(update, () => db.orm.public.WorksSettings.create({ schemeId, ...data }));
   return before;
 }
 
@@ -125,10 +140,13 @@ export async function setPreferredContractor(schemeId: string, actorId: string, 
   if (!options.some((o) => o.id === contractorBusinessId)) {
     throw new PreferredContractorError("Choose a contractor approved on StrataVerze.");
   }
-  const updated = await db.orm.public.WorksPreferredContractor
-    .where((p) => and(p.schemeId.eq(schemeId), p.trade.eq(trade60(trade))))
-    .updateAndCount({ contractorBusinessId, createdById: actorId, createdAt: ts(new Date().toISOString()) });
-  if (updated === 0) await db.orm.public.WorksPreferredContractor.create({ schemeId, trade: trade60(trade), contractorBusinessId, createdById: actorId });
+  await upsert(
+    () =>
+      db.orm.public.WorksPreferredContractor
+        .where((p) => and(p.schemeId.eq(schemeId), p.trade.eq(trade60(trade))))
+        .updateAndCount({ contractorBusinessId, createdById: actorId, createdAt: ts(new Date().toISOString()) }),
+    () => db.orm.public.WorksPreferredContractor.create({ schemeId, trade: trade60(trade), contractorBusinessId, createdById: actorId }),
+  );
 }
 
 export async function removePreferredContractor(schemeId: string, trade: string): Promise<boolean> {

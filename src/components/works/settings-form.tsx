@@ -62,7 +62,7 @@ export function WorksSettingsForm({
           defaultValue={money(current.urgentLimit)}
           placeholder="e.g. 2000"
           error={state.fieldErrors?.urgentLimit}
-          helpText="The most one committee member can approve for urgent works without the others. Leave blank until the committee agrees a limit."
+          helpText="The most one committee member can approve for urgent works without the others. Until a limit is set, an urgent order needs the same votes as any other decision."
         />
       </fieldset>
 
@@ -71,7 +71,7 @@ export function WorksSettingsForm({
           <input type="checkbox" name="adviserMayDecide" checked={delegate} onChange={(e) => setDelegate(e.target.checked)} className="mt-1 h-4 w-4 accent-turquoise" />
           <span className="text-sm">
             <span className="font-medium text-ink">Delegate works decisions to the Adviser</span>
-            <span className="block text-ink-muted mt-0.5">Off by default. When on, the Adviser can decide works requests for the committee, up to the limit below. Each decision is recorded as made under this delegation.</span>
+            <span className="block text-ink-muted mt-0.5">Off by default. When on, the Adviser can decide works requests for the committee. Each decision is recorded as made under this delegation. The limit below will apply when quotes and work orders are approved in StrataVerze, which comes in a later stage.</span>
           </span>
         </label>
         {delegate && (
@@ -90,7 +90,7 @@ export function WorksSettingsForm({
         <div className="space-y-2">
           <Message state={state} />
           <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : "Save settings"}</Button>
-          <p className="text-xs text-ink-muted">Saving asks you to confirm with your authenticator if you have not recently.</p>
+          <p className="text-xs text-ink-muted">Saving asks you to confirm with your authenticator if you have not recently. Every committee member and the Adviser are emailed the change.</p>
         </div>
       )}
     </form>

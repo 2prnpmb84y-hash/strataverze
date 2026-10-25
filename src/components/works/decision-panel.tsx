@@ -13,7 +13,7 @@ import { proposeWorksRouteAction, voteWorksDecisionAction, withdrawWorksDecision
 import type { DecisionView, RequestViewer } from "@/lib/works/view";
 
 const OUTCOME_CHOICES = [
-  { value: "URGENT", label: "Urgent: order the work now", help: "Any one committee member can decide this. The Adviser is told at once to arrange the contractor." },
+  { value: "URGENT", label: "Urgent: order the work now", help: "Once the building has set an urgent spending limit, any one committee member can decide this. The Adviser is told at once to arrange the contractor." },
   { value: "QUOTES", label: "Get quotes", help: "The Adviser arranges quotes from contractors in the trade. Over $30,000, two quotes are needed before one is approved." },
   { value: "RETURN", label: "Return to the owner for more detail", help: "The owner is told what to add, and can send it again." },
   { value: "DECLINE", label: "Decline", help: "The request is closed and the owner is told why." },
@@ -91,7 +91,7 @@ function WithdrawButton({ schemeId, requestId, decisionId }: { schemeId: string;
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  if (!confirming) return <Button type="button" variant="ghost" onClick={() => setConfirming(true)}>Withdraw my proposal</Button>;
+  if (!confirming) return <Button type="button" variant="ghost" onClick={() => setConfirming(true)}>Withdraw the proposal</Button>;
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="text-sm text-ink">Withdraw it? The votes so far are kept in the record.</span>

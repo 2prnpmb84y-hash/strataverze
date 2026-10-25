@@ -140,16 +140,19 @@ export function WorksRequestActions({
   requestId,
   schemeId,
   status,
+  returned = false,
   members,
 }: {
   requestId: string;
   schemeId: string;
   status: string;
+  /** Returned by the committee: only whoever raised it sends it again. */
+  returned?: boolean;
   members: { id: string; firstName: string; lastName: string }[];
 }) {
   return (
     <div className="flex flex-wrap items-start gap-3">
-      {status === "DRAFT" && (
+      {status === "DRAFT" && !returned && (
         <SubmitAction requestId={requestId} schemeId={schemeId} />
       )}
       {members.length > 0 && (

@@ -13,10 +13,10 @@ const committee = (schemeId: string, ...ids: string[]) => ids.map((profileId) =>
 const member = (id: string) => ({ profileId: id, roles: ["COMMITTEE"] as string[] });
 const adviser = { profileId: "adviser", roles: ["ADVISER"] as string[] };
 
-function seed(opts: { members?: string[]; rule?: string; adviserMayDecide?: boolean; status?: string } = {}) {
+function seed(opts: { members?: string[]; rule?: string; adviserMayDecide?: boolean; urgentLimit?: string; status?: string } = {}) {
   sharedFake.reset({
     SchemeMembership: [...committee(A, ...(opts.members ?? ["m1", "m2", "m3"])), ...committee(B, "other"), { schemeId: A, profileId: "adviser", role: "ADVISER", isActive: true }],
-    WorksSettings: opts.rule || opts.adviserMayDecide ? [{ schemeId: A, approvalRule: opts.rule ?? "TWO", adviserMayDecide: !!opts.adviserMayDecide, adviserLimit: opts.adviserMayDecide ? "5000.00" : null }] : [],
+    WorksSettings: opts.rule || opts.adviserMayDecide || opts.urgentLimit ? [{ schemeId: A, approvalRule: opts.rule ?? "TWO", urgentLimit: opts.urgentLimit ?? null, adviserMayDecide: !!opts.adviserMayDecide, adviserLimit: opts.adviserMayDecide ? "5000.00" : null }] : [],
     WorksRequest: [
       { id: "req", schemeId: A, status: opts.status ?? "SUBMITTED", raisedById: "owner", deletedAt: null, isEmergency: false, currentVersion: 1 },
       { id: "reqB", schemeId: B, status: "SUBMITTED", raisedById: "owner", deletedAt: null, currentVersion: 1 },
@@ -45,7 +45,14 @@ describe("the committee decides a works request by vote", () => {
     expect(reviews()).toEqual([expect.objectContaining({ requestId: "req", outcome: "APPROVED", procurementRoute: "SELECTIVE_TENDER", reviewerId: "m1" })]);
   });
 
-  it("lets any one member order urgent works", async () => {
+  it("needs the usual votes for urgent works until the building sets an urgent limit", async () => {
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "URGENT", note: null });
+    expect(p.status).toBe("OPEN");
+    expect(sharedFake.table("WorksDecision")[0]).toMatchObject({ rule: "TWO", requiredVotes: 2 });
+  });
+
+  it("lets any one member order urgent works once there is an urgent limit", async () => {
+    seed({ urgentLimit: "2000.00" });
     const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "URGENT", note: "Burst pipe" });
     expect(p.status).toBe("DECIDED");
     expect(request()).toMatchObject({ status: "PROCUREMENT", isEmergency: true, isUrgent: true });
@@ -120,6 +127,37 @@ describe("the committee decides a works request by vote", () => {
     await withdraw({ schemeId: A, decisionId: p.decisionId, actor: member("m1") });
     expect(request().status).toBe("SUBMITTED");
     await expect(vote({ schemeId: A, decisionId: p.decisionId, actor: member("m2"), vote: "FOR", comment: null })).rejects.toThrow(/already been settled/);
+  });
+
+  it("refuses a request id that is not the decision's own", async () => {
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    await expect(vote({ schemeId: A, decisionId: p.decisionId, requestId: "reqB", actor: member("m2"), vote: "FOR", comment: null })).rejects.toThrow(/not found/);
+    await expect(withdraw({ schemeId: A, decisionId: p.decisionId, requestId: "other", actor: member("m1") })).rejects.toThrow(/not found/);
+  });
+
+  it("lets any member withdraw a proposal whose proposer has left, or after a week", async () => {
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    await expect(withdraw({ schemeId: A, decisionId: p.decisionId, actor: member("m2") })).rejects.toThrow(/Only the member who proposed/);
+    // Open eight days.
+    sharedFake.table("WorksDecision")[0].createdAt = new Date(Date.now() - 8 * 86_400_000).toISOString();
+    await withdraw({ schemeId: A, decisionId: p.decisionId, actor: member("m2") });
+    expect(request().status).toBe("SUBMITTED");
+
+    const q = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    sharedFake.table("WorksDecision")[1].createdAt = new Date().toISOString();
+    sharedFake.table("SchemeMembership").find((m) => m.profileId === "m1")!.isActive = false;
+    await expect(withdraw({ schemeId: A, decisionId: q.decisionId, actor: { profileId: "owner", roles: ["OWNER"] } })).rejects.toThrow(/Only the member/);
+    await withdraw({ schemeId: A, decisionId: q.decisionId, actor: adviser });
+    expect(request().status).toBe("SUBMITTED");
+  });
+
+  it("does not apply a decision to a request that has moved on", async () => {
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "DECLINE", note: "x" });
+    request().status = "PROCUREMENT"; // another decision got there first
+    const r = await vote({ schemeId: A, decisionId: p.decisionId, actor: member("m2"), vote: "FOR", comment: null });
+    expect(r.applied).toBe(false);
+    expect(request().status).toBe("PROCUREMENT");
+    expect(reviews()).toHaveLength(0);
   });
 
   it("lists the proposals waiting on a member's vote", async () => {

@@ -14,7 +14,7 @@ vi.mock("@/lib/auth/mfa-enforcement", () => ({ requireRecentMfa: stepUp.requireR
 vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async () => {}) }));
 const activity = vi.hoisted(() => ({ logActivity: vi.fn(async () => {}) }));
 vi.mock("@/lib/queries/activity-log", () => activity);
-const notify = vi.hoisted(() => ({ notifyRequestSubmitted: vi.fn(async () => {}), notifyVoteNeeded: vi.fn(async () => {}), notifyDecision: vi.fn(async () => {}) }));
+const notify = vi.hoisted(() => ({ notifyRequestSubmitted: vi.fn(async () => {}), notifyVoteNeeded: vi.fn(async () => {}), notifyDecision: vi.fn(async () => {}), notifySettingsChanged: vi.fn(async () => {}) }));
 vi.mock("@/lib/works/notify", () => notify);
 vi.mock("@/lib/log", () => ({ logError: vi.fn() }));
 vi.mock("@/lib/storage/server-storage", () => ({ signDownloads: vi.fn(async () => []) }));
@@ -138,6 +138,8 @@ describe("settings", () => {
 
     expect((await saveWorksSettingsAction(A, {}, form({ approvalRule: "ONE", urgentLimit: "$2,000" }))).done).toBeTruthy();
     expect(sharedFake.table("WorksSettings")[0]).toMatchObject({ schemeId: A, approvalRule: "ONE", urgentLimit: "2000.00", adviserMayDecide: false });
+    // Every committee member and the Adviser hear of it.
+    expect(notify.notifySettingsChanged).toHaveBeenCalledWith(expect.objectContaining({ schemeId: A, changedById: "m1", after: expect.objectContaining({ approvalRule: "ONE" }) }));
   });
 
   it("need an Adviser limit when decisions are delegated", async () => {

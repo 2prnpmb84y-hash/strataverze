@@ -6,7 +6,7 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { getWorksSettings } from "./settings";
-import { committeeMembers, decisionsFor } from "./review";
+import { committeeMembers, decisionsFor, mayWithdraw } from "./review";
 import { requestPhotos } from "./requests";
 import { ROUTE_OUTCOMES, isRouteOutcome, requestStatusLabel, tally, votesSentence } from "./decision-rules";
 
@@ -71,7 +71,10 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
 
   const decisionViews: DecisionView[] = decisions.map((d) => {
     const required = Number(d.requiredVotes);
-    const t = tally(required, Number(d.committeeSize), d.votes);
+    // Where it stands comes from the stored status; the tally only gives the counts.
+    const counted = tally(required, Number(d.committeeSize), d.votes);
+    const stored = String(d.status);
+    const t = { ...counted, status: stored === "DECIDED" || stored === "NOT_AGREED" ? stored : stored === "OPEN" ? "OPEN" : counted.status } as typeof counted;
     const outcome = String(d.outcome);
     return {
       id: d.id,
@@ -102,7 +105,7 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
     isRaiser,
     canPropose: awaiting && !open && mayDecide,
     canVote: !!open && isCommitteeMember && !open.votes.some((v) => v.voterId === viewer.profileId),
-    canWithdraw: !!open && open.proposedById === viewer.profileId,
+    canWithdraw: !!open && (await mayWithdraw(schemeId, open, viewer)),
     canResubmit: isRaiser && request.status === "DRAFT" && !!request.returnReason,
     adviserNote:
       isAdviser && !isCommitteeMember && !settings.adviserMayDecide

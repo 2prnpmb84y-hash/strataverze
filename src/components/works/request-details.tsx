@@ -16,7 +16,8 @@ export function ruleSentence(view: Pick<RequestView, "settings" | "committeeSize
   const r = votesRequired(view.settings.approvalRule, view.committeeSize);
   if (!r) return "The building has no committee members to decide.";
   const rule = APPROVAL_RULES[view.settings.approvalRule].toLowerCase();
-  return `This building's rule: ${rule} (${r.required} of ${view.committeeSize}). Your proposal counts as your vote. An urgent order needs only one member.`;
+  const urgent = view.settings.urgentLimit != null ? "An urgent order needs only one member." : "An urgent order needs the same votes until the committee sets an urgent spending limit.";
+  return `This building's rule: ${rule} (${r.required} of ${view.committeeSize}). Your proposal counts as your vote. ${urgent}`;
 }
 
 export function RequestDetails({ view }: { view: RequestView }) {

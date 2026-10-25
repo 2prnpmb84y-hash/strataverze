@@ -176,6 +176,7 @@ export default async function WorksRequestDetailPage({
         requestId={requestId}
         schemeId={id}
         status={request.status}
+        returned={!!request.returnReason && request.raisedById !== access.profile.id}
         members={members}
       />
 

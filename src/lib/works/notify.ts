@@ -52,7 +52,7 @@ export async function notifyRequestSubmitted(input: { schemeId: string; requestI
         to: p.email,
         subject: `${urgent}Works request ${input.requestNumber} for ${s.name}`,
         heading: `${urgent}Works request for the committee`,
-        lines: [`Hello ${p.name},`, `Works request ${input.requestNumber}, "${input.title}", ${what} for ${s.name}.`, input.isEmergency ? "It was reported as an emergency. Any one committee member can order urgent works." : "The committee decides how it is handled: get quotes, return it to the owner, or decline it."],
+        lines: [`Hello ${p.name},`, `Works request ${input.requestNumber}, "${input.title}", ${what} for ${s.name}.`, input.isEmergency ? "It was reported as urgent. The committee can order urgent works straight away." : "The committee decides how it is handled: get quotes, return it to the owner, or decline it."],
         buttonLabel: "Review the request",
         url: ownerLink(input.requestId),
       }),
@@ -164,5 +164,38 @@ export async function notifyDecision(input: { schemeId: string; requestId: strin
     );
   } catch (err) {
     logError("[works] decision emails failed:", err);
+  }
+}
+
+type SettingsSummary = { approvalRule: string; urgentLimit: number | null; adviserMayDecide: boolean; adviserLimit: number | null };
+
+function describeSettings(v: SettingsSummary): string[] {
+  const dollars = (n: number | null) => (n == null ? "not set" : `$${n.toLocaleString("en-AU", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`);
+  const rule: Record<string, string> = { ONE: "any one committee member", TWO: "two committee members", MAJORITY: "a majority of the committee" };
+  return [
+    `Who must agree: ${rule[v.approvalRule] ?? v.approvalRule}.`,
+    `Urgent works limit: ${dollars(v.urgentLimit)}.`,
+    `Adviser may decide: ${v.adviserMayDecide ? `yes, up to ${dollars(v.adviserLimit)}` : "no"}.`,
+  ];
+}
+
+/** Works settings changed: to every committee member and the Adviser, so no change goes unseen. */
+export async function notifySettingsChanged(input: { schemeId: string; changedById: string; before: SettingsSummary; after: SettingsSummary }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const by = (await people([input.changedById]))[0]?.name ?? "A committee member";
+    const list = await people([...(await roleMembers(input.schemeId, "COMMITTEE")), ...(await roleMembers(input.schemeId, "ADVISER"))]);
+    await send(list, (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Works settings changed for ${s.name}`,
+        heading: "Works settings changed",
+        lines: [`${by} changed the works settings for ${s.name}.`, "Now:", ...describeSettings(input.after), "Before:", ...describeSettings(input.before), "If the committee did not agree this change, raise it with the committee."],
+        buttonLabel: "See the settings",
+        url: `${siteUrl()}/owner/works/settings`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] settings emails failed:", err);
   }
 }

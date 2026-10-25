@@ -17,7 +17,7 @@ import { logError } from "@/lib/log";
 import { checkRequest, getRequest, resubmitRequest, submitRequest, WorksRequestError } from "@/lib/works/requests";
 import { proposeRoute, vote, withdraw, WorksDecisionError, decisionsFor } from "@/lib/works/review";
 import { checkWorksSettings, PreferredContractorError, removePreferredContractor, saveWorksSettings, setPreferredContractor } from "@/lib/works/settings";
-import { notifyDecision, notifyRequestSubmitted, notifyVoteNeeded } from "@/lib/works/notify";
+import { notifyDecision, notifyRequestSubmitted, notifySettingsChanged, notifyVoteNeeded } from "@/lib/works/notify";
 import { ROUTE_OUTCOMES, type RouteOutcome } from "@/lib/works/decision-rules";
 
 export type WorksFormState = { error?: string; fieldErrors?: Record<string, string>; done?: string; requestId?: string };
@@ -61,7 +61,7 @@ export async function submitWorksRequestAction(schemeId: string, _prev: WorksFor
     await logActivity({ schemeId, actorId: profile.id, action: "WORKS_REQUEST_SUBMITTED", entityType: "WorksRequest", entityId: r.id, metadata: { requestNumber: r.requestNumber, trade: checked.value.trade, emergency: checked.value.isEmergency, photos: checked.value.photoUploadIds.length } });
     await notifyRequestSubmitted({ schemeId, requestId: r.id, requestNumber: r.requestNumber, title: checked.value.title, isEmergency: checked.value.isEmergency, raisedById: profile.id });
     revalidateWorks(schemeId, r.id);
-    return { done: `Request ${r.requestNumber} has been sent to the committee.`, requestId: r.id };
+    return { done: `Request ${r.requestNumber} has been sent to the committee.${r.photoProblem ? ` ${r.photoProblem}` : ""}`, requestId: r.id };
   } catch (err) {
     return failure(err, "The request could not be sent. Please try again.");
   }
@@ -77,7 +77,7 @@ export async function resubmitWorksRequestAction(schemeId: string, requestId: st
     await logActivity({ schemeId, actorId: profile.id, action: "WORKS_REQUEST_RESUBMITTED", entityType: "WorksRequest", entityId: r.id, metadata: { requestNumber: r.requestNumber } });
     await notifyRequestSubmitted({ schemeId, requestId: r.id, requestNumber: r.requestNumber, title: checked.value.title, isEmergency: checked.value.isEmergency, raisedById: profile.id, resubmitted: true });
     revalidateWorks(schemeId, r.id);
-    return { done: `Request ${r.requestNumber} has been sent back to the committee.`, requestId: r.id };
+    return { done: `Request ${r.requestNumber} has been sent back to the committee.${r.photoProblem ? ` ${r.photoProblem}` : ""}`, requestId: r.id };
   } catch (err) {
     return failure(err, "The request could not be sent. Please try again.");
   }
@@ -126,6 +126,7 @@ export async function proposeWorksRouteAction(schemeId: string, requestId: strin
       returnReason: String(formData.get("returnReason") ?? "").slice(0, 2000) || null,
     });
     await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_PROPOSED", entityType: "WorksRequest", entityId: requestId, metadata: { outcome: r.outcome, decisionId: r.decisionId } });
+    if (r.status === "WITHDRAWN") return { error: "This request is no longer waiting for the committee. Reload the page." };
     if (r.status === "OPEN") {
       const request = await getRequest(schemeId, requestId);
       if (request) await notifyVoteNeeded({ schemeId, requestId, requestNumber: String(request.requestNumber), title: String(request.title), outcome: r.outcome, proposedById: profile.id, votedIds: [profile.id] });
@@ -144,10 +145,11 @@ export async function voteWorksDecisionAction(schemeId: string, requestId: strin
   try {
     const { profile, roles } = await requireSchemeAccess(schemeId, "works.decide");
     const v = String(formData.get("vote") ?? "");
-    const r = await vote({ schemeId, decisionId, actor: { profileId: profile.id, roles }, vote: v, comment: String(formData.get("comment") ?? "").slice(0, 2000) || null });
-    await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_VOTED", entityType: "WorksRequest", entityId: requestId, metadata: { decisionId, vote: v } });
-    await afterSettle(schemeId, requestId, profile.id, r);
-    revalidateWorks(schemeId, requestId);
+    // The request comes from the decision itself; a mismatched id is refused.
+    const r = await vote({ schemeId, decisionId, requestId, actor: { profileId: profile.id, roles }, vote: v, comment: String(formData.get("comment") ?? "").slice(0, 2000) || null });
+    await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_VOTED", entityType: "WorksRequest", entityId: r.requestId, metadata: { decisionId, vote: v } });
+    await afterSettle(schemeId, r.requestId, profile.id, r);
+    revalidateWorks(schemeId, r.requestId);
     return { done: r.status === "DECIDED" ? "Your vote decided it." : r.status === "NOT_AGREED" ? "Your vote was recorded. The proposal was not agreed." : "Your vote has been recorded." };
   } catch (err) {
     return failure(err, "Your vote could not be recorded. Please try again.");
@@ -157,9 +159,9 @@ export async function voteWorksDecisionAction(schemeId: string, requestId: strin
 export async function withdrawWorksDecisionAction(schemeId: string, requestId: string, decisionId: string): Promise<WorksFormState> {
   try {
     const { profile, roles } = await requireSchemeAccess(schemeId, "works.decide");
-    await withdraw({ schemeId, decisionId, actor: { profileId: profile.id, roles } });
-    await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_WITHDRAWN", entityType: "WorksRequest", entityId: requestId, metadata: { decisionId } });
-    revalidateWorks(schemeId, requestId);
+    const r = await withdraw({ schemeId, decisionId, requestId, actor: { profileId: profile.id, roles } });
+    await logActivity({ schemeId, actorId: profile.id, action: "WORKS_DECISION_WITHDRAWN", entityType: "WorksRequest", entityId: r.requestId, metadata: { decisionId } });
+    revalidateWorks(schemeId, r.requestId);
     return { done: "The proposal has been withdrawn." };
   } catch (err) {
     return failure(err, "The proposal could not be withdrawn.");
@@ -179,6 +181,8 @@ export async function saveWorksSettingsAction(schemeId: string, _prev: WorksForm
     const changes = { before: { ...before, updatedAt: undefined }, after: checked.value };
     await logActivity({ schemeId, actorId: profile.id, action: "WORKS_SETTINGS_UPDATED", entityType: "Scheme", entityId: schemeId, metadata: changes });
     await recordSecurityEvent({ action: "works.settings_changed", outcome: "allowed", actorProfileId: profile.id, actorRole: "COMMITTEE", schemeId, resourceType: "WorksSettings", resourceId: schemeId, metadata: changes });
+    // Every committee member and the Adviser hear of a change, so one member cannot quietly loosen the rule.
+    await notifySettingsChanged({ schemeId, changedById: profile.id, before: changes.before, after: checked.value });
     revalidateWorks(schemeId);
     return { done: "Works settings saved." };
   } catch (err) {

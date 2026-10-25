@@ -11,6 +11,7 @@ import { isWorksTrade, WORKS_PHOTOS_MAX } from "@/config/works";
 import { consumeUpload, verifyUpload, type VerifiedUpload } from "@/lib/storage/uploads";
 import { signDownloads } from "@/lib/storage/server-storage";
 import { schemeStoragePathProblem, toStoragePath } from "@/lib/queries/document-url";
+import { logError } from "@/lib/log";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const vc = <N extends number>(v: string) => v as unknown as Varchar<N>;
@@ -79,8 +80,26 @@ async function verifyPhotos(schemeId: string, profileId: string, ids: string[]):
   return out;
 }
 
-async function attachPhotos(schemeId: string, requestId: string, profileId: string, photos: VerifiedUpload[]) {
+/**
+ * Attach checked photos to a request that is already saved. A photo that
+ * cannot be attached (used twice at the same moment, say) does not undo the
+ * request: the owner is told, so they do not raise it again.
+ */
+async function attachPhotos(schemeId: string, requestId: string, profileId: string, photos: VerifiedUpload[]): Promise<string | null> {
+  let failed = 0;
   for (const p of photos) {
+    try {
+      await attachPhoto(schemeId, requestId, profileId, p);
+    } catch (err) {
+      failed++;
+      logError("[works] photo not attached:", err);
+    }
+  }
+  return failed ? `${failed} photo${failed === 1 ? " was" : "s were"} not attached. Open the request to see it, and tell the committee if the photo matters.` : null;
+}
+
+async function attachPhoto(schemeId: string, requestId: string, profileId: string, p: VerifiedUpload) {
+  {
     await consumeUpload(
       p.uploadId,
       () =>
@@ -143,8 +162,8 @@ export async function submitRequest(schemeId: string, profileId: string, input: 
     }
   }
   if (!request) throw new WorksRequestError("The request could not be numbered. Please try again.");
-  await attachPhotos(schemeId, request.id, profileId, photos);
-  return request;
+  const photoProblem = await attachPhotos(schemeId, request.id, profileId, photos);
+  return { ...request, photoProblem };
 }
 
 /** Change a returned request and send it back to the committee. Only whoever raised it. */
@@ -188,8 +207,8 @@ export async function resubmitRequest(schemeId: string, requestId: string, profi
     return true;
   });
   if (!moved) throw new WorksRequestError("This request has changed. Reload the page.");
-  await attachPhotos(schemeId, requestId, profileId, photos);
-  return { id: requestId, requestNumber: String(existing.requestNumber) };
+  const photoProblem = await attachPhotos(schemeId, requestId, profileId, photos);
+  return { id: requestId, requestNumber: String(existing.requestNumber), photoProblem };
 }
 
 // ─── Reading ───────────────────────────────────────────────────────────────

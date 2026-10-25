@@ -318,7 +318,11 @@ export async function updateWorksRequest(
     const { profile } = await requireSchemeAccess(schemeId, "works.manage");
 
     // The request must belong to the scheme the caller was authorised on.
-    await requestInScheme(requestId, schemeId);
+    const current = await requestInScheme(requestId, schemeId);
+    // Not while the committee is voting on it: members vote on what they read.
+    if (String(current.status) === "UNDER_REVIEW") {
+      return { error: "The committee is voting on this request. Change it once the vote is settled or withdrawn." };
+    }
 
     await db.transaction(async (tx) => {
       // Get current version number
@@ -390,11 +394,20 @@ export async function submitWorksRequest(
     }
     if (request.status !== "DRAFT")
       return { error: "Only draft requests can be submitted." };
+    // A request the committee returned goes back only from whoever raised it
+    // (the owner does this from the owner portal, with the detail added).
+    if (request.returnReason && request.raisedById !== profile.id) {
+      return { error: "The committee returned this request to whoever raised it. They add the detail and send it again." };
+    }
 
-    await db.orm.public.WorksRequest.where((r) => r.id.eq(requestId)).update({
-      status: "SUBMITTED",
-      submittedAt: toTimestamp(new Date().toISOString()),
-    });
+    const sent = await db.orm.public.WorksRequest
+      .where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId), r.status.eq("DRAFT")))
+      .updateAndCount({
+        status: "SUBMITTED",
+        submittedAt: toTimestamp(new Date().toISOString()),
+        returnReason: null,
+      });
+    if (sent !== 1) return { error: "This request has changed. Reload the page." };
 
     await logActivity({
       schemeId,
