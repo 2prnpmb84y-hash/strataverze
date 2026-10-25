@@ -14,7 +14,7 @@ import type { DecisionView, RequestViewer } from "@/lib/works/view";
 
 const OUTCOME_CHOICES = [
   { value: "URGENT", label: "Urgent: order the work now", help: "Within the building's urgent spending limit, any one committee member can decide this. The work order goes straight to the preferred contractor for the trade." },
-  { value: "QUOTES", label: "Get quotes", help: "The Adviser arranges quotes from contractors in the trade. Over $30,000, two quotes are needed before one is approved." },
+  { value: "QUOTES", label: "Get quotes", help: "The request goes to approved contractors in the trade who work in this area. The committee invites some to quote and approves one by vote. Over $30,000, two quotes are needed." },
   { value: "RETURN", label: "Return to the owner for more detail", help: "The owner is told what to add, and can send it again." },
   { value: "DECLINE", label: "Decline", help: "The request is closed and the owner is told why." },
 ] as const;
@@ -25,7 +25,7 @@ function Message({ state }: { state: WorksFormState }) {
   return null;
 }
 
-function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLimit }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean; urgentLimit: number | null }) {
+function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLimit, requestTitle, requestDescription }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean; urgentLimit: number | null; requestTitle: string; requestDescription: string }) {
   const router = useRouter();
   const [outcome, setOutcome] = useState<string>("");
   const [state, formAction, isPending] = useActionState<WorksFormState, FormData>(async (prev, fd) => {
@@ -61,6 +61,21 @@ function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLi
                 : "The building has no urgent spending limit yet, so this needs the usual votes."}{" "}
             The contractor sees this as the most they may charge without checking with the building.
           </p>
+        </div>
+      )}
+      {outcome === "QUOTES" && (
+        <div className="space-y-3 rounded-[var(--radius-card)] border border-line bg-muted p-3">
+          <p className="text-sm text-ink">
+            <span className="font-medium">What contractors see before they are invited.</span> Approved contractors in the trade who work in this postcode see this, the suburb and the photos. Take out names, unit numbers and anything private.
+          </p>
+          <div>
+            <label htmlFor="summaryTitle" className="block text-sm font-medium text-ink mb-1.5">Title<span className="text-red-500 ml-0.5">*</span></label>
+            <input id="summaryTitle" name="summaryTitle" required maxLength={300} defaultValue={requestTitle} className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise" />
+          </div>
+          <div>
+            <label htmlFor="summary" className="block text-sm font-medium text-ink mb-1.5">Summary<span className="text-red-500 ml-0.5">*</span></label>
+            <textarea id="summary" name="summary" required rows={4} maxLength={5000} defaultValue={requestDescription} className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise" />
+          </div>
         </div>
       )}
       {outcome === "RETURN" ? (
@@ -170,7 +185,12 @@ export function DecisionPanel({
   openDecisionId,
   ruleSentence,
   urgentLimit = null,
+  requestTitle = "",
+  requestDescription = "",
 }: {
+  /** Pre-fill for the summary contractors see (Get quotes). */
+  requestTitle?: string;
+  requestDescription?: string;
   schemeId: string;
   requestId: string;
   /** The building's urgent spending limit, for the urgent amount hint. */
@@ -195,7 +215,7 @@ export function DecisionPanel({
           {can.canWithdraw && <WithdrawButton schemeId={schemeId} requestId={requestId} decisionId={open.id} />}
         </div>
       )}
-      {can.canPropose && <ProposeForm schemeId={schemeId} requestId={requestId} ruleSentence={ruleSentence} byDelegation={delegated} urgentLimit={urgentLimit} />}
+      {can.canPropose && <ProposeForm schemeId={schemeId} requestId={requestId} ruleSentence={ruleSentence} byDelegation={delegated} urgentLimit={urgentLimit} requestTitle={requestTitle} requestDescription={requestDescription} />}
       {past.length > 0 && (
         <details className="group" open={!open && !can.canPropose}>
           <summary className="cursor-pointer text-sm font-medium text-ink">Decision record ({past.length})</summary>

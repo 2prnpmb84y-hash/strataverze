@@ -7,6 +7,8 @@ import { sharedFake } from "@/test/fake-orm";
 import { proposeRoute, vote, withdraw, awaitingMyVote, WorksDecisionError } from "./review";
 
 const A = "11111111-1111-4111-8111-111111111111";
+/** What contractors see for a QUOTES route. */
+const S = { title: "Water leak in the car park", body: "Water dripping from the ceiling near the lifts." };
 const B = "22222222-2222-4222-8222-222222222222";
 
 const committee = (schemeId: string, ...ids: string[]) => ids.map((profileId) => ({ schemeId, profileId, role: "COMMITTEE", isActive: true }));
@@ -34,7 +36,7 @@ describe("the committee decides a works request by vote", () => {
   beforeEach(() => seed());
 
   it("needs two members by default: a proposal, then a second vote for it", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     expect(p.status).toBe("OPEN");
     expect(request().status).toBe("UNDER_REVIEW");
     expect(reviews()).toHaveLength(0);
@@ -68,7 +70,7 @@ describe("the committee decides a works request by vote", () => {
     expect(request().status).toBe("SUBMITTED");
     expect(request().closedAt ?? null).toBeNull();
     // A new proposal can then be made.
-    const again = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "QUOTES", note: null });
+    const again = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m3"), outcome: "QUOTES", note: null, summary: S });
     expect(again.status).toBe("OPEN");
   });
 
@@ -89,8 +91,8 @@ describe("the committee decides a works request by vote", () => {
   });
 
   it("refuses anyone who is not on the committee", async () => {
-    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: { profileId: "owner", roles: ["OWNER", "COMMITTEE"] }, outcome: "QUOTES", note: null })).rejects.toThrow(/Only the committee/);
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: { profileId: "owner", roles: ["OWNER", "COMMITTEE"] }, outcome: "QUOTES", note: null, summary: S })).rejects.toThrow(/Only the committee/);
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     // A committee member of another building cannot vote here.
     await expect(vote({ schemeId: A, decisionId: p.decisionId, actor: member("other"), vote: "FOR", comment: null })).rejects.toThrow(/Only committee members/);
     expect(request().status).toBe("UNDER_REVIEW");
@@ -98,19 +100,19 @@ describe("the committee decides a works request by vote", () => {
 
   it("does not reach another building's request or decision", async () => {
     await expect(proposeRoute({ schemeId: A, requestId: "reqB", actor: member("m1"), outcome: "URGENT", note: null, amount: 1500 })).rejects.toThrow(/not found/);
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     await expect(vote({ schemeId: B, decisionId: p.decisionId, actor: member("other"), vote: "FOR", comment: null })).rejects.toThrow(/not found/);
   });
 
   it("allows one open proposal at a time, and one vote each", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     await expect(proposeRoute({ schemeId: A, requestId: "req", actor: member("m2"), outcome: "DECLINE", note: "x" })).rejects.toThrow(/already open/);
     await expect(vote({ schemeId: A, decisionId: p.decisionId, actor: member("m1"), vote: "FOR", comment: null })).rejects.toThrow(/already voted/);
     await expect(vote({ schemeId: A, decisionId: p.decisionId, actor: member("m2"), vote: "MAYBE", comment: null })).rejects.toThrow(/for or against/);
   });
 
   it("cannot be voted on once decided", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     await vote({ schemeId: A, decisionId: p.decisionId, actor: member("m2"), vote: "FOR", comment: null });
     await expect(vote({ schemeId: A, decisionId: p.decisionId, actor: member("m3"), vote: "AGAINST", comment: null })).rejects.toThrow(/already been settled/);
     expect(reviews()).toHaveLength(1);
@@ -118,11 +120,11 @@ describe("the committee decides a works request by vote", () => {
 
   it("only decides a request still waiting for the committee", async () => {
     seed({ status: "CLOSED" });
-    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null })).rejects.toThrow(/not waiting/);
+    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S })).rejects.toThrow(/not waiting/);
   });
 
   it("lets only the proposer withdraw, and the request waits again", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     await expect(withdraw({ schemeId: A, decisionId: p.decisionId, actor: member("m2") })).rejects.toThrow(/Only the member who proposed/);
     await withdraw({ schemeId: A, decisionId: p.decisionId, actor: member("m1") });
     expect(request().status).toBe("SUBMITTED");
@@ -130,20 +132,20 @@ describe("the committee decides a works request by vote", () => {
   });
 
   it("refuses a request id that is not the decision's own", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     await expect(vote({ schemeId: A, decisionId: p.decisionId, requestId: "reqB", actor: member("m2"), vote: "FOR", comment: null })).rejects.toThrow(/not found/);
     await expect(withdraw({ schemeId: A, decisionId: p.decisionId, requestId: "other", actor: member("m1") })).rejects.toThrow(/not found/);
   });
 
   it("lets any member withdraw a proposal whose proposer has left, or after a week", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     await expect(withdraw({ schemeId: A, decisionId: p.decisionId, actor: member("m2") })).rejects.toThrow(/Only the member who proposed/);
     // Open eight days.
     sharedFake.table("WorksDecision")[0].createdAt = new Date(Date.now() - 8 * 86_400_000).toISOString();
     await withdraw({ schemeId: A, decisionId: p.decisionId, actor: member("m2") });
     expect(request().status).toBe("SUBMITTED");
 
-    const q = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const q = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     sharedFake.table("WorksDecision")[1].createdAt = new Date().toISOString();
     sharedFake.table("SchemeMembership").find((m) => m.profileId === "m1")!.isActive = false;
     await expect(withdraw({ schemeId: A, decisionId: q.decisionId, actor: { profileId: "owner", roles: ["OWNER"] } })).rejects.toThrow(/Only the member/);
@@ -161,7 +163,7 @@ describe("the committee decides a works request by vote", () => {
   });
 
   it("lists the proposals waiting on a member's vote", async () => {
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     expect((await awaitingMyVote(A, "m2")).map((d) => d.id)).toEqual([p.decisionId]);
     expect(await awaitingMyVote(A, "m1")).toEqual([]);
   });
@@ -170,13 +172,13 @@ describe("the committee decides a works request by vote", () => {
 describe("the Adviser", () => {
   it("cannot decide unless the building delegates it", async () => {
     seed();
-    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: adviser, outcome: "QUOTES", note: null })).rejects.toThrow(WorksDecisionError);
+    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: adviser, outcome: "QUOTES", note: null, summary: S })).rejects.toThrow(WorksDecisionError);
     expect(request().status).toBe("SUBMITTED");
   });
 
   it("decides at once under a delegation, recorded as such", async () => {
     seed({ adviserMayDecide: true });
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: adviser, outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: adviser, outcome: "QUOTES", note: null, summary: S });
     expect(p.status).toBe("DECIDED");
     expect(sharedFake.table("WorksDecision")[0]).toMatchObject({ rule: "DELEGATED", byDelegation: true, requiredVotes: 1 });
     expect(request().status).toBe("PROCUREMENT");
@@ -184,7 +186,7 @@ describe("the Adviser", () => {
 
   it("does not vote on the committee's proposals", async () => {
     seed({ adviserMayDecide: true });
-    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null });
+    const p = await proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S });
     await expect(vote({ schemeId: A, decisionId: p.decisionId, actor: adviser, vote: "FOR", comment: null })).rejects.toThrow(/Only committee members/);
   });
 });
@@ -192,6 +194,6 @@ describe("the Adviser", () => {
 describe("a building with no committee", () => {
   it("has no one to decide", async () => {
     seed({ members: [] });
-    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null })).rejects.toThrow(/Only the committee/);
+    await expect(proposeRoute({ schemeId: A, requestId: "req", actor: member("m1"), outcome: "QUOTES", note: null, summary: S })).rejects.toThrow(/Only the committee/);
   });
 });

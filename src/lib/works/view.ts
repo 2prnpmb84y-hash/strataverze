@@ -69,6 +69,15 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
     getWorksSettings(schemeId),
     requestPhotos(schemeId, requestId),
   ]);
+  // For QUOTE decisions: whose quote is being approved.
+  const quotationIds = decisions.map((d) => d.quotationId).filter((x): x is string => !!x);
+  const quoteRows = quotationIds.length ? await db.orm.public.WorksQuotation.where((q) => q.id.in(quotationIds)).limit(100).all() : [];
+  const quoteBiz = quoteRows.length ? await db.orm.public.ContractorBusiness.where((c) => c.id.in(quoteRows.map((q) => q.contractorBusinessId))).limit(100).all() : [];
+  const quoteLabel = (id: string | null | undefined) => {
+    const q = quoteRows.find((x) => x.id === id);
+    const b = q ? quoteBiz.find((x) => x.id === q.contractorBusinessId) : null;
+    return `Approve the quote from ${String(b?.tradingName || b?.companyName || "a contractor")}`;
+  };
   const who = await names([request.raisedById, ...decisions.flatMap((d) => [d.proposedById, ...d.votes.map((v) => v.voterId)])]);
 
   const decisionViews: DecisionView[] = decisions.map((d) => {
@@ -81,7 +90,7 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
     return {
       id: d.id,
       outcome,
-      outcomeLabel: isRouteOutcome(outcome) ? ROUTE_OUTCOMES[outcome].label : outcome,
+      outcomeLabel: d.kind === "QUOTE" ? quoteLabel(d.quotationId) : isRouteOutcome(outcome) ? ROUTE_OUTCOMES[outcome].label : outcome,
       note: d.note ? String(d.note) : null,
       amount: d.amount != null ? Number(d.amount) : null,
       proposedByName: who.get(d.proposedById) ?? "A member",

@@ -1,210 +1,122 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getQuoteRequestForSupplier } from "@/lib/queries/supplier";
-import { isQuoteRequestOpen, supplierMaySeeQuoteRequest } from "@/lib/supplier/quote-visibility";
-import { db } from "@/prisma/db";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { myContractorBusinessIds } from "@/lib/works/urgent-orders";
+import { jobForContractor } from "@/lib/works/marketplace";
 import { Card, CardHeader } from "@/components/ui/card";
-import { SubmitQuoteForm } from "./submit-quote-form";
-import { WithdrawQuoteButton } from "./withdraw-button";
+import { DeclineInvitation, InterestButton, QuoteForm, WithdrawQuote } from "@/components/works/job-actions";
 
-const urgencyColours: Record<string, string> = {
-  URGENT: "bg-danger/10 text-danger",
-  STANDARD: "bg-gold-100 text-gold-500",
-  FLEXIBLE: "bg-success/10 text-success",
-};
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" }) : "Not set");
+const money = (n: number) => `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const quoteStatusConfig: Record<string, { label: string; className: string }> = {
-  SUBMITTED: { label: "Submitted", className: "bg-gold-100 text-gold-500" },
-  ACCEPTED: { label: "Accepted", className: "bg-success/10 text-success" },
-  DECLINED: { label: "Declined", className: "bg-danger/10 text-danger" },
-  WITHDRAWN: { label: "Withdrawn", className: "bg-muted text-ink-muted" },
-};
-
-export default async function QuoteRequestDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+/**
+ * One marketplace job (works stage 3, 25 Oct 2026). Before an invitation the
+ * contractor sees the committee's summary, the trade, the suburb and the
+ * photos. Once invited, also the address and who to contact, and they quote.
+ */
+export default async function SupplierJobPage({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const { id } = await params;
+  if (!UUID.test(id)) notFound();
   const profile = await getCurrentProfile();
   if (!profile) return null;
-
-  // Only the caller's own quote and a count of the others (F3).
-  const quoteRequest = await getQuoteRequestForSupplier(id, profile.id);
-  if (!quoteRequest) notFound();
-
-  // Verify supplier has an active membership on this scheme (F-04)
-  const membership = await db.orm.public.SchemeMembership
-    .where((m) =>
-      and(
-        m.profileId.eq(profile.id),
-        m.schemeId.eq(quoteRequest.schemeId),
-        m.role.eq("SUPPLIER"),
-        m.isActive.eq(true),
-      ),
-    )
-    .first();
-
-  if (!membership) notFound();
-
-  // The supplier's own quote, if they submitted one.
-  const supplierQuote = quoteRequest.ownQuote;
-  const alreadyQuoted = !!supplierQuote;
-
-  // A request is visible while it is open, or afterwards to a supplier who quoted.
-  if (!supplierMaySeeQuoteRequest(quoteRequest, alreadyQuoted)) notFound();
-  const isOpen = isQuoteRequestOpen(quoteRequest);
-  const otherCount = quoteRequest.otherQuoteCount;
+  const job = await jobForContractor(id, await myContractorBusinessIds(profile.id));
+  if (!job) notFound();
 
   return (
-    <div className="max-w-4xl">
-      <Link
-        href="/supplier/quotes"
-        className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink transition-colors mb-6"
-      >
-        &larr; Back to Quote Requests
-      </Link>
+    <div className="max-w-3xl space-y-6">
+      <div>
+        <Link href="/supplier/quotes" className="text-sm text-ink-muted hover:text-ink">← Quote requests</Link>
+        <h1 className="text-2xl font-bold font-heading text-ink mt-2 mb-1">{job.title}</h1>
+        <p className="text-sm text-ink-muted">{[job.trade, job.suburb].filter(Boolean).join(" · ")} · {job.rfqNumber} · {job.statusLabel}</p>
+      </div>
 
-      <Card className="mb-6">
-        <CardHeader
-          title={quoteRequest.title}
-          description={quoteRequest.scheme?.name}
-        />
-
-        {quoteRequest.description && (
-          <p className="text-sm text-ink mb-4 whitespace-pre-wrap">
-            {quoteRequest.description}
-          </p>
-        )}
-
-        <div className="flex flex-wrap gap-3 text-sm">
-          {quoteRequest.category && (
-            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-ink-muted">
-              {quoteRequest.category}
-            </span>
-          )}
-          {quoteRequest.urgency && (
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${urgencyColours[quoteRequest.urgency] ?? "bg-muted text-ink-muted"}`}
-            >
-              {quoteRequest.urgency}
-            </span>
-          )}
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              quoteRequest.status === "OPEN"
-                ? "bg-success/10 text-success"
-                : "bg-muted text-ink-muted"
-            }`}
-          >
-            {quoteRequest.status}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-4 border-t border-line">
-          {quoteRequest.budget && (
-            <div>
-              <p className="text-xs text-ink-muted">Budget</p>
-              <p className="text-sm font-medium text-ink">
-                {quoteRequest.budget}
-              </p>
-            </div>
-          )}
-          {quoteRequest.closesAt && (
-            <div>
-              <p className="text-xs text-ink-muted">Closing Date</p>
-              <p className="text-sm font-medium text-ink">
-                {new Date(String(quoteRequest.closesAt)).toLocaleDateString(
-                  "en-AU",
-                  { day: "numeric", month: "long", year: "numeric" },
-                )}
-              </p>
-            </div>
-          )}
-          {quoteRequest.workOrder && (
-            <div>
-              <p className="text-xs text-ink-muted">Work Order</p>
-              <p className="text-sm font-medium text-ink">
-                {quoteRequest.workOrder.title}
-              </p>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* The supplier's own quote. Other suppliers' quotes are never shown, only counted. */}
-      <Card className="mb-6">
-        <CardHeader
-          title="Your Quote"
-          description={`${otherCount} other quote${otherCount === 1 ? "" : "s"} submitted`}
-        />
-
-        {supplierQuote ? (
-          (() => {
-            const status =
-              quoteStatusConfig[supplierQuote.status] ?? quoteStatusConfig.SUBMITTED;
-            return (
-              <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-ink">
-                    ${Number(supplierQuote.amount).toLocaleString("en-AU", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </p>
-                  {supplierQuote.description && (
-                    <p className="text-xs text-ink-muted mt-0.5">
-                      {supplierQuote.description}
-                    </p>
-                  )}
-                  {supplierQuote.estimatedDays != null && (
-                    <p className="text-xs text-ink-muted">
-                      Est. {supplierQuote.estimatedDays} day
-                      {supplierQuote.estimatedDays === 1 ? "" : "s"}
-                    </p>
-                  )}
-                </div>
-                <span
-                  className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}
-                >
-                  {status.label}
-                </span>
-              </div>
-            );
-          })()
-        ) : (
-          <p className="text-sm text-ink-muted">
-            You have not submitted a quote for this request yet.
-          </p>
-        )}
-      </Card>
-
-      {/* Submit quote form */}
-      {isOpen && !alreadyQuoted && (
+      {!job.invitationStatus && (
         <Card>
-          <CardHeader
-            title="Submit Your Quote"
-            description="Provide your pricing and details below."
-          />
-          <SubmitQuoteForm quoteRequestId={id} />
+          <CardHeader title="Would you like to quote?" description={`Interest closes ${when(job.interestClosesAt)}. The committee then chooses who to invite.`} />
+          {job.interestOpen ? <InterestButton rfqId={job.id} interested={job.interested} /> : <p className="text-sm text-ink-muted">Interest has closed.</p>}
         </Card>
       )}
 
-      {alreadyQuoted && supplierQuote && (
+      {job.invitationStatus === "DECLINED" && (
         <Card>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-ink-muted">
-              You have already submitted a quote for this request.
+          <p className="text-sm text-ink">You declined this invitation.</p>
+        </Card>
+      )}
+
+      {job.invited && (
+        <Card>
+          <CardHeader title={job.quote?.status === "SUBMITTED" ? "Your quote" : "Your invitation to quote"} description={`Quotes close ${when(job.quoteClosesAt)}.`} />
+          {job.quote?.status === "ACCEPTED" && <p className="text-sm text-emerald-700 mb-3">Your quote was approved. The work order is under Work Orders.</p>}
+          {job.quote?.status === "DECLINED" && <p className="text-sm text-ink mb-3">The building chose another quote. Thank you for quoting.</p>}
+          {job.quote?.status === "SUBMITTED" && (
+            <p className="text-sm text-ink mb-3">
+              Quoted {money(job.quote.total)} including GST{job.quote.documentName ? `, with ${job.quote.documentName}` : ""}.
             </p>
-            {supplierQuote.status === "SUBMITTED" && (
-              <WithdrawQuoteButton quoteId={supplierQuote.id} />
-            )}
-          </div>
+          )}
+          {job.quoteOpen ? (
+            <div className="space-y-4">
+              <QuoteForm rfqId={job.id} schemeId={job.schemeId} current={job.quote && job.quote.status !== "WITHDRAWN" ? job.quote : null} />
+              {job.quote?.status === "SUBMITTED" ? <WithdrawQuote rfqId={job.id} /> : job.invitationStatus === "PENDING" && <DeclineInvitation rfqId={job.id} />}
+            </div>
+          ) : (
+            !job.quote && <p className="text-sm text-ink-muted">Quotes have closed.</p>
+          )}
         </Card>
       )}
+
+      <Card>
+        {job.invited && (
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mb-5">
+            <div>
+              <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Building</dt>
+              <dd className="text-sm text-ink">
+                {job.building?.name}
+                <span className="block text-ink-muted">{job.building?.address}</span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Where in the building</dt>
+              <dd className="text-sm text-ink">{job.location ?? "Not given"}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Contact</dt>
+              <dd className="text-sm text-ink">
+                {job.contact ? (
+                  <>
+                    {job.contact.name}
+                    {job.contact.email && <span className="block select-all text-ink-muted">{job.contact.email}</span>}
+                    {job.contact.phone && <span className="block select-all text-ink-muted">{job.contact.phone}</span>}
+                  </>
+                ) : (
+                  "The building's committee"
+                )}
+              </dd>
+            </div>
+          </dl>
+        )}
+        <p className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">The job</p>
+        <p className="text-sm text-ink whitespace-pre-wrap" style={{ overflowWrap: "anywhere" }}>{job.summary}</p>
+        {!job.invited && <p className="mt-2 text-xs text-ink-muted">The address and a contact are shown once the committee invites you to quote.</p>}
+        {job.photos.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">Photos</p>
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {job.photos.map((p) => (
+                <li key={p.id}>
+                  <a href={p.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-[var(--radius-card)] border border-line bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed storage link */}
+                    <img src={p.url} alt="Photo of the job" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1.5 text-xs text-ink-muted">Photo links last 15 minutes. Reload the page if one does not open.</p>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

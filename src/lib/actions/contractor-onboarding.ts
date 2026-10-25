@@ -1,5 +1,7 @@
 "use server";
 
+import { isWorksTrade } from "@/config/works";
+
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import {
   COMPLIANCE_FEE_DECLARATION,
@@ -335,9 +337,10 @@ export async function saveServicesAndContacts(
     const serviceRegions = formData.getAll("serviceRegions")
       .map((v) => String(v).trim())
       .filter(Boolean);
+    // Only the fixed list buildings choose from (works stage 3, 25 Oct 2026).
     const tradeCategories = formData.getAll("tradeCategories")
       .map((v) => String(v).trim())
-      .filter(Boolean);
+      .filter(isWorksTrade);
 
     await db.orm.public.ContractorBusiness
       .where((c) => c.id.eq(contractorId))

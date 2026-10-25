@@ -1,102 +1,71 @@
 import Link from "next/link";
-import { getCurrentProfile } from "@/lib/queries/profiles";
-import { getOpenQuoteRequests } from "@/lib/queries/supplier";
-import { Card } from "@/components/ui/card";
 import { connection } from "next/server";
+import { getCurrentProfile } from "@/lib/queries/profiles";
+import { myContractorBusinessIds } from "@/lib/works/urgent-orders";
+import { jobsForContractor } from "@/lib/works/marketplace";
+import { Card, CardHeader } from "@/components/ui/card";
 
-export default async function QuoteRequestsPage() {
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" }) : "");
+
+/**
+ * Jobs to quote (works marketplace stage 3, 25 Oct 2026): jobs open to the
+ * business's trades and postcodes, and the ones it was invited to quote.
+ */
+export default async function SupplierQuotesPage() {
   await connection();
   const profile = await getCurrentProfile();
   if (!profile) return null;
-
-  const quoteRequests = await getOpenQuoteRequests(profile.id);
-
-  const urgencyOrder: Record<string, number> = {
-    URGENT: 0,
-    STANDARD: 1,
-    FLEXIBLE: 2,
-  };
-
-  const sorted = [...quoteRequests].sort(
-    (a, b) => (urgencyOrder[a.urgency] ?? 1) - (urgencyOrder[b.urgency] ?? 1),
-  );
-
+  const { open, invited } = await jobsForContractor(await myContractorBusinessIds(profile.id));
   return (
-    <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold font-heading text-ink mb-1">
-        Quote Requests
-      </h1>
-      <p className="text-sm text-ink-muted mb-8">
-        Browse open quote requests from owners corporations.
-      </p>
+    <div className="max-w-4xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold font-heading text-ink mb-1">Quote Requests</h1>
+        <p className="text-sm text-ink-muted">
+          Jobs from buildings in your trades and postcodes. Keep your <Link href="/supplier/service-area" className="underline">trades and service area</Link> up to date to see the right jobs.
+        </p>
+      </div>
 
-      {sorted.length === 0 ? (
-        <Card>
-          <p className="text-sm text-ink-muted">
-            There are no open quote requests at the moment. Check back soon.
-          </p>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {sorted.map((qr) => {
-            const urgencyColour =
-              qr.urgency === "URGENT"
-                ? "bg-danger/10 text-danger"
-                : qr.urgency === "FLEXIBLE"
-                  ? "bg-success/10 text-success"
-                  : "bg-gold-100 text-gold-500";
+      <Card>
+        <CardHeader title="Invited to quote" />
+        {invited.length === 0 ? (
+          <p className="text-sm text-ink-muted">No invitations yet.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {invited.map((j) => (
+              <li key={j.id}>
+                <Link href={`/supplier/quotes/${j.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink truncate">{j.title}</p>
+                    <p className="text-xs text-ink-muted">{[j.trade, j.suburb].filter(Boolean).join(" · ")}{j.quoteClosesAt ? ` · quotes close ${when(j.quoteClosesAt)}` : ""}</p>
+                  </div>
+                  <span className="text-xs text-ink-muted">{j.invitationStatus === "DECLINED" ? "You declined" : j.quoteStatus === "SUBMITTED" ? "Quoted" : j.quoteStatus === "ACCEPTED" ? "Your quote was approved" : j.quoteStatus === "DECLINED" ? "Not selected" : j.statusLabel}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
-            return (
-              <Card key={qr.id}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/supplier/quotes/${qr.id}`}
-                      className="text-sm font-semibold text-ink hover:text-supplier transition-colors"
-                    >
-                      {qr.title}
-                    </Link>
-                    <p className="text-xs text-ink-muted mt-1 line-clamp-2">
-                      {qr.description}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-ink-muted">
-                        {qr.category}
-                      </span>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${urgencyColour}`}>
-                        {qr.urgency}
-                      </span>
-                      {qr.budget && (
-                        <span className="text-xs text-ink-muted">
-                          Budget: {qr.budget}
-                        </span>
-                      )}
-                      <span className="text-xs text-ink-muted">
-                        {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0)} quote
-                        {qr.otherQuoteCount + (qr.ownQuote ? 1 : 0) === 1 ? "" : "s"}
-                      </span>
-                    </div>
+      <Card>
+        <CardHeader title="Open jobs" description="Say you are interested, and the committee may invite you to quote." />
+        {open.length === 0 ? (
+          <p className="text-sm text-ink-muted">No open jobs in your trades and postcodes right now. You are emailed when one opens.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {open.map((j) => (
+              <li key={j.id}>
+                <Link href={`/supplier/quotes/${j.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink truncate">{j.title}</p>
+                    <p className="text-xs text-ink-muted">{[j.trade, j.suburb].filter(Boolean).join(" · ")} · interest closes {when(j.interestClosesAt)}</p>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-xs text-ink-muted">
-                      {qr.scheme?.name}
-                    </p>
-                    {qr.closesAt && (
-                      <p className="text-xs text-ink-muted mt-1">
-                        Closes{" "}
-                        {new Date(String(qr.closesAt)).toLocaleDateString(
-                          "en-AU",
-                          { day: "numeric", month: "short" },
-                        )}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                  <span className="text-xs text-ink-muted">{j.interested ? "You are interested" : "Open"}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }

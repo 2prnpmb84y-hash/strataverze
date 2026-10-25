@@ -62,7 +62,7 @@ export function requestStatusLabel(r: { status: string; isEmergency?: boolean | 
     case "SCOPE_PREPARATION":
       return "Scope being prepared";
     case "APPROVAL":
-      return "Awaiting approval";
+      return "Quote approved: contractor confirming";
     case "DELIVERY":
       return "Work under way";
     case "CLOSE_OUT":

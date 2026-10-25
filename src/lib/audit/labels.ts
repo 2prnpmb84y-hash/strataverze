@@ -34,6 +34,7 @@ const LABELS: Record<string, string> = {
   "scheme.created": "Building created",
   "scheme.photo_set": "Property photo added",
   "works.settings_changed": "Works settings changed",
+  "contractor.service_area_changed": "Contractor trades and service area changed",
   "scheme.photo_removed": "Property photo removed",
   "scheme.deleted": "Building deleted",
   "contractor.approved": "Contractor approved",

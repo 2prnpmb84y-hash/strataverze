@@ -294,3 +294,169 @@ export async function notifyOrderCancelled(input: { schemeId: string; workOrderN
     logError("[works] cancel emails failed:", err);
   }
 }
+
+// ─── Marketplace quotes (stage 3) ──────────────────────────────────────────
+
+/** Contacts who can sign in, of these businesses. */
+async function contractorContacts(businessIds: string[]) {
+  if (!businessIds.length) return [];
+  const contacts = await db.orm.public.ContractorContact.where((c) => and(c.contractorBusinessId.in([...new Set(businessIds)]), c.status.eq("ACTIVE"))).limit(1000).all();
+  const seen = new Set<string>();
+  return contacts
+    .filter((c) => c.email && c.profileId && !seen.has(String(c.email).toLowerCase()) && seen.add(String(c.email).toLowerCase()))
+    .map((c) => ({ email: String(c.email), name: String(c.firstName || "there"), businessId: c.contractorBusinessId }));
+}
+
+const supplierJob = (rfqId: string) => `${siteUrl()}/supplier/quotes/${rfqId}`;
+const sydneyDate = (iso: string) => new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
+
+/** A new job on the marketplace: to contractors who list the trade and work in the postcode. */
+export async function notifyRfqOpened(input: { rfqId: string; title: string; trade: string; suburb: string | null; interestClosesAt: string; businessIds: string[] }) {
+  try {
+    await send(await contractorContacts(input.businessIds), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `New job: ${input.trade}${input.suburb ? ` in ${input.suburb}` : ""}`,
+        heading: "A building is looking for quotes",
+        lines: [`Hello ${p.name},`, `"${input.title}": ${input.trade}${input.suburb ? `, ${input.suburb}` : ""}.`, `If you would like to quote, say you are interested by ${sydneyDate(input.interestClosesAt)}. The committee then chooses who to invite.`],
+        buttonLabel: "See the job",
+        url: supplierJob(input.rfqId),
+      }),
+    );
+  } catch (err) {
+    logError("[works] job emails failed:", err);
+  }
+}
+
+/** Invited to quote: to the invited contractors. */
+export async function notifyInvited(input: { schemeId: string; rfqId: string; rfqNumber: string; title: string; businessIds: string[]; quoteClosesAt: string }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await contractorContacts(input.businessIds), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Invited to quote: ${input.title}`,
+        heading: "You are invited to quote",
+        lines: [`Hello ${p.name},`, `${s.name} has invited you to quote for "${input.title}" (${input.rfqNumber}).`, `Quotes close ${sydneyDate(input.quoteClosesAt)}. The address and a contact are now on the job page.`],
+        buttonLabel: "See the job and quote",
+        url: supplierJob(input.rfqId),
+      }),
+    );
+  } catch (err) {
+    logError("[works] invitation emails failed:", err);
+  }
+}
+
+/** Interest has closed: to the committee and the Adviser, with what to do next. */
+export async function notifyInterestClosed(input: { schemeId: string; requestId: string | null; rfqNumber: string; interested: number }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: input.interested ? `${input.interested} interested: choose who to invite (${input.rfqNumber})` : `No contractor interest yet (${input.rfqNumber})`,
+        heading: input.interested ? "Choose who to invite" : "No contractor has expressed interest",
+        lines: input.interested
+          ? [`${input.interested} contractor${input.interested === 1 ? " has" : "s have"} expressed interest in ${input.rfqNumber} at ${s.name}.`, "Open the request and choose who to invite to quote."]
+          : [`No contractor has expressed interest in ${input.rfqNumber} at ${s.name} by the deadline.`, "You can extend the deadline, or invite an approved contractor directly."],
+        buttonLabel: "Open the request",
+        url: p.url,
+      }),
+    );
+  } catch (err) {
+    logError("[works] interest emails failed:", err);
+  }
+}
+
+/** Quotes are in (all invited contractors quoted, or the deadline passed): to the committee and the Adviser. */
+export async function notifyQuotesIn(input: { schemeId: string; requestId: string | null; rfqNumber: string; quotes: number; allIn: boolean }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `${input.allIn ? "All quotes are in" : "Quotes have closed"}: ${input.rfqNumber} at ${s.name}`,
+        heading: input.allIn ? "All quotes are in" : "Quotes have closed",
+        lines: [`${input.quotes} quote${input.quotes === 1 ? "" : "s"} received for ${input.rfqNumber} at ${s.name}.`, "Open the request to compare them and propose one to approve. The committee votes on it."],
+        buttonLabel: "Compare the quotes",
+        url: p.url,
+      }),
+    );
+  } catch (err) {
+    logError("[works] quotes-in emails failed:", err);
+  }
+}
+
+/** A quote proposed for approval: to the committee members who have not voted. */
+export async function notifyQuoteVote(input: { schemeId: string; requestId: string; requestNumber: string; contractorName: string; amount: number; proposedById: string }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const proposer = (await people([input.proposedById]))[0]?.name ?? "A committee member";
+    const list = (await people(await roleMembers(input.schemeId, "COMMITTEE"))).filter((p) => p.id !== input.proposedById);
+    await send(list, (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Your vote: approve a quote for ${input.requestNumber} at ${s.name}`,
+        heading: "Your vote is needed",
+        lines: [`Hello ${p.name},`, `${proposer} has proposed approving the quote from ${input.contractorName} for ${dollarsText(input.amount)} for works request ${input.requestNumber}.`, "Compare the quotes and vote for or against in StrataVerze."],
+        buttonLabel: "Vote",
+        url: ownerLink(input.requestId),
+      }),
+    );
+  } catch (err) {
+    logError("[works] quote vote emails failed:", err);
+  }
+}
+
+/** A quote approved: to the committee and Adviser, and whoever raised the request. */
+export async function notifyQuoteApproved(input: { schemeId: string; requestId: string; requestNumber: string; title: string; contractorName: string; amount: number; raisedById: string; byDelegation: boolean }) {
+  try {
+    const s = await scheme(input.schemeId);
+    const who = input.byDelegation ? "The Adviser, under the committee's delegation," : "The committee";
+    await send(await committeeAndAdvisers(input.schemeId, input.requestId), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Quote approved: ${input.requestNumber} at ${s.name}`,
+        heading: "Quote approved",
+        lines: [`${who} approved the quote from ${input.contractorName} for ${dollarsText(input.amount)} for works request ${input.requestNumber}, "${input.title}".`, "The work order has gone to the contractor to accept."],
+        buttonLabel: "Open the request",
+        url: p.url,
+      }),
+    );
+    const raiser = (await people([input.raisedById]))[0];
+    if (raiser) {
+      await send([raiser], (p) =>
+        worksEmail({
+          to: p.email,
+          subject: `Works request ${input.requestNumber}: a contractor has been chosen`,
+          heading: "Your works request",
+          lines: [`Hello ${p.name},`, `${who} has approved a quote for works request ${input.requestNumber}, "${input.title}", at ${s.name}. The contractor is confirming the job.`],
+          buttonLabel: "See the request",
+          url: ownerLink(input.requestId),
+        }),
+      );
+    }
+  } catch (err) {
+    logError("[works] quote approved emails failed:", err);
+  }
+}
+
+/** The chosen contractor accepted, so the others were not selected: thank them. */
+export async function notifyNotSelected(input: { schemeId: string; title: string; businessIds: string[] }) {
+  try {
+    const s = await scheme(input.schemeId);
+    await send(await contractorContacts(input.businessIds), (p) =>
+      worksEmail({
+        to: p.email,
+        subject: `Not selected this time: ${input.title}`,
+        heading: "Thank you for quoting",
+        lines: [`Hello ${p.name},`, `${s.name} has gone ahead with another quote for "${input.title}". Thank you for quoting.`],
+        buttonLabel: "Your quote requests",
+        url: `${siteUrl()}/supplier/quotes`,
+      }),
+    );
+  } catch (err) {
+    logError("[works] not-selected emails failed:", err);
+  }
+}
+

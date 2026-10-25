@@ -85,8 +85,8 @@ const adviserNav = [
 const supplierNav = [
   { label: "Dashboard", href: "/supplier", icon: LayoutGrid },
   { label: "Onboarding", href: "/supplier/onboarding", icon: UserPlus },
+  { label: "Trades & Area", href: "/supplier/service-area", icon: Truck },
   { label: "Quote Requests", href: "/supplier/quotes", icon: ClipboardList },
-  { label: "My Quotes", href: "/supplier/my-quotes", icon: FileText },
   { label: "Work Orders", href: "/supplier/work-orders", icon: Briefcase },
   { label: "Invoices", href: "/supplier/invoices", icon: ClipboardList },
   { label: "Compliance", href: "/supplier/compliance", icon: Shield },

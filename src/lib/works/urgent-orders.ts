@@ -211,7 +211,8 @@ export async function respondToOrder(input: { workOrderId: string; contractorBus
         .updateAndCount(input.accept ? { status: "AUTHORISED", acknowledgedAt: now } : { status: "DECLINED", declinedAt: now, declineReason: reason });
       if (n !== 1) return false;
       if (input.accept) {
-        const started = await tx.orm.public.WorksRequest.where((r) => and(r.id.eq(order.requestId!), r.status.eq("PROCUREMENT"))).updateAndCount({ status: "DELIVERY" });
+        // Urgent orders come from PROCUREMENT; approved quotes from APPROVAL.
+        const started = await tx.orm.public.WorksRequest.where((r) => and(r.id.eq(order.requestId!), r.status.in(["PROCUREMENT", "APPROVAL"]))).updateAndCount({ status: "DELIVERY" });
         if (started !== 1) throw new Undo("request moved on");
       }
       return true;
