@@ -1833,8 +1833,9 @@ exports[`NSW statutory constants > are unchanged 1`] = `
     "excludedLotTypes": [
       "PARKING",
       "STORAGE",
+      "COMMON",
     ],
-    "excludedLotsLabel": "parking or utility lots",
+    "excludedLotsLabel": "parking, utility or common property lots",
     "leviesRaisedMoreThanCents": 25000000,
     "lotsMoreThan": 100,
     "measure": "total levies raised for the financial year",

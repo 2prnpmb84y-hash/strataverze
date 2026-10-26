@@ -104,9 +104,10 @@ export const CAPITAL_WORKS_PLAN = {
  * Other schemes consider an audit at each AGM.
  *
  * Lots counted: every lot on the strata roll except those recorded as
- * PARKING or STORAGE (StrataVerze's lot types for parking and utility lots).
- * A lot recorded with another type is counted, so a utility lot recorded as
- * RESIDENTIAL or COMMON is counted until its type is corrected. When the
+ * PARKING or STORAGE (StrataVerze's lot types for parking and utility lots)
+ * and COMMON (a common property row, not a lot; decided by StrataVerze on
+ * 26 Oct 2026). A utility lot recorded as RESIDENTIAL is counted until its
+ * type is corrected. When the
  * roll has fewer lots than the building's recorded total (it is not fully
  * loaded), the lots not yet on the roll are counted too.
  *
@@ -119,9 +120,9 @@ export const CAPITAL_WORKS_PLAN = {
 export const AUDIT_THRESHOLD = {
   lotsMoreThan: 100,
   /** Lot types not counted towards the lots test (parking and utility lots). */
-  excludedLotTypes: ["PARKING", "STORAGE"],
+  excludedLotTypes: ["PARKING", "STORAGE", "COMMON"],
   /** How the platform names the lots left out. */
-  excludedLotsLabel: "parking or utility lots",
+  excludedLotsLabel: "parking, utility or common property lots",
   leviesRaisedMoreThanCents: 25_000_000,
   measure: "total levies raised for the financial year",
   timing: "before the accounts and financial statements are presented to the annual general meeting",
