@@ -79,7 +79,7 @@ beforeEach(() => {
 });
 
 describe("globalSearch", () => {
-  it("gives a supplier only work orders awarded to them, whatever portal they claim", async () => {
+  it("gives a supplier nothing, whatever portal they claim (old work orders retired)", async () => {
     memberships.mockResolvedValue([{ schemeId: SCHEME_A, role: "SUPPLIER", isActive: true }]);
     rows.WorkOrder = [{ id: "wo-1", schemeId: SCHEME_A, title: "Fix pump", status: "AWARDED", scheme: { name: "A" } }];
 
@@ -92,19 +92,10 @@ describe("globalSearch", () => {
       expect(queried.Lot).toBeUndefined();
       expect(queried.Scheme).toBeUndefined();
 
-      if (portal === "supplier") {
-        const conds = flat(queried.WorkOrder?.[0]);
-        expect(conds).toContainEqual({ col: "supplierId", op: "eq", v: "me" });
-        expect(conds).toContainEqual({ col: "schemeId", op: "in", v: [SCHEME_A] });
-        expect(conds.some((c) => c.col === "schemeId" && c.op === "in" && (c.v as string[]).length !== 1)).toBe(false);
-        expect(results).toEqual([
-          expect.objectContaining({ type: "work-order", id: "wo-1", href: "/supplier/work-orders" }),
-        ]);
-      } else {
-        // Claiming another portal narrows to nothing; it never widens.
-        expect(queried.WorkOrder).toBeUndefined();
-        expect(results).toEqual([]);
-      }
+      // The old maintenance work orders are no longer searched for suppliers,
+      // and claiming another portal narrows to nothing; it never widens.
+      expect(queried.WorkOrder).toBeUndefined();
+      expect(results).toEqual([]);
     }
   });
 
