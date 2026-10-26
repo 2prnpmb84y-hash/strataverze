@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { interestWords } from "@/lib/jurisdiction/wording";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getOverdueLevyNoticesWithInterest } from "@/lib/queries/interest";
@@ -35,6 +36,8 @@ export default async function InterestPage({
   ]);
   const notices = interestData?.notices ?? [];
   const annualRate = interestData?.annualRate ?? 0;
+  // The building's interest wording (rate, grace period, citations).
+  const words = interestWords(setting.rules.rules);
 
   return (
     <div className="space-y-6">
@@ -42,8 +45,8 @@ export default async function InterestPage({
         title="Interest on Overdue Levies"
         description={
           annualRate > 0
-            ? `Statutory interest: ${annualRate}% a year simple interest on levies unpaid one month after the due date (SSMA 2015 s 85).`
-            : "No interest: the owners corporation resolved that contributions bear no interest (SSMA 2015 s 85(3))."
+            ? `Statutory interest: ${annualRate}% a year simple interest on levies unpaid ${words.grace} after the due date (${words.citation}).`
+            : `No interest: the ${words.ownersCorporation} resolved that contributions bear no interest (${words.noInterestCitation}).`
         }
       />
 
@@ -54,6 +57,7 @@ export default async function InterestPage({
           meetingId={setting.meetingId}
           motionId={setting.motionId}
           meetings={meetings}
+          words={words}
         />
       </Card>
 
@@ -74,6 +78,7 @@ export default async function InterestPage({
           interestReason: n.interestReason,
         }))}
         annualRate={annualRate}
+        words={words}
       />
     </div>
   );

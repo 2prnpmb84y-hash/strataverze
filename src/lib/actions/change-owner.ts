@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
@@ -53,6 +54,8 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
       }
     }
 
+    // Looked up before the change is saved, so nothing after the write can fail on it.
+    const seatCitation = (await rulesForScheme(schemeId)).rules.CITATIONS.committeeSeatEndsOnSale;
     const result = await applyChangeOwner(schemeId, lotId, input);
     const lotNumber = lot!.lotNumber;
 
@@ -140,7 +143,7 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
     const parts = [`${input.ownerName} is now the owner of Lot ${lotNumber} on the strata roll, settled ${input.settlementDate.split("-").reverse().join("/")}.`];
     if (result.endedMemberships.length) parts.push(`The outgoing owner's portal access has ended.`);
     for (const m of result.movedAccess) parts.push(`The outgoing owner keeps portal access through Lot ${m.lotNumber}, which the strata roll shows they still own.`);
-    if (result.endedCommitteeSeats.length) parts.push(`Their seat on the strata committee has ended from the settlement date, as they are no longer an owner (s 35(1)(a) SSMA 2015).`);
+    if (result.endedCommitteeSeats.length) parts.push(`Their seat on the strata committee has ended from the settlement date, as they are no longer an owner (${seatCitation}).`);
     for (const k of result.keptCommitteeSeats) {
       const lots = k.lotNumbers.map((n) => `Lot ${n}`).join(", ");
       parts.push(`Their committee seat continues, as the strata roll shows them as the owner of ${lots}. If that is wrong, the seat needs to be ended separately.`);

@@ -32,16 +32,26 @@ import {
 } from "@/lib/meetings/templates";
 import { assembleNoticeContent } from "@/lib/meetings/notice";
 import { statutoryInterest, allocatePayment, interestSettingProblem } from "@/lib/finance/statutory-interest";
-import { HARDSHIP_INFORMATION, validateLevyNoticeContent, type LevyNoticeContentInput } from "@/lib/finance/levy-notice-content";
+import { validateLevyNoticeContent, type LevyNoticeContentInput } from "@/lib/finance/levy-notice-content";
 import { issueDateFor, issueTiming, lateMessage } from "@/lib/levies/issue-timing";
 import { projectPlan, requiredAnnualContribution, reviewDueDate, spendByYear } from "@/lib/finance/capital-works-plan";
 import { auditRequired } from "@/lib/finance/key-financial-information";
 // The NSW rules, as a building in NSW gets them (phase 1: every helper takes its building's rules).
 const NSW = statutory.statutoryRulesFor("NSW");
 const DEFAULT_RECOVERY_STEPS = NSW.DEBT_RECOVERY_STEPS;
+const HARDSHIP_INFORMATION = NSW.HARDSHIP_INFORMATION;
 import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
 import { levyNoticeBlocks, statutoryPackBlocks } from "@/lib/pdf/documents";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
+
+/** The wording constants added in phase 1d: snapshotted on their own below, so adding them did not touch the snapshot above. */
+const WORDING = ["TERMINOLOGY", "CITATIONS", "HARDSHIP_INFORMATION", "DEBT_RECOVERY_GUIDANCE"];
+
+describe("NSW wording (phase 1d)", () => {
+  it("is the wording the platform used before", () => {
+    expect(Object.fromEntries(WORDING.map((n) => [n, (NSW as Record<string, unknown>)[n]]))).toMatchSnapshot();
+  });
+});
 
 describe("NSW statutory constants", () => {
   it("are unchanged", () => {
@@ -63,7 +73,7 @@ describe("NSW statutory constants", () => {
     // DEBT_RECOVERY_STEPS (moved into the pack unchanged in phase 1b) by the
     // debt recovery test at the end.
     const constants = Object.entries(statutory.statutoryRulesFor("NSW"))
-      .filter(([k, v]) => typeof v !== "function" && k !== "MEETING_RULES" && k !== "DEBT_RECOVERY_STEPS")
+      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", ...WORDING].includes(k))
       .map(([k]) => k)
       .sort();
     expect(constants).toEqual([...names].sort());
@@ -241,6 +251,8 @@ describe("NSW levies", () => {
       ledgerUrl: "https://app.strataverze.com/owner/levies",
       noInterest: false,
       interest: NSW.STATUTORY_INTEREST,
+      hardship: NSW.HARDSHIP_INFORMATION,
+      ownersCorporation: NSW.TERMINOLOGY.ownersCorporation,
     };
     expect(levyNoticeBlocks(doc)).toMatchSnapshot();
     expect(levyNoticeBlocks({ ...doc, noInterest: true })).toMatchSnapshot();
@@ -261,6 +273,8 @@ describe("NSW levies", () => {
         ledgerUrl: doc.ledgerUrl,
         noInterest: false,
         interest: NSW.STATUTORY_INTEREST,
+        hardship: NSW.HARDSHIP_INFORMATION,
+        ownersCorporation: NSW.TERMINOLOGY.ownersCorporation,
       }),
     ).toMatchSnapshot();
   });

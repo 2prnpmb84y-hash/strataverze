@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import Link from "next/link";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -179,6 +180,7 @@ export default async function RenewalDetailPage({
       )}
 
       <RenewalWorkspace
+        tribunal={rulesForState(scheme.state).rules.TERMINOLOGY.tribunal}
         schemeId={id}
         renewalId={renewalId}
         stage={renewal.stage}

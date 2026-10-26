@@ -49,7 +49,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     code: "AU-NSW",
     state: "NSW",
     name: "New South Wales",
-    version: "2026.10.1",
+    // 2026.10.2 (26 Oct 2026): wording added (TERMINOLOGY, CITATIONS, HARDSHIP_INFORMATION, DEBT_RECOVERY_GUIDANCE); no rule value changed.
+    version: "2026.10.2",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not

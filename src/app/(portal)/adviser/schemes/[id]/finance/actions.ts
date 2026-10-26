@@ -1,5 +1,6 @@
 "use server";
 import { logError } from "@/lib/log";
+import { noticeLeadMark, noticeLeadText } from "@/lib/jurisdiction/wording";
 
 import { uploadErrorMessage, consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
@@ -1204,7 +1205,7 @@ export async function issueScheduleNoticesAction(
     const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today, levyRule) }));
     const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`, levyRule)!])).values()];
     if (late.length && formData.get("confirmLate") !== "on") {
-      return { error: "Some instalments cannot be given 5 weeks' notice. Check them below and confirm to go ahead.", data: { late } };
+      return { error: `Some instalments cannot be given ${noticeLeadText(levyRule)}' notice. Check them below and confirm to go ahead.`, data: { late } };
     }
 
     const first = await getNextNoticeNumber(schemeId);
@@ -1300,11 +1301,11 @@ export async function issueOverdueNoticesAction(
     if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be sent." };
     const today = await schemeToday(schemeId);
     const list = await overdueDrafts(schemeId, scheduleId, today);
-    if (!list.length) return { error: "No planned notice is past its 5-week mark." };
     const levyRule = (await rulesForScheme(schemeId)).rules.LEVY_NOTICE_RULES;
+    if (!list.length) return { error: `No planned notice is past its ${noticeLeadMark(levyRule)}.` };
     const late = [...new Set(list.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, levyRule)!))];
     if (formData.get("confirmLate") !== "on") {
-      return { error: "Confirm that these notices go out today with less than 5 weeks' notice.", data: { late } };
+      return { error: `Confirm that these notices go out today with less than ${noticeLeadText(levyRule)}' notice.`, data: { late } };
     }
     const r = await issueOverdueDrafts({ schemeId, scheduleId, fundId: schedule.fundId, issuerId: profile.id, today });
     if (r.missing.length) {

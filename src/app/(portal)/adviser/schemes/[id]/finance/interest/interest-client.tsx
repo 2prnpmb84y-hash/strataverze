@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import type { InterestWords } from "@/lib/jurisdiction/wording";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,13 +26,13 @@ type NoticeRow = {
   interestReason: string;
 };
 
-const REASON_LABEL: Record<string, string> = {
-  IN_GRACE: "In the one month grace period",
+const reasonLabel = (words: InterestWords): Record<string, string> => ({
+  IN_GRACE: `In the ${words.grace} grace period`,
   PAID_IN_GRACE: "Paid within the grace period",
   NOT_YET_DUE: "Not yet due",
   NOTHING_OWING: "Nothing owing",
   NO_INTEREST_RESOLUTION: "No interest by resolution",
-};
+});
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
@@ -52,11 +53,15 @@ export function InterestClient({
   schemeId,
   notices,
   annualRate,
+  words,
 }: {
   schemeId: string;
   notices: NoticeRow[];
   annualRate: number;
+  /** The building's interest wording. */
+  words: InterestWords;
 }) {
+  const REASON_LABEL = reasonLabel(words);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +128,7 @@ export function InterestClient({
           </svg>
         }
         title="No interest is charged"
-        description="The owners corporation has resolved that contributions bear no interest (SSMA 2015 s 85(3)). Change the setting above if that resolution is revoked."
+        description={`The ${words.ownersCorporation} has resolved that contributions bear no interest (${words.noInterestCitation}). Change the setting above if that resolution is revoked.`}
       />
     );
   }

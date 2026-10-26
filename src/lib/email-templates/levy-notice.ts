@@ -1,6 +1,7 @@
 import { emailLayout, emailButton } from "./layout";
 import { html, plainSubject, type SafeHtml } from "./html";
-import { HARDSHIP_INFORMATION } from "@/lib/finance/levy-notice-content";
+import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
+import { graceText } from "@/lib/jurisdiction/wording";
 import type { InterestRule } from "@/lib/finance/statutory-interest";
 
 
@@ -21,6 +22,10 @@ export interface LevyNoticeEmail {
   noInterest: boolean;
   /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
   interest: InterestRule;
+  /** The building's hardship statement (`rules.HARDSHIP_INFORMATION`). */
+  hardship: HardshipInformation;
+  /** The building's term for the owners corporation (`rules.TERMINOLOGY.ownersCorporation`). */
+  ownersCorporation: string;
 }
 
 const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
@@ -50,8 +55,8 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
     <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
       ${
         p.noInterest
-          ? "The owners corporation has resolved not to charge interest on overdue levies."
-          : `Interest: if this levy is not paid within one month after the due date, simple interest of ${p.interest.annualRatePercent}% a year is charged from the due date until it is paid (${p.interest.source}).`
+          ? `The ${p.ownersCorporation} has resolved not to charge interest on overdue levies.`
+          : `Interest: if this levy is not paid within ${graceText(p.interest)} after the due date, simple interest of ${p.interest.annualRatePercent}% a year is charged from the due date until it is paid (${p.interest.source}).`
       }
     </p>
     <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
@@ -59,11 +64,11 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
     </p>
     ${emailButton("View your levy ledger", p.ledgerUrl)}
     <div style="margin:20px 0 0;padding:12px 16px;background-color:#F8FAFB;border-radius:8px;">
-      <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#1a1a2e;">${HARDSHIP_INFORMATION.title}</p>
-      <p style="margin:0 0 6px;font-size:13px;color:#1A202C;line-height:1.6;">${HARDSHIP_INFORMATION.summary}</p>
+      <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#1a1a2e;">${p.hardship.title}</p>
+      <p style="margin:0 0 6px;font-size:13px;color:#1A202C;line-height:1.6;">${p.hardship.summary}</p>
       <p style="margin:0;font-size:13px;color:#1A202C;line-height:1.6;">
-        ${HARDSHIP_INFORMATION.helplineName}: ${HARDSHIP_INFORMATION.helplinePhone} or ${HARDSHIP_INFORMATION.helplineWeb}.
-        More information, including translations: ${HARDSHIP_INFORMATION.moreInformationUrl}
+        ${p.hardship.helplineName}: ${p.hardship.helplinePhone} or ${p.hardship.helplineWeb}.
+        More information, including translations: ${p.hardship.moreInformationUrl}
       </p>
     </div>
   `;

@@ -316,3 +316,95 @@ export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
     triggerCondition: "Debt fully recovered, written off, or settled",
   },
 ];
+
+/**
+ * The words the law uses, for text the platform shows or sends for a
+ * building (multi-jurisdiction plan, phase 1d). Each value is exactly what
+ * the platform said before phase 1d, so NSW output is unchanged. Other
+ * jurisdictions' packs give their own terms (for example body corporate), to
+ * be confirmed when their packs are written; none is assumed here.
+ */
+export const TERMINOLOGY = {
+  /** The body that owns the common property. */
+  ownersCorporation: "owners corporation",
+  /** The elected committee. */
+  committee: "strata committee",
+  /** The governing Act, in full. */
+  act: "Strata Schemes Management Act 2015",
+  /** The governing Act, short form used in citations. */
+  actShort: "SSMA 2015",
+  /** The jurisdiction, as it follows the Act's name. */
+  jurisdictionShort: "NSW",
+  /** The tribunal that hears strata disputes and levy claims. */
+  tribunal: "NCAT",
+  source: "Strata Schemes Management Act 2015 (NSW); NSW Civil and Administrative Tribunal",
+} as const;
+
+/**
+ * Citations shown next to a rule in the platform's text (phase 1d). Each is
+ * exactly the wording used before, so NSW output is unchanged. Section numbers
+ * are as made in 2015 and are to be re-checked against the in-force Act with
+ * the rest of the pack.
+ */
+export const CITATIONS = {
+  /** Interest on unpaid contributions. */
+  interest: "SSMA 2015 s 85",
+  /** The same section, after the Act's full name. */
+  interestSection: "s 85",
+  /** A resolution that contributions bear no interest. */
+  noInterestResolution: "SSMA 2015 s 85(3)",
+  /** The same section, where the Act is already named. */
+  noInterestSection: "s 85(3)",
+  /** The resolution adopting pre-meeting electronic voting. */
+  evotingAdoption: "Reg cl 14",
+  /** Two quotes for works over the threshold. */
+  worksTwoQuotes: "SSMA s 102",
+  /** A committee member who stops being an owner leaves the committee. */
+  committeeSeatEndsOnSale: "s 35(1)(a) SSMA 2015",
+  /** The formal reminder notice before recovery. */
+  recoveryReminderNotice: "s.83(1) of the Strata Schemes Management Act 2015",
+  source: "Strata Schemes Management Act 2015 (NSW), as made",
+} as const;
+
+/**
+ * The hardship information included with every levy notice (moved here from
+ * src/lib/finance/levy-notice-content.ts in phase 1d, unchanged). Confirm
+ * against the current NSW Government statement.
+ */
+export const HARDSHIP_INFORMATION = {
+  title: "Financial Hardship Information Statement",
+  summary:
+    "If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.",
+  helplineName: "National Debt Helpline",
+  helplinePhone: "1800 007 007",
+  helplineWeb: "ndh.org.au",
+  moreInformationUrl: "https://www.nsw.gov.au/strata-levies-help",
+} as const;
+
+/**
+ * Guidance shown for each debt recovery step (moved here from the case
+ * screen in phase 1d, unchanged). Like DEBT_RECOVERY_STEPS, not yet reviewed
+ * against the current Act; the NSW pack reviewer should confirm or correct it.
+ */
+export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION:
+    "Verify the accuracy of all levy charges, payments received and the outstanding balance. Ensure the ledger is reconciled before proceeding.",
+  INITIAL_CONTACT:
+    "Make initial contact with the lot owner to advise them of the overdue levy and request payment. This is an informal reminder before formal notices.",
+  REMINDER_NOTICE:
+    "Issue a formal reminder notice under s.83(1) of the Strata Schemes Management Act 2015. The notice must specify the amount owing and due date.",
+  FINAL_NOTICE:
+    "Issue a final notice of the overdue contribution, warning that further recovery action will be taken if payment is not received within 14 days.",
+  HARDSHIP_REVIEW:
+    "Review any hardship application from the lot owner. Consider whether a payment plan or alternative arrangement is appropriate before escalating.",
+  COMMITTEE_REVIEW:
+    "Present the case to the strata committee for review and decision on next steps. The committee must resolve to proceed with legal recovery.",
+  LEGAL_REFERRAL:
+    "Refer the matter to the scheme's solicitor for formal debt recovery proceedings. Provide all supporting documentation and correspondence.",
+  PROCEEDINGS:
+    "Commence formal legal proceedings. This may include an application to NCAT or the Local Court for recovery of the outstanding levy debt.",
+  ENFORCEMENT:
+    "Enforce the court order or NCAT decision. This may include registration of a judgment, garnishee orders, or other enforcement mechanisms.",
+  CLOSED:
+    "Finalise and close the debt recovery case. Record the outcome and any relevant notes for future reference.",
+};

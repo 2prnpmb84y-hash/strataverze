@@ -29,6 +29,8 @@ const notice = {
   ledgerUrl: "https://strataverze.vercel.app/owner/levies",
   noInterest: false,
   interest: statutoryRulesFor("NSW").STATUTORY_INTEREST,
+  hardship: statutoryRulesFor("NSW").HARDSHIP_INFORMATION,
+  ownersCorporation: "owners corporation",
 };
 
 describe("PDF documents", () => {

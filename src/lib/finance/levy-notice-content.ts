@@ -10,16 +10,8 @@ import type { StatutoryRules } from "@/config/statutory";
 /** The levy notice rules of a building's rule pack (`rules.LEVY_NOTICE_RULES`). */
 export type LevyNoticeRule = StatutoryRules["LEVY_NOTICE_RULES"];
 
-/** The hardship information included with every notice. Confirm against the current NSW Government statement. */
-export const HARDSHIP_INFORMATION = {
-  title: "Financial Hardship Information Statement",
-  summary:
-    "If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.",
-  helplineName: "National Debt Helpline",
-  helplinePhone: "1800 007 007",
-  helplineWeb: "ndh.org.au",
-  moreInformationUrl: "https://www.nsw.gov.au/strata-levies-help",
-} as const;
+/** The hardship information of a building's rule pack (`rules.HARDSHIP_INFORMATION`). */
+export type HardshipInformation = StatutoryRules["HARDSHIP_INFORMATION"];
 
 export interface LevyNoticeContentInput {
   scheme: { name: string | null; planNumber: string | null };

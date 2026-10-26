@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import {
   getDebtRecoveryCaseWithDetails,
@@ -127,6 +128,7 @@ export default async function OwnerCaseDetailPage({
   };
   const serialised = isCommittee ? full : debtorCaseView(full);
 
+  const terms = (await rulesForScheme(debtCase.schemeId)).rules.TERMINOLOGY;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -144,6 +146,7 @@ export default async function OwnerCaseDetailPage({
         debtCase={serialised}
         isCommittee={isCommittee}
         recoveryFees={isCommittee ? await previewRecoveryFees() : {}}
+        recoveryLaw={`${terms.jurisdictionShort} ${terms.act}`}
       />
     </div>
   );

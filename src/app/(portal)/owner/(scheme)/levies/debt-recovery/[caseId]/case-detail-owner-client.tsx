@@ -162,7 +162,10 @@ export function CaseDetailOwnerClient({
   debtCase,
   isCommittee,
   recoveryFees = {},
+  recoveryLaw,
 }: {
+  /** "NSW Strata Schemes Management Act 2015": the building's law the steps follow. */
+  recoveryLaw: string;
   debtCase: DebtRecoveryCase;
   isCommittee: boolean;
   /** StrataVerze recovery fees by price variant, shown before a step is completed. */
@@ -358,7 +361,7 @@ export function CaseDetailOwnerClient({
       <Card>
         <CardHeader
           title="Recovery Steps"
-          description="NSW Strata Schemes Management Act 2015 recovery process."
+          description={`${recoveryLaw} recovery process.`}
         />
         <div className="px-6 pb-6">
           <ol className="relative border-l-2 border-line ml-3 space-y-4">

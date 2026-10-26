@@ -7,18 +7,20 @@
  * the building delegates works decisions.
  */
 import { useActionState, useState, useTransition } from "react";
+import { countWord } from "@/lib/jurisdiction/wording";
 import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { proposeWorksRouteAction, voteWorksDecisionAction, withdrawWorksDecisionAction, type WorksFormState } from "@/lib/actions/works-marketplace";
 import type { DecisionView, RequestViewer } from "@/lib/works/view";
 
-const OUTCOME_CHOICES = [
+/** The choices, with the building's two-quote rule in the Get quotes help. */
+const outcomeChoices = (q: { threshold: number; minimumQuotes: number }) => [
   { value: "URGENT", label: "Urgent: order the work now", help: "Within the building's urgent spending limit, any one committee member can decide this. The work order goes straight to the preferred contractor for the trade." },
-  { value: "QUOTES", label: "Get quotes", help: "The request goes to approved contractors in the trade who work in this area. The committee invites some to quote and approves one by vote. Over $30,000, two quotes are needed." },
+  { value: "QUOTES", label: "Get quotes", help: `The request goes to approved contractors in the trade who work in this area. The committee invites some to quote and approves one by vote. Over $${q.threshold.toLocaleString("en-AU")}, ${countWord(q.minimumQuotes)} quotes are needed.` },
   { value: "RETURN", label: "Return to the owner for more detail", help: "The owner is told what to add, and can send it again." },
   { value: "DECLINE", label: "Decline", help: "The request is closed and the owner is told why." },
-] as const;
+];
 
 function Message({ state }: { state: WorksFormState }) {
   if (state.error) return <p className="text-sm text-red-600" role="alert">{state.error}</p>;
@@ -26,7 +28,7 @@ function Message({ state }: { state: WorksFormState }) {
   return null;
 }
 
-function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLimit, requestTitle, requestDescription }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean; urgentLimit: number | null; requestTitle: string; requestDescription: string }) {
+function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLimit, requestTitle, requestDescription, twoQuotes }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean; urgentLimit: number | null; requestTitle: string; requestDescription: string; twoQuotes: { threshold: number; minimumQuotes: number } }) {
   const router = useRouter();
   const [outcome, setOutcome] = useState<string>("");
   const [state, formAction, isPending] = useActionState<WorksFormState, FormData>(async (prev, fd) => {
@@ -40,7 +42,7 @@ function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLi
       <p className="text-sm text-ink-muted">{byDelegation ? "The building delegates works decisions to you, so your decision takes effect at once and is recorded as made under the delegation." : ruleSentence}</p>
       <fieldset className="space-y-2">
         <legend className="sr-only">How should this request be handled?</legend>
-        {OUTCOME_CHOICES.map((o) => (
+        {outcomeChoices(twoQuotes).map((o) => (
           <label key={o.value} className={`flex items-start gap-3 rounded-[var(--radius-card)] border p-3 cursor-pointer ${outcome === o.value ? "border-turquoise bg-turquoise/5" : "border-line bg-white"}`}>
             <input type="radio" name="outcome" value={o.value} required checked={outcome === o.value} onChange={() => setOutcome(o.value)} className="mt-1 accent-turquoise" />
             <span className="text-sm">
@@ -193,6 +195,7 @@ export function DecisionPanel({
   openDecisionId,
   ruleSentence,
   urgentLimit = null,
+  twoQuotes,
   requestTitle = "",
   requestDescription = "",
 }: {
@@ -203,6 +206,8 @@ export function DecisionPanel({
   requestId: string;
   /** The building's urgent spending limit, for the urgent amount hint. */
   urgentLimit?: number | null;
+  /** The building's two-quote rule (`rules.WORKS_SPENDING_RULES`). */
+  twoQuotes: { threshold: number; minimumQuotes: number };
   can: RequestViewer;
   decisions: DecisionView[];
   openDecisionId: string | null;
@@ -223,7 +228,7 @@ export function DecisionPanel({
           {can.canWithdraw && <WithdrawButton schemeId={schemeId} requestId={requestId} decisionId={open.id} />}
         </div>
       )}
-      {can.canPropose && <ProposeForm schemeId={schemeId} requestId={requestId} ruleSentence={ruleSentence} byDelegation={delegated} urgentLimit={urgentLimit} requestTitle={requestTitle} requestDescription={requestDescription} />}
+      {can.canPropose && <ProposeForm schemeId={schemeId} requestId={requestId} ruleSentence={ruleSentence} byDelegation={delegated} urgentLimit={urgentLimit} requestTitle={requestTitle} requestDescription={requestDescription} twoQuotes={twoQuotes} />}
       {past.length > 0 && (
         <details className="group" open={!open && !can.canPropose}>
           <summary className="cursor-pointer text-sm font-medium text-ink">Decision record ({past.length})</summary>

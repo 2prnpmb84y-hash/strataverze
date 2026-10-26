@@ -1897,3 +1897,48 @@ exports[`NSW statutory constants > give the same default accounting basis 1`] = 
   "SPECIAL": "CASH",
 }
 `;
+
+exports[`NSW wording (phase 1d) > is the wording the platform used before 1`] = `
+{
+  "CITATIONS": {
+    "committeeSeatEndsOnSale": "s 35(1)(a) SSMA 2015",
+    "evotingAdoption": "Reg cl 14",
+    "interest": "SSMA 2015 s 85",
+    "interestSection": "s 85",
+    "noInterestResolution": "SSMA 2015 s 85(3)",
+    "noInterestSection": "s 85(3)",
+    "recoveryReminderNotice": "s.83(1) of the Strata Schemes Management Act 2015",
+    "source": "Strata Schemes Management Act 2015 (NSW), as made",
+    "worksTwoQuotes": "SSMA s 102",
+  },
+  "DEBT_RECOVERY_GUIDANCE": {
+    "CLOSED": "Finalise and close the debt recovery case. Record the outcome and any relevant notes for future reference.",
+    "COMMITTEE_REVIEW": "Present the case to the strata committee for review and decision on next steps. The committee must resolve to proceed with legal recovery.",
+    "ENFORCEMENT": "Enforce the court order or NCAT decision. This may include registration of a judgment, garnishee orders, or other enforcement mechanisms.",
+    "FINAL_NOTICE": "Issue a final notice of the overdue contribution, warning that further recovery action will be taken if payment is not received within 14 days.",
+    "HARDSHIP_REVIEW": "Review any hardship application from the lot owner. Consider whether a payment plan or alternative arrangement is appropriate before escalating.",
+    "INITIAL_CONTACT": "Make initial contact with the lot owner to advise them of the overdue levy and request payment. This is an informal reminder before formal notices.",
+    "LEDGER_VERIFICATION": "Verify the accuracy of all levy charges, payments received and the outstanding balance. Ensure the ledger is reconciled before proceeding.",
+    "LEGAL_REFERRAL": "Refer the matter to the scheme's solicitor for formal debt recovery proceedings. Provide all supporting documentation and correspondence.",
+    "PROCEEDINGS": "Commence formal legal proceedings. This may include an application to NCAT or the Local Court for recovery of the outstanding levy debt.",
+    "REMINDER_NOTICE": "Issue a formal reminder notice under s.83(1) of the Strata Schemes Management Act 2015. The notice must specify the amount owing and due date.",
+  },
+  "HARDSHIP_INFORMATION": {
+    "helplineName": "National Debt Helpline",
+    "helplinePhone": "1800 007 007",
+    "helplineWeb": "ndh.org.au",
+    "moreInformationUrl": "https://www.nsw.gov.au/strata-levies-help",
+    "summary": "If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.",
+    "title": "Financial Hardship Information Statement",
+  },
+  "TERMINOLOGY": {
+    "act": "Strata Schemes Management Act 2015",
+    "actShort": "SSMA 2015",
+    "committee": "strata committee",
+    "jurisdictionShort": "NSW",
+    "ownersCorporation": "owners corporation",
+    "source": "Strata Schemes Management Act 2015 (NSW); NSW Civil and Administrative Tribunal",
+    "tribunal": "NCAT",
+  },
+}
+`;

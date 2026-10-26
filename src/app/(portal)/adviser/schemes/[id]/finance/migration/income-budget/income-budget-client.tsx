@@ -100,12 +100,15 @@ export function IncomeBudgetClient({
   saved,
   locks,
   cutoverHref,
+  noticeLead,
 }: {
   schemeId: string;
   ctx: IncomeBudgetContext;
   saved: IncomeBudgetInput;
   locks: { budget: Record<string, string>; levies: Record<string, string> };
   cutoverHref: string;
+  /** How long before the due date a notice goes out, from the building's rule ("5 weeks"). */
+  noticeLead: string;
 }) {
   const { lastYear, budgetYear, takeoverAtYearEnd } = ctx.years;
   const [funds, setFunds] = useState<FundState[]>(() =>
@@ -546,7 +549,7 @@ export function IncomeBudgetClient({
         </div>
         <p className="text-sm text-ink-muted">
           Levies are paid in advance, so each instalment falls due on the first day of its period:{" "}
-          {dueDatesFor(budgetYear.start, levies.frequency).map((d) => longDate(d)).join(", ")}. Each notice goes out 5 weeks before it falls due.
+          {dueDatesFor(budgetYear.start, levies.frequency).map((d) => longDate(d)).join(", ")}. Each notice goes out {noticeLead} before it falls due.
         </p>
         <ul className="text-sm text-ink space-y-1">
           {ctx.funds.map((fund) => {

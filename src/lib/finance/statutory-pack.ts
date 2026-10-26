@@ -6,6 +6,7 @@
  * notes. Adopting it at the AGM stores a locked snapshot.
  */
 import { createHash } from "node:crypto";
+import { graceText } from "@/lib/jurisdiction/wording";
 import { priorYearActualLines } from "./prior-year-actuals";
 import { db } from "@/prisma/db";
 import { formatAud } from "@/lib/billing/money";
@@ -240,8 +241,8 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
         `${f.fundName} is reported on ${f.basis === "CASH" ? "a cash basis: levy contributions when received and expenses when paid" : "an accrual basis: levies when raised and expenses when invoices are approved"}.`,
     ),
     interest.mode === "NO_INTEREST"
-      ? "The owners corporation has resolved that contributions bear no interest (SSMA 2015 s 85(3))."
-      : `Interest on unpaid contributions is charged at ${STATUTORY_INTEREST.annualRatePercent}% a year simple interest when unpaid one month after the due date (${STATUTORY_INTEREST.source}).`,
+      ? `The ${rules.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${rules.CITATIONS.noInterestResolution}).`
+      : `Interest on unpaid contributions is charged at ${STATUTORY_INTEREST.annualRatePercent}% a year simple interest when unpaid ${graceText(STATUTORY_INTEREST)} after the due date (${STATUTORY_INTEREST.source}).`,
     plan
       ? `Capital works fund plan "${plan.title}" was adopted${plan.adoptedAt ? ` on ${isoDay(plan.adoptedAt)}` : ""} and is due for review by ${isoDay(plan.reviewDueAt)} (${CAPITAL_WORKS_PLAN.source}).`
       : "No capital works fund plan has been adopted in StrataVerze.",

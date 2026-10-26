@@ -4,6 +4,7 @@
  * out the viewer's choices from their roles on the building.
  */
 import { and } from "@prisma/orm-postgres/orm-client";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { db } from "@/prisma/db";
 import { getWorksSettings } from "./settings";
@@ -144,9 +145,12 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
         : null,
   };
 
+  const spending = (await rulesForScheme(schemeId)).rules.WORKS_SPENDING_RULES;
   return {
     /** The building's time zone, for showing dates and times. */
     timeZone: tz,
+    /** The building's two-quote rule. */
+    twoQuotes: { threshold: spending.twoQuoteThreshold, minimumQuotes: spending.minimumQuotes },
     request: {
       id: request.id,
       requestNumber: String(request.requestNumber),

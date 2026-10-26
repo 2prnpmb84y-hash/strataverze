@@ -1,4 +1,5 @@
 import { issueDateFor, issueTiming } from "@/lib/levies/issue-timing";
+import { noticeLeadText, noticeTimingWords } from "@/lib/jurisdiction/wording";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
@@ -251,6 +252,7 @@ export default async function LevyScheduleDetailPage({
               isSpecial={isSpecial}
               noticeCount={preview.length}
               blocked={planIssues.length > 0}
+              timing={noticeTimingWords(levyRule)}
             />
           </div>
         </Card>
@@ -267,7 +269,7 @@ export default async function LevyScheduleDetailPage({
             {plannedNotices.length > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-ink-muted">
-                  Planned, not yet sent ({plannedNotices.length} notice{plannedNotices.length === 1 ? "" : "s"}, each 5 weeks before it falls due)
+                  Planned, not yet sent ({plannedNotices.length} notice{plannedNotices.length === 1 ? "" : "s"}, each {noticeLeadText(levyRule)} before it falls due)
                 </span>
                 <span className="text-ink tabular-nums">{formatCurrency(totalPlanned)}</span>
               </div>
@@ -286,9 +288,9 @@ export default async function LevyScheduleDetailPage({
 
       {status === "ACTIVE" && plannedNotices.length > 0 && (
         <Card className="mb-6">
-          <CardHeader title="Planned notices" description="Each goes out by email 5 weeks before it falls due." />
+          <CardHeader title="Planned notices" description={`Each goes out by email ${noticeLeadText(levyRule)} before it falls due.`} />
           <div className="px-6 pb-6 space-y-6">
-            {overdueCount > 0 && <OverdueNoticesForm schemeId={id} scheduleId={scheduleId} count={overdueCount} />}
+            {overdueCount > 0 && <OverdueNoticesForm schemeId={id} scheduleId={scheduleId} count={overdueCount} timing={noticeTimingWords(levyRule)} />}
             <StopPlannedNoticesForm schemeId={id} scheduleId={scheduleId} count={plannedNotices.length} />
           </div>
         </Card>

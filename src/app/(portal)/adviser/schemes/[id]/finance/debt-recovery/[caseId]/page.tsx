@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
@@ -66,6 +67,7 @@ export default async function DebtRecoveryCaseDetailPage({
   return (
     <CaseDetailClient
       recoveryFees={await previewRecoveryFees()}
+      stepGuidance={(await rulesForScheme(id)).rules.DEBT_RECOVERY_GUIDANCE}
       schemeId={id}
       lotNumber={lot ? String(lot.lotNumber) : "—"}
       unitNumber={lot?.unitNumber ?? null}

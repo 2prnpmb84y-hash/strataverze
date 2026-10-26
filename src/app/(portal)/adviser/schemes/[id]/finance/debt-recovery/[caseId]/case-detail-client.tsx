@@ -124,28 +124,6 @@ const STEP_LABELS: Record<string, string> = {
   CLOSED: "Closed",
 };
 
-const STEP_DESCRIPTIONS: Record<string, string> = {
-  LEDGER_VERIFICATION:
-    "Verify the accuracy of all levy charges, payments received and the outstanding balance. Ensure the ledger is reconciled before proceeding.",
-  INITIAL_CONTACT:
-    "Make initial contact with the lot owner to advise them of the overdue levy and request payment. This is an informal reminder before formal notices.",
-  REMINDER_NOTICE:
-    "Issue a formal reminder notice under s.83(1) of the Strata Schemes Management Act 2015. The notice must specify the amount owing and due date.",
-  FINAL_NOTICE:
-    "Issue a final notice of the overdue contribution, warning that further recovery action will be taken if payment is not received within 14 days.",
-  HARDSHIP_REVIEW:
-    "Review any hardship application from the lot owner. Consider whether a payment plan or alternative arrangement is appropriate before escalating.",
-  COMMITTEE_REVIEW:
-    "Present the case to the strata committee for review and decision on next steps. The committee must resolve to proceed with legal recovery.",
-  LEGAL_REFERRAL:
-    "Refer the matter to the scheme's solicitor for formal debt recovery proceedings. Provide all supporting documentation and correspondence.",
-  PROCEEDINGS:
-    "Commence formal legal proceedings. This may include an application to NCAT or the Local Court for recovery of the outstanding levy debt.",
-  ENFORCEMENT:
-    "Enforce the court order or NCAT decision. This may include registration of a judgment, garnishee orders, or other enforcement mechanisms.",
-  CLOSED:
-    "Finalise and close the debt recovery case. Record the outcome and any relevant notes for future reference.",
-};
 
 function currency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
@@ -186,7 +164,10 @@ export function CaseDetailClient({
   documents,
   activities,
   recoveryFees = {},
+  stepGuidance,
 }: {
+  /** The building's guidance for each recovery step (`rules.DEBT_RECOVERY_GUIDANCE`). */
+  stepGuidance: Readonly<Record<string, string>>;
   schemeId: string;
   lotNumber: string;
   unitNumber: string | null;
@@ -377,6 +358,7 @@ export function CaseDetailClient({
               setSuccess={setSuccess}
               clearMessages={clearMessages}
               router={router}
+              guidance={stepGuidance[activeStep.stepType]}
               fee={recoveryFees[recoveryFeeVariant(activeStep.stepType) ?? ""] ?? null}
             />
           )}
@@ -697,7 +679,10 @@ function WizardStepContent({
   clearMessages,
   router,
   fee = null,
+  guidance,
 }: {
+  /** The building's guidance for this step. */
+  guidance?: string;
   step: Step;
   stepIndex: number;
   totalSteps: number;
@@ -830,9 +815,9 @@ function WizardStepContent({
             What to do
           </p>
           <p className="text-sm text-gray-600">{step.actionRequired}</p>
-          {STEP_DESCRIPTIONS[step.stepType] && (
+          {guidance && (
             <p className="mt-2 text-xs text-gray-500">
-              {STEP_DESCRIPTIONS[step.stepType]}
+              {guidance}
             </p>
           )}
         </div>

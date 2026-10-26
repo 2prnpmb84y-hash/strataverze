@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
@@ -276,6 +277,7 @@ export default async function MeetingDetailPage({
         ballot={ballotView}
         fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" })}
         timeZone={meetingTz}
+        adoptionCitation={rulesForState(scheme.state).rules.CITATIONS.evotingAdoption}
       />
 
       {/* Conduct */}
