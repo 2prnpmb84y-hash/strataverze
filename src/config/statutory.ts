@@ -70,35 +70,39 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
 };
 
 /**
- * A jurisdiction's rules while they are being written and reviewed (phase 2,
- * 27 Oct 2026). A draft pack is never given to a building: `rulePackFor` and
+ * A jurisdiction's rules that are written but not yet applied (phase 2,
+ * 27 Oct 2026): a DRAFT while being reviewed, REVIEWED once the reviewer signs
+ * them off. Neither is ever given to a building: `rulePackFor` and
  * `statutoryRulesFor` read RULE_PACKS only, and the state is not supported for
- * new buildings. It becomes a RulePack, with the shared rule shape, when the
- * reviewer signs it off and the platform can apply it.
+ * new buildings. A pack moves to RULE_PACKS, with the shared rule shape, when
+ * the platform can apply it (stage 2).
  */
-export interface DraftRulePack<R> {
+export interface PendingRulePack<R> {
   code: string;
   state: string;
   name: string;
   version: string;
-  status: "DRAFT";
+  status: "DRAFT" | "REVIEWED";
   reviewer: string;
-  reviewedOn: null;
+  /** When the reviewer signed the pack off (REVIEWED), or null (DRAFT). */
+  reviewedOn: string | null;
   rules: R;
 }
 
-export const DRAFT_RULE_PACKS = {
+export const PENDING_RULE_PACKS = {
   QLD: {
     code: "AU-QLD",
     state: "QLD",
     name: "Queensland",
     // 2026.10.1 (27 Oct 2026): Standard Module, researched from the in-force Act and SM, for review.
-    version: "2026.10.1",
-    status: "DRAFT",
+    // 2026.10.2 (27 Oct 2026): signed off by Matthew Wrigley with the six decisions in DECISIONS; the
+    // points in NOT_CONFIRMED stay not confirmed.
+    version: "2026.10.2",
+    status: "REVIEWED",
     reviewer: "Matthew Wrigley",
-    reviewedOn: null,
+    reviewedOn: "2026-10-27",
     rules: QLD,
-  } satisfies DraftRulePack<typeof QLD>,
+  } satisfies PendingRulePack<typeof QLD>,
 } as const;
 
 /** How a pack is recorded on a notice, charge or case, for example "AU-NSW 2026.10.1". */

@@ -4,21 +4,22 @@
  * never given to a building.
  */
 import { describe, expect, it } from "vitest";
-import { DRAFT_RULE_PACKS, RULE_PACKS, rulePackFor, statutoryRulesFor, UnsupportedJurisdictionError } from "./statutory";
+import { PENDING_RULE_PACKS, RULE_PACKS, rulePackFor, statutoryRulesFor, UnsupportedJurisdictionError } from "./statutory";
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
 import type { EntitlementScheduleDefinition, FundDefinition, RuleStatus } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
 const packs = [
   ...Object.values(RULE_PACKS).map((p) => [p.code, p.rules] as const),
-  ...Object.values(DRAFT_RULE_PACKS).map((p) => [p.code, p.rules] as const),
+  ...Object.values(PENDING_RULE_PACKS).map((p) => [p.code, p.rules] as const),
 ];
 
-describe("draft rule packs", () => {
+describe("pending rule packs", () => {
   it("are never given to a building, and their states cannot have buildings yet", () => {
-    for (const draft of Object.values(DRAFT_RULE_PACKS)) {
-      expect(draft.status).toBe("DRAFT");
-      expect(draft.reviewedOn).toBeNull();
+    for (const draft of Object.values(PENDING_RULE_PACKS)) {
+      expect(["DRAFT", "REVIEWED"]).toContain(draft.status);
+      // Signed off exactly when reviewed.
+      expect(draft.reviewedOn === null).toBe((draft.status as string) === "DRAFT");
       expect(Object.keys(RULE_PACKS)).not.toContain(draft.state);
       expect(rulePackFor(draft.state)).toBeNull();
       expect(() => statutoryRulesFor(draft.state)).toThrow(UnsupportedJurisdictionError);
@@ -60,8 +61,16 @@ describe("NSW funds", () => {
   });
 });
 
-describe("Queensland draft", () => {
-  const qld = DRAFT_RULE_PACKS.QLD.rules;
+describe("Queensland pack (pending)", () => {
+  const qld = PENDING_RULE_PACKS.QLD.rules;
+
+  it("is signed off, with its decisions recorded", () => {
+    expect(PENDING_RULE_PACKS.QLD.status).toBe("REVIEWED");
+    expect(PENDING_RULE_PACKS.QLD.reviewedOn).toBe("2026-10-27");
+    expect(qld.DECISIONS.every((d) => d.decidedBy === "Matthew Wrigley" && d.decidedOn === "2026-10-27")).toBe(true);
+    expect(qld.LATE_PAYMENT_PENALTY.appliesOnlyAfterResolutionRecorded).toBe(true);
+    expect(qld.CONTRIBUTION_DISCOUNT.appliesOnlyAfterResolutionRecorded).toBe(true);
+  });
 
   it("applies the Standard Module only", () => {
     expect(qld.REGULATION_MODULE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["STANDARD"]);

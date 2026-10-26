@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Queensland draft > is the rules recorded for review 1`] = `
+exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
 {
   "AUDIT": {
     "financialYearChangeOncePerYears": 5,
@@ -65,6 +65,7 @@ exports[`Queensland draft > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
   },
   "CONTRIBUTION_DISCOUNT": {
+    "appliesOnlyAfterResolutionRecorded": true,
     "maxPercent": 20,
     "optional": true,
     "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 164",
@@ -100,6 +101,38 @@ exports[`Queensland draft > is the rules recorded for review 1`] = `
     "tribunal": "QCAT",
     "tribunalLimitCents": 2500000,
   },
+  "DECISIONS": [
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-27",
+      "decision": "Apply the Standard Module only for now; the other four modules are listed but blocked.",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-27",
+      "decision": "Keep the sinking fund in the ledger's capital works fund, shown as "sinking fund".",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-27",
+      "decision": "Keep minutes, the roll, registers and insurance policies without a limit (the law gives no disposal period).",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-27",
+      "decision": "No penalty or discount applies until a building records the ordinary resolution that sets it, with the rate.",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-27",
+      "decision": "Hold fees in fee units, with a dollar table updated each 1 July from Queensland Government guidance.",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-27",
+      "decision": "Show owners "penalty", never "interest", for late payment.",
+    },
+  ],
   "DISPUTES": {
     "appealWithinWeeks": 6,
     "applicationFeeConfirmed": false,
@@ -186,8 +219,10 @@ exports[`Queensland draft > is the rules recorded for review 1`] = `
     "valuationEveryYears": 5,
   },
   "LATE_PAYMENT_PENALTY": {
+    "appliesOnlyAfterResolutionRecorded": true,
     "maxMonthlyPercent": 2.5,
     "optional": true,
+    "ownerFacingTerm": "penalty",
     "perWholeMonthInArrears": true,
     "simple": true,
     "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 165, 166(6)",

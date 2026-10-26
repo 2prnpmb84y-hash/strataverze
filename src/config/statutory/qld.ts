@@ -4,10 +4,12 @@
  * and the Body Corporate and Community Management (Standard Module)
  * Regulation 2020 ("SM").
  *
- * DRAFT, FOR STRATAVERZE TO REVIEW (27 Oct 2026). This pack is not applied to
- * any building: `rulePackFor` returns active packs only, and Queensland is not
- * in SUPPORTED_SCHEME_STATES or the database's state check. It is activated
- * only after StrataVerze signs it off (multi-jurisdiction plan, phase 2).
+ * SIGNED OFF by Matthew Wrigley on 27 Oct 2026, with the decisions in
+ * DECISIONS; the points in NOT_CONFIRMED stay not confirmed. Not yet applied
+ * to any building: `rulePackFor` returns active packs only, and Queensland is
+ * not in SUPPORTED_SCHEME_STATES or the database's state check. It becomes
+ * active in stage 2, when the shared code can apply it (multi-jurisdiction
+ * plan, phase 2).
  *
  * Sources, read on 27 Oct 2026 on legislation.qld.gov.au (in-force HTML):
  * - the Act, reprint current from 1 Aug 2025;
@@ -168,6 +170,8 @@ export const CONTRIBUTIONS = {
 /** An optional discount for paying on time, by ordinary resolution: "can not be more than 20%" (SM s 164). */
 export const CONTRIBUTION_DISCOUNT = {
   optional: true,
+  /** None applies until the building records the ordinary resolution that sets it (decided 27 Oct 2026). */
+  appliesOnlyAfterResolutionRecorded: true,
   maxPercent: 20,
   source: `${SM} s 164`,
   status: "CONFIRMED" as RuleStatus,
@@ -184,6 +188,10 @@ export const CONTRIBUTION_DISCOUNT = {
  */
 export const LATE_PAYMENT_PENALTY = {
   optional: true,
+  /** None applies until the building records the ordinary resolution that sets it, with the rate (decided 27 Oct 2026). */
+  appliesOnlyAfterResolutionRecorded: true,
+  /** Owners are shown "penalty", never "interest" (decided 27 Oct 2026). */
+  ownerFacingTerm: "penalty",
   maxMonthlyPercent: 2.5,
   simple: true,
   perWholeMonthInArrears: true,
@@ -528,3 +536,14 @@ export const NOT_CONFIRMED = [
   "Which instrument inserted SM s 233AA (the certificate contents).",
   "The assent date of the Body Corporate and Community Management and Other Legislation Amendment Act 2023.",
 ] as const;
+
+/** StrataVerze's decisions in the sign-off of 27 Oct 2026 (review document, "Decisions"). */
+export const DECISIONS = [
+  { decision: "Apply the Standard Module only for now; the other four modules are listed but blocked.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
+  { decision: "Keep the sinking fund in the ledger's capital works fund, shown as \"sinking fund\".", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
+  { decision: "Keep minutes, the roll, registers and insurance policies without a limit (the law gives no disposal period).", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
+  { decision: "No penalty or discount applies until a building records the ordinary resolution that sets it, with the rate.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
+  { decision: "Hold fees in fee units, with a dollar table updated each 1 July from Queensland Government guidance.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
+  { decision: "Show owners \"penalty\", never \"interest\", for late payment.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
+] as const;
+
