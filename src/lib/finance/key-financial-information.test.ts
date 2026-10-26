@@ -81,6 +81,13 @@ describe("lots counted for the audit test", () => {
   it("uses the building's recorded total when no lots are on the roll", () => {
     expect(auditLotCount({ lots: [], totalLots: 120, excludedLotTypes })).toEqual({ counted: 120, excluded: 0, fromRoll: false });
   });
+
+  it("counts the lots not yet on a partly loaded roll", () => {
+    // 150 lots recorded, 40 on the roll (5 parking): 35 + 110 not yet entered.
+    const r = auditLotCount({ lots: [...lots(35, "RESIDENTIAL"), ...lots(5, "PARKING")], totalLots: 150, excludedLotTypes });
+    expect(r).toEqual({ counted: 145, excluded: 5, fromRoll: false });
+    expect(auditRequired({ lots: r.counted, leviesRaisedCents: 0, lotsMoreThan: 100, leviesRaisedMoreThanCents: 25_000_000 }).byLots).toBe(true);
+  });
 });
 
 describe("audit requirement", () => {

@@ -3,7 +3,7 @@
 exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
 [
   {
-    "actionRequired": "Check each overdue levy was validly raised and its notice served with the hardship information, and that payments were applied to the oldest levies first, then interest, then costs (unless the owner directed otherwise)",
+    "actionRequired": "Check each overdue levy was validly raised and its notice served with the hardship information, and that payments were applied to the oldest levies first, then interest, then costs (unless the owner or a court or tribunal order directed otherwise)",
     "approvalRequired": false,
     "legalBasis": "SSMA 2015 ss 83, 85; payment order: NSW Government guidance (from 27 Oct 2025)",
     "responsibleParty": "ADVISER",
@@ -21,7 +21,7 @@ exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
     "triggerCondition": "Ledger verified",
   },
   {
-    "actionRequired": "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan. No period for a reminder is set by law; the building sets its own",
+    "actionRequired": "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan",
     "approvalRequired": false,
     "legalBasis": "Interest: SSMA 2015 s 85",
     "noticeType": "DEMAND",
@@ -31,9 +31,9 @@ exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
     "triggerCondition": "No payment or payment plan request after initial contact (period set by the building)",
   },
   {
-    "actionRequired": "Give the owner written notice at least 30 days before any recovery action. No action can be taken for levies covered by a payment plan that is being followed. Prescribed content of the notice not confirmed",
+    "actionRequired": "Give the owner written notice at least 30 days before any recovery action. No action can be taken for levies covered by a payment plan that is being followed",
     "approvalRequired": false,
-    "legalBasis": "SSMA 2015 s 86 and the Regulation (from 27 Oct 2025); clause and notice content not confirmed",
+    "legalBasis": "NSW Government guidance on the changes from 27 Oct 2025",
     "noticeType": "FINAL_DEMAND",
     "responsibleParty": "ADVISER",
     "stepOrder": 4,
@@ -43,16 +43,15 @@ exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
   {
     "actionRequired": "Decide any payment plan request (and any request to waive interest) by majority vote at an owners corporation or strata committee meeting, recorded in the minutes, and reply in writing within 28 days. A refusal must give reasons. No fee can be charged. A request can arrive at any step",
     "approvalRequired": true,
-    "legalBasis": "SSMA 2015 s 85 and the Regulation (from 27 Oct 2025); NSW Government guidance",
+    "legalBasis": "Strata Schemes Management Regulation 2016 cl 17K (Form 1); NSW Government guidance",
     "responsibleParty": "COMMITTEE",
     "stepOrder": 5,
     "stepType": "HARDSHIP_REVIEW",
     "triggerCondition": "Owner asks for a payment plan on the standard form",
   },
   {
-    "actionRequired": "Decide whether to start recovery proceedings, after the 30-day notice has expired and with no payment plan being followed. Who must authorise this (strata committee or general meeting) not confirmed",
+    "actionRequired": "Decide whether to start recovery proceedings, after the 30-day notice has expired and with no payment plan being followed",
     "approvalRequired": true,
-    "legalBasis": "SSMA 2015 s 103 (application to levy recovery not confirmed)",
     "responsibleParty": "COMMITTEE",
     "stepOrder": 6,
     "stepType": "COMMITTEE_REVIEW",
@@ -68,7 +67,7 @@ exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
     "triggerCondition": "Recovery proceedings authorised",
   },
   {
-    "actionRequired": "Solicitor starts proceedings to recover the unpaid levies as a debt. The court or tribunal, its monetary limits, and which costs can be claimed not confirmed",
+    "actionRequired": "Solicitor starts proceedings to recover the unpaid levies as a debt",
     "approvalRequired": false,
     "legalBasis": "SSMA 2015 s 86",
     "responsibleParty": "SOLICITOR",
@@ -77,7 +76,7 @@ exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
     "triggerCondition": "Legal referral accepted",
   },
   {
-    "actionRequired": "Solicitor enforces the judgment or order. Enforcement options not confirmed",
+    "actionRequired": "Solicitor enforces the judgment or order",
     "approvalRequired": false,
     "responsibleParty": "SOLICITOR",
     "stepOrder": 9,
@@ -1835,6 +1834,7 @@ exports[`NSW statutory constants > are unchanged 1`] = `
       "PARKING",
       "STORAGE",
     ],
+    "excludedLotsLabel": "parking or utility lots",
     "leviesRaisedMoreThanCents": 25000000,
     "lotsMoreThan": 100,
     "measure": "total levies raised for the financial year",
@@ -1919,15 +1919,15 @@ exports[`NSW wording (phase 1d) > is the wording the platform used before 1`] = 
   },
   "DEBT_RECOVERY_GUIDANCE": {
     "CLOSED": "Close the case once the debt is paid, settled or written off, and reconcile the lot ledger.",
-    "COMMITTEE_REVIEW": "Decide whether to start proceedings once the 30-day notice has expired and no payment plan is being followed. Whether the strata committee can decide this or a general meeting resolution is needed is not confirmed: check before acting.",
-    "ENFORCEMENT": "The solicitor enforces the judgment or order. Enforcement options are not confirmed: rely on the solicitor's advice.",
-    "FINAL_NOTICE": "Before any recovery action, give the owner written notice at least 30 days ahead. No action can be taken for levies covered by a payment plan that is being followed. The prescribed content of this notice is not confirmed: check it before issuing.",
-    "HARDSHIP_REVIEW": "A payment plan request (and any request to waive interest) is decided by majority vote at an owners corporation or strata committee meeting and recorded in the minutes. The strata managing agent cannot decide it. Reply in writing within 28 days. A plan can run up to 12 months. A refusal must give reasons; the guidance says a request may be refused if the plan would leave a fund short. No fee can be charged. While a plan is followed, no recovery action can be taken for the levies it covers.",
+    "COMMITTEE_REVIEW": "Decide whether to start proceedings once the 30-day notice has expired and no payment plan is being followed. Not confirmed: whether the strata committee can decide this or a general meeting resolution is needed (s 103). Check before acting.",
+    "ENFORCEMENT": "The solicitor enforces the judgment or order. Not confirmed: the enforcement options. Rely on the solicitor's advice.",
+    "FINAL_NOTICE": "Before any recovery action, give the owner written notice at least 30 days ahead. No action can be taken for levies covered by a payment plan that is being followed. Not confirmed: the prescribed content of this notice and the clause that requires it. Check both before issuing.",
+    "HARDSHIP_REVIEW": "A payment plan request (and any request to waive interest) is decided by majority vote at an owners corporation or strata committee meeting and recorded in the minutes. The strata managing agent cannot decide it. Reply in writing within 28 days. A plan can run up to 12 months. A refusal must give reasons; the guidance says a request may be refused if the plan would leave a fund short. No fee can be charged. From 23 Oct 2026 a plan can cover current levies and interest as well as overdue levies. While a plan is followed, no recovery action can be taken for the levies it covers.",
     "INITIAL_CONTACT": "Contact the owner informally about the overdue levies and the amount owing. Tell them they can ask for a payment plan of up to 12 months on the standard form, and that the owners corporation cannot charge a fee for it.",
-    "LEDGER_VERIFICATION": "Check each overdue levy was validly raised and the levy notice was served with the hardship information. Check payments were applied to the oldest overdue levies first, then interest, then recovery costs, unless the owner or a court or tribunal order said otherwise. Show levies, interest and costs separately.",
+    "LEDGER_VERIFICATION": "Check each overdue levy was validly raised and the levy notice was served with the hardship information. Check payments were applied to the oldest overdue levies first, then interest, then recovery costs, unless the owner or a court or tribunal order said otherwise. Showing levies, interest and costs separately is StrataVerze practice.",
     "LEGAL_REFERRAL": "Refer the matter to a solicitor with the ledger, the levy notices, the 30-day notice, evidence of service and the decision authorising proceedings.",
-    "PROCEEDINGS": "The solicitor starts proceedings to recover the unpaid levies as a debt. The court or tribunal, its monetary limits and which recovery costs can be claimed are not confirmed: rely on the solicitor's advice.",
-    "REMINDER_NOTICE": "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan. The law sets no period for a reminder; use the building's own.",
+    "PROCEEDINGS": "The solicitor starts proceedings to recover the unpaid levies as a debt (s 86; current wording not read). Not confirmed: the court or tribunal, its monetary limits and which recovery costs can be claimed. Rely on the solicitor's advice.",
+    "REMINDER_NOTICE": "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan. No statutory period for a reminder is confirmed; the building sets its own.",
   },
   "HARDSHIP_INFORMATION": {
     "helplineName": "National Debt Helpline",

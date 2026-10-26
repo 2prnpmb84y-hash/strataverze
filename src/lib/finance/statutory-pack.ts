@@ -80,7 +80,9 @@ export interface StatutoryPack {
   rules: {
     rulePack: string;
     keyFinancialInformation: StatutoryRules["KEY_FINANCIAL_INFORMATION"];
-    auditThreshold: StatutoryRules["AUDIT_THRESHOLD"];
+    /** Packs adopted before 2026.10.3 stored the threshold without the lot types, label, timing and standard. */
+    auditThreshold: Omit<StatutoryRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard"> &
+      Partial<Pick<StatutoryRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard">>;
   };
   adopted: { meetingId: string; adoptedAt: string; snapshotId: string } | null;
 }
@@ -260,7 +262,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
       ? `Capital works fund plan "${plan.title}" was adopted${plan.adoptedAt ? ` on ${isoDay(plan.adoptedAt)}` : ""} and is due for review by ${isoDay(plan.reviewDueAt)} (${CAPITAL_WORKS_PLAN.source}).`
       : "No capital works fund plan has been adopted in StrataVerze.",
     audit.required
-      ? `An audit is required (${audit.byLots ? `more than ${AUDIT_THRESHOLD.lotsMoreThan} lots, not counting parking or utility lots` : `levies raised for the year of ${formatAud(annualBudgetCents)}, more than ${formatAud(AUDIT_THRESHOLD.leviesRaisedMoreThanCents)}`}; ${AUDIT_THRESHOLD.source}). It must be done ${AUDIT_THRESHOLD.timing}, in accordance with ${AUDIT_THRESHOLD.standard}.`
+      ? `An audit is required (${audit.byLots ? `more than ${AUDIT_THRESHOLD.lotsMoreThan} lots, not counting ${AUDIT_THRESHOLD.excludedLotsLabel}` : `levies raised for the year of ${formatAud(annualBudgetCents)}, more than ${formatAud(AUDIT_THRESHOLD.leviesRaisedMoreThanCents)}`}; ${AUDIT_THRESHOLD.source}). It must be done ${AUDIT_THRESHOLD.timing}, in accordance with ${AUDIT_THRESHOLD.standard}.`
       : `An audit is not required by size, but the annual general meeting must consider whether to have the accounts audited (${AUDIT_THRESHOLD.source}).`,
     "Interest earned is the total of interest income accounts, which include interest charged on overdue levies.",
   ];
