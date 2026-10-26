@@ -617,3 +617,87 @@ export const RECORD_RETENTION = {
   byCategory: { MINUTES: 7, INSURANCE: 7, BYLAW: null, FINANCIAL: 7, COMPLIANCE: 7, OTHER: 7 } as Readonly<Record<string, number | null>>,
   source: "NSW Government, Record keeping requirements; Guide to strata law changes (1 Jul 2025)",
 } as const;
+
+/**
+ * Section 184 strata information certificate (26 Oct 2026, for StrataVerze
+ * to review). Sources, checked 26 Oct 2026:
+ * - NSW Fair Trading, "Section 184 certificate – strata schemes", the
+ *   approved form (PDF last updated 19 Mar 2026, "version March 2026"); its
+ *   items are listed in `items`, as read from the form. StrataVerze lays the
+ *   certificate out itself (decided by StrataVerze, 26 Oct 2026), so check
+ *   it against the current approved form before relying on the layout.
+ * - NSW Government, "Guide to strata law changes" (1 Apr 2026): the
+ *   certificate also covers utilities supplied by an exclusive supply
+ *   network, certain orders and compliance actions, and meetings held in the
+ *   past year and upcoming meetings.
+ * - Fees: $109, or $94 for a further certificate for the same lot within 3
+ *   months, from the price book's source (SSMR 2016 Sch 4 item 3, as
+ *   consolidated on AustLII). The in-force amount is NOT CONFIRMED.
+ *   StrataVerze records the fee due; it is collected outside StrataVerze
+ *   (decided 26 Oct 2026).
+ */
+export const SALE_CERTIFICATE = {
+  title: "Strata information certificate",
+  section: "Strata Schemes Management Act 2015 (NSW) s 184",
+  form: "Approved form: Section 184 certificate – strata schemes (NSW Fair Trading, version March 2026)",
+  requesterTypes: { OWNER: "Owner", MORTGAGEE: "Mortgagee", COVENANT_CHARGEE: "Covenant chargee", AUTHORISED_PERSON: "Person authorised by the owner, mortgagee or covenant chargee" },
+  items: [
+    ["1", "Strata renewal committee"],
+    ["2", "Exclusive supply network (s 184(8))"],
+    ["3", "Administrative fund contributions (s 73)"],
+    ["4", "Capital works fund contributions (s 74)"],
+    ["5", "Amounts for additional amenities or services (s 117)"],
+    ["6", "Special contributions to the administrative or capital works fund (s 81(4))"],
+    ["7", "Money unpaid under a by-law conferring a right or privilege"],
+    ["8", "Proposals for funding matters in the 10-year capital works fund plan"],
+    ["9", "Contributions towards legal proceedings (s 90)"],
+    ["10", "Amount recoverable for work carried out by the owners corporation (s 120)"],
+    ["11", "Interest on contributions (s 85)"],
+    ["12", "Unpaid contributions and penalties"],
+    ["12A", "Outstanding orders and compliance action"],
+    ["13", "General and strata committee meetings held in the 12 months before the date of this certificate"],
+    ["14", "Meetings notified but not yet held"],
+    ["15", "Strata roll for the lot"],
+    ["16", "Strata managing agent (s 49) and building manager (s 67)"],
+    ["17", "Strata committee"],
+    ["18", "By-laws made in the previous six months not yet lodged with the Registrar-General (s 141)"],
+    ["19", "Insurance policies"],
+    ["20", "Community association administrative fund contributions (community schemes only)"],
+    ["21", "Community association sinking fund contributions (community schemes only)"],
+    ["22", "Building management committee contributions (members only)"],
+    ["23", "Amounts payable to any other person or body not connected to maintenance or insurance of common property"],
+  ] as ReadonlyArray<readonly [string, string]>,
+  execution: "Common seal of the owners corporation, affixed in the presence of the persons authorised by s 273",
+  conclusiveNote: "A strata information certificate is conclusive evidence, as at its date, of the matters it certifies, for a purchaser or lessee for valuable consideration (s 185).",
+  feeCents: 10_900,
+  repeatFeeCents: 9_400,
+  repeatWithinMonths: 3,
+  feeSource: "Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)",
+  helpUrl: "https://www.nsw.gov.au/housing-and-construction/strata/factsheets-forms-resources/section-184-certificate-strata-schemes",
+} as const;
+
+/**
+ * Inspection of the owners corporation's records (s 182) (26 Oct 2026, for
+ * StrataVerze to review). Source: NSW Government, "Record keeping
+ * requirements" (checked 26 Oct 2026): owners may inspect; others need the
+ * owner's authority; if a time and place cannot be agreed within 3 days, the
+ * owners corporation may set a date within 10 days of the request, a place
+ * and a time by written notice; fees, the same however the inspection is
+ * made and paid into the administrative fund, including GST: an owner $31
+ * for the first hour and $16 for each further half hour; another authorised
+ * person $60 and $30. How a part of a half hour is charged is NOT
+ * CONFIRMED: StrataVerze charges each part as a whole half hour.
+ */
+export const RECORDS_INSPECTION = {
+  section: "Strata Schemes Management Act 2015 (NSW) s 182",
+  agreeWithinDays: 3,
+  setWithinDays: 10,
+  fees: {
+    OWNER: { firstHourCents: 3_100, extraHalfHourCents: 1_600 },
+    AUTHORISED_PERSON: { firstHourCents: 6_000, extraHalfHourCents: 3_000 },
+  },
+  feesIncludeGst: true,
+  paidInto: "the administrative fund",
+  partHalfHour: "Each part of a further half hour is charged as a whole half hour (not confirmed).",
+  source: "NSW Government, Record keeping requirements",
+} as const;

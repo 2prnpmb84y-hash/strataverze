@@ -224,6 +224,8 @@ model Scheme {
   paymentPlanRequests         PaymentPlanRequest[]
   committeeTraining           CommitteeTraining[]
   annualReports               AnnualReport[]
+  saleCertificates            SaleCertificate[]
+  recordsInspections          RecordsInspection[]
 
   worksSettings          WorksSettings?
   worksPreferredContractors WorksPreferredContractor[]
@@ -279,6 +281,8 @@ model Lot {
   powersOfAttorney   LotPowerOfAttorney[]
   propertyManager    PropertyManager?
 
+  saleCertificates   SaleCertificate[]
+  recordsInspections RecordsInspection[]
   @@unique([schemeId, lotNumber])
   @@map("lots")
 }
@@ -4379,4 +4383,67 @@ model AnnualReport {
 
   @@unique([schemeId, agmOn])
   @@map("annual_reports")
+}
+
+/// A section 184 strata information certificate for a lot: drafted from the
+/// platform's records, completed by the adviser, then issued (locked).
+model SaleCertificate {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId           String    @map("scheme_id") @db.Uuid
+  lotId              String    @map("lot_id") @db.Uuid
+  number             Int       // per scheme, from 1
+  status             String    @default("DRAFT") // DRAFT, ISSUED, CANCELLED
+  requestedOn        DateTime  @db.Date @map("requested_on")
+  requesterType      String    @map("requester_type") // OWNER, MORTGAGEE, COVENANT_CHARGEE, AUTHORISED_PERSON
+  requesterName      String    @map("requester_name")
+  requesterAddress   String    @map("requester_address")
+  authorisedByType   String?   @map("authorised_by_type") // for an authorised person: OWNER, MORTGAGEE, COVENANT_CHARGEE
+  authorisedByName   String?   @map("authorised_by_name")
+  authorisedByAddress String?  @map("authorised_by_address")
+  /// The items, in the order of the approved form: [{ no, title, text }].
+  items              Json
+  certificateDate    DateTime? @db.Date @map("certificate_date") // the date it is issued
+  feeCents           Int?      @map("fee_cents")
+  feeRepeat          Boolean   @default(false) @map("fee_repeat")
+  feePaidOn          DateTime? @db.Date @map("fee_paid_on") // the fee is collected outside StrataVerze
+  rulePack           String?   @map("rule_pack") @db.VarChar(40)
+  createdBy          String    @map("created_by") @db.Uuid
+  issuedBy           String?   @map("issued_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme             Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot                Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, number])
+  @@index([lotId])
+  @@map("sale_certificates")
+}
+
+/// A request to inspect the owners corporation's records (s 182).
+model RecordsInspection {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId         String    @map("scheme_id") @db.Uuid
+  lotId            String    @map("lot_id") @db.Uuid // the owner's lot (an authorised person acts for its owner)
+  inspectorType    String    @map("inspector_type") // OWNER, AUTHORISED_PERSON
+  inspectorName    String    @map("inspector_name")
+  authorisedBy     String?   @map("authorised_by") // the owner who authorised it, for an authorised person
+  requestedOn      DateTime  @db.Date @map("requested_on")
+  status           String    @default("REQUESTED") // REQUESTED, SCHEDULED, COMPLETED, CANCELLED
+  scheduledFor     DateTime? @db.Timestamptz @map("scheduled_for")
+  setByNotice      Boolean   @default(false) @map("set_by_notice") // the time was set by the owners corporation's written notice
+  place            String?
+  minutes          Int?      // how long it took
+  feeCents         Int?      @map("fee_cents")
+  feePaidOn        DateTime? @db.Date @map("fee_paid_on")
+  notes            String?
+  createdBy        String    @map("created_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme           Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot              Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([schemeId, status])
+  @@map("records_inspections")
 }

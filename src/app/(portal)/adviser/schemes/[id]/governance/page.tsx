@@ -34,6 +34,17 @@ export default async function GovernanceSectionPage({
       </Card>
       <Card className="mb-6">
         <CardHeader
+          title="Records inspections"
+          description="Requests to inspect the owners corporation's records: times, notices and fees."
+          action={
+            <Button href={`/adviser/schemes/${id}/governance/inspections`} variant="secondary">
+              Inspections
+            </Button>
+          }
+        />
+      </Card>
+      <Card className="mb-6">
+        <CardHeader
           title="Committee training"
           description="Each committee member's training: completed, due or overdue."
           action={
