@@ -100,7 +100,7 @@ export default async function LotDetailPage({
           <FileText size={14} />
           Strata Report
         </Button>
-        <Button variant="secondary" className="text-xs h-9 px-4">
+        <Button variant="secondary" className="text-xs h-9 px-4" href={`/adviser/schemes/${id}/lots/${lotId}/certificates`}>
           <Award size={14} />
           Info Certificate
         </Button>

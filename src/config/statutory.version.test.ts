@@ -55,6 +55,7 @@ const KNOWN_VERSIONS: Record<string, string> = {
   "AU-NSW 2026.10.4": "4a3c7269761dcf0b47f55e0400c50f86a0a7639df718bccf22f4c58da503d56c",
   "AU-NSW 2026.10.5": "3ec937f302fe2ad0f05b5d84a76f2166dbef44318c25d6c49141f91bb81fbb2c",
   "AU-NSW 2026.10.6": "c8403799040884241117f3cbdbe4703491ae23ee62886a16d15456670aa62638",
+  "AU-NSW 2026.10.7": "1f5ffa66fbfbc737a211da8466a0a2736b4e063cdd589156389dbb0808e9e694",
 };
 
 describe("rule pack versions", () => {

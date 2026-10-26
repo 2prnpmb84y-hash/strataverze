@@ -56,7 +56,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.5 (26 Oct 2026): COMMITTEE_TRAINING added (committee training tracking).
     // 2026.10.6 (26 Oct 2026): ANNUAL_REPORTING and RECORD_RETENTION added (Strata Hub reports, record keeping);
     // the audit lots test also leaves out common property rows (decided by StrataVerze).
-    version: "2026.10.6",
+    // 2026.10.7 (26 Oct 2026): SALE_CERTIFICATE and RECORDS_INSPECTION added (s 184 certificates, s 182 inspections).
+    version: "2026.10.7",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not

@@ -1983,6 +1983,25 @@ exports[`NSW statutory workflows (Oct 2026) > are the rules recorded 1`] = `
       "the date the plan was agreed",
     ],
   },
+  "RECORDS_INSPECTION": {
+    "agreeWithinDays": 3,
+    "fees": {
+      "AUTHORISED_PERSON": {
+        "extraHalfHourCents": 3000,
+        "firstHourCents": 6000,
+      },
+      "OWNER": {
+        "extraHalfHourCents": 1600,
+        "firstHourCents": 3100,
+      },
+    },
+    "feesIncludeGst": true,
+    "paidInto": "the administrative fund",
+    "partHalfHour": "Each part of a further half hour is charged as a whole half hour (not confirmed).",
+    "section": "Strata Schemes Management Act 2015 (NSW) s 182",
+    "setWithinDays": 10,
+    "source": "NSW Government, Record keeping requirements",
+  },
   "RECORD_RETENTION": {
     "byCategory": {
       "BYLAW": null,
@@ -2000,6 +2019,122 @@ exports[`NSW statutory workflows (Oct 2026) > are the rules recorded 1`] = `
     "secretBallotMonths": 13,
     "source": "NSW Government, Record keeping requirements; Guide to strata law changes (1 Jul 2025)",
     "strataRoll": "for the life of the scheme",
+  },
+  "SALE_CERTIFICATE": {
+    "conclusiveNote": "A strata information certificate is conclusive evidence, as at its date, of the matters it certifies, for a purchaser or lessee for valuable consideration (s 185).",
+    "execution": "Common seal of the owners corporation, affixed in the presence of the persons authorised by s 273",
+    "feeCents": 10900,
+    "feeSource": "Strata Schemes Management Regulation 2016 Sch 4 item 3, as consolidated on AustLII (in-force amount not confirmed)",
+    "form": "Approved form: Section 184 certificate – strata schemes (NSW Fair Trading, version March 2026)",
+    "helpUrl": "https://www.nsw.gov.au/housing-and-construction/strata/factsheets-forms-resources/section-184-certificate-strata-schemes",
+    "items": [
+      [
+        "1",
+        "Strata renewal committee",
+      ],
+      [
+        "2",
+        "Exclusive supply network (s 184(8))",
+      ],
+      [
+        "3",
+        "Administrative fund contributions (s 73)",
+      ],
+      [
+        "4",
+        "Capital works fund contributions (s 74)",
+      ],
+      [
+        "5",
+        "Amounts for additional amenities or services (s 117)",
+      ],
+      [
+        "6",
+        "Special contributions to the administrative or capital works fund (s 81(4))",
+      ],
+      [
+        "7",
+        "Money unpaid under a by-law conferring a right or privilege",
+      ],
+      [
+        "8",
+        "Proposals for funding matters in the 10-year capital works fund plan",
+      ],
+      [
+        "9",
+        "Contributions towards legal proceedings (s 90)",
+      ],
+      [
+        "10",
+        "Amount recoverable for work carried out by the owners corporation (s 120)",
+      ],
+      [
+        "11",
+        "Interest on contributions (s 85)",
+      ],
+      [
+        "12",
+        "Unpaid contributions and penalties",
+      ],
+      [
+        "12A",
+        "Outstanding orders and compliance action",
+      ],
+      [
+        "13",
+        "General and strata committee meetings held in the 12 months before the date of this certificate",
+      ],
+      [
+        "14",
+        "Meetings notified but not yet held",
+      ],
+      [
+        "15",
+        "Strata roll for the lot",
+      ],
+      [
+        "16",
+        "Strata managing agent (s 49) and building manager (s 67)",
+      ],
+      [
+        "17",
+        "Strata committee",
+      ],
+      [
+        "18",
+        "By-laws made in the previous six months not yet lodged with the Registrar-General (s 141)",
+      ],
+      [
+        "19",
+        "Insurance policies",
+      ],
+      [
+        "20",
+        "Community association administrative fund contributions (community schemes only)",
+      ],
+      [
+        "21",
+        "Community association sinking fund contributions (community schemes only)",
+      ],
+      [
+        "22",
+        "Building management committee contributions (members only)",
+      ],
+      [
+        "23",
+        "Amounts payable to any other person or body not connected to maintenance or insurance of common property",
+      ],
+    ],
+    "repeatFeeCents": 9400,
+    "repeatWithinMonths": 3,
+    "requesterTypes": {
+      "AUTHORISED_PERSON": "Person authorised by the owner, mortgagee or covenant chargee",
+      "COVENANT_CHARGEE": "Covenant chargee",
+      "MORTGAGEE": "Mortgagee",
+      "OWNER": "Owner",
+    },
+    "section": "Strata Schemes Management Act 2015 (NSW) s 184",
+    "title": "Strata information certificate",
   },
 }
 `;
