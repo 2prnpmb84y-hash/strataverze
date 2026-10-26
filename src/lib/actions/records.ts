@@ -16,6 +16,7 @@ import {
   createInspection,
   issueCertificate,
   recordFeePaid,
+  refreshCertificateFigures,
   saveCertificateDraft,
   scheduleInspection,
   type RequesterInput,
@@ -65,6 +66,13 @@ export async function saveCertificateAction(schemeId: string, lotId: string, cer
     const itemTexts: Record<string, string> = {};
     for (const [k, v] of formData.entries()) if (k.startsWith("item_") && typeof v === "string") itemTexts[k.slice(5)] = v;
     await saveCertificateDraft({ schemeId, certificateId, requester: requester(formData), itemTexts });
+    // "Save and issue": what is on the screen is saved, then issued, in one step.
+    if (formData.get("intent") === "issue") {
+      const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+      const fee = await issueCertificate({ schemeId, certificateId, actorId: profile.id, checkedAll: formData.get("checkedAll") === "on" });
+      certPaths(schemeId, lotId);
+      return { success: `Issued. Fee due: $${(fee.cents / 100).toFixed(2)}${fee.repeat ? " (a further certificate within the repeat period)" : ""}, collected outside StrataVerze.` };
+    }
     certPaths(schemeId, lotId);
     return { success: "Draft saved." };
   } catch (err) {
@@ -80,6 +88,17 @@ export async function issueCertificateAction(schemeId: string, lotId: string, ce
     return { success: `Issued. Fee due: $${(fee.cents / 100).toFixed(2)}${fee.repeat ? " (a further certificate within the repeat period)" : ""}, collected outside StrataVerze.` };
   } catch (err) {
     return failure(err, null, "issue the certificate");
+  }
+}
+
+export async function refreshCertificateAction(schemeId: string, lotId: string, certificateId: string): Promise<RecordsFormState> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await refreshCertificateFigures({ schemeId, certificateId });
+    certPaths(schemeId, lotId);
+    return { success: "Figures refreshed from the records." };
+  } catch (err) {
+    return failure(err, null, "refresh the figures");
   }
 }
 

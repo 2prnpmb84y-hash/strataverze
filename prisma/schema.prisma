@@ -4402,6 +4402,7 @@ model SaleCertificate {
   authorisedByAddress String?  @map("authorised_by_address")
   /// The items, in the order of the approved form: [{ no, title, text }].
   items              Json
+  draftedOn          DateTime  @db.Date @map("drafted_on") // the day the figures were last taken from StrataVerze's records
   certificateDate    DateTime? @db.Date @map("certificate_date") // the date it is issued
   feeCents           Int?      @map("fee_cents")
   feeRepeat          Boolean   @default(false) @map("fee_repeat")

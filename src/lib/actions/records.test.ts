@@ -16,6 +16,7 @@ const store = {
   createInspection: vi.fn(),
   scheduleInspection: vi.fn(),
   completeInspection: vi.fn(async () => 3_100),
+  refreshCertificateFigures: vi.fn(),
   cancelInspection: vi.fn(),
 };
 vi.mock("@/lib/records/records-store", async () => {
@@ -52,6 +53,16 @@ describe("certificate and inspection actions", () => {
     membership.mockResolvedValue({ profile: { id: "a1" }, membership: {}, roles: ["ADVISER"] });
     await actions.saveCertificateAction(SCHEME, "lot-1", "c1", {}, form({ requesterName: "Jo", item_1: "Nil", item_12A: "None" }));
     expect(store.saveCertificateDraft).toHaveBeenCalledWith(expect.objectContaining({ certificateId: "c1", itemTexts: { "1": "Nil", "12A": "None" } }));
+  });
+
+  it("save what is on the screen, then issue, in one step", async () => {
+    membership.mockResolvedValue({ profile: { id: "a1" }, membership: {}, roles: ["ADVISER"] });
+    const order: string[] = [];
+    store.saveCertificateDraft.mockImplementationOnce(async () => void order.push("save"));
+    store.issueCertificate.mockImplementationOnce(async () => (order.push("issue"), { cents: 9_400, repeat: true }));
+    const r = await actions.saveCertificateAction(SCHEME, "lot-1", "c1", {}, form({ intent: "issue", checkedAll: "on", item_1: "Nil" }));
+    expect(order).toEqual(["save", "issue"]);
+    expect(r.success).toMatch(/\$94\.00/);
   });
 
   it("issue only with every item confirmed as checked", async () => {

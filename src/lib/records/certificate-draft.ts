@@ -9,7 +9,7 @@ import { db } from "@/prisma/db";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { meetingZone, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
-import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { getSchemeInterestSetting, statutoryInterestForScheme } from "@/lib/finance/interest-setting";
 import { graceText } from "@/lib/jurisdiction/wording";
 import { toCents } from "@/lib/billing/money";
 import { addMonths } from "@/lib/levies/notice-plan";
@@ -24,7 +24,9 @@ export interface CertificateItem {
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 const aud = (cents: number) => new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(cents / 100);
 const NOT_HELD = "StrataVerze holds no record of this. Check and complete.";
-const HELD_MEETING = ["IN_PROGRESS", "MINUTES_DRAFT", "PUBLISHED"];
+const HELD_MEETING = ["IN_PROGRESS", "MINUTES_DRAFT", "PUBLISHED", "ADJOURNED"];
+/** Items worked out from StrataVerze's records (refreshed from them before issue); the rest are the adviser's. */
+export const FIGURE_ITEMS = ["3", "4", "6", "11", "12", "13", "14", "18", "19"] as const;
 const MEETING_LABEL: Record<string, string> = { AGM: "Annual general meeting", FIRST_AGM: "First annual general meeting", EGM: "General meeting", COMMITTEE: "Strata committee meeting" };
 
 /** The lot's levy notices for one kind of fund, as instalment lines with what is unpaid. */
@@ -55,12 +57,15 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
     db.orm.public.LevySchedule.where((x) => x.schemeId.eq(schemeId)).limit(500).all(),
     getSchemeInterestSetting(schemeId),
     lotArrears(schemeId, lotId, today),
-    db.orm.public.Meeting.where((m) => m.schemeId.eq(schemeId)).limit(1000).all(),
+    db.orm.public.Meeting.where((m) => and(m.schemeId.eq(schemeId), m.deletedAt.isNull())).limit(1000).all(),
     db.orm.public.LotDetail.where((d) => d.lotId.eq(lotId)).first(),
     db.orm.public.SchemeMembership.where((m) => and(m.schemeId.eq(schemeId), m.role.eq("COMMITTEE"), m.isActive.eq(true))).limit(50).all(),
-    db.orm.public.ByLaw.where((b) => b.schemeId.eq(schemeId)).limit(500).all(),
-    db.orm.public.InsurancePolicy.where((p) => and(p.schemeId.eq(schemeId), p.status.eq("ACTIVE"))).limit(20).all(),
+    db.orm.public.ByLaw.where((b) => and(b.schemeId.eq(schemeId), b.status.eq("ACTIVE"))).limit(500).all(),
+    db.orm.public.InsurancePolicy.where((p) => and(p.schemeId.eq(schemeId), p.status.eq("ACTIVE"), p.deletedAt.isNull())).limit(50).all(),
   ]);
+  // Interest to date on the lot's notices: what is posted and unpaid, plus what has accrued since it was last posted.
+  const lotNoticeIds = new Set(notices.map((n) => n.id));
+  const accruedCents = (await statutoryInterestForScheme(schemeId, today)).filter((x) => lotNoticeIds.has(x.noticeId)).reduce((sum, x) => sum + Math.max(0, x.additionalCents), 0);
   const fundType = new Map(funds.map((f) => [f.id, String(f.fundType).toUpperCase()]));
   const special = new Set(schedules.filter((x) => String(x.levyType) === "SPECIAL").map((x) => x.id));
   // The current and coming instalments, and any earlier ones still unpaid.
@@ -74,9 +79,10 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
       ? `The ${pack.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${pack.CITATIONS.noInterestResolution}).`
       : `Simple interest at ${i.annualRatePercent}% a year on contributions not paid ${graceText(i)} after they are due (${pack.CITATIONS.interest}).`;
 
+  // Meetings that opened (or were adjourned), and legacy SCHEDULED meetings whose date has passed (to confirm).
   const held = meetings
-    .filter((m) => HELD_MEETING.includes(String(m.status)))
-    .map((m) => ({ m, d: storedDayIn(meetingZone(m, tz), m.startTime ?? m.scheduledAt) }))
+    .filter((m) => HELD_MEETING.includes(String(m.status)) || String(m.status) === "SCHEDULED")
+    .map((m) => ({ m, d: storedDayIn(meetingZone(m, tz), m.openedAt ?? m.startTime ?? m.scheduledAt), confirm: String(m.status) === "SCHEDULED" }))
     .filter((x) => x.d >= yearAgo && x.d <= today)
     .sort((a, b) => a.d.localeCompare(b.d));
   const upcoming = meetings
@@ -86,7 +92,11 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
     .sort((a, b) => a.d.localeCompare(b.d));
 
   const members = committee.length ? await db.orm.public.Profile.where((p) => p.id.in(committee.map((c) => c.profileId))).limit(50).all() : [];
-  const recentBylaws = bylaws.filter((b) => !b.deletedAt && day(b.effectiveDate) >= sixMonthsAgo);
+  // Candidates only: StrataVerze does not record lodgement with the Registrar-General.
+  const recentBylaws = bylaws.filter((b) => !b.deletedAt && storedDayIn(tz, b.effectiveDate) >= sixMonthsAgo);
+  // Building and strata cover first, then the rest; the form has room for four.
+  const rank = (t: string) => (t === "STRATA" || t === "BUILDING" ? 0 : t === "PUBLIC_LIABILITY" ? 1 : 2);
+  const sortedPolicies = [...policies].sort((a, b) => rank(String(a.policyType)) - rank(String(b.policyType)));
 
   const text: Record<string, string> = {
     "1": "No strata renewal committee is recorded in StrataVerze. Check and complete.",
@@ -99,11 +109,15 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
     "8": NOT_HELD,
     "9": NOT_HELD,
     "10": NOT_HELD,
-    "11": `${interestText}\nInterest payable on outstanding contributions: ${aud(arrears.interestCents)}.`,
-    "12": `Contributions overdue and recoverable: ${aud(arrears.leviesCents)} in levies and ${aud(arrears.interestCents)} in interest. Monetary penalties: ${NOT_HELD}`,
+    "11": `${interestText}\nInterest payable on outstanding contributions at ${today}: ${aud(arrears.interestCents + accruedCents)} (${aud(arrears.interestCents)} charged and unpaid, ${aud(accruedCents)} accrued since). Check and complete.`,
+    "12": `Contributions overdue and recoverable at ${today}: ${aud(arrears.leviesCents)} in levies and ${aud(arrears.interestCents + accruedCents)} in interest. Monetary penalties: ${NOT_HELD}`,
     "12A": NOT_HELD,
-    "13": held.length ? held.map((x) => `${x.d}: ${MEETING_LABEL[String(x.m.meetingType)] ?? String(x.m.meetingType)}`).join("\n") : "No meetings held in the 12 months are recorded in StrataVerze. Check and complete.",
-    "14": upcoming.length ? upcoming.map((x) => `${x.d}: ${MEETING_LABEL[String(x.m.meetingType)] ?? String(x.m.meetingType)}`).join("\n") : "No meetings notified but not yet held are recorded in StrataVerze. Check and complete.",
+    "13": held.length
+      ? [...held.map((x) => `${x.d}: ${MEETING_LABEL[String(x.m.meetingType)] ?? String(x.m.meetingType)}${x.confirm ? " (recorded as scheduled: confirm it was held)" : ""}`), "Meetings held outside StrataVerze: check and complete."].join("\n")
+      : "No meetings held in the 12 months are recorded in StrataVerze. Check and complete.",
+    "14": upcoming.length
+      ? [...upcoming.map((x) => `${x.d}: ${MEETING_LABEL[String(x.m.meetingType)] ?? String(x.m.meetingType)}`), "Meetings notified outside StrataVerze: check and complete."].join("\n")
+      : "No meetings notified but not yet held are recorded in StrataVerze. Check and complete.",
     "15": [
       `Owner: ${lotDetail?.rollOwnerName?.trim() || "not recorded"}`,
       `Address: ${lotDetail?.ownerAddress?.trim() || "not recorded"}`,
@@ -114,13 +128,19 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
       ? [...members.map((p) => `${`${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()} (address: check and complete)`), "Chairperson, secretary and treasurer: check and complete."].join("\n")
       : `No committee members are recorded in StrataVerze. ${NOT_HELD}`,
     "18": recentBylaws.length
-      ? [...recentBylaws.map((b) => `By-law ${b.bylawNumber}, ${b.title}, effective ${day(b.effectiveDate)}`), "Whether each is lodged with the Registrar-General: check and complete."].join("\n")
+      ? [
+          "By-laws in force recorded with a date in the previous six months (StrataVerze does not record lodgement):",
+          ...recentBylaws.map((b) => `By-law ${b.bylawNumber}, ${b.title}, dated ${storedDayIn(tz, b.effectiveDate)}`),
+          "List here only by-laws made in the previous six months that are not yet lodged with the Registrar-General: check and complete.",
+        ].join("\n")
       : "No by-laws made in the previous six months are recorded in StrataVerze. Check and complete.",
-    "19": policies.length
-      ? policies
-          .slice(0, 4)
-          .map((p) => `${String(p.policyType).replace(/_/g, " ").toLowerCase()}: ${p.insurer}, policy ${p.policyNumber}, sum insured ${aud(toCents(String(p.coverageAmount)))}, due ${day(p.endDate)}, premium ${aud(toCents(String(p.premium)))}${p.broker ? `, broker ${p.broker}` : ""}. Last premium date: check and complete.`)
-          .join("\n")
+    "19": sortedPolicies.length
+      ? [
+          ...sortedPolicies
+            .slice(0, 4)
+            .map((p) => `${String(p.policyType).replace(/_/g, " ").toLowerCase()}: ${p.insurer}, policy ${p.policyNumber}, sum insured ${aud(toCents(String(p.coverageAmount)))}, due ${storedDayIn(tz, p.endDate)}, premium ${aud(toCents(String(p.premium)))}${p.broker ? `, broker ${p.broker}` : ""}. Last premium date: check and complete.`),
+          ...(sortedPolicies.length > 4 ? [`${sortedPolicies.length - 4} more active policies are recorded; the form has room for four.`] : []),
+        ].join("\n")
       : `No active insurance policies are recorded in StrataVerze. ${NOT_HELD}`,
     "20": "Only if the scheme is part of a community scheme. Check and complete.",
     "21": "Only if the scheme is part of a community scheme. Check and complete.",

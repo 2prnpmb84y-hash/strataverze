@@ -121,9 +121,17 @@ export function CertificateEditor({
           );
         })}
       </div>
-      <div className="flex justify-end">
-        <Button type="submit" variant="secondary" disabled={pending}>
+      <label className="flex items-start gap-2 text-sm text-ink">
+        <input type="checkbox" name="checkedAll" className="mt-1" defaultChecked={v.checkedAll === "on"} />
+        <span>To issue: I have checked and completed every item against the owners corporation&apos;s records.</span>
+      </label>
+      {e.checkedAll && <p className="text-xs text-red-600">{e.checkedAll}</p>}
+      <div className="flex flex-wrap justify-end gap-3">
+        <Button type="submit" name="intent" value="save" variant="secondary" disabled={pending}>
           {pending ? "Saving..." : "Save draft"}
+        </Button>
+        <Button type="submit" name="intent" value="issue" disabled={pending}>
+          {pending ? "Saving..." : "Save and issue"}
         </Button>
       </div>
     </form>

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.sale_certificates (
   authorised_by_name    text,
   authorised_by_address text,
   items                 jsonb NOT NULL,
+  drafted_on            date NOT NULL,
   certificate_date      date,
   fee_cents             integer CHECK (fee_cents >= 0),
   fee_repeat            boolean NOT NULL DEFAULT false,

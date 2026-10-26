@@ -5,7 +5,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
-import { cancelCertificateAction, issueCertificateAction, recordFeePaidAction, saveCertificateAction } from "@/lib/actions/records";
+import { cancelCertificateAction, recordFeePaidAction, refreshCertificateAction, saveCertificateAction } from "@/lib/actions/records";
 import { requesterFields } from "@/lib/records/requester-fields";
 import type { CertificateItem } from "@/lib/records/certificate-draft";
 import { formatLotLabel } from "@/lib/format";
@@ -44,7 +44,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
           <Card>
             <CardHeader
               title="Check and complete every item"
-              description={toComplete.length ? `Items still to complete: ${toComplete.join(", ")}.` : "Every item has been completed. Check them once more before issuing."}
+              description={`Figures from the records as at ${day(cert.draftedOn)}${day(cert.draftedOn) < today ? " (refresh them before issuing)" : ""}. ${toComplete.length ? `Items still to complete: ${toComplete.join(", ")}.` : "Every item has been completed. Check them once more before issuing."} Issuing dates the certificate today (${today}), fixes its items and records the fee due.`}
               action={<StatusChip status="Draft" variant="warning" />}
             />
             <CertificateEditor
@@ -60,9 +60,13 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
             </p>
           </Card>
           <Card>
-            <CardHeader title="Issue" description={`Issuing dates the certificate today (${today}), fixes its items and records the fee due.`} />
-            <RecordsForm action={issueCertificateAction.bind(null, id, lotId, cert.id)} submitLabel="Issue certificate" fields={[{ name: "checkedAll", label: "I have checked and completed every item against the owners corporation's records.", type: "checkbox", wide: true }]} />
-            <div className="mt-3 flex flex-wrap gap-3">
+            <CardHeader title="More" />
+            <div className="flex flex-wrap items-center gap-3">
+              <ConfirmButton
+                label="Refresh figures from the records"
+                confirmText="Replace items 3, 4, 6, 11 to 14, 18 and 19 with today's figures? Your other items are kept."
+                act={refreshCertificateAction.bind(null, id, lotId, cert.id)}
+              />
               <a href={pdf} target="_blank" rel="noreferrer" className="text-sm text-turquoise underline">
                 Preview (PDF, marked draft)
               </a>

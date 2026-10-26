@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'191083ef684f536c222b45bd93cbd62f75c6bd66ee83e0e3e073975744b70693'>;
+  StorageHashBase<'fd735100a6fa2fcd980be349481e06ca33caf1c252d840204f49d61854663de7'>;
 export type ExecutionHash =
   ExecutionHashBase<'7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9'>;
 export type ProfileHash =
@@ -2578,6 +2578,7 @@ export namespace Models {
     certificateDate: FieldOutputTypes['public']['SaleCertificate']['certificateDate'];
     createdAt: FieldOutputTypes['public']['SaleCertificate']['createdAt'];
     createdBy: FieldOutputTypes['public']['SaleCertificate']['createdBy'];
+    draftedOn: FieldOutputTypes['public']['SaleCertificate']['draftedOn'];
     feeCents: FieldOutputTypes['public']['SaleCertificate']['feeCents'];
     feePaidOn: FieldOutputTypes['public']['SaleCertificate']['feePaidOn'];
     feeRepeat: FieldOutputTypes['public']['SaleCertificate']['feeRepeat'];
@@ -16984,6 +16985,12 @@ type ContractBase = Omit<
                 readonly created_by: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly drafted_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
                   readonly nullable: false;
                   readonly many: false;
                 };
@@ -40034,6 +40041,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly draftedOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
               readonly feeCents: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -40139,6 +40150,7 @@ type ContractBase = Omit<
                 readonly certificateDate: { readonly column: 'certificate_date' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly createdBy: { readonly column: 'created_by' };
+                readonly draftedOn: { readonly column: 'drafted_on' };
                 readonly feeCents: { readonly column: 'fee_cents' };
                 readonly feePaidOn: { readonly column: 'fee_paid_on' };
                 readonly feeRepeat: { readonly column: 'fee_repeat' };

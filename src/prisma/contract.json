@@ -20495,6 +20495,13 @@
                   "kind": "scalar"
                 }
               },
+              "draftedOn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
               "feeCents": {
                 "nullable": true,
                 "type": {
@@ -20664,6 +20671,9 @@
                 },
                 "createdBy": {
                   "column": "created_by"
+                },
+                "draftedOn": {
+                  "column": "drafted_on"
                 },
                 "feeCents": {
                   "column": "fee_cents"
@@ -49454,6 +49464,11 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "drafted_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
                 "fee_cents": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -60713,7 +60728,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "191083ef684f536c222b45bd93cbd62f75c6bd66ee83e0e3e073975744b70693"
+    "storageHash": "fd735100a6fa2fcd980be349481e06ca33caf1c252d840204f49d61854663de7"
   },
   "execution": {
     "executionHash": "7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9",
