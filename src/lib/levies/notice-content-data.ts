@@ -49,12 +49,13 @@ export async function checkPlannedNotices(input: {
 }): Promise<MissingItem[]> {
   const { scheme, fund, issuer, account } = await noticeContext(input.schemeId, input.fundId, input.issuerId);
   const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
+  const rollNames = await rollOwnerNames(input.notices.map((n) => n.lotId));
   const seen = new Map<string, MissingItem>();
   for (const n of input.notices) {
     const items = validateLevyNoticeContent({
       scheme: { name: scheme?.name ?? null, planNumber: scheme?.planNumber ?? null },
       lotNumber: n.lotNumber,
-      ownerNames: n.ownerId && owners.get(n.ownerId) ? [owners.get(n.ownerId)!.name] : [],
+      ownerNames: noticeOwnerNames(n.ownerId ? owners.get(n.ownerId)?.name : null, rollNames.get(n.lotId)),
       noticeDate: input.noticeDate,
       dueDate: n.dueDate,
       fundName: fund?.name ?? null,
@@ -78,13 +79,37 @@ export async function checkPlannedNotices(input: {
     for (const item of items) {
       const key = item.code;
       if (item.code === "OWNER") {
-        seen.set(`OWNER:${n.lotNumber}`, { code: "OWNER", message: `Lot ${n.lotNumber} has no owner on the strata roll.` });
+        seen.set(`OWNER:${n.lotNumber}`, {
+          code: "OWNER",
+          message: `Lot ${n.lotNumber} has no owner name on the strata roll. Add the owner on the lot's page (Lots, then Lot ${n.lotNumber}, then Assign owner).`,
+        });
       } else if (!seen.has(key)) {
         seen.set(key, item);
       }
     }
   }
   return [...seen.values()];
+}
+
+/**
+ * The owner's name for a notice: the owner's account name, or else the name
+ * on the strata roll entered at onboarding. A notice can be issued to a named
+ * owner who has no account yet; only email delivery needs one (financials
+ * review B6, 26 Oct 2026).
+ */
+export function noticeOwnerNames(accountName: string | null | undefined, rollName: string | null | undefined): string[] {
+  const name = (accountName ?? "").trim() || (rollName ?? "").trim();
+  return name ? [name] : [];
+}
+
+/** Owner names as they appear on the strata roll, by lot. */
+export async function rollOwnerNames(lotIds: string[]) {
+  const map = new Map<string, string>();
+  const ids = [...new Set(lotIds)];
+  if (ids.length === 0) return map;
+  const rows = await db.orm.public.LotDetail.where((d) => d.lotId.in(ids)).limit(ids.length).all();
+  for (const d of rows) if (d.rollOwnerName?.trim()) map.set(d.lotId, d.rollOwnerName.trim());
+  return map;
 }
 
 export async function ownerNames(profileIds: string[]) {

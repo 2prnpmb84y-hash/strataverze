@@ -78,6 +78,7 @@ export default async function BudgetPage({
     code: String(ac.code),
     name: String(ac.name),
     accountType: ac.accountType,
+    accountSubType: ac.accountSubType ?? null,
     fundId: ac.fundId,
   }));
 

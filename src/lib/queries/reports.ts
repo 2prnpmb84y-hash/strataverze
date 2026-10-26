@@ -9,6 +9,7 @@ import { LEDGER_STATUSES, inLedger } from "@/lib/finance/ledger-status";
 import { fundPositions, getFundPositions, ledgerLinesUpTo } from "@/lib/finance/fund-position";
 import { NOT_ARREARS_STATUSES, arrearsCents, toArrearsNotice } from "@/lib/finance/arrears";
 import { todayInSydney } from "@/lib/onboarding/property-onboarding";
+import { getBudgetVsActual } from "./budget";
 import { migratedInvoiceEntries } from "@/lib/finance/migrated-invoices";
 import { priorYearActualLines } from "@/lib/finance/prior-year-actuals";
 
@@ -1143,95 +1144,28 @@ export async function getCommitteeReportingPack(
 
   const budgetComparisons: CommitteeBudgetComparison[] = [];
 
+  // The same comparison as the Budget page (src/lib/queries/budget.ts): every
+  // account with a budget line or activity, the scheme's own financial year,
+  // and totals for expenditure (financials review B10).
   for (const fund of funds) {
-    // Check if budget lines exist for this fund/year
-    const budgetLines = await db.orm.public.BudgetLine
-      .where((b) =>
-        and(b.fundId.eq(fund.id), b.financialYear.eq(financialYear)),
-      )
-      .limit(1)
-      .all();
-
-    if (budgetLines.length === 0) continue;
-
-    // Get account codes for the scheme
-    const accountCodes = await db.orm.public.AccountCode
-      .where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true)))
-      .limit(500)
-      .all();
-    const accountMap = new Map(accountCodes.map((a) => [a.id, a]));
-
-    // Get all budget lines for this fund
-    const allBudgetLines = await db.orm.public.BudgetLine
-      .where((b) =>
-        and(b.fundId.eq(fund.id), b.financialYear.eq(financialYear)),
-      )
-      .limit(200)
-      .all();
-
-    // Get actual amounts from posted journal entries
-    const journalLines = await db.orm.public.JournalLine
-      .where((jl) => jl.fundId.eq(fund.id))
-      .include("journalEntry")
-      .limit(50000)
-      .all();
-
-    const fyStart = `${financialYear}-07-01`;
-    const fyEnd = `${financialYear + 1}-06-30`;
-
-    const postedLines = journalLines.filter((jl) => {
-      const entry = jl.journalEntry;
-      if (!entry || entry.schemeId !== schemeId || !inLedger(entry.status)) return false;
-      const txDate = String(entry.transactionDate).slice(0, 10);
-      return txDate >= fyStart && txDate <= fyEnd;
-    });
-
-    // Net of credits, so a reversed invoice and its reversal cancel out (and
-    // the figure matches the drill-down behind it).
-    const actualCents = new Map<string, number>();
-    for (const line of postedLines) {
-      const account = accountMap.get(line.accountCodeId);
-      if (!account) continue;
-      const net = Math.round(Number(line.debit ?? 0) * 100) - Math.round(Number(line.credit ?? 0) * 100);
-      const current = actualCents.get(line.accountCodeId) ?? 0;
-      if (account.accountType === "EXPENSE") {
-        actualCents.set(line.accountCodeId, current + net);
-      } else if (account.accountType === "INCOME") {
-        actualCents.set(line.accountCodeId, current - net);
-      }
-    }
-    const actualsByAccount = new Map([...actualCents].map(([k, c]) => [k, c / 100]));
-
-    const lines = allBudgetLines.map((bl) => {
-      const account = accountMap.get(bl.accountCodeId);
-      const budgetAmount = Number(bl.budgetAmount);
-      const actualAmount = actualsByAccount.get(bl.accountCodeId) ?? 0;
-      const variance = budgetAmount - actualAmount;
-      return {
-        accountCodeId: bl.accountCodeId,
-        accountCode: account ? String(account.code) : "",
-        accountName: account ? String(account.name) : "Unknown",
-        budgetAmount,
-        actualAmount,
-        variance,
-        variancePercent: budgetAmount !== 0 ? (variance / budgetAmount) * 100 : 0,
-      };
-    }).sort((a, b) => a.accountCode.localeCompare(b.accountCode));
-
-    const totalBudget = lines.reduce((s, l) => s + l.budgetAmount, 0);
-    const totalActual = lines.reduce((s, l) => s + l.actualAmount, 0);
-    const totalVariance = totalBudget - totalActual;
-
+    const c = await getBudgetVsActual(schemeId, fund.id, financialYear);
+    if (c.lines.length === 0) continue;
     budgetComparisons.push({
       fundId: fund.id,
       fundName: String(fund.name),
-      totalBudget: Math.round(totalBudget * 100) / 100,
-      totalActual: Math.round(totalActual * 100) / 100,
-      totalVariance: Math.round(totalVariance * 100) / 100,
-      variancePercent: totalBudget !== 0
-        ? Math.round(((totalVariance / totalBudget) * 100) * 100) / 100
-        : 0,
-      lines,
+      totalBudget: c.totalBudget,
+      totalActual: c.totalActual,
+      totalVariance: c.totalVariance,
+      variancePercent: c.totalBudget !== 0 ? Math.round(((c.totalVariance / c.totalBudget) * 100) * 100) / 100 : 0,
+      lines: c.lines.map((l) => ({
+        accountCodeId: l.accountCodeId,
+        accountCode: l.accountCode,
+        accountName: l.accountName,
+        budgetAmount: l.budgetAmount,
+        actualAmount: l.actualAmount,
+        variance: l.variance,
+        variancePercent: l.variancePercent,
+      })),
     });
   }
 

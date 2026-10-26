@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3438c3dab2494aa6e3db5e25d308431179b7c70145f09e6310a88868ab6dd5e7'>;
+  StorageHashBase<'b77d8766c343b13b6735d33976ec1700fe80b72326c693d7050f142e9e8a43b9'>;
 export type ExecutionHash =
   ExecutionHashBase<'3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15'>;
 export type ProfileHash =
@@ -1574,6 +1574,8 @@ export namespace Models {
     levyPostPending: FieldOutputTypes['public']['LevyNotice']['levyPostPending'];
     levyScheduleId: FieldOutputTypes['public']['LevyNotice']['levyScheduleId'];
     lotId: FieldOutputTypes['public']['LevyNotice']['lotId'];
+    migratedInterestCharged: FieldOutputTypes['public']['LevyNotice']['migratedInterestCharged'];
+    migratedInterestPaid: FieldOutputTypes['public']['LevyNotice']['migratedInterestPaid'];
     migrationBatchId: FieldOutputTypes['public']['LevyNotice']['migrationBatchId'];
     noticeNumber: FieldOutputTypes['public']['LevyNotice']['noticeNumber'];
     ownerId: FieldOutputTypes['public']['LevyNotice']['ownerId'];
@@ -11346,6 +11348,28 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly migrated_interest_charged: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/numeric@1', '0.00'>;
+                  };
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly migrated_interest_paid: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/numeric@1', '0.00'>;
+                  };
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly migration_batch_id: {
@@ -33086,6 +33110,22 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly migratedInterestCharged: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly migratedInterestPaid: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
               readonly migrationBatchId: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -33216,6 +33256,8 @@ type ContractBase = Omit<
                 readonly levyPostPending: { readonly column: 'levy_post_pending' };
                 readonly levyScheduleId: { readonly column: 'levy_schedule_id' };
                 readonly lotId: { readonly column: 'lot_id' };
+                readonly migratedInterestCharged: { readonly column: 'migrated_interest_charged' };
+                readonly migratedInterestPaid: { readonly column: 'migrated_interest_paid' };
                 readonly migrationBatchId: { readonly column: 'migration_batch_id' };
                 readonly noticeNumber: { readonly column: 'notice_number' };
                 readonly ownerId: { readonly column: 'owner_id' };

@@ -452,6 +452,8 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
           amountPaid: money(a.interestPaidCents),
           balanceOutstanding: money(a.levyOutstandingCents + a.interestChargedCents - a.interestPaidCents),
           interestCharged: money(a.interestChargedCents),
+          migratedInterestCharged: money(a.interestChargedCents),
+          migratedInterestPaid: money(a.interestPaidCents),
           status: "ISSUED",
           issuedAt: ts(`${date}T00:00:00.000Z`),
           migrationBatchId: batch.id,

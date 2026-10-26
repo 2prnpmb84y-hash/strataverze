@@ -8,7 +8,7 @@ import { siteUrl } from "@/lib/site-url";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { formatLotLabel } from "@/lib/format";
-import { noticeContext, ownerNames } from "@/lib/levies/notice-content-data";
+import { noticeContext, noticeOwnerNames, ownerNames, rollOwnerNames } from "@/lib/levies/notice-content-data";
 import { getSchemeInterestSetting, sydneyToday } from "@/lib/finance/interest-setting";
 import { getIssuedLevyNoticesForLot, getLevyPaymentsForNotices } from "@/lib/queries/levy-schedules";
 import { buildStatement } from "@/lib/levies/levy-ledger";
@@ -49,6 +49,7 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
   if (!scheme) return null;
   const owners = n.ownerId ? await ownerNames([n.ownerId]) : new Map();
   const owner = n.ownerId ? owners.get(n.ownerId) : null;
+  const rollNames = await rollOwnerNames([n.lotId]);
   return {
     schemeId: n.schemeId,
     lotId: n.lotId,
@@ -56,7 +57,7 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       schemeName: String(scheme.name),
       planNumber: scheme.planNumber ? String(scheme.planNumber) : null,
       lotNumber: String(n.lot?.lotNumber ?? ""),
-      ownerNames: owner ? [owner.name] : [],
+      ownerNames: noticeOwnerNames(owner?.name, rollNames.get(n.lotId)),
       noticeNumber: String(n.noticeNumber),
       noticeDate: isoDay(n.issuedAt) || sydneyToday(),
       dueDate: isoDay(n.dueDate),

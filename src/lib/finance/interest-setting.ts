@@ -65,7 +65,10 @@ export async function statutoryInterestForScheme(schemeId: string, asAt = sydney
       asAt,
       noInterest: setting.mode === "NO_INTEREST",
     });
-    const previouslyChargedCents = toCents(String(n.interestCharged ?? 0));
+    // Interest the old system charged before takeover is not interest charged
+    // here: new interest is compared only with what this system has charged
+    // (financials review B8, 26 Oct 2026).
+    const previouslyChargedCents = Math.max(0, toCents(String(n.interestCharged ?? 0)) - toCents(String(n.migratedInterestCharged ?? 0)));
     return {
       ...result,
       noticeId: n.id,

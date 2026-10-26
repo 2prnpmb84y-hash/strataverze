@@ -11241,6 +11241,28 @@
                   "kind": "scalar"
                 }
               },
+              "migratedInterestCharged": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "migratedInterestPaid": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
               "migrationBatchId": {
                 "nullable": true,
                 "type": {
@@ -11444,6 +11466,12 @@
                 },
                 "lotId": {
                   "column": "lot_id"
+                },
+                "migratedInterestCharged": {
+                  "column": "migrated_interest_charged"
+                },
+                "migratedInterestPaid": {
+                  "column": "migrated_interest_paid"
                 },
                 "migrationBatchId": {
                   "column": "migration_batch_id"
@@ -42074,6 +42102,32 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
+                "migrated_interest_charged": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0.00"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "migrated_interest_paid": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0.00"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
                 "migration_batch_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -58175,7 +58229,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3438c3dab2494aa6e3db5e25d308431179b7c70145f09e6310a88868ab6dd5e7"
+    "storageHash": "b77d8766c343b13b6735d33976ec1700fe80b72326c693d7050f142e9e8a43b9"
   },
   "execution": {
     "executionHash": "3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15",

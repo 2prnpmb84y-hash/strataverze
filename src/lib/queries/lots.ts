@@ -10,7 +10,11 @@ import { sydneyToday } from "@/lib/finance/interest-setting";
 type LotNotice = {
   amountDue: unknown;
   amountPaid: unknown;
+  balanceOutstanding?: unknown;
   interestCharged?: unknown;
+  migratedInterestCharged?: unknown;
+  migratedInterestPaid?: unknown;
+  migrationBatchId?: string | null;
   levySchedule?: { levyType?: unknown } | null;
 };
 
@@ -18,21 +22,38 @@ function isSpecialNotice(n: LotNotice): boolean {
   return String(n.levySchedule?.levyType ?? "") === "SPECIAL";
 }
 
-/** Budget, special, paid and interest totals for a lot's issued notices. */
-function levyTotalsForLot(notices: LotNotice[]) {
-  const r = (x: number) => Math.round(x * 100) / 100;
+/**
+ * A lot's levy account, rolled forward from its issued notices (financials
+ * review B7, 26 Oct 2026):
+ *
+ *   brought forward + levies + special levies + interest charged - paid = closing
+ *
+ * - Brought forward: what was owing on the notices brought across at
+ *   takeover (levy and the old system's unpaid interest).
+ * - Levies and special levies: notices raised here.
+ * - Interest charged: interest charged here, not the old system's.
+ * - Paid: payments received here.
+ * - Closing: what is owing, the sum of the notices' balances.
+ */
+export function lotRollForward(notices: LotNotice[]) {
+  const c = (v: unknown) => Math.round(Number(v ?? 0) * 100);
+  let broughtForward = 0;
   let annual = 0;
   let special = 0;
-  let paid = 0;
   let interest = 0;
+  let paid = 0;
   for (const n of notices) {
-    const due = Number(n.amountDue ?? 0);
-    if (isSpecialNotice(n)) special += due;
-    else annual += due;
-    paid += Number(n.amountPaid ?? 0);
-    interest += Number(n.interestCharged ?? 0);
+    const migIc = c(n.migratedInterestCharged);
+    const migIp = c(n.migratedInterestPaid);
+    if (n.migrationBatchId) broughtForward += c(n.amountDue) + migIc - migIp;
+    else if (isSpecialNotice(n)) special += c(n.amountDue);
+    else annual += c(n.amountDue);
+    interest += c(n.interestCharged) - migIc;
+    paid += c(n.amountPaid) - migIp;
   }
-  return { annual: r(annual), special: r(special), paid: r(paid), interest: r(interest) };
+  const closing = broughtForward + annual + special + interest - paid;
+  const d = (x: number) => x / 100;
+  return { opening: d(broughtForward), annual: d(annual), special: d(special), interest: d(interest), paid: d(paid), closing: d(closing) };
 }
 
 /**
@@ -190,7 +211,7 @@ export async function getLotDetail(lotId: string) {
 
   // Financials from issued levy notices (budget and special levies)
   const notices = (lot.levyNotices ?? []).filter((n) => String(n.status) !== "DRAFT");
-  const totals = levyTotalsForLot(notices);
+  const totals = lotRollForward(notices);
 
   const levyHistory = [...notices]
     .sort((a, b) => toIsoDay(b.dueDate).localeCompare(toIsoDay(a.dueDate)))
@@ -205,17 +226,6 @@ export async function getLotDetail(lotId: string) {
       paidAt: n.paidInFullAt,
     }));
 
-  // Opening balance from journal lines tagged to this lot (debit minus credit)
-  const lotJournalLines = (lot as { journalLines?: Array<{ debit?: unknown; credit?: unknown }> }).journalLines ?? [];
-  const opening = lotJournalLines.reduce(
-    (sum, jl) => sum + Number(jl.debit ?? 0) - Number(jl.credit ?? 0),
-    0,
-  );
-  const annualTotal = totals.annual;
-  const specialTotal = totals.special;
-  const paidTotal = totals.paid;
-  const interestPaid = totals.interest;
-  const closing = opening + annualTotal + specialTotal + interestPaid - paidTotal;
 
   return {
     id: lot.id,
@@ -233,14 +243,7 @@ export async function getLotDetail(lotId: string) {
     crn: (lot as Record<string, unknown>).crn as string | null ?? null,
     owners,
     isCommitteeMember: owners.some((o) => committeeMembers.includes(o.profileId)),
-    financials: {
-      opening,
-      annual: annualTotal,
-      special: specialTotal,
-      paid: paidTotal,
-      closing,
-      interestPaid,
-    },
+    financials: totals,
     levyHistory,
   };
 }
@@ -289,19 +292,7 @@ export async function getStrataRollData(schemeId: string, limit = 500) {
 
     // Financials from issued levy notices (budget and special levies)
     const notices = (lot.levyNotices ?? []).filter((n) => String(n.status) !== "DRAFT");
-    const totals = levyTotalsForLot(notices);
-    const lotJournalLines = (lot as { journalLines?: Array<{ debit?: unknown; credit?: unknown }> }).journalLines ?? [];
-    // Opening = net debit balance from journal lines tagged to this lot
-    const opening = lotJournalLines.reduce(
-      (sum, jl) => sum + Number(jl.debit ?? 0) - Number(jl.credit ?? 0),
-      0,
-    );
-    const annualTotal = totals.annual;
-    const specialTotal = totals.special;
-    const paidTotal = totals.paid;
-    const interestPaid = totals.interest;
-    // Closing = Opening + Annual + Special + Interest - Paid
-    const closing = opening + annualTotal + specialTotal + interestPaid - paidTotal;
+    const totals = lotRollForward(notices);
 
     return {
       id: lot.id,
@@ -310,12 +301,7 @@ export async function getStrataRollData(schemeId: string, limit = 500) {
       entitlement: lot.entitlement,
       // The name as recorded on the strata roll, else the owners' accounts.
       ownerNames: (lot as { lotDetail?: { rollOwnerName?: string | null } | null }).lotDetail?.rollOwnerName || owners.join(" & "),
-      opening,
-      annual: annualTotal,
-      special: specialTotal,
-      paid: paidTotal,
-      closing,
-      interestPaid,
+      ...totals,
       // Financial or unfinancial (overdue and unpaid), decided 25 Oct 2026.
       ...lotFinancialStatus(notices, today),
     };
