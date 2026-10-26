@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { withLedgerBalances } from "@/lib/finance/fund-position";
@@ -68,7 +71,8 @@ export default async function OwnerDashboard() {
   const upcomingMeetings = meetings.filter((m) => m.status === "SCHEDULED");
 
   // Outstanding levy balance on the owner's lots in this scheme
-  const today = new Date().toISOString().slice(0, 10);
+  // Today in the building's own time zone.
+  const today = todayIn(timeZoneOf(scheme));
   const unpaid = levies.filter(
     (n) =>
       n.schemeId === selectedSchemeId &&
@@ -250,6 +254,7 @@ export default async function OwnerDashboard() {
           <div className="flex flex-col gap-2">
             {upcomingMeetings.slice(0, 3).map((meeting) => {
               const scheduledDate = new Date(String(meeting.scheduledAt));
+              const meetingTz = meetingZone(meeting);
               const pendingCount = meeting.motions.filter(
                 (mo) => mo.status === "PROPOSED",
               ).length;
@@ -266,7 +271,7 @@ export default async function OwnerDashboard() {
                     <StatusChip status="Scheduled" />
                   </div>
                   <p className="text-xs text-ink-muted">
-                    {scheduledDate.toLocaleDateString("en-AU", {
+                    {scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz,
                       weekday: "short",
                       day: "numeric",
                       month: "short",

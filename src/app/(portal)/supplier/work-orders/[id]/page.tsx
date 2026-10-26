@@ -5,11 +5,13 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { myContractorBusinessIds, orderForContractor } from "@/lib/works/urgent-orders";
 import { Card, CardHeader } from "@/components/ui/card";
 import { OrderAnswer } from "@/components/works/order-answer";
-import { closeOutForContractor, sydneyToday } from "@/lib/works/completion";
+import { closeOutForContractor } from "@/lib/works/completion";
+import { formatDateTimeIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { ReportDoneForm, WorksInvoiceForm } from "@/components/works/contractor-close-out";
 
 const money = (n: number) => `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const when = (iso: string) => new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
+/** A time in the job's building's time zone. */
+const when = (tz: string, iso: string) => formatDateTimeIn(tz, iso);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -29,7 +31,7 @@ export default async function SupplierWorkOrderPage({ params }: { params: Promis
   if (!order) notFound();
   // Finishing and invoicing the job (works stage 4).
   const closeOut = await closeOutForContractor(id, businessIds);
-  const today = sydneyToday();
+  const today = todayIn(order.timeZone);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -37,7 +39,7 @@ export default async function SupplierWorkOrderPage({ params }: { params: Promis
         <Link href="/supplier/work-orders" className="text-sm text-ink-muted hover:text-ink">← Work orders</Link>
         <h1 className="text-2xl font-bold font-heading text-ink mt-2 mb-1">{order.title}</h1>
         <p className="text-sm text-ink-muted">
-          Urgent work order {order.workOrderNumber} · sent {when(order.issuedAt)} · {order.statusLabel}
+          Urgent work order {order.workOrderNumber} · sent {when(order.timeZone, order.issuedAt)} · {order.statusLabel}
         </p>
       </div>
 

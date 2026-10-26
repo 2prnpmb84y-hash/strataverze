@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { storedDayIn } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getComplianceItemById } from "@/lib/queries/compliance";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -48,9 +50,8 @@ export default async function ComplianceDetailPage({
   const createdDate = new Date(String(item.createdAt));
 
   // Format due date for the date input (YYYY-MM-DD)
-  const dueDateValue = item.dueDate
-    ? new Date(String(item.dueDate)).toISOString().split("T")[0]
-    : null;
+  // The due day in the building's time zone (it is stored as midnight there).
+  const dueDateValue = item.dueDate ? storedDayIn(await schemeTimeZone(id), item.dueDate) : null;
 
   return (
     <div className="max-w-3xl">
@@ -80,6 +81,7 @@ export default async function ComplianceDetailPage({
               <p className="text-sm text-ink-muted">Due Date</p>
               <p className="text-sm font-medium text-ink">
                 {new Date(String(item.dueDate)).toLocaleDateString("en-AU", {
+                  timeZone: await schemeTimeZone(id),
                   day: "numeric",
                   month: "short",
                   year: "numeric",

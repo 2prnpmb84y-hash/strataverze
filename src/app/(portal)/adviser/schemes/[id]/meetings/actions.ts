@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { isTimeZone, localToInstant } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { revalidatePath } from "next/cache";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
@@ -28,7 +30,6 @@ import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import {
   validateMeetingSetup,
   createMeetingWithRuleSnapshot,
-  DEFAULT_TIMEZONE,
   type MeetingSetupInput,
 } from "@/lib/meetings/setup";
 
@@ -40,7 +41,7 @@ export type MeetingFormState = {
 const MEETING_TYPES = ["AGM", "EGM", "SGM", "COMMITTEE", "FIRST_AGM"];
 const MOTION_TYPES = ["ORDINARY", "SPECIAL", "UNANIMOUS"];
 
-function validateMeetingForm(formData: FormData) {
+function validateMeetingForm(formData: FormData, timeZone: string) {
   const errors: Record<string, string> = {};
 
   const title = formData.get("title") as string | null;
@@ -50,7 +51,13 @@ function validateMeetingForm(formData: FormData) {
   if (!title?.trim()) errors.title = "Title is required.";
   if (!meetingType || !MEETING_TYPES.includes(meetingType))
     errors.meetingType = "Select a valid meeting type.";
+  const startsAt = scheduledAt ? localToInstant(timeZone, scheduledAt) : null;
   if (!scheduledAt) errors.scheduledAt = "Date and time is required.";
+  else if (!startsAt) errors.scheduledAt = "Enter a valid date and time.";
+  const endRaw = String(formData.get("endTime") ?? "").trim();
+  const endsAt = endRaw ? localToInstant(timeZone, endRaw) : null;
+  if (endRaw && !endsAt) errors.endTime = "Enter a valid end time.";
+  else if (startsAt && endsAt && endsAt <= startsAt) errors.endTime = "The meeting must end after it starts.";
 
   return {
     errors,
@@ -58,7 +65,11 @@ function validateMeetingForm(formData: FormData) {
     data: {
       title: title?.trim() ?? "",
       meetingType: meetingType ?? "AGM",
-      scheduledAt: new Date(scheduledAt ?? "").toISOString(),
+      scheduledAt: startsAt ?? "",
+      // The start time is the meeting time: notices, e-voting and minutes use it.
+      startTime: startsAt ?? "",
+      endTime: endsAt,
+      timezone: timeZone,
       location: (formData.get("location") as string)?.trim() || undefined,
       agenda: (formData.get("agenda") as string)?.trim() || undefined,
     },
@@ -80,10 +91,26 @@ async function motionInMeeting(schemeId: string, meetingId: string, motionId: st
   return motion;
 }
 
-function toIso(value: FormDataEntryValue | null): string {
+/**
+ * A datetime-local value ("YYYY-MM-DDTHH:mm") as an instant, read in the
+ * meeting's time zone. `new Date(value)` would read it in the server's time
+ * zone (UTC), putting a 6 pm meeting at 5 am the next day in Sydney.
+ */
+function toIso(value: FormDataEntryValue | null, timeZone: string): string {
   if (!value) return "";
-  const d = new Date(value as string);
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  return localToInstant(timeZone, String(value)) ?? "";
+}
+
+/** Why the time zone typed on the form cannot be used, or null (blank means the building's). */
+function timeZoneFieldProblem(formData: FormData): string | null {
+  const chosen = String(formData.get("timezone") ?? "").trim();
+  return chosen && !isTimeZone(chosen) ? `${chosen} is not a time zone. Use a name such as Australia/Sydney, or leave it blank for the building's.` : null;
+}
+
+/** The meeting's time zone: the one chosen on the form if it is real, else the building's. */
+function meetingTimeZone(formData: FormData, buildingTimeZone: string): string {
+  const chosen = String(formData.get("timezone") ?? "").trim();
+  return isTimeZone(chosen) ? chosen : buildingTimeZone;
 }
 
 export async function createMeetingAction(
@@ -98,13 +125,17 @@ export async function createMeetingAction(
     if (!scheme) return { error: "Scheme not found." };
 
     const endRaw = formData.get("endTime");
+    // Times on the form are local times in the meeting's time zone (the building's unless another is chosen).
+    const zoneProblem = timeZoneFieldProblem(formData);
+    if (zoneProblem) return { fieldErrors: { timezone: zoneProblem } };
+    const tz = meetingTimeZone(formData, timeZoneOf(scheme));
     const input: MeetingSetupInput = {
       schemeId,
       title: ((formData.get("title") as string) ?? "").trim(),
       meetingType: (formData.get("meetingType") as string) ?? "AGM",
-      startTime: toIso(formData.get("scheduledAt")),
-      endTime: endRaw ? toIso(endRaw) : null,
-      timezone: (formData.get("timezone") as string) || DEFAULT_TIMEZONE,
+      startTime: toIso(formData.get("scheduledAt"), tz),
+      endTime: endRaw ? toIso(endRaw, tz) : null,
+      timezone: tz,
       format: (formData.get("format") as string) || null,
       location: ((formData.get("location") as string) ?? "").trim() || null,
       joinUrl: ((formData.get("joinUrl") as string) ?? "").trim() || null,
@@ -140,6 +171,7 @@ export async function createMeetingAction(
       meetingTitle: input.title,
       meetingType: input.meetingType,
       scheduledAt: new Date(input.startTime),
+      timeZone: tz,
       location: input.location ?? undefined,
       meetingId: meeting.id,
     }).catch(() => {});
@@ -170,10 +202,14 @@ export async function updateMeetingAction(
   try {
     await requireSchemeAccess(schemeId, "governance.manage");
 
-    const { errors, isValid, data } = validateMeetingForm(formData);
+    const meeting = await meetingInScheme(schemeId, meetingId);
+    const zoneProblem = timeZoneFieldProblem(formData);
+    if (zoneProblem) return { fieldErrors: { timezone: zoneProblem } };
+    // Read the form's times in the time zone chosen on the form (the meeting's, else the building's).
+    const tz = meetingTimeZone(formData, isTimeZone(meeting.timezone) ? String(meeting.timezone) : timeZoneOf(await getSchemeById(schemeId)));
+    const { errors, isValid, data } = validateMeetingForm(formData, tz);
     if (!isValid) return { fieldErrors: errors };
 
-    await meetingInScheme(schemeId, meetingId);
     await updateMeeting(schemeId, meetingId, data);
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};

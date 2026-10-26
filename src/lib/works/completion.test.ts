@@ -33,7 +33,7 @@ const NOW = new Date("2026-10-26T02:00:00Z");
 
 function seed(opts: { orderStatus?: string; amountLimit?: string | null; gstRegistered?: boolean; adviserMayCodeInvoices?: boolean; bank?: boolean } = {}) {
   sharedFake.reset({
-    Scheme: [{ id: A, name: "Opera House", planNumber: "SP 99999", suburb: "Sydney" }],
+    Scheme: [{ id: A, name: "Opera House", planNumber: "SP 99999", suburb: "Sydney", timeZone: "Australia/Sydney" }],
     SchemeMembership: [
       ...["m1", "m2", "m3"].map((profileId) => ({ schemeId: A, profileId, role: "COMMITTEE", isActive: true })),
       { schemeId: A, profileId: "adv", role: "ADVISER", isActive: true },

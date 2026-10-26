@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getIssuedLevyNoticesForScheme } from "@/lib/queries/levy-schedules";
@@ -41,7 +42,7 @@ export default async function LevyRegisterPage({
 
   const levies = levyRegister(
     await getIssuedLevyNoticesForScheme(id),
-    new Date().toISOString().slice(0, 10),
+    await schemeToday(id),
   );
 
   // Calculate totals

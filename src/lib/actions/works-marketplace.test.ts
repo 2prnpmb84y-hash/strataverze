@@ -241,7 +241,7 @@ describe("marketplace quotes", () => {
     caller.id = "owner";
     caller.roles = { [A]: ["OWNER"] };
     const created = await submitWorksRequestAction(A, {}, form(request));
-    sharedFake.table("Scheme").push({ id: A, name: "Opera House", suburb: "Sydney", postcode: "2000", address: "1 Macquarie St" });
+    sharedFake.table("Scheme").push({ id: A, name: "Opera House", suburb: "Sydney", postcode: "2000", address: "1 Macquarie St", timeZone: "Australia/Sydney" });
     sharedFake.table("WorksSettings").push({ schemeId: A, approvalRule: "ONE", urgentLimit: null, adviserMayDecide: false });
     for (const b of sharedFake.table("ContractorBusiness")) Object.assign(b, { servicePostcodes: ["2000"] });
     caller.id = "m1";

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
@@ -31,6 +32,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function OwnerCreditsPage({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const { id } = await params;
+  const today = await schemeToday(id);
   const profile = await getCurrentProfile();
   if (!profile) return null;
   const scheme = await getSchemeById(id);
@@ -114,7 +116,7 @@ export default async function OwnerCreditsPage({ params }: { params: Promise<{ i
                     <span className="font-medium text-ink">{STATUS_LABEL[r.status] ?? r.status}.</span>
                   </p>
                   {view && <ApprovalPanel view={view} status={r.status} />}
-                  {r.status === "APPROVED" && <RecordRefundPaidForm schemeId={id} refundId={r.id} />}
+                  {r.status === "APPROVED" && <RecordRefundPaidForm schemeId={id} refundId={r.id} today={today} />}
                   {(r.status === "AWAITING_APPROVAL" || r.status === "APPROVED") && <CancelRefundButton schemeId={id} refundId={r.id} />}
                 </li>
               );

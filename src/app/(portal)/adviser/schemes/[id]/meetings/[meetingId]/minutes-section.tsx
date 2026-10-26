@@ -46,12 +46,15 @@ export function MinutesSection({
   canAssemble,
   minutes,
   deadline,
+  timeZone,
 }: {
   schemeId: string;
   meetingId: string;
   canAssemble: boolean;
   minutes: MinutesView | null;
   deadline: { dueDate: string; overdue: boolean } | null;
+  /** The meeting's time zone. */
+  timeZone: string;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +116,7 @@ export function MinutesSection({
             {minutes.distributedAt && (
               <span className="text-xs text-ink-muted">
                 · Published{" "}
-                {new Date(minutes.distributedAt).toLocaleDateString("en-AU", {
+                {new Date(minutes.distributedAt).toLocaleDateString("en-AU", { timeZone,
                   day: "numeric",
                   month: "short",
                   year: "numeric",
@@ -131,8 +134,8 @@ export function MinutesSection({
               }`}
             >
               {deadline.overdue
-                ? `Minutes distribution is overdue (was due ${new Date(deadline.dueDate).toLocaleDateString("en-AU")}).`
-                : `Minutes must be distributed by ${new Date(deadline.dueDate).toLocaleDateString("en-AU")}.`}
+                ? `Minutes distribution is overdue (was due ${new Date(deadline.dueDate).toLocaleDateString("en-AU", { timeZone })}).`
+                : `Minutes must be distributed by ${new Date(deadline.dueDate).toLocaleDateString("en-AU", { timeZone })}.`}
             </div>
           )}
 
@@ -146,9 +149,9 @@ export function MinutesSection({
             {content.meeting?.openedAt && (
               <p className="text-xs text-ink-muted">
                 Opened{" "}
-                {new Date(content.meeting.openedAt).toLocaleString("en-AU")}
+                {new Date(content.meeting.openedAt).toLocaleString("en-AU", { timeZone })}
                 {content.meeting.closedAt
-                  ? ` · Closed ${new Date(content.meeting.closedAt).toLocaleString("en-AU")}`
+                  ? ` · Closed ${new Date(content.meeting.closedAt).toLocaleString("en-AU", { timeZone })}`
                   : ""}
               </p>
             )}

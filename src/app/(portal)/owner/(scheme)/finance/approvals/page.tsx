@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { db } from "@/prisma/db";
 import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -89,13 +90,14 @@ export default async function OwnerApprovalsPage() {
   // Waiting for verification, or verified once but still in the cooling-off
   // period, when a second person must also verify before payment.
   const nowIso = new Date().toISOString();
+  const tz = await schemeTimeZone(schemeId);
   const bankChanges = (
     await Promise.all(suppliers.map(async (s) => ({ supplier: s, latest: (await getBankDetailVersions(s.id))[0] ?? null })))
   ).filter(
     (x) =>
       x.latest &&
       (x.latest.status === "PENDING" ||
-        (x.latest.status === "VERIFIED" && !x.latest.secondVerifiedById && businessDaysBetween(x.latest.changedAt, nowIso) < settings.coolingOffDays)),
+        (x.latest.status === "VERIFIED" && !x.latest.secondVerifiedById && businessDaysBetween(x.latest.changedAt, nowIso, tz) < settings.coolingOffDays)),
   );
   // Works invoices from marketplace contractors (stage 4): the contractor's
   // own tax invoice for every approver, and the job for the committee.

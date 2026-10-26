@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { getThreeWayReconciliationReport } from "@/lib/finance/three-way-report";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { PageHeader } from "@/components/ui/page-header";
 import { ThreeWayReportView } from "@/components/finance/three-way-report-view";
 
@@ -23,7 +23,7 @@ export default async function AccountantThreeWayReconciliationPage({
   } catch {
     notFound();
   }
-  const date = asAt && ISO.test(asAt) ? asAt : sydneyToday();
+  const date = asAt && ISO.test(asAt) ? asAt : await schemeToday(id);
   const report = await getThreeWayReconciliationReport(id, date);
   return (
     <div className="space-y-6">

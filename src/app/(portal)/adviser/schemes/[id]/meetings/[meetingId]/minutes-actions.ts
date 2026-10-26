@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { dayIn, meetingZone } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { getMeetingById, updateMeeting } from "@/lib/queries/meetings";
@@ -152,7 +154,8 @@ export async function publishMinutesAction(
 
     await updateMinutes(meetingId, latest.id, {
       distributedAt: new Date().toISOString(),
-      retentionUntil: retention.toISOString().slice(0, 10),
+      // The day in the building's time zone.
+      retentionUntil: dayIn(timeZoneOf(scheme), retention),
     });
     await updateMeeting(schemeId, meetingId, { status: "PUBLISHED" });
     await recordMeetingEvent({
@@ -170,6 +173,7 @@ export async function publishMinutesAction(
       meetingTitle: `Minutes: ${meeting.title}`,
       meetingType: meeting.meetingType,
       scheduledAt: new Date(String(meeting.startTime ?? meeting.scheduledAt)),
+      timeZone: meetingZone(meeting, timeZoneOf(scheme)),
       location: meeting.location ?? undefined,
       meetingId,
     }).catch(() => {});

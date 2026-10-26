@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -9,7 +10,6 @@ import { levyIncomeAccountPicker, recognisedIncomeExpense, type AccountingBasis,
 import { LEDGER_STATUSES, inLedger } from "@/lib/finance/ledger-status";
 import { fundPositions, getFundPositions, ledgerLinesUpTo } from "@/lib/finance/fund-position";
 import { NOT_ARREARS_STATUSES, arrearsCents, toArrearsNotice } from "@/lib/finance/arrears";
-import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 import { getBudgetVsActual } from "./budget";
 import { migratedInvoiceEntries } from "@/lib/finance/migrated-invoices";
 import { priorYearActualLines } from "@/lib/finance/prior-year-actuals";
@@ -689,8 +689,8 @@ export async function getFundSummaryReport(
     .where((ln) => and(ln.schemeId.eq(schemeId), ln.status.neq("DRAFT")))
     .limit(100_000)
     .all();
-  // Arrears on the period's last day, or today for a period not yet over.
-  const today = todayInSydney();
+  // Arrears on the period's last day, or today (in the building's time zone) for a period not yet over.
+  const today = await schemeToday(schemeId);
   const arrearsDay = end < today ? end : today;
 
   return funds.map((fund) => {
@@ -1111,7 +1111,7 @@ export async function getCommitteeReportingPack(
   // 3. Aged arrears snapshot
   // Arrears on the period's last day, or today for a period not yet over, as
   // on the other screens (review B11).
-  const todayForArrears = todayInSydney();
+  const todayForArrears = await schemeToday(schemeId);
   const arrearsItems = await getAgedArrearsReport(schemeId, endDate.slice(0, 10) < todayForArrears ? endDate.slice(0, 10) : todayForArrears);
   const arrearsSnapshot: CommitteeArrearsSnapshot = {
     current: 0,

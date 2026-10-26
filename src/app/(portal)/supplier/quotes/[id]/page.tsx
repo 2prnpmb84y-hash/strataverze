@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -8,7 +9,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { DeclineInvitation, InterestButton, QuoteForm, WithdrawQuote } from "@/components/works/job-actions";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" }) : "Not set");
+/** A deadline in the job's building's time zone. */
+const when = (tz: string, iso: string | null) => (iso ? formatDateTimeIn(tz, iso, { weekday: "short" }) : "Not set");
 const money = (n: number) => `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
@@ -35,7 +37,7 @@ export default async function SupplierJobPage({ params }: { params: Promise<{ id
 
       {!job.invitationStatus && (
         <Card>
-          <CardHeader title="Would you like to quote?" description={`Interest closes ${when(job.interestClosesAt)}. The committee then chooses who to invite.`} />
+          <CardHeader title="Would you like to quote?" description={`Interest closes ${when(job.timeZone, job.interestClosesAt)}. The committee then chooses who to invite.`} />
           {job.interestOpen ? <InterestButton rfqId={job.id} interested={job.interested} /> : <p className="text-sm text-ink-muted">Interest has closed.</p>}
         </Card>
       )}
@@ -48,7 +50,7 @@ export default async function SupplierJobPage({ params }: { params: Promise<{ id
 
       {job.invited && (
         <Card>
-          <CardHeader title={job.quote?.status === "SUBMITTED" ? "Your quote" : "Your invitation to quote"} description={`Quotes close ${when(job.quoteClosesAt)}.`} />
+          <CardHeader title={job.quote?.status === "SUBMITTED" ? "Your quote" : "Your invitation to quote"} description={`Quotes close ${when(job.timeZone, job.quoteClosesAt)}.`} />
           {job.quote?.status === "ACCEPTED" && <p className="text-sm text-emerald-700 mb-3">Your quote was approved. The work order is under Work Orders.</p>}
           {job.quote?.status === "DECLINED" && <p className="text-sm text-ink mb-3">The building chose another quote. Thank you for quoting.</p>}
           {job.quote?.status === "SUBMITTED" && (

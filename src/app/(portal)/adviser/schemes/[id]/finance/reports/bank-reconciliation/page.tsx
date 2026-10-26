@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
@@ -50,7 +51,7 @@ export default async function BankReconciliationReportPage({
   }
 
   // Default as-at date to today
-  const asAtDate = asAt || new Date().toISOString().slice(0, 10);
+  const asAtDate = asAt || (await schemeToday(id));
 
   // The selected account must be one of this scheme's accounts.
   const selectedAccount = selectedAccountId

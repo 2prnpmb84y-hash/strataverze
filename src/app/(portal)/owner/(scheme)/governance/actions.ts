@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { isTimeZone, localToInstant } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { revalidatePath } from "next/cache";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
@@ -15,7 +17,6 @@ import { UnsupportedJurisdictionError } from "@/config/statutory";
 import {
   validateMeetingSetup,
   createMeetingWithRuleSnapshot,
-  DEFAULT_TIMEZONE,
   type MeetingSetupInput,
 } from "@/lib/meetings/setup";
 
@@ -24,10 +25,20 @@ export type CommitteeMeetingFormState = {
   fieldErrors?: Record<string, string>;
 };
 
-function toIso(value: FormDataEntryValue | null): string {
+/**
+ * A datetime-local value ("YYYY-MM-DDTHH:mm") as an instant, read in the
+ * meeting's time zone. `new Date(value)` would read it in the server's time
+ * zone (UTC), putting a 6 pm meeting at 5 am the next day in Sydney.
+ */
+function toIso(value: FormDataEntryValue | null, timeZone: string): string {
   if (!value) return "";
-  const d = new Date(value as string);
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  return localToInstant(timeZone, String(value)) ?? "";
+}
+
+/** The meeting's time zone: the one chosen on the form if it is real, else the building's. */
+function meetingTimeZone(formData: FormData, buildingTimeZone: string): string {
+  const chosen = String(formData.get("timezone") ?? "").trim();
+  return isTimeZone(chosen) ? chosen : buildingTimeZone;
 }
 
 export async function createCommitteeMeetingAction(
@@ -39,6 +50,7 @@ export async function createCommitteeMeetingAction(
 
   let profileId: string;
   let state: string;
+  let buildingTimeZone: string;
   try {
     // Committee only (security review F9): plain owners cannot convene meetings here.
     const { profile } = await requireSchemeAccess(schemeId, "governance.committee");
@@ -46,19 +58,22 @@ export async function createCommitteeMeetingAction(
     const scheme = await getSchemeById(schemeId);
     if (!scheme) return { error: "Scheme not found." };
     state = scheme.state;
+    buildingTimeZone = timeZoneOf(scheme);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     throw err;
   }
 
   const endRaw = formData.get("endTime");
+  // Times on the form are local times in the meeting's time zone (the building's unless another is chosen).
+  const tz = meetingTimeZone(formData, buildingTimeZone);
   const input: MeetingSetupInput = {
     schemeId,
     title: ((formData.get("title") as string) ?? "").trim(),
     meetingType: (formData.get("meetingType") as string) || "COMMITTEE",
-    startTime: toIso(formData.get("scheduledAt")),
-    endTime: endRaw ? toIso(endRaw) : null,
-    timezone: (formData.get("timezone") as string) || DEFAULT_TIMEZONE,
+    startTime: toIso(formData.get("scheduledAt"), tz),
+    endTime: endRaw ? toIso(endRaw, tz) : null,
+    timezone: tz,
     format: (formData.get("format") as string) || null,
     location: ((formData.get("location") as string) ?? "").trim() || null,
     joinUrl: ((formData.get("joinUrl") as string) ?? "").trim() || null,
@@ -91,6 +106,7 @@ export async function createCommitteeMeetingAction(
       meetingTitle: input.title,
       meetingType: input.meetingType,
       scheduledAt: new Date(input.startTime),
+      timeZone: tz,
       location: input.location ?? undefined,
       meetingId: meeting.id,
     }).catch(() => {});

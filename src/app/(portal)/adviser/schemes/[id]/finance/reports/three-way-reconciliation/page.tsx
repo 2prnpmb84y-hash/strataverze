@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getThreeWayReconciliationReport } from "@/lib/finance/three-way-report";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { PageHeader } from "@/components/ui/page-header";
 import { ThreeWayReportView } from "@/components/finance/three-way-report-view";
 
@@ -24,7 +24,7 @@ export default async function ThreeWayReconciliationPage({
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
-  const date = asAt && ISO.test(asAt) ? asAt : sydneyToday();
+  const date = asAt && ISO.test(asAt) ? asAt : await schemeToday(id);
   const report = await getThreeWayReconciliationReport(id, date);
   return (
     <div className="space-y-6">

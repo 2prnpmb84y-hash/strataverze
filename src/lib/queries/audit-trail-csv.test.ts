@@ -4,7 +4,7 @@ import type { AuditTrailRow } from "./activity-log";
 
 describe("formatAuditTrailCsv", () => {
   it("produces a header row when given empty array", () => {
-    const result = formatAuditTrailCsv([]);
+    const result = formatAuditTrailCsv([], "Australia/Sydney");
     expect(result).toBe(
       "Date/Time,User,Email,Action,Entity Type,Entity ID,Details",
     );
@@ -24,7 +24,7 @@ describe("formatAuditTrailCsv", () => {
       },
     ];
 
-    const result = formatAuditTrailCsv(rows);
+    const result = formatAuditTrailCsv(rows, "Australia/Sydney");
     const lines = result.split("\n");
     expect(lines).toHaveLength(2);
     expect(lines[0]).toBe(
@@ -52,7 +52,7 @@ describe("formatAuditTrailCsv", () => {
       },
     ];
 
-    const result = formatAuditTrailCsv(rows);
+    const result = formatAuditTrailCsv(rows, "Australia/Sydney");
     // Name with comma should be double-quoted
     expect(result).toContain('"Smith, Alice"');
   });
@@ -71,7 +71,7 @@ describe("formatAuditTrailCsv", () => {
       },
     ];
 
-    const result = formatAuditTrailCsv(rows);
+    const result = formatAuditTrailCsv(rows, "Australia/Sydney");
     // Double quotes inside value should be escaped as ""
     expect(result).toContain('""status""');
   });
@@ -90,7 +90,7 @@ describe("formatAuditTrailCsv", () => {
       },
     ];
 
-    const result = formatAuditTrailCsv(rows);
+    const result = formatAuditTrailCsv(rows, "Australia/Sydney");
     expect(result).toContain("field: entitlement");
     expect(result).toContain("oldValue: 100");
   });
@@ -109,7 +109,7 @@ describe("formatAuditTrailCsv", () => {
       },
     ];
 
-    const result = formatAuditTrailCsv(rows);
+    const result = formatAuditTrailCsv(rows, "Australia/Sydney");
     const lines = result.split("\n");
     // Should not throw and should produce a valid row
     expect(lines).toHaveLength(2);
@@ -139,7 +139,7 @@ describe("formatAuditTrailCsv", () => {
       },
     ];
 
-    const result = formatAuditTrailCsv(rows);
+    const result = formatAuditTrailCsv(rows, "Australia/Sydney");
     const lines = result.split("\n");
     expect(lines).toHaveLength(3); // header + 2 data rows
   });

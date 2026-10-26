@@ -6,13 +6,13 @@
  * a dishonour) the receipt is taken off its bank transaction.
  */
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { toCents, fromCents } from "@/lib/billing/money";
 import { createJournalEntry, getNextEntryNumber, postJournalEntry, validatePeriodForPosting } from "@/lib/queries/journal-entries";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
 import { logActivity } from "@/lib/queries/activity-log";
-import { sydneyToday } from "./interest-setting";
 import { creditBalanceCents, recordCreditMovement } from "./owner-credits";
 import { allocateBankTransaction, syncTransaction } from "./bank-allocations";
 import { receiptLevyPayments } from "./levy-receipts";
@@ -89,7 +89,7 @@ export async function reverseLevyReceipt(input: {
   if (!r) throw new ReceiptReversalError("Journal entry not found.");
   const problem = receiptReversalProblem(r, input.reason);
   if (problem) throw new ReceiptReversalError(problem);
-  const date = input.reversalDate || sydneyToday();
+  const date = input.reversalDate || (await schemeToday(input.schemeId));
   if (!ISO.test(date)) throw new ReceiptReversalError("The reversal date is not a date.");
   if (date < isoDay(r.entry.transactionDate)) throw new ReceiptReversalError("The reversal cannot be dated before the receipt.");
   await validatePeriodForPosting(input.schemeId, date, "REVERSAL");

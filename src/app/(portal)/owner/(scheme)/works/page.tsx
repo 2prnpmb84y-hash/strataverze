@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { listRequests } from "@/lib/works/requests";
@@ -10,9 +12,9 @@ import { StatusChip, type ChipStatus } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 
-function formatDate(value: unknown): string {
+function formatDate(timeZone: string, value: unknown): string {
   if (!value) return "";
-  return new Date(String(value)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" });
+  return formatDateIn(timeZone, String(value));
 }
 
 function chip(status: string, returned: boolean): ChipStatus {
@@ -24,7 +26,7 @@ function chip(status: string, returned: boolean): ChipStatus {
 
 type Row = Awaited<ReturnType<typeof listRequests>>[number];
 
-function RequestList({ rows, highlight }: { rows: Row[]; highlight?: Set<string> }) {
+function RequestList({ rows, highlight, timeZone }: { rows: Row[]; highlight?: Set<string>; timeZone: string }) {
   return (
     <ul className="flex flex-col gap-2">
       {rows.map((r) => {
@@ -42,7 +44,7 @@ function RequestList({ rows, highlight }: { rows: Row[]; highlight?: Set<string>
                 <p className="text-sm font-medium text-ink truncate">{String(r.title)}</p>
                 <p className="text-xs text-ink-muted mt-1">
                   {r.trade ? `${String(r.trade)} · ` : ""}
-                  {formatDate(r.submittedAt ?? r.createdAt)}
+                  {formatDate(timeZone, r.submittedAt ?? r.createdAt)}
                 </p>
               </div>
             </Link>
@@ -71,6 +73,7 @@ export default async function OwnerWorksPage() {
   }
   const { schemeId, profile } = selected;
   const members = await committeeMembers(schemeId);
+  const tz = await schemeTimeZone(schemeId);
   const isCommittee = members.includes(profile.id);
 
   const all = await listRequests(schemeId);
@@ -101,14 +104,14 @@ export default async function OwnerWorksPage() {
       {returnedToMe.length > 0 && (
         <Card>
           <CardHeader title="Returned to you" description="The committee needs more detail before it can decide." />
-          <RequestList rows={returnedToMe} />
+          <RequestList rows={returnedToMe} timeZone={tz} />
         </Card>
       )}
 
       {isCommittee && (
         <Card>
           <CardHeader title="For the committee" description="Requests waiting for a decision. Decisions are made by vote here, with no meeting needed." />
-          {waiting.length ? <RequestList rows={waiting} highlight={needVote} /> : <p className="text-sm text-ink-muted">Nothing is waiting for the committee.</p>}
+          {waiting.length ? <RequestList rows={waiting} highlight={needVote} timeZone={tz} /> : <p className="text-sm text-ink-muted">Nothing is waiting for the committee.</p>}
         </Card>
       )}
 
@@ -117,7 +120,7 @@ export default async function OwnerWorksPage() {
         {(isCommittee ? rest : [...waiting, ...rest]).length === 0 ? (
           <EmptyState title="No works requests" description={isCommittee ? "No other requests have been raised." : "You have not reported anything yet."} />
         ) : (
-          <RequestList rows={isCommittee ? rest : [...waiting, ...rest]} />
+          <RequestList rows={isCommittee ? rest : [...waiting, ...rest]} timeZone={tz} />
         )}
       </Card>
 

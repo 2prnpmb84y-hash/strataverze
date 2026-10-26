@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ListToolbar } from "@/components/ui/list-toolbar";
@@ -57,6 +58,8 @@ type MeetingItem = {
   meetingType: string;
   schemeId: string;
   scheduledAt: unknown;
+  /** The meeting's time zone; its times are shown in it. */
+  timezone?: string | null;
   location: string | null;
   motions: MotionItem[];
 };
@@ -162,6 +165,7 @@ export function OwnerMeetingList({
               <div className="flex flex-col gap-2">
                 {upcoming.map((meeting) => {
                   const scheduledDate = new Date(String(meeting.scheduledAt));
+                  const meetingTz = meetingZone(meeting);
 
                   const typeAccent =
                     meeting.meetingType === "AGM"
@@ -189,14 +193,14 @@ export function OwnerMeetingList({
                       <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}
                         {" · "}
-                        {scheduledDate.toLocaleDateString("en-AU", {
+                        {scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz,
                           weekday: "short",
                           day: "numeric",
                           month: "short",
                           year: "numeric",
                         })}
                         {" at "}
-                        {scheduledDate.toLocaleTimeString("en-AU", {
+                        {scheduledDate.toLocaleTimeString("en-AU", { timeZone: meetingTz,
                           hour: "numeric",
                           minute: "2-digit",
                         })}
@@ -266,6 +270,7 @@ export function OwnerMeetingList({
               <div className="flex flex-col gap-2">
                 {past.map((meeting) => {
                   const scheduledDate = new Date(String(meeting.scheduledAt));
+                  const meetingTz = meetingZone(meeting);
 
                   const typeAccent =
                     meeting.meetingType === "AGM"
@@ -293,7 +298,7 @@ export function OwnerMeetingList({
                       <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}
                         {" · "}
-                        {scheduledDate.toLocaleDateString("en-AU", {
+                        {scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz,
                           day: "numeric",
                           month: "short",
                           year: "numeric",

@@ -1,4 +1,6 @@
 import { logError } from "@/lib/log";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { db } from "@/prisma/db";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -11,7 +13,7 @@ import {
 import { logActivity } from "./activity-log";
 import { fromCents } from "@/lib/billing/money";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { getSchemeInterestSetting, statutoryInterestForScheme, sydneyToday } from "@/lib/finance/interest-setting";
+import { getSchemeInterestSetting, statutoryInterestForScheme } from "@/lib/finance/interest-setting";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric<P extends number = 12, S extends number = 2>(
@@ -36,7 +38,7 @@ export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
   try {
     const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
     const setting = await getSchemeInterestSetting(schemeId);
-    const asAt = sydneyToday();
+    const asAt = todayIn(setting.timeZone);
     const interest = await statutoryInterestForScheme(schemeId, asAt);
     const byNotice = new Map(interest.map((i) => [i.noticeId, i]));
 
@@ -166,7 +168,8 @@ export async function chargeInterest(data: {
 
   // Create and post the interest journal entry
   const entryNumber = await getNextEntryNumber(schemeId);
-  const today = new Date().toISOString().split("T")[0];
+  // Dated today in the building's time zone (not UTC, which is the day before until 10 or 11 am in Sydney).
+  const today = await schemeToday(schemeId);
 
   const entry = await createJournalEntry({
     schemeId,

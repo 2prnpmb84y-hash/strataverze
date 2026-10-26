@@ -22,13 +22,13 @@ const CATEGORIES = [
   { value: "OTHER", label: "Other" },
 ];
 
-function formatDate(dateStr: string) {
-  // A fixed time zone, so the server and the browser show the same day (React error 418).
+function formatDate(dateStr: string, timeZone: string) {
+  // A fixed time zone (the building's), so the server and the browser show the same day (React error 418).
   return new Date(dateStr).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "Australia/Sydney",
+    timeZone,
   });
 }
 
@@ -59,7 +59,8 @@ function fileIcon(fileName: string) {
   return fileIcons[ext] ?? "📎";
 }
 
-export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
+/** `timeZone`: the building's, for upload dates. */
+export function LotDocuments({ documents, timeZone }: { documents: DocumentItem[]; timeZone: string }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("ALL");
   const [sortBy, setSortBy] = useState<"latest" | "oldest" | "name">("latest");
@@ -157,7 +158,7 @@ export function LotDocuments({ documents }: { documents: DocumentItem[] }) {
                   {categoryLabel(doc.category)}
                   {doc.fileSize ? ` · ${formatFileSize(doc.fileSize)}` : ""}
                   {" · "}
-                  {formatDate(doc.createdAt)}
+                  {formatDate(doc.createdAt, timeZone)}
                 </p>
               </div>
               {doc.fileUrl ? (

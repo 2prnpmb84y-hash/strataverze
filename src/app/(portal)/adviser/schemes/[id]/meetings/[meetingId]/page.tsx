@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getMeetingById } from "@/lib/queries/meetings";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -92,6 +94,7 @@ export default async function MeetingDetailPage({
           normalisedType as MeetingType,
           new Date(),
           new Date(startIso),
+          meetingZone(meeting, timeZoneOf(scheme)),
         )
       : null;
   const recipientCount = scheme.memberships.filter(
@@ -170,6 +173,8 @@ export default async function MeetingDetailPage({
     ballot == null;
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
+  // Shown in the meeting's own time zone (stored times are instants).
+  const meetingTz = meetingZone(meeting, timeZoneOf(scheme));
   const motionCount = meeting.motions.length;
 
   const votedMotions = meeting.motions.filter(
@@ -192,7 +197,7 @@ export default async function MeetingDetailPage({
     <div className="max-w-3xl">
       <PageHeader
         title={meeting.title}
-        description={`${meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType} · ${scheduledDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} at ${scheduledDate.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })}`}
+        description={`${meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType} · ${scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz, weekday: "long", day: "numeric", month: "long", year: "numeric" })} at ${scheduledDate.toLocaleTimeString("en-AU", { timeZone: meetingTz, hour: "numeric", minute: "2-digit" })}`}
         backHref={`/adviser/schemes/${id}/meetings`}
         backLabel="Meetings"
       />
@@ -259,6 +264,7 @@ export default async function MeetingDetailPage({
         noticePeriod={noticePeriod}
         notices={noticeViews}
         fee={noticeFee}
+        timeZone={meetingTz}
       />
 
       {/* Pre-meeting electronic voting */}
@@ -269,6 +275,7 @@ export default async function MeetingDetailPage({
         canOpen={canOpenBallot}
         ballot={ballotView}
         fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" })}
+        timeZone={meetingTz}
       />
 
       {/* Conduct */}
@@ -278,6 +285,7 @@ export default async function MeetingDetailPage({
         status={meeting.status}
         openedAt={meeting.openedAt ? String(meeting.openedAt) : null}
         closedAt={meeting.closedAt ? String(meeting.closedAt) : null}
+        timeZone={meetingTz}
         items={agendaItems.map((a) => ({
           id: a.id,
           position: a.position,
@@ -293,6 +301,7 @@ export default async function MeetingDetailPage({
         canAssemble={canAssembleMinutes}
         minutes={minutesView}
         deadline={minutesDeadlineView}
+        timeZone={meetingTz}
       />
 
       {/* Motions */}
@@ -314,10 +323,13 @@ export default async function MeetingDetailPage({
             mode="edit"
             schemeId={id}
             meetingId={meetingId}
+            timeZone={timeZoneOf(scheme)}
             defaults={{
               title: meeting.title,
               meetingType: meeting.meetingType,
               scheduledAt: String(meeting.scheduledAt),
+              endTime: meeting.endTime ? String(meeting.endTime) : null,
+              timezone: meeting.timezone ? String(meeting.timezone) : null,
               location: meeting.location,
               agenda: meeting.agenda,
             }}

@@ -1,5 +1,7 @@
 "use server";
 import { logError } from "@/lib/log";
+import { formatDateIn, PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
 import { revalidatePath } from "next/cache";
 import { siteUrl } from "@/lib/site-url";
@@ -175,7 +177,7 @@ export async function uploadPaymentConfirmationAction(
               noticeNumber,
               amount: amountCents != null ? (amountCents / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD" }) : "",
               documentDate: documentDate ? new Date(`${documentDate}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "",
-              earlierUploadedAt: new Date(duplicate.uploadedAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" }),
+              earlierUploadedAt: formatDateIn(scheme ? timeZoneOf(scheme) : PLATFORM_TIME_ZONE, String(duplicate.uploadedAt), { month: "long" }),
               reviewUrl: `${siteUrl()}/adviser/schemes/${schemeId}/finance/documents/${doc.id}`,
             }),
           );

@@ -7,6 +7,8 @@ type MeetingScheduledParams = {
   meetingTitle: string;
   meetingType: string;
   scheduledAt: Date;
+  /** The meeting's time zone: the date and time are shown in it. */
+  timeZone: string;
   location?: string;
   detailUrl: string;
 };
@@ -21,12 +23,14 @@ export function meetingScheduledEmail(params: MeetingScheduledParams) {
   const typeLabel =
     meetingTypeLabels[params.meetingType] ?? params.meetingType;
   const dateFormatted = params.scheduledAt.toLocaleDateString("en-AU", {
+    timeZone: params.timeZone,
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
   const timeFormatted = params.scheduledAt.toLocaleTimeString("en-AU", {
+    timeZone: params.timeZone,
     hour: "numeric",
     minute: "2-digit",
     hour12: true,

@@ -7,6 +7,7 @@
  * PLATFORM_TXN_FEE_MODE=FLAT selects the flat pilot transaction fee.
  */
 import { db } from "@/prisma/db";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { toCents, fromCents } from "./money";
 import type { PayerType, PriceBookEntry, PriceUnit } from "./price-book";
@@ -138,7 +139,8 @@ export function ormFeeEventStore(orm: Orm = db.orm): FeeEventStore {
   };
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// StrataVerze's own billing day (not UTC).
+const today = () => platformToday();
 
 interface CaptureCommon {
   schemeId: string;

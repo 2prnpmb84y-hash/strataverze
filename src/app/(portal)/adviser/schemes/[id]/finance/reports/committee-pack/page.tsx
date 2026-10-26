@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getCommitteeReportingPack } from "@/lib/queries/reports";
@@ -6,7 +7,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CommitteePackClient } from "./committee-pack-client";
 import { connection } from "next/server";
 import { addDays, financialYearStart } from "@/lib/levies/notice-plan";
-import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 
 export default async function CommitteePackPage({
   params,
@@ -36,7 +36,7 @@ export default async function CommitteePackPage({
   // Default to the scheme's current financial year, from its own year end
   // (financials review: the budget comparison already follows it).
   const fyEnd = String(scheme.financialYearEnd ?? "06-30");
-  const today = todayInSydney();
+  const today = await schemeToday(id);
   const thisYear = Number(today.slice(0, 4));
   const currentFY = financialYearStart(thisYear, fyEnd) <= today ? thisYear : thisYear - 1;
   const financialYear = sp.year ? parseInt(sp.year, 10) : currentFY;

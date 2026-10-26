@@ -133,28 +133,28 @@ describe("bank detail change control", () => {
   });
 
   it("counts Monday to Friday business days", () => {
-    expect(businessDaysBetween("2026-10-19T01:00:00Z", "2026-10-19T05:00:00Z")).toBe(0);
-    expect(businessDaysBetween("2026-10-19T01:00:00Z", "2026-10-26T01:00:00Z")).toBe(5);
-    expect(businessDaysBetween("2026-10-23T01:00:00Z", "2026-10-26T01:00:00Z")).toBe(1); // Friday to Monday
+    expect(businessDaysBetween("2026-10-19T01:00:00Z", "2026-10-19T05:00:00Z", "Australia/Sydney")).toBe(0);
+    expect(businessDaysBetween("2026-10-19T01:00:00Z", "2026-10-26T01:00:00Z", "Australia/Sydney")).toBe(5);
+    expect(businessDaysBetween("2026-10-23T01:00:00Z", "2026-10-26T01:00:00Z", "Australia/Sydney")).toBe(1); // Friday to Monday
   });
 
   it("blocks payment while a change is pending", () => {
-    expect(checkBankDetailsForPayment(version({ status: "PENDING", verifiedById: null }), "2026-11-30T00:00:00Z").result).toBe(
+    expect(checkBankDetailsForPayment(version({ status: "PENDING", verifiedById: null }), "2026-11-30T00:00:00Z", 5, "Australia/Sydney").result).toBe(
       "blocked",
     );
   });
 
   it("enforces the cooling-off period even after verification", () => {
-    expect(checkBankDetailsForPayment(version(), "2026-10-22T00:00:00Z").result).toBe("blocked");
-    expect(checkBankDetailsForPayment(version({ secondVerifiedById: "authoriser" }), "2026-10-22T00:00:00Z").result).toBe("allowed");
+    expect(checkBankDetailsForPayment(version(), "2026-10-22T00:00:00Z", 5, "Australia/Sydney").result).toBe("blocked");
+    expect(checkBankDetailsForPayment(version({ secondVerifiedById: "authoriser" }), "2026-10-22T00:00:00Z", 5, "Australia/Sydney").result).toBe("allowed");
   });
 
   it("allows a verified change after the cooling-off period", () => {
-    expect(checkBankDetailsForPayment(version(), "2026-10-26T01:00:00Z").result).toBe("allowed");
+    expect(checkBankDetailsForPayment(version(), "2026-10-26T01:00:00Z", 5, "Australia/Sydney").result).toBe("allowed");
   });
 
   it("allows payment when no change has been recorded", () => {
-    expect(checkBankDetailsForPayment(null, "2026-10-22T00:00:00Z").result).toBe("allowed");
+    expect(checkBankDetailsForPayment(null, "2026-10-22T00:00:00Z", 5, "Australia/Sydney").result).toBe("allowed");
   });
 
   it("never lets the person who changed the details verify them, or one person verify twice", () => {

@@ -10,7 +10,9 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { formatLotLabel } from "@/lib/format";
 import { noticeContext, noticeOwnerNames, ownerNames, rollOwnerNames } from "@/lib/levies/notice-content-data";
-import { getSchemeInterestSetting, sydneyToday } from "@/lib/finance/interest-setting";
+import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getIssuedLevyNoticesForLot, getLevyPaymentsForNotices } from "@/lib/queries/levy-schedules";
 import { buildStatement } from "@/lib/levies/levy-ledger";
 import { getCreditMovements } from "@/lib/finance/owner-credits";
@@ -60,7 +62,8 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       lotNumber: String(n.lot?.lotNumber ?? ""),
       ownerNames: noticeOwnerNames(owner?.name, rollNames.get(n.lotId)),
       noticeNumber: String(n.noticeNumber),
-      noticeDate: isoDay(n.issuedAt) || sydneyToday(),
+      // The day it was issued in the building's time zone (the stored value is a UTC timestamp).
+      noticeDate: storedDayIn(setting.timeZone, n.issuedAt) || todayIn(setting.timeZone),
       dueDate: isoDay(n.dueDate),
       periodStart: isoDay(n.periodStart) || null,
       periodEnd: isoDay(n.periodEnd) || null,
@@ -130,14 +133,15 @@ export async function generateOwnerStatementPdf(input: { schemeId: string; lotId
     totalPayments: s.totalPayments,
     closingBalance: s.closingBalance,
   });
-  const fileName = safeName(`Owner-statement-${lotLabel}-${input.startDate ?? "start"}-to-${input.endDate ?? sydneyToday()}.pdf`);
+  const endDay = input.endDate ?? todayIn(timeZoneOf(scheme));
+  const fileName = safeName(`Owner-statement-${lotLabel}-${input.startDate ?? "start"}-to-${endDay}.pdf`);
   const stored = await storeGeneratedPdf({
     schemeId: input.schemeId,
     documentType: "OWNER_STATEMENT",
     fileName,
     bytes,
     actorId: input.actorId,
-    documentDate: input.endDate ?? sydneyToday(),
+    documentDate: endDay,
     amountCents: Math.round(s.closingBalance * 100),
     lotId: input.lotId,
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { formatDateIn, PLATFORM_TIME_ZONE, zoneOr } from "@/lib/jurisdiction/time-zone";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ListToolbar } from "@/components/ui/list-toolbar";
@@ -57,7 +58,7 @@ type ComplianceItem = {
   schemeId: string;
   dueDate: unknown;
   lastChecked: unknown;
-  scheme?: { name: string } | null;
+  scheme?: { name: string; timeZone?: string | null } | null;
 };
 
 export function ComplianceList({
@@ -113,10 +114,10 @@ export function ComplianceList({
             {" · "}
             {categoryLabels[item.category] ?? item.category}
             {item.dueDate
-              ? ` · Due ${new Date(String(item.dueDate)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`
+              ? ` · Due ${formatDateIn(zoneOr(item.scheme?.timeZone, PLATFORM_TIME_ZONE), String(item.dueDate))}`
               : null}
             {!item.dueDate && item.lastChecked
-              ? ` · Checked ${new Date(String(item.lastChecked)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`
+              ? ` · Checked ${formatDateIn(zoneOr(item.scheme?.timeZone, PLATFORM_TIME_ZONE), String(item.lastChecked))}`
               : null}
           </p>
         </div>

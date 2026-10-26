@@ -8,6 +8,7 @@
  * Plan: https://claude.ai/artifact/VAj6SJ5PrsVry3HJ5RAYbF
  */
 import { revalidatePath } from "next/cache";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { requireActiveContractorContact } from "@/lib/auth/require-contractor";
@@ -19,7 +20,7 @@ import { db } from "@/prisma/db";
 import { getApprovalMembers, getPaymentSettings } from "@/lib/queries/payment-controls";
 import { eligibleApprovers } from "@/lib/finance/payment-controls";
 import { myContractorBusinessIds } from "@/lib/works/urgent-orders";
-import { answerCompletion, checkCompletion, reportCompletion, returnInvoice, sendInvoiceToFinance, submitInvoice, sydneyToday, WorksCompletionError } from "@/lib/works/completion";
+import { answerCompletion, checkCompletion, reportCompletion, returnInvoice, sendInvoiceToFinance, submitInvoice, WorksCompletionError } from "@/lib/works/completion";
 import { notifyCompletionAnswered, notifyCompletionReported, notifyInvoiceReturned, notifyInvoiceSubmitted, notifyInvoiceWithFinance } from "@/lib/works/notify";
 import type { WorksFormState } from "./works-marketplace";
 
@@ -62,7 +63,7 @@ export async function reportCompletionAction(workOrderId: string, _prev: WorksFo
     const { order, profile, businessIds } = await asOrderContractor(workOrderId);
     const checked = checkCompletion(
       { summary: formData.get("summary"), completedOn: formData.get("completedOn"), photoUploadIds: formData.getAll("photoUploadId").map(String) },
-      sydneyToday(),
+      await schemeToday(order.schemeId),
     );
     if (!checked.ok) return { fieldErrors: checked.fieldErrors };
     const r = await reportCompletion({ workOrderId: order.id, businessIds, profileId: profile.id, completion: checked.value });

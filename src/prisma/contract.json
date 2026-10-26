@@ -19556,6 +19556,16 @@
                   "kind": "scalar"
                 }
               },
+              "timeZone": {
+                "nullable": false,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 64
+                  }
+                }
+              },
               "totalEntitlement": {
                 "nullable": false,
                 "type": {
@@ -20450,6 +20460,9 @@
                 },
                 "suburb": {
                   "column": "suburb"
+                },
+                "timeZone": {
+                  "column": "time_zone"
                 },
                 "totalEntitlement": {
                   "column": "total_entitlement"
@@ -48049,6 +48062,18 @@
                   "dataType": "pg/text",
                   "nullable": false
                 },
+                "time_zone": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "default": {
+                    "kind": "literal",
+                    "value": "Australia/Sydney"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "length": 64
+                  }
+                },
                 "total_entitlement": {
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
@@ -58292,7 +58317,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5235fc41692c825370ea08bd140a2fb6e43c1130e0298e954beff48622ad9939"
+    "storageHash": "dde94df1233d06cd4ac75bb23c05e9e2c588d9b3b95dccf93d2d97817d136b8d"
   },
   "execution": {
     "executionHash": "3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15",

@@ -42,7 +42,7 @@ describe("every email template", () => {
   const emails = [
     announcementPublishedEmail({ recipientEmails: ["a@example.com"], schemeName: EVIL, title: EVIL, body: EVIL, priority: "URGENT", authorName: EVIL, detailUrl: URL }),
     invitationEmail({ recipientEmail: "a@example.com", schemeName: EVIL, role: EVIL, inviterName: EVIL, expiresAt: new Date(), acceptUrl: URL }),
-    meetingScheduledEmail({ recipientEmails: [], schemeName: EVIL, meetingTitle: EVIL, meetingType: EVIL, scheduledAt: new Date(), location: EVIL, detailUrl: URL }),
+    meetingScheduledEmail({ recipientEmails: [], schemeName: EVIL, meetingTitle: EVIL, meetingType: EVIL, scheduledAt: new Date(), timeZone: "Australia/Sydney", location: EVIL, detailUrl: URL }),
     levyIssuedEmail({ recipientEmail: "a@example.com", ownerName: EVIL, schemeName: EVIL, levyTitle: EVIL, amount: EVIL, dueDate: new Date(), detailUrl: URL }),
     levyNoticeEmail({
       to: "a@example.com", ownerName: EVIL, schemeName: EVIL, planNumber: EVIL, lotNumber: EVIL, noticeNumber: EVIL,

@@ -1,4 +1,5 @@
 import { auditActionLabel } from "@/lib/audit/labels";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 
 export type SecurityEventRow = {
   seq: number;
@@ -23,7 +24,7 @@ const outcomeStyle: Record<string, string> = {
 
 function when(iso: string) {
   return new Date(iso).toLocaleString("en-AU", {
-    timeZone: "Australia/Sydney",
+    timeZone: PLATFORM_TIME_ZONE,
     day: "numeric",
     month: "short",
     year: "numeric",

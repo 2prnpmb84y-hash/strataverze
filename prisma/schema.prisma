@@ -141,6 +141,7 @@ model Scheme {
   totalLots           Int                 @map("total_lots")
   totalEntitlement    Int                 @map("total_entitlement")
   financialYearEnd    String              @default("06-30") @map("financial_year_end")
+  timeZone            String              @default("Australia/Sydney") @map("time_zone") @db.VarChar(64) // IANA time zone for the building's dates, set from state and postcode (src/lib/jurisdiction/time-zone.ts)
   abnNumber           String?             @map("abn_number")
   buildingClass       String?             @map("building_class") // e.g. "1", "2", "3"
   buildingType        String?             @map("building_type") // STRATA, COMMUNITY, COMPANY_TITLE, STRATUM

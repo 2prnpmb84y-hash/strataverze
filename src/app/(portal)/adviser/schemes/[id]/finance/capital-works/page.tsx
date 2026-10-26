@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getPlans } from "@/lib/finance/capital-works-plans";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { formatAud, toCents } from "@/lib/billing/money";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { PageHeader } from "@/components/ui/page-header";
@@ -23,7 +23,7 @@ export default async function CapitalWorksPlansPage({ params }: { params: Promis
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
   const plans = await getPlans(id);
   const CAPITAL_WORKS_PLAN = rulesForState(scheme.state).rules.CAPITAL_WORKS_PLAN;
-  const today = sydneyToday();
+  const today = await schemeToday(id);
   const fyStart = Number(today.slice(5, 7)) >= 7 ? Number(today.slice(0, 4)) : Number(today.slice(0, 4)) - 1;
   const adopted = plans.find((p) => p.status === "ADOPTED");
   const overdue = adopted && String(adopted.reviewDueAt).slice(0, 10) < today;

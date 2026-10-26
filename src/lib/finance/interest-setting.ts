@@ -8,6 +8,8 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { statutoryInterest, type InterestResult } from "./statutory-interest";
 import { rulesForState, SchemeNotFoundError, type SchemeRules } from "@/lib/jurisdiction/scheme-rules";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
 import type { InterestSettingMode } from "./statutory-interest";
 
 const isoDay = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? "").slice(0, 10));
@@ -18,6 +20,8 @@ export interface SchemeInterestSetting {
   motionId: string | null;
   /** The building's rule pack, which sets the interest rule. */
   rules: SchemeRules;
+  /** The building's time zone: interest runs to today there. */
+  timeZone: string;
 }
 
 /** A scheme's interest setting and rule pack. Throws SchemeNotFoundError or UnsupportedJurisdictionError. */
@@ -29,13 +33,10 @@ export async function getSchemeInterestSetting(schemeId: string): Promise<Scheme
     meetingId: s.interestResolutionMeetingId ?? null,
     motionId: s.interestResolutionMotionId ?? null,
     rules: rulesForState(s.state),
+    timeZone: timeZoneOf(s),
   };
 }
 
-/** Today's date in Sydney (YYYY-MM-DD). */
-export function sydneyToday(now = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-}
 
 export interface NoticeInterest extends InterestResult {
   noticeId: string;
@@ -51,8 +52,10 @@ export interface NoticeInterest extends InterestResult {
  * rate unless the owners corporation resolves that the contribution bears no
  * interest (s 85(3)), which is the scheme's NO_INTEREST setting.
  */
-export async function statutoryInterestForScheme(schemeId: string, asAt = sydneyToday()): Promise<NoticeInterest[]> {
+/** `asAt` defaults to today in the building's time zone. */
+export async function statutoryInterestForScheme(schemeId: string, asAtDay?: string): Promise<NoticeInterest[]> {
   const setting = await getSchemeInterestSetting(schemeId);
+  const asAt = asAtDay ?? todayIn(setting.timeZone);
   const rule = setting.rules.rules.STATUTORY_INTEREST;
   const notices = await db.orm.public.LevyNotice
     .where((n) => and(n.schemeId.eq(schemeId), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"])))

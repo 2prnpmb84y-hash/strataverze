@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
@@ -40,6 +41,7 @@ export default async function NewMeetingPage({
           mode="create"
           schemeId={id}
           noticePeriods={ruleSet.noticePeriods}
+          timeZone={timeZoneOf(scheme)}
         />
       </Card>
     </div>

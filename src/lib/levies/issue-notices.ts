@@ -40,6 +40,8 @@ import { addDays, toCents, toIsoDay } from "./notice-plan";
 import { issueDateFor, issueTiming, lateMessage } from "./issue-timing";
 import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { platformToday, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const PAGE = 1000;
@@ -306,17 +308,23 @@ async function draftNoticesDue(scheduleIds: string[], horizon: string) {
   return out;
 }
 
-/** Issue every planned notice of an active schedule whose day has come (`today`, Sydney). Safe to run more than once a day. */
-export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
+/**
+ * Issue every planned notice of an active schedule whose day has come. Each
+ * building's day is today in its own time zone at `now`. Safe to run more
+ * than once a day.
+ */
+export async function issueDueNotices(now: Date = new Date()): Promise<DueRunResult[]> {
   const schedules = await db.orm.public.LevySchedule.where((s) => s.status.eq("ACTIVE")).limit(5000).all();
   if (!schedules.length) return [];
   // Read far enough ahead for every rule pack; each building's own rule decides below.
   const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => p.rules.LEVY_NOTICE_RULES.issueDaysBeforeDue));
-  const horizon = addDays(today, lookAhead);
+  // A day of margin, since a building's today can be ahead of StrataVerze's.
+  const horizon = addDays(platformToday(now), lookAhead + 1);
   const due = await draftNoticesDue(schedules.map((s) => s.id), horizon);
   if (!due.length) return [];
   const schemes = await db.orm.public.Scheme.where((s) => s.id.in([...new Set(schedules.map((x) => x.schemeId))])).limit(5000).all();
   const stateOf = new Map(schemes.map((s) => [s.id, s.state]));
+  const schemeOf = new Map(schemes.map((s) => [s.id, s]));
   const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(due.map((n) => n.lotId))])).limit(20000).all();
   const results: DueRunResult[] = [];
 
@@ -324,8 +332,9 @@ export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
     const mine = due.filter((n) => n.levyScheduleId === schedule.id);
     if (!mine.length) continue;
     try {
-      // The building's own levy notice rules (throws for a state with no rule pack).
+      // The building's own levy notice rules (throws for a state with no rule pack), and its today.
       const rule = rulesForState(stateOf.get(schedule.schemeId)).rules.LEVY_NOTICE_RULES;
+      const today = todayIn(timeZoneOf(schemeOf.get(schedule.schemeId)), now);
       // Not yet in the building's issue window: next run.
       const inWindow = mine.filter((n) => issueDateFor(toIsoDay(n.dueDate), rule) <= today);
       if (!inWindow.length) continue;
@@ -438,8 +447,9 @@ export async function issueOverdueDrafts(input: { schemeId: string; scheduleId: 
 // ─── 2. Sending failed emails again ─────────────────────────────────────────
 
 /** Email again any notice issued in the last few days (by this process) whose email did not go. */
-export async function retryNoticeEmails(today: string): Promise<number> {
-  const since = addDays(today, -EMAIL_RETRY_DAYS);
+export async function retryNoticeEmails(now: Date = new Date()): Promise<number> {
+  // A day of margin before StrataVerze's own day, for buildings in other time zones.
+  const since = addDays(platformToday(now), -EMAIL_RETRY_DAYS - 1);
   const notices = await db.orm.public.LevyNotice
     .where((n) =>
       and(
@@ -462,12 +472,14 @@ export async function retryNoticeEmails(today: string): Promise<number> {
       if (!schedule) continue;
       const issuerId = await issuerFor(schedule.schemeId, schedule.approvedBy ?? null);
       if (!issuerId) continue;
+      const tz = await schemeTimeZone(schedule.schemeId);
       const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(list.map((n) => n.lotId))])).limit(5000).all();
       sent += await sendIssuedNotices({
         schemeId: schedule.schemeId,
         fundId: schedule.fundId,
         issuerId,
-        noticeDate: list[0].issuedAt ? sydneyDay(String(list[0].issuedAt)) : today,
+        // The notice date the owner saw: the day it was issued, in the building's time zone.
+        noticeDate: list[0].issuedAt ? storedDayIn(tz, String(list[0].issuedAt).replace(" ", "T")) : todayIn(tz, now),
         notices: list.map((n) => ({
           noticeId: n.id,
           lotId: n.lotId,
@@ -486,16 +498,10 @@ export async function retryNoticeEmails(today: string): Promise<number> {
   return sent;
 }
 
-/** The Sydney date of a moment (the notice date the owner saw). */
-function sydneyDay(isoTimestamp: string): string {
-  const d = new Date(isoTimestamp.replace(" ", "T"));
-  return Number.isNaN(d.getTime()) ? isoTimestamp.slice(0, 10) : d.toLocaleDateString("en-CA", { timeZone: "Australia/Sydney" });
-}
-
 /** The daily job: post any levy an interrupted run left, issue, then resend failed emails. */
-export async function runLevyNoticeDay(today: string) {
+export async function runLevyNoticeDay(now: Date = new Date()) {
   const recovered = await postPendingLevies();
-  const issued = await issueDueNotices(today);
-  const resent = await retryNoticeEmails(today);
+  const issued = await issueDueNotices(now);
+  const resent = await retryNoticeEmails(now);
   return { recovered, issued, resent };
 }

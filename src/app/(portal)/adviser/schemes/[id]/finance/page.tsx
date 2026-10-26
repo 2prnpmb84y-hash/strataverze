@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getFundsWithBalances } from "@/lib/queries/funds";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
 import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
@@ -101,7 +102,7 @@ export default async function FinanceDashboardPage({
       <FundsCard id={id} funds={funds} className="" />
 
       {/* Levies (nested under Financials) */}
-      <LeviesCard id={id} schedules={levySchedules} className="" />
+      <LeviesCard id={id} schedules={levySchedules} className="" today={await schemeToday(id)} />
 
       {/* Setup checklist — shown if chart of accounts is not yet seeded */}
       {!hasChartOfAccounts && (

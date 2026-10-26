@@ -3,12 +3,13 @@
  * (works marketplace stage 1, 25 Oct 2026).
  */
 import type { RequestView } from "@/lib/works/view";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { APPROVAL_RULES } from "@/config/works";
 import { votesRequired } from "@/lib/works/decision-rules";
 
-function when(iso: string | null) {
+function when(tz: string, iso: string | null) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
+  return formatDateTimeIn(tz, iso);
 }
 
 /** How many votes this building needs, in a sentence. */
@@ -45,7 +46,7 @@ export function RequestDetails({ view }: { view: RequestView }) {
         </div>
         <div>
           <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-1">Sent to the committee</dt>
-          <dd className="text-sm text-ink">{when(r.submittedAt) || "Not yet"}</dd>
+          <dd className="text-sm text-ink">{when(view.timeZone, r.submittedAt) || "Not yet"}</dd>
         </div>
       </dl>
       <div>

@@ -4,6 +4,7 @@
  * out the viewer's choices from their roles on the building.
  */
 import { and } from "@prisma/orm-postgres/orm-client";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { db } from "@/prisma/db";
 import { getWorksSettings } from "./settings";
 import { committeeMembers, decisionsFor, mayWithdraw } from "./review";
@@ -37,6 +38,8 @@ export interface DecisionView {
   votes: DecisionVoteView[];
   createdAt: string;
   decidedAt: string | null;
+  /** The building's time zone, for showing dates and times. */
+  timeZone: string;
 }
 
 export interface RequestViewer {
@@ -68,6 +71,7 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
   const request = await db.orm.public.WorksRequest.where((r) => and(r.id.eq(requestId), r.schemeId.eq(schemeId), r.deletedAt.isNull())).first();
   if (!request) return null;
 
+  const tz = await schemeTimeZone(schemeId);
   const [members, decisions, settings, photos] = await Promise.all([
     committeeMembers(schemeId),
     decisionsFor(requestId),
@@ -114,6 +118,7 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
       votesSentence: d.status === "WITHDRAWN" ? "Withdrawn." : d.byDelegation && d.status === "DECIDED" ? "Decided by the Adviser under the building's delegation." : votesSentence(t, required),
       votes: d.votes.map((v) => ({ voterName: who.get(v.voterId) ?? "A member", vote: v.vote === "AGAINST" ? "AGAINST" : "FOR", comment: v.comment ? String(v.comment) : null, at: String(v.createdAt) })),
       createdAt: String(d.createdAt),
+      timeZone: tz,
       decidedAt: d.decidedAt ? String(d.decidedAt) : null,
     };
   });
@@ -140,6 +145,8 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
   };
 
   return {
+    /** The building's time zone, for showing dates and times. */
+    timeZone: tz,
     request: {
       id: request.id,
       requestNumber: String(request.requestNumber),

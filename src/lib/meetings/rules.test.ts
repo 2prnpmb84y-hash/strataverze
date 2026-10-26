@@ -47,6 +47,7 @@ describe("validateNoticePeriod", () => {
       "AGM",
       new Date("2026-01-01"),
       new Date("2026-01-15"),
+      "UTC",
     );
     expect(result.requiredDays).toBe(14);
     expect(result.actualDays).toBe(14);
@@ -59,6 +60,7 @@ describe("validateNoticePeriod", () => {
       "AGM",
       new Date("2026-01-01"),
       new Date("2026-01-08"),
+      "UTC",
     );
     expect(result.compliant).toBe(false);
   });
@@ -69,6 +71,7 @@ describe("validateNoticePeriod", () => {
       "COMMITTEE",
       new Date("2026-01-01"),
       new Date("2026-01-04"),
+      "UTC",
     );
     expect(result.compliant).toBe(true);
   });
@@ -144,5 +147,16 @@ describe("evaluateResolution", () => {
       againstUE: 50,
     });
     expect(fail.passed).toBe(false);
+  });
+});
+
+describe("notice periods in the meeting's time zone (phase 1c)", () => {
+  it("counts the days the notice and the meeting fall on locally, not in UTC", () => {
+    // Notice at noon on 1 Jan in Sydney (01:00 UTC on 1 Jan); meeting at 9 am on 15 Jan in Sydney (22:00 UTC on 14 Jan).
+    const notice = new Date("2026-01-01T01:00:00Z");
+    const meeting = new Date("2026-01-14T22:00:00Z");
+    expect(validateNoticePeriod(NSW_RULE_SET, "AGM", notice, meeting, "UTC").actualDays).toBe(13);
+    const sydney = validateNoticePeriod(NSW_RULE_SET, "AGM", notice, meeting, "Australia/Sydney");
+    expect(sydney).toEqual({ requiredDays: 14, actualDays: 14, compliant: true });
   });
 });

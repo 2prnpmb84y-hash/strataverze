@@ -1,4 +1,6 @@
 import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
@@ -70,7 +72,8 @@ export default async function OwnerFinancePage() {
   ]);
 
   const issued = notices.filter((n) => String(n.status) !== "DRAFT");
-  const today = new Date().toISOString().slice(0, 10);
+  // Today in each building's own time zone.
+  const todayBy = new Map(schemes.map((s) => [s.id, todayIn(timeZoneOf(s))]));
   const totals = noticeTotals(issued);
   const totalDue = totals.levied;
   const totalPaid = totals.paid;
@@ -91,6 +94,7 @@ export default async function OwnerFinancePage() {
 
   const displayLevies: DisplayLevy[] = issued.map((notice) => {
     const entry = lotEntries.find((e) => e.lotId === notice.lotId);
+    const today = todayBy.get(entry?.schemeId ?? notice.schemeId) ?? todayIn(timeZoneOf(schemes[0]));
     return {
       id: notice.id,
       title: `${noticeLabel(notice)} (${String(notice.noticeNumber)})`,

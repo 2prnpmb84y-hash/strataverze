@@ -31,13 +31,13 @@ function formatCurrency(value: number) {
   });
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string, timeZone: string) {
   // A fixed time zone, so the server and the browser show the same day (React error 418).
   return new Date(dateStr).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "Australia/Sydney",
+    timeZone,
   });
 }
 
@@ -54,9 +54,12 @@ function StatusBadge({ status }: { status: string }) {
 export function LotFinancials({
   financials,
   levyHistory,
+  timeZone,
 }: {
   financials: Financials;
   levyHistory: LevyHistoryItem[];
+  /** The building's time zone. */
+  timeZone: string;
 }) {
   const [filterType, setFilterType] = useState<"ALL" | "ORDINARY" | "SPECIAL">("ALL");
 
@@ -155,7 +158,7 @@ export function LotFinancials({
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-ink-muted tabular-nums">
-                      {formatDate(item.dueDate)}
+                      {formatDate(item.dueDate, timeZone)}
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums">
                       {formatCurrency(item.amount)}
@@ -170,7 +173,7 @@ export function LotFinancials({
                       <StatusBadge status={item.status} />
                     </td>
                     <td className="px-3 py-2.5 text-ink-muted tabular-nums">
-                      {item.paidAt ? formatDate(item.paidAt) : "—"}
+                      {item.paidAt ? formatDate(item.paidAt, timeZone) : "—"}
                     </td>
                   </tr>
                 ))}

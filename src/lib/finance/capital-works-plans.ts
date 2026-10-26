@@ -4,6 +4,8 @@
  * capital works levy schedule generated from the adopted plan.
  */
 import { db } from "@/prisma/db";
+import { startOfDayIn } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { fromCents, toCents } from "@/lib/billing/money";
@@ -196,7 +198,8 @@ export async function adoptPlan(schemeId: string, planId: string, meetingId: str
     title: "Review the capital works fund plan",
     description: `The capital works fund plan "${plan.title}" must be reviewed at least every ${rule.reviewEveryYears} years (${rule.source}).`,
     category: "OTHER",
-    dueDate: ts(`${due}T00:00:00+10:00`),
+    // Midnight at the start of the due day in the building's time zone.
+    dueDate: ts(startOfDayIn(await schemeTimeZone(schemeId), due)),
     status: "PENDING",
     lastChecked: null,
     notes: `capital-works-plan:${plan.id}`,

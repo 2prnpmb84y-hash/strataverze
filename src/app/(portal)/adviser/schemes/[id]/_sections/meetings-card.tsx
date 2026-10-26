@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { getMeetingsForScheme } from "@/lib/queries/meetings";
@@ -29,6 +30,7 @@ export function MeetingsCard({
         <div className="flex flex-col gap-2">
           {meetings.map((meeting) => {
             const scheduledDate = new Date(String(meeting.scheduledAt));
+            const meetingTz = meetingZone(meeting);
             const motionCount = meeting.motions.length;
 
             const statusStyle: Record<string, string> = {
@@ -56,7 +58,7 @@ export function MeetingsCard({
                   <p className="text-xs text-ink-muted">
                     {meetingTypeShort[meeting.meetingType] ?? meeting.meetingType}
                     {" · "}
-                    {scheduledDate.toLocaleDateString("en-AU", {
+                    {scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz,
                       day: "numeric",
                       month: "short",
                       year: "numeric",

@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { financialYearRange, getStatutoryStatementsPack } from "@/lib/finance/statutory-pack";
 import { resolutionMeetings } from "@/lib/finance/resolutions";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { formatAud } from "@/lib/billing/money";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -21,7 +21,7 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
   if (!scheme) notFound();
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
 
-  const today = sydneyToday();
+  const today = await schemeToday(id);
   // Default: the last financial year that has ended.
   let defaultYear = Number(today.slice(0, 4));
   while (financialYearRange(defaultYear, String(scheme.financialYearEnd ?? "06-30")).end >= today) defaultYear--;

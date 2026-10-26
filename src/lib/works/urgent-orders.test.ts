@@ -14,7 +14,7 @@ const member = (id: string) => ({ profileId: id, roles: ["COMMITTEE"] as string[
 
 function seed(opts: { preferred?: string | null; urgentLimit?: string | null; adviserMayDecide?: boolean } = {}) {
   sharedFake.reset({
-    Scheme: [{ id: A, name: "Opera House", planNumber: "SP 99999", address: "1 Macquarie St", suburb: "Sydney", postcode: "2000" }],
+    Scheme: [{ id: A, name: "Opera House", planNumber: "SP 99999", address: "1 Macquarie St", suburb: "Sydney", postcode: "2000", timeZone: "Australia/Sydney" }],
     SchemeMembership: ["m1", "m2", "m3"].map((profileId) => ({ schemeId: A, profileId, role: "COMMITTEE", isActive: true })),
     WorksSettings: [{ schemeId: A, approvalRule: "TWO", urgentLimit: opts.urgentLimit === undefined ? "2000.00" : opts.urgentLimit, adviserMayDecide: !!opts.adviserMayDecide, adviserLimit: opts.adviserMayDecide ? "1000.00" : null }],
     WorksPreferredContractor: opts.preferred === null ? [] : [{ schemeId: A, trade: "Plumbing", contractorBusinessId: opts.preferred ?? "c-ok" }],

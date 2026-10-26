@@ -15,10 +15,10 @@
  * fund was created and never changed by posting.
  */
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { LEDGER_STATUSES } from "./ledger-status";
-import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 import type { BasisEntry } from "./accounting-basis";
 
 export interface FundPosition {
@@ -91,8 +91,9 @@ export async function ledgerLinesUpTo(schemeId: string, asAt: string): Promise<P
   return out;
 }
 
-/** Each fund's position as at a day (default: today in Sydney). */
-export async function getFundPositions(schemeId: string, asAt: string = todayInSydney()) {
+/** Each fund's position as at a day (default: today in the building's time zone). */
+export async function getFundPositions(schemeId: string, asAtDay?: string) {
+  const asAt = asAtDay ?? (await schemeToday(schemeId));
   return fundPositions(await ledgerLinesUpTo(schemeId, asAt), asAt);
 }
 

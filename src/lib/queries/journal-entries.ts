@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type {
   Numeric,
@@ -359,12 +360,15 @@ export async function reverseJournalEntry(
     throw new Error("Only posted journal entries can be reversed");
   }
 
+  // Dated today in the building's time zone.
+  const today = await schemeToday(original.schemeId);
+
   return db.transaction(async (tx) => {
     // Create the reversal entry
     const reversalEntry = await tx.orm.public.JournalEntry.create({
       schemeId: original.schemeId,
       entryNumber: toVarchar<20>(data.entryNumber),
-      transactionDate: toTimestamp(new Date().toISOString().split("T")[0]),
+      transactionDate: toTimestamp(today),
       description: toVarchar<500>(
         data.description ?? `Reversal of ${original.entryNumber}`,
       ),

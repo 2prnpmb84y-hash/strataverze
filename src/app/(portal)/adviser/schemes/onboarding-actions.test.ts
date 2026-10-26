@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { currentYearEnd, todayInSydney } from "@/lib/onboarding/property-onboarding";
+import { currentYearEnd } from "@/lib/onboarding/property-onboarding";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
 
 /**
  * Property onboarding (24 Oct): the server refuses anything the wizard would
@@ -57,7 +58,7 @@ vi.mock("@/prisma/db", () => {
 
 const { createSchemeAction } = await import("./actions");
 
-const today = todayInSydney();
+const today = todayIn("Australia/Sydney");
 const yearEnd = currentYearEnd("06-30", today);
 
 function form(overrides: { lots?: unknown; balances?: unknown; lotBalances?: unknown; fields?: Record<string, string> } = {}) {

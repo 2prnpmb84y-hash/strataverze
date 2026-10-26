@@ -1,5 +1,6 @@
 "use server";
 import { LOCKED_MESSAGE, LOCKED_SCHEME_FIELDS, changedLockedFields, requireRolesOrAdmin } from "@/lib/auth/building-lock";
+import { defaultTimeZone, PLATFORM_TIME_ZONE, todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
 import { db } from "@/prisma/db";
 
@@ -24,7 +25,6 @@ import {
   checkLots,
   checkOpeningBalances,
   checkYearEnd,
-  todayInSydney,
   type LotBalanceInput,
   type OnboardingLot,
   type OpeningBalancesInput,
@@ -54,6 +54,11 @@ export type StrataRollParseResult = {
   data?: ParsedStrataRoll;
 };
 
+/** Today in a new building's time zone, from its state and postcode (StrataVerze's own until they are known). */
+function newBuildingToday(state: string | null | undefined, postcode: string | null | undefined): string {
+  return todayIn(defaultTimeZone(state, postcode) ?? PLATFORM_TIME_ZONE);
+}
+
 function validateSchemeForm(formData: FormData) {
   const errors: Record<string, string> = {};
 
@@ -81,7 +86,8 @@ function validateSchemeForm(formData: FormData) {
 
   // The end of the building's current financial year, as a full date. The
   // day and month are stored and roll forward each year (24 Oct).
-  const yearEnd = checkYearEnd(formData.get("financialYearEnd") as string | null, todayInSydney());
+  // Today in the new building's time zone (from its state and postcode).
+  const yearEnd = checkYearEnd(formData.get("financialYearEnd") as string | null, newBuildingToday(state, postcode));
   if (!yearEnd.ok) errors.financialYearEnd = yearEnd.message;
 
   return {
@@ -184,7 +190,7 @@ export async function createSchemeAction(
     admin: fundSheet(balancesRaw.admin),
     capitalWorks: fundSheet(balancesRaw.capitalWorks),
   };
-  const balances = checkOpeningBalances(balancesInput, yearEnd, todayInSydney());
+  const balances = checkOpeningBalances(balancesInput, yearEnd, newBuildingToday(data.state, data.postcode));
   if (!balances.ok) return { step: "balances", stepErrors: [...Object.values(balances.fieldErrors), ...balances.errors] };
 
   const lotBalanceRows = readJsonArray(formData, "lotBalancesJson", 2_000_000);

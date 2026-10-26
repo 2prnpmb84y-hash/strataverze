@@ -85,6 +85,9 @@ export async function updateMeeting(
     title: string;
     meetingType: string;
     scheduledAt: string;
+    startTime: string;
+    endTime: string | null;
+    timezone: string;
     location: string | null;
     agenda: string | null;
     minutesUrl: string | null;
@@ -98,6 +101,9 @@ export async function updateMeeting(
   if (data.title !== undefined) updateData.title = data.title;
   if (data.meetingType !== undefined) updateData.meetingType = data.meetingType;
   if (data.scheduledAt !== undefined) updateData.scheduledAt = toTimestamp(data.scheduledAt);
+  if (data.startTime !== undefined) updateData.startTime = toTimestamp(data.startTime);
+  if (data.endTime !== undefined) updateData.endTime = data.endTime ? toTimestamp(data.endTime) : null;
+  if (data.timezone !== undefined) updateData.timezone = data.timezone;
   if (data.location !== undefined) updateData.location = data.location;
   if (data.agenda !== undefined) updateData.agenda = data.agenda;
   if (data.minutesUrl !== undefined) updateData.minutesUrl = data.minutesUrl;

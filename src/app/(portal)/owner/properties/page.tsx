@@ -1,4 +1,5 @@
 import { getCurrentProfile } from "@/lib/queries/profiles";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getSchemeNotificationCounts } from "@/lib/queries/schemes";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
@@ -206,6 +207,7 @@ export default async function OwnerPropertiesPage() {
                     .slice(0, 3)
                     .map((m) => {
                       const d = new Date(String(m.scheduledAt));
+                      const meetingTz = meetingZone(m);
                       return (
                         <div
                           key={m.id}
@@ -216,7 +218,7 @@ export default async function OwnerPropertiesPage() {
                           </p>
                           <p className="text-[11px] text-ink-muted">
                             {schemeNames[m.schemeId] ?? ""} &middot;{" "}
-                            {d.toLocaleDateString("en-AU", {
+                            {d.toLocaleDateString("en-AU", { timeZone: meetingTz,
                               day: "numeric",
                               month: "short",
                             })}

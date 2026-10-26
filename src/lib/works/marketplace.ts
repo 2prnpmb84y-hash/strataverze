@@ -15,6 +15,8 @@
  * open RFQ per request. Callers authorise first.
  */
 import { and } from "@prisma/orm-postgres/orm-client";
+import { endOfDayIn, PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone, schemeTimeZones, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { MARKETPLACE_DEFAULTS } from "@/config/works";
@@ -29,20 +31,9 @@ const vc = <N extends number>(v: string) => v as unknown as Varchar<N>;
 const money = (v: number) => v.toFixed(2) as unknown as Numeric<12, 2>;
 const DAY = 86_400_000;
 
-/**
- * The last minute (11.59 pm) of a Sydney calendar day, as an instant. Sydney
- * is UTC+10, or UTC+11 in daylight saving; the right one is the offset at
- * which that instant reads 11.59 pm on that date in Sydney.
- */
-export function sydneyEndOfDay(date: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  for (const offset of ["+11:00", "+10:00"]) {
-    const d = new Date(`${date}T23:59:00${offset}`);
-    if (Number.isNaN(d.getTime())) return null;
-    const local = d.toLocaleString("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
-    if (local.startsWith(date) && /23:59$/.test(local)) return d;
-  }
-  return null;
+/** The last minute (11.59 pm) of a calendar day in the building's time zone. */
+export function buildingEndOfDay(timeZone: string, date: string): Date | null {
+  return endOfDayIn(timeZone, date);
 }
 
 export class MarketplaceError extends Error {}
@@ -194,8 +185,11 @@ export async function jobsForContractor(businessIds: string[], now = new Date())
   const invitations = await db.orm.public.WorksRfqInvitation.where((i) => i.contractorBusinessId.in(ids)).limit(1000).all();
   const invitedRfqs = invitations.length ? await db.orm.public.WorksRfq.where((r) => and(r.id.in([...new Set(invitations.map((i) => i.rfqId))]), r.marketplace.eq(true))).limit(1000).all() : [];
   const quotes = invitedRfqs.length ? await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.in(invitedRfqs.map((r) => r.id)), q.contractorBusinessId.in(ids))).limit(1000).all() : [];
+  // Each job's deadlines are shown in its building's time zone.
+  const zones = await schemeTimeZones([...visible, ...invitedRfqs].map((r) => r.schemeId));
   const row = (r: (typeof openRows)[number]) => ({
     id: r.id,
+    timeZone: zones.get(r.schemeId) ?? PLATFORM_TIME_ZONE,
     rfqNumber: String(r.rfqNumber),
     title: String(r.title),
     trade: r.trade ? String(r.trade) : null,
@@ -250,6 +244,8 @@ export async function jobForContractor(rfqId: string, businessIds: string[], now
   return {
     id: rfq.id,
     schemeId: rfq.schemeId,
+    /** The building's time zone: deadlines are days there. */
+    timeZone: scheme ? timeZoneOf(scheme) : PLATFORM_TIME_ZONE,
     businessId,
     rfqNumber: String(rfq.rfqNumber),
     title: String(rfq.title),
@@ -482,6 +478,8 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
     postcode: rfq.postcode ? String(rfq.postcode) : null,
     interestClosesAt: rfq.interestClosesAt ? String(rfq.interestClosesAt) : null,
     quoteClosesAt: rfq.quoteClosesAt ? String(rfq.quoteClosesAt) : null,
+    /** The building's time zone: deadlines are days there. */
+    timeZone: await schemeTimeZone(schemeId),
     inviteLimit: Number(rfq.inviteLimit),
     inviteRoom: Math.max(0, Number(rfq.inviteLimit) - activeInvites.length),
     canInvite: rfq.status === "INTEREST" || rfq.status === "QUOTING",
@@ -538,7 +536,7 @@ export async function invite(input: { schemeId: string; rfqId: string; businessI
   if (businesses.length !== wanted.length || businesses.some((b) => !isApproved(b))) throw new MarketplaceError("Choose contractors approved on StrataVerze.");
   let closes: Date;
   if (input.quoteClosesAt) {
-    const end = sydneyEndOfDay(input.quoteClosesAt);
+    const end = buildingEndOfDay(await schemeTimeZone(input.schemeId), input.quoteClosesAt);
     if (!end || end <= now) throw new MarketplaceError("Choose a quote deadline in the future.");
     closes = end;
   } else {
@@ -562,13 +560,14 @@ export async function invite(input: { schemeId: string; rfqId: string; businessI
   return { invited, quoteClosesAt: closes.toISOString(), rfqNumber: String(rfq.rfqNumber), requestId: rfq.requestId };
 }
 
-/** Change the deadlines (committee or Adviser). Dates are Sydney calendar days; each runs to 11.59 pm. */
+/** Change the deadlines (committee or Adviser). Dates are calendar days in the building's time zone; each runs to 11.59 pm. */
 export async function setDeadlines(input: { schemeId: string; rfqId: string; interestClosesAt?: string | null; quoteClosesAt?: string | null; now?: Date }) {
   const now = input.now ?? new Date();
   const rfq = await db.orm.public.WorksRfq.where((r) => and(r.id.eq(input.rfqId), r.schemeId.eq(input.schemeId), r.marketplace.eq(true))).first();
   if (!rfq) throw new MarketplaceError("Not found.");
+  const tz = await schemeTimeZone(input.schemeId);
   const day = (v: string) => {
-    const d = sydneyEndOfDay(v);
+    const d = buildingEndOfDay(tz, v);
     if (!d || d <= now) throw new MarketplaceError("Choose a date in the future.");
     return d;
   };

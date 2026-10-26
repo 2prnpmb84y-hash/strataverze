@@ -92,8 +92,8 @@ describe("NSW meetings", () => {
       type: t,
       earliest: earliestCompliantMeetingDate(NSW_RULE_SET, t, from)?.toISOString() ?? null,
       minutesBy: minutesDeadline(NSW_RULE_SET, t, from)?.toISOString() ?? null,
-      sixDays: validateNoticePeriod(NSW_RULE_SET, t, from, new Date("2026-03-07T09:00:00Z")),
-      fourteenDays: validateNoticePeriod(NSW_RULE_SET, t, from, new Date("2026-03-15T09:00:00Z")),
+      sixDays: validateNoticePeriod(NSW_RULE_SET, t, from, new Date("2026-03-07T09:00:00Z"), "UTC"),
+      fourteenDays: validateNoticePeriod(NSW_RULE_SET, t, from, new Date("2026-03-15T09:00:00Z"), "UTC"),
     }));
     expect(out).toMatchSnapshot();
   });

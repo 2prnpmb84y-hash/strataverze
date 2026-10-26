@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
@@ -42,7 +43,7 @@ export default async function AccountantBankReconciliationPage({
     );
   }
 
-  const asAtDate = asAt || new Date().toISOString().slice(0, 10);
+  const asAtDate = asAt || (await schemeToday(id));
 
   // The selected account must be one of this scheme's accounts.
   const selectedAccount = selectedAccountId

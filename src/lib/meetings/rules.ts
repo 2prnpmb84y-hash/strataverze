@@ -12,6 +12,7 @@
  * (clear days and service rules under Schedule 1 / Schedule 2) is a refinement
  * flagged for the rules review; see the strategy document section 4.
  */
+import { dayIn } from "@/lib/jurisdiction/time-zone";
 
 
 export type MeetingType = "AGM" | "EGM" | "COMMITTEE" | "FIRST_AGM";
@@ -67,16 +68,19 @@ export interface MeetingRuleSet {
 // (or `statutoryRulesFor(state).MEETING_RULES` for the built-in set).
 
 /**
- * Whole-day difference (b - a), ignoring time of day, counted in UTC so the
- * result is deterministic regardless of the server timezone. Timezone-aware
- * clear-day counting in the scheme's own timezone is a refinement flagged for
- * the rules review (strategy doc section 4).
+ * Whole-day difference (b - a), ignoring time of day: the calendar days the
+ * two instants fall on in `timeZone` (multi-jurisdiction plan, phase 1c). Pass
+ * the meeting's time zone for notice periods, so a 9 am Sydney meeting counts
+ * on its own day, not the day before in UTC. Without one it counts UTC days.
+ * Whether a notice period counts clear days is for the rules review.
  */
-export function wholeDaysBetween(a: Date, b: Date): number {
+export function wholeDaysBetween(a: Date, b: Date, timeZone: string = "UTC"): number {
   const ms = 24 * 60 * 60 * 1000;
-  const da = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
-  const db = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
-  return Math.round((db - da) / ms);
+  const day = (d: Date) => {
+    const [y, m, dd] = dayIn(timeZone, d).split("-").map(Number);
+    return Date.UTC(y, m - 1, dd);
+  };
+  return Math.round((day(b) - day(a)) / ms);
 }
 
 /** The earliest meeting date that satisfies the notice period, counted from `from`. */
@@ -104,9 +108,11 @@ export function validateNoticePeriod(
   meetingType: MeetingType,
   issueDate: Date,
   meetingDate: Date,
+  /** The meeting's time zone: days are counted in it. */
+  timeZone: string,
 ): NoticeValidation {
   const requiredDays = ruleSet.noticePeriods[meetingType] ?? null;
-  const actualDays = wholeDaysBetween(issueDate, meetingDate);
+  const actualDays = wholeDaysBetween(issueDate, meetingDate, timeZone);
   return {
     requiredDays,
     actualDays,

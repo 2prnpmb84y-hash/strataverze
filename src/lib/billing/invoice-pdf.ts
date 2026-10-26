@@ -3,6 +3,7 @@
  * stored invoice and its fee events, so the PDF always matches the ledger.
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 import { formatAud } from "./money";
 import { STRATAVERZE_SUPPLIER, formatAbn } from "./strataverze-supplier";
 
@@ -39,7 +40,7 @@ const day = (iso: string) =>
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: "Australia/Sydney",
+    timeZone: PLATFORM_TIME_ZONE,
   });
 
 function wrap(text: string, font: PDFFont, size: number, width: number): string[] {

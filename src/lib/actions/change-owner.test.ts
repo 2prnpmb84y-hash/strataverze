@@ -20,7 +20,7 @@ vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async 
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(async () => {}) }));
 vi.mock("@/lib/notifications", () => ({ notifyInvitation: vi.fn(async (p: { recipientEmail: string }) => { sent.invitations.push(p.recipientEmail); }) }));
 vi.mock("@/lib/queries/schemes", () => ({ getSchemeNameById: async () => "Opera House" }));
-vi.mock("@/lib/finance/interest-setting", () => ({ sydneyToday: () => "2026-10-25" }));
+vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: async () => "2026-10-25" }));
 vi.mock("@/lib/vault/capture", () => ({ getTrialVault: async () => null }));
 vi.mock("@/lib/vault/sources", () => ({ captureLibraryDocument: vi.fn(), captureQuietly: vi.fn(async () => null) }));
 

@@ -4,6 +4,7 @@
  * lot shows exactly this, read only.
  */
 import { getLevyNoticesForLots } from "@/lib/queries/levies";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getLevyPaymentsForNotices } from "@/lib/queries/levy-schedules";
 import { getCreditMovements } from "@/lib/finance/owner-credits";
 import { buildStatement, levyItemTotals, levyItems, type LevyItem, type Statement } from "./levy-ledger";
@@ -14,7 +15,9 @@ export interface LotLevyView {
   statement: Statement;
 }
 
-export async function loadLotLevyView(schemeId: string, lotId: string, lotLabel: string, today: string = new Date().toISOString().slice(0, 10)): Promise<LotLevyView> {
+export async function loadLotLevyView(schemeId: string, lotId: string, lotLabel: string, todayDay?: string): Promise<LotLevyView> {
+  // Today in the building's time zone unless given.
+  const today = todayDay ?? (await schemeToday(schemeId));
   const notices = (await getLevyNoticesForLots([lotId])).filter((n) => n.schemeId === schemeId && String(n.status) !== "DRAFT");
   const [payments, credits] = await Promise.all([getLevyPaymentsForNotices(notices.map((n) => n.id)), getCreditMovements(schemeId, lotId)]);
   const items = levyItems(notices, today, new Map([[lotId, { label: lotLabel, schemeId }]]));

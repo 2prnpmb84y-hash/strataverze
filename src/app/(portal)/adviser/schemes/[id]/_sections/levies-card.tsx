@@ -27,12 +27,14 @@ export function LeviesCard({
   id,
   schedules,
   className = "mb-6",
+  today,
 }: {
   id: string;
   schedules: Awaited<ReturnType<typeof getLevySchedulesForScheme>>;
   className?: string;
+  /** Today in the building's time zone. */
+  today: string;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
   const rows = schedules.map((s) => {
     const notices = (s.levyNotices ?? []).filter((n) => String(n.status) !== "DRAFT");
     const outstanding = notices.reduce((sum, n) => sum + Number(n.balanceOutstanding ?? 0), 0);

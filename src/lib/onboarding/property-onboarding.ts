@@ -57,10 +57,6 @@ export function auDate(isoValue: string): string {
   return `${String(p.d).padStart(2, "0")}/${String(p.m).padStart(2, "0")}/${p.y}`;
 }
 
-/** Today's date in Sydney, as YYYY-MM-DD. */
-export function todayInSydney(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-}
 
 /** The first day of the financial year that ends on `yearEnd`. */
 export function yearStartFor(yearEnd: string): string {

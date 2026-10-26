@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { getCurrentProfile } from "@/lib/queries/profiles";
-import { todayInSydney } from "@/lib/onboarding/property-onboarding";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { AddPropertyWizard } from "../../adviser/schemes/add-property-wizard";
 
 export default async function OwnerAddPropertyPage() {
@@ -21,7 +21,7 @@ export default async function OwnerAddPropertyPage() {
         backLabel="Properties"
       />
 
-      <AddPropertyWizard simplified today={todayInSydney()} />
+      <AddPropertyWizard simplified today={platformToday()} />
     </div>
   );
 }
