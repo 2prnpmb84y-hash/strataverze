@@ -1,4 +1,6 @@
 "use client";
+import { keepUntil, type RetentionRules } from "@/lib/compliance/annual-report";
+import { PLATFORM_TIME_ZONE, storedDayIn } from "@/lib/jurisdiction/time-zone";
 
 import { useState, useCallback, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -55,6 +57,10 @@ type Props = {
   documents: DocumentRecord[];
   /** Building vault trial: each document's vault label, when the vault is open. */
   vaultLabels?: Record<string, { tone: LabelTone; text: string; detail: string }>;
+  /** How long the building's records are kept (its rule pack), to show "keep until" on each document. */
+  retention?: RetentionRules;
+  /** The building's time zone, for the day a document was added. */
+  timeZone?: string;
 };
 
 export function DocumentsTabContent({
@@ -62,6 +68,8 @@ export function DocumentsTabContent({
   schemePlanNumber,
   documents: initialDocuments,
   vaultLabels,
+  retention,
+  timeZone,
 }: Props) {
   const router = useRouter();
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -349,6 +357,11 @@ export function DocumentsTabContent({
       )}
 
       {/* Document list (when no doc is selected) */}
+      {!selectedDoc && documents.length > 0 && retention && (
+        <p className="mb-2 text-xs text-ink-muted">
+          Removing a document hides it from the library. StrataVerze keeps it as a record of the scheme. Records with a longer period (such as minor renovation approvals, 10 years) are kept longer than shown.
+        </p>
+      )}
       {!selectedDoc && documents.length > 0 && (
         <div className="flex flex-col gap-2">
           {documents.map((doc) => (
@@ -368,6 +381,10 @@ export function DocumentsTabContent({
                   {" · "}
                   {formatDate(doc.createdAt)}
                   {doc.fileSize ? ` · ${formatSize(doc.fileSize)}` : ""}
+                  {retention && (() => {
+                    const until = keepUntil(doc.category, storedDayIn(timeZone ?? PLATFORM_TIME_ZONE, doc.documentDate ?? doc.createdAt), retention);
+                    return until === "LIFE" ? " · kept for the life of the scheme" : ` · keep at least until ${until}`;
+                  })()}
                 </p>
                 {vaultLabels?.[doc.id] && (
                   <span className="mt-1 block">

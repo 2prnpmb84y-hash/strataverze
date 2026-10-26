@@ -23,6 +23,28 @@ export default async function GovernanceSectionPage({
       <BylawsCard id={id} bylaws={bylaws} />
       <Card className="mb-6">
         <CardHeader
+          title="Strata Hub annual report"
+          description="When the annual report is due after each AGM, and what it asks for."
+          action={
+            <Button href={`/adviser/schemes/${id}/governance/strata-hub`} variant="secondary">
+              Annual report
+            </Button>
+          }
+        />
+      </Card>
+      <Card className="mb-6">
+        <CardHeader
+          title="Committee training"
+          description="Each committee member's training: completed, due or overdue."
+          action={
+            <Button href={`/adviser/schemes/${id}/members/training`} variant="secondary">
+              Committee training
+            </Button>
+          }
+        />
+      </Card>
+      <Card className="mb-6">
+        <CardHeader
           title="Members"
           description="Owners, committee members and advisers with access to this scheme."
           action={

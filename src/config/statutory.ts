@@ -54,7 +54,9 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // debt recovery steps and guidance redrafted from sources, for review.
     // 2026.10.4 (26 Oct 2026): PAYMENT_PLANS added (the payment plan workflow).
     // 2026.10.5 (26 Oct 2026): COMMITTEE_TRAINING added (committee training tracking).
-    version: "2026.10.5",
+    // 2026.10.6 (26 Oct 2026): ANNUAL_REPORTING and RECORD_RETENTION added (Strata Hub reports, record keeping);
+    // the audit lots test also leaves out common property rows (decided by StrataVerze).
+    version: "2026.10.6",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not

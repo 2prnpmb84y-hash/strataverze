@@ -223,6 +223,7 @@ model Scheme {
   debtRecoveryPaymentPlans    PaymentPlan[]
   paymentPlanRequests         PaymentPlanRequest[]
   committeeTraining           CommitteeTraining[]
+  annualReports               AnnualReport[]
 
   worksSettings          WorksSettings?
   worksPreferredContractors WorksPreferredContractor[]
@@ -4357,4 +4358,25 @@ model CommitteeTraining {
 
   @@unique([schemeId, profileId])
   @@map("committee_training")
+}
+
+/// The Strata Hub annual report for one AGM: when it is due, and when it
+/// was reported. A row is also how an AGM held outside StrataVerze is recorded.
+model AnnualReport {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId       String    @map("scheme_id") @db.Uuid
+  agmOn          DateTime  @db.Date @map("agm_on")
+  agmRecorded    Boolean   @default(false) @map("agm_recorded") // the AGM was entered by hand (held outside StrataVerze)
+  reportedOn     DateTime? @db.Date @map("reported_on")
+  reference      String?   // the Strata Hub receipt or reference
+  reportedBy     String?   @map("reported_by") @db.Uuid
+  note           String?
+  lastReminderOn DateTime? @db.Date @map("last_reminder_on")
+  createdAt      DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme         Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, agmOn])
+  @@map("annual_reports")
 }

@@ -104,9 +104,10 @@ export const CAPITAL_WORKS_PLAN = {
  * Other schemes consider an audit at each AGM.
  *
  * Lots counted: every lot on the strata roll except those recorded as
- * PARKING or STORAGE (StrataVerze's lot types for parking and utility lots).
- * A lot recorded with another type is counted, so a utility lot recorded as
- * RESIDENTIAL or COMMON is counted until its type is corrected. When the
+ * PARKING or STORAGE (StrataVerze's lot types for parking and utility lots)
+ * and COMMON (a common property row, not a lot; decided by StrataVerze on
+ * 26 Oct 2026). A utility lot recorded as RESIDENTIAL is counted until its
+ * type is corrected. When the
  * roll has fewer lots than the building's recorded total (it is not fully
  * loaded), the lots not yet on the roll are counted too.
  *
@@ -119,9 +120,9 @@ export const CAPITAL_WORKS_PLAN = {
 export const AUDIT_THRESHOLD = {
   lotsMoreThan: 100,
   /** Lot types not counted towards the lots test (parking and utility lots). */
-  excludedLotTypes: ["PARKING", "STORAGE"],
+  excludedLotTypes: ["PARKING", "STORAGE", "COMMON"],
   /** How the platform names the lots left out. */
-  excludedLotsLabel: "parking or utility lots",
+  excludedLotsLabel: "parking, utility or common property lots",
   leviesRaisedMoreThanCents: 25_000_000,
   measure: "total levies raised for the financial year",
   timing: "before the accounts and financial statements are presented to the annual general meeting",
@@ -557,4 +558,62 @@ export const COMMITTEE_TRAINING = {
   repeatNote: "Whether the training must be repeated each year is not yet confirmed. The training page says further details will be published in 2027.",
   helpUrl: "https://www.nsw.gov.au/housing-and-construction/strata/serving-on-a-committee/strata-committee-training",
   source: "NSW Government, Strata committee training (from 1 Oct 2026)",
+} as const;
+
+/**
+ * Strata Hub annual reporting (26 Oct 2026, for StrataVerze to review).
+ * Source: NSW Government, "Strata annual reporting" (checked 26 Oct 2026),
+ * citing Strata Schemes Management Regulation 2016, Part 7, Division 2
+ * (cl 43 to 43C): every strata scheme reports each year within 3 months of
+ * its AGM; from 1 Oct 2026 two-lot schemes do not; changes (secretary,
+ * chairperson, strata managing agent, building manager, emergency contacts,
+ * incorrect information) are updated within 28 days of becoming aware;
+ * the reporter pays $3 a lot; fines of up to $5,500 for not reporting on
+ * time, and up to $2,200 for not updating.
+ */
+export const ANNUAL_REPORTING = {
+  withinMonthsOfAgm: 3,
+  exemptLotCount: 2,
+  exemptFrom: "2026-10-01",
+  updateWithinDays: 28,
+  feePerLotCents: 300,
+  information: [
+    "Strata plan number, address and number of lots",
+    "Secretary and chairperson contact details",
+    "Date of the last AGM (or why none has been held)",
+    "Building insurance replacement value",
+    "Capital works fund balance",
+    "Strata managing agent and building manager, if any",
+    "Occupation certificate and annual fire safety statement dates, and NABERS rating, if any",
+    "Lots by use, number of storeys, and strata renewal committee date, if any",
+    "Up to four emergency contacts, in order",
+  ],
+  penalty: "Fines of up to $5,500 may apply if a scheme does not report on time, and up to $2,200 if it does not update its information within 28 days.",
+  portal: "NSW Strata Hub",
+  noAgmNote: "A scheme that has not yet reported should start as soon as possible, even without a recent AGM; it gives the reason no AGM has been held.",
+  helpUrl: "https://www.nsw.gov.au/housing-and-construction/strata/strata-annual-reporting",
+  source: "Strata Schemes Management Regulation 2016, Part 7, Division 2; NSW Government, Strata annual reporting",
+} as const;
+
+/**
+ * How long the owners corporation's records are kept (26 Oct 2026, for
+ * StrataVerze to review). Sources, checked 26 Oct 2026: NSW Government,
+ * "Record keeping requirements" (records 7 years; the strata roll for the
+ * life of the scheme, its change records 7 years; secret ballot records 13
+ * months; records made from 11 Jun 2024 kept electronically) and "Guide to
+ * strata law changes" (minor renovations approved: a record kept for 10
+ * years, from 1 Jul 2025). StrataVerze never destroys a record: removing a
+ * document hides it from the library and keeps it.
+ */
+export const RECORD_RETENTION = {
+  generalYears: 7,
+  generalRecords: "financial records, meeting records, notices and correspondence",
+  strataRoll: "for the life of the scheme",
+  minorRenovationYears: 10,
+  minorRenovationFrom: "2025-07-01",
+  secretBallotMonths: 13,
+  electronicFrom: "2024-06-11",
+  /** Library categories and how long each is kept: years, or null for the life of the scheme (by-laws are part of the strata roll). */
+  byCategory: { MINUTES: 7, INSURANCE: 7, BYLAW: null, FINANCIAL: 7, COMPLIANCE: 7, OTHER: 7 } as Readonly<Record<string, number | null>>,
+  source: "NSW Government, Record keeping requirements; Guide to strata law changes (1 Jul 2025)",
 } as const;

@@ -24,6 +24,10 @@
       "model": "Announcement",
       "namespace": "public"
     },
+    "annual_reports": {
+      "model": "AnnualReport",
+      "namespace": "public"
+    },
     "app_sessions": {
       "model": "AppSession",
       "namespace": "public"
@@ -1615,6 +1619,144 @@
               },
               "namespaceId": "public",
               "table": "announcements"
+            }
+          },
+          "AnnualReport": {
+            "fields": {
+              "agmOn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "agmRecorded": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastReminderOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reference": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "reportedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "reportedOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "agmOn": {
+                  "column": "agm_on"
+                },
+                "agmRecorded": {
+                  "column": "agm_recorded"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastReminderOn": {
+                  "column": "last_reminder_on"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "reference": {
+                  "column": "reference"
+                },
+                "reportedBy": {
+                  "column": "reported_by"
+                },
+                "reportedOn": {
+                  "column": "reported_on"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "annual_reports"
             }
           },
           "AppSession": {
@@ -20334,6 +20476,21 @@
                   "namespace": "public"
                 }
               },
+              "annualReports": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "AnnualReport",
+                  "namespace": "public"
+                }
+              },
               "bankAccounts": {
                 "cardinality": "1:N",
                 "on": {
@@ -35728,6 +35885,116 @@
                   ],
                   "name": "announcements_scheme_id_published_at_idx",
                   "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "annual_reports": {
+              "columns": {
+                "agm_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "agm_recorded": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "last_reminder_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reference": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "reported_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "reported_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "annual_reports_scheme_id_agm_on_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "annual_reports"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "agm_on"
+                  ],
+                  "name": "annual_reports_scheme_id_agm_on_key",
+                  "unique": true
                 }
               ],
               "primaryKey": {
@@ -59520,10 +59787,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "77212e9dec5de6ad8ca5bdc315342c3634477972797b24cc0404a28c230d1118"
+    "storageHash": "3b6f103915f5aa55055c16f8197e7b555bbae6b3f72f310e72410f1e538371dc"
   },
   "execution": {
-    "executionHash": "5e817cab30fd1e20bee97158f3305d2f1d63516069bf9191427d4e527e012094",
+    "executionHash": "51083b26aeda7b42c49db908d800399cb05f3bcf93273a6ea78c7acaa090cded",
     "mutations": {
       "defaults": [
         {
@@ -59567,6 +59834,21 @@
           },
           "ref": {
             "entry": "announcements",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "annual_reports",
             "field": "updated_at",
             "namespace": "public"
           }

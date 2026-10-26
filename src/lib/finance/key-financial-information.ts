@@ -133,7 +133,9 @@ export function keyFinancialInformation(input: {
  */
 export function auditLotCount(input: { lots: Array<{ lotType: string | null }>; totalLots: number; excludedLotTypes: readonly string[] }): { counted: number; excluded: number; fromRoll: boolean } {
   const excluded = input.lots.filter((l) => input.excludedLotTypes.includes(String(l.lotType ?? "").toUpperCase())).length;
-  const notOnRoll = Math.max(0, input.totalLots - input.lots.length);
+  // A common property row is not a lot, so it does not stand for one of the recorded total.
+  const lotsOnRoll = input.lots.filter((l) => String(l.lotType ?? "").toUpperCase() !== "COMMON").length;
+  const notOnRoll = Math.max(0, input.totalLots - lotsOnRoll);
   return { counted: input.lots.length - excluded + notOnRoll, excluded, fromRoll: notOnRoll === 0 };
 }
 

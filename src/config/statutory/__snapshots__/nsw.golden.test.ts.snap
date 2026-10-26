@@ -1833,8 +1833,9 @@ exports[`NSW statutory constants > are unchanged 1`] = `
     "excludedLotTypes": [
       "PARKING",
       "STORAGE",
+      "COMMON",
     ],
-    "excludedLotsLabel": "parking or utility lots",
+    "excludedLotsLabel": "parking, utility or common property lots",
     "leviesRaisedMoreThanCents": 25000000,
     "lotsMoreThan": 100,
     "measure": "total levies raised for the financial year",
@@ -1906,6 +1907,29 @@ exports[`NSW statutory constants > give the same default accounting basis 1`] = 
 
 exports[`NSW statutory workflows (Oct 2026) > are the rules recorded 1`] = `
 {
+  "ANNUAL_REPORTING": {
+    "exemptFrom": "2026-10-01",
+    "exemptLotCount": 2,
+    "feePerLotCents": 300,
+    "helpUrl": "https://www.nsw.gov.au/housing-and-construction/strata/strata-annual-reporting",
+    "information": [
+      "Strata plan number, address and number of lots",
+      "Secretary and chairperson contact details",
+      "Date of the last AGM (or why none has been held)",
+      "Building insurance replacement value",
+      "Capital works fund balance",
+      "Strata managing agent and building manager, if any",
+      "Occupation certificate and annual fire safety statement dates, and NABERS rating, if any",
+      "Lots by use, number of storeys, and strata renewal committee date, if any",
+      "Up to four emergency contacts, in order",
+    ],
+    "noAgmNote": "A scheme that has not yet reported should start as soon as possible, even without a recent AGM; it gives the reason no AGM has been held.",
+    "penalty": "Fines of up to $5,500 may apply if a scheme does not report on time, and up to $2,200 if it does not update its information within 28 days.",
+    "portal": "NSW Strata Hub",
+    "source": "Strata Schemes Management Regulation 2016, Part 7, Division 2; NSW Government, Strata annual reporting",
+    "updateWithinDays": 28,
+    "withinMonthsOfAgm": 3,
+  },
   "COMMITTEE_TRAINING": {
     "consequence": "A member who has not completed the training within 3 months of appointment automatically stops being a committee member.",
     "course": "NSW Fair Trading's free online training, Introduction to Strata Committee Rights and Responsibilities (on Strata Hub)",
@@ -1958,6 +1982,24 @@ exports[`NSW statutory workflows (Oct 2026) > are the rules recorded 1`] = `
       "the owner's right to ask for an extension (the owners corporation need not agree)",
       "the date the plan was agreed",
     ],
+  },
+  "RECORD_RETENTION": {
+    "byCategory": {
+      "BYLAW": null,
+      "COMPLIANCE": 7,
+      "FINANCIAL": 7,
+      "INSURANCE": 7,
+      "MINUTES": 7,
+      "OTHER": 7,
+    },
+    "electronicFrom": "2024-06-11",
+    "generalRecords": "financial records, meeting records, notices and correspondence",
+    "generalYears": 7,
+    "minorRenovationFrom": "2025-07-01",
+    "minorRenovationYears": 10,
+    "secretBallotMonths": 13,
+    "source": "NSW Government, Record keeping requirements; Guide to strata law changes (1 Jul 2025)",
+    "strataRoll": "for the life of the scheme",
   },
 }
 `;

@@ -82,6 +82,12 @@ describe("lots counted for the audit test", () => {
     expect(auditLotCount({ lots: [], totalLots: 120, excludedLotTypes })).toEqual({ counted: 120, excluded: 0, fromRoll: false });
   });
 
+  it("does not count a common property row, or let it stand for a lot not yet entered", () => {
+    const withCommon = ["PARKING", "STORAGE", "COMMON"];
+    const r = auditLotCount({ lots: [...lots(99, "RESIDENTIAL"), ...lots(1, "COMMON")], totalLots: 100, excludedLotTypes: withCommon });
+    expect(r).toEqual({ counted: 100, excluded: 1, fromRoll: false });
+  });
+
   it("counts the lots not yet on a partly loaded roll", () => {
     // 150 lots recorded, 40 on the roll (5 parking): 35 + 110 not yet entered.
     const r = auditLotCount({ lots: [...lots(35, "RESIDENTIAL"), ...lots(5, "PARKING")], totalLots: 150, excludedLotTypes });
