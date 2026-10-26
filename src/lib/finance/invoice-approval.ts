@@ -106,7 +106,7 @@ export async function authoriseSupplierInvoice(input: {
   // (financials review B1). Invoices saved before this check could hold one.
   if (loaded.invoice.accountCodeId) {
     const fundProblem = await accountFundProblem(db.orm, input.schemeId, loaded.invoice.accountCodeId, loaded.invoice.fundId);
-    if (fundProblem) throw new PaymentControlError(`${fundProblem} Edit the invoice before approving it.`);
+    if (fundProblem) throw new PaymentControlError(`${fundProblem} Cancel this invoice and enter it again with an account of the invoice's fund.`);
   }
 
   const asMember = members.find((m) => m.profileId === input.actorId && isEligibleApprover(m, settings.policy));

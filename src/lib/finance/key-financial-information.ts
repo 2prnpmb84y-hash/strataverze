@@ -39,17 +39,19 @@ export function ownersFundsCents(entries: BasisEntry[], fundId: string, upTo: st
  * period's figures count those already). Other entries on the takeover day
  * belong to the period, not to the balance carried forward.
  */
-function carriedForwardAtTakeover(entries: BasisEntry[], fundId: string, takeover: string): number {
-  let cents = 0;
+function carriedForwardAtTakeover(entries: BasisEntry[], fundId: string, takeover: string, dayBefore: string): number {
+  // The balance before the period, plus the takeover entry. Entries in the
+  // period other than the takeover (even ones dated before it) are counted
+  // in the period's figures, so they stay out of the carried forward.
+  let cents = ownersFundsCents(entries, fundId, dayBefore);
   for (const e of entries) {
-    const migration = e.sourceType === "DATA_MIGRATION" && e.date === takeover;
-    if (!(e.date < takeover || migration)) continue;
+    if (!(e.sourceType === "DATA_MIGRATION" && e.date === takeover)) continue;
     for (const l of e.lines) {
       if (l.fundId !== fundId) continue;
       if (l.accountType === "ASSET") cents += l.debitCents - l.creditCents;
       else if (l.accountType === "LIABILITY") cents -= l.creditCents - l.debitCents;
-      else if (migration && l.accountType === "INCOME") cents -= l.creditCents - l.debitCents;
-      else if (migration && l.accountType === "EXPENSE") cents += l.debitCents - l.creditCents;
+      else if (l.accountType === "INCOME") cents -= l.creditCents - l.debitCents;
+      else if (l.accountType === "EXPENSE") cents += l.debitCents - l.creditCents;
     }
   }
   return cents;
@@ -110,7 +112,7 @@ export function keyFinancialInformation(input: {
   }
   const sum = (pred: (r: (typeof input.recognised)[number]) => boolean) => input.recognised.filter(pred).reduce((s, r) => s + r.amountCents, 0);
   return {
-    balanceCarriedForwardCents: takeover ? carriedForwardAtTakeover(input.entries, input.fundId, takeover) : ownersFundsCents(input.entries, input.fundId, input.dayBefore),
+    balanceCarriedForwardCents: takeover ? carriedForwardAtTakeover(input.entries, input.fundId, takeover, input.dayBefore) : ownersFundsCents(input.entries, input.fundId, input.dayBefore),
     totalIncomeReceivedCents: received,
     totalInterestEarnedCents: sum((r) => r.accountType === "INCOME" && r.accountSubType === "INTEREST_INCOME"),
     totalContributionsPaidCents: contributions,

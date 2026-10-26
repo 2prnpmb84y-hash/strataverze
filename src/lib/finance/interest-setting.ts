@@ -70,15 +70,15 @@ export async function statutoryInterestForScheme(schemeId: string, asAt = sydney
     // interest from the takeover day on is owed here. It is compared with
     // the interest charged here, plus the statutory interest to takeover,
     // which the old system's charge stands in for (financials review B8).
-    const takeover = n.migrationBatchId ? isoDay(n.issuedAt) : "";
+    const takeover = n.migrationBatchId ? isoDay(n.issuedAt) || isoDay(n.dueDate) : "";
     const toTakeoverCents = takeover ? statutoryInterest({ ...base, asAt: takeover }).interestCents : 0;
     const chargedHereCents = Math.max(0, toCents(String(n.interestCharged ?? 0)) - toCents(String(n.migratedInterestCharged ?? 0)));
-    const previouslyChargedCents = chargedHereCents + toTakeoverCents;
+    const previouslyChargedCents = chargedHereCents;
     return {
       ...result,
       noticeId: n.id,
       previouslyChargedCents,
-      additionalCents: Math.max(0, result.interestCents - previouslyChargedCents),
+      additionalCents: Math.max(0, result.interestCents - toTakeoverCents - chargedHereCents),
     };
   });
 }

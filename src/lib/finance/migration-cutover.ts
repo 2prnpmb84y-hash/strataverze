@@ -474,13 +474,13 @@ export function cutoverReadiness(input: { files: CutoverFile[]; rows: CutoverRow
     problems.push(
       trialBalance.lines === 0
         ? "The opening trial balance has no lines."
-        : `The opening trial balance does not net to zero: debits ${(trialBalance.debitCents / 100).toFixed(2)}, credits ${(trialBalance.creditCents / 100).toFixed(2)}.`,
+        : `The opening trial balance does not net to zero: debits $${(trialBalance.debitCents / 100).toFixed(2)}, credits $${(trialBalance.creditCents / 100).toFixed(2)}.`,
     );
   }
   // Each fund's opening balances must balance on their own (review B1).
   for (const [fundId, gap] of fundGapsCents(lines)) {
     const name = input.funds.find((f) => f.id === fundId)?.name ?? "A fund";
-    problems.push(`The ${name} opening balances do not net to zero: they are out by ${(Math.abs(gap) / 100).toFixed(2)}. Each fund must balance on its own.`);
+    problems.push(`The ${name} opening balances do not net to zero: they are out by $${(Math.abs(gap) / 100).toFixed(2)}. Each fund must balance on its own.`);
   }
   const tieOuts = controlTieOuts(input.rows, input.funds);
   return { trialBalance, tieOuts, problems, canSignOff: problems.length === 0 };

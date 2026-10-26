@@ -177,6 +177,18 @@ describe("statement of key financial information (B4)", () => {
     expect(k.balanceCarriedForwardCents + 35_000 - 10_000).toBe(k.balanceAtEndCents);
   });
 
+  it("keeps an entry in the period dated before the takeover out of the balance carried forward", () => {
+    const l = (accountType: string, accountSubType: string | null, debitCents: number, creditCents: number) => ({ accountId: String(accountSubType), accountCode: "", accountName: "", accountType, accountSubType, fundId: A, debitCents, creditCents });
+    const basis = [
+      { id: "lv", date: "2026-08-01", sourceType: "LEVY", sourceId: null, lines: [l("ASSET", "ACCOUNTS_RECEIVABLE", 5_000, 0), l("INCOME", "LEVY_INCOME", 0, 5_000)] },
+      { id: "t", date: "2026-10-01", sourceType: "DATA_MIGRATION", sourceId: null, lines: [l("ASSET", "BANK", 100_000, 0), l("EQUITY", "OPENING_BALANCE", 0, 100_000)] },
+    ];
+    const recognised = [{ accountType: "INCOME" as const, accountSubType: "LEVY_INCOME", amountCents: 5_000 }];
+    const k = keyFinancialInformation({ entries: basis, fundId: A, start: "2026-07-01", end: "2027-06-30", dayBefore: "2026-06-30", recognised, unpaidNotices: [], principalItemsNextPeriod: [] });
+    expect(k.balanceCarriedForwardCents).toBe(100_000);
+    expect(k.balanceCarriedForwardCents + 5_000).toBe(k.balanceAtEndCents);
+  });
+
   it("counts money moved between the funds in the bank once, for the fund it moved to", () => {
     const l = (fundId: string, accountType: string, accountSubType: string, debitCents: number, creditCents: number) => ({ accountId: accountSubType, accountCode: "", accountName: "", accountType, accountSubType, fundId, debitCents, creditCents });
     const basis = [
