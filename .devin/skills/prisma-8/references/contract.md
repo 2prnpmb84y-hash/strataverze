@@ -126,7 +126,7 @@ Then run `pnpm prisma contract emit` (or rely on the Vite plugin — see `refere
 @@index([authorId], where: sql`(archived_at IS NULL)`, name: "posts_author_active")
 ```
 
-`name:` declares a wire-named index (physical name `<name>_<8-hex hash>`, renames plan as `ALTER INDEX … RENAME`); `map:` adopts an exact physical name verbatim (for infer-captured objects — combining it with a SQL body warns, because drift detection byte-compares the authored text against Postgres's reprint). An `expression:` requires `name:` or `map:`. The TS builder mirrors this via `constraints.index([cols.x], {...})` / `constraints.index({ expression, ... })`, where `expression` and `where` are `sql` values such as ``sql`lower(email)` `` (a string does not compile) — see `packages/2-sql/2-authoring/contract-ts/README.md`.
+`name:` declares a wire-named index (physical name `<name>_<8-hex hash>`, renames plan as `ALTER INDEX … RENAME`); `map:` adopts an exact physical name verbatim (for infer-captured objects — combining it with a SQL body warns, because drift detection byte-compares the authored text against Postgres's reprint). An `expression:` requires `name:` or `map:`. The TS builder mirrors this via `constraints.index([cols.x], {...})` / `constraints.index({ expression, ... })`, where `expression` and `where` are `sql` values such as ``sql`lower(email)` `` (a string does not compile) — see `packages/2-sql-family/2-authoring/contract-ts/README.md`.
 
 **Full-text search indexes (PostgreSQL).** Do not hand-write the `to_tsvector` expression — Postgres only uses the index when the query carries the same search document: the same columns, configuration and weights. Declare `@@fullTextIndex`, and the index and the queries `fullTextMatches` / `fullTextRank` / `fullTextHeadline` build are rendered from the same definition (see `references/queries-postgres.md`):
 
@@ -156,7 +156,11 @@ model User {
 }
 ```
 
+An alias is expanded into each field that uses it: the column stores the alias's codec and type params, and the contract stores no alias. An alias may carry `@default`, `@onCreate` and `@onUpdate`, which every field typed by it takes: `UpdatedAt = TimestampString(3) @onCreate(now()) @onUpdate(now())`. It may not carry `@id` or `@unique`; write those on the field. A field may add attributes its alias does not set (`updatedAt UpdatedAt @default(now())`), but repeating one the alias sets is `PSL_DUPLICATE_ATTRIBUTE`. An alias may not name another alias. The targets contribute `temporal.CreatedAt` (generated on create) and `temporal.UpdatedAt` (on create and on update), written bare: `createdAt temporal.CreatedAt`. On Postgres they are `Timestamptz` columns, with `temporal.CreatedAtString` / `UpdatedAtString` and `CreatedAtJsDate` / `UpdatedAtJsDate` variants; on SQLite `DateTime`; on Mongo `Date`. They take no arguments; for a precision, write the type and attributes, as in `Timestamptz(3) @onCreate(now())`.
+
 Values the client generates are written `@onCreate(fn())` and `@onUpdate(fn())`: `id String @id @onCreate(uuid(7))`, `slug String @onCreate(nanoid(12))`, `updatedAt DateTime @onCreate(now()) @onUpdate(now())`. `@default(...)` is a database default only (`now()`, `autoincrement()`, a literal, or `` sql`...` ``); `@default(uuid())` is refused with `PSL_GENERATOR_IN_DEFAULT`. In the TS builder, write `.onCreate(gen.uuid(7))` and `.onUpdate(gen.now())`. Column defaults and generators can sit on one field: `@default(now()) @onCreate(now())`.
+
+In the TS builder, an alias is a constant passed as the field, because field builders are immutable: `const Slug = field.column(type.VarChar(64))`, `const UpdatedAt = field.column(type.TimestampString(3)).onCreate(gen.now()).onUpdate(gen.now())`, then `slug: Slug, updatedAt: UpdatedAt.default(now())`. `type.*` has a helper for every PSL type constructor, and the contributed aliases are `type.temporal.CreatedAt()` and `type.temporal.UpdatedAt()`, used as `field.column(type.temporal.UpdatedAt())`. A definition has no `types` key (`CONTRACT.TYPES_KEY_REMOVED`), and `field.namedType(...)` takes only an enum handle.
 
 Note: scalar lists (e.g. `String[]`) are gated on the target's `sql.scalarList` capability — PostgreSQL declares it, so `tags String[]` lowers to an array column (with a generated no-NULL-elements check; write `tags String?[]` for a list whose elements may be null, which gets no such check); SQLite does not, and rejects the field with `PSL_SCALAR_LIST_UNSUPPORTED_TARGET`. Implicit Prisma-ORM many-to-many (list navigation on both sides without a join model) is rejected by the SQL interpreter — declare the join model explicitly and the ORM traverses it for you (`references/queries.md`). Composite/embeddable types (`type Address { ... }` with `address Address` on a model) are supported: the interpreter lowers them to `valueObjects` in the domain and stores them as `jsonb` columns. See *Workflow — Value objects* below.
 
@@ -194,7 +198,7 @@ For Mongo, swap every `@internal/postgres/*` import for `@internal/mongo/*`. The
 
 Mongo scalar types, as PSL name / TS builder / application type: `String` / `field.string()` / `string`; `Int32` / `field.int32()` / `number`; `Int64` / `field.int64()` / `bigint`; `Double` / `field.double()` / `number`; `Decimal128` / `field.decimal128()` / decimal text as a `string`; `Bool` / `field.bool()` / `boolean`; `Date` / `field.date()` / `Date`; `ObjectId` / `field.objectId()` / `string`; `Binary` / `field.binary()` / `Uint8Array`; `Json` / `field.json()` / `JsonValue`; `Bson` / `field.bson()` / `BsonValue`. `Json` holds a JSON value only, validated as the JSON-representable BSON types; `Bson` holds any BSON value, unconstrained by the validator. The full table, with codec ids and storage types, is [Scalar types](https://github.com/prisma/orm/blob/main/docs/reference/scalar-types.md).
 
-Mongo timestamps the ORM fills: in PSL, write `createdAt Date @onCreate(now())` (set on create) or `updatedAt Date @onCreate(now()) @onUpdate(now())` (set on create and on every update with a non-empty payload), or type the field with the presets `temporal.createdAt()`, `temporal.updatedAt()` or `temporal.timestamp(onCreate: now, onUpdate: now)`; in TS, use `field.date().onCreate(gen.now()).onUpdate(gen.now())`, or `field.temporal.createdAt()` and the rest inside the callback overload. They store a BSON date read back as `Date`, one value per ORM operation, and an explicit value in the write wins. The fields are optional on create. A preset field cannot be optional (`?`), a list, `@id`, or a field of a composite type.
+Mongo timestamps the ORM fills: in PSL, write `createdAt Date @onCreate(now())` (set on create) or `updatedAt Date @onCreate(now()) @onUpdate(now())` (set on create and on every update with a non-empty payload), or type the field `temporal.CreatedAt` or `temporal.UpdatedAt`, or with the presets `temporal.createdAt()`, `temporal.updatedAt()` or `temporal.timestamp(onCreate: now, onUpdate: now)`; in TS, use `field.date().onCreate(gen.now()).onUpdate(gen.now())`, or `field.temporal.createdAt()` and the rest inside the callback overload. They store a BSON date read back as `Date`, one value per ORM operation, and an explicit value in the write wins. The fields are optional on create. A preset field cannot be optional (`?`), a list, `@id`, or a field of a composite type.
 
 ## Workflow — Add an extension-typed scalar (pgvector)
 
@@ -287,7 +291,7 @@ model Feature {
 
 A variant's base can be in another namespace: write `@@base(ns.Model, "value")`. Such a variant must set `@@map(...)`, because a variant that shares its base's table has to be in the base's namespace.
 
-Verify the polymorphism syntax against the interpreter tests if in doubt: `packages/2-sql/2-authoring/contract-psl/test/interpreter.polymorphism.test.ts`.
+Verify the polymorphism syntax against the interpreter tests if in doubt: `packages/2-sql-family/2-authoring/contract-psl/test/interpreter.polymorphism.test.ts`.
 
 Mongo PSL takes the same `@@discriminator(field)` / `@@base(Base, "value")` attributes (the Mongo interpreter implements both; `examples/mongo-demo/src/contract.prisma` declares `Post` with `@@discriminator(kind)` and `Article` / `Tutorial` variants via `@@base(Post, "article")`). Variants share the base's collection — there is no `@@map` on a Mongo variant, since there is no second table to join. The TS builder's `discriminator` option on the model is the programmatic equivalent.
 
@@ -511,17 +515,17 @@ Infer captures indexes at full fidelity — expression, partial (`where:`), uniq
 ## What Prisma 8 doesn't do yet
 
 - **In-contract rename hint.** No `@@rename(old: ..., new: ...)` or similar; renames are stated with `--rename` on the command line, as in *Common Pitfalls* #7.
-- **Model validations.** No declarative `@validates(...)` surface. Validate in application code (arktype). To request declarative validations in the contract, file via `references/feedback.md`.
-- **Lifecycle callbacks** (`beforeSave`, `afterCreate`, etc.). Not supported. Use middleware (`references/runtime.md`) or app code. To request lifecycle callbacks, file via `references/feedback.md`.
-- **Soft delete / `paranoid: true`.** No built-in soft-delete column. Add a nullable `deletedAt DateTime?` and filter explicitly in queries (or in middleware). To request built-in soft delete, file via `references/feedback.md`.
+- **Model validations.** No declarative `@validates(...)` surface. Validate in application code (arktype). The maintainers decided it stays out of the core; an extension may provide it (prisma/orm ADR 293).
+- **Lifecycle callbacks** (`beforeSave`, `afterCreate`, etc.). Not supported. Use middleware (`references/runtime.md`) or app code. The maintainers decided it stays out of the core; an extension may provide it (prisma/orm ADR 293).
+- **Soft delete / `paranoid: true`.** No built-in soft-delete column. Add a nullable `deletedAt DateTime?` and filter explicitly in queries (or in middleware). The maintainers decided it stays out of the core; an extension may provide it (prisma/orm ADR 293).
 - **Scopes / default filters.** No ActiveRecord-style scopes. Compose query helpers yourself. To request scopes, file via `references/feedback.md`.
 - **Implicit Prisma-ORM many-to-many.** List navigation on both sides without an explicit join model is rejected. Author the join model explicitly. To request implicit M2M, file via `references/feedback.md`.
 
 ## Reference
 
 - Run `pnpm prisma contract --help` for the live command surface.
-- PSL feature surface and what the interpreter accepts: `packages/2-sql/2-authoring/contract-psl/README.md`.
-- TS builder surface and the callback-helper vocabulary: `packages/2-sql/2-authoring/contract-ts/README.md`.
+- PSL feature surface and what the interpreter accepts: `packages/2-sql-family/2-authoring/contract-psl/README.md`.
+- TS builder surface and the callback-helper vocabulary: `packages/2-sql-family/2-authoring/contract-ts/README.md`.
 - Layouts (where `contract.prisma`, `contract.json`, `contract.d.ts`, and `migrations/` live):
   - **App layout** (`src/prisma/...` + `migrations/app/...`) — what `examples/prisma-8-demo` demonstrates; the canonical shape consuming applications use.
   - **Contract-space-package layout** (`src/contract.{prisma,ts}` directly, `migrations/<timestamp>_<slug>/` without a space-id segment) — for extensions and aggregate-root packages, documented in `.cursor/rules/contract-space-package-layout.mdc` and ADR 212.
