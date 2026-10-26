@@ -2,7 +2,7 @@
  * Meeting rules layer (pure).
  *
  * Legislative deadlines and thresholds are expressed here as DATA, not as
- * hard-coded logic. The NSW rule set below is the seed for the
+ * hard-coded logic. The NSW rule set (in `src/config/statutory/nsw.ts`) is the seed for the
  * `meeting_rule_sets` table; `rule-set-repo.ts` reads the active row and falls
  * back to this seed. Each meeting records the version that governed it, so a
  * later change to the rules never rewrites the compliance basis of a past
@@ -12,6 +12,8 @@
  * (clear days and service rules under Schedule 1 / Schedule 2) is a refinement
  * flagged for the rules review; see the strategy document section 4.
  */
+
+import { MEETING_RULES } from "@/config/statutory";
 
 export type MeetingType = "AGM" | "EGM" | "COMMITTEE" | "FIRST_AGM";
 
@@ -62,40 +64,12 @@ export interface MeetingRuleSet {
 }
 
 /**
- * NSW seed rule set. Notice and minutes periods confirmed by the product owner
- * (AGM 14 notice / 7 minutes, EGM 7 / 7, committee 3 / 7). The clause citations
- * behind these periods are to be re-pinned to the live consolidation; the
- * numbers here are the operative build figures. See strategy doc section 4.
+ * NSW meeting rules. The values live with the other NSW statutory rules in
+ * `src/config/statutory/nsw.ts` (multi-jurisdiction plan, phase 1); this name
+ * is kept for existing callers. Use `meetingRulesFor(state)` to pick a
+ * building's rules.
  */
-export const NSW_RULE_SET: MeetingRuleSet = {
-  state: "NSW",
-  version: "NSW-2025.1",
-  effectiveFrom: "2025-01-01",
-  noticePeriods: { AGM: 14, EGM: 7, COMMITTEE: 3, FIRST_AGM: 14 },
-  minutesDeadlines: { AGM: 7, EGM: 7, COMMITTEE: 7, FIRST_AGM: 7 },
-  quorumRules: {
-    AGM: { basis: "PERCENT_PRESENT_OR_UE", percent: 0.25, minPersons: 2 },
-    EGM: { basis: "PERCENT_PRESENT_OR_UE", percent: 0.25, minPersons: 2 },
-    FIRST_AGM: { basis: "PERCENT_PRESENT_OR_UE", percent: 0.25, minPersons: 2 },
-    COMMITTEE: { basis: "HALF_MEMBERS" },
-  },
-  resolutionCategories: {
-    ORDINARY: { basis: "COUNT_MAJORITY" },
-    SPECIAL: { basis: "UE_AGAINST_THRESHOLD", againstThreshold: 0.25 },
-    UNANIMOUS: { basis: "NO_AGAINST" },
-    SUSTAINABILITY_INFRASTRUCTURE: {
-      basis: "UE_AGAINST_THRESHOLD",
-      againstThreshold: 0.5,
-    },
-  },
-  retention: { generalYears: 7, secretBallotMonths: 13 },
-  preMeetingEvoting: {
-    ballotOpenDaysBefore: 7,
-    ballotCloseHoursBefore: { AGM: 24, EGM: 24, FIRST_AGM: 24, COMMITTEE: 0 },
-  },
-  notes:
-    "Seed rule set for NSW. Clause citations to be re-pinned to the live in-force consolidation before deadline logic is relied upon.",
-};
+export const NSW_RULE_SET: MeetingRuleSet = MEETING_RULES;
 
 /**
  * Whole-day difference (b - a), ignoring time of day, counted in UTC so the

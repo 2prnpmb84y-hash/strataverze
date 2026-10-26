@@ -11,6 +11,8 @@
  * outputs these rules produce.
  */
 
+import type { MeetingRuleSet } from "@/lib/meetings/rules";
+
 /**
  * Interest on unpaid contributions.
  *
@@ -161,3 +163,40 @@ export const WORKS_SPENDING_RULES = {
   urgentWorksExempt: true,
   source: "SSMA 2015 s 102; PBL Legal, Strata scheme spending limits (Oct 2025); confirmed by Matthew 25 Oct 2026",
 } as const;
+
+/**
+ * Meetings: the NSW rule set (moved here from src/lib/meetings/rules.ts on
+ * 26 Oct 2026, unchanged). It seeds the `meeting_rule_sets` table. Notice and minutes periods confirmed by the product owner
+ * (AGM 14 notice / 7 minutes, EGM 7 / 7, committee 3 / 7). The clause citations
+ * behind these periods are to be re-pinned to the live consolidation; the
+ * numbers here are the operative build figures. See strategy doc section 4.
+ */
+export const MEETING_RULES: MeetingRuleSet = {
+  state: "NSW",
+  version: "NSW-2025.1",
+  effectiveFrom: "2025-01-01",
+  noticePeriods: { AGM: 14, EGM: 7, COMMITTEE: 3, FIRST_AGM: 14 },
+  minutesDeadlines: { AGM: 7, EGM: 7, COMMITTEE: 7, FIRST_AGM: 7 },
+  quorumRules: {
+    AGM: { basis: "PERCENT_PRESENT_OR_UE", percent: 0.25, minPersons: 2 },
+    EGM: { basis: "PERCENT_PRESENT_OR_UE", percent: 0.25, minPersons: 2 },
+    FIRST_AGM: { basis: "PERCENT_PRESENT_OR_UE", percent: 0.25, minPersons: 2 },
+    COMMITTEE: { basis: "HALF_MEMBERS" },
+  },
+  resolutionCategories: {
+    ORDINARY: { basis: "COUNT_MAJORITY" },
+    SPECIAL: { basis: "UE_AGAINST_THRESHOLD", againstThreshold: 0.25 },
+    UNANIMOUS: { basis: "NO_AGAINST" },
+    SUSTAINABILITY_INFRASTRUCTURE: {
+      basis: "UE_AGAINST_THRESHOLD",
+      againstThreshold: 0.5,
+    },
+  },
+  retention: { generalYears: 7, secretBallotMonths: 13 },
+  preMeetingEvoting: {
+    ballotOpenDaysBefore: 7,
+    ballotCloseHoursBefore: { AGM: 24, EGM: 24, FIRST_AGM: 24, COMMITTEE: 0 },
+  },
+  notes:
+    "Seed rule set for NSW. Clause citations to be re-pinned to the live in-force consolidation before deadline logic is relied upon.",
+};

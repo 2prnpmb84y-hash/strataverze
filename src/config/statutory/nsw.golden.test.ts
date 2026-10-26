@@ -43,12 +43,22 @@ import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 
 describe("NSW statutory constants", () => {
   it("are unchanged", () => {
-    const values = Object.fromEntries(
-      Object.entries(statutory)
-        .filter(([, v]) => typeof v !== "function")
-        .sort(([a], [b]) => a.localeCompare(b)),
-    );
-    expect(values).toMatchSnapshot();
+    // The NSW constants as at phase 0, by name, so adding a rule or a
+    // jurisdiction does not touch this snapshot (phase 1, 26 Oct 2026).
+    const names = [
+      "AUDIT_THRESHOLD",
+      "CAPITAL_WORKS_PLAN",
+      "DEFAULT_ACCOUNTING_BASIS",
+      "KEY_FINANCIAL_INFORMATION",
+      "LEVY_NOTICE_RULES",
+      "PAYMENT_ALLOCATION_ORDER",
+      "STATUTORY_INTEREST",
+      "WORKS_SPENDING_RULES",
+    ] as const;
+    expect(Object.fromEntries(names.map((n) => [n, statutory[n]]))).toMatchSnapshot();
+    // The NSW pack holds the same values.
+    for (const n of names) expect(statutory.statutoryRulesFor("NSW")[n]).toBe(statutory[n]);
+    expect(statutory.statutoryRulesFor("NSW").MEETING_RULES).toBe(NSW_RULE_SET);
   });
 
   it("give the same default accounting basis", () => {
