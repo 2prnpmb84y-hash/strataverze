@@ -589,6 +589,7 @@ export const ANNUAL_REPORTING = {
   ],
   penalty: "Fines of up to $5,500 may apply if a scheme does not report on time, and up to $2,200 if it does not update its information within 28 days.",
   portal: "NSW Strata Hub",
+  noAgmNote: "A scheme that has not yet reported should start as soon as possible, even without a recent AGM; it gives the reason no AGM has been held.",
   helpUrl: "https://www.nsw.gov.au/housing-and-construction/strata/strata-annual-reporting",
   source: "Strata Schemes Management Regulation 2016, Part 7, Division 2; NSW Government, Strata annual reporting",
 } as const;

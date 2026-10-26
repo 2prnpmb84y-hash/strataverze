@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requireAdviserScheme } from "../../_sections/require-adviser-scheme";
 import { annualReportOverview } from "@/lib/compliance/annual-report-store";
-import { recordAgmHeldAction, recordReportedAction } from "@/lib/actions/annual-report";
+import { recordAgmHeldAction, recordReportedAction, removeRecordedAgmAction } from "@/lib/actions/annual-report";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
@@ -28,7 +28,7 @@ export default async function StrataHubPage({ params }: { params: Promise<{ id: 
           ? { label: `Reported ${day(o.row?.reportedOn)}`, variant: "success" as const }
           : o.status === "OVERDUE"
             ? { label: `Overdue (due ${o.dueOn})`, variant: "danger" as const }
-            : { label: `Due by ${o.dueOn} (${o.daysLeft} days)`, variant: "warning" as const };
+            : { label: `Due by ${o.dueOn} (${o.daysLeft === 1 ? "1 day" : `${o.daysLeft} days`})`, variant: "warning" as const };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -41,6 +41,7 @@ export default async function StrataHubPage({ params }: { params: Promise<{ id: 
       <Card>
         <CardHeader title={o.lastAgmOn ? `For the AGM of ${o.lastAgmOn}` : "Annual report"} action={<StatusChip status={chip.label} variant={chip.variant} />} />
         {o.status === "OVERDUE" && <p className="text-sm text-red-700">{r.penalty}</p>}
+        {o.status === "NO_AGM" && <p className="text-sm text-ink">{r.noAgmNote}</p>}
         {o.row?.reference && <p className="text-sm text-ink">Strata Hub reference: {o.row.reference}</p>}
         <p className="mt-2 text-xs text-ink-muted">
           The reporter pays ${(r.feePerLotCents / 100).toFixed(2)} a lot on {r.portal} ({o.schemeLots} lots). Advisers and the committee get email reminders 14, 7 and 1 days before the date, and after it.{" "}
@@ -82,6 +83,12 @@ export default async function StrataHubPage({ params }: { params: Promise<{ id: 
       <Card>
         <CardHeader title="AGM held outside StrataVerze" description="AGMs run in StrataVerze are found from the meetings. Record one held another way." />
         <ReportForm action={recordAgmHeldAction.bind(null, id)} submitLabel="Record AGM" fields={[{ name: "agmOn", label: "Date of the AGM", type: "date", max: o.today }]} />
+        {o.recordedAgms.length > 0 && (
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="mb-2 text-sm text-ink-muted">Recorded by hand: {o.recordedAgms.join(", ")}. Remove one entered by mistake (only if no report is recorded for it).</p>
+            <ReportForm action={removeRecordedAgmAction.bind(null, id)} submitLabel="Remove AGM" fields={[{ name: "agmOn", label: "AGM recorded by hand", type: "select", options: o.recordedAgms, defaultValue: o.recordedAgms[0] }]} />
+          </div>
+        )}
       </Card>
     </div>
   );

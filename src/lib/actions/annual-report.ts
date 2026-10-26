@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { logError } from "@/lib/log";
-import { AnnualReportError, recordAgmHeld, recordReported } from "@/lib/compliance/annual-report-store";
+import { AnnualReportError, recordAgmHeld, recordReported, removeRecordedAgm } from "@/lib/compliance/annual-report-store";
 
 export type ReportFormState = { error?: string; fieldErrors?: Record<string, string>; success?: string; values?: Record<string, string> };
 
@@ -24,6 +24,17 @@ export async function recordAgmHeldAction(schemeId: string, _prev: ReportFormSta
     await recordAgmHeld({ schemeId, agmOn: text(formData, "agmOn"), today: await schemeToday(schemeId) });
     revalidatePath(`/adviser/schemes/${schemeId}/governance`, "layout");
     return { success: "AGM recorded." };
+  } catch (err) {
+    return failure(err, formData);
+  }
+}
+
+export async function removeRecordedAgmAction(schemeId: string, _prev: ReportFormState, formData: FormData): Promise<ReportFormState> {
+  try {
+    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await removeRecordedAgm({ schemeId, agmOn: text(formData, "agmOn") });
+    revalidatePath(`/adviser/schemes/${schemeId}/governance`, "layout");
+    return { success: "AGM removed." };
   } catch (err) {
     return failure(err, formData);
   }

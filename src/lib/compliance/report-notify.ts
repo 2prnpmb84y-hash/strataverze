@@ -20,7 +20,7 @@ export async function notifyAnnualReportDue(input: { schemeId: string; schemeNam
           heading: input.overdue ? "The annual report is overdue" : "The annual report is due",
           lines: [
             `The ${input.portal} annual report for ${input.schemeName}, after the AGM of ${input.agmOn}, ${input.overdue ? "was" : "is"} due by ${input.dueOn}${input.overdue ? " and no report is recorded in StrataVerze" : ""}.`,
-            input.overdue ? input.penalty : "Once it is made, record the date in StrataVerze so the reminders stop.",
+            input.overdue ? input.penalty : adviser ? "Once it is made, record the date in StrataVerze so the reminders stop." : "Once it is made, tell your strata manager so they can record it in StrataVerze.",
           ],
           buttonLabel: adviser ? "Open the annual report" : "Open StrataVerze",
           url: adviser ? `${siteUrl()}/adviser/schemes/${input.schemeId}/governance/strata-hub` : `${siteUrl()}/owner`,

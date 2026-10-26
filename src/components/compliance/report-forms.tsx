@@ -28,7 +28,7 @@ export function ReportForm({
           <label key={f.name} className="text-sm">
             <span className="block mb-1 font-medium text-ink">{f.label}</span>
             {f.type === "select" ? (
-              <select name={f.name} defaultValue={v[f.name] ?? f.defaultValue} className={input} required={f.required !== false}>
+              <select key={v[f.name] ?? f.defaultValue} name={f.name} defaultValue={v[f.name] ?? f.defaultValue} className={input} required={f.required !== false}>
                 {(f.options ?? []).map((o) => (
                   <option key={o} value={o}>
                     {o}

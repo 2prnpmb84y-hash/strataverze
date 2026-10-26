@@ -62,7 +62,13 @@ export async function runComplianceDay(now: Date = new Date()) {
 async function annualReportReminders_(now: Date) {
   let sent = 0;
   try {
-    const schemes = await db.orm.public.Scheme.where((s) => s.isActive.eq(true)).limit(5000).all();
+    // Only buildings with an AGM in StrataVerze or a report row: the others have nothing due yet.
+    const [agmMeetings, reportRows] = await Promise.all([
+      db.orm.public.Meeting.where((m) => and(m.meetingType.in(["AGM", "FIRST_AGM"]), m.status.in(["IN_PROGRESS", "MINUTES_DRAFT", "PUBLISHED"]), m.deletedAt.isNull())).limit(20000).all(),
+      db.orm.public.AnnualReport.where((r) => r.reportedOn.isNull()).limit(20000).all(),
+    ]);
+    const ids = [...new Set([...agmMeetings.map((m) => m.schemeId), ...reportRows.map((r) => r.schemeId)])];
+    const schemes = ids.length ? await db.orm.public.Scheme.where((s) => and(s.id.in(ids), s.isActive.eq(true))).limit(ids.length).all() : [];
     for (const scheme of schemes) {
       try {
         const o = await annualReportOverview(scheme.id, now, { info: false });

@@ -55,6 +55,7 @@ export default async function DocumentsSectionPage({
     <DocumentsTabContent
       vaultLabels={vaultLabels}
       retention={(await rulesForScheme(id)).rules.RECORD_RETENTION}
+      timeZone={scheme.timeZone}
       schemeId={id}
       schemePlanNumber={scheme.planNumber}
       documents={documents.map((d) => ({
