@@ -1,11 +1,13 @@
 /**
  * Which states and territories a building can be set up in.
  *
- * StrataVerze applies New South Wales strata law (see `@/config/statutory`).
- * Until another jurisdiction's rules are added and reviewed (multi-jurisdiction
- * plan, 26 Oct 2026), a building outside NSW would get NSW rules, so only NSW
- * buildings can be created. Addresses of suppliers and businesses are not
- * limited by this.
+ * A building can only be in a jurisdiction whose strata rules have been
+ * added (`RULE_PACKS` in `@/config/statutory`). Today that is New South Wales
+ * only (multi-jurisdiction plan, 26 Oct 2026). The database holds the same
+ * line (`schemes_state_has_rule_pack_check`, migration
+ * 20261106_jurisdiction_rule_packs.sql): adding a pack means changing that
+ * constraint in the same release. Addresses of suppliers and businesses are
+ * not limited by this.
  *
  * Plan: https://claude.ai/artifact/4mgrKi2E7VeBdSqTSgZhyc
  */
@@ -25,7 +27,12 @@ export const STATE_NAMES: Record<AustralianState, string> = {
   ACT: "Australian Capital Territory",
 };
 
-/** States whose strata law the platform applies today. */
+/**
+ * States whose strata law the platform applies today: exactly the states with
+ * a rule pack (`RULE_PACKS` in `@/config/statutory`, checked by
+ * src/config/statutory.test.ts). Kept as a plain list so the browser forms
+ * do not load the rules themselves.
+ */
 export const SUPPORTED_SCHEME_STATES: readonly AustralianState[] = ["NSW"];
 
 /** The state a new building starts with in forms. */
