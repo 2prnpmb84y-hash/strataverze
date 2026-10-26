@@ -43,7 +43,8 @@ export interface TrainingRow {
  */
 async function schemeLotCount(scheme: { id: string; totalLots: number }) {
   const lots = await db.orm.public.Lot.where((l) => l.schemeId.eq(scheme.id)).limit(5000).all();
-  return Math.max(lots.length, scheme.totalLots);
+  // A common property row on the roll is not a lot.
+  return Math.max(lots.filter((l) => String(l.lotType ?? "").toUpperCase() !== "COMMON").length, scheme.totalLots);
 }
 
 /** Every active committee member of a scheme with their training status. */
