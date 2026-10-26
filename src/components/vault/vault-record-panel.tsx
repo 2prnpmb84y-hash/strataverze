@@ -26,6 +26,7 @@ export function VaultRecordPanel({
   recordId,
   allowNewVersion = true,
   initialDetail,
+  timeZone,
 }: {
   schemeId: string;
   documentId?: string;
@@ -33,6 +34,8 @@ export function VaultRecordPanel({
   allowNewVersion?: boolean;
   /** Already loaded (skips the first fetch). */
   initialDetail?: Detail;
+  /** The building's time zone, for the times shown. */
+  timeZone: string;
 }) {
   const router = useRouter();
   const [detail, setDetail] = useState<Detail | null | undefined>(initialDetail);
@@ -129,7 +132,7 @@ export function VaultRecordPanel({
         <div className="min-w-0">
           <h3 id={`vault-${detail.id}`} className="font-heading font-semibold text-ink">In the building vault</h3>
           <p className="text-xs text-ink-muted">
-            {SOURCE_TEXT[detail.source] ?? detail.source} · captured {auDateTime(detail.createdAt)}
+            {SOURCE_TEXT[detail.source] ?? detail.source} · captured {auDateTime(detail.createdAt, timeZone)}
             {detail.reportedDate ? ` · dated ${auDate(detail.reportedDate)} (as reported)` : ""}
           </p>
         </div>
@@ -182,7 +185,7 @@ export function VaultRecordPanel({
                 {v === latest ? " (current)" : ""} · <span className="break-all font-normal">{v.fileName}</span>
               </p>
               <p className="text-xs text-ink-muted">
-                Captured {auDateTime(v.capturedAt)} · {size(v.sizeBytes)} · received {v.receipts.length} time{v.receipts.length === 1 ? "" : "s"}
+                Captured {auDateTime(v.capturedAt, timeZone)} · {size(v.sizeBytes)} · received {v.receipts.length} time{v.receipts.length === 1 ? "" : "s"}
               </p>
               <p className="mt-0.5 break-all font-mono text-[11px] text-ink-muted" title="SHA-256 fingerprint of the exact file">
                 SHA-256 {v.contentHash}
@@ -199,7 +202,7 @@ export function VaultRecordPanel({
       <ol className="mt-2 space-y-1.5">
         {detail.history.map((h) => (
           <li key={h.seq} className="text-sm text-ink">
-            <span className="text-xs text-ink-muted">{auDateTime(h.occurredAt)} · event {h.seq}</span>
+            <span className="text-xs text-ink-muted">{auDateTime(h.occurredAt, timeZone)} · event {h.seq}</span>
             <br />
             {describeEvent(h.eventType)}
             {typeof h.details.text === "string" && <span className="block whitespace-pre-wrap text-ink-muted">&ldquo;{h.details.text}&rdquo;</span>}

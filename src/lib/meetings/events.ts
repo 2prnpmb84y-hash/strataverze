@@ -15,8 +15,8 @@ export interface MeetingEventInput {
 }
 
 /** Append an event. There is deliberately no update or delete counterpart. */
-export async function recordMeetingEvent(input: MeetingEventInput) {
-  return db.orm.public.MeetingEvent.create({
+export async function recordMeetingEvent(input: MeetingEventInput, orm: typeof db.orm = db.orm) {
+  return orm.public.MeetingEvent.create({
     meetingId: input.meetingId,
     actorId: input.actorId ?? null,
     eventType: input.eventType,

@@ -2,13 +2,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { getDocumentsForScheme } from "@/lib/queries/documents";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 
 /** Moved unchanged from the scheme main page so it can also back its section page. */
 export function DocumentsCard({
-  id, documents,
+  id, documents, timeZone,
 }: {
   id: string;
   documents: Awaited<ReturnType<typeof getDocumentsForScheme>>;
+  /** The building's time zone, for upload dates. */
+  timeZone: string;
 }) {
   return (
     <Card className="mb-6">
@@ -28,8 +31,6 @@ export function DocumentsCard({
       {documents.length > 0 ? (
         <div className="flex flex-col gap-2">
           {documents.map((doc) => {
-            const uploadDate = new Date(String(doc.createdAt));
-
             const categoryLabels: Record<string, string> = {
               MINUTES: "Minutes",
               INSURANCE: "Insurance",
@@ -52,7 +53,7 @@ export function DocumentsCard({
                   <p className="text-xs text-ink-muted">
                     {categoryLabels[doc.category] ?? doc.category}
                     {" · "}
-                    {uploadDate.toLocaleDateString("en-AU", {
+                    {formatDateIn(timeZone, String(doc.createdAt), {
                       day: "numeric",
                       month: "short",
                       year: "numeric",

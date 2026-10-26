@@ -3,6 +3,7 @@ import { scopeSchemeIds } from "@/lib/owner/scheme-scope";
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner, getSchemesForCommittee } from "@/lib/queries/schemes";
+import { schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
 import { getVisibleDocumentsForSchemes } from "@/lib/documents/viewers";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { paginateArray, parsePage } from "@/lib/pagination";
@@ -39,7 +40,10 @@ export default async function OwnerDocumentsPage({
   // Committee of a scheme in view, not committee of any scheme (SEC-023).
   const isCommittee = committeeSchemes.some((cs) => schemeIds.includes(cs.id));
   // Only the documents this person may see (S3 visibility).
-  const documents = await getVisibleDocumentsForSchemes(profile.id, schemeIds);
+  const [documents, timeZones] = await Promise.all([
+    getVisibleDocumentsForSchemes(profile.id, schemeIds),
+    schemeTimeZones(schemeIds),
+  ]);
 
   const schemeNames = Object.fromEntries(schemeMap);
 
@@ -68,7 +72,7 @@ export default async function OwnerDocumentsPage({
         }
       />
 
-      <DocumentList documents={paginatedDocs} schemeNames={schemeNames} />
+      <DocumentList documents={paginatedDocs} schemeNames={schemeNames} schemeTimeZones={Object.fromEntries(timeZones)} />
 
       <Pagination
         page={meta.page}

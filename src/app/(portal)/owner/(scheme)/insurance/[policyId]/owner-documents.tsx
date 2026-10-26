@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getOwnerInsuranceDocumentUrlAction } from "../actions";
 import { DOCUMENT_CATEGORY_LABELS } from "@/lib/insurance/constants";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 
 export interface OwnerDocView {
   id: string;
@@ -14,8 +15,8 @@ export interface OwnerDocView {
   uploadedAt: string;
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-AU", {
+function fmtDate(iso: string, timeZone: string): string {
+  return formatDateIn(timeZone, iso, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -25,9 +26,12 @@ function fmtDate(iso: string): string {
 export function OwnerDocuments({
   schemeId,
   documents,
+  timeZone,
 }: {
   schemeId: string;
   documents: OwnerDocView[];
+  /** The building's time zone, for upload dates. */
+  timeZone: string;
 }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +60,7 @@ export function OwnerDocuments({
               <span className="text-ink-muted">
                 {" "}
                 · {DOCUMENT_CATEGORY_LABELS[d.category] ?? d.category}
-                {d.version > 1 ? ` · v${d.version}` : ""} · {fmtDate(d.uploadedAt)}
+                {d.version > 1 ? ` · v${d.version}` : ""} · {fmtDate(d.uploadedAt, timeZone)}
               </span>
             </span>
             <button

@@ -1,6 +1,8 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import { strToU8, zipSync } from "fflate";
 import { db } from "@/prisma/db";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { dayIn } from "@/lib/jurisdiction/time-zone";
 import { downloadObject } from "@/lib/storage/server-storage";
 import { appendVaultEvent, VaultError } from "./capture";
 import { sha256Hex } from "./chain";
@@ -37,6 +39,7 @@ export async function buildEvidencePackage(input: {
   if (!reason) throw new VaultError("Say why the package is needed. It is recorded with the export.");
   const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(input.schemeId)).first();
   if (!scheme) throw new VaultError("Building not found.");
+  const tz = timeZoneOf(scheme);
 
   const allRecords = await db.orm.public.VaultRecord.where((r) => r.schemeId.eq(input.schemeId)).all();
   const records = input.recordIds === "all" ? allRecords : allRecords.filter((r) => (input.recordIds as string[]).includes(r.id));
@@ -97,9 +100,9 @@ export async function buildEvidencePackage(input: {
 
   const titleOf = new Map(records.map((r) => [r.id, r.title]));
   files["timeline.csv"] = strToU8(csv([
-    ["Event", "StrataVerze time (UTC)", "Sydney time", "What happened", "Record", "Fingerprint", "Actor profile"],
+    ["Event", "StrataVerze time (UTC)", `Building time (${tz})`, "What happened", "Record", "Fingerprint", "Actor profile"],
     ...chain.filter(inFull).map((e) => [
-      e.seq, e.occurredAt, auDateTime(e.occurredAt), describeEvent(e.eventType), e.recordId ? titleOf.get(e.recordId) ?? e.recordId : "", e.contentHash ?? "", e.actorProfileId ?? "",
+      e.seq, e.occurredAt, auDateTime(e.occurredAt, tz), describeEvent(e.eventType), e.recordId ? titleOf.get(e.recordId) ?? e.recordId : "", e.contentHash ?? "", e.actorProfileId ?? "",
     ]),
   ]));
   files["audit.csv"] = strToU8(csv([
@@ -125,7 +128,7 @@ export async function buildEvidencePackage(input: {
   const manifestSha256 = sha256Hex(manifestText);
   files["manifest.json"] = strToU8(manifestText);
   files["verify.mjs"] = strToU8(VERIFY_SCRIPT);
-  files["VERIFY.md"] = strToU8(verifyReadme({ name: scheme.name, planNumber: scheme.planNumber, exportedAt, reason, fileCount: manifestFiles.length, eventCount: events.length, manifestSha256 }));
+  files["VERIFY.md"] = strToU8(verifyReadme({ name: scheme.name, planNumber: scheme.planNumber, timeZone: tz, exportedAt, reason, fileCount: manifestFiles.length, eventCount: events.length, manifestSha256 }));
 
   const exported = await appendVaultEvent({
     schemeId: input.schemeId,
@@ -142,14 +145,15 @@ export async function buildEvidencePackage(input: {
   }, null, 2));
 
   const name = String(scheme.planNumber || scheme.name).replace(/[^A-Za-z0-9]+/g, "-");
-  return { fileName: `evidence-${name}-${exportedAt.slice(0, 10)}.zip`, zip: zipSync(files), manifestSha256, exportSeq: Number(exported.seq) };
+  // Named for the export day in the building's time zone.
+  return { fileName: `evidence-${name}-${dayIn(tz, exportedAt)}.zip`, zip: zipSync(files), manifestSha256, exportSeq: Number(exported.seq) };
 }
 
-export function verifyReadme(p: { name: string; planNumber: string; exportedAt: string; reason: string; fileCount: number; eventCount: number; manifestSha256: string }): string {
+export function verifyReadme(p: { name: string; planNumber: string; timeZone: string; exportedAt: string; reason: string; fileCount: number; eventCount: number; manifestSha256: string }): string {
   return [
     `# Evidence package: ${p.name} (${p.planNumber})`,
     "",
-    `Exported from StrataVerze on ${auDateTime(p.exportedAt)} (Sydney time). Reason given: ${p.reason}`,
+    `Exported from StrataVerze on ${auDateTime(p.exportedAt, p.timeZone)} (${p.timeZone} time, the building's time zone). Reason given: ${p.reason}`,
     "",
     "## What is in it",
     "",

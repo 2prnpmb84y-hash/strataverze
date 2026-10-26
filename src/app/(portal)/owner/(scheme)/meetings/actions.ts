@@ -9,13 +9,12 @@ import { getMeetingById } from "@/lib/queries/meetings";
 import { getAgendaItem } from "@/lib/queries/agenda";
 import { getBallotForMeeting, castElectronicVote } from "@/lib/queries/evoting";
 import { isBallotOpen, isInformalVote } from "@/lib/meetings/evoting";
+import { isOpenForVoting } from "@/lib/meetings/lifecycle";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 
 /** Motion statuses an owner can vote on. */
 const OPEN_MOTION_STATUSES = ["OPEN", "PROPOSED"];
-/** Meeting statuses after which no vote can be cast. */
-const CLOSED_MEETING_STATUSES = ["CANCELLED", "COMPLETED", "PUBLISHED"];
 
 function isVoteValue(value: unknown): value is (typeof VOTE_VALUES)[number] {
   return typeof value === "string" && (VOTE_VALUES as readonly string[]).includes(value);
@@ -74,7 +73,8 @@ export async function castVoteAction(motionId: string, voteValue: string) {
     if (!meeting || meeting.schemeId !== motion.schemeId) {
       return { error: "Motion not found." };
     }
-    if (!OPEN_MOTION_STATUSES.includes(motion.status) || CLOSED_MEETING_STATUSES.includes(meeting.status)) {
+    // Not before the notice is out, and not once the meeting has closed.
+    if (!OPEN_MOTION_STATUSES.includes(motion.status) || !isOpenForVoting(String(meeting.status))) {
       return { error: "This motion is not open for voting." };
     }
     // Owners vote at general meetings. Committee motions are voted on by the

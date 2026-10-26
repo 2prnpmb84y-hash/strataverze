@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { normaliseMeetingType } from "@/lib/meetings/setup";
+import { isOpenForVoting } from "@/lib/meetings/lifecycle";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { assertBelongsTo, assertInScheme, assertOneOf } from "@/lib/auth/scheme-scope";
@@ -13,9 +14,6 @@ export type MotionFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
 };
-
-/** Meeting statuses in which no further committee business can happen. */
-const CLOSED_MEETING_STATUSES = ["CANCELLED", "COMPLETED", "PUBLISHED"];
 
 /**
  * Validate the current user holds the capability on the meeting's scheme.
@@ -111,8 +109,8 @@ export async function castCommitteeVoteAction(
       if (normaliseMeetingType(String(result.meeting.meetingType)) !== "COMMITTEE")
         return { error: "This motion is voted on by owners, not the committee." };
       if (motion.status !== "OPEN") return { error: "This motion is not open for voting." };
-      if (CLOSED_MEETING_STATUSES.includes(result.meeting.status))
-        return { error: "This meeting is closed." };
+      if (!isOpenForVoting(String(result.meeting.status)))
+        return { error: "This meeting is not open for voting." };
     }
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };

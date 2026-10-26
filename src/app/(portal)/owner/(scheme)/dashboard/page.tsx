@@ -7,6 +7,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { withLedgerBalances } from "@/lib/finance/fund-position";
 import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
+import { isUpcomingMeeting, meetingStatusLabel } from "@/lib/meetings/lifecycle";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { getLevyNoticesForLots } from "@/lib/queries/levies";
 import { effectiveStatus, noticeLabel } from "@/lib/levies/levy-ledger";
@@ -68,7 +69,8 @@ export default async function OwnerDashboard() {
     getDashboardFinancialSummary(selectedSchemeId),
   ]);
 
-  const upcomingMeetings = meetings.filter((m) => m.status === "SCHEDULED");
+  const now = new Date();
+  const upcomingMeetings = meetings.filter((m) => isUpcomingMeeting(String(m.status), new Date(String(m.scheduledAt)), now));
 
   // Outstanding levy balance on the owner's lots in this scheme
   // Today in the building's own time zone.
@@ -268,7 +270,7 @@ export default async function OwnerDashboard() {
                     <p className="text-sm font-medium text-ink">
                       {meeting.title}
                     </p>
-                    <StatusChip status="Scheduled" />
+                    <StatusChip status={meetingStatusLabel(String(meeting.status))} />
                   </div>
                   <p className="text-xs text-ink-muted">
                     {scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz,

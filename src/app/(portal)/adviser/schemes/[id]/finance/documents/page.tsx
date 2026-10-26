@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import { connection } from "next/server";
 import { requirePageAccess } from "@/lib/auth/require-access";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
@@ -44,9 +46,10 @@ const verificationLabels: Record<string, string> = {
   FLAGGED: "Flagged",
 };
 
-function formatDate(date: string | null | undefined): string {
+/** An instant's date in the building's time zone, dd/mm/yyyy. */
+function formatDate(date: string | null | undefined, timeZone: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU");
+  return formatDateIn(timeZone, String(date), { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function formatFileSize(bytes: number): string {
@@ -71,6 +74,7 @@ export default async function FinanceDocumentsPage({
   // Adviser finance: checked here as well as in the layout.
   if (!(await requirePageAccess(id, "finance.write"))) return null;
   const { type, status, verification } = await searchParams;
+  const tz = await schemeTimeZone(id);
 
   const [documents, unreviewedDocs] = await Promise.all([
     getFinancialDocumentsForScheme(id, {
@@ -193,7 +197,7 @@ export default async function FinanceDocumentsPage({
                     <span>
                       {docTypeLabels[doc.documentType] ?? doc.documentType}
                     </span>
-                    <span>Uploaded: {formatDate(doc.uploadedAt)}</span>
+                    <span>Uploaded: {formatDate(doc.uploadedAt, tz)}</span>
                     <span>{formatFileSize(doc.fileSize)}</span>
                     {doc.lot && (
                       <span>Lot {String(doc.lot.lotNumber)}</span>

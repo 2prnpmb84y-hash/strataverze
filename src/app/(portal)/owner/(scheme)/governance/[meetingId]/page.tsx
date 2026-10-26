@@ -7,6 +7,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { MotionSection } from "./motion-section";
 import { connection } from "next/server";
+import { meetingStatusLabel } from "@/lib/meetings/lifecycle";
 
 export default async function OwnerMeetingDetailPage({
   params,
@@ -61,7 +62,7 @@ export default async function OwnerMeetingDetailPage({
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
         >
-          {meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}
+          {meetingStatusLabel(String(meeting.status))}
         </span>
         {meeting.location && (
           <span className="text-sm text-ink-muted">
@@ -76,7 +77,7 @@ export default async function OwnerMeetingDetailPage({
         <StatCard label="Voted" value={votedMotions} accent="bg-owner" />
         <StatCard
           label="Status"
-          value={meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}
+          value={meetingStatusLabel(String(meeting.status))}
           accent={meeting.status === "COMPLETED" ? "bg-green-400" : "bg-blue-400"}
         />
       </div>

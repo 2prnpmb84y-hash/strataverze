@@ -3,6 +3,7 @@ import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getSchemeNotificationCounts } from "@/lib/queries/schemes";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
+import { isUpcomingMeeting } from "@/lib/meetings/lifecycle";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
 import { getVisibleDocumentsForSchemes } from "@/lib/documents/viewers";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -32,7 +33,7 @@ export default async function OwnerPropertiesPage() {
     await Promise.all([
       getSchemeNotificationCounts(schemeIds, ownerLotIds),
       schemeIds.length > 0
-        ? getUpcomingMeetingsForOwner(schemeIds, 5)
+        ? getUpcomingMeetingsForOwner(schemeIds)
         : Promise.resolve([]),
       schemeIds.length > 0
         ? getWorkOrdersForSchemes(schemeIds, 5)
@@ -41,6 +42,7 @@ export default async function OwnerPropertiesPage() {
         ? getVisibleDocumentsForSchemes(profile.id, schemeIds, 5)
         : Promise.resolve([]),
     ]);
+  const upcomingMeetings = meetings.filter((m) => isUpcomingMeeting(String(m.status), new Date(String(m.scheduledAt))));
 
   const totalProperties = ownerSchemes.length;
   const totalLots = ownerSchemes.reduce((s, c) => s + c.totalLots, 0);
@@ -196,14 +198,13 @@ export default async function OwnerPropertiesPage() {
                   </Button>
                 }
               />
-              {meetings.length === 0 ? (
+              {upcomingMeetings.length === 0 ? (
                 <p className="text-xs text-ink-muted px-4 pb-3">
                   No upcoming meetings.
                 </p>
               ) : (
                 <div className="flex flex-col gap-1.5 px-1 pb-2">
-                  {meetings
-                    .filter((m) => m.status === "SCHEDULED")
+                  {upcomingMeetings
                     .slice(0, 3)
                     .map((m) => {
                       const d = new Date(String(m.scheduledAt));

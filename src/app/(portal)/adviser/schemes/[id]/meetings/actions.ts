@@ -9,9 +9,12 @@ import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { assertBelongsTo, assertInScheme, assertOneOf } from "@/lib/auth/scheme-scope";
 import {
   getMeetingById,
-  updateMeeting,
+  updateMeetingWhileStatus,
   deleteMeeting,
 } from "@/lib/queries/meetings";
+import { canEditDetails } from "@/lib/meetings/lifecycle";
+import { db } from "@/prisma/db";
+import { recordMeetingEvent } from "@/lib/meetings/events";
 import {
   createMotion,
   updateMotion,
@@ -32,6 +35,14 @@ import {
   createMeetingWithRuleSnapshot,
   type MeetingSetupInput,
 } from "@/lib/meetings/setup";
+
+const BEFORE_NOTICE = ["DRAFT", "SCHEDULED"] as const;
+/** Details can change before notice, and while adjourned (a new time and place before the notice is issued again). */
+const EDITABLE = ["DRAFT", "SCHEDULED", "ADJOURNED"] as const;
+const NOTICE_OUT = "The notice for this meeting has been issued, so its details can no longer be changed here.";
+
+/** The meeting's status moved on while the change was being made: nothing is written. */
+class StatusMovedOn extends Error {}
 
 export type MeetingFormState = {
   error?: string;
@@ -70,8 +81,12 @@ function validateMeetingForm(formData: FormData, timeZone: string) {
       startTime: startsAt ?? "",
       endTime: endsAt,
       timezone: timeZone,
-      location: (formData.get("location") as string)?.trim() || undefined,
-      agenda: (formData.get("agenda") as string)?.trim() || undefined,
+      // Blank clears the field (a meeting switched to virtual has no street address).
+      location: (formData.get("location") as string)?.trim() || null,
+      agenda: (formData.get("agenda") as string)?.trim() || null,
+      format: (formData.get("format") as string)?.trim() || null,
+      joinUrl: (formData.get("joinUrl") as string)?.trim() || null,
+      joinDetails: (formData.get("joinDetails") as string)?.trim() || null,
     },
   };
 }
@@ -200,17 +215,39 @@ export async function updateMeetingAction(
   formData: FormData,
 ): Promise<MeetingFormState> {
   try {
-    await requireSchemeAccess(schemeId, "governance.manage");
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
     const meeting = await meetingInScheme(schemeId, meetingId);
+    if (!canEditDetails(String(meeting.status))) return { error: NOTICE_OUT };
     const zoneProblem = timeZoneFieldProblem(formData);
     if (zoneProblem) return { fieldErrors: { timezone: zoneProblem } };
     // Read the form's times in the time zone chosen on the form (the meeting's, else the building's).
     const tz = meetingTimeZone(formData, isTimeZone(meeting.timezone) ? String(meeting.timezone) : timeZoneOf(await getSchemeById(schemeId)));
     const { errors, isValid, data } = validateMeetingForm(formData, tz);
-    if (!isValid) return { fieldErrors: errors };
+    // The same place and join-link rules as when the meeting was set up.
+    const scheme = await getSchemeById(schemeId);
+    const setup = validateMeetingSetup(
+      { schemeId, title: data.title, meetingType: data.meetingType, startTime: data.startTime, timezone: tz, format: data.format, location: data.location ?? null, joinUrl: data.joinUrl },
+      await getActiveRuleSet(String(scheme?.state ?? "")),
+    ).errors;
+    if (setup.location) errors.location = setup.location;
+    if (setup.joinUrl) errors.joinUrl = setup.joinUrl;
+    if (!isValid || setup.location || setup.joinUrl) return { fieldErrors: errors };
 
-    await updateMeeting(schemeId, meetingId, data);
+    // Only while the details can still change: a notice already issued gives this time and place.
+    try {
+      await db.transaction(async (tx) => {
+        const changed = await updateMeetingWhileStatus(schemeId, meetingId, EDITABLE, data, tx.orm);
+        if (changed === 0) throw new StatusMovedOn();
+        await recordMeetingEvent(
+          { meetingId, actorId: profile.id, eventType: "MEETING_UPDATED", payload: { status: String(meeting.status), startTime: data.startTime, format: data.format, location: data.location } },
+          tx.orm,
+        );
+      });
+    } catch (err) {
+      if (err instanceof StatusMovedOn) return { error: NOTICE_OUT };
+      throw err;
+    }
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {
@@ -253,7 +290,9 @@ export async function completeMeetingAction(
     await requireSchemeAccess(schemeId, "governance.manage");
 
     await meetingInScheme(schemeId, meetingId);
-    await updateMeeting(schemeId, meetingId, { status: "COMPLETED" });
+    // Old (SCHEDULED) meetings only: a meeting run through notice, conduct and minutes finishes there.
+    const changed = await updateMeetingWhileStatus(schemeId, meetingId, ["SCHEDULED"], { status: "COMPLETED" });
+    if (changed === 0) return { error: "Only a scheduled meeting can be marked as completed here." };
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {
@@ -267,10 +306,20 @@ export async function cancelMeetingAction(
   meetingId: string,
 ) {
   try {
-    await requireSchemeAccess(schemeId, "governance.manage");
+    const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
 
-    await meetingInScheme(schemeId, meetingId);
-    await updateMeeting(schemeId, meetingId, { status: "CANCELLED" });
+    const meeting = await meetingInScheme(schemeId, meetingId);
+    // The cancellation and its record are written together, or not at all.
+    try {
+      await db.transaction(async (tx) => {
+        const changed = await updateMeetingWhileStatus(schemeId, meetingId, BEFORE_NOTICE, { status: "CANCELLED" }, tx.orm);
+        if (changed === 0) throw new StatusMovedOn();
+        await recordMeetingEvent({ meetingId, actorId: profile.id, eventType: "MEETING_CANCELLED", payload: { from: String(meeting.status) } }, tx.orm);
+      });
+    } catch (err) {
+      if (err instanceof StatusMovedOn) return { error: "Only a meeting whose notice has not been issued can be cancelled here." };
+      throw err;
+    }
     revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
     return {};
   } catch (err) {

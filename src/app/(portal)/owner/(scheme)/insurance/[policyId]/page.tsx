@@ -3,6 +3,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getPolicyWithItems } from "@/lib/queries/insurance";
 import { getPolicyDocumentsWithHistory } from "@/lib/queries/insurance-documents";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
@@ -136,7 +137,7 @@ export default async function OwnerPolicyDetailPage({
 
       <Card className="mb-6">
         <CardHeader title="Documents" description="Policy documents for your scheme." />
-        <OwnerDocuments schemeId={policy.schemeId} documents={documents} />
+        <OwnerDocuments schemeId={policy.schemeId} documents={documents} timeZone={timeZoneOf(policy.scheme)} />
       </Card>
 
       {policy.coverageSummary ? (
