@@ -90,24 +90,42 @@ export const CAPITAL_WORKS_PLAN = {
 } as const;
 
 /**
- * Audit of the accounts and financial statements.
+ * Audit of the accounts and financial statements (SSMA 2015 s 95), as
+ * confirmed by StrataVerze on 26 October 2026:
+ * - compulsory for a large strata scheme, one of more than 100 lots, not
+ *   counting parking or utility lots;
+ * - compulsory when the annual budget is more than $250,000 (the prescribed
+ *   amount; Strata Schemes Management Regulation 2016 cl 21, whose heading
+ *   "Calculation of annual budget" was seen in the AustLII table of contents
+ *   on 26 Oct 2026; its text was not read);
+ * - done before the accounts and financial statements are presented to the
+ *   annual general meeting, in accordance with the Australian Auditing
+ *   Standards.
+ * Other schemes consider an audit at each AGM.
  *
- * SSMA 2015 s 95: required for a scheme of more than 100 lots, or with an
- * annual budget of more than the prescribed amount, $250,000 (Strata Schemes
- * Management Regulation 2016 cl 21). Other schemes consider an audit at each
- * AGM. Thresholds confirmed by StrataVerze, 23 October 2026.
+ * Lots counted: every lot on the strata roll except those recorded as
+ * PARKING or STORAGE (StrataVerze's lot types for parking and utility lots).
+ * A lot recorded with another type is counted, so a utility lot recorded as
+ * RESIDENTIAL or COMMON is counted until its type is corrected. When the
+ * roll has fewer lots than the building's recorded total (it is not fully
+ * loaded), the lots not yet on the roll are counted too.
  *
  * The amount tested is the total levies raised for the financial year
  * (administrative and capital works fund contributions, and any special
- * levies), as confirmed by StrataVerze on 23 October 2026: "all buildings over
- * 100 lots or raise more than 250K require an audit". Other income and money
- * already held are not counted. If the Regulation's own definition of the
- * annual budget is later found to include them, change `leviesRaisedForYear`.
+ * levies), as confirmed by StrataVerze on 23 October 2026. Other income and
+ * money already held are not counted. If cl 21's definition of the annual
+ * budget is found to differ, change `leviesRaisedForYear`.
  */
 export const AUDIT_THRESHOLD = {
   lotsMoreThan: 100,
+  /** Lot types not counted towards the lots test (parking and utility lots). */
+  excludedLotTypes: ["PARKING", "STORAGE"],
+  /** How the platform names the lots left out. */
+  excludedLotsLabel: "parking or utility lots",
   leviesRaisedMoreThanCents: 25_000_000,
   measure: "total levies raised for the financial year",
+  timing: "before the accounts and financial statements are presented to the annual general meeting",
+  standard: "the Australian Auditing Standards",
   source: "Strata Schemes Management Act 2015 (NSW) s 95; Strata Schemes Management Regulation 2016 cl 21",
 } as const;
 
@@ -202,16 +220,42 @@ export const MEETING_RULES: MeetingRuleSet = {
 };
 
 /**
- * Debt recovery: the steps a recovery case goes through, in order (moved here
- * from src/lib/queries/debt-recovery.ts on 26 Oct 2026, unchanged). Each case
- * is given these steps when it is opened.
+ * Debt recovery: the steps a recovery case goes through, in order. Each case
+ * is given these steps when it is opened; a case keeps the steps it was
+ * opened with.
  *
- * NOT YET REVIEWED against the current Act. These were written before the
- * multi-jurisdiction plan. In particular the NCAT and Local Court split at
- * $500, the 14 and 21 day periods, and the citations (s 83, 85, 86, 103, 229)
- * have not been checked against the in-force SSMA or the 2025 reforms
- * (prescribed payment plans, the order of payment allocation). The NSW pack
- * reviewer should confirm or correct them.
+ * REDRAFTED FROM SOURCES on 26 Oct 2026, FOR STRATAVERZE TO REVIEW. The step
+ * types and order are unchanged (cases, labels and fees use them); the
+ * actions, legal bases and triggers are rewritten from:
+ * - NSW Government, "Guide to strata law changes" (changes from 27 Oct 2025
+ *   and 23 Oct 2026): at least 30 days' notice before action against an
+ *   owner; no action on levies covered by a payment plan that is being
+ *   followed; payment plans up to 12 months on the standard form, a written
+ *   reply within 28 days, no fee, written reasons for a refusal; from
+ *   23 Oct 2026 a plan can cover current levies and interest too.
+ * - NSW Government, "Assessing a payment plan for unpaid strata levies" and
+ *   "How to arrange a payment plan": the decision is a majority vote at an
+ *   owners corporation or strata committee meeting, recorded in the minutes,
+ *   and cannot be delegated to the strata managing agent; an interest waiver
+ *   is a separate decision made the same way; a request may be refused if
+ *   the plan would leave the capital works or administrative fund short;
+ *   payments apply to overdue levies oldest first, then interest, then
+ *   recovery costs, unless a court or tribunal order or the owner says
+ *   otherwise.
+ * - NSW Fair Trading Form 1 (FT6648, November 2025), prescribed under SSMR
+ *   cl 17K(1).
+ * - SSMA 2015 ss 83, 85, 86 (numbers from the Act as made; current wording
+ *   not read).
+ * Owners see each step's `actionRequired` and `legalBasis`, so those hold no
+ * review caveats; the points not confirmed are in DEBT_RECOVERY_GUIDANCE,
+ * which only advisers see: the prescribed content of the 30-day notice and
+ * the clause that requires it, who must authorise proceedings (s 103), the
+ * court or tribunal and its limits, which recovery costs an owner can be
+ * made to pay, enforcement options, and the current wording of ss 83 to 86.
+ * Showing levies, interest and costs separately, and the reminder, are
+ * StrataVerze practice, not a legal requirement.
+ * The previous 14 and 21 day periods and the $500 NCAT and Local Court split
+ * had no source and are removed.
  */
 export interface DebtRecoveryStepRule {
   stepType: string;
@@ -228,8 +272,9 @@ export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
   {
     stepType: "LEDGER_VERIFICATION",
     stepOrder: 1,
-    actionRequired: "Verify all levy notices, payments, and outstanding balances on the lot ledger",
-    legalBasis: "s 83 SSMA 2015",
+    actionRequired:
+      "Check each overdue levy was validly raised and its notice served with the hardship information, and that payments were applied to the oldest levies first, then interest, then costs (unless the owner or a court or tribunal order directed otherwise)",
+    legalBasis: "SSMA 2015 ss 83, 85; payment order: NSW Government guidance (from 27 Oct 2025)",
     responsibleParty: "ADVISER",
     approvalRequired: false,
     triggerCondition: "Case opened",
@@ -237,7 +282,8 @@ export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
   {
     stepType: "INITIAL_CONTACT",
     stepOrder: 2,
-    actionRequired: "Make initial contact with the lot owner regarding overdue levies",
+    actionRequired:
+      "Contact the owner about the overdue levies: the amount owing, and that they can ask for a payment plan on the standard form",
     responsibleParty: "ADVISER",
     approvalRequired: false,
     triggerCondition: "Ledger verified",
@@ -246,54 +292,59 @@ export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
   {
     stepType: "REMINDER_NOTICE",
     stepOrder: 3,
-    actionRequired: "Issue formal reminder notice with 14-day payment deadline",
-    legalBasis: "s 85 SSMA 2015",
+    actionRequired:
+      "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan",
+    legalBasis: "Interest: SSMA 2015 s 85",
     responsibleParty: "ADVISER",
     approvalRequired: false,
-    triggerCondition: "14 days after initial contact with no payment",
+    triggerCondition: "No payment or payment plan request after initial contact (period set by the building)",
     noticeType: "DEMAND",
   },
   {
     stepType: "FINAL_NOTICE",
     stepOrder: 4,
-    actionRequired: "Issue final demand notice warning of legal action if payment is not received within 21 days",
-    legalBasis: "s 85 SSMA 2015",
+    actionRequired:
+      "Give the owner written notice at least 30 days before any recovery action. No action can be taken for levies covered by a payment plan that is being followed",
+    legalBasis: "NSW Government guidance on the changes from 27 Oct 2025",
     responsibleParty: "ADVISER",
     approvalRequired: false,
-    triggerCondition: "14 days after reminder notice",
+    triggerCondition: "Reminder unpaid and no payment plan being followed",
     noticeType: "FINAL_DEMAND",
   },
   {
     stepType: "HARDSHIP_REVIEW",
     stepOrder: 5,
-    actionRequired: "Review any hardship application or payment plan request from the owner",
+    actionRequired:
+      "Decide any payment plan request (and any request to waive interest) by majority vote at an owners corporation or strata committee meeting, recorded in the minutes, and reply in writing within 28 days. A refusal must give reasons. No fee can be charged. A request can arrive at any step",
+    legalBasis: "Strata Schemes Management Regulation 2016 cl 17K (Form 1); NSW Government guidance",
     responsibleParty: "COMMITTEE",
     approvalRequired: true,
-    triggerCondition: "Owner submits hardship application or payment plan request",
+    triggerCondition: "Owner asks for a payment plan on the standard form",
   },
   {
     stepType: "COMMITTEE_REVIEW",
     stepOrder: 6,
-    actionRequired: "Committee review and resolution to approve legal referral (ordinary resolution required)",
-    legalBasis: "s 103 SSMA 2015",
+    actionRequired:
+      "Decide whether to start recovery proceedings, after the 30-day notice has expired and with no payment plan being followed",
     responsibleParty: "COMMITTEE",
     approvalRequired: true,
-    triggerCondition: "Final notice period expired with no payment or payment plan",
+    triggerCondition: "30-day notice expired with no payment and no payment plan being followed",
   },
   {
     stepType: "LEGAL_REFERRAL",
     stepOrder: 7,
-    actionRequired: "Refer matter to solicitor for recovery proceedings",
-    legalBasis: "s 86 SSMA 2015",
+    actionRequired: "Refer the matter to a solicitor with the ledger, notices, evidence of service and the authorising decision",
+    legalBasis: "SSMA 2015 s 86",
     responsibleParty: "ADVISER",
     approvalRequired: true,
-    triggerCondition: "Committee approval granted",
+    triggerCondition: "Recovery proceedings authorised",
   },
   {
     stepType: "PROCEEDINGS",
     stepOrder: 8,
-    actionRequired: "Solicitor files claim in NCAT or Local Court (amounts under $500 to NCAT; over $500 to Local Court)",
-    legalBasis: "s 86, s 229 SSMA 2015; Civil & Administrative Tribunal Act 2013",
+    actionRequired:
+      "Solicitor starts proceedings to recover the unpaid levies as a debt",
+    legalBasis: "SSMA 2015 s 86",
     responsibleParty: "SOLICITOR",
     approvalRequired: false,
     triggerCondition: "Legal referral accepted",
@@ -301,19 +352,18 @@ export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
   {
     stepType: "ENFORCEMENT",
     stepOrder: 9,
-    actionRequired: "Enforce judgment via garnishee order, writ of execution, or interest registration on lot",
-    legalBasis: "s 86(4) SSMA 2015",
+    actionRequired: "Solicitor enforces the judgment or order",
     responsibleParty: "SOLICITOR",
     approvalRequired: false,
-    triggerCondition: "Judgment obtained",
+    triggerCondition: "Judgment or order obtained and unpaid",
   },
   {
     stepType: "CLOSED",
     stepOrder: 10,
-    actionRequired: "Close recovery case and update ledger",
+    actionRequired: "Close the case and reconcile the lot ledger",
     responsibleParty: "ADVISER",
     approvalRequired: false,
-    triggerCondition: "Debt fully recovered, written off, or settled",
+    triggerCondition: "Debt paid, settled or written off",
   },
 ];
 
@@ -382,29 +432,29 @@ export const HARDSHIP_INFORMATION = {
 } as const;
 
 /**
- * Guidance shown for each debt recovery step (moved here from the case
- * screen in phase 1d, unchanged). Like DEBT_RECOVERY_STEPS, not yet reviewed
- * against the current Act; the NSW pack reviewer should confirm or correct it.
+ * Guidance shown for each debt recovery step. Redrafted from sources with
+ * DEBT_RECOVERY_STEPS on 26 Oct 2026, for StrataVerze to review; the
+ * sources and the points not confirmed are listed there.
  */
 export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
   LEDGER_VERIFICATION:
-    "Verify the accuracy of all levy charges, payments received and the outstanding balance. Ensure the ledger is reconciled before proceeding.",
+    "Check each overdue levy was validly raised and the levy notice was served with the hardship information. Check payments were applied to the oldest overdue levies first, then interest, then recovery costs, unless the owner or a court or tribunal order said otherwise. Showing levies, interest and costs separately is StrataVerze practice.",
   INITIAL_CONTACT:
-    "Make initial contact with the lot owner to advise them of the overdue levy and request payment. This is an informal reminder before formal notices.",
+    "Contact the owner informally about the overdue levies and the amount owing. Tell them they can ask for a payment plan of up to 12 months on the standard form, and that the owners corporation cannot charge a fee for it.",
   REMINDER_NOTICE:
-    "Issue a formal reminder notice under s.83(1) of the Strata Schemes Management Act 2015. The notice must specify the amount owing and due date.",
+    "Send a written reminder showing levies, interest and any costs separately, with the hardship information and how to ask for a payment plan. No statutory period for a reminder is confirmed; the building sets its own.",
   FINAL_NOTICE:
-    "Issue a final notice of the overdue contribution, warning that further recovery action will be taken if payment is not received within 14 days.",
+    "Before any recovery action, give the owner written notice at least 30 days ahead. No action can be taken for levies covered by a payment plan that is being followed. Not confirmed: the prescribed content of this notice and the clause that requires it. Check both before issuing.",
   HARDSHIP_REVIEW:
-    "Review any hardship application from the lot owner. Consider whether a payment plan or alternative arrangement is appropriate before escalating.",
+    "A payment plan request (and any request to waive interest) is decided by majority vote at an owners corporation or strata committee meeting and recorded in the minutes. The strata managing agent cannot decide it. Reply in writing within 28 days. A plan can run up to 12 months. A refusal must give reasons; the guidance says a request may be refused if the plan would leave a fund short. No fee can be charged. From 23 Oct 2026 a plan can cover current levies and interest as well as overdue levies. While a plan is followed, no recovery action can be taken for the levies it covers.",
   COMMITTEE_REVIEW:
-    "Present the case to the strata committee for review and decision on next steps. The committee must resolve to proceed with legal recovery.",
+    "Decide whether to start proceedings once the 30-day notice has expired and no payment plan is being followed. Not confirmed: whether the strata committee can decide this or a general meeting resolution is needed (s 103). Check before acting.",
   LEGAL_REFERRAL:
-    "Refer the matter to the scheme's solicitor for formal debt recovery proceedings. Provide all supporting documentation and correspondence.",
+    "Refer the matter to a solicitor with the ledger, the levy notices, the 30-day notice, evidence of service and the decision authorising proceedings.",
   PROCEEDINGS:
-    "Commence formal legal proceedings. This may include an application to NCAT or the Local Court for recovery of the outstanding levy debt.",
+    "The solicitor starts proceedings to recover the unpaid levies as a debt (s 86; current wording not read). Not confirmed: the court or tribunal, its monetary limits and which recovery costs can be claimed. Rely on the solicitor's advice.",
   ENFORCEMENT:
-    "Enforce the court order or NCAT decision. This may include registration of a judgment, garnishee orders, or other enforcement mechanisms.",
+    "The solicitor enforces the judgment or order. Not confirmed: the enforcement options. Rely on the solicitor's advice.",
   CLOSED:
-    "Finalise and close the debt recovery case. Record the outcome and any relevant notes for future reference.",
+    "Close the case once the debt is paid, settled or written off, and reconcile the lot ledger.",
 };

@@ -124,6 +124,19 @@ export function keyFinancialInformation(input: {
   };
 }
 
+/**
+ * The number of lots counted for the audit test: the lots on the strata roll
+ * other than those of an excluded type (parking and utility lots). When the
+ * roll has fewer lots than the building's recorded total (it is not fully
+ * loaded), the lots not yet on the roll are counted too, so a partly loaded
+ * roll never hides an audit.
+ */
+export function auditLotCount(input: { lots: Array<{ lotType: string | null }>; totalLots: number; excludedLotTypes: readonly string[] }): { counted: number; excluded: number; fromRoll: boolean } {
+  const excluded = input.lots.filter((l) => input.excludedLotTypes.includes(String(l.lotType ?? "").toUpperCase())).length;
+  const notOnRoll = Math.max(0, input.totalLots - input.lots.length);
+  return { counted: input.lots.length - excluded + notOnRoll, excluded, fromRoll: notOnRoll === 0 };
+}
+
 /** Whether the accounts must be audited (SSMA 2015 s 95). See AUDIT_THRESHOLD. */
 export function auditRequired(input: { lots: number; leviesRaisedCents: number; lotsMoreThan: number; leviesRaisedMoreThanCents: number }) {
   const byLots = input.lots > input.lotsMoreThan;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { auditRequired, keyFinancialInformation, leviesRaisedForYear, ownersFundsCents, unpaidAt } from "./key-financial-information";
+import { auditLotCount, auditRequired, keyFinancialInformation, leviesRaisedForYear, ownersFundsCents, unpaidAt } from "./key-financial-information";
 import type { BasisEntry, BasisLine } from "./accounting-basis";
 
 const l = (accountType: string, accountSubType: string, debit: number, credit: number): BasisLine => ({
@@ -58,6 +58,35 @@ describe("statement of key financial information", () => {
       administrationExpenditureCents: 50_000,
       balanceAtEndCents: 1_200_000,
     });
+  });
+});
+
+describe("lots counted for the audit test", () => {
+  const excludedLotTypes = ["PARKING", "STORAGE"];
+  const lots = (n: number, lotType: string) => Array.from({ length: n }, () => ({ lotType }));
+
+  it("leaves out parking and utility (storage) lots", () => {
+    // 101 lots on the roll, 30 of them parking or storage: 71 counted, so not a large scheme.
+    const r = auditLotCount({ lots: [...lots(71, "RESIDENTIAL"), ...lots(20, "PARKING"), ...lots(10, "STORAGE")], totalLots: 101, excludedLotTypes });
+    expect(r).toEqual({ counted: 71, excluded: 30, fromRoll: true });
+    expect(auditRequired({ lots: r.counted, leviesRaisedCents: 0, lotsMoreThan: 100, leviesRaisedMoreThanCents: 25_000_000 }).byLots).toBe(false);
+  });
+
+  it("counts commercial and other lots, and reads the type in any case", () => {
+    const r = auditLotCount({ lots: [...lots(100, "RESIDENTIAL"), ...lots(1, "COMMERCIAL"), ...lots(2, "parking")], totalLots: 103, excludedLotTypes });
+    expect(r).toEqual({ counted: 101, excluded: 2, fromRoll: true });
+    expect(auditRequired({ lots: r.counted, leviesRaisedCents: 0, lotsMoreThan: 100, leviesRaisedMoreThanCents: 25_000_000 }).byLots).toBe(true);
+  });
+
+  it("uses the building's recorded total when no lots are on the roll", () => {
+    expect(auditLotCount({ lots: [], totalLots: 120, excludedLotTypes })).toEqual({ counted: 120, excluded: 0, fromRoll: false });
+  });
+
+  it("counts the lots not yet on a partly loaded roll", () => {
+    // 150 lots recorded, 40 on the roll (5 parking): 35 + 110 not yet entered.
+    const r = auditLotCount({ lots: [...lots(35, "RESIDENTIAL"), ...lots(5, "PARKING")], totalLots: 150, excludedLotTypes });
+    expect(r).toEqual({ counted: 145, excluded: 5, fromRoll: false });
+    expect(auditRequired({ lots: r.counted, leviesRaisedCents: 0, lotsMoreThan: 100, leviesRaisedMoreThanCents: 25_000_000 }).byLots).toBe(true);
   });
 });
 

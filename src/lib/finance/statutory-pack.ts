@@ -18,7 +18,7 @@ import { toBasisEntries } from "@/lib/queries/reports";
 import { logActivity } from "@/lib/queries/activity-log";
 import type { StatutoryRules } from "@/config/statutory";
 import { levyIncomeAccountPicker, recognisedIncomeExpense, incomeExpenseTotals, type AccountingBasis, type RecognisedLine } from "./accounting-basis";
-import { auditRequired, keyFinancialInformation, leviesRaisedForYear, unpaidAt, type KeyFinancialInformation } from "./key-financial-information";
+import { auditLotCount, auditRequired, keyFinancialInformation, leviesRaisedForYear, unpaidAt, type KeyFinancialInformation } from "./key-financial-information";
 import { currentBudgetLines } from "./budgets";
 import { getAdoptedPlan, isCapitalWorksFund } from "./capital-works-plans";
 import { getSchemeInterestSetting } from "./interest-setting";
@@ -66,12 +66,23 @@ export interface StatutoryPack {
   funds: FundPack[];
   notes: string[];
   /** `annualBudgetCents` is the amount tested: the total levies raised for the year (see the pack's AUDIT_THRESHOLD). */
-  audit: { required: boolean; byLots: boolean; byBudget: boolean; annualBudgetCents: number };
+  audit: {
+    required: boolean;
+    byLots: boolean;
+    byBudget: boolean;
+    annualBudgetCents: number;
+    /** Lots counted for the test (parking and utility lots left out). Absent on packs adopted before 26 Oct 2026. */
+    lotsCounted?: number;
+    /** Parking and utility lots left out of the count. */
+    lotsExcluded?: number;
+  };
   /** The building's rule pack the statements were prepared under, and the parts of it they show. */
   rules: {
     rulePack: string;
     keyFinancialInformation: StatutoryRules["KEY_FINANCIAL_INFORMATION"];
-    auditThreshold: StatutoryRules["AUDIT_THRESHOLD"];
+    /** Packs adopted before 2026.10.3 stored the threshold without the lot types, label, timing and standard. */
+    auditThreshold: Omit<StatutoryRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard"> &
+      Partial<Pick<StatutoryRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard">>;
   };
   adopted: { meetingId: string; adoptedAt: string; snapshotId: string } | null;
 }
@@ -229,9 +240,13 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     notices: notices.filter((n) => isoDay(n.dueDate) >= start).map((n) => ({ fundId: n.fundId, amountDueCents: toCents(String(n.amountDue)) })),
   });
   const annualBudgetCents = raised.totalCents;
+  // Lots counted for the audit test: parking and utility lots are left out (AUDIT_THRESHOLD).
+  const lotCount = auditLotCount({ lots: lots.map((l) => ({ lotType: l.lotType ? String(l.lotType) : null })), totalLots: scheme.totalLots, excludedLotTypes: AUDIT_THRESHOLD.excludedLotTypes });
   const audit = {
-    ...auditRequired({ lots: scheme.totalLots, leviesRaisedCents: annualBudgetCents, lotsMoreThan: AUDIT_THRESHOLD.lotsMoreThan, leviesRaisedMoreThanCents: AUDIT_THRESHOLD.leviesRaisedMoreThanCents }),
+    ...auditRequired({ lots: lotCount.counted, leviesRaisedCents: annualBudgetCents, lotsMoreThan: AUDIT_THRESHOLD.lotsMoreThan, leviesRaisedMoreThanCents: AUDIT_THRESHOLD.leviesRaisedMoreThanCents }),
     annualBudgetCents,
+    lotsCounted: lotCount.counted,
+    lotsExcluded: lotCount.excluded,
   };
 
   const notes = [
@@ -247,7 +262,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
       ? `Capital works fund plan "${plan.title}" was adopted${plan.adoptedAt ? ` on ${isoDay(plan.adoptedAt)}` : ""} and is due for review by ${isoDay(plan.reviewDueAt)} (${CAPITAL_WORKS_PLAN.source}).`
       : "No capital works fund plan has been adopted in StrataVerze.",
     audit.required
-      ? `An audit is required (${audit.byLots ? `more than ${AUDIT_THRESHOLD.lotsMoreThan} lots` : `levies raised for the year of ${formatAud(annualBudgetCents)}, more than ${formatAud(AUDIT_THRESHOLD.leviesRaisedMoreThanCents)}`}; ${AUDIT_THRESHOLD.source}).`
+      ? `An audit is required (${audit.byLots ? `more than ${AUDIT_THRESHOLD.lotsMoreThan} lots, not counting ${AUDIT_THRESHOLD.excludedLotsLabel}` : `levies raised for the year of ${formatAud(annualBudgetCents)}, more than ${formatAud(AUDIT_THRESHOLD.leviesRaisedMoreThanCents)}`}; ${AUDIT_THRESHOLD.source}). It must be done ${AUDIT_THRESHOLD.timing}, in accordance with ${AUDIT_THRESHOLD.standard}.`
       : `An audit is not required by size, but the annual general meeting must consider whether to have the accounts audited (${AUDIT_THRESHOLD.source}).`,
     "Interest earned is the total of interest income accounts, which include interest charged on overdue levies.",
   ];

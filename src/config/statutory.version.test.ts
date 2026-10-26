@@ -51,6 +51,7 @@ function packFingerprint(rules: Record<string, unknown>): string {
 const KNOWN_VERSIONS: Record<string, string> = {
   "AU-NSW 2026.10.1": "beadc77f5a9c5145fb733bf4f8da8f7f0aef5800cdf2c8851aa7e287d63b3194",
   "AU-NSW 2026.10.2": "dc4fe58d43251ff7ea6192fa0d975442767ee743dc5737d204108632ab8d3d8d",
+  "AU-NSW 2026.10.3": "fba9d1564ced3f81500c13f0d100cda92da1a6f7b045133b95dbcfce4d311807",
 };
 
 describe("rule pack versions", () => {
