@@ -8,7 +8,10 @@
  *   adviser / committee: documents, work orders, contacts and lots of the scheme
  *   owner:               the scheme's documents, lots and work orders; no contacts
  *                        (owners see all of their building's work orders, decided 23 Oct 2026)
- *   supplier:            only work orders awarded to them
+ *   supplier:            nothing (26 Oct 2026: the old maintenance work orders a
+ *                        supplier was awarded are no longer shown anywhere in the
+ *                        supplier portal, which now lists works work orders, so
+ *                        search would only lead to a page that does not show them)
  *   accountant / payment authoriser: the scheme itself only
  *
  * The client's portal can only NARROW the result (to the schemes where the
@@ -95,7 +98,8 @@ export function searchPlan(scopes: readonly SchemeSearchScope[]): SearchPlan {
     workOrdersAll: ids(["adviser", "committee", "owner"]),
     // Kept for a narrower owner policy; owners currently see every work order.
     workOrdersRaised: [],
-    workOrdersAwarded: ids(["supplier"]),
+    // Suppliers no longer search the old maintenance work orders (see above).
+    workOrdersAwarded: [],
   };
 }
 
@@ -121,8 +125,7 @@ export function hrefFor(
     }
   }
   if (level === "accountant") return `/accountant/schemes/${schemeId}`;
-  // Supplier search finds the earlier maintenance work orders; their detail
-  // page was replaced by urgent work orders (works stage 2), so go to the list.
+  // Suppliers no longer get search results (searchPlan); this stays a safe default.
   if (level === "supplier") return kind === "work-order" ? "/supplier/work-orders" : "/supplier";
   if (level === "authoriser") return "/owner/finance/approvals";
   switch (kind) {
