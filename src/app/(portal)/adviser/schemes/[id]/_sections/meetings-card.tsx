@@ -3,6 +3,7 @@ import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { getMeetingsForScheme } from "@/lib/queries/meetings";
+import { meetingStatusLabel } from "@/lib/meetings/lifecycle";
 
 /** Moved unchanged from the scheme main page so it can also back its section page. */
 export function MeetingsCard({
@@ -69,7 +70,7 @@ export function MeetingsCard({
                 <span
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
                 >
-                  {meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}
+                  {meetingStatusLabel(String(meeting.status))}
                 </span>
               </Link>
             );

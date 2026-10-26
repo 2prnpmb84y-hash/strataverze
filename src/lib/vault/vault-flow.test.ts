@@ -71,7 +71,7 @@ const { sharedFake } = await import("@/test/fake-orm");
 const { annotateRecord, captureFile, openVault } = await import("./capture");
 const { runVaultCheck } = await import("./check");
 const { buildEvidencePackage } = await import("./export");
-const { vaultRecordDetail } = await import("./queries");
+const { vaultRecordDetail, vaultTimeline } = await import("./queries");
 
 const S1 = "11111111-1111-4111-8111-111111111111";
 const S2 = "22222222-2222-4222-8222-222222222222";
@@ -81,8 +81,8 @@ beforeEach(() => {
   storage.objects.clear();
   sharedFake.reset({
     Scheme: [
-      { id: S1, name: "Opera House", planNumber: "SP 99999" },
-      { id: S2, name: "Other building", planNumber: "SP 1" },
+      { id: S1, name: "Opera House", planNumber: "SP 99999", timeZone: "Australia/Perth" },
+      { id: S2, name: "Other building", planNumber: "SP 1", timeZone: "Australia/Sydney" },
     ],
     Vault: [], VaultRecord: [], VaultVersion: [], VaultReceipt: [], VaultEvent: [], VaultCheck: [], SecurityAuditEvent: [],
   });
@@ -108,6 +108,15 @@ describe("capturing into a vault", () => {
     expect(v).toMatchObject({ versionNo: 1, schemeId: S1, storagePath: `schemes/${S1}/vault/originals/${v.contentHash}.pdf` });
     expect(storage.objects.get(String(v.storagePath))).toEqual(pdf("roof report"));
     expect(sharedFake.table("VaultEvent").map((e) => e.eventType)).toEqual(["vault.opened", "record.captured"]);
+  });
+
+  it("filters the timeline by days in the building's time zone", async () => {
+    await openVault(S1, "adviser");
+    await captureRoof();
+    // 5 pm UTC on 25 Oct is 1 am on 26 Oct in Perth (S1's zone).
+    for (const e of sharedFake.table("VaultEvent")) e.occurredAt = "2026-10-25T17:00:00.000Z";
+    expect((await vaultTimeline(S1, { from: "2026-10-26", to: "2026-10-26" })).length).toBe(2);
+    expect(await vaultTimeline(S1, { to: "2026-10-25" })).toEqual([]);
   });
 
   it("records the same file twice as one version with two receipts", async () => {
@@ -259,6 +268,9 @@ describe("the evidence package", () => {
     expect(manifest.events.find((e: { seq: number }) => e.seq === 4)).toEqual(expect.objectContaining({ redacted: true }));
     expect(other.kind).toBe("new_record");
     expect(readFileSync(join(dir, "VERIFY.md"), "utf8")).toContain("What it does not show");
+    // Times are given in the building's own time zone, and say which.
+    expect(readFileSync(join(dir, "VERIFY.md"), "utf8")).toContain("(Australia/Perth time, the building's time zone)");
+    expect(readFileSync(join(dir, "timeline.csv"), "utf8").split("\r\n")[0]).toContain("Building time (Australia/Perth)");
     // The export is itself in the ledger, with the manifest's fingerprint.
     const exported = sharedFake.table("VaultEvent").at(-1)!;
     expect(exported.eventType).toBe("export.created");

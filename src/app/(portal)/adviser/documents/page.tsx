@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForAdviser } from "@/lib/queries/schemes";
 import { getDocumentsForSchemes } from "@/lib/queries/documents";
+import { PLATFORM_TIME_ZONE, schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -25,9 +27,11 @@ export default async function AdviserDocumentsPage() {
   const schemeIds = schemes.map((s) => s.id);
   const schemeNames = new Map(schemes.map((s) => [s.id, s.name]));
 
-  const documents = schemeIds.length > 0
-    ? await getDocumentsForSchemes(schemeIds)
-    : [];
+  const [documents, timeZones] = await Promise.all([
+    schemeIds.length > 0 ? getDocumentsForSchemes(schemeIds) : [],
+    // Each document's date is shown in its own building's time zone.
+    schemeTimeZones(schemeIds),
+  ]);
 
   // Count by category
   const categoryCounts = new Map<string, number>();
@@ -81,7 +85,6 @@ export default async function AdviserDocumentsPage() {
           />
           <div className="flex flex-col gap-2">
             {documents.map((doc) => {
-              const uploadDate = new Date(String(doc.createdAt));
               return (
                 <Link
                   key={doc.id}
@@ -97,7 +100,7 @@ export default async function AdviserDocumentsPage() {
                       {" · "}
                       {categoryLabels[doc.category] ?? doc.category}
                       {" · "}
-                      {uploadDate.toLocaleDateString("en-AU", {
+                      {formatDateIn(timeZones.get(doc.schemeId) ?? PLATFORM_TIME_ZONE, String(doc.createdAt), {
                         day: "numeric",
                         month: "short",
                         year: "numeric",

@@ -1,5 +1,6 @@
 import { logError } from "@/lib/log";
 import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
+import { isUpcomingMeeting } from "@/lib/meetings/lifecycle";
 import { defaultTimeZone } from "@/lib/jurisdiction/time-zone";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
@@ -280,10 +281,12 @@ export async function getSchemeNotificationCounts(
       .where((wo) => wo.status.in(["OPEN", "IN_PROGRESS"]))
       .limit(1000)
       .all(),
+    // Current meetings in any status of either flow; which are upcoming is decided below.
     db.orm.public.Meeting
       .where((m) => m.schemeId.in(schemeIds))
-      .where((m) => m.status.eq("SCHEDULED"))
-      .limit(500)
+      .where((m) => m.deletedAt.eq(null))
+      .where((m) => m.status.in(["DRAFT", "SCHEDULED", "NOTICE_ISSUED", "IN_PROGRESS", "ADJOURNED", "MINUTES_DRAFT"]))
+      .limit(2000)
       .all(),
   ]);
 
@@ -306,9 +309,10 @@ export async function getSchemeNotificationCounts(
   }
 
   // Count upcoming meetings per scheme
+  const now = new Date();
   for (const meeting of meetings) {
     const entry = counts.get(meeting.schemeId);
-    if (entry) entry.upcomingMeetings++;
+    if (entry && isUpcomingMeeting(String(meeting.status), new Date(String(meeting.scheduledAt)), now)) entry.upcomingMeetings++;
   }
 
   return counts;

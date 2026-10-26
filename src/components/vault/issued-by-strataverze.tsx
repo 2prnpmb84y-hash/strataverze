@@ -24,7 +24,8 @@ const TYPE_TEXT: Record<string, string> = {
 };
 
 /** The documents StrataVerze itself issued for this building, as kept in the vault. */
-export function IssuedByStrataVerze({ schemeId, records }: { schemeId: string; records: IssuedRecord[] }) {
+/** `timeZone` is the building's, for the capture times. */
+export function IssuedByStrataVerze({ schemeId, records, timeZone }: { schemeId: string; records: IssuedRecord[]; timeZone: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [type, setType] = useState("");
   const types = [...new Set(records.map((r) => r.recordType))];
@@ -64,11 +65,11 @@ export function IssuedByStrataVerze({ schemeId, records }: { schemeId: string; r
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-ink">{r.title}</span>
-                  <span className="block text-xs text-ink-muted">{TYPE_TEXT[r.recordType] ?? r.recordType} · captured {auDateTime(r.createdAt)}</span>
+                  <span className="block text-xs text-ink-muted">{TYPE_TEXT[r.recordType] ?? r.recordType} · captured {auDateTime(r.createdAt, timeZone)}</span>
                 </span>
                 {r.label && <VaultLabelChip tone={r.label.tone} text={r.label.text} detail={r.label.detail} />}
               </button>
-              {openId === r.id && <VaultRecordPanel schemeId={schemeId} recordId={r.id} allowNewVersion={false} />}
+              {openId === r.id && <VaultRecordPanel schemeId={schemeId} recordId={r.id} allowNewVersion={false} timeZone={timeZone} />}
             </li>
           ))}
         </ul>

@@ -14,6 +14,7 @@ import {
   DOCUMENT_CATEGORY_LABELS,
 } from "@/lib/insurance/constants";
 import type { PolicyDocumentView } from "@/lib/queries/insurance-documents";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 
 const categoryOptions = DOCUMENT_CATEGORIES.map((v) => ({
   value: v,
@@ -27,8 +28,8 @@ function formatSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-AU", {
+function formatDate(iso: string, timeZone: string): string {
+  return formatDateIn(timeZone, iso, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -48,10 +49,13 @@ export function InsuranceDocumentsSection({
   schemeId,
   policyId,
   documents,
+  timeZone,
 }: {
   schemeId: string;
   policyId: string;
   documents: PolicyDocumentView[];
+  /** The building's time zone, for upload dates. */
+  timeZone: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -297,7 +301,7 @@ export function InsuranceDocumentsSection({
                     <p className="text-xs text-ink-muted mt-0.5 truncate">
                       {d.fileName}
                       {formatSize(d.fileSize) ? ` · ${formatSize(d.fileSize)}` : ""} ·{" "}
-                      {formatDate(d.uploadedAt)}
+                      {formatDate(d.uploadedAt, timeZone)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs">
@@ -353,7 +357,7 @@ export function InsuranceDocumentsSection({
                         className="flex items-center justify-between gap-2 text-xs text-ink-muted"
                       >
                         <span>
-                          v{v.version} · {v.fileName} · {formatDate(v.uploadedAt)}
+                          v{v.version} · {v.fileName} · {formatDate(v.uploadedAt, timeZone)}
                         </span>
                         <button
                           type="button"

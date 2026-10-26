@@ -1,6 +1,5 @@
 "use client";
 import { keepUntil, type RetentionRules } from "@/lib/compliance/annual-report";
-import { PLATFORM_TIME_ZONE, storedDayIn } from "@/lib/jurisdiction/time-zone";
 
 import { useState, useCallback, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -11,6 +10,7 @@ import { stageUpload } from "@/lib/storage/client-upload";
 import { VaultLabelChip } from "@/components/vault/vault-label";
 import { VaultRecordPanel } from "@/components/vault/vault-record-panel";
 import type { LabelTone } from "@/lib/vault/labels";
+import { formatDateIn, storedDayIn } from "@/lib/jurisdiction/time-zone";
 import {
   uploadFileAction,
   updateDocumentMetadataAction,
@@ -59,8 +59,8 @@ type Props = {
   vaultLabels?: Record<string, { tone: LabelTone; text: string; detail: string }>;
   /** How long the building's records are kept (its rule pack), to show "keep until" on each document. */
   retention?: RetentionRules;
-  /** The building's time zone, for the day a document was added. */
-  timeZone?: string;
+  /** The building's time zone, for upload dates and the day a document was added. */
+  timeZone: string;
 };
 
 export function DocumentsTabContent({
@@ -238,7 +238,7 @@ export function DocumentsTabContent({
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-AU", {
+    return formatDateIn(timeZone, dateStr, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -352,7 +352,7 @@ export function DocumentsTabContent({
               Unable to load document preview.
             </div>
           )}
-          {vaultLabels && <VaultRecordPanel key={selectedDoc.id} schemeId={schemeId} documentId={selectedDoc.id} />}
+          {vaultLabels && <VaultRecordPanel key={selectedDoc.id} schemeId={schemeId} documentId={selectedDoc.id} timeZone={timeZone} />}
         </div>
       )}
 
@@ -382,7 +382,7 @@ export function DocumentsTabContent({
                   {formatDate(doc.createdAt)}
                   {doc.fileSize ? ` · ${formatSize(doc.fileSize)}` : ""}
                   {retention && (() => {
-                    const until = keepUntil(doc.category, storedDayIn(timeZone ?? PLATFORM_TIME_ZONE, doc.documentDate ?? doc.createdAt), retention);
+                    const until = keepUntil(doc.category, storedDayIn(timeZone, doc.documentDate ?? doc.createdAt), retention);
                     return until === "LIFE" ? " · kept for the life of the scheme" : ` · keep at least until ${until}`;
                   })()}
                 </p>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { meetingZone } from "@/lib/jurisdiction/time-zone";
+import { isUpcomingMeeting, meetingStatusLabel, MEETING_STATUS_FILTER_OPTIONS } from "@/lib/meetings/lifecycle";
 import Link from "next/link";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
@@ -17,6 +18,7 @@ const meetingTypeLabels: Record<string, string> = {
 const statusStyle: Record<string, string> = {
   SCHEDULED: "bg-blue-100 text-blue-700",
   COMPLETED: "bg-green-100 text-green-700",
+  PUBLISHED: "bg-green-100 text-green-700",
   CANCELLED: "bg-gray-100 text-gray-700",
 };
 
@@ -27,12 +29,7 @@ const motionStatusStyle: Record<string, string> = {
   WITHDRAWN: "bg-gray-100 text-gray-700",
 };
 
-const statusOptions = [
-  { value: "", label: "All statuses" },
-  { value: "SCHEDULED", label: "Scheduled" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const statusOptions = [{ value: "", label: "All statuses" }, ...MEETING_STATUS_FILTER_OPTIONS];
 
 const typeOptions = [
   { value: "", label: "All types" },
@@ -90,10 +87,10 @@ export function CommitteeMeetingList({
     });
   }, [meetings, search, statusFilter, typeFilter, schemeNames]);
 
-  const scheduled = filtered.filter((m) => m.status === "SCHEDULED");
-  const completed = filtered.filter(
-    (m) => m.status === "COMPLETED" || m.status === "CANCELLED",
-  );
+  // Upcoming (not finished, under way or not yet started) and the rest, as on the owner pages.
+  const now = new Date();
+  const scheduled = filtered.filter((m) => isUpcomingMeeting(m.status, new Date(String(m.scheduledAt)), now));
+  const completed = filtered.filter((m) => !isUpcomingMeeting(m.status, new Date(String(m.scheduledAt)), now));
 
   return (
     <>
@@ -136,7 +133,7 @@ export function CommitteeMeetingList({
             <Card className="mb-6">
               <CardHeader
                 title="Upcoming Meetings"
-                description={`${scheduled.length} meeting${scheduled.length === 1 ? "" : "s"} scheduled.`}
+                description={`${scheduled.length} upcoming meeting${scheduled.length === 1 ? "" : "s"}.`}
               />
               <div className="flex flex-col gap-2">
                 {scheduled.map((meeting) => {
@@ -159,9 +156,9 @@ export function CommitteeMeetingList({
                           {meeting.title}
                         </Link>
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status]}`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-blue-100 text-blue-700"}`}
                         >
-                          {meeting.status}
+                          {meetingStatusLabel(meeting.status)}
                         </span>
                       </div>
                       <p className="text-xs text-ink-muted">
@@ -213,7 +210,7 @@ export function CommitteeMeetingList({
             <Card>
               <CardHeader
                 title="Past Meetings"
-                description={`${completed.length} meeting${completed.length === 1 ? "" : "s"} completed.`}
+                description={`${completed.length} previous meeting${completed.length === 1 ? "" : "s"}.`}
               />
               <div className="flex flex-col gap-2">
                 {completed.map((meeting) => {
@@ -253,8 +250,7 @@ export function CommitteeMeetingList({
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
                       >
-                        {meeting.status.charAt(0) +
-                          meeting.status.slice(1).toLowerCase()}
+                        {meetingStatusLabel(meeting.status)}
                       </span>
                     </div>
                   );

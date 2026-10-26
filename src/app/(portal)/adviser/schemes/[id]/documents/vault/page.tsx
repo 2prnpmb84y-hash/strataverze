@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { isVaultTrialBuilding } from "@/config/vault";
 import { db } from "@/prisma/db";
 import { getVault } from "@/lib/vault/capture";
@@ -48,6 +49,8 @@ export default async function VaultPage({
   const scheme = await getSchemeById(id);
   if (!scheme || !isVaultTrialBuilding(scheme.planNumber) || !(await getVault(id))) redirect(`/adviser/schemes/${id}/documents`);
 
+  const tz = timeZoneOf(scheme);
+
   const sp = await searchParams;
   const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");
   const filter = {
@@ -83,6 +86,7 @@ export default async function VaultPage({
 
       <VaultBanner
         schemeId={id}
+        timeZone={tz}
         data={{ opened: true, openedAt: view.vault.openedAt, recordCount: view.recordCount, lastCheck: view.lastCheck, pendingCount: view.pending.length }}
       />
 
@@ -152,7 +156,7 @@ export default async function VaultPage({
               <li key={c.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
                 <VaultLabelChip tone={c.ok ? "good" : "bad"} text={c.ok ? "All unchanged" : "Problem found"} />
                 <span className="text-sm text-ink">
-                  {auDateTime(String(c.checkedAt))} · {c.eventsChecked} events, {c.filesChecked} files
+                  {auDateTime(String(c.checkedAt), tz)} · {c.eventsChecked} events, {c.filesChecked} files
                   {c.headHash ? <span className="block break-all font-mono text-[11px] text-ink-muted">Last event {String(c.headSeq)}: {c.headHash}</span> : null}
                 </span>
               </li>
@@ -202,7 +206,7 @@ export default async function VaultPage({
             {timeline.slice(0, 300).map((e) => (
               <li key={e.seq} className="flex flex-col gap-1 py-3 sm:flex-row sm:gap-4">
                 <div className="text-xs text-ink-muted sm:w-44 sm:shrink-0">
-                  <span className="block font-medium text-ink">{auDateTime(e.occurredAt)}</span>
+                  <span className="block font-medium text-ink">{auDateTime(e.occurredAt, tz)}</span>
                   Recorded by StrataVerze · event {e.seq}
                 </div>
                 <div className="min-w-0 text-sm text-ink">

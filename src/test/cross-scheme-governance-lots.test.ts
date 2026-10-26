@@ -109,6 +109,7 @@ vi.mock("@/lib/queries/lot-workflows", () => lotWorkflows);
 const meetings = {
   getMeetingById: vi.fn(),
   updateMeeting: vi.fn(),
+  updateMeetingWhileStatus: vi.fn(async () => 1),
   deleteMeeting: vi.fn(),
 };
 vi.mock("@/lib/queries/meetings", () => meetings);
@@ -174,7 +175,8 @@ vi.mock("@/lib/notifications", () => ({
   notifyInvitation: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/meetings/rule-set-repo", () => ({ getActiveRuleSet: vi.fn(async () => ({})) }));
-vi.mock("@/lib/meetings/events", () => ({ recordMeetingEvent: vi.fn() }));
+const events = { recordMeetingEvent: vi.fn() };
+vi.mock("@/lib/meetings/events", () => events);
 vi.mock("@/lib/meetings/setup", () => ({
   validateMeetingSetup: vi.fn(() => ({ errors: {} })),
   createMeetingWithRuleSnapshot: vi.fn(),
@@ -192,6 +194,7 @@ vi.mock("@/lib/billing/disclosure", () => ({
   resolveDisclosure: vi.fn(),
 }));
 
+const { db } = await import("@/prisma/db");
 const lotActions = await import("@/app/(portal)/adviser/schemes/[id]/lots/actions");
 const lotWorkflowActions = await import("@/app/(portal)/adviser/schemes/[id]/lots/[lotId]/lot-workflow-actions");
 const meetingActions = await import("@/app/(portal)/adviser/schemes/[id]/meetings/actions");
@@ -211,6 +214,9 @@ const MEETING_A = { id: "meeting-a", schemeId: SCHEME_A, status: "SCHEDULED", me
 const MEETING_A2 = { id: "meeting-a2", schemeId: SCHEME_A, status: "SCHEDULED", meetingType: "AGM" };
 const MEETING_B = { id: "meeting-b", schemeId: SCHEME_B, status: "SCHEDULED", meetingType: "AGM" };
 const MEETING_C = { id: "meeting-c", schemeId: SCHEME_A, status: "SCHEDULED", meetingType: "COMMITTEE" };
+const MEETING_DRAFT = { id: "meeting-d", schemeId: SCHEME_A, status: "DRAFT", meetingType: "AGM", timezone: "Australia/Sydney" };
+const MEETING_NOTICED = { id: "meeting-n", schemeId: SCHEME_A, status: "NOTICE_ISSUED", meetingType: "AGM", timezone: "Australia/Sydney" };
+const MEETING_ADJOURNED = { id: "meeting-j", schemeId: SCHEME_A, status: "ADJOURNED", meetingType: "AGM", timezone: "Australia/Sydney" };
 const motion = (id: string, schemeId: string, meetingId: string | null, status = "OPEN") => ({
   id,
   schemeId,
@@ -235,7 +241,10 @@ beforeEach(() => {
   lots.getLotInScheme.mockImplementation(async (schemeId: string, lotId: string) =>
     allLots.find((l) => l.id === lotId && l.schemeId === schemeId) ?? null,
   );
-  const allMeetings = [MEETING_A, MEETING_A2, MEETING_B, MEETING_C];
+  const allMeetings = [MEETING_A, MEETING_A2, MEETING_B, MEETING_C, MEETING_DRAFT, MEETING_NOTICED, MEETING_ADJOURNED];
+  meetings.updateMeetingWhileStatus.mockResolvedValue(1);
+  // A transaction runs its work against the same (mocked) ORM.
+  (db.transaction as unknown as ReturnType<typeof vi.fn>).mockImplementation(async (fn: (tx: { orm: typeof db.orm }) => unknown) => fn({ orm: db.orm }));
   meetings.getMeetingById.mockImplementation(async (id: string) =>
     allMeetings.find((m) => m.id === id) ?? null,
   );
@@ -355,6 +364,7 @@ describe("adviser meetings and motions (H1, L3)", () => {
 
   it("cancelMeetingAction refuses a meeting from another scheme", async () => {
     const r = await meetingActions.cancelMeetingAction(SCHEME_A, MEETING_B.id);
+    expect(meetings.updateMeetingWhileStatus).not.toHaveBeenCalled();
     expect(r.error).toBe("Meeting not found.");
     expect(meetings.updateMeeting).not.toHaveBeenCalled();
   });
@@ -484,6 +494,13 @@ describe("owner castVoteAction (F8)", () => {
     motions.getMotionById.mockResolvedValue(motion("motion-b", SCHEME_B, MEETING_B.id));
     const r = await ownerMeetingActions.castVoteAction("motion-b", "FOR");
     expect(r.error).toMatch(/permission/);
+    expect(motions.castVote).not.toHaveBeenCalled();
+  });
+
+  it("refuses a vote before the meeting's notice is out", async () => {
+    motions.getMotionById.mockResolvedValue(motion("motion-d", SCHEME_A, MEETING_DRAFT.id, "PROPOSED"));
+    const r = await ownerMeetingActions.castVoteAction("motion-d", "FOR");
+    expect(r.error).toMatch(/not open for voting/);
     expect(motions.castVote).not.toHaveBeenCalled();
   });
 
@@ -644,5 +661,71 @@ describe("committee voting (F6)", () => {
     const r = await committeeActions.createCommitteeMotionAction(MEETING_A.id, {}, fd);
     expect(r.error).toMatch(/permission/);
     expect(motions.createMotion).not.toHaveBeenCalled();
+  });
+});
+
+describe("meeting details before and after notice", () => {
+  function meetingForm() {
+    const fd = new FormData();
+    fd.set("title", "AGM 2026");
+    fd.set("meetingType", "AGM");
+    fd.set("scheduledAt", "2026-12-01T18:00");
+    fd.set("format", "VIRTUAL");
+    fd.set("joinUrl", "https://meet.example/abc");
+    return fd;
+  }
+
+  it("a draft meeting's details can be edited, guarded on the status, keeping its format and join link", async () => {
+    const r = await meetingActions.updateMeetingAction(SCHEME_A, MEETING_DRAFT.id, {}, meetingForm());
+    expect(r).toEqual({});
+    expect(meetings.updateMeetingWhileStatus).toHaveBeenCalledWith(
+      SCHEME_A,
+      MEETING_DRAFT.id,
+      ["DRAFT", "SCHEDULED", "ADJOURNED"],
+      // A blank location is cleared, not kept (a virtual meeting has no street address).
+      expect.objectContaining({ title: "AGM 2026", format: "VIRTUAL", joinUrl: "https://meet.example/abc", timezone: "Australia/Sydney", location: null }),
+      expect.anything(),
+    );
+    expect(events.recordMeetingEvent).toHaveBeenCalledWith(expect.objectContaining({ meetingId: MEETING_DRAFT.id, eventType: "MEETING_UPDATED" }), expect.anything());
+  });
+
+  it("an adjourned meeting can be given a new time before its notice is issued again", async () => {
+    const r = await meetingActions.updateMeetingAction(SCHEME_A, MEETING_ADJOURNED.id, {}, meetingForm());
+    expect(r).toEqual({});
+    expect(meetings.updateMeetingWhileStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to change a meeting once its notice is issued", async () => {
+    const r = await meetingActions.updateMeetingAction(SCHEME_A, MEETING_NOTICED.id, {}, meetingForm());
+    expect(r.error).toMatch(/notice/i);
+    expect(meetings.updateMeetingWhileStatus).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the notice went out between loading the page and saving", async () => {
+    meetings.updateMeetingWhileStatus.mockResolvedValueOnce(0);
+    const r = await meetingActions.updateMeetingAction(SCHEME_A, MEETING_DRAFT.id, {}, meetingForm());
+    expect(r.error).toMatch(/notice/i);
+  });
+
+  it("a draft meeting can be cancelled, but not marked completed", async () => {
+    expect(await meetingActions.cancelMeetingAction(SCHEME_A, MEETING_DRAFT.id)).toEqual({});
+    expect(meetings.updateMeetingWhileStatus).toHaveBeenCalledWith(SCHEME_A, MEETING_DRAFT.id, ["DRAFT", "SCHEDULED"], { status: "CANCELLED" }, expect.anything());
+    expect(events.recordMeetingEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: "MEETING_CANCELLED" }), expect.anything());
+    meetings.updateMeetingWhileStatus.mockResolvedValueOnce(0);
+    const r = await meetingActions.completeMeetingAction(SCHEME_A, MEETING_DRAFT.id);
+    expect(r.error).toMatch(/scheduled meeting/i);
+    expect(meetings.updateMeetingWhileStatus).toHaveBeenLastCalledWith(SCHEME_A, MEETING_DRAFT.id, ["SCHEDULED"], { status: "COMPLETED" });
+  });
+
+  it("a noticed meeting is not cancelled from the details page", async () => {
+    meetings.updateMeetingWhileStatus.mockResolvedValueOnce(0);
+    const r = await meetingActions.cancelMeetingAction(SCHEME_A, MEETING_NOTICED.id);
+    expect(r.error).toMatch(/not been issued/);
+    expect(events.recordMeetingEvent).not.toHaveBeenCalled();
+  });
+
+  it("an old scheduled meeting can still be marked completed", async () => {
+    expect(await meetingActions.completeMeetingAction(SCHEME_A, MEETING_A.id)).toEqual({});
+    expect(meetings.updateMeetingWhileStatus).toHaveBeenCalledWith(SCHEME_A, MEETING_A.id, ["SCHEDULED"], { status: "COMPLETED" });
   });
 });

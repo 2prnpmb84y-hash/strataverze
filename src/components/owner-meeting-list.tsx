@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { meetingZone } from "@/lib/jurisdiction/time-zone";
+import { isOpenForVoting, isUpcomingMeeting, meetingStatusLabel, MEETING_STATUS_FILTER_OPTIONS } from "@/lib/meetings/lifecycle";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ListToolbar } from "@/components/ui/list-toolbar";
@@ -15,12 +16,6 @@ const meetingTypeLabels: Record<string, string> = {
   COMMITTEE: "Committee",
 };
 
-const statusLabels: Record<string, string> = {
-  SCHEDULED: "Scheduled",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-};
-
 const motionStatusLabels: Record<string, string> = {
   DRAFT: "Draft",
   PROPOSED: "Proposed",
@@ -29,12 +24,7 @@ const motionStatusLabels: Record<string, string> = {
   WITHDRAWN: "Withdrawn",
 };
 
-const statusOptions = [
-  { value: "", label: "All statuses" },
-  { value: "SCHEDULED", label: "Scheduled" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const statusOptions = [{ value: "", label: "All statuses" }, ...MEETING_STATUS_FILTER_OPTIONS];
 
 const typeOptions = [
   { value: "", label: "All types" },
@@ -107,12 +97,8 @@ export function OwnerMeetingList({
   }, [meetings, search, statusFilter, typeFilter, schemeNames]);
 
   const now = new Date();
-  const upcoming = filtered.filter(
-    (m) => new Date(String(m.scheduledAt)) >= now && m.status === "SCHEDULED",
-  );
-  const past = filtered.filter(
-    (m) => new Date(String(m.scheduledAt)) < now || m.status !== "SCHEDULED",
-  );
+  const upcoming = filtered.filter((m) => isUpcomingMeeting(m.status, new Date(String(m.scheduledAt)), now));
+  const past = filtered.filter((m) => !isUpcomingMeeting(m.status, new Date(String(m.scheduledAt)), now));
 
   function getUserVote(votes: { profileId: string; voteValue: string }[]) {
     const vote = votes.find((v) => v.profileId === profileId);
@@ -160,7 +146,7 @@ export function OwnerMeetingList({
             <Card className="mb-6">
               <CardHeader
                 title="Upcoming"
-                description={`${upcoming.length} meeting${upcoming.length === 1 ? "" : "s"} scheduled.`}
+                description={`${upcoming.length} upcoming meeting${upcoming.length === 1 ? "" : "s"}.`}
               />
               <div className="flex flex-col gap-2">
                 {upcoming.map((meeting) => {
@@ -188,7 +174,7 @@ export function OwnerMeetingList({
                             {meeting.title}
                           </p>
                         </div>
-                        <StatusChip status={statusLabels[meeting.status] ?? meeting.status} />
+                        <StatusChip status={meetingStatusLabel(meeting.status)} />
                       </div>
                       <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}
@@ -219,7 +205,7 @@ export function OwnerMeetingList({
                           {meeting.motions.map((motion) => {
                             const tally = getVoteTally(motion.votes);
                             const userVote = getUserVote(motion.votes);
-                            const isProposed = motion.status === "PROPOSED";
+                            const isProposed = motion.status === "PROPOSED" && isOpenForVoting(meeting.status);
 
                             return (
                               <div
@@ -293,7 +279,7 @@ export function OwnerMeetingList({
                             {meeting.title}
                           </p>
                         </div>
-                        <StatusChip status={statusLabels[meeting.status] ?? meeting.status} />
+                        <StatusChip status={meetingStatusLabel(meeting.status)} />
                       </div>
                       <p className="text-xs text-ink-muted">
                         {schemeNames[meeting.schemeId] ?? ""}

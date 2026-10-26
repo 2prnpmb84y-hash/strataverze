@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import { getDocumentById } from "@/lib/queries/documents";
 import { resolveDocumentUrl } from "@/lib/queries/document-url";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -47,13 +49,12 @@ export default async function DocumentDetailPage({
   if (!document || document.schemeId !== id) notFound();
 
   const downloadUrl = await resolveDocumentUrl(document.fileUrl, 600, { schemeId: id }).catch(() => "");
-  const uploadDate = new Date(String(document.createdAt));
 
   return (
     <div className="max-w-3xl">
       <PageHeader
         title={document.title}
-        description={`${categoryLabels[document.category] ?? document.category} · Uploaded ${uploadDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
+        description={`${categoryLabels[document.category] ?? document.category} · Uploaded ${formatDateIn(timeZoneOf(scheme), String(document.createdAt), { day: "numeric", month: "short", year: "numeric" })}`}
         backHref={`/adviser/schemes/${id}/documents`}
         backLabel="Documents"
       />

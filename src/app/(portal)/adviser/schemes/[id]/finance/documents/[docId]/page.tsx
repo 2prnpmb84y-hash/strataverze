@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import { getFinancialDocumentById } from "@/lib/queries/financial-documents";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -46,9 +48,14 @@ const verificationLabels: Record<string, string> = {
   FLAGGED: "Flagged",
 };
 
-function formatDate(date: string | null | undefined): string {
+/**
+ * A date in `timeZone`. Instants (uploaded, reviewed) use the building's time
+ * zone; the document date is a calendar date (@db.Date), so it is read in UTC,
+ * where it falls on the day it names.
+ */
+function formatDate(date: string | null | undefined, timeZone: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
+  return formatDateIn(timeZone, String(date), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -83,6 +90,7 @@ export default async function DocumentDetailPage({
   if (!doc || doc.schemeId !== id) notFound();
 
   const basePath = `/adviser/schemes/${id}/finance/documents`;
+  const tz = timeZoneOf(scheme);
 
   return (
     <div className="space-y-6">
@@ -137,11 +145,11 @@ export default async function DocumentDetailPage({
                   {String(doc.mimeType)}
                 </DetailItem>
                 <DetailItem label="Uploaded">
-                  {formatDate(doc.uploadedAt)}
+                  {formatDate(doc.uploadedAt, tz)}
                 </DetailItem>
                 {doc.documentDate && (
                   <DetailItem label="Document Date">
-                    {formatDate(doc.documentDate)}
+                    {formatDate(doc.documentDate, "UTC")}
                   </DetailItem>
                 )}
                 {doc.amount && (
@@ -227,7 +235,7 @@ export default async function DocumentDetailPage({
               <div className="px-6 pb-6">
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                   <DetailItem label="Reviewed">
-                    {formatDate(doc.reviewedAt)}
+                    {formatDate(doc.reviewedAt, tz)}
                   </DetailItem>
                   {doc.reviewNotes && (
                     <div className="sm:col-span-2">

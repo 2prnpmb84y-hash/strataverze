@@ -5,6 +5,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { ListToolbar } from "@/components/ui/list-toolbar";
 import { Card, CardHeader } from "@/components/ui/card";
+import { formatDateIn, PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 
 const categoryLabels: Record<string, string> = {
   MINUTES: "Meeting Minutes",
@@ -49,9 +50,12 @@ type DocumentItem = {
 export function DocumentList({
   documents,
   schemeNames,
+  schemeTimeZones,
 }: {
   documents: DocumentItem[];
   schemeNames: Record<string, string>;
+  /** Each building's time zone, by scheme id, for upload dates. */
+  schemeTimeZones: Record<string, string>;
 }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -125,7 +129,6 @@ export function DocumentList({
               />
               <div className="flex flex-col gap-2">
                 {docs.map((doc) => {
-                  const uploadDate = new Date(String(doc.createdAt));
                   return (
                     <div
                       key={doc.id}
@@ -138,7 +141,7 @@ export function DocumentList({
                         <p className="text-xs text-ink-muted">
                           {schemeNames[doc.schemeId] ?? ""}
                           {" · "}
-                          {uploadDate.toLocaleDateString("en-AU", {
+                          {formatDateIn(schemeTimeZones[doc.schemeId] ?? PLATFORM_TIME_ZONE, String(doc.createdAt), {
                             day: "numeric",
                             month: "short",
                             year: "numeric",

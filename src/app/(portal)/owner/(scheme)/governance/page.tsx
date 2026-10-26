@@ -2,6 +2,7 @@ import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { scopeToSelectedScheme, scopeSchemeIds } from "@/lib/owner/scheme-scope";
 import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
+import { isUpcomingMeeting } from "@/lib/meetings/lifecycle";
 import { paginateArray, parsePage } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -41,7 +42,8 @@ export default async function OwnerGovernancePage({
     schemes.map((s) => [s.id, s.name]),
   );
 
-  const scheduled = meetings.filter((m) => m.status === "SCHEDULED");
+  const now = new Date();
+  const scheduled = meetings.filter((m) => isUpcomingMeeting(String(m.status), new Date(String(m.scheduledAt)), now));
   const totalMotions = meetings.reduce(
     (sum, m) => sum + m.motions.length,
     0,

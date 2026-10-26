@@ -17,8 +17,8 @@ export type VaultBannerData =
       pendingCount: number;
     };
 
-/** The vault's summary at the top of a trial building's document library. */
-export function VaultBanner({ schemeId, data }: { schemeId: string; data: VaultBannerData }) {
+/** The vault's summary at the top of a trial building's document library. `timeZone` is the building's. */
+export function VaultBanner({ schemeId, data, timeZone }: { schemeId: string; data: VaultBannerData; timeZone: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -43,11 +43,11 @@ export function VaultBanner({ schemeId, data }: { schemeId: string; data: VaultB
             </p>
           ) : (
             <p className="mt-1 text-sm text-ink-muted">
-              {data.recordCount} record{data.recordCount === 1 ? "" : "s"} since {auDateTime(data.openedAt)}.{" "}
+              {data.recordCount} record{data.recordCount === 1 ? "" : "s"} since {auDateTime(data.openedAt, timeZone)}.{" "}
               {data.lastCheck
                 ? data.lastCheck.ok
-                  ? `Last check ${auDateTime(data.lastCheck.checkedAt)}: all ${data.lastCheck.eventsChecked} events and ${data.lastCheck.filesChecked} files unchanged.`
-                  : `Last check ${auDateTime(data.lastCheck.checkedAt)} found a problem. Open the vault page for details.`
+                  ? `Last check ${auDateTime(data.lastCheck.checkedAt, timeZone)}: all ${data.lastCheck.eventsChecked} events and ${data.lastCheck.filesChecked} files unchanged.`
+                  : `Last check ${auDateTime(data.lastCheck.checkedAt, timeZone)} found a problem. Open the vault page for details.`
                 : "Not checked yet."}
             </p>
           )}

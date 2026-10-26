@@ -29,7 +29,7 @@ import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { getMotionLibrary, getAgendaTemplate } from "@/lib/meetings/templates";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
-import { canTransition } from "@/lib/meetings/lifecycle";
+import { canEditDetails, canTransition, isBeforeNotice, meetingStatusLabel } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
 import { hasFeeEvent, previewUsageFee } from "@/lib/billing/capture";
 import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
@@ -81,8 +81,7 @@ export default async function MeetingDetailPage({
   const canLoadTemplate = normalisedType
     ? getAgendaTemplate(scheme.state, normalisedType).length > 0
     : false;
-  const agendaEditable =
-    meeting.status === "DRAFT" || meeting.status === "SCHEDULED";
+  const agendaEditable = isBeforeNotice(String(meeting.status));
 
   // Notice context
   const notices = await getNoticesForMeeting(meetingId);
@@ -208,7 +207,7 @@ export default async function MeetingDetailPage({
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyle[meeting.status] ?? "bg-gray-100 text-gray-700"}`}
         >
-          {meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}
+          {meetingStatusLabel(String(meeting.status))}
         </span>
         {meeting.location && (
           <span className="text-sm text-ink-muted">
@@ -222,7 +221,7 @@ export default async function MeetingDetailPage({
         <StatCard label="Voted" value={votedMotions} accent="bg-owner" />
         <StatCard
           label="Status"
-          value={meeting.status.charAt(0) + meeting.status.slice(1).toLowerCase()}
+          value={meetingStatusLabel(String(meeting.status))}
           accent={meeting.status === "COMPLETED" ? "bg-green-400" : "bg-blue-400"}
         />
       </div>
@@ -315,8 +314,8 @@ export default async function MeetingDetailPage({
         currentProfileId={profile.id}
       />
 
-      {/* Edit form (only if scheduled) */}
-      {meeting.status === "SCHEDULED" && (
+      {/* Edit form: before notice, or while adjourned (a new time and place before the notice is issued again) */}
+      {canEditDetails(String(meeting.status)) && (
         <div className="mb-6">
           <h2 className="font-heading font-semibold text-ink mb-4">
             Edit Meeting Details
@@ -334,24 +333,29 @@ export default async function MeetingDetailPage({
               timezone: meeting.timezone ? String(meeting.timezone) : null,
               location: meeting.location,
               agenda: meeting.agenda,
+              format: meeting.format ?? null,
+              joinUrl: meeting.joinUrl ?? null,
+              joinDetails: meeting.joinDetails ?? null,
             }}
           />
         </div>
       )}
 
-      {/* Status actions */}
-      {meeting.status === "SCHEDULED" && (
+      {/* Status actions: cancel before notice; old SCHEDULED meetings can also be marked completed */}
+      {isBeforeNotice(String(meeting.status)) && (
         <Card className="mb-6">
           <CardHeader
             title="Meeting Actions"
-            description="Mark meeting as complete or cancel it."
+            description={meeting.status === "SCHEDULED" ? "Mark meeting as complete or cancel it." : "Cancel the meeting before its notice is issued."}
           />
           <div className="flex gap-3">
-            <MeetingStatusButton
-              schemeId={id}
-              meetingId={meetingId}
-              action="complete"
-            />
+            {meeting.status === "SCHEDULED" && (
+              <MeetingStatusButton
+                schemeId={id}
+                meetingId={meetingId}
+                action="complete"
+              />
+            )}
             <MeetingStatusButton
               schemeId={id}
               meetingId={meetingId}

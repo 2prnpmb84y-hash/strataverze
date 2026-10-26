@@ -8,6 +8,7 @@ import { vaultLibraryView } from "@/lib/vault/queries";
 import { VaultBanner, type VaultBannerData } from "@/components/vault/vault-banner";
 import { IssuedByStrataVerze } from "@/components/vault/issued-by-strataverze";
 import type { LabelTone } from "@/lib/vault/labels";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
 /** Documents section (moved from the former Documents tab). */
 export default async function DocumentsSectionPage({
@@ -19,6 +20,7 @@ export default async function DocumentsSectionPage({
   const { id } = await params;
   const scheme = await requireAdviserScheme(id);
   if (!scheme) return null;
+  const tz = timeZoneOf(scheme);
 
   const documents = await getDocumentsForScheme(id);
 
@@ -51,11 +53,11 @@ export default async function DocumentsSectionPage({
 
   return (
     <>
-    {banner && <VaultBanner schemeId={id} data={banner} />}
+    {banner && <VaultBanner schemeId={id} data={banner} timeZone={tz} />}
     <DocumentsTabContent
       vaultLabels={vaultLabels}
       retention={(await rulesForScheme(id)).rules.RECORD_RETENTION}
-      timeZone={scheme.timeZone}
+      timeZone={tz}
       schemeId={id}
       schemePlanNumber={scheme.planNumber}
       documents={documents.map((d) => ({
@@ -81,6 +83,7 @@ export default async function DocumentsSectionPage({
     {vault?.vault && (
       <IssuedByStrataVerze
         schemeId={id}
+        timeZone={tz}
         records={vault.issuedByStrataVerze.map((r) => ({ id: r.id, title: r.title, recordType: r.recordType, createdAt: r.createdAt, label: r.latest?.labels[0] ?? null }))}
       />
     )}

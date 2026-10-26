@@ -7,6 +7,7 @@ import { getAuditTrail, formatActionLabel } from "@/lib/queries/activity-log";
 import { InsuranceDocumentsSection } from "./documents-section";
 import { StartRenewalButton } from "./start-renewal-button";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -353,6 +354,7 @@ export default async function InsurancePolicyDetailPage({
         schemeId={id}
         policyId={policyId}
         documents={documents}
+        timeZone={timeZoneOf(scheme)}
       />
 
       {/* Edit form */}

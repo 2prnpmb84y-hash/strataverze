@@ -75,28 +75,25 @@ export async function createMeeting(data: {
   });
 }
 
-/**
- * Update a meeting. Scheme-scoped: a meeting from another scheme matches nothing.
- */
-export async function updateMeeting(
-  schemeId: string,
-  meetingId: string,
-  data: Partial<{
-    title: string;
-    meetingType: string;
-    scheduledAt: string;
-    startTime: string;
-    endTime: string | null;
-    timezone: string;
-    location: string | null;
-    agenda: string | null;
-    minutesUrl: string | null;
-    status: string;
-    openedAt: string;
-    closedAt: string;
-  }>,
-  orm: typeof db.orm = db.orm,
-) {
+type MeetingUpdate = Partial<{
+  title: string;
+  meetingType: string;
+  scheduledAt: string;
+  startTime: string;
+  endTime: string | null;
+  timezone: string;
+  location: string | null;
+  agenda: string | null;
+  minutesUrl: string | null;
+  status: string;
+  openedAt: string;
+  closedAt: string;
+  format: string | null;
+  joinUrl: string | null;
+  joinDetails: string | null;
+}>;
+
+function meetingUpdateData(data: MeetingUpdate): Record<string, unknown> {
   const updateData: Record<string, unknown> = {};
   if (data.title !== undefined) updateData.title = data.title;
   if (data.meetingType !== undefined) updateData.meetingType = data.meetingType;
@@ -110,7 +107,39 @@ export async function updateMeeting(
   if (data.status !== undefined) updateData.status = data.status;
   if (data.openedAt !== undefined) updateData.openedAt = toTimestamp(data.openedAt);
   if (data.closedAt !== undefined) updateData.closedAt = toTimestamp(data.closedAt);
+  if (data.format !== undefined) updateData.format = data.format;
+  if (data.joinUrl !== undefined) updateData.joinUrl = data.joinUrl;
+  if (data.joinDetails !== undefined) updateData.joinDetails = data.joinDetails;
+  return updateData;
+}
 
+/**
+ * Update a meeting only while its status is one of `statuses`. Returns how
+ * many rows changed (0 when the status moved on, or the meeting is not in the
+ * scheme or is deleted), so a stale page cannot change a meeting after notice.
+ */
+export async function updateMeetingWhileStatus(
+  schemeId: string,
+  meetingId: string,
+  statuses: readonly string[],
+  data: MeetingUpdate,
+  orm: typeof db.orm = db.orm,
+): Promise<number> {
+  return orm.public.Meeting
+    .where((m) => and(m.id.eq(meetingId), m.schemeId.eq(schemeId), m.deletedAt.eq(null), m.status.in([...statuses])))
+    .updateAndCount(meetingUpdateData(data));
+}
+
+/**
+ * Update a meeting. Scheme-scoped: a meeting from another scheme matches nothing.
+ */
+export async function updateMeeting(
+  schemeId: string,
+  meetingId: string,
+  data: MeetingUpdate,
+  orm: typeof db.orm = db.orm,
+) {
+  const updateData = meetingUpdateData(data);
   return orm.public.Meeting
     .where((m) => and(m.id.eq(meetingId), m.schemeId.eq(schemeId)))
     .update(updateData);
@@ -131,14 +160,17 @@ export async function deleteMeeting(schemeId: string, meetingId: string) {
 export async function getUpcomingMeetingsForOwner(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
 
-  return db.orm.public.Meeting
+  // The latest meetings (so the upcoming ones are never cut off by a long
+  // history), returned earliest first.
+  const rows = await db.orm.public.Meeting
     .where((m) => and(m.schemeId.in(schemeIds), m.deletedAt.eq(null)))
     .include("motions", (mot) =>
       mot
         .include("votes")
         .orderBy((m) => m.createdAt.asc()),
     )
-    .orderBy((m) => m.scheduledAt.asc())
+    .orderBy((m) => m.scheduledAt.desc())
     .limit(limit)
     .all();
+  return rows.reverse();
 }

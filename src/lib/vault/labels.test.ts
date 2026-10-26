@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { vaultLabels } from "./labels";
+import { auDateTime, auDay, vaultLabels } from "./labels";
 
 const base = { source: "UPLOAD", reportedDate: null, reportedBy: null, versionId: "v1", capturedAt: "2026-10-25T01:00:00.000Z" };
 
@@ -31,5 +31,23 @@ describe("vault labels", () => {
 
   it("says when StrataVerze issued it", () => {
     expect(vaultLabels({ ...base, source: "STRATAVERZE", lastCheck: null }).map((l) => l.text)).toContain("Issued by StrataVerze");
+  });
+
+  it("shows dates in the building's time zone, Sydney by default", () => {
+    // 15:30 UTC on 25 Oct 2026 is 2:30 am on 26 Oct in Sydney (+11) but 11:30 pm on 25 Oct in Perth (+8).
+    const at = "2026-10-25T15:30:00.000Z";
+    expect(auDateTime(at)).toBe(auDateTime(at, "Australia/Sydney"));
+    expect(auDateTime(at)).toMatch(/^26\/10\/2026 2:30\sam$/i);
+    expect(auDateTime(at, "Australia/Perth")).toMatch(/^25\/10\/2026 11:30\spm$/i);
+    expect(auDay(at)).toBe("26/10/2026");
+    expect(auDay(at, "Australia/Perth")).toBe("25/10/2026");
+
+    const check = { ok: true, checkedAt: "2026-10-25T16:00:00.000Z", failedVersionIds: new Set<string>() };
+    const sydney = vaultLabels({ ...base, capturedAt: at, lastCheck: check });
+    const perth = vaultLabels({ ...base, capturedAt: at, lastCheck: check, timeZone: "Australia/Perth" });
+    expect(sydney[0].text).toBe("Unchanged since captured 26/10/2026");
+    expect(perth[0].text).toBe("Unchanged since captured 25/10/2026");
+    expect(perth[0].detail).toContain(auDateTime(at, "Australia/Perth"));
+    expect(perth[0].detail).toContain(auDateTime(check.checkedAt, "Australia/Perth"));
   });
 });

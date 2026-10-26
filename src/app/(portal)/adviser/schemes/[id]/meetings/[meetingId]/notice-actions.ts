@@ -6,7 +6,7 @@ import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { captureMeetingNotice } from "@/lib/vault/sources";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
-import { getMeetingById, updateMeeting } from "@/lib/queries/meetings";
+import { getMeetingById, updateMeetingWhileStatus } from "@/lib/queries/meetings";
 import {
   getSchemeById,
   getSchemeNameById,
@@ -31,6 +31,14 @@ import { db } from "@/prisma/db";
 import { assertUsageFeeConfirmed, captureUsageFee, hasFeeEvent } from "@/lib/billing/capture";
 import { feeErrorMessage } from "@/lib/billing/disclosure";
 import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
+
+class MeetingChangedMeanwhile extends Error {}
+
+/** Whether the meeting still has the details the notice was drafted from. */
+function sameNoticeDetails(now: Record<string, unknown>, then: Record<string, unknown>): boolean {
+  const keys = ["title", "meetingType", "startTime", "scheduledAt", "timezone", "format", "location", "joinUrl", "joinDetails"];
+  return keys.every((k) => String(now[k] ?? "") === String(then[k] ?? ""));
+}
 
 export type NoticeActionState = { error?: string; ok?: boolean };
 
@@ -143,28 +151,42 @@ export async function issueNoticeAction(
     // EGMs are charged once per meeting; re-issuing the notice of an
     // adjourned general meeting is charged per adjournment. AGMs and committee
     // meetings are covered by the subscription.
-    await db.transaction(async (tx) => {
-      await updateMeeting(schemeId, meetingId, { status: "NOTICE_ISSUED" }, tx.orm);
-      if (chargeAdjournment) {
-        await captureUsageFee(tx.orm, {
-          schemeId,
-          code: "MEETING_EGM",
-          sourceType: "MeetingAdjournmentNotice",
-          sourceId: notice.id,
-          actorId: profile.id,
-          confirmedCents: feeConfirmedCents,
-        });
-      } else if (chargeMeeting) {
-        await captureUsageFee(tx.orm, {
-          schemeId,
-          code: "MEETING_EGM",
-          sourceType: "Meeting",
-          sourceId: meetingId,
-          actorId: profile.id,
-          confirmedCents: feeConfirmedCents,
-        });
-      }
-    });
+    // Issue only if the meeting is as it was read: still in the same status
+    // (not cancelled meanwhile) and with the same details the notice gives.
+    // The status update holds the row, so an edit after this point waits and
+    // then finds the notice issued.
+    try {
+      await db.transaction(async (tx) => {
+        const changed = await updateMeetingWhileStatus(schemeId, meetingId, [String(meeting.status)], { status: "NOTICE_ISSUED" }, tx.orm);
+        if (changed === 0) throw new MeetingChangedMeanwhile();
+        const now = await tx.orm.public.Meeting.where((m) => m.id.eq(meetingId)).first();
+        if (!now || !sameNoticeDetails(now, meeting)) throw new MeetingChangedMeanwhile();
+        if (chargeAdjournment) {
+          await captureUsageFee(tx.orm, {
+            schemeId,
+            code: "MEETING_EGM",
+            sourceType: "MeetingAdjournmentNotice",
+            sourceId: notice.id,
+            actorId: profile.id,
+            confirmedCents: feeConfirmedCents,
+          });
+        } else if (chargeMeeting) {
+          await captureUsageFee(tx.orm, {
+            schemeId,
+            code: "MEETING_EGM",
+            sourceType: "Meeting",
+            sourceId: meetingId,
+            actorId: profile.id,
+            confirmedCents: feeConfirmedCents,
+          });
+        }
+      });
+    } catch (err) {
+      if (!(err instanceof MeetingChangedMeanwhile)) throw err;
+      // Nothing was issued: set aside the notice drafted from the old details.
+      await db.orm.public.Notice.where((n) => n.id.eq(notice.id)).updateAndCount({ status: "SUPERSEDED" });
+      return { error: "The meeting changed while the notice was being issued. Check its details and issue the notice again." };
+    }
     await recordMeetingEvent({
       meetingId,
       actorId: profile.id,

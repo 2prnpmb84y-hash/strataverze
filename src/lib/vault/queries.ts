@@ -1,5 +1,7 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
+import { dayIn } from "@/lib/jurisdiction/time-zone";
 import { getVault } from "./capture";
 import { failedVersionsOf, latestCheck } from "./check";
 import { vaultLabels, type VaultLabel } from "./labels";
@@ -48,13 +50,14 @@ function checkInfo(check: Check) {
 }
 
 async function loadAll(schemeId: string) {
-  const [records, versions, receipts, check] = await Promise.all([
+  const [records, versions, receipts, check, timeZone] = await Promise.all([
     db.orm.public.VaultRecord.where((r) => r.schemeId.eq(schemeId)).all(),
     db.orm.public.VaultVersion.where((v) => v.schemeId.eq(schemeId)).all(),
     db.orm.public.VaultReceipt.where((r) => r.schemeId.eq(schemeId)).all(),
     latestCheck(schemeId),
+    schemeTimeZone(schemeId),
   ]);
-  return { records, versions, receipts, check };
+  return { records, versions, receipts, check, timeZone };
 }
 
 function summarise(all: Awaited<ReturnType<typeof loadAll>>): VaultRecordSummary[] {
@@ -72,7 +75,7 @@ function summarise(all: Awaited<ReturnType<typeof loadAll>>): VaultRecordSummary
         reportedDate: day(r.reportedDate),
         createdAt: iso(r.createdAt),
         versionCount: versions.length,
-        latest: latest ? versionView(r, latest, all.receipts, info) : null,
+        latest: latest ? versionView(r, latest, all.receipts, info, all.timeZone) : null,
       };
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -83,6 +86,7 @@ function versionView(
   v: { id: string; versionNo: number; fileName: string; mimeType: string; sizeBytes: unknown; contentHash: string; capturedAt: unknown },
   receipts: Array<{ id: string; versionId: string; source: string; sourceRef: string | null; originalFileName: string; receivedAt: unknown; receivedBy: string | null }>,
   info: ReturnType<typeof checkInfo>,
+  timeZone: string,
 ): VaultVersionView {
   return {
     id: v.id,
@@ -92,7 +96,7 @@ function versionView(
     sizeBytes: Number(v.sizeBytes),
     contentHash: v.contentHash,
     capturedAt: iso(v.capturedAt),
-    labels: vaultLabels({ source: r.source, reportedDate: day(r.reportedDate), reportedBy: r.reportedBy ?? null, versionId: v.id, capturedAt: iso(v.capturedAt), lastCheck: info }),
+    labels: vaultLabels({ source: r.source, reportedDate: day(r.reportedDate), reportedBy: r.reportedBy ?? null, versionId: v.id, capturedAt: iso(v.capturedAt), lastCheck: info, timeZone }),
     receipts: receipts
       .filter((x) => x.versionId === v.id)
       .map((x) => ({ id: x.id, source: x.source, sourceRef: x.sourceRef ?? null, originalFileName: x.originalFileName, receivedAt: iso(x.receivedAt), receivedBy: x.receivedBy ?? null }))
@@ -134,11 +138,12 @@ export async function vaultLibraryView(schemeId: string) {
 export async function vaultRecordDetail(schemeId: string, recordId: string) {
   const record = await db.orm.public.VaultRecord.where((r) => and(r.id.eq(recordId), r.schemeId.eq(schemeId))).first();
   if (!record) return null;
-  const [versions, receipts, events, check] = await Promise.all([
+  const [versions, receipts, events, check, timeZone] = await Promise.all([
     db.orm.public.VaultVersion.where((v) => and(v.recordId.eq(record.id), v.schemeId.eq(schemeId))).all(),
     db.orm.public.VaultReceipt.where((r) => r.schemeId.eq(schemeId)).all(),
     db.orm.public.VaultEvent.where((e) => and(e.recordId.eq(record.id), e.schemeId.eq(schemeId))).all(),
     latestCheck(schemeId),
+    schemeTimeZone(schemeId),
   ]);
   const info = checkInfo(check);
   return {
@@ -150,7 +155,7 @@ export async function vaultRecordDetail(schemeId: string, recordId: string) {
     reportedDate: day(record.reportedDate),
     reportedBy: record.reportedBy ?? null,
     createdAt: iso(record.createdAt),
-    versions: versions.sort((a, b) => b.versionNo - a.versionNo).map((v) => versionView(record, v, receipts, info)),
+    versions: versions.sort((a, b) => b.versionNo - a.versionNo).map((v) => versionView(record, v, receipts, info, timeZone)),
     history: events
       .map((e) => ({ seq: Number(e.seq), occurredAt: iso(e.occurredAt), eventType: e.eventType, actorProfileId: e.actorProfileId ?? null, details: safeParse(e.details), versionId: e.versionId ?? null }))
       .sort((a, b) => a.seq - b.seq),
@@ -183,9 +188,10 @@ export function safeParse(text: string): Record<string, unknown> {
 
 /** The building's timeline, newest first, with names for the people and records. */
 export async function vaultTimeline(schemeId: string, filter: { recordType?: string; eventType?: string; from?: string; to?: string } = {}) {
-  const [events, records] = await Promise.all([
+  const [events, records, tz] = await Promise.all([
     db.orm.public.VaultEvent.where((e) => e.schemeId.eq(schemeId)).all(),
     db.orm.public.VaultRecord.where((r) => r.schemeId.eq(schemeId)).all(),
+    schemeTimeZone(schemeId),
   ]);
   const recordById = new Map(records.map((r) => [r.id, r]));
   const actorIds = [...new Set(events.map((e) => e.actorProfileId).filter((x): x is string => !!x))];
@@ -210,6 +216,7 @@ export async function vaultTimeline(schemeId: string, filter: { recordType?: str
       };
     })
     .filter((e) => (!filter.recordType || e.recordType === filter.recordType) && (!filter.eventType || e.eventType === filter.eventType))
-    .filter((e) => (!filter.from || e.occurredAt.slice(0, 10) >= filter.from) && (!filter.to || e.occurredAt.slice(0, 10) <= filter.to))
+    // "From" and "to" are days in the building's time zone, as the times are shown.
+    .filter((e) => (!filter.from || dayIn(tz, e.occurredAt) >= filter.from) && (!filter.to || dayIn(tz, e.occurredAt) <= filter.to))
     .sort((a, b) => b.seq - a.seq);
 }
