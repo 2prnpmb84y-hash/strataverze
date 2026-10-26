@@ -166,6 +166,7 @@ import {
   checkDocumentDuplicates,
 } from "@/lib/queries/duplicate-detection";
 import { importSummary } from "@/lib/bank-import-parser";
+import { FundIntegrityError } from "@/lib/finance/fund-integrity";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -199,6 +200,8 @@ function financePath(schemeId: string, sub = "") {
 function unexpectedError(err: unknown, fallback: string, keepMessages: readonly RegExp[] = []): string {
   const feeError = feeErrorMessage(err);
   if (feeError) return feeError;
+  // A fund out of balance, or an account used for the other fund (review B1).
+  if (err instanceof FundIntegrityError) return err.message;
   const message = err instanceof Error ? err.message : "";
   if (message && keepMessages.some((re) => re.test(message))) return message;
   logError(fallback, err);

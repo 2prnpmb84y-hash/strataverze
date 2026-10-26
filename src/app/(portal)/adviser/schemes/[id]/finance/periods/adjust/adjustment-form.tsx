@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createAdjustmentEntryAction } from "../../actions";
+import { fundImbalances } from "@/lib/finance/fund-balance-check";
 
 type Account = {
   id: string;
@@ -66,7 +67,9 @@ export function AdjustmentForm({
 
   const totalDebits = lines.reduce((s, l) => s + (parseFloat(l.debit) || 0), 0);
   const totalCredits = lines.reduce((s, l) => s + (parseFloat(l.credit) || 0), 0);
-  const isBalanced = Math.abs(totalDebits - totalCredits) < 0.005 && totalDebits > 0;
+  // Each fund must balance on its own (financials review B1, 26 Oct 2026).
+  const fundGaps = fundImbalances(lines, funds.map((f) => ({ value: f.id, label: f.name })));
+  const isBalanced = Math.abs(totalDebits - totalCredits) < 0.005 && totalDebits > 0 && fundGaps.length === 0;
 
   const accountOptions = [
     { value: "", label: "Select account..." },
@@ -109,7 +112,11 @@ export function AdjustmentForm({
     }
 
     if (!isBalanced) {
-      setError("Debits and credits must be equal and greater than zero.");
+      setError(
+        fundGaps.length
+          ? `${fundGaps.map((g) => `${g.label} is out of balance by $${g.gap.toFixed(2)}`).join("; ")}. Each fund must balance on its own.`
+          : "Debits and credits must be equal and greater than zero.",
+      );
       return;
     }
 
@@ -328,8 +335,12 @@ export function AdjustmentForm({
             </div>
             <span className={isBalanced ? "text-green-600" : "text-red-500"}>
               {isBalanced
-                ? "Balanced"
-                : `Out of balance by ${formatCurrency(Math.abs(totalDebits - totalCredits))}`}
+                ? "Balanced in each fund"
+                : totalDebits === 0 && totalCredits === 0
+                  ? "Enter the debits and credits"
+                  : Math.abs(totalDebits - totalCredits) >= 0.005
+                    ? `Out of balance by ${formatCurrency(Math.abs(totalDebits - totalCredits))}`
+                    : `${fundGaps.map((g) => `${g.label} out of balance by ${formatCurrency(g.gap)}`).join("; ")}. Each fund must balance on its own.`}
             </span>
           </div>
         </div>

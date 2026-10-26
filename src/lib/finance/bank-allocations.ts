@@ -424,6 +424,19 @@ export async function clearSuspenseItem(input: {
     }
     const fundId = account.fundId ?? suspense.fundId;
     const abs = fromCents(Math.abs(amount));
+    // Both funds share the bank and suspense accounts. When the amount belongs
+    // to the other fund, the money moves there in the bank as well, so each
+    // fund balances on its own (financials review B1, 26 Oct 2026).
+    const crossFund = fundId !== suspense.fundId;
+    const bank = crossFund ? await getSystemAccountBySubType(input.schemeId, "BANK", "ADMINISTRATIVE") : null;
+    if (crossFund && !bank) throw new ReconciliationError("The chart of accounts needs a bank account. Seed the chart of accounts first.");
+    const moveCash = (into: string, outOf: string) =>
+      crossFund && bank
+        ? [
+            { accountCodeId: bank.id, fundId: into, debit: abs, description: "Moved to the fund it belongs to" },
+            { accountCodeId: bank.id, fundId: outOf, credit: abs, description: "Moved to the fund it belongs to" },
+          ]
+        : [];
     const entryNumber = await getNextEntryNumber(input.schemeId);
     const entry = await createJournalEntry({
       schemeId: input.schemeId,
@@ -439,10 +452,12 @@ export async function clearSuspenseItem(input: {
           ? [
               { accountCodeId: suspense.id, fundId: suspense.fundId, debit: abs, description: "Suspense cleared" },
               { accountCodeId: account.id, fundId, credit: abs, description: input.note ?? "Identified receipt" },
+              ...moveCash(fundId, suspense.fundId),
             ]
           : [
               { accountCodeId: account.id, fundId, debit: abs, description: input.note ?? "Identified payment" },
               { accountCodeId: suspense.id, fundId: suspense.fundId, credit: abs, description: "Suspense cleared" },
+              ...moveCash(suspense.fundId, fundId),
             ],
     });
     await postJournalEntry(entry.id, input.actorId);
