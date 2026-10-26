@@ -345,7 +345,10 @@ export async function createLevyNoticesBatch(
  * posted (levy_post_pending) until the caller posts it. `claimedAt` marks
  * the rows this run claimed, so only they are put back if posting fails.
  */
-export async function issueLevyNotice(noticeId: string, opts: { ownerId?: string | null; dueDate?: string; claimedAt?: string } = {}): Promise<boolean> {
+export async function issueLevyNotice(
+  noticeId: string,
+  opts: { ownerId?: string | null; dueDate?: string; claimedAt?: string; /** The building's rule pack label, recorded on the notice. */ rulePack?: string } = {},
+): Promise<boolean> {
   const n = await db.orm.public.LevyNotice
     .where((ln) => and(ln.id.eq(noticeId), ln.status.eq("DRAFT")))
     .updateAndCount({
@@ -354,6 +357,7 @@ export async function issueLevyNotice(noticeId: string, opts: { ownerId?: string
       levyPostPending: true,
       ...(opts.ownerId !== undefined ? { ownerId: opts.ownerId } : {}),
       ...(opts.dueDate ? { dueDate: toTimestamp(opts.dueDate) } : {}),
+      ...(opts.rulePack ? { rulePack: opts.rulePack as unknown as Varchar<40> } : {}),
     });
   return n === 1;
 }

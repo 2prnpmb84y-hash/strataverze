@@ -2,6 +2,7 @@ import { issueDateFor, issueTiming } from "@/lib/levies/issue-timing";
 import { sydneyToday } from "@/lib/finance/interest-setting";
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getLevyScheduleById } from "@/lib/queries/levy-schedules";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
@@ -122,7 +123,8 @@ export default async function LevyScheduleDetailPage({
   const totalPaid = notices.reduce((s, n) => s + Number(n.amountPaid ?? 0), 0);
   // Planned notices past their 5-week mark wait for the Adviser to confirm.
   const today = sydneyToday();
-  const overdueCount = status === "ACTIVE" ? plannedNotices.filter((n) => issueTiming(toIsoDay(n.dueDate), today).kind !== "planned").length : 0;
+  const levyRule = rulesForState(scheme.state).rules.LEVY_NOTICE_RULES;
+  const overdueCount = status === "ACTIVE" ? plannedNotices.filter((n) => issueTiming(toIsoDay(n.dueDate), today, levyRule).kind !== "planned").length : 0;
 
   // Preview of the notices this schedule will raise (before issue).
   const fyStart = financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
@@ -327,7 +329,7 @@ export default async function LevyScheduleDetailPage({
                     </div>
                     <div className="text-ink-muted">
                       Due {formatDate(notice.dueDate)}
-                      {noticeStatus === "DRAFT" && <span className="block text-xs">Goes out {formatDate(issueDateFor(toIsoDay(notice.dueDate)))}</span>}
+                      {noticeStatus === "DRAFT" && <span className="block text-xs">Goes out {formatDate(issueDateFor(toIsoDay(notice.dueDate), levyRule))}</span>}
                     </div>
                     <div className="text-ink text-right tabular-nums">{formatCurrency(notice.amountDue)}</div>
                     <div className="text-ink text-right tabular-nums">

@@ -37,8 +37,9 @@ import { logError } from "@/lib/log";
 import { checkPlannedNotices, sendIssuedNotices } from "./notice-content-data";
 import { loadPlanLots } from "./load-plan-lots";
 import { addDays, toCents, toIsoDay } from "./notice-plan";
-import { issueTiming, lateMessage } from "./issue-timing";
-import { LEVY_NOTICE_RULES } from "@/config/statutory";
+import { issueDateFor, issueTiming, lateMessage } from "./issue-timing";
+import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
+import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const PAGE = 1000;
@@ -124,12 +125,14 @@ export async function issueNoticeBatch(input: {
 }): Promise<{ count: number; emailed: number; creditAppliedCents: number }> {
   if (input.notices.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
   const owners = await currentOwners(input.schemeId);
+  // The building's rule pack, recorded on each notice it issues.
+  const { label: rulePack } = await rulesForScheme(input.schemeId);
   // One stamp for this run's claims, so a failure puts back only what this run claimed.
   const claimedAt = new Date().toISOString();
   const claimed: BatchNotice[] = [];
   for (const n of input.notices) {
     const ownerId = owners.has(n.lotId) ? owners.get(n.lotId)! : n.ownerId;
-    if (await issueLevyNotice(n.id, { ownerId, dueDate: n.dueDate, claimedAt })) claimed.push({ ...n, ownerId });
+    if (await issueLevyNotice(n.id, { ownerId, dueDate: n.dueDate, claimedAt, rulePack })) claimed.push({ ...n, ownerId });
   }
   if (claimed.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
 
@@ -141,7 +144,7 @@ export async function issueNoticeBatch(input: {
     for (const n of unposted) {
       await db.orm.public.LevyNotice
         .where((x) => and(x.id.eq(n.id), x.status.eq("ISSUED"), x.levyPostPending.eq(true), x.issuedAt.eq(ts(claimedAt))))
-        .updateAndCount({ status: "DRAFT", issuedAt: null, levyPostPending: false });
+        .updateAndCount({ status: "DRAFT", issuedAt: null, levyPostPending: false, rulePack: null });
     }
     if (!posted.length) throw postLevies.lastError ?? new Error("The levy could not be posted.");
     claimed.splice(0, claimed.length, ...posted);
@@ -307,9 +310,13 @@ async function draftNoticesDue(scheduleIds: string[], horizon: string) {
 export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
   const schedules = await db.orm.public.LevySchedule.where((s) => s.status.eq("ACTIVE")).limit(5000).all();
   if (!schedules.length) return [];
-  const horizon = addDays(today, LEVY_NOTICE_RULES.issueDaysBeforeDue);
+  // Read far enough ahead for every rule pack; each building's own rule decides below.
+  const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => p.rules.LEVY_NOTICE_RULES.issueDaysBeforeDue));
+  const horizon = addDays(today, lookAhead);
   const due = await draftNoticesDue(schedules.map((s) => s.id), horizon);
   if (!due.length) return [];
+  const schemes = await db.orm.public.Scheme.where((s) => s.id.in([...new Set(schedules.map((x) => x.schemeId))])).limit(5000).all();
+  const stateOf = new Map(schemes.map((s) => [s.id, s.state]));
   const lots = await db.orm.public.Lot.where((l) => l.id.in([...new Set(due.map((n) => n.lotId))])).limit(20000).all();
   const results: DueRunResult[] = [];
 
@@ -317,16 +324,21 @@ export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
     const mine = due.filter((n) => n.levyScheduleId === schedule.id);
     if (!mine.length) continue;
     try {
+      // The building's own levy notice rules (throws for a state with no rule pack).
+      const rule = rulesForState(stateOf.get(schedule.schemeId)).rules.LEVY_NOTICE_RULES;
+      // Not yet in the building's issue window: next run.
+      const inWindow = mine.filter((n) => issueDateFor(toIsoDay(n.dueDate), rule) <= today);
+      if (!inWindow.length) continue;
       const issuerId = await issuerFor(schedule.schemeId, schedule.approvedBy ?? null);
       if (!issuerId) {
         results.push({ scheduleId: schedule.id, schemeId: schedule.schemeId, issued: 0, held: ["The building has no active Adviser to issue the notices."], awaitingConfirmation: 0 });
         continue;
       }
       // On time: today is the 5-week mark. Past it: the Adviser confirms first.
-      const onTime = mine.filter((n) => issueTiming(toIsoDay(n.dueDate), today).kind === "planned");
-      const late = mine.filter((n) => issueTiming(toIsoDay(n.dueDate), today).kind !== "planned");
+      const onTime = inWindow.filter((n) => issueTiming(toIsoDay(n.dueDate), today, rule).kind === "planned");
+      const late = inWindow.filter((n) => issueTiming(toIsoDay(n.dueDate), today, rule).kind !== "planned");
       if (late.length) {
-        const lines = [...new Set(late.map((n) => lateMessage(issueTiming(toIsoDay(n.dueDate), today), `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`)!))];
+        const lines = [...new Set(late.map((n) => lateMessage(issueTiming(toIsoDay(n.dueDate), today, rule), `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, rule)!))];
         await logActivity({
           schemeId: schedule.schemeId,
           actorId: issuerId,
@@ -367,7 +379,10 @@ export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
     } catch (err) {
       logError(`[levy-notices] schedule ${schedule.id} could not be issued:`, err);
       // A closed or locked period is the Adviser's to fix: say so in the building's activity.
-      const message = err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message) ? err.message : "The notices could not be issued; see the server log.";
+      const message =
+        err instanceof UnsupportedJurisdictionError || (err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message))
+          ? err.message
+          : "The notices could not be issued; see the server log.";
       try {
         const issuerId = await issuerFor(schedule.schemeId, schedule.approvedBy ?? null);
         if (issuerId) await logActivity({ schemeId: schedule.schemeId, actorId: issuerId, action: "LEVY_NOTICES_HELD", entityType: "LevySchedule", entityId: schedule.id, metadata: { missing: [message] } });
@@ -386,12 +401,13 @@ export async function issueDueNotices(today: string): Promise<DueRunResult[]> {
  * (today) and its due date (moved to 30 days away when fewer are left).
  */
 export async function overdueDrafts(schemeId: string, scheduleId: string, today: string) {
+  const rule = (await rulesForScheme(schemeId)).rules.LEVY_NOTICE_RULES;
   const drafts = await db.orm.public.LevyNotice
     .where((n) => and(n.schemeId.eq(schemeId), n.levyScheduleId.eq(scheduleId), n.status.eq("DRAFT")))
     .limit(5000)
     .all();
   return drafts
-    .map((n) => ({ n, t: issueTiming(toIsoDay(n.dueDate), today) }))
+    .map((n) => ({ n, t: issueTiming(toIsoDay(n.dueDate), today, rule) }))
     .filter((x) => x.t.kind !== "planned");
 }
 

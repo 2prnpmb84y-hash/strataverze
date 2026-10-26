@@ -8,7 +8,7 @@
  * than 30 days left has its due date moved to 30 days after today, the
  * statutory minimum.
  */
-import { LEVY_NOTICE_RULES } from "@/config/statutory";
+import type { LevyNoticeRule } from "@/lib/finance/levy-notice-content";
 import { addDays } from "./notice-plan";
 import { auDate } from "@/lib/onboarding/property-onboarding";
 
@@ -17,8 +17,8 @@ export function daysBetween(from: string, to: string): number {
 }
 
 /** The day a notice due on `dueDate` goes out. */
-export function issueDateFor(dueDate: string): string {
-  return addDays(dueDate, -LEVY_NOTICE_RULES.issueDaysBeforeDue);
+export function issueDateFor(dueDate: string, rule: LevyNoticeRule): string {
+  return addDays(dueDate, -rule.issueDaysBeforeDue);
 }
 
 export type IssueTiming =
@@ -29,17 +29,17 @@ export type IssueTiming =
   /** Fewer than 30 days left: goes out today, due 30 days from today instead of `originalDueDate`. */
   | { kind: "moved"; issueOn: string; dueDate: string; originalDueDate: string };
 
-export function issueTiming(dueDate: string, today: string): IssueTiming {
-  const issueOn = issueDateFor(dueDate);
+export function issueTiming(dueDate: string, today: string, rule: LevyNoticeRule): IssueTiming {
+  const issueOn = issueDateFor(dueDate, rule);
   if (issueOn >= today) return { kind: "planned", issueOn, dueDate };
   const left = daysBetween(today, dueDate);
-  if (left >= LEVY_NOTICE_RULES.minimumNoticeDays) return { kind: "late", issueOn: today, dueDate, daysNotice: left };
-  return { kind: "moved", issueOn: today, dueDate: addDays(today, LEVY_NOTICE_RULES.minimumNoticeDays), originalDueDate: dueDate };
+  if (left >= rule.minimumNoticeDays) return { kind: "late", issueOn: today, dueDate, daysNotice: left };
+  return { kind: "moved", issueOn: today, dueDate: addDays(today, rule.minimumNoticeDays), originalDueDate: dueDate };
 }
 
 /** A plain-English line for a notice that cannot be given 5 weeks. */
-export function lateMessage(t: IssueTiming, label: string): string | null {
+export function lateMessage(t: IssueTiming, label: string, rule: LevyNoticeRule): string | null {
   if (t.kind === "late") return `${label}: due ${auDate(t.dueDate)}, so it goes out today with ${t.daysNotice} days' notice instead of 5 weeks.`;
-  if (t.kind === "moved") return `${label}: due ${auDate(t.originalDueDate)}, fewer than ${LEVY_NOTICE_RULES.minimumNoticeDays} days away, so it goes out today and falls due on ${auDate(t.dueDate)} (the statutory ${LEVY_NOTICE_RULES.minimumNoticeDays} days).`;
+  if (t.kind === "moved") return `${label}: due ${auDate(t.originalDueDate)}, fewer than ${rule.minimumNoticeDays} days away, so it goes out today and falls due on ${auDate(t.dueDate)} (the statutory ${rule.minimumNoticeDays} days).`;
   return null;
 }

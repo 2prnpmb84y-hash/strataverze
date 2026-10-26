@@ -44,6 +44,8 @@ interface CreateJournalEntryInput {
   entryType: string;
   sourceType: string;
   sourceId?: string;
+  /** The rule pack the entry was worked out under (interest charges). */
+  rulePack?: string | null;
   createdBy: string;
   lines: JournalLineInput[];
 }
@@ -260,6 +262,7 @@ export async function createJournalEntry(data: CreateJournalEntryInput) {
       entryType: data.entryType,
       sourceType: data.sourceType,
       sourceId: data.sourceId ?? null,
+      rulePack: data.rulePack ? toVarchar<40>(data.rulePack) : null,
       status: "DRAFT",
       createdBy: data.createdBy,
     });

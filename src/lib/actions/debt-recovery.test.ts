@@ -31,7 +31,10 @@ const queries = {
   createDebtRecoveryDocument: vi.fn(),
   getInstalmentsForPlan: vi.fn(),
 };
-vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, DEFAULT_RECOVERY_STEPS: [] }));
+vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, getDebtRecoverySteps: vi.fn(async () => []) }));
+vi.mock("@/lib/jurisdiction/scheme-rules", () => ({
+  rulesForScheme: vi.fn(async () => ({ rules: { DEBT_RECOVERY_STEPS: [] }, label: "AU-NSW test" })),
+}));
 
 const instalmentFirst = vi.fn();
 const lotFirst = vi.fn();

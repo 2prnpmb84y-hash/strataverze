@@ -8,7 +8,10 @@
  * contribution bears no interest removes it (SSMA 2015 s 85(3)); it cannot
  * raise or lower the rate.
  */
-import { STATUTORY_INTEREST } from "@/config/statutory";
+import type { StatutoryRules } from "@/config/statutory";
+
+/** The interest rule of a building's rule pack (`rules.STATUTORY_INTEREST`). */
+export type InterestRule = Pick<StatutoryRules["STATUTORY_INTEREST"], "annualRatePercent" | "graceMonths" | "source">;
 
 export interface InterestInput {
   /** The levy amount on the notice, in cents (excluding interest). */
@@ -23,8 +26,6 @@ export interface InterestInput {
   stopAt?: string | null;
   /** A resolution that the contribution bears no interest. */
   noInterest?: boolean;
-  annualRatePercent?: number;
-  graceMonths?: number;
 }
 
 export interface InterestResult {
@@ -49,9 +50,10 @@ export function addMonths(day: string, months: number): string {
   return fromUtc(Date.UTC(y, m, Math.min(d, last)));
 }
 
-export function statutoryInterest(input: InterestInput): InterestResult {
-  const rate = input.annualRatePercent ?? STATUTORY_INTEREST.annualRatePercent;
-  const graceEnds = addMonths(input.dueDate, input.graceMonths ?? STATUTORY_INTEREST.graceMonths);
+/** Interest on one notice under the building's interest rule (`rules.STATUTORY_INTEREST`). */
+export function statutoryInterest(input: InterestInput, rule: InterestRule): InterestResult {
+  const rate = rule.annualRatePercent;
+  const graceEnds = addMonths(input.dueDate, rule.graceMonths);
   const base = { graceEnds, daysAccrued: 0, interestCents: 0 };
 
   if (input.noInterest) return { ...base, reason: "NO_INTEREST_RESOLUTION" };
@@ -108,15 +110,18 @@ export type InterestSettingMode = "STATUTORY" | "NO_INTEREST";
  * interest (by recorded resolution) is allowed: the owners corporation cannot
  * set any other rate, higher or lower (s 85(1) and (3)).
  */
-export function interestSettingProblem(input: {
-  mode: string;
-  ratePercent?: number | null;
-  resolutionMeetingId?: string | null;
-  resolutionMotionId?: string | null;
-}): string | null {
+export function interestSettingProblem(
+  input: {
+    mode: string;
+    ratePercent?: number | null;
+    resolutionMeetingId?: string | null;
+    resolutionMotionId?: string | null;
+  },
+  rule: InterestRule,
+): string | null {
   if (input.mode !== "STATUTORY" && input.mode !== "NO_INTEREST") return "Choose the statutory rate or no interest.";
-  if (input.ratePercent != null && input.ratePercent !== STATUTORY_INTEREST.annualRatePercent) {
-    return `The interest rate is fixed at ${STATUTORY_INTEREST.annualRatePercent}% a year by ${STATUTORY_INTEREST.source}. The owners corporation can only resolve to charge no interest.`;
+  if (input.ratePercent != null && input.ratePercent !== rule.annualRatePercent) {
+    return `The interest rate is fixed at ${rule.annualRatePercent}% a year by ${rule.source}. The owners corporation can only resolve to charge no interest.`;
   }
   if (input.mode === "NO_INTEREST" && (!input.resolutionMeetingId || !input.resolutionMotionId)) {
     return "Charging no interest needs the general meeting resolution that decided it. Choose the meeting and motion.";

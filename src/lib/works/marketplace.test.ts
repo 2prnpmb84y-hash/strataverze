@@ -38,7 +38,7 @@ const quote = (total: number, gst = 0) => ({ total, gst, validUntil: null, durat
 
 function seed(opts: { adviserMayDecide?: boolean } = {}) {
   sharedFake.reset({
-    Scheme: [{ id: A, name: "Opera House", planNumber: "SP 99999", address: "1 Macquarie St", suburb: "Sydney", postcode: "2000" }],
+    Scheme: [{ id: A, name: "Opera House", planNumber: "SP 99999", address: "1 Macquarie St", suburb: "Sydney", state: "NSW", postcode: "2000" }],
     SchemeMembership: ["m1", "m2", "m3"].map((profileId) => ({ schemeId: A, profileId, role: "COMMITTEE", isActive: true })),
     WorksSettings: [{ schemeId: A, approvalRule: "TWO", urgentLimit: "2000.00", adviserMayDecide: !!opts.adviserMayDecide, adviserLimit: opts.adviserMayDecide ? "5000.00" : null }],
     Profile: [{ id: "m1", firstName: "Matthew", lastName: "W", email: "m@x.test", phone: "0400" }],

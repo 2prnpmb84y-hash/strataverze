@@ -4,6 +4,7 @@
  * FinancialDocument (once per identical file).
  */
 import { db } from "@/prisma/db";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { siteUrl } from "@/lib/site-url";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
@@ -77,6 +78,7 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       },
       ledgerUrl: `${APP_URL}/owner/levies`,
       noInterest: setting.mode === "NO_INTEREST",
+      interest: setting.rules.rules.STATUTORY_INTEREST,
     },
   };
 }
@@ -200,6 +202,12 @@ export async function generateCommitteePackPdf(input: { schemeId: string; startD
   return { bytes, fileName, documentId: stored.id };
 }
 
+/** The rules shown on an adopted copy that was stored before rule packs were recorded. */
+async function adoptedPackRulesFallback(schemeId: string): Promise<StatutoryPack["rules"]> {
+  const { rules } = await rulesForScheme(schemeId);
+  return { rulePack: "", keyFinancialInformation: rules.KEY_FINANCIAL_INFORMATION, auditThreshold: rules.AUDIT_THRESHOLD };
+}
+
 /** The statutory statements: the locked copy once adopted at the AGM, else recalculated from the ledger. */
 export async function generateStatutoryPackPdf(input: { schemeId: string; financialYear: number; actorId: string }): Promise<GeneratedPdf | null> {
   const snapshot = await db.orm.public.StatutoryPackSnapshot
@@ -207,7 +215,14 @@ export async function generateStatutoryPackPdf(input: { schemeId: string; financ
     .first();
   let pack: StatutoryPack;
   if (snapshot) {
-    pack = { ...(JSON.parse(snapshot.content) as StatutoryPack), adopted: { meetingId: snapshot.meetingId, adoptedAt: String(snapshot.adoptedAt), snapshotId: snapshot.id } };
+    const stored = JSON.parse(snapshot.content) as Omit<StatutoryPack, "rules"> & { rules?: StatutoryPack["rules"] };
+    pack = {
+      ...stored,
+      // Copies adopted before rule packs were recorded (26 Oct 2026) carry no
+      // rules: show them with the building's current rules, and no pack label.
+      rules: stored.rules ?? (await adoptedPackRulesFallback(input.schemeId)),
+      adopted: { meetingId: snapshot.meetingId, adoptedAt: String(snapshot.adoptedAt), snapshotId: snapshot.id },
+    };
   } else {
     pack = await getStatutoryStatementsPack(input.schemeId, input.financialYear);
   }

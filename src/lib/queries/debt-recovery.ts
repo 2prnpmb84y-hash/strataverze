@@ -111,10 +111,13 @@ export async function createDebtRecoveryCase(data: {
   initiatedBy: string;
   initiatedRole: string;
   notes?: string;
+  /** The building's rule pack the case's steps came from. */
+  rulePack: string;
 }) {
   return db.orm.public.DebtRecoveryCase.create({
     ...data,
     caseNumber: toVarchar<30>(data.caseNumber),
+    rulePack: toVarchar<40>(data.rulePack),
     principalOwed: toNumeric(data.principalOwed),
     interestOwed: toNumeric(data.interestOwed ?? 0),
     costsOwed: toNumeric(data.costsOwed ?? 0),
@@ -458,97 +461,3 @@ export async function getDebtRecoveryStats(schemeId: string) {
   }
 }
 
-// ─── Default Recovery Steps ─────────────────────────────────────
-
-export const DEFAULT_RECOVERY_STEPS = [
-  {
-    stepType: "LEDGER_VERIFICATION",
-    stepOrder: 1,
-    actionRequired: "Verify all levy notices, payments, and outstanding balances on the lot ledger",
-    legalBasis: "s 83 SSMA 2015",
-    responsibleParty: "ADVISER",
-    approvalRequired: false,
-    triggerCondition: "Case opened",
-  },
-  {
-    stepType: "INITIAL_CONTACT",
-    stepOrder: 2,
-    actionRequired: "Make initial contact with the lot owner regarding overdue levies",
-    responsibleParty: "ADVISER",
-    approvalRequired: false,
-    triggerCondition: "Ledger verified",
-    noticeType: "REMINDER",
-  },
-  {
-    stepType: "REMINDER_NOTICE",
-    stepOrder: 3,
-    actionRequired: "Issue formal reminder notice with 14-day payment deadline",
-    legalBasis: "s 85 SSMA 2015",
-    responsibleParty: "ADVISER",
-    approvalRequired: false,
-    triggerCondition: "14 days after initial contact with no payment",
-    noticeType: "DEMAND",
-  },
-  {
-    stepType: "FINAL_NOTICE",
-    stepOrder: 4,
-    actionRequired: "Issue final demand notice warning of legal action if payment is not received within 21 days",
-    legalBasis: "s 85 SSMA 2015",
-    responsibleParty: "ADVISER",
-    approvalRequired: false,
-    triggerCondition: "14 days after reminder notice",
-    noticeType: "FINAL_DEMAND",
-  },
-  {
-    stepType: "HARDSHIP_REVIEW",
-    stepOrder: 5,
-    actionRequired: "Review any hardship application or payment plan request from the owner",
-    responsibleParty: "COMMITTEE",
-    approvalRequired: true,
-    triggerCondition: "Owner submits hardship application or payment plan request",
-  },
-  {
-    stepType: "COMMITTEE_REVIEW",
-    stepOrder: 6,
-    actionRequired: "Committee review and resolution to approve legal referral (ordinary resolution required)",
-    legalBasis: "s 103 SSMA 2015",
-    responsibleParty: "COMMITTEE",
-    approvalRequired: true,
-    triggerCondition: "Final notice period expired with no payment or payment plan",
-  },
-  {
-    stepType: "LEGAL_REFERRAL",
-    stepOrder: 7,
-    actionRequired: "Refer matter to solicitor for recovery proceedings",
-    legalBasis: "s 86 SSMA 2015",
-    responsibleParty: "ADVISER",
-    approvalRequired: true,
-    triggerCondition: "Committee approval granted",
-  },
-  {
-    stepType: "PROCEEDINGS",
-    stepOrder: 8,
-    actionRequired: "Solicitor files claim in NCAT or Local Court (amounts under $500 to NCAT; over $500 to Local Court)",
-    legalBasis: "s 86, s 229 SSMA 2015; Civil & Administrative Tribunal Act 2013",
-    responsibleParty: "SOLICITOR",
-    approvalRequired: false,
-    triggerCondition: "Legal referral accepted",
-  },
-  {
-    stepType: "ENFORCEMENT",
-    stepOrder: 9,
-    actionRequired: "Enforce judgment via garnishee order, writ of execution, or interest registration on lot",
-    legalBasis: "s 86(4) SSMA 2015",
-    responsibleParty: "SOLICITOR",
-    approvalRequired: false,
-    triggerCondition: "Judgment obtained",
-  },
-  {
-    stepType: "CLOSED",
-    stepOrder: 10,
-    actionRequired: "Close recovery case and update ledger",
-    responsibleParty: "ADVISER",
-    approvalRequired: false,
-    triggerCondition: "Debt fully recovered, written off, or settled",
-  },
-];

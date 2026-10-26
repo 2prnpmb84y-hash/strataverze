@@ -33,8 +33,10 @@ import {
   getOverdueLevyNoticesForLot,
   getDebtRecoveryCaseById,
   getPaymentPlanForCase,
-  DEFAULT_RECOVERY_STEPS,
+  getDebtRecoverySteps,
 } from "@/lib/queries/debt-recovery";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
@@ -125,6 +127,8 @@ export async function initiateDebtRecoveryAction(
     );
     const totalOwed = principalOwed + interestOwed;
 
+    // The building's rule pack sets the recovery steps (throws for a state with no pack).
+    const { rules, label: rulePack } = await rulesForScheme(schemeId);
     const caseNumber = await generateCaseNumber(schemeId);
 
     const newCase = await createDebtRecoveryCase({
@@ -137,10 +141,11 @@ export async function initiateDebtRecoveryAction(
       totalOwed,
       initiatedBy: profile.id,
       initiatedRole: role,
+      rulePack,
     });
 
-    // Create all default recovery steps
-    for (const step of DEFAULT_RECOVERY_STEPS) {
+    // The recovery steps of the building's rule pack
+    for (const step of rules.DEBT_RECOVERY_STEPS) {
       await createDebtRecoveryStep({
         caseId: newCase.id,
         ...step,
@@ -167,6 +172,7 @@ export async function initiateDebtRecoveryAction(
     return { success: true, id: newCase.id };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     logError("Failed to initiate debt recovery:", err);
     return { error: "Failed to initiate debt recovery case" };
   }
@@ -291,19 +297,12 @@ export async function completeDebtRecoveryStepAction(
       }
     });
 
-    // Find the next step and activate it
-    const debtCase = await getDebtRecoveryCaseById(caseId);
-    if (debtCase) {
-      const currentStepType = formData.get("stepType") as string;
-      const nextStepIdx = DEFAULT_RECOVERY_STEPS.findIndex(
-        (s) => s.stepType === currentStepType,
-      );
-      if (nextStepIdx >= 0 && nextStepIdx < DEFAULT_RECOVERY_STEPS.length - 1) {
-        const nextStep = DEFAULT_RECOVERY_STEPS[nextStepIdx + 1];
-        await updateDebtRecoveryCase(caseId, {
-          currentStep: nextStep.stepType,
-        });
-      }
+    // The next step is the case's own next step (its steps were set from the
+    // rule pack when it was opened), after the one just completed.
+    const caseSteps = await getDebtRecoverySteps(caseId);
+    const nextStep = caseSteps.find((s) => s.stepOrder > step.stepOrder);
+    if (nextStep) {
+      await updateDebtRecoveryCase(caseId, { currentStep: nextStep.stepType });
     }
 
     await logDebtRecoveryActivity({

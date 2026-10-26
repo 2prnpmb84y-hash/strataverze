@@ -200,3 +200,119 @@ export const MEETING_RULES: MeetingRuleSet = {
   notes:
     "Seed rule set for NSW. Clause citations to be re-pinned to the live in-force consolidation before deadline logic is relied upon.",
 };
+
+/**
+ * Debt recovery: the steps a recovery case goes through, in order (moved here
+ * from src/lib/queries/debt-recovery.ts on 26 Oct 2026, unchanged). Each case
+ * is given these steps when it is opened.
+ *
+ * NOT YET REVIEWED against the current Act. These were written before the
+ * multi-jurisdiction plan. In particular the NCAT and Local Court split at
+ * $500, the 14 and 21 day periods, and the citations (s 83, 85, 86, 103, 229)
+ * have not been checked against the in-force SSMA or the 2025 reforms
+ * (prescribed payment plans, the order of payment allocation). The NSW pack
+ * reviewer should confirm or correct them.
+ */
+export interface DebtRecoveryStepRule {
+  stepType: string;
+  stepOrder: number;
+  actionRequired: string;
+  legalBasis?: string;
+  responsibleParty: string;
+  approvalRequired: boolean;
+  triggerCondition: string;
+  noticeType?: string;
+}
+
+export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
+  {
+    stepType: "LEDGER_VERIFICATION",
+    stepOrder: 1,
+    actionRequired: "Verify all levy notices, payments, and outstanding balances on the lot ledger",
+    legalBasis: "s 83 SSMA 2015",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Case opened",
+  },
+  {
+    stepType: "INITIAL_CONTACT",
+    stepOrder: 2,
+    actionRequired: "Make initial contact with the lot owner regarding overdue levies",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Ledger verified",
+    noticeType: "REMINDER",
+  },
+  {
+    stepType: "REMINDER_NOTICE",
+    stepOrder: 3,
+    actionRequired: "Issue formal reminder notice with 14-day payment deadline",
+    legalBasis: "s 85 SSMA 2015",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "14 days after initial contact with no payment",
+    noticeType: "DEMAND",
+  },
+  {
+    stepType: "FINAL_NOTICE",
+    stepOrder: 4,
+    actionRequired: "Issue final demand notice warning of legal action if payment is not received within 21 days",
+    legalBasis: "s 85 SSMA 2015",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "14 days after reminder notice",
+    noticeType: "FINAL_DEMAND",
+  },
+  {
+    stepType: "HARDSHIP_REVIEW",
+    stepOrder: 5,
+    actionRequired: "Review any hardship application or payment plan request from the owner",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Owner submits hardship application or payment plan request",
+  },
+  {
+    stepType: "COMMITTEE_REVIEW",
+    stepOrder: 6,
+    actionRequired: "Committee review and resolution to approve legal referral (ordinary resolution required)",
+    legalBasis: "s 103 SSMA 2015",
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Final notice period expired with no payment or payment plan",
+  },
+  {
+    stepType: "LEGAL_REFERRAL",
+    stepOrder: 7,
+    actionRequired: "Refer matter to solicitor for recovery proceedings",
+    legalBasis: "s 86 SSMA 2015",
+    responsibleParty: "ADVISER",
+    approvalRequired: true,
+    triggerCondition: "Committee approval granted",
+  },
+  {
+    stepType: "PROCEEDINGS",
+    stepOrder: 8,
+    actionRequired: "Solicitor files claim in NCAT or Local Court (amounts under $500 to NCAT; over $500 to Local Court)",
+    legalBasis: "s 86, s 229 SSMA 2015; Civil & Administrative Tribunal Act 2013",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Legal referral accepted",
+  },
+  {
+    stepType: "ENFORCEMENT",
+    stepOrder: 9,
+    actionRequired: "Enforce judgment via garnishee order, writ of execution, or interest registration on lot",
+    legalBasis: "s 86(4) SSMA 2015",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Judgment obtained",
+  },
+  {
+    stepType: "CLOSED",
+    stepOrder: 10,
+    actionRequired: "Close recovery case and update ledger",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Debt fully recovered, written off, or settled",
+  },
+];

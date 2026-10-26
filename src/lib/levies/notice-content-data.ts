@@ -11,6 +11,7 @@ import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
 import { fromCents } from "@/lib/billing/money";
 import { validateLevyNoticeContent, type MissingItem } from "@/lib/finance/levy-notice-content";
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { rulesForState, SchemeNotFoundError } from "@/lib/jurisdiction/scheme-rules";
 import { generateLevyNoticePdf } from "@/lib/pdf/generate";
 
 const APP_URL = siteUrl();
@@ -48,6 +49,9 @@ export async function checkPlannedNotices(input: {
   notices: PlannedNotice[];
 }): Promise<MissingItem[]> {
   const { scheme, fund, issuer, account } = await noticeContext(input.schemeId, input.fundId, input.issuerId);
+  if (!scheme) throw new SchemeNotFoundError();
+  // The building's own levy notice rules (throws for a state with no rule pack).
+  const rule = rulesForState(scheme.state).rules.LEVY_NOTICE_RULES;
   const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
   const rollNames = await rollOwnerNames(input.notices.map((n) => n.lotId));
   const seen = new Map<string, MissingItem>();
@@ -75,7 +79,7 @@ export async function checkPlannedNotices(input: {
       includesInterestWarning: true,
       includesHardshipStatement: true,
       includesLedgerAccess: true,
-    });
+    }, rule);
     for (const item of items) {
       const key = item.code;
       if (item.code === "OWNER") {
@@ -168,6 +172,7 @@ export async function sendIssuedNotices(input: {
           },
           ledgerUrl: `${APP_URL}/owner/levies`,
           noInterest: setting.mode === "NO_INTEREST",
+          interest: setting.rules.rules.STATUTORY_INTEREST,
         }),
         attachments,
       });

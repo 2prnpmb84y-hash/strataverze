@@ -95,6 +95,8 @@ import {
 import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconciliation";
 import { sydneyToday } from "@/lib/finance/interest-setting";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
@@ -202,6 +204,8 @@ function unexpectedError(err: unknown, fallback: string, keepMessages: readonly 
   if (feeError) return feeError;
   // A fund out of balance, or an account used for the other fund (review B1).
   if (err instanceof FundIntegrityError) return err.message;
+  // A building in a state whose rules have not been added (multi-jurisdiction plan).
+  if (err instanceof UnsupportedJurisdictionError) return err.message;
   const message = err instanceof Error ? err.message : "";
   if (message && keepMessages.some((re) => re.test(message))) return message;
   logError(fallback, err);
@@ -1195,8 +1199,9 @@ export async function issueScheduleNoticesAction(
 
     // When each notice goes out: 5 weeks before it falls due. A special levy
     // is resolved for one date and goes out now.
-    const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today) }));
-    const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`)!])).values()];
+    const levyRule = (await rulesForScheme(schemeId)).rules.LEVY_NOTICE_RULES;
+    const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today, levyRule) }));
+    const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`, levyRule)!])).values()];
     if (late.length && formData.get("confirmLate") !== "on") {
       return { error: "Some instalments cannot be given 5 weeks' notice. Check them below and confirm to go ahead.", data: { late } };
     }
@@ -1271,6 +1276,7 @@ export async function issueScheduleNoticesAction(
     if (err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message)) {
       return { error: `${err.message} The notices were not sent; they stay planned.` };
     }
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     return { error: "Failed to issue levy notices." };
   }
 }
@@ -1294,7 +1300,8 @@ export async function issueOverdueNoticesAction(
     const today = sydneyToday();
     const list = await overdueDrafts(schemeId, scheduleId, today);
     if (!list.length) return { error: "No planned notice is past its 5-week mark." };
-    const late = [...new Set(list.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`)!))];
+    const levyRule = (await rulesForScheme(schemeId)).rules.LEVY_NOTICE_RULES;
+    const late = [...new Set(list.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, levyRule)!))];
     if (formData.get("confirmLate") !== "on") {
       return { error: "Confirm that these notices go out today with less than 5 weeks' notice.", data: { late } };
     }
@@ -1311,6 +1318,7 @@ export async function issueOverdueNoticesAction(
     if (err instanceof Error && /^(Cannot post to a closed period|This period is locked)/.test(err.message)) {
       return { error: `${err.message} The notices were not sent; they stay planned.` };
     }
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     return { error: "Failed to send the notices." };
   }
 }
@@ -2840,7 +2848,8 @@ export async function saveInterestSettingAction(
     const mode = String(formData.get("mode") ?? "");
     const meetingId = String(formData.get("meetingId") ?? "").trim() || null;
     const motionId = String(formData.get("motionId") ?? "").trim() || null;
-    const problem = interestSettingProblem({ mode, resolutionMeetingId: meetingId, resolutionMotionId: motionId });
+    const { rules } = await rulesForScheme(schemeId);
+    const problem = interestSettingProblem({ mode, resolutionMeetingId: meetingId, resolutionMotionId: motionId }, rules.STATUTORY_INTEREST);
     if (problem) return { error: problem };
 
     if (mode === "NO_INTEREST") {
@@ -2867,6 +2876,7 @@ export async function saveInterestSettingAction(
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     return { error: "Failed to save the interest setting." };
   }
 }

@@ -9,7 +9,7 @@ import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec
 import { fromCents, toCents } from "@/lib/billing/money";
 import { logActivity } from "@/lib/queries/activity-log";
 import { createLevySchedule } from "@/lib/queries/levy-schedules";
-import { CAPITAL_WORKS_PLAN } from "@/config/statutory";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import {
   CONTRIBUTION_METHOD_LABELS,
   planAdoptionProblem,
@@ -43,15 +43,22 @@ async function loadPlan(schemeId: string, planId: string) {
 const itemsOf = (plan: { items?: { plannedYear: number; estimatedCost: unknown }[] }) =>
   (plan.items ?? []).map((i) => ({ plannedYear: i.plannedYear, estimatedCostCents: toCents(String(i.estimatedCost)) }));
 
+/** The building's capital works plan rule (throws for a state with no rule pack). */
+async function capitalWorksRule(schemeId: string) {
+  return (await rulesForScheme(schemeId)).rules.CAPITAL_WORKS_PLAN;
+}
+
 /** Work out and store the yearly contribution the plan needs. */
 async function recompute(planId: string) {
   const plan = await db.orm.public.CapitalWorksPlan.where((p) => p.id.eq(planId)).include("items").first();
   if (!plan) return;
+  const rule = await capitalWorksRule(plan.schemeId);
   const cents = requiredAnnualContribution({
     items: itemsOf(plan),
     startYear: plan.periodStartYear,
     openingBalanceCents: toCents(String(plan.openingBalance)),
     method: plan.contributionMethod as ContributionMethod,
+    years: rule.horizonYears,
   });
   await db.orm.public.CapitalWorksPlan.where((p) => p.id.eq(planId)).update({ annualContribution: num(cents) });
 }
@@ -69,13 +76,14 @@ export async function createPlan(input: {
   if (!input.title.trim()) throw new CapitalWorksPlanError("Give the plan a title.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.preparedAt)) throw new CapitalWorksPlanError("Enter the date the plan was prepared.");
   if (!(input.periodStartYear >= 2000 && input.periodStartYear <= 2100)) throw new CapitalWorksPlanError("Enter the first financial year of the plan.");
+  const rule = await capitalWorksRule(input.schemeId);
   const plan = await db.orm.public.CapitalWorksPlan.create({
     schemeId: input.schemeId,
     title: input.title.trim(),
     preparedBy: input.preparedBy?.trim() || null,
     preparedAt: ts(input.preparedAt),
     periodStartYear: input.periodStartYear,
-    reviewDueAt: ts(reviewDueDate(input.preparedAt)),
+    reviewDueAt: ts(reviewDueDate(input.preparedAt, rule.reviewEveryYears)),
     openingBalance: num(input.openingBalanceCents),
     contributionMethod: input.method,
     annualContribution: null,
@@ -141,7 +149,8 @@ export async function addPlanItem(
   const plan = await loadPlan(schemeId, planId);
   assertDraft(plan);
   if (!item.description.trim()) throw new CapitalWorksPlanError("Describe the work.");
-  const last = plan.periodStartYear + CAPITAL_WORKS_PLAN.horizonYears - 1;
+  const rule = await capitalWorksRule(schemeId);
+  const last = plan.periodStartYear + rule.horizonYears - 1;
   if (item.plannedYear < plan.periodStartYear || item.plannedYear > last) {
     throw new CapitalWorksPlanError(`Choose a year from FY ${plan.periodStartYear} to FY ${last}.`);
   }
@@ -174,8 +183,9 @@ export async function removePlanItem(schemeId: string, planId: string, itemId: s
  */
 export async function adoptPlan(schemeId: string, planId: string, meetingId: string | null, motionId: string | null, actorId: string) {
   const plan = await loadPlan(schemeId, planId);
+  const rule = await capitalWorksRule(schemeId);
   const problem =
-    planAdoptionProblem({ status: plan.status, items: itemsOf(plan), startYear: plan.periodStartYear, meetingId, motionId }) ??
+    planAdoptionProblem({ status: plan.status, items: itemsOf(plan), startYear: plan.periodStartYear, horizonYears: rule.horizonYears, meetingId, motionId }) ??
     (await generalMeetingResolutionProblem(schemeId, meetingId, motionId));
   if (problem) throw new CapitalWorksPlanError(problem);
   await recompute(planId);
@@ -184,7 +194,7 @@ export async function adoptPlan(schemeId: string, planId: string, meetingId: str
   const compliance = await db.orm.public.ComplianceItem.create({
     schemeId,
     title: "Review the capital works fund plan",
-    description: `The capital works fund plan "${plan.title}" must be reviewed at least every ${CAPITAL_WORKS_PLAN.reviewEveryYears} years (${CAPITAL_WORKS_PLAN.source}).`,
+    description: `The capital works fund plan "${plan.title}" must be reviewed at least every ${rule.reviewEveryYears} years (${rule.source}).`,
     category: "OTHER",
     dueDate: ts(`${due}T00:00:00+10:00`),
     status: "PENDING",
@@ -215,7 +225,8 @@ export async function generateLevyFromPlan(input: { schemeId: string; financialY
   if (!plan) throw new CapitalWorksPlanError("Adopt a capital works fund plan first.");
   const cents = toCents(String(plan.annualContribution ?? 0));
   if (cents <= 0) throw new CapitalWorksPlanError("The adopted plan does not need a contribution this year.");
-  const last = plan.periodStartYear + CAPITAL_WORKS_PLAN.horizonYears - 1;
+  const rule = await capitalWorksRule(input.schemeId);
+  const last = plan.periodStartYear + rule.horizonYears - 1;
   if (input.financialYear < plan.periodStartYear || input.financialYear > last) {
     throw new CapitalWorksPlanError(`FY ${input.financialYear} is outside the adopted plan (FY ${plan.periodStartYear} to FY ${last}).`);
   }

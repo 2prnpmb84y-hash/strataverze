@@ -1,6 +1,5 @@
 import { formatAud } from "@/lib/billing/money";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
-import { KEY_FINANCIAL_INFORMATION } from "@/config/statutory";
 import { drillDownHref } from "@/lib/finance/drill-down";
 import { Card, CardHeader } from "@/components/ui/card";
 
@@ -22,7 +21,8 @@ const Row = ({ label, cents, strong = false, href }: { label: string; cents: num
 /** The statutory statements pack, fund by fund. */
 /** `reportsBase` (the portal's reports path) turns each account line into a link to its drill-down. */
 export function StatutoryPackView({ pack, reportsBase }: { pack: StatutoryPack; reportsBase?: string }) {
-  const rows = KEY_FINANCIAL_INFORMATION.rows;
+  const kfi = pack.rules.keyFinancialInformation;
+  const rows = kfi.rows;
   return (
     <div className="space-y-6">
       {pack.funds.map((f) => (
@@ -32,7 +32,7 @@ export function StatutoryPackView({ pack, reportsBase }: { pack: StatutoryPack; 
           </h2>
 
           <Card>
-            <CardHeader title="Statement of key financial information" description={KEY_FINANCIAL_INFORMATION.source} />
+            <CardHeader title="Statement of key financial information" description={kfi.source} />
             <table className="w-full text-sm">
               <tbody className="divide-y divide-line">
                 <Row label={rows[0]} cents={f.keyInformation.balanceCarriedForwardCents} />

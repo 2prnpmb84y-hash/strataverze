@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { issueDateFor, issueTiming } from "./issue-timing";
+import { issueDateFor as issueDateWith, issueTiming as issueTimingWith } from "./issue-timing";
+import { statutoryRulesFor } from "@/config/statutory";
+
+const LEVY = statutoryRulesFor("NSW").LEVY_NOTICE_RULES;
+const issueDateFor = (due: string) => issueDateWith(due, LEVY);
+const issueTiming = (due: string, today: string) => issueTimingWith(due, today, LEVY);
 
 /**
  * Levy notices go out 5 weeks before they fall due, and levies are paid in
@@ -99,7 +104,7 @@ const { recordLevyPayment } = await import("@/lib/queries/levy-schedules");
 
 function seed() {
   sharedFake.reset({
-    Scheme: [{ id: "s1", financialYearEnd: "06-30", autoApplyOwnerCredit: true }],
+    Scheme: [{ id: "s1", state: "NSW", financialYearEnd: "06-30", autoApplyOwnerCredit: true }],
     Fund: [{ id: "admin", schemeId: "s1", name: "Administrative Fund", fundType: "ADMINISTRATIVE", isActive: true }],
     Lot: [
       { id: "l1", schemeId: "s1", lotNumber: "1" },

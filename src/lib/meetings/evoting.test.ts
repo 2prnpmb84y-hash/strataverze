@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { NSW_RULE_SET } from "./rules";
+import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
 import {
   computeBallotWindow,
   isBallotOpen,

@@ -1,4 +1,3 @@
-import { AUDIT_THRESHOLD } from "@/config/statutory";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -70,7 +69,7 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
           title={pack.audit.required ? "An audit is required" : "Audit"}
           description={
             pack.audit.required
-              ? `This scheme must have its accounts audited (${pack.audit.byLots ? "more than 100 lots" : `levies raised for the year of ${formatAud(pack.audit.annualBudgetCents)} are more than ${formatAud(AUDIT_THRESHOLD.leviesRaisedMoreThanCents)}`}). Give the auditor the audit export.`
+              ? `This scheme must have its accounts audited (${pack.audit.byLots ? `more than ${pack.rules.auditThreshold.lotsMoreThan} lots` : `levies raised for the year of ${formatAud(pack.audit.annualBudgetCents)} are more than ${formatAud(pack.rules.auditThreshold.leviesRaisedMoreThanCents)}`}). Give the auditor the audit export.`
               : `Not required by size (levies raised for the year ${formatAud(pack.audit.annualBudgetCents)}, ${pack.scheme.lots} lots). The AGM must consider whether to have the accounts audited.`
           }
         />

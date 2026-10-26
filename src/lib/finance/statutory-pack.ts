@@ -15,7 +15,7 @@ import { toCents } from "@/lib/billing/money";
 import { financialYearStart, addDays } from "@/lib/levies/notice-plan";
 import { toBasisEntries } from "@/lib/queries/reports";
 import { logActivity } from "@/lib/queries/activity-log";
-import { AUDIT_THRESHOLD, CAPITAL_WORKS_PLAN, KEY_FINANCIAL_INFORMATION, STATUTORY_INTEREST } from "@/config/statutory";
+import type { StatutoryRules } from "@/config/statutory";
 import { levyIncomeAccountPicker, recognisedIncomeExpense, incomeExpenseTotals, type AccountingBasis, type RecognisedLine } from "./accounting-basis";
 import { auditRequired, keyFinancialInformation, leviesRaisedForYear, unpaidAt, type KeyFinancialInformation } from "./key-financial-information";
 import { currentBudgetLines } from "./budgets";
@@ -64,8 +64,14 @@ export interface StatutoryPack {
   generatedAt: string;
   funds: FundPack[];
   notes: string[];
-  /** `annualBudgetCents` is the amount tested: the total levies raised for the year (see AUDIT_THRESHOLD). */
+  /** `annualBudgetCents` is the amount tested: the total levies raised for the year (see the pack's AUDIT_THRESHOLD). */
   audit: { required: boolean; byLots: boolean; byBudget: boolean; annualBudgetCents: number };
+  /** The building's rule pack the statements were prepared under, and the parts of it they show. */
+  rules: {
+    rulePack: string;
+    keyFinancialInformation: StatutoryRules["KEY_FINANCIAL_INFORMATION"];
+    auditThreshold: StatutoryRules["AUDIT_THRESHOLD"];
+  };
   adopted: { meetingId: string; adoptedAt: string; snapshotId: string } | null;
 }
 
@@ -100,6 +106,9 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     getSchemeInterestSetting(schemeId),
     db.orm.public.StatutoryPackSnapshot.where((s) => and(s.schemeId.eq(schemeId), s.financialYear.eq(financialYear))).first(),
   ]);
+  // The building's rule pack (from the interest setting, which reads the building).
+  const { rules, label: rulePack } = interest.rules;
+  const { AUDIT_THRESHOLD, CAPITAL_WORKS_PLAN, KEY_FINANCIAL_INFORMATION, STATUTORY_INTEREST } = rules;
   const payments = notices.length
     ? livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(notices.map((n) => n.id))).limit(100000).all(), end)
     : [];
@@ -212,7 +221,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     };
   });
 
-  // The audit test: total levies raised for the year (AUDIT_THRESHOLD).
+  // The audit test: total levies raised for the year (the pack's AUDIT_THRESHOLD).
   const schedules = await db.orm.public.LevySchedule.where((x) => and(x.schemeId.eq(schemeId), x.financialYear.eq(financialYear))).limit(500).all();
   const raised = leviesRaisedForYear({
     schedules: schedules.map((x) => ({ fundId: x.fundId, status: String(x.status), budgetAmountCents: toCents(String(x.budgetAmount)) })),
@@ -251,6 +260,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     funds: fundPacks,
     notes,
     audit,
+    rules: { rulePack, keyFinancialInformation: KEY_FINANCIAL_INFORMATION, auditThreshold: AUDIT_THRESHOLD },
     adopted: snapshot ? { meetingId: snapshot.meetingId, adoptedAt: String(snapshot.adoptedAt), snapshotId: snapshot.id } : null,
   };
 }

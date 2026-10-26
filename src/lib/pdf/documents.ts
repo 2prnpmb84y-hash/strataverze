@@ -5,7 +5,7 @@
  */
 import { renderPdf, type PdfBlock } from "./document";
 import { HARDSHIP_INFORMATION } from "@/lib/finance/levy-notice-content";
-import { KEY_FINANCIAL_INFORMATION, STATUTORY_INTEREST } from "@/config/statutory";
+import type { InterestRule } from "@/lib/finance/statutory-interest";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 import type { CommitteeReportingPack } from "@/lib/queries/reports";
 
@@ -34,6 +34,8 @@ export interface LevyNoticeDocument {
   contact: { name: string; emailOrPhone: string };
   ledgerUrl: string;
   noInterest: boolean;
+  /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
+  interest: InterestRule;
 }
 
 export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
@@ -65,7 +67,7 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
       kind: "text",
       text: d.noInterest
         ? "The owners corporation has resolved not to charge interest on overdue levies."
-        : `Interest: if this levy is not paid within one month after the due date, simple interest of ${STATUTORY_INTEREST.annualRatePercent}% a year is charged from the due date until it is paid (${STATUTORY_INTEREST.source}).`,
+        : `Interest: if this levy is not paid within one month after the due date, simple interest of ${d.interest.annualRatePercent}% a year is charged from the due date until it is paid (${d.interest.source}).`,
     },
     {
       kind: "text",
@@ -285,7 +287,8 @@ export function renderCommitteePackPdf(p: CommitteeReportingPack, planNumber: st
 // ─── Statutory statements pack ──────────────────────────────────────────────
 
 export function statutoryPackBlocks(pack: StatutoryPack): PdfBlock[] {
-  const rows = KEY_FINANCIAL_INFORMATION.rows;
+  const kfi = pack.rules.keyFinancialInformation;
+  const rows = kfi.rows;
   const blocks: PdfBlock[] = [
     { kind: "heading", text: "Financial statements" },
     { kind: "text", text: `For the financial year ${longDate(pack.start)} to ${longDate(pack.end)}.` },
@@ -297,7 +300,7 @@ export function statutoryPackBlocks(pack: StatutoryPack): PdfBlock[] {
     blocks.push(
       { kind: "heading", text: `${f.fundName} (${f.basis === "CASH" ? "cash basis" : "accrual basis"})` },
       { kind: "heading", text: "Statement of key financial information", level: 2 },
-      { kind: "text", muted: true, text: KEY_FINANCIAL_INFORMATION.source },
+      { kind: "text", muted: true, text: kfi.source },
       {
         kind: "table",
         columns: [
