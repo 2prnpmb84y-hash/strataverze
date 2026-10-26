@@ -677,6 +677,44 @@ exports[`NSW finance reporting > statutory pack PDF content is unchanged 1`] = `
 ]
 `;
 
+exports[`NSW funds and entitlement schedules (phase 2 foundation) > are the funds and schedules the platform already uses 1`] = `
+{
+  "ENTITLEMENT_SCHEDULES": [
+    {
+      "key": "UNIT_ENTITLEMENT",
+      "name": "unit entitlement",
+      "onLot": true,
+      "source": "Strata Schemes Management Act 2015 (NSW), as the platform applies it; the schedule of unit entitlement on the strata plan (sections not checked)",
+      "status": "NOT_CONFIRMED",
+      "usedFor": [
+        "each lot's share of levies",
+        "the value of a lot's vote on a poll and in special resolutions",
+      ],
+    },
+  ],
+  "FUND_CATALOGUE": [
+    {
+      "key": "ADMINISTRATIVE",
+      "ledgerFund": "ADMINISTRATIVE",
+      "name": "administrative fund",
+      "purpose": "Day-to-day running costs of the owners corporation.",
+      "required": true,
+      "source": "Strata Schemes Management Act 2015 (NSW) s 73, as given in the approved s 184 certificate form",
+      "status": "GUIDANCE",
+    },
+    {
+      "key": "CAPITAL_WORKS",
+      "ledgerFund": "CAPITAL_WORKS",
+      "name": "capital works fund",
+      "purpose": "Major and long-term works on common property, following the 10-year capital works fund plan.",
+      "required": true,
+      "source": "Strata Schemes Management Act 2015 (NSW) ss 74 (as given in the approved s 184 certificate form), 80",
+      "status": "GUIDANCE",
+    },
+  ],
+}
+`;
+
 exports[`NSW levies > interest is unchanged 1`] = `
 {
   "afterGrace": {

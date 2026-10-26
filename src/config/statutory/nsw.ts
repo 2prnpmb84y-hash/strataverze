@@ -12,6 +12,7 @@
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
+import type { EntitlementScheduleDefinition, FundDefinition } from "./types";
 
 /**
  * Interest on unpaid contributions.
@@ -701,3 +702,49 @@ export const RECORDS_INSPECTION = {
   partHalfHour: "Each part of a further half hour is charged as a whole half hour (not confirmed).",
   source: "NSW Government, Record keeping requirements",
 } as const;
+
+/**
+ * The funds an NSW owners corporation keeps (phase 2 foundation, 27 Oct 2026):
+ * the administrative fund and the capital works fund, the same two the
+ * platform already uses. Sections 73 and 74 are those the approved s 184
+ * certificate form gives for each fund's contributions (SALE_CERTIFICATE
+ * items 3 and 4); s 80 is the capital works fund plan (CAPITAL_WORKS_PLAN).
+ * The Act's text for them was not read.
+ */
+export const FUND_CATALOGUE: readonly FundDefinition[] = [
+  {
+    key: "ADMINISTRATIVE",
+    name: "administrative fund",
+    ledgerFund: "ADMINISTRATIVE",
+    purpose: "Day-to-day running costs of the owners corporation.",
+    required: true,
+    source: "Strata Schemes Management Act 2015 (NSW) s 73, as given in the approved s 184 certificate form",
+    status: "GUIDANCE",
+  },
+  {
+    key: "CAPITAL_WORKS",
+    name: "capital works fund",
+    ledgerFund: "CAPITAL_WORKS",
+    purpose: "Major and long-term works on common property, following the 10-year capital works fund plan.",
+    required: true,
+    source: "Strata Schemes Management Act 2015 (NSW) ss 74 (as given in the approved s 184 certificate form), 80",
+    status: "GUIDANCE",
+  },
+];
+
+/**
+ * NSW has one schedule: unit entitlement, held on each lot. It decides each
+ * lot's share of levies and the value of its vote on a poll and in special
+ * resolutions (MEETING_RULES), as the platform uses it today.
+ */
+export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
+  {
+    key: "UNIT_ENTITLEMENT",
+    name: "unit entitlement",
+    onLot: true,
+    usedFor: ["each lot's share of levies", "the value of a lot's vote on a poll and in special resolutions"],
+    source: "Strata Schemes Management Act 2015 (NSW), as the platform applies it; the schedule of unit entitlement on the strata plan (sections not checked)",
+    status: "NOT_CONFIRMED",
+  },
+];
+
