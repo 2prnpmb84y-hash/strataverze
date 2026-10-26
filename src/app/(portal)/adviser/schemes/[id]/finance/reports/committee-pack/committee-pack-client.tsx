@@ -479,7 +479,7 @@ export function CommitteePackClient({
                           ))}
                           {/* Fund totals */}
                           <tr className="font-semibold">
-                            <td className="py-2 pr-4 text-ink">Total</td>
+                            <td className="py-2 pr-4 text-ink">Total expenditure</td>
                             <td className="py-2 pr-4 text-right tabular-nums text-ink">
                               {formatCurrency(comp.totalBudget)}
                             </td>

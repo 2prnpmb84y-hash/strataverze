@@ -31,7 +31,7 @@ UPDATE public.levy_notices n SET
     FROM public.journal_entries j
     JOIN public.journal_lines l ON l.journal_entry_id = j.id
     JOIN public.account_codes a ON a.id = l.account_code_id
-    WHERE j.source_type = 'INTEREST' AND j.source_id = n.id AND j.status = 'POSTED'
+    WHERE j.source_type = 'INTEREST' AND j.source_id = n.id AND j.status IN ('POSTED', 'REVERSED')
       AND a.account_sub_type = 'ACCOUNTS_RECEIVABLE'
   ), 0)),
   migrated_interest_paid = greatest(0, n.amount_paid - coalesce((

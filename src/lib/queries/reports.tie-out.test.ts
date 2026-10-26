@@ -158,6 +158,25 @@ describe("statement of key financial information (B4)", () => {
     expect(cw.totalIncomeReceivedCents).toBe(0);
   });
 
+  it("keeps the takeover's year-to-date figures and same-day entries out of the balance carried forward", () => {
+    const l = (accountType: string, accountSubType: string | null, debitCents: number, creditCents: number) => ({ accountId: String(accountSubType), accountCode: "", accountName: "", accountType, accountSubType, fundId: A, debitCents, creditCents });
+    const basis = [
+      // Takeover part way through the year: the trial balance carries $300 of income and $100 of expenses.
+      { id: "t", date: "2026-10-01", sourceType: "DATA_MIGRATION", sourceId: null, lines: [l("ASSET", "BANK", 120_000, 0), l("INCOME", "LEVY_INCOME", 0, 30_000), l("EXPENSE", "UTILITIES_EXPENSE", 10_000, 0), l("EQUITY", "OPENING_BALANCE", 0, 100_000)] },
+      // A levy raised on the takeover day belongs to the period.
+      { id: "lv", date: "2026-10-01", sourceType: "LEVY", sourceId: null, lines: [l("ASSET", "ACCOUNTS_RECEIVABLE", 5_000, 0), l("INCOME", "LEVY_INCOME", 0, 5_000)] },
+    ];
+    const recognised = [
+      { accountType: "INCOME" as const, accountSubType: "LEVY_INCOME", amountCents: 35_000 },
+      { accountType: "EXPENSE" as const, accountSubType: "UTILITIES_EXPENSE", amountCents: 10_000 },
+    ];
+    const k = keyFinancialInformation({ entries: basis, fundId: A, start: "2026-07-01", end: "2027-06-30", dayBefore: "2026-06-30", recognised, unpaidNotices: [], principalItemsNextPeriod: [] });
+    // $1,200 of net assets less the $200 of year-to-date surplus already in the period figures.
+    expect(k.balanceCarriedForwardCents).toBe(100_000);
+    // Carried forward + income - expenditure = balance at the end.
+    expect(k.balanceCarriedForwardCents + 35_000 - 10_000).toBe(k.balanceAtEndCents);
+  });
+
   it("counts money moved between the funds in the bank once, for the fund it moved to", () => {
     const l = (fundId: string, accountType: string, accountSubType: string, debitCents: number, creditCents: number) => ({ accountId: accountSubType, accountCode: "", accountName: "", accountType, accountSubType, fundId, debitCents, creditCents });
     const basis = [

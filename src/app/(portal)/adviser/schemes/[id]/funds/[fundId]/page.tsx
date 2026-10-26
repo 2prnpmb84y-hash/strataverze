@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { getFundById } from "@/lib/queries/funds";
+import { getFundWithBalance } from "@/lib/queries/funds";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -32,7 +32,7 @@ export default async function FundDetailPage({
   );
   if (!isAdviser) notFound();
 
-  const fund = await getFundById(fundId);
+  const fund = await getFundWithBalance(fundId);
   if (!fund || fund.schemeId !== id) notFound();
 
   const createdDate = new Date(String(fund.createdAt));

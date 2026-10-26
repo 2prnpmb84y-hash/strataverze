@@ -15,25 +15,35 @@ function toNumeric(value: number | string): Numeric<12, 2> {
 }
 
 /**
- * Fetch all funds for a scheme, ordered by fund type. `balance` and `cash`
- * are worked out from the ledger as at today (financials review B2).
+ * Fetch all funds for a scheme, ordered by fund type. For a list or a choice
+ * of fund: the stored `balance` column is not the fund's balance, so use
+ * getFundsWithBalances wherever a balance is shown (financials review B2).
  */
 export async function getFundsForScheme(schemeId: string, limit = 200) {
-  const funds = await db.orm.public.Fund
+  return db.orm.public.Fund
     .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
     .orderBy((f) => f.createdAt.asc())
     .limit(limit)
     .all();
-  return withLedgerBalances(funds);
+}
+
+/** A scheme's funds with `balance` and `cash` from the ledger as at today (financials review B2). */
+export async function getFundsWithBalances(schemeId: string, limit = 200) {
+  return withLedgerBalances(await getFundsForScheme(schemeId, limit));
 }
 
 /**
- * Fetch a single fund by ID, with its ledger balance as at today.
+ * Fetch a single fund by ID.
  */
 export async function getFundById(fundId: string) {
-  const fund = await db.orm.public.Fund
+  return db.orm.public.Fund
     .where((f) => and(f.id.eq(fundId), f.deletedAt.eq(null)))
     .first();
+}
+
+/** A single fund with `balance` and `cash` from the ledger as at today. */
+export async function getFundWithBalance(fundId: string) {
+  const fund = await getFundById(fundId);
   if (!fund) return fund;
   return (await withLedgerBalances([fund]))[0];
 }

@@ -261,7 +261,7 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
           { header: "Variance", width: 1.2, align: "right" },
         ],
         rows: b.lines.map((l) => [`${l.accountCode} ${l.accountName}`, audDollars(l.budgetAmount), audDollars(l.actualAmount), audDollars(l.variance)]),
-        totalRow: ["Total", audDollars(b.totalBudget), audDollars(b.totalActual), audDollars(b.totalVariance)],
+        totalRow: ["Total expenditure", audDollars(b.totalBudget), audDollars(b.totalActual), audDollars(b.totalVariance)],
       },
     ]),
     { kind: "heading", text: "Bank accounts", level: 2 },

@@ -1108,7 +1108,10 @@ export async function getCommitteeReportingPack(
   );
 
   // 3. Aged arrears snapshot
-  const arrearsItems = await getAgedArrearsReport(schemeId, endDate);
+  // Arrears on the period's last day, or today for a period not yet over, as
+  // on the other screens (review B11).
+  const todayForArrears = todayInSydney();
+  const arrearsItems = await getAgedArrearsReport(schemeId, endDate.slice(0, 10) < todayForArrears ? endDate.slice(0, 10) : todayForArrears);
   const arrearsSnapshot: CommitteeArrearsSnapshot = {
     current: 0,
     days30: 0,

@@ -24,6 +24,7 @@ import {
   stageCutoverFile,
 } from "@/lib/finance/migration-batches";
 import { CUTOVER_DATA_TYPES, type CutoverDataType } from "@/lib/finance/migration-cutover";
+import { FundIntegrityError } from "@/lib/finance/fund-integrity";
 
 type ActionState = {
   error?: string;
@@ -175,7 +176,7 @@ export async function validateMigrationAction(
 // ─── Financial cutover (Stage 7) ──────────────────────────────────────────
 
 function cutoverError(err: unknown): ActionState {
-  if (err instanceof AuthorisationError || err instanceof CutoverError) return { error: err.message };
+  if (err instanceof AuthorisationError || err instanceof CutoverError || err instanceof FundIntegrityError) return { error: err.message };
   logError("Cutover error:", err);
   // Database and library messages stay in the server log (S7, SEC-025).
   return { error: "Something went wrong with the cutover." };
