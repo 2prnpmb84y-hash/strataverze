@@ -67,16 +67,8 @@ export function FundForm({
           error={state.fieldErrors?.fundType}
         />
 
-        <FormField
-          label="Balance"
-          name="balance"
-          type="number"
-          step="0.01"
-          defaultValue={defaults?.balance ?? 0}
-          placeholder="0.00"
-          error={state.fieldErrors?.balance}
-          helpText="Opening balance in dollars."
-        />
+        {/* A fund's balance comes from the ledger (opening balances at takeover,
+            then every posting), so it is not typed in here (review B2). */}
       </div>
 
       <Button type="submit" disabled={isPending}>

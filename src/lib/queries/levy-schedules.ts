@@ -3,8 +3,10 @@ import { captureTransactionFee } from "@/lib/billing/capture";
 import { toCents } from "@/lib/billing/money";
 import { splitLevyPayment } from "@/lib/finance/owner-credit";
 import { recordCreditMovement } from "@/lib/finance/owner-credits";
-import { and, or } from "@prisma/orm-postgres/orm-client";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
+import { NOT_ARREARS_STATUSES, isInArrears, toArrearsNotice } from "@/lib/finance/arrears";
+import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric<P extends number = 12, S extends number = 2>(value: number | string): Numeric<P, S> {
@@ -484,30 +486,26 @@ export async function getIssuedLevyNoticesForLot(schemeId: string, lotId: string
 }
 
 /**
- * Fetch overdue levy notices for a scheme.
- * Returns notices with status ISSUED or PARTIALLY_PAID where dueDate is in the past.
+ * Fetch the levy notices in arrears for a scheme: issued, past their due date
+ * (in Sydney) and not paid. This is the one arrears definition
+ * (src/lib/finance/arrears.ts, financials review B11).
  */
 export async function getOverdueLevyNotices(schemeId: string, limit = 500) {
-  try {
-    const today = new Date().toISOString().split("T")[0];
-
-    return db.orm.public.LevyNotice
-      .where((ln) =>
-        and(
-          ln.schemeId.eq(schemeId),
-          or(ln.status.eq("ISSUED"), ln.status.eq("PARTIALLY_PAID")),
-          ln.dueDate.lt(toTimestamp(today)),
-        ),
-      )
-      .include("lot")
-      .include("fund")
-      .orderBy((ln) => ln.dueDate.asc())
-      .limit(limit)
-      .all();
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+  const today = todayInSydney();
+  const notices = await db.orm.public.LevyNotice
+    .where((ln) =>
+      and(
+        ln.schemeId.eq(schemeId),
+        ln.status.notIn([...NOT_ARREARS_STATUSES]),
+        ln.dueDate.lt(toTimestamp(today)),
+      ),
+    )
+    .include("lot")
+    .include("fund")
+    .orderBy((ln) => ln.dueDate.asc())
+    .limit(limit)
+    .all();
+  return notices.filter((n) => isInArrears(toArrearsNotice(n), today));
 }
 
 /**

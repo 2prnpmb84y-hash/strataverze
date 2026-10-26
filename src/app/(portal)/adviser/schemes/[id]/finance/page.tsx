@@ -49,7 +49,7 @@ export default async function FinanceDashboardPage({
     getLevySchedulesForScheme(id),
     getSupplierInvoicesForScheme(id),
     getJournalEntriesForScheme(id, undefined, 10),
-    getOverdueLevyNotices(id, 100),
+    getOverdueLevyNotices(id, 5000),
     getOverdueInvoices(id),
   ]);
 

@@ -231,12 +231,12 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
     {
       kind: "table",
       columns: [
-        { header: "Current", width: 1, align: "right" },
+        { header: "Not yet due", width: 1, align: "right" },
         { header: "1 to 30 days", width: 1, align: "right" },
         { header: "31 to 60", width: 1, align: "right" },
         { header: "61 to 90", width: 1, align: "right" },
         { header: "Over 90", width: 1, align: "right" },
-        { header: "Total", width: 1, align: "right" },
+        { header: "In arrears", width: 1, align: "right" },
       ],
       rows: [
         [

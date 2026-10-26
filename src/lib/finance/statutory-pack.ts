@@ -142,7 +142,9 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
     ];
 
     const keyInformation = keyFinancialInformation({
-      entries: onlyFund,
+      // Every fund's lines: money moved between the funds in the bank is
+      // recognised from both sides (the function picks this fund's lines).
+      entries: basisEntries,
       fundId: f.id,
       start,
       end,
