@@ -1,0 +1,71 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW meeting rules for a building > come from the stored row when there is one 1`] = `
+{
+  "effectiveFrom": "2026-07-01",
+  "minutesDeadlines": {
+    "AGM": 7,
+    "COMMITTEE": 7,
+    "EGM": 7,
+    "FIRST_AGM": 7,
+  },
+  "notes": undefined,
+  "noticePeriods": {
+    "AGM": 14,
+    "COMMITTEE": 3,
+    "EGM": 7,
+    "FIRST_AGM": 14,
+  },
+  "preMeetingEvoting": {
+    "ballotCloseHoursBefore": {
+      "AGM": 24,
+      "COMMITTEE": 0,
+      "EGM": 24,
+      "FIRST_AGM": 24,
+    },
+    "ballotOpenDaysBefore": 7,
+  },
+  "quorumRules": {
+    "AGM": {
+      "basis": "PERCENT_PRESENT_OR_UE",
+      "minPersons": 2,
+      "percent": 0.25,
+    },
+    "COMMITTEE": {
+      "basis": "HALF_MEMBERS",
+    },
+    "EGM": {
+      "basis": "PERCENT_PRESENT_OR_UE",
+      "minPersons": 2,
+      "percent": 0.25,
+    },
+    "FIRST_AGM": {
+      "basis": "PERCENT_PRESENT_OR_UE",
+      "minPersons": 2,
+      "percent": 0.25,
+    },
+  },
+  "resolutionCategories": {
+    "ORDINARY": {
+      "basis": "COUNT_MAJORITY",
+    },
+    "SPECIAL": {
+      "againstThreshold": 0.25,
+      "basis": "UE_AGAINST_THRESHOLD",
+    },
+    "SUSTAINABILITY_INFRASTRUCTURE": {
+      "againstThreshold": 0.5,
+      "basis": "UE_AGAINST_THRESHOLD",
+    },
+    "UNANIMOUS": {
+      "basis": "NO_AGAINST",
+    },
+  },
+  "retention": {
+    "generalYears": 7,
+    "secretBallotMonths": 13,
+  },
+  "state": "NSW",
+  "version": "NSW-2026.1",
+}
+`;

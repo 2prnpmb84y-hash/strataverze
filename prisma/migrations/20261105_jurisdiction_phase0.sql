@@ -7,9 +7,15 @@
 -- default state: it is whatever the person enters.
 --
 -- Defaults only: no row changes. Checked 26 Oct 2026: both buildings in
--- production are already NSW, and there are no organisation rows.
+-- production are already NSW, and there are no organisation rows. Existing
+-- contractor rows keep the state they have (some will be VIC only because
+-- the old form preselected it); the contractor can correct it.
+--
 -- Safe in either order with the code: the code always sends a building's
--- state, and leaves the other two blank when not entered. Idempotent.
+-- state. Contractor sign-up does not send a state, so new contractors get
+-- VIC until this is applied, and no state after. Idempotent.
+--
+-- Applied by hand in the Supabase SQL editor, like the other migrations.
 
 BEGIN;
 ALTER TABLE public.schemes ALTER COLUMN state SET DEFAULT 'NSW';
