@@ -1,7 +1,7 @@
 import { emailLayout, emailButton } from "./layout";
 import { html, plainSubject, type SafeHtml } from "./html";
 import { HARDSHIP_INFORMATION } from "@/lib/finance/levy-notice-content";
-import { STATUTORY_INTEREST } from "@/config/statutory";
+import type { InterestRule } from "@/lib/finance/statutory-interest";
 
 
 export interface LevyNoticeEmail {
@@ -19,6 +19,8 @@ export interface LevyNoticeEmail {
   contact: { name: string; emailOrPhone: string };
   ledgerUrl: string;
   noInterest: boolean;
+  /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
+  interest: InterestRule;
 }
 
 const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
@@ -49,7 +51,7 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
       ${
         p.noInterest
           ? "The owners corporation has resolved not to charge interest on overdue levies."
-          : `Interest: if this levy is not paid within one month after the due date, simple interest of ${STATUTORY_INTEREST.annualRatePercent}% a year is charged from the due date until it is paid (${STATUTORY_INTEREST.source}).`
+          : `Interest: if this levy is not paid within one month after the due date, simple interest of ${p.interest.annualRatePercent}% a year is charged from the due date until it is paid (${p.interest.source}).`
       }
     </p>
     <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">

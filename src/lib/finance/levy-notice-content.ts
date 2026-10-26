@@ -5,7 +5,10 @@
  * recommended contents for levy notices, which this platform treats as
  * required so every notice is complete. Sources in src/config/statutory.ts.
  */
-import { LEVY_NOTICE_RULES } from "@/config/statutory";
+import type { StatutoryRules } from "@/config/statutory";
+
+/** The levy notice rules of a building's rule pack (`rules.LEVY_NOTICE_RULES`). */
+export type LevyNoticeRule = StatutoryRules["LEVY_NOTICE_RULES"];
 
 /** The hardship information included with every notice. Confirm against the current NSW Government statement. */
 export const HARDSHIP_INFORMATION = {
@@ -48,7 +51,7 @@ export interface MissingItem {
 const daysBetween = (a: string, b: string) =>
   Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86_400_000);
 
-export function validateLevyNoticeContent(n: LevyNoticeContentInput): MissingItem[] {
+export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: LevyNoticeRule): MissingItem[] {
   const missing: MissingItem[] = [];
   const need = (ok: unknown, code: string, message: string) => {
     if (!ok) missing.push({ code, message });
@@ -71,12 +74,12 @@ export function validateLevyNoticeContent(n: LevyNoticeContentInput): MissingIte
   need(n.contact.name?.trim() && n.contact.emailOrPhone?.trim(), "CONTACT", "Who to contact with questions (name and email or phone).");
   need(n.includesInterestWarning, "INTEREST_WARNING", "A warning that interest is charged on overdue amounts.");
   need(n.includesLedgerAccess, "LEDGER_ACCESS", "How the owner can check their levy ledger.");
-  if (n.noticeDate >= LEVY_NOTICE_RULES.hardshipStatementRequiredFrom) {
+  if (n.noticeDate >= rule.hardshipStatementRequiredFrom) {
     need(n.includesHardshipStatement, "HARDSHIP_STATEMENT", "The Financial Hardship Information Statement.");
   }
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(n.noticeDate) && /^\d{4}-\d{2}-\d{2}$/.test(n.dueDate)) {
-    const minimum = n.isUrgentSpecialLevy ? LEVY_NOTICE_RULES.urgentSpecialLevyNoticeDays : LEVY_NOTICE_RULES.minimumNoticeDays;
+    const minimum = n.isUrgentSpecialLevy ? rule.urgentSpecialLevyNoticeDays : rule.minimumNoticeDays;
     if (daysBetween(n.noticeDate, n.dueDate) < minimum) {
       missing.push({
         code: "NOTICE_PERIOD",

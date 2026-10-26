@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { NSW_RULE_SET, wholeDaysBetween } from "./rules";
+import { wholeDaysBetween } from "./rules";
+import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
 import {
   assembleMinutesContent,
   minutesDistributionDeadline,

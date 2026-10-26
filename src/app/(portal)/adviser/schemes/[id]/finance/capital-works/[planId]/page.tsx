@@ -6,7 +6,7 @@ import { getPlans } from "@/lib/finance/capital-works-plans";
 import { CONTRIBUTION_METHOD_LABELS, projectPlan, type ContributionMethod } from "@/lib/finance/capital-works-plan";
 import { resolutionMeetings } from "@/lib/finance/resolutions";
 import { formatAud, toCents } from "@/lib/billing/money";
-import { CAPITAL_WORKS_PLAN } from "@/config/statutory";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { AddItemForm, AdoptPlanForm, GenerateLevyForm, PlanSettingsForm, RemoveItemButton, ReviewPlanButton } from "../plan-forms";
@@ -23,13 +23,15 @@ export default async function CapitalWorksPlanPage({ params }: { params: Promise
   if (!plan) notFound();
   const meetings = plan.status === "DRAFT" ? await resolutionMeetings(id) : [];
   const items = [...(plan.items ?? [])].sort((a, b) => a.plannedYear - b.plannedYear || a.description.localeCompare(b.description));
-  const years = Array.from({ length: CAPITAL_WORKS_PLAN.horizonYears }, (_, k) => plan.periodStartYear + k);
+  const rule = rulesForState(scheme.state).rules.CAPITAL_WORKS_PLAN;
+  const years = Array.from({ length: rule.horizonYears }, (_, k) => plan.periodStartYear + k);
   const contribution = toCents(String(plan.annualContribution ?? 0));
   const projection = projectPlan({
     items: items.map((i) => ({ plannedYear: i.plannedYear, estimatedCostCents: toCents(String(i.estimatedCost)) })),
     startYear: plan.periodStartYear,
     openingBalanceCents: toCents(String(plan.openingBalance)),
     annualContributionCents: contribution,
+    years: rule.horizonYears,
   });
   const method = plan.contributionMethod as ContributionMethod;
   const fy = (y: number) => `FY ${y}/${String(y + 1).slice(2)}`;

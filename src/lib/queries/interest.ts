@@ -10,7 +10,7 @@ import {
 } from "./journal-entries";
 import { logActivity } from "./activity-log";
 import { fromCents } from "@/lib/billing/money";
-import { STATUTORY_INTEREST } from "@/config/statutory";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { getSchemeInterestSetting, statutoryInterestForScheme, sydneyToday } from "@/lib/finance/interest-setting";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
@@ -72,7 +72,7 @@ export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
 
     return {
       notices: noticesWithInterest,
-      annualRate: setting.mode === "NO_INTEREST" ? 0 : STATUTORY_INTEREST.annualRatePercent,
+      annualRate: setting.mode === "NO_INTEREST" ? 0 : setting.rules.rules.STATUTORY_INTEREST.annualRatePercent,
       mode: setting.mode,
       schemeName: scheme ? String(scheme.name) : "",
     };
@@ -115,6 +115,9 @@ export async function chargeInterest(data: {
   if (!notice || notice.schemeId !== schemeId) {
     throw new Error("Levy notice not found.");
   }
+
+  // The building's rule pack, recorded on the interest journal.
+  const { label: rulePack } = await rulesForScheme(schemeId);
 
   // Never charge more than the statutory interest owed to date.
   const owed = data.alreadyVerified
@@ -173,6 +176,7 @@ export async function chargeInterest(data: {
     entryType: "INTEREST",
     sourceType: "INTEREST",
     sourceId: noticeId,
+    rulePack,
     createdBy: actorId,
     lines: [
       {
@@ -206,6 +210,7 @@ export async function chargeInterest(data: {
       newBalance,
       journalEntryId: entry.id,
       entryNumber,
+      rulePack,
     },
   });
 

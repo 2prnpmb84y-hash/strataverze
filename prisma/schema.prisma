@@ -1416,6 +1416,7 @@ model JournalEntry {
   entryType        String            @map("entry_type") // LEVY_RAISED, RECEIPT, INVOICE, PAYMENT, BANK_FEE, INTEREST, TRANSFER, ADJUSTMENT, OPENING_BALANCE, REVERSAL
   sourceType       String            @map("source_type") // LEVY_ISSUE, PAYMENT_RECEIPT, SUPPLIER_INVOICE, SUPPLIER_PAYMENT, BANK_FEE, INTEREST, TRANSFER, MANUAL_JOURNAL, ADJUSTMENT, REVERSAL
   sourceId         String?           @map("source_id") @db.Uuid
+  rulePack         String?           @map("rule_pack") @db.VarChar(40) // the rule pack an interest charge was worked out under; null for other entries
   status           String            @default("DRAFT") // DRAFT, POSTED, REVERSED
   reversalOfId     String?           @map("reversal_of_id") @db.Uuid
   postedAt         DateTime?         @db.Timestamptz @map("posted_at")
@@ -1603,6 +1604,7 @@ model LevyNotice {
   paidInFullAt       DateTime?           @db.Timestamptz @map("paid_in_full_at")
   /// The cutover this notice was brought across in, if any.
   migrationBatchId   String?             @map("migration_batch_id") @db.Uuid
+  rulePack           String?             @map("rule_pack") @db.VarChar(40) // the rule pack the notice was issued under, e.g. "AU-NSW 2026.10.1"; null before rule packs were recorded and for takeover notices
   createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
   updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 
@@ -3232,6 +3234,7 @@ model DebtRecoveryCase {
   // Status tracking
   status              String                @default("OPEN") // OPEN, IN_PROGRESS, PAYMENT_PLAN, ON_HOLD, REFERRED_LEGAL, CLOSED_PAID, CLOSED_WRITTEN_OFF, CLOSED_SETTLED
   currentStep         String                @default("LEDGER_VERIFICATION") @map("current_step")
+  rulePack            String?               @map("rule_pack") @db.VarChar(40) // the rule pack the case's steps came from; null before rule packs were recorded
   // LEDGER_VERIFICATION, INITIAL_CONTACT, REMINDER_NOTICE, FINAL_NOTICE, HARDSHIP_REVIEW, COMMITTEE_REVIEW, LEGAL_REFERRAL, PROCEEDINGS, ENFORCEMENT, CLOSED
   priority            String                @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
   // Initiator

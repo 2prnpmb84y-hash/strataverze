@@ -1,4 +1,4 @@
-import { defaultAccountingBasis } from "@/config/statutory";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { withLedgerBalances } from "@/lib/finance/fund-position";
@@ -57,12 +57,13 @@ export async function createFund(data: {
   fundType: string;
   balance?: number;
 }) {
+  const { rules } = await rulesForScheme(data.schemeId);
   return db.orm.public.Fund.create({
     schemeId: data.schemeId,
     name: data.name,
     fundType: data.fundType,
     balance: toNumeric(data.balance ?? 0),
-    accountingBasis: defaultAccountingBasis(data.fundType),
+    accountingBasis: rules.defaultAccountingBasis(data.fundType),
   });
 }
 

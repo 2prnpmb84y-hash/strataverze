@@ -2,7 +2,7 @@
  * Agenda templates and the motion library (rules-layer data).
  *
  * These are the seed defaults, defined in code so the agenda works before any
- * DB customisation exists (mirroring the NSW_RULE_SET pattern). The
+ * DB customisation exists (mirroring the meeting rule set pattern). The
  * `meeting_templates` and `motion_library_entries` tables are the
  * per-organisation override layer, read by the repo functions and layered over
  * these seeds in a later increment.

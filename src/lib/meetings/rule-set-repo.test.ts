@@ -15,7 +15,7 @@ vi.mock("@/prisma/db", () => {
 vi.mock("@prisma/orm-postgres/orm-client", () => ({ and: (...c: unknown[]) => c }));
 
 import { getActiveRuleSet } from "./rule-set-repo";
-import { NSW_RULE_SET } from "./rules";
+import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 
 describe("choosing a building's meeting rules", () => {

@@ -6,7 +6,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { getPlans } from "@/lib/finance/capital-works-plans";
 import { sydneyToday } from "@/lib/finance/interest-setting";
 import { formatAud, toCents } from "@/lib/billing/money";
-import { CAPITAL_WORKS_PLAN } from "@/config/statutory";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { NewPlanForm } from "./plan-forms";
@@ -22,6 +22,7 @@ export default async function CapitalWorksPlansPage({ params }: { params: Promis
   if (!scheme) notFound();
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
   const plans = await getPlans(id);
+  const CAPITAL_WORKS_PLAN = rulesForState(scheme.state).rules.CAPITAL_WORKS_PLAN;
   const today = sydneyToday();
   const fyStart = Number(today.slice(5, 7)) >= 7 ? Number(today.slice(0, 4)) : Number(today.slice(0, 4)) - 1;
   const adopted = plans.find((p) => p.status === "ADOPTED");

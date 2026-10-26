@@ -1,5 +1,5 @@
 import { logError } from "@/lib/log";
-import { defaultAccountingBasis } from "@/config/statutory";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
 
@@ -123,6 +123,8 @@ export async function createScheme(
    */
   lots: readonly { lotNumber: string; unitNumber: string | null; entitlement: number; ownerName: string | null }[] = [],
 ) {
+  // The building's rule pack. A state with no pack is refused before anything is created.
+  const { rules } = rulesForState(data.state);
   const created = await db.transaction(async (tx) => {
     const scheme = await tx.orm.public.Scheme.create({
       name: data.name,
@@ -158,13 +160,13 @@ export async function createScheme(
       schemeId: scheme.id,
       name: "Administrative Fund",
       fundType: "ADMINISTRATIVE",
-      accountingBasis: defaultAccountingBasis("ADMINISTRATIVE"),
+      accountingBasis: rules.defaultAccountingBasis("ADMINISTRATIVE"),
     });
     await tx.orm.public.Fund.create({
       schemeId: scheme.id,
       name: "Capital Works Fund",
       fundType: "CAPITAL_WORKS",
-      accountingBasis: defaultAccountingBasis("CAPITAL_WORKS"),
+      accountingBasis: rules.defaultAccountingBasis("CAPITAL_WORKS"),
     });
 
     // The lots, in batches, with the owner's name as on the strata roll.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
 import {
-  NSW_RULE_SET,
   earliestCompliantMeetingDate,
   validateNoticePeriod,
   minutesDeadline,

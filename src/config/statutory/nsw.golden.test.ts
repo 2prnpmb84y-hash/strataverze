@@ -13,8 +13,8 @@
  */
 import { describe, expect, it } from "vitest";
 import * as statutory from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
 import {
-  NSW_RULE_SET,
   earliestCompliantMeetingDate,
   evaluateResolution,
   minutesDeadline,
@@ -36,7 +36,9 @@ import { HARDSHIP_INFORMATION, validateLevyNoticeContent, type LevyNoticeContent
 import { issueDateFor, issueTiming, lateMessage } from "@/lib/levies/issue-timing";
 import { projectPlan, requiredAnnualContribution, reviewDueDate, spendByYear } from "@/lib/finance/capital-works-plan";
 import { auditRequired } from "@/lib/finance/key-financial-information";
-import { DEFAULT_RECOVERY_STEPS } from "@/lib/queries/debt-recovery";
+// The NSW rules, as a building in NSW gets them (phase 1: every helper takes its building's rules).
+const NSW = statutory.statutoryRulesFor("NSW");
+const DEFAULT_RECOVERY_STEPS = NSW.DEBT_RECOVERY_STEPS;
 import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
 import { levyNoticeBlocks, statutoryPackBlocks } from "@/lib/pdf/documents";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
@@ -57,9 +59,11 @@ describe("NSW statutory constants", () => {
     ] as const;
     expect(Object.fromEntries(names.map((n) => [n, statutory[n]]))).toMatchSnapshot();
     // A new NSW constant must be added to this list (and its golden output)
-    // on purpose: MEETING_RULES is covered by the meeting tests below.
+    // on purpose: MEETING_RULES is covered by the meeting tests below, and
+    // DEBT_RECOVERY_STEPS (moved into the pack unchanged in phase 1b) by the
+    // debt recovery test at the end.
     const constants = Object.entries(statutory.statutoryRulesFor("NSW"))
-      .filter(([k, v]) => typeof v !== "function" && k !== "MEETING_RULES")
+      .filter(([k, v]) => typeof v !== "function" && k !== "MEETING_RULES" && k !== "DEBT_RECOVERY_STEPS")
       .map(([k]) => k)
       .sort();
     expect(constants).toEqual([...names].sort());
@@ -175,16 +179,16 @@ describe("NSW levies", () => {
       },
     };
     expect(HARDSHIP_INFORMATION).toMatchSnapshot();
-    expect(Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, validateLevyNoticeContent(v)]))).toMatchSnapshot();
+    expect(Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, validateLevyNoticeContent(v, NSW.LEVY_NOTICE_RULES)]))).toMatchSnapshot();
   });
 
   it("issue timing is unchanged", () => {
     const due = "2026-12-01";
     const out = ["2026-10-01", "2026-10-27", "2026-10-28", "2026-11-01", "2026-11-20"].map((today) => {
-      const t = issueTiming(due, today);
-      return { today, timing: t, message: lateMessage(t, "Q3 levy") };
+      const t = issueTiming(due, today, NSW.LEVY_NOTICE_RULES);
+      return { today, timing: t, message: lateMessage(t, "Q3 levy", NSW.LEVY_NOTICE_RULES) };
     });
-    expect({ issueDate: issueDateFor(due), out }).toMatchSnapshot();
+    expect({ issueDate: issueDateFor(due, NSW.LEVY_NOTICE_RULES), out }).toMatchSnapshot();
   });
 
   it("interest is unchanged", () => {
@@ -201,7 +205,7 @@ describe("NSW levies", () => {
       noInterest: { ...base, asAt: "2026-12-31", noInterest: true },
       nothingOwing: { ...base, levyCents: 0, asAt: "2026-12-31" },
     };
-    expect(Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, statutoryInterest(v)]))).toMatchSnapshot();
+    expect(Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, statutoryInterest(v, NSW.STATUTORY_INTEREST)]))).toMatchSnapshot();
   });
 
   it("payment allocation and interest settings are unchanged", () => {
@@ -215,7 +219,7 @@ describe("NSW levies", () => {
         { mode: "NO_INTEREST" },
         { mode: "NO_INTEREST", resolutionMeetingId: "m", resolutionMotionId: "x" },
         { mode: "CUSTOM" },
-      ].map((i) => interestSettingProblem(i)),
+      ].map((i) => interestSettingProblem(i, NSW.STATUTORY_INTEREST)),
     ).toMatchSnapshot();
   });
 
@@ -236,6 +240,7 @@ describe("NSW levies", () => {
       contact: { name: "Sam Adviser", emailOrPhone: "sam@example.com" },
       ledgerUrl: "https://app.strataverze.com/owner/levies",
       noInterest: false,
+      interest: NSW.STATUTORY_INTEREST,
     };
     expect(levyNoticeBlocks(doc)).toMatchSnapshot();
     expect(levyNoticeBlocks({ ...doc, noInterest: true })).toMatchSnapshot();
@@ -255,6 +260,7 @@ describe("NSW levies", () => {
         contact: doc.contact,
         ledgerUrl: doc.ledgerUrl,
         noInterest: false,
+        interest: NSW.STATUTORY_INTEREST,
       }),
     ).toMatchSnapshot();
   });
@@ -268,13 +274,14 @@ describe("NSW finance reporting", () => {
       { plannedYear: 2035, estimatedCostCents: 8_000_000 },
       { plannedYear: 2040, estimatedCostCents: 9_999_999 },
     ];
+    const { horizonYears: years, reviewEveryYears } = NSW.CAPITAL_WORKS_PLAN;
     const out = {
-      spend: spendByYear(items, 2027),
-      level: requiredAnnualContribution({ items, startYear: 2027, openingBalanceCents: 500_000, method: "LEVEL" }),
-      average: requiredAnnualContribution({ items, startYear: 2027, openingBalanceCents: 500_000, method: "AVERAGE" }),
-      projection: projectPlan({ items, startYear: 2027, openingBalanceCents: 500_000, annualContributionCents: 1_500_000 }),
-      reviewDue: reviewDueDate("2026-04-01"),
-      reviewDueLeap: reviewDueDate("2028-02-29"),
+      spend: spendByYear(items, 2027, years),
+      level: requiredAnnualContribution({ items, startYear: 2027, openingBalanceCents: 500_000, method: "LEVEL", years }),
+      average: requiredAnnualContribution({ items, startYear: 2027, openingBalanceCents: 500_000, method: "AVERAGE", years }),
+      projection: projectPlan({ items, startYear: 2027, openingBalanceCents: 500_000, annualContributionCents: 1_500_000, years }),
+      reviewDue: reviewDueDate("2026-04-01", reviewEveryYears),
+      reviewDueLeap: reviewDueDate("2028-02-29", reviewEveryYears),
     };
     expect(out).toMatchSnapshot();
   });
@@ -324,6 +331,7 @@ describe("NSW finance reporting", () => {
       funds: [fund, { ...fund, fundId: "c", fundName: "Capital Works Fund", fundType: "CAPITAL_WORKS", basis: "ACCRUAL" }],
       notes: ["An audit is not required by size."],
       audit: { required: false, byLots: false, byBudget: false, annualBudgetCents: 1 },
+      rules: { rulePack: "AU-NSW test", keyFinancialInformation: NSW.KEY_FINANCIAL_INFORMATION, auditThreshold: NSW.AUDIT_THRESHOLD },
       adopted: null,
     };
     expect(statutoryPackBlocks(pack)).toMatchSnapshot();

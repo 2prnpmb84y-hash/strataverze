@@ -13,7 +13,6 @@
  * flagged for the rules review; see the strategy document section 4.
  */
 
-import { MEETING_RULES } from "@/config/statutory";
 
 export type MeetingType = "AGM" | "EGM" | "COMMITTEE" | "FIRST_AGM";
 
@@ -63,13 +62,9 @@ export interface MeetingRuleSet {
   notes?: string;
 }
 
-/**
- * NSW meeting rules. The values live with the other NSW statutory rules in
- * `src/config/statutory/nsw.ts` (multi-jurisdiction plan, phase 1); this name
- * is kept for existing callers. For a building's rules use `getActiveRuleSet`
- * (or `statutoryRulesFor(state).MEETING_RULES` for the built-in set).
- */
-export const NSW_RULE_SET: MeetingRuleSet = MEETING_RULES;
+// The NSW meeting rules live with the other NSW statutory rules in
+// `src/config/statutory/nsw.ts`. For a building's rules use `getActiveRuleSet`
+// (or `statutoryRulesFor(state).MEETING_RULES` for the built-in set).
 
 /**
  * Whole-day difference (b - a), ignoring time of day, counted in UTC so the

@@ -14,7 +14,7 @@ vi.mock("@/prisma/db", () => {
 vi.mock("@prisma/orm-postgres/orm-client", () => ({ and: (...c: unknown[]) => c }));
 
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
-import { NSW_RULE_SET } from "@/lib/meetings/rules";
+import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
 
 describe("NSW meeting rules for a building", () => {
   beforeEach(() => first.mockReset());

@@ -54,7 +54,7 @@ describe("B7: a lot's account rolls forward", () => {
 
 describe("B8: interest brought over at takeover does not cancel new interest", () => {
   it("accrues the review's $16.04 on Lot 1", async () => {
-    data.Scheme = [{ id: "s", interestMode: "STATUTORY" }];
+    data.Scheme = [{ id: "s", state: "NSW", interestMode: "STATUTORY" }];
     data.LevyNotice = [
       { id: "n1", schemeId: "s", status: "ISSUED", amountDue: "500.50", dueDate: "2026-07-01", interestCharged: "50", migratedInterestCharged: "50", migrationBatchId: "b", issuedAt: "2026-07-01T00:00:00.000Z" },
     ];
@@ -66,7 +66,7 @@ describe("B8: interest brought over at takeover does not cancel new interest", (
   });
 
   it("does not charge again for the time before takeover when the original due date was kept", async () => {
-    data.Scheme = [{ id: "s", interestMode: "STATUTORY" }];
+    data.Scheme = [{ id: "s", state: "NSW", interestMode: "STATUTORY" }];
     // Due 1 Jan 2026, taken over 1 Jul 2026 with the old system's interest charged.
     data.LevyNotice = [
       { id: "n1", schemeId: "s", status: "ISSUED", amountDue: "1000", dueDate: "2026-01-01", interestCharged: "49.59", migratedInterestCharged: "49.59", migrationBatchId: "b", issuedAt: "2026-07-01T00:00:00.000Z" },

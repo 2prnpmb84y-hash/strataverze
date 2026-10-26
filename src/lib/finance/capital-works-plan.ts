@@ -1,9 +1,13 @@
 /**
  * Capital works fund plan (pure). SSMA 2015 s 80: a plan of anticipated
  * major expenditure for at least the next 10 years, reviewed at least every
- * 5 years. See CAPITAL_WORKS_PLAN in src/config/statutory.ts.
+ * 5 years. The horizon and review period come from the building's rule pack
+ * (`rules.CAPITAL_WORKS_PLAN`); nothing here assumes a jurisdiction.
  */
-import { CAPITAL_WORKS_PLAN } from "@/config/statutory";
+import type { StatutoryRules } from "@/config/statutory";
+
+/** The capital works plan rule of a building's rule pack (`rules.CAPITAL_WORKS_PLAN`). */
+export type CapitalWorksRule = StatutoryRules["CAPITAL_WORKS_PLAN"];
 
 export interface PlanItem {
   plannedYear: number;
@@ -18,7 +22,7 @@ export const CONTRIBUTION_METHOD_LABELS: Record<ContributionMethod, string> = {
 };
 
 /** Planned spending for each year of the plan, starting at `startYear`. */
-export function spendByYear(items: PlanItem[], startYear: number, years: number = CAPITAL_WORKS_PLAN.horizonYears): number[] {
+export function spendByYear(items: PlanItem[], startYear: number, years: number): number[] {
   const out = Array<number>(years).fill(0);
   for (const i of items) {
     const k = i.plannedYear - startYear;
@@ -36,9 +40,10 @@ export function requiredAnnualContribution(input: {
   startYear: number;
   openingBalanceCents: number;
   method: ContributionMethod;
-  years?: number;
+  /** The plan's horizon in years (`rules.CAPITAL_WORKS_PLAN.horizonYears`). */
+  years: number;
 }): number {
-  const years = input.years ?? CAPITAL_WORKS_PLAN.horizonYears;
+  const years = input.years;
   const spend = spendByYear(input.items, input.startYear, years);
   let needed = 0;
   if (input.method === "AVERAGE") {
@@ -60,9 +65,10 @@ export function projectPlan(input: {
   startYear: number;
   openingBalanceCents: number;
   annualContributionCents: number;
-  years?: number;
+  /** The plan's horizon in years (`rules.CAPITAL_WORKS_PLAN.horizonYears`). */
+  years: number;
 }) {
-  const spend = spendByYear(input.items, input.startYear, input.years ?? CAPITAL_WORKS_PLAN.horizonYears);
+  const spend = spendByYear(input.items, input.startYear, input.years);
   let balance = input.openingBalanceCents;
   return spend.map((s, k) => {
     const opening = balance;
@@ -71,20 +77,28 @@ export function projectPlan(input: {
   });
 }
 
-/** When the plan must next be reviewed: at least every 5 years from preparation (YYYY-MM-DD). */
-export function reviewDueDate(preparedOn: string, everyYears: number = CAPITAL_WORKS_PLAN.reviewEveryYears): string {
+/** When the plan must next be reviewed: `everyYears` (`rules.CAPITAL_WORKS_PLAN.reviewEveryYears`) from preparation (YYYY-MM-DD). */
+export function reviewDueDate(preparedOn: string, everyYears: number): string {
   const y = Number(preparedOn.slice(0, 4)) + everyYears;
   const md = preparedOn.slice(5, 10) === "02-29" ? "02-28" : preparedOn.slice(5, 10);
   return `${y}-${md}`;
 }
 
 /** Why a plan cannot be adopted yet, or null. */
-export function planAdoptionProblem(input: { status: string; items: PlanItem[]; startYear: number; meetingId: string | null; motionId: string | null }): string | null {
+export function planAdoptionProblem(input: {
+  status: string;
+  items: PlanItem[];
+  startYear: number;
+  /** The plan's horizon in years (`rules.CAPITAL_WORKS_PLAN.horizonYears`). */
+  horizonYears: number;
+  meetingId: string | null;
+  motionId: string | null;
+}): string | null {
   if (input.status !== "DRAFT") return "Only a draft plan can be adopted.";
   if (input.items.length === 0) return "Add the anticipated major expenditure before adopting the plan.";
-  const last = input.startYear + CAPITAL_WORKS_PLAN.horizonYears - 1;
+  const last = input.startYear + input.horizonYears - 1;
   if (input.items.some((i) => i.plannedYear < input.startYear || i.plannedYear > last)) {
-    return `Every item must fall within the plan's ${CAPITAL_WORKS_PLAN.horizonYears} years (FY ${input.startYear} to FY ${last}).`;
+    return `Every item must fall within the plan's ${input.horizonYears} years (FY ${input.startYear} to FY ${last}).`;
   }
   if (!input.meetingId || !input.motionId) return "Choose the general meeting and the motion that adopted the plan.";
   return null;

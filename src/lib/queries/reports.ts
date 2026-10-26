@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { currentBudgetLines } from "@/lib/finance/budgets";
@@ -1575,6 +1576,8 @@ export async function getFundBalanceProjections(
   const allBudgetLines = await currentBudgetLines(schemeId, currentFY);
   // The adopted capital works fund plan, if any, drives the capital works projection.
   const adoptedPlan = await getAdoptedPlan(schemeId);
+  // The plan's horizon comes from the building's rule pack.
+  const planHorizonYears = adoptedPlan ? rulesForState(scheme?.state).rules.CAPITAL_WORKS_PLAN.horizonYears : 0;
 
   // Get account codes for budget lines
   const budgetAccountCodeIds = [
@@ -1642,6 +1645,7 @@ export async function getFundBalanceProjections(
       ? spendByYear(
           (adoptedPlan!.items ?? []).map((i) => ({ plannedYear: i.plannedYear, estimatedCostCents: Math.round(Number(i.estimatedCost) * 100) })),
           adoptedPlan!.periodStartYear,
+          planHorizonYears,
         )
       : [];
     const planContribution = usePlan ? Number(adoptedPlan!.annualContribution ?? 0) : 0;

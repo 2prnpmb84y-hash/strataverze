@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'b77d8766c343b13b6735d33976ec1700fe80b72326c693d7050f142e9e8a43b9'>;
+  StorageHashBase<'5235fc41692c825370ea08bd140a2fb6e43c1130e0298e954beff48622ad9939'>;
 export type ExecutionHash =
   ExecutionHashBase<'3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15'>;
 export type ProfileHash =
@@ -1008,6 +1008,7 @@ export namespace Models {
     ownerId: FieldOutputTypes['public']['DebtRecoveryCase']['ownerId'];
     principalOwed: FieldOutputTypes['public']['DebtRecoveryCase']['principalOwed'];
     priority: FieldOutputTypes['public']['DebtRecoveryCase']['priority'];
+    rulePack: FieldOutputTypes['public']['DebtRecoveryCase']['rulePack'];
     schemeId: FieldOutputTypes['public']['DebtRecoveryCase']['schemeId'];
     solicitorName: FieldOutputTypes['public']['DebtRecoveryCase']['solicitorName'];
     solicitorRef: FieldOutputTypes['public']['DebtRecoveryCase']['solicitorRef'];
@@ -1527,6 +1528,7 @@ export namespace Models {
     postedBy: FieldOutputTypes['public']['JournalEntry']['postedBy'];
     postingDate: FieldOutputTypes['public']['JournalEntry']['postingDate'];
     reversalOfId: FieldOutputTypes['public']['JournalEntry']['reversalOfId'];
+    rulePack: FieldOutputTypes['public']['JournalEntry']['rulePack'];
     schemeId: FieldOutputTypes['public']['JournalEntry']['schemeId'];
     sourceId: FieldOutputTypes['public']['JournalEntry']['sourceId'];
     sourceType: FieldOutputTypes['public']['JournalEntry']['sourceType'];
@@ -1582,6 +1584,7 @@ export namespace Models {
     paidInFullAt: FieldOutputTypes['public']['LevyNotice']['paidInFullAt'];
     periodEnd: FieldOutputTypes['public']['LevyNotice']['periodEnd'];
     periodStart: FieldOutputTypes['public']['LevyNotice']['periodStart'];
+    rulePack: FieldOutputTypes['public']['LevyNotice']['rulePack'];
     schemeId: FieldOutputTypes['public']['LevyNotice']['schemeId'];
     status: FieldOutputTypes['public']['LevyNotice']['status'];
     updatedAt: FieldOutputTypes['public']['LevyNotice']['updatedAt'];
@@ -7668,6 +7671,13 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
                 readonly scheme_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -10992,6 +11002,13 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
                 readonly scheme_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -11407,6 +11424,13 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/date';
                   readonly codecId: 'pg/date-string@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 40 };
                   readonly many: false;
                 };
                 readonly scheme_id: {
@@ -29600,6 +29624,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly rulePack: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -29773,6 +29805,7 @@ type ContractBase = Omit<
                 readonly ownerId: { readonly column: 'owner_id' };
                 readonly principalOwed: { readonly column: 'principal_owed' };
                 readonly priority: { readonly column: 'priority' };
+                readonly rulePack: { readonly column: 'rule_pack' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly solicitorName: { readonly column: 'solicitor_name' };
                 readonly solicitorRef: { readonly column: 'solicitor_ref' };
@@ -32780,6 +32813,14 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly rulePack: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -32874,6 +32915,7 @@ type ContractBase = Omit<
                 readonly postedBy: { readonly column: 'posted_by' };
                 readonly postingDate: { readonly column: 'posting_date' };
                 readonly reversalOfId: { readonly column: 'reversal_of_id' };
+                readonly rulePack: { readonly column: 'rule_pack' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly sourceId: { readonly column: 'source_id' };
                 readonly sourceType: { readonly column: 'source_type' };
@@ -33157,6 +33199,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
               };
+              readonly rulePack: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -33264,6 +33314,7 @@ type ContractBase = Omit<
                 readonly paidInFullAt: { readonly column: 'paid_in_full_at' };
                 readonly periodEnd: { readonly column: 'period_end' };
                 readonly periodStart: { readonly column: 'period_start' };
+                readonly rulePack: { readonly column: 'rule_pack' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updated_at' };

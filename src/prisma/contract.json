@@ -5684,6 +5684,16 @@
                   "kind": "scalar"
                 }
               },
+              "rulePack": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 40
+                  }
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -5956,6 +5966,9 @@
                 },
                 "priority": {
                   "column": "priority"
+                },
+                "rulePack": {
+                  "column": "rule_pack"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -10732,6 +10745,16 @@
                   "kind": "scalar"
                 }
               },
+              "rulePack": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 40
+                  }
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -10878,6 +10901,9 @@
                 },
                 "reversalOfId": {
                   "column": "reversal_of_id"
+                },
+                "rulePack": {
+                  "column": "rule_pack"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -11308,6 +11334,16 @@
                   "kind": "scalar"
                 }
               },
+              "rulePack": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 40
+                  }
+                }
+              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -11490,6 +11526,9 @@
                 },
                 "periodStart": {
                   "column": "period_start"
+                },
+                "rulePack": {
+                  "column": "rule_pack"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -38007,6 +38046,14 @@
                   },
                   "nullable": false
                 },
+                "rule_pack": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 40
+                  }
+                },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -41661,6 +41708,14 @@
                   "dataType": "pg/uuid",
                   "nullable": true
                 },
+                "rule_pack": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 40
+                  }
+                },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -42160,6 +42215,14 @@
                   "codecId": "pg/date-string@1",
                   "dataType": "pg/date",
                   "nullable": false
+                },
+                "rule_pack": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 40
+                  }
                 },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
@@ -58229,7 +58292,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b77d8766c343b13b6735d33976ec1700fe80b72326c693d7050f142e9e8a43b9"
+    "storageHash": "5235fc41692c825370ea08bd140a2fb6e43c1130e0298e954beff48622ad9939"
   },
   "execution": {
     "executionHash": "3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15",

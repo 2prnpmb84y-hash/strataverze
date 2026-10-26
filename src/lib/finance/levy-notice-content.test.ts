@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { validateLevyNoticeContent, type LevyNoticeContentInput } from "./levy-notice-content";
+import { validateLevyNoticeContent as validateWith, type LevyNoticeContentInput } from "./levy-notice-content";
+import { statutoryRulesFor } from "@/config/statutory";
+
+const validateLevyNoticeContent = (n: LevyNoticeContentInput) => validateWith(n, statutoryRulesFor("NSW").LEVY_NOTICE_RULES);
 
 const complete: LevyNoticeContentInput = {
   scheme: { name: "Harbour View", planNumber: "12345" },
