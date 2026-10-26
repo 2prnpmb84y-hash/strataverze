@@ -1,3 +1,4 @@
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { connection } from "next/server";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
 import { DocumentsTabContent } from "@/components/documents/documents-tab-content";
@@ -53,6 +54,7 @@ export default async function DocumentsSectionPage({
     {banner && <VaultBanner schemeId={id} data={banner} />}
     <DocumentsTabContent
       vaultLabels={vaultLabels}
+      retention={(await rulesForScheme(id)).rules.RECORD_RETENTION}
       schemeId={id}
       schemePlanNumber={scheme.planNumber}
       documents={documents.map((d) => ({

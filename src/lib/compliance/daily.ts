@@ -10,6 +10,8 @@
  *   reminded until a decision and reply date are recorded.
  * - Committee training: each committee member is reminded before their
  *   date; when it passes, the member and the advisers are told.
+ * - Strata Hub annual report: the advisers and the committee are reminded
+ *   before it is due after each AGM, and after, until it is recorded.
  */
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
@@ -21,6 +23,8 @@ import { notifyPaymentPlanReplyDue } from "@/lib/debt-recovery/payment-plan-noti
 import { reminderDue } from "./reminder-days";
 import { claimTrainingReminder, committeeTrainingRows } from "@/lib/governance/committee-training-store";
 import { notifyTrainingDue, notifyTrainingOverdue } from "@/lib/governance/training-notify";
+import { annualReportOverview, claimReportReminder } from "./annual-report-store";
+import { notifyAnnualReportDue } from "./report-notify";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -51,7 +55,31 @@ export async function runComplianceDay(now: Date = new Date()) {
     logError("[compliance] payment plan reminders failed:", err);
   }
   const trainingReminders = await committeeTrainingReminders(now);
-  return { paymentPlanReminders, trainingReminders };
+  const annualReportReminders = await annualReportReminders_(now);
+  return { paymentPlanReminders, trainingReminders, annualReportReminders };
+}
+
+async function annualReportReminders_(now: Date) {
+  let sent = 0;
+  try {
+    const schemes = await db.orm.public.Scheme.where((s) => s.isActive.eq(true)).limit(5000).all();
+    for (const scheme of schemes) {
+      try {
+        const o = await annualReportOverview(scheme.id, now, { info: false });
+        if (!o || !o.lastAgmOn || !o.dueOn || o.daysLeft == null || (o.status !== "DUE" && o.status !== "OVERDUE")) continue;
+        const kind = reminderDue(o.daysLeft);
+        if (!kind) continue;
+        if (!(await claimReportReminder({ schemeId: scheme.id, agmOn: o.lastAgmOn, today: o.today }))) continue;
+        await notifyAnnualReportDue({ schemeId: scheme.id, schemeName: String(scheme.name), agmOn: o.lastAgmOn, dueOn: o.dueOn, overdue: kind === "OVERDUE", portal: o.rules.portal, penalty: o.rules.penalty });
+        sent++;
+      } catch (err) {
+        logError("[compliance] annual report reminder failed for a scheme:", err);
+      }
+    }
+  } catch (err) {
+    logError("[compliance] annual report reminders failed:", err);
+  }
+  return sent;
 }
 
 async function committeeTrainingReminders(now: Date) {

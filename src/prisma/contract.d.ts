@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'77212e9dec5de6ad8ca5bdc315342c3634477972797b24cc0404a28c230d1118'>;
+  StorageHashBase<'3b6f103915f5aa55055c16f8197e7b555bbae6b3f72f310e72410f1e538371dc'>;
 export type ExecutionHash =
-  ExecutionHashBase<'5e817cab30fd1e20bee97158f3305d2f1d63516069bf9191427d4e527e012094'>;
+  ExecutionHashBase<'51083b26aeda7b42c49db908d800399cb05f3bcf93273a6ea78c7acaa090cded'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -570,6 +570,21 @@ export namespace Models {
     author: public_Profile;
     scheme: public_Scheme;
     readonly [RelationKeys]?: 'author' | 'scheme';
+  };
+  export type public_AnnualReport = {
+    agmOn: FieldOutputTypes['public']['AnnualReport']['agmOn'];
+    agmRecorded: FieldOutputTypes['public']['AnnualReport']['agmRecorded'];
+    createdAt: FieldOutputTypes['public']['AnnualReport']['createdAt'];
+    id: FieldOutputTypes['public']['AnnualReport']['id'];
+    lastReminderOn: FieldOutputTypes['public']['AnnualReport']['lastReminderOn'];
+    note: FieldOutputTypes['public']['AnnualReport']['note'];
+    reference: FieldOutputTypes['public']['AnnualReport']['reference'];
+    reportedBy: FieldOutputTypes['public']['AnnualReport']['reportedBy'];
+    reportedOn: FieldOutputTypes['public']['AnnualReport']['reportedOn'];
+    schemeId: FieldOutputTypes['public']['AnnualReport']['schemeId'];
+    updatedAt: FieldOutputTypes['public']['AnnualReport']['updatedAt'];
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'scheme';
   };
   export type public_AppSession = {
     authenticatedAt: FieldOutputTypes['public']['AppSession']['authenticatedAt'];
@@ -2566,6 +2581,7 @@ export namespace Models {
     accountCodes: public_AccountCode[];
     activityLogs: public_ActivityLog[];
     announcements: public_Announcement[];
+    annualReports: public_AnnualReport[];
     bankAccounts: public_SchemeBankAccount[];
     bankTransactions: public_BankTransaction[];
     bylaws: public_ByLaw[];
@@ -2621,6 +2637,7 @@ export namespace Models {
       | 'accountCodes'
       | 'activityLogs'
       | 'announcements'
+      | 'annualReports'
       | 'bankAccounts'
       | 'bankTransactions'
       | 'bylaws'
@@ -4093,6 +4110,7 @@ export declare const models: {
     ActivityLog: Models.public_ActivityLog;
     AgendaItem: Models.public_AgendaItem;
     Announcement: Models.public_Announcement;
+    AnnualReport: Models.public_AnnualReport;
     AppSession: Models.public_AppSession;
     AppliedRuleSet: Models.public_AppliedRuleSet;
     BankTransaction: Models.public_BankTransaction;
@@ -4924,6 +4942,108 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly annual_reports: {
+              columns: {
+                readonly agm_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly agm_recorded: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly last_reminder_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reference: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reported_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reported_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'annual_reports_scheme_id_agm_on_key';
+                  readonly columns: readonly ['scheme_id', 'agm_on'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'annual_reports';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -26319,6 +26439,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Announcement';
     };
+    readonly annual_reports: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'AnnualReport';
+    };
     readonly app_sessions: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AppSession';
@@ -27510,6 +27634,91 @@ type ContractBase = Omit<
                 readonly publishedAt: { readonly column: 'published_at' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly title: { readonly column: 'title' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly AnnualReport: {
+            readonly fields: {
+              readonly agmOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly agmRecorded: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lastReminderOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly note: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reference: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly reportedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly reportedOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'annual_reports';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly agmOn: { readonly column: 'agm_on' };
+                readonly agmRecorded: { readonly column: 'agm_recorded' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly id: { readonly column: 'id' };
+                readonly lastReminderOn: { readonly column: 'last_reminder_on' };
+                readonly note: { readonly column: 'note' };
+                readonly reference: { readonly column: 'reference' };
+                readonly reportedBy: { readonly column: 'reported_by' };
+                readonly reportedOn: { readonly column: 'reported_on' };
+                readonly schemeId: { readonly column: 'scheme_id' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
@@ -39410,6 +39619,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly annualReports: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'AnnualReport';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly bankAccounts: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -49007,6 +49227,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'announcements';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'annual_reports';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };
