@@ -9,6 +9,7 @@
  * statutory minimum.
  */
 import type { LevyNoticeRule } from "@/lib/finance/levy-notice-content";
+import { noticeLeadText } from "@/lib/jurisdiction/wording";
 import { addDays } from "./notice-plan";
 import { auDate } from "@/lib/onboarding/property-onboarding";
 
@@ -37,9 +38,9 @@ export function issueTiming(dueDate: string, today: string, rule: LevyNoticeRule
   return { kind: "moved", issueOn: today, dueDate: addDays(today, rule.minimumNoticeDays), originalDueDate: dueDate };
 }
 
-/** A plain-English line for a notice that cannot be given 5 weeks. */
+/** A plain-English line for a notice that cannot be given its full lead time (5 weeks in NSW). */
 export function lateMessage(t: IssueTiming, label: string, rule: LevyNoticeRule): string | null {
-  if (t.kind === "late") return `${label}: due ${auDate(t.dueDate)}, so it goes out today with ${t.daysNotice} days' notice instead of 5 weeks.`;
+  if (t.kind === "late") return `${label}: due ${auDate(t.dueDate)}, so it goes out today with ${t.daysNotice} days' notice instead of ${noticeLeadText(rule)}.`;
   if (t.kind === "moved") return `${label}: due ${auDate(t.originalDueDate)}, fewer than ${rule.minimumNoticeDays} days away, so it goes out today and falls due on ${auDate(t.dueDate)} (the statutory ${rule.minimumNoticeDays} days).`;
   return null;
 }

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
@@ -63,11 +64,13 @@ export default async function DebtRecoveryPage({
     };
   });
 
+  // The building's terms ("NSW", "Strata Schemes Management Act 2015").
+  const terms = (await rulesForScheme(id)).rules.TERMINOLOGY;
   return (
     <div className="space-y-6">
       <PageHeader
         title="Debt Recovery"
-        description="Manage levy debt recovery cases following the NSW Strata Schemes Management Act 2015"
+        description={`Manage levy debt recovery cases following the ${terms.jurisdictionShort} ${terms.act}`}
         backHref={`/adviser/schemes/${id}/finance`}
         backLabel="Financials"
       />

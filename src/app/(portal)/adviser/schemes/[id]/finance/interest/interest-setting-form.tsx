@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import type { InterestWords } from "@/lib/jurisdiction/wording";
 import { Button } from "@/components/ui/button";
 import { saveInterestSettingAction, type ActionState } from "../actions";
 
@@ -17,12 +18,15 @@ export function InterestSettingForm({
   meetingId,
   motionId,
   meetings,
+  words,
 }: {
   schemeId: string;
   mode: "STATUTORY" | "NO_INTEREST";
   meetingId: string | null;
   motionId: string | null;
   meetings: ResolutionMeeting[];
+  /** The building's interest wording. */
+  words: InterestWords;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     saveInterestSettingAction.bind(null, schemeId),
@@ -39,13 +43,13 @@ export function InterestSettingForm({
         <label className="flex items-start gap-2 text-sm text-ink">
           <input type="radio" name="mode" value="STATUTORY" checked={choice === "STATUTORY"} onChange={() => setChoice("STATUTORY")} className="mt-1" />
           <span>
-            Statutory interest: simple interest at 10% a year on levies unpaid one month after the due date. This is the
-            default under the Strata Schemes Management Act 2015 (NSW) s 85. The rate cannot be changed.
+            Statutory interest: simple interest at {words.ratePercent}% a year on levies unpaid {words.grace} after the due date. This is the
+            default under the {words.fullCitation}. The rate cannot be changed.
           </span>
         </label>
         <label className="flex items-start gap-2 text-sm text-ink">
           <input type="radio" name="mode" value="NO_INTEREST" checked={choice === "NO_INTEREST"} onChange={() => setChoice("NO_INTEREST")} className="mt-1" />
-          <span>No interest, because a general meeting resolved that contributions bear no interest (s 85(3)).</span>
+          <span>No interest, because a general meeting resolved that contributions bear no interest ({words.noInterestSection}).</span>
         </label>
       </fieldset>
 

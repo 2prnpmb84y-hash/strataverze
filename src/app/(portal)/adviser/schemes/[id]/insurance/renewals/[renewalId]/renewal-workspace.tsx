@@ -64,7 +64,10 @@ export function RenewalWorkspace({
   approval,
   selectedQuote,
   isComplete,
+  tribunal,
 }: {
+  /** The building's strata tribunal ("NCAT"). */
+  tribunal: string;
   schemeId: string;
   renewalId: string;
   stage: string;
@@ -189,6 +192,7 @@ export function RenewalWorkspace({
             schemeId={schemeId}
             renewalId={renewalId}
             declaration={declaration}
+            tribunal={tribunal}
           />
 
           {/* Quotes */}

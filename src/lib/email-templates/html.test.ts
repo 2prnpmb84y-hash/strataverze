@@ -50,6 +50,8 @@ describe("every email template", () => {
       payment: { accountName: EVIL, bsb: EVIL, accountNumber: EVIL, reference: EVIL },
       contact: { name: EVIL, emailOrPhone: EVIL }, ledgerUrl: "https://evil.example/", noInterest: false,
       interest: statutoryRulesFor("NSW").STATUTORY_INTEREST,
+      hardship: statutoryRulesFor("NSW").HARDSHIP_INFORMATION,
+      ownersCorporation: "owners corporation",
     }),
     possibleDuplicatePaymentEmail({ recipientEmails: [], schemeName: EVIL, lotLabel: EVIL, noticeNumber: EVIL, amount: EVIL, documentDate: EVIL, earlierUploadedAt: EVIL, reviewUrl: URL }),
     platformInvoiceEmail({ to: [], schemeName: EVIL, invoiceNumber: EVIL, monthLabel: EVIL, total: EVIL, promotional: true, needsApproval: true, detailUrl: URL }),

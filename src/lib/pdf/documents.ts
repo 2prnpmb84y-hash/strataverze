@@ -4,7 +4,8 @@
  * the server. See document.ts for the page layout.
  */
 import { renderPdf, type PdfBlock } from "./document";
-import { HARDSHIP_INFORMATION } from "@/lib/finance/levy-notice-content";
+import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
+import { graceText } from "@/lib/jurisdiction/wording";
 import type { InterestRule } from "@/lib/finance/statutory-interest";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 import type { CommitteeReportingPack } from "@/lib/queries/reports";
@@ -36,6 +37,10 @@ export interface LevyNoticeDocument {
   noInterest: boolean;
   /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
   interest: InterestRule;
+  /** The building's hardship statement (`rules.HARDSHIP_INFORMATION`). */
+  hardship: HardshipInformation;
+  /** The building's term for the owners corporation (`rules.TERMINOLOGY.ownersCorporation`). */
+  ownersCorporation: string;
 }
 
 export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
@@ -66,8 +71,8 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
     {
       kind: "text",
       text: d.noInterest
-        ? "The owners corporation has resolved not to charge interest on overdue levies."
-        : `Interest: if this levy is not paid within one month after the due date, simple interest of ${d.interest.annualRatePercent}% a year is charged from the due date until it is paid (${d.interest.source}).`,
+        ? `The ${d.ownersCorporation} has resolved not to charge interest on overdue levies.`
+        : `Interest: if this levy is not paid within ${graceText(d.interest)} after the due date, simple interest of ${d.interest.annualRatePercent}% a year is charged from the due date until it is paid (${d.interest.source}).`,
     },
     {
       kind: "text",
@@ -75,11 +80,11 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
     },
     {
       kind: "box",
-      title: HARDSHIP_INFORMATION.title,
+      title: d.hardship.title,
       lines: [
-        HARDSHIP_INFORMATION.summary,
-        `${HARDSHIP_INFORMATION.helplineName}: ${HARDSHIP_INFORMATION.helplinePhone} or ${HARDSHIP_INFORMATION.helplineWeb}.`,
-        `More information, including translations: ${HARDSHIP_INFORMATION.moreInformationUrl}`,
+        d.hardship.summary,
+        `${d.hardship.helplineName}: ${d.hardship.helplinePhone} or ${d.hardship.helplineWeb}.`,
+        `More information, including translations: ${d.hardship.moreInformationUrl}`,
       ],
     },
   ];

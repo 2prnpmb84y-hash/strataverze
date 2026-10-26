@@ -63,11 +63,12 @@ const POLICY_LIMITS: [string, string][] = [
   ["excess", "Standard excess"],
 ];
 
-const QUESTIONS: [string, string][] = [
+/** `tribunal`: the building's strata tribunal ("NCAT" in NSW). */
+const questions = (tribunal: string): [string, string][] => [
   ["q_rewired", "Has the building been rewired or replumbed in the last 20 years?"],
   ["q_hazards", "Are there any known hazards and/or defects associated with the property?"],
   ["q_council_orders", "Are there any unresolved Council Orders?"],
-  ["q_ncat", "Are there any outstanding NCAT or legal proceedings?"],
+  ["q_ncat", `Are there any outstanding ${tribunal} or legal proceedings?`],
   ["q_office_bearers", "Any circumstances which could lead to an Office Bearers claim?"],
   ["q_commercial_change", "Change in commercial occupants in the past 12 months?"],
   ["q_asbestos_eps", "Additional information insurers should be aware of (remedial works, asbestos, EPS)?"],
@@ -106,11 +107,15 @@ export function RenewalDeclaration({
   schemeId,
   renewalId,
   declaration,
+  tribunal,
 }: {
   schemeId: string;
   renewalId: string;
   declaration: Record<string, string>;
+  /** The building's strata tribunal ("NCAT"). */
+  tribunal: string;
 }) {
+  const QUESTIONS = questions(tribunal);
   const [state, action, pending] = useActionState<RenewalFormState, FormData>(
     saveDeclarationAction.bind(null, schemeId, renewalId),
     {},

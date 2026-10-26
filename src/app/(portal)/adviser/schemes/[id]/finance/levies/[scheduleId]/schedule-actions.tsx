@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import type { NoticeTimingWords } from "@/lib/jurisdiction/wording";
 import { Button } from "@/components/ui/button";
 import {
   FeeDisclosure,
@@ -59,12 +60,15 @@ export function IssueNoticesForm({
   isSpecial,
   noticeCount,
   blocked,
+  timing,
 }: {
   schemeId: string;
   scheduleId: string;
   isSpecial: boolean;
   noticeCount: number;
   blocked: boolean;
+  /** The building's levy notice timing (5 weeks, the statutory 30 days in NSW). */
+  timing: NoticeTimingWords;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     issueScheduleNoticesAction.bind(null, schemeId, scheduleId),
@@ -87,7 +91,7 @@ export function IssueNoticesForm({
       )}
       {late.length > 0 && (
         <div className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
-          <p className="font-medium">These instalments cannot be given 5 weeks&apos; notice:</p>
+          <p className="font-medium">These instalments cannot be given {timing.lead}&apos; notice:</p>
           <ul className="list-disc space-y-1 pl-5">
             {late.map((m) => (
               <li key={m}>{m}</li>
@@ -95,7 +99,7 @@ export function IssueNoticesForm({
           </ul>
           <label className="flex items-start gap-2">
             <input type="checkbox" name="confirmLate" className="mt-1" />
-            <span>I confirm these notices go out today with less than 5 weeks&apos; notice (never less than the statutory 30 days).</span>
+            <span>I confirm these notices go out today with less than {timing.lead}&apos; notice (never less than the statutory {timing.minimumDays} days).</span>
           </label>
         </div>
       )}
@@ -103,7 +107,7 @@ export function IssueNoticesForm({
         <p className="text-sm text-green-700">
           {typeof state.data?.count === "number" && state.data.count > 0 ? `${state.data.count} notice(s) issued today.` : "No notices go out today."}
           {typeof state.data?.planned === "number" && state.data.planned > 0
-            ? ` ${state.data.planned} planned: each goes out 5 weeks before it falls due${typeof state.data?.nextIssueOn === "string" ? `, the next on ${state.data.nextIssueOn.split("-").reverse().join("/")}` : ""}.`
+            ? ` ${state.data.planned} planned: each goes out ${timing.lead} before it falls due${typeof state.data?.nextIssueOn === "string" ? `, the next on ${state.data.nextIssueOn.split("-").reverse().join("/")}` : ""}.`
             : ""}
           {typeof state.data?.emailed === "number" ? ` ${state.data.emailed} emailed to owners.` : ""}
           {typeof state.data?.creditApplied === "number" && state.data.creditApplied > 0
@@ -115,14 +119,14 @@ export function IssueNoticesForm({
         <label className="flex items-start gap-2 text-sm text-ink">
           <input type="checkbox" name="urgentSpecialLevy" className="mt-1" />
           <span>
-            This is an urgent special levy for emergency repairs. The minimum notice to pay is 14 days instead of 30.
+            This is an urgent special levy for emergency repairs. The minimum notice to pay is {timing.urgentDays} days instead of {timing.minimumDays}.
           </span>
         </label>
       )}
       {!isSpecial && (
         <p className="text-sm text-ink-muted">
-          Levies are paid in advance: each instalment falls due on the first day of the period it covers. Each notice goes out by email 5 weeks before
-          it falls due. Any whose 5-week mark has passed go out today, once you confirm.
+          Levies are paid in advance: each instalment falls due on the first day of the period it covers. Each notice goes out by email {timing.lead} before
+          it falls due. Any whose {timing.mark} has passed go out today, once you confirm.
         </p>
       )}
       <Button type="submit" disabled={pending || blocked}>
@@ -133,16 +137,16 @@ export function IssueNoticesForm({
 }
 
 /** Send, once confirmed, the planned notices past their 5-week mark. */
-export function OverdueNoticesForm({ schemeId, scheduleId, count }: { schemeId: string; scheduleId: string; count: number }) {
+export function OverdueNoticesForm({ schemeId, scheduleId, count, timing }: { schemeId: string; scheduleId: string; count: number; timing: NoticeTimingWords }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueOverdueNoticesAction.bind(null, schemeId, scheduleId), {});
   const late = Array.isArray(state.data?.late) ? (state.data.late as string[]) : [];
   const missing = Array.isArray(state.data?.missing) ? (state.data.missing as { code: string; message: string }[]) : [];
   return (
     <form action={formAction} className="space-y-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <p className="font-medium">
-        {count} planned notice{count === 1 ? " is" : "s are"} past {count === 1 ? "its" : "their"} 5-week mark and {count === 1 ? "has" : "have"} not gone out.
+        {count} planned notice{count === 1 ? " is" : "s are"} past {count === 1 ? "its" : "their"} {timing.mark} and {count === 1 ? "has" : "have"} not gone out.
       </p>
-      <p>They go out today once you confirm. Any with fewer than 30 days left fall due 30 days from today instead, the statutory minimum.</p>
+      <p>They go out today once you confirm. Any with fewer than {timing.minimumDays} days left fall due {timing.minimumDays} days from today instead, the statutory minimum.</p>
       {late.length > 0 && (
         <ul className="list-disc space-y-1 pl-5">
           {late.map((m) => (
@@ -159,7 +163,7 @@ export function OverdueNoticesForm({ schemeId, scheduleId, count }: { schemeId: 
       )}
       <label className="flex items-start gap-2">
         <input type="checkbox" name="confirmLate" className="mt-1" />
-        <span>I confirm these notices go out today with less than 5 weeks&apos; notice (never less than the statutory 30 days).</span>
+        <span>I confirm these notices go out today with less than {timing.lead}&apos; notice (never less than the statutory {timing.minimumDays} days).</span>
       </label>
       {state.error && <p role="alert" className="text-red-700">{state.error}</p>}
       {state.success && <p className="text-green-700">{String(state.data?.count ?? 0)} notice(s) sent, {String(state.data?.emailed ?? 0)} emailed to owners.</p>}

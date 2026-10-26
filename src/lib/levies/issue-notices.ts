@@ -26,6 +26,7 @@
  * claim is undone, so the notices are issued on a later run instead.
  */
 import { db } from "@/prisma/db";
+import { noticeLeadMark } from "@/lib/jurisdiction/wording";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
@@ -354,7 +355,7 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
           action: "LEVY_NOTICES_HELD",
           entityType: "LevySchedule",
           entityId: schedule.id,
-          metadata: { count: late.length, reason: "Past the 5-week mark: confirm on the levy schedule to send them.", missing: lines },
+          metadata: { count: late.length, reason: `Past the ${noticeLeadMark(rule)}: confirm on the levy schedule to send them.`, missing: lines },
         });
       }
       const notices: BatchNotice[] = onTime.map((n) => ({

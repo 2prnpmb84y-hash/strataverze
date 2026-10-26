@@ -462,7 +462,7 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
   const allAnswered = activeInvites.length > 0 && activeInvites.every((i) => quotes.some((q) => q.contractorBusinessId === i.contractorBusinessId && (q.status === "SUBMITTED" || q.status === "ACCEPTED")));
   const liveOrder = rfq.requestId ? await db.orm.public.WorksWorkOrder.where((o) => and(o.requestId.eq(rfq.requestId!), o.status.notIn(["DECLINED", "CANCELLED"]))).first() : null;
   const acceptedQuote = quotes.find((q) => q.status === "ACCEPTED") ?? null;
-  const spending = (await rulesForScheme(schemeId)).rules.WORKS_SPENDING_RULES;
+  const { WORKS_SPENDING_RULES: spending, CITATIONS: citations } = (await rulesForScheme(schemeId)).rules;
   const ready = (rfq.status === "QUOTING" || rfq.status === "CLOSED") && (quoteDeadlinePassed || allAnswered || rfq.status === "CLOSED");
   // Quotes stay sealed until they can be compared, so no price can leak to
   // a contractor still able to change theirs.
@@ -519,6 +519,8 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
     canCancel: (RFQ_OPEN_STATUSES as readonly string[]).includes(String(rfq.status)),
     twoQuoteThreshold: spending.twoQuoteThreshold,
     minimumQuotes: spending.minimumQuotes,
+    /** The building's citation for the rule ("SSMA s 102"). */
+    twoQuoteCitation: citations.worksTwoQuotes,
   };
 }
 
@@ -618,9 +620,9 @@ export async function quoteApprovalProblem(quotationId: string, now = new Date()
   // then declined the work order; a withdrawn quote does not.
   const obtained = await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.in(["SUBMITTED", "ACCEPTED", "DECLINED"]))).limit(100).all();
   // The building's spending rules (throws for a state with no rule pack).
-  const spending = (await rulesForScheme(rfq.schemeId)).rules.WORKS_SPENDING_RULES;
+  const { WORKS_SPENDING_RULES: spending, CITATIONS: citations } = (await rulesForScheme(rfq.schemeId)).rules;
   if (Number(quote.totalAmount) > spending.twoQuoteThreshold && obtained.length < spending.minimumQuotes) {
-    return { problem: `Over $${spending.twoQuoteThreshold.toLocaleString("en-AU")}, at least ${spending.minimumQuotes} quotes are needed before one is approved (SSMA s 102). Invite more contractors, or extend the deadline.`, ...base };
+    return { problem: `Over $${spending.twoQuoteThreshold.toLocaleString("en-AU")}, at least ${spending.minimumQuotes} quotes are needed before one is approved (${citations.worksTwoQuotes}). Invite more contractors, or extend the deadline.`, ...base };
   }
   return { problem: null, ...base };
 }

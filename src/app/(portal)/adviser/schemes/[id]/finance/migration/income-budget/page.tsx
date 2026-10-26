@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { noticeLeadText } from "@/lib/jurisdiction/wording";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { requireSchemeMembership } from "@/lib/auth/require-membership";
@@ -34,7 +36,7 @@ export default async function IncomeBudgetPage({ params }: { params: Promise<{ i
           .
         </div>
       ) : (
-        <IncomeBudgetClient schemeId={id} ctx={data.ctx} saved={data.saved} locks={data.locks} cutoverHref={`${cutoverBase}?batch=${data.cutover.id}`} />
+        <IncomeBudgetClient schemeId={id} ctx={data.ctx} saved={data.saved} locks={data.locks} cutoverHref={`${cutoverBase}?batch=${data.cutover.id}`} noticeLead={noticeLeadText((await rulesForScheme(id)).rules.LEVY_NOTICE_RULES)} />
       )}
     </div>
   );

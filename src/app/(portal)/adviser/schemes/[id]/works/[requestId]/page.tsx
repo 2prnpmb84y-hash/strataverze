@@ -208,7 +208,7 @@ export default async function WorksRequestDetailPage({
       {view && (
         <Card>
           <CardHeader title="The committee's decision" description="How this request is handled." />
-          <DecisionPanel schemeId={id} requestId={requestId} urgentLimit={view.settings.urgentLimit} requestTitle={view.request.title} requestDescription={view.request.description} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
+          <DecisionPanel schemeId={id} requestId={requestId} urgentLimit={view.settings.urgentLimit} twoQuotes={view.twoQuotes} requestTitle={view.request.title} requestDescription={view.request.description} can={view.can} decisions={view.decisions} openDecisionId={view.openDecisionId} ruleSentence={ruleSentence(view)} />
         </Card>
       )}
 
