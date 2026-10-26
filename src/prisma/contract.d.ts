@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'dde94df1233d06cd4ac75bb23c05e9e2c588d9b3b95dccf93d2d97817d136b8d'>;
+  StorageHashBase<'fef88172c963f6e866924b8aff2a4623de574a2dad53597bd422f4610929fefc'>;
 export type ExecutionHash =
-  ExecutionHashBase<'3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15'>;
+  ExecutionHashBase<'38fe1a63c62df3d1a0a9ea1fb81cac618336f1f71e6ec7b6f747a3e57a8f489c'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -1021,7 +1021,8 @@ export namespace Models {
     initiator: public_Profile;
     lot: public_Lot;
     owner: public_Profile;
-    paymentPlan: public_PaymentPlan | null;
+    paymentPlanRequests: public_PaymentPlanRequest[];
+    paymentPlans: public_PaymentPlan[];
     scheme: public_Scheme;
     steps: public_DebtRecoveryStep[];
     readonly [RelationKeys]?:
@@ -1031,7 +1032,8 @@ export namespace Models {
       | 'initiator'
       | 'lot'
       | 'owner'
-      | 'paymentPlan'
+      | 'paymentPlanRequests'
+      | 'paymentPlans'
       | 'scheme'
       | 'steps';
   };
@@ -1667,6 +1669,7 @@ export namespace Models {
     levyNotices: public_LevyNotice[];
     lotDetail: public_LotDetail | null;
     memberships: public_SchemeMembership[];
+    paymentPlanRequests: public_PaymentPlanRequest[];
     powersOfAttorney: public_LotPowerOfAttorney[];
     propertyManager: public_PropertyManager | null;
     proxies: public_LotProxy[];
@@ -1683,6 +1686,7 @@ export namespace Models {
       | 'levyNotices'
       | 'lotDetail'
       | 'memberships'
+      | 'paymentPlanRequests'
       | 'powersOfAttorney'
       | 'propertyManager'
       | 'proxies'
@@ -2115,10 +2119,13 @@ export namespace Models {
     readonly [RelationKeys]?: never;
   };
   export type public_PaymentPlan = {
+    agreedOn: FieldOutputTypes['public']['PaymentPlan']['agreedOn'];
     approvedAt: FieldOutputTypes['public']['PaymentPlan']['approvedAt'];
     approvedBy: FieldOutputTypes['public']['PaymentPlan']['approvedBy'];
     caseId: FieldOutputTypes['public']['PaymentPlan']['caseId'];
     conditions: FieldOutputTypes['public']['PaymentPlan']['conditions'];
+    contactDetails: FieldOutputTypes['public']['PaymentPlan']['contactDetails'];
+    coversCurrentLevies: FieldOutputTypes['public']['PaymentPlan']['coversCurrentLevies'];
     createdAt: FieldOutputTypes['public']['PaymentPlan']['createdAt'];
     defaultReason: FieldOutputTypes['public']['PaymentPlan']['defaultReason'];
     defaultedAt: FieldOutputTypes['public']['PaymentPlan']['defaultedAt'];
@@ -2128,20 +2135,27 @@ export namespace Models {
     includesInterest: FieldOutputTypes['public']['PaymentPlan']['includesInterest'];
     includesOngoing: FieldOutputTypes['public']['PaymentPlan']['includesOngoing'];
     instalmentAmount: FieldOutputTypes['public']['PaymentPlan']['instalmentAmount'];
+    interestMethod: FieldOutputTypes['public']['PaymentPlan']['interestMethod'];
+    interestOwing: FieldOutputTypes['public']['PaymentPlan']['interestOwing'];
     interestWaived: FieldOutputTypes['public']['PaymentPlan']['interestWaived'];
+    leviesOwing: FieldOutputTypes['public']['PaymentPlan']['leviesOwing'];
     lotId: FieldOutputTypes['public']['PaymentPlan']['lotId'];
     notes: FieldOutputTypes['public']['PaymentPlan']['notes'];
     numberOfInstalments: FieldOutputTypes['public']['PaymentPlan']['numberOfInstalments'];
+    paymentMethods: FieldOutputTypes['public']['PaymentPlan']['paymentMethods'];
+    requestId: FieldOutputTypes['public']['PaymentPlan']['requestId'];
+    rulePack: FieldOutputTypes['public']['PaymentPlan']['rulePack'];
     schemeId: FieldOutputTypes['public']['PaymentPlan']['schemeId'];
     startDate: FieldOutputTypes['public']['PaymentPlan']['startDate'];
     status: FieldOutputTypes['public']['PaymentPlan']['status'];
     totalAmount: FieldOutputTypes['public']['PaymentPlan']['totalAmount'];
     updatedAt: FieldOutputTypes['public']['PaymentPlan']['updatedAt'];
-    case: public_DebtRecoveryCase;
+    case: public_DebtRecoveryCase | null;
     instalments: public_PaymentPlanInstalment[];
     lot: public_Lot;
+    request: public_PaymentPlanRequest | null;
     scheme: public_Scheme;
-    readonly [RelationKeys]?: 'case' | 'instalments' | 'lot' | 'scheme';
+    readonly [RelationKeys]?: 'case' | 'instalments' | 'lot' | 'request' | 'scheme';
   };
   export type public_PaymentPlanInstalment = {
     amount: FieldOutputTypes['public']['PaymentPlanInstalment']['amount'];
@@ -2157,6 +2171,41 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['PaymentPlanInstalment']['updatedAt'];
     plan: public_PaymentPlan;
     readonly [RelationKeys]?: 'plan';
+  };
+  export type public_PaymentPlanRequest = {
+    caseId: FieldOutputTypes['public']['PaymentPlanRequest']['caseId'];
+    createdAt: FieldOutputTypes['public']['PaymentPlanRequest']['createdAt'];
+    currentDebt: FieldOutputTypes['public']['PaymentPlanRequest']['currentDebt'];
+    decidedOn: FieldOutputTypes['public']['PaymentPlanRequest']['decidedOn'];
+    decisionBody: FieldOutputTypes['public']['PaymentPlanRequest']['decisionBody'];
+    decisionRecordedAt: FieldOutputTypes['public']['PaymentPlanRequest']['decisionRecordedAt'];
+    decisionRecordedBy: FieldOutputTypes['public']['PaymentPlanRequest']['decisionRecordedBy'];
+    hardshipStatement: FieldOutputTypes['public']['PaymentPlanRequest']['hardshipStatement'];
+    id: FieldOutputTypes['public']['PaymentPlanRequest']['id'];
+    interestWaiver: FieldOutputTypes['public']['PaymentPlanRequest']['interestWaiver'];
+    interestWaiverRequested: FieldOutputTypes['public']['PaymentPlanRequest']['interestWaiverRequested'];
+    lastReminderOn: FieldOutputTypes['public']['PaymentPlanRequest']['lastReminderOn'];
+    lotId: FieldOutputTypes['public']['PaymentPlanRequest']['lotId'];
+    notes: FieldOutputTypes['public']['PaymentPlanRequest']['notes'];
+    ownerNames: FieldOutputTypes['public']['PaymentPlanRequest']['ownerNames'];
+    proposedFrequency: FieldOutputTypes['public']['PaymentPlanRequest']['proposedFrequency'];
+    proposedInstalment: FieldOutputTypes['public']['PaymentPlanRequest']['proposedInstalment'];
+    proposedMonths: FieldOutputTypes['public']['PaymentPlanRequest']['proposedMonths'];
+    receivedOn: FieldOutputTypes['public']['PaymentPlanRequest']['receivedOn'];
+    refusalReasons: FieldOutputTypes['public']['PaymentPlanRequest']['refusalReasons'];
+    repliedOn: FieldOutputTypes['public']['PaymentPlanRequest']['repliedOn'];
+    replyDueOn: FieldOutputTypes['public']['PaymentPlanRequest']['replyDueOn'];
+    rulePack: FieldOutputTypes['public']['PaymentPlanRequest']['rulePack'];
+    schemeId: FieldOutputTypes['public']['PaymentPlanRequest']['schemeId'];
+    source: FieldOutputTypes['public']['PaymentPlanRequest']['source'];
+    status: FieldOutputTypes['public']['PaymentPlanRequest']['status'];
+    submittedBy: FieldOutputTypes['public']['PaymentPlanRequest']['submittedBy'];
+    updatedAt: FieldOutputTypes['public']['PaymentPlanRequest']['updatedAt'];
+    case: public_DebtRecoveryCase | null;
+    lot: public_Lot;
+    plan: public_PaymentPlan | null;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'case' | 'lot' | 'plan' | 'scheme';
   };
   export type public_PlatformFeeEvent = {
     amountExGst: FieldOutputTypes['public']['PlatformFeeEvent']['amountExGst'];
@@ -2526,6 +2575,7 @@ export namespace Models {
     memberships: public_SchemeMembership[];
     motions: public_Motion[];
     organisation: public_Organisation | null;
+    paymentPlanRequests: public_PaymentPlanRequest[];
     quoteRequests: public_QuoteRequest[];
     supplierInvoices: public_SupplierInvoice[];
     suppliers: public_Supplier[];
@@ -2579,6 +2629,7 @@ export namespace Models {
       | 'memberships'
       | 'motions'
       | 'organisation'
+      | 'paymentPlanRequests'
       | 'quoteRequests'
       | 'supplierInvoices'
       | 'suppliers'
@@ -4096,6 +4147,7 @@ export declare const models: {
     PaymentAuthorisation: Models.public_PaymentAuthorisation;
     PaymentPlan: Models.public_PaymentPlan;
     PaymentPlanInstalment: Models.public_PaymentPlanInstalment;
+    PaymentPlanRequest: Models.public_PaymentPlanRequest;
     PlatformFeeEvent: Models.public_PlatformFeeEvent;
     PlatformInvoice: Models.public_PlatformInvoice;
     PlatformPriceBook: Models.public_PlatformPriceBook;
@@ -14757,8 +14809,254 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly payment_plan_requests: {
+              columns: {
+                readonly case_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly current_debt: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly decided_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly decision_body: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly decision_recorded_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly decision_recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly hardship_statement: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly interest_waiver: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly interest_waiver_requested: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly last_reminder_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly notes: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly owner_names: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly proposed_frequency: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly proposed_instalment: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
+                readonly proposed_months: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly received_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly refusal_reasons: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly replied_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly reply_due_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 40 };
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly source: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly status: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'RECEIVED'>;
+                  };
+                  readonly many: false;
+                };
+                readonly submitted_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'payment_plan_requests_lot_id_idx';
+                  readonly columns: readonly ['lot_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'payment_plan_requests_scheme_id_status_idx';
+                  readonly columns: readonly ['scheme_id', 'status'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'payment_plan_requests';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'payment_plan_requests';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'payment_plan_requests';
+                    readonly columns: readonly ['case_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'debt_recovery_cases';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly payment_plans: {
               columns: {
+                readonly agreed_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly approved_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -14774,13 +15072,29 @@ type ContractBase = Omit<
                 readonly case_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
-                  readonly nullable: false;
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly conditions: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly contact_details: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly covers_current_levies: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly created_at: {
@@ -14851,6 +15165,19 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                   readonly many: false;
                 };
+                readonly interest_method: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly interest_owing: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
                 readonly interest_waived: {
                   readonly dataType: 'pg/bool';
                   readonly codecId: 'pg/bool@1';
@@ -14859,6 +15186,13 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', false>;
                   };
+                  readonly many: false;
+                };
+                readonly levies_owing: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly lot_id: {
@@ -14877,6 +15211,25 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly payment_methods: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly request_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly rule_pack: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly length: 40 };
                   readonly many: false;
                 };
                 readonly scheme_id: {
@@ -14919,14 +15272,19 @@ type ContractBase = Omit<
               uniques: readonly [];
               indexes: readonly [
                 {
-                  readonly name: 'payment_plans_case_id_key';
+                  readonly name: 'payment_plans_case_id_idx';
                   readonly columns: readonly ['case_id'];
-                  readonly unique: true;
+                  readonly unique: false;
                 },
                 {
                   readonly name: 'payment_plans_lot_id_idx';
                   readonly columns: readonly ['lot_id'];
                   readonly unique: false;
+                },
+                {
+                  readonly name: 'payment_plans_request_id_key';
+                  readonly columns: readonly ['request_id'];
+                  readonly unique: true;
                 },
                 {
                   readonly name: 'payment_plans_scheme_id_idx';
@@ -14968,6 +15326,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'payment_plans';
+                    readonly columns: readonly ['request_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'payment_plan_requests';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -26071,6 +26441,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PaymentPlanInstalment';
     };
+    readonly payment_plan_requests: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'PaymentPlanRequest';
+    };
     readonly payment_plans: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PaymentPlan';
@@ -29752,13 +30126,23 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
-              readonly paymentPlan: {
+              readonly paymentPlanRequests: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentPlanRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['caseId'];
+                };
+              };
+              readonly paymentPlans: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'PaymentPlan';
                 };
-                readonly cardinality: '1:1';
-                readonly nullable: true;
+                readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['caseId'];
@@ -33776,6 +34160,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['lotId'];
                 };
               };
+              readonly paymentPlanRequests: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentPlanRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
               readonly powersOfAttorney: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -36299,6 +36694,10 @@ type ContractBase = Omit<
           };
           readonly PaymentPlan: {
             readonly fields: {
+              readonly agreedOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
               readonly approvedAt: {
                 readonly nullable: true;
                 readonly type: {
@@ -36311,12 +36710,20 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly caseId: {
-                readonly nullable: false;
+                readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly conditions: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly contactDetails: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly coversCurrentLevies: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
               readonly createdAt: {
                 readonly nullable: false;
@@ -36364,9 +36771,29 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                 };
               };
+              readonly interestMethod: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly interestOwing: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
               readonly interestWaived: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly leviesOwing: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
               };
               readonly lotId: {
                 readonly nullable: false;
@@ -36379,6 +36806,22 @@ type ContractBase = Omit<
               readonly numberOfInstalments: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly paymentMethods: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly requestId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly rulePack: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
               };
               readonly schemeId: {
                 readonly nullable: false;
@@ -36415,7 +36858,7 @@ type ContractBase = Omit<
                   readonly model: 'DebtRecoveryCase';
                 };
                 readonly cardinality: 'N:1';
-                readonly nullable: false;
+                readonly nullable: true;
                 readonly on: {
                   readonly localFields: readonly ['caseId'];
                   readonly targetFields: readonly ['id'];
@@ -36441,6 +36884,18 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly request: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentPlanRequest';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['requestId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly scheme: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -36458,10 +36913,13 @@ type ContractBase = Omit<
               readonly table: 'payment_plans';
               readonly namespaceId: 'public';
               readonly fields: {
+                readonly agreedOn: { readonly column: 'agreed_on' };
                 readonly approvedAt: { readonly column: 'approved_at' };
                 readonly approvedBy: { readonly column: 'approved_by' };
                 readonly caseId: { readonly column: 'case_id' };
                 readonly conditions: { readonly column: 'conditions' };
+                readonly contactDetails: { readonly column: 'contact_details' };
+                readonly coversCurrentLevies: { readonly column: 'covers_current_levies' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly defaultReason: { readonly column: 'default_reason' };
                 readonly defaultedAt: { readonly column: 'defaulted_at' };
@@ -36471,10 +36929,16 @@ type ContractBase = Omit<
                 readonly includesInterest: { readonly column: 'includes_interest' };
                 readonly includesOngoing: { readonly column: 'includes_ongoing' };
                 readonly instalmentAmount: { readonly column: 'instalment_amount' };
+                readonly interestMethod: { readonly column: 'interest_method' };
+                readonly interestOwing: { readonly column: 'interest_owing' };
                 readonly interestWaived: { readonly column: 'interest_waived' };
+                readonly leviesOwing: { readonly column: 'levies_owing' };
                 readonly lotId: { readonly column: 'lot_id' };
                 readonly notes: { readonly column: 'notes' };
                 readonly numberOfInstalments: { readonly column: 'number_of_instalments' };
+                readonly paymentMethods: { readonly column: 'payment_methods' };
+                readonly requestId: { readonly column: 'request_id' };
+                readonly rulePack: { readonly column: 'rule_pack' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly startDate: { readonly column: 'start_date' };
                 readonly status: { readonly column: 'status' };
@@ -36575,6 +37039,224 @@ type ContractBase = Omit<
                 readonly paidAt: { readonly column: 'paid_at' };
                 readonly planId: { readonly column: 'plan_id' };
                 readonly status: { readonly column: 'status' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
+          readonly PaymentPlanRequest: {
+            readonly fields: {
+              readonly caseId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly currentDebt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly decidedOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly decisionBody: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly decisionRecordedAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly decisionRecordedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly hardshipStatement: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly interestWaiver: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly interestWaiverRequested: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lastReminderOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly notes: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly ownerNames: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly proposedFrequency: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly proposedInstalment: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
+              readonly proposedMonths: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly receivedOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly refusalReasons: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly repliedOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly replyDueOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly rulePack: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 40 };
+                };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly source: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly submittedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly case: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'DebtRecoveryCase';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['caseId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly plan: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentPlan';
+                };
+                readonly cardinality: '1:1';
+                readonly nullable: true;
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['requestId'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'payment_plan_requests';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly caseId: { readonly column: 'case_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly currentDebt: { readonly column: 'current_debt' };
+                readonly decidedOn: { readonly column: 'decided_on' };
+                readonly decisionBody: { readonly column: 'decision_body' };
+                readonly decisionRecordedAt: { readonly column: 'decision_recorded_at' };
+                readonly decisionRecordedBy: { readonly column: 'decision_recorded_by' };
+                readonly hardshipStatement: { readonly column: 'hardship_statement' };
+                readonly id: { readonly column: 'id' };
+                readonly interestWaiver: { readonly column: 'interest_waiver' };
+                readonly interestWaiverRequested: { readonly column: 'interest_waiver_requested' };
+                readonly lastReminderOn: { readonly column: 'last_reminder_on' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly notes: { readonly column: 'notes' };
+                readonly ownerNames: { readonly column: 'owner_names' };
+                readonly proposedFrequency: { readonly column: 'proposed_frequency' };
+                readonly proposedInstalment: { readonly column: 'proposed_instalment' };
+                readonly proposedMonths: { readonly column: 'proposed_months' };
+                readonly receivedOn: { readonly column: 'received_on' };
+                readonly refusalReasons: { readonly column: 'refusal_reasons' };
+                readonly repliedOn: { readonly column: 'replied_on' };
+                readonly replyDueOn: { readonly column: 'reply_due_on' };
+                readonly rulePack: { readonly column: 'rule_pack' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly source: { readonly column: 'source' };
+                readonly status: { readonly column: 'status' };
+                readonly submittedBy: { readonly column: 'submitted_by' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
@@ -38774,6 +39456,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['organisationId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly paymentPlanRequests: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PaymentPlanRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
                 };
               };
               readonly quoteRequests: {
@@ -48381,6 +49074,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'payment_plan_instalments';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'payment_plan_requests';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };

@@ -52,18 +52,27 @@ export interface FeeQuote {
 
 export class FeeConfigError extends Error {}
 
+/**
+ * Fees that are never passed to an owner, whatever the price book says: no
+ * fee can be charged for a payment plan request (NSW Government guide to
+ * strata law changes, from 27 Oct 2025). StrataVerze charges the owners corporation only (decided
+ * 26 Oct 2026).
+ */
+export const NEVER_RECOVERABLE_FROM_OWNER: ReadonlyArray<{ code: string; variant: string }> = [{ code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" }];
+
 function quoteFrom(entry: PriceBookEntry, quantity = 1): FeeQuote {
   if (entry.amountCents == null) {
     throw new FeeConfigError(`${entry.code} has no price and needs a manual quote.`);
   }
   const split = splitGst(entry.amountCents * quantity, entry.gstInclusive);
+  const ocOnly = NEVER_RECOVERABLE_FROM_OWNER.some((f) => f.code === entry.code && f.variant === (entry.variant ?? null));
   return {
     code: entry.code,
     variant: entry.variant ?? null,
     description: entry.description,
     ...split,
-    payerType: entry.payerType,
-    recoverableFromOwner: entry.recoverableFromOwner ?? false,
+    payerType: ocOnly ? "OC" : entry.payerType,
+    recoverableFromOwner: ocOnly ? false : (entry.recoverableFromOwner ?? false),
   };
 }
 

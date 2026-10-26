@@ -4,6 +4,7 @@ import { bearerMatches } from "@/lib/auth/secret-compare";
 import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { runLevyNoticeDay } from "@/lib/levies/issue-notices";
 import { runWorksDay } from "@/lib/works/daily";
+import { runComplianceDay } from "@/lib/compliance/daily";
 import { logError } from "@/lib/log";
 
 /**
@@ -14,7 +15,8 @@ import { logError } from "@/lib/log";
  * A repeated call does no harm: each notice is claimed before it is issued.
  *
  * The same daily run closes works marketplace deadlines (works stage 3) and
- * tells the committee; a failure there never stops the levy notices.
+ * tells the committee, and sends statutory deadline reminders (payment plan
+ * replies); a failure there never stops the levy notices.
  */
 export const maxDuration = 300;
 
@@ -34,6 +36,14 @@ export async function GET(request: NextRequest) {
     works = { error: "failed" };
   }
   const { recovered, issued, resent } = await runLevyNoticeDay(now);
+  // After the levy notices, so reminders never hold them up.
+  let compliance: { paymentPlanReminders: number } | { error: string };
+  try {
+    compliance = await runComplianceDay(now);
+  } catch (err) {
+    logError("[cron] compliance reminders failed:", err);
+    compliance = { error: "failed" };
+  }
   return NextResponse.json(
     {
       today,
@@ -44,6 +54,7 @@ export async function GET(request: NextRequest) {
       emailsResent: resent,
       leviesRecovered: recovered,
       works,
+      compliance,
     },
     { headers: NO_STORE },
   );

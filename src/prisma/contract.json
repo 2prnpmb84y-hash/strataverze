@@ -320,6 +320,10 @@
       "model": "PaymentPlanInstalment",
       "namespace": "public"
     },
+    "payment_plan_requests": {
+      "model": "PaymentPlanRequest",
+      "namespace": "public"
+    },
     "payment_plans": {
       "model": "PaymentPlan",
       "namespace": "public"
@@ -5842,9 +5846,23 @@
                   "namespace": "public"
                 }
               },
-              "paymentPlan": {
-                "cardinality": "1:1",
-                "nullable": true,
+              "paymentPlanRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "caseId"
+                  ]
+                },
+                "to": {
+                  "model": "PaymentPlanRequest",
+                  "namespace": "public"
+                }
+              },
+              "paymentPlans": {
+                "cardinality": "1:N",
                 "on": {
                   "localFields": [
                     "id"
@@ -12250,6 +12268,21 @@
                   "namespace": "public"
                 }
               },
+              "paymentPlanRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "lotId"
+                  ]
+                },
+                "to": {
+                  "model": "PaymentPlanRequest",
+                  "namespace": "public"
+                }
+              },
               "powersOfAttorney": {
                 "cardinality": "1:N",
                 "on": {
@@ -16320,6 +16353,13 @@
           },
           "PaymentPlan": {
             "fields": {
+              "agreedOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
               "approvedAt": {
                 "nullable": true,
                 "type": {
@@ -16335,7 +16375,7 @@
                 }
               },
               "caseId": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/uuid@1",
                   "kind": "scalar"
@@ -16345,6 +16385,20 @@
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "contactDetails": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "coversCurrentLevies": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -16415,11 +16469,40 @@
                   }
                 }
               },
+              "interestMethod": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "interestOwing": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
               "interestWaived": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/bool@1",
                   "kind": "scalar"
+                }
+              },
+              "leviesOwing": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
                 }
               },
               "lotId": {
@@ -16441,6 +16524,30 @@
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
+                }
+              },
+              "paymentMethods": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "requestId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "rulePack": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 40
+                  }
                 }
               },
               "schemeId": {
@@ -16486,7 +16593,7 @@
             "relations": {
               "case": {
                 "cardinality": "N:1",
-                "nullable": false,
+                "nullable": true,
                 "on": {
                   "localFields": [
                     "caseId"
@@ -16531,6 +16638,22 @@
                   "namespace": "public"
                 }
               },
+              "request": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "requestId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "PaymentPlanRequest",
+                  "namespace": "public"
+                }
+              },
               "scheme": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -16550,6 +16673,9 @@
             },
             "storage": {
               "fields": {
+                "agreedOn": {
+                  "column": "agreed_on"
+                },
                 "approvedAt": {
                   "column": "approved_at"
                 },
@@ -16561,6 +16687,12 @@
                 },
                 "conditions": {
                   "column": "conditions"
+                },
+                "contactDetails": {
+                  "column": "contact_details"
+                },
+                "coversCurrentLevies": {
+                  "column": "covers_current_levies"
                 },
                 "createdAt": {
                   "column": "created_at"
@@ -16589,8 +16721,17 @@
                 "instalmentAmount": {
                   "column": "instalment_amount"
                 },
+                "interestMethod": {
+                  "column": "interest_method"
+                },
+                "interestOwing": {
+                  "column": "interest_owing"
+                },
                 "interestWaived": {
                   "column": "interest_waived"
+                },
+                "leviesOwing": {
+                  "column": "levies_owing"
                 },
                 "lotId": {
                   "column": "lot_id"
@@ -16600,6 +16741,15 @@
                 },
                 "numberOfInstalments": {
                   "column": "number_of_instalments"
+                },
+                "paymentMethods": {
+                  "column": "payment_methods"
+                },
+                "requestId": {
+                  "column": "request_id"
+                },
+                "rulePack": {
+                  "column": "rule_pack"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -16765,6 +16915,373 @@
               },
               "namespaceId": "public",
               "table": "payment_plan_instalments"
+            }
+          },
+          "PaymentPlanRequest": {
+            "fields": {
+              "caseId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "currentDebt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "decidedOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "decisionBody": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "decisionRecordedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "decisionRecordedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "hardshipStatement": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "interestWaiver": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "interestWaiverRequested": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastReminderOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "lotId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "notes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ownerNames": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "proposedFrequency": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "proposedInstalment": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
+              "proposedMonths": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "receivedOn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "refusalReasons": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "repliedOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "replyDueOn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "rulePack": {
+                "nullable": true,
+                "type": {
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 40
+                  }
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "source": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "submittedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "case": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "caseId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "DebtRecoveryCase",
+                  "namespace": "public"
+                }
+              },
+              "lot": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "lotId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Lot",
+                  "namespace": "public"
+                }
+              },
+              "plan": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "requestId"
+                  ]
+                },
+                "to": {
+                  "model": "PaymentPlan",
+                  "namespace": "public"
+                }
+              },
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "caseId": {
+                  "column": "case_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "currentDebt": {
+                  "column": "current_debt"
+                },
+                "decidedOn": {
+                  "column": "decided_on"
+                },
+                "decisionBody": {
+                  "column": "decision_body"
+                },
+                "decisionRecordedAt": {
+                  "column": "decision_recorded_at"
+                },
+                "decisionRecordedBy": {
+                  "column": "decision_recorded_by"
+                },
+                "hardshipStatement": {
+                  "column": "hardship_statement"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "interestWaiver": {
+                  "column": "interest_waiver"
+                },
+                "interestWaiverRequested": {
+                  "column": "interest_waiver_requested"
+                },
+                "lastReminderOn": {
+                  "column": "last_reminder_on"
+                },
+                "lotId": {
+                  "column": "lot_id"
+                },
+                "notes": {
+                  "column": "notes"
+                },
+                "ownerNames": {
+                  "column": "owner_names"
+                },
+                "proposedFrequency": {
+                  "column": "proposed_frequency"
+                },
+                "proposedInstalment": {
+                  "column": "proposed_instalment"
+                },
+                "proposedMonths": {
+                  "column": "proposed_months"
+                },
+                "receivedOn": {
+                  "column": "received_on"
+                },
+                "refusalReasons": {
+                  "column": "refusal_reasons"
+                },
+                "repliedOn": {
+                  "column": "replied_on"
+                },
+                "replyDueOn": {
+                  "column": "reply_due_on"
+                },
+                "rulePack": {
+                  "column": "rule_pack"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "source": {
+                  "column": "source"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "submittedBy": {
+                  "column": "submitted_by"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "payment_plan_requests"
             }
           },
           "PlatformFeeEvent": {
@@ -20052,6 +20569,21 @@
                 },
                 "to": {
                   "model": "Organisation",
+                  "namespace": "public"
+                }
+              },
+              "paymentPlanRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "PaymentPlanRequest",
                   "namespace": "public"
                 }
               },
@@ -45783,8 +46315,269 @@
               },
               "uniques": []
             },
+            "payment_plan_requests": {
+              "columns": {
+                "case_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "current_debt": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "decided_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "decision_body": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "decision_recorded_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "decision_recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "hardship_statement": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "interest_waiver": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "interest_waiver_requested": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "last_reminder_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "lot_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "notes": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "owner_names": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "proposed_frequency": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "proposed_instalment": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
+                "proposed_months": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "received_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "refusal_reasons": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "replied_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "reply_due_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "rule_pack": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 40
+                  }
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "source": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "RECEIVED"
+                  },
+                  "nullable": false
+                },
+                "submitted_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "payment_plan_requests_scheme_id_status_idx"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "payment_plan_requests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "payment_plan_requests_lot_id_idx"
+                  },
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "lot_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "payment_plan_requests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "lots"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "case_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "payment_plan_requests"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "debt_recovery_cases"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "lot_id"
+                  ],
+                  "name": "payment_plan_requests_lot_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "scheme_id",
+                    "status"
+                  ],
+                  "name": "payment_plan_requests_scheme_id_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "payment_plans": {
               "columns": {
+                "agreed_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
                 "approved_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -45798,12 +46591,26 @@
                 "case_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
-                  "nullable": false
+                  "nullable": true
                 },
                 "conditions": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
+                },
+                "contact_details": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "covers_current_levies": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
                 },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -45870,6 +46677,20 @@
                     "scale": 2
                   }
                 },
+                "interest_method": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "interest_owing": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
                 "interest_waived": {
                   "codecId": "pg/bool@1",
                   "dataType": "pg/bool",
@@ -45878,6 +46699,15 @@
                     "value": false
                   },
                   "nullable": false
+                },
+                "levies_owing": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
                 },
                 "lot_id": {
                   "codecId": "pg/uuid@1",
@@ -45893,6 +46723,24 @@
                   "codecId": "pg/int4@1",
                   "dataType": "pg/int4",
                   "nullable": false
+                },
+                "payment_methods": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "request_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "rule_pack": {
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
+                  "nullable": true,
+                  "typeParams": {
+                    "length": 40
+                  }
                 },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
@@ -45931,9 +46779,9 @@
               "foreignKeys": [
                 {
                   "index": {
-                    "name": "payment_plans_case_id_key"
+                    "name": "payment_plans_case_id_idx"
                   },
-                  "onDelete": "cascade",
+                  "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
@@ -45991,6 +46839,27 @@
                     "namespaceId": "public",
                     "tableName": "lots"
                   }
+                },
+                {
+                  "index": {
+                    "name": "payment_plans_request_id_key"
+                  },
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "request_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "payment_plans"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "payment_plan_requests"
+                  }
                 }
               ],
               "indexes": [
@@ -45998,8 +46867,8 @@
                   "columns": [
                     "case_id"
                   ],
-                  "name": "payment_plans_case_id_key",
-                  "unique": true
+                  "name": "payment_plans_case_id_idx",
+                  "unique": false
                 },
                 {
                   "columns": [
@@ -46007,6 +46876,13 @@
                   ],
                   "name": "payment_plans_lot_id_idx",
                   "unique": false
+                },
+                {
+                  "columns": [
+                    "request_id"
+                  ],
+                  "name": "payment_plans_request_id_key",
+                  "unique": true
                 },
                 {
                   "columns": [
@@ -58317,10 +59193,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "dde94df1233d06cd4ac75bb23c05e9e2c588d9b3b95dccf93d2d97817d136b8d"
+    "storageHash": "fef88172c963f6e866924b8aff2a4623de574a2dad53597bd422f4610929fefc"
   },
   "execution": {
-    "executionHash": "3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15",
+    "executionHash": "38fe1a63c62df3d1a0a9ea1fb81cac618336f1f71e6ec7b6f747a3e57a8f489c",
     "mutations": {
       "defaults": [
         {
@@ -58919,6 +59795,21 @@
           },
           "ref": {
             "entry": "payment_plan_instalments",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "payment_plan_requests",
             "field": "updated_at",
             "namespace": "public"
           }

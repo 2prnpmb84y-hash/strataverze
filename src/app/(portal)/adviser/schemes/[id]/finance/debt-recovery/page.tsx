@@ -10,6 +10,7 @@ import {
 import { db } from "@/prisma/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { Button } from "@/components/ui/button";
 import { DebtRecoveryListClient } from "./debt-recovery-client";
 
 const currency = (v: number) =>
@@ -74,6 +75,12 @@ export default async function DebtRecoveryPage({
         backHref={`/adviser/schemes/${id}/finance`}
         backLabel="Financials"
       />
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" href={`/adviser/schemes/${id}/finance/debt-recovery/payment-plans`}>
+          Payment plans
+        </Button>
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Cases" value={stats.totalCases} />

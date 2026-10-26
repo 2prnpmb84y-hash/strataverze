@@ -47,6 +47,18 @@ import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 /** The wording constants added in phase 1d: snapshotted on their own below, so adding them did not touch the snapshot above. */
 const WORDING = ["TERMINOLOGY", "CITATIONS", "HARDSHIP_INFORMATION", "DEBT_RECOVERY_GUIDANCE"];
 
+/**
+ * The NSW statutory workflows added in October 2026 (the gaps found by the
+ * multi-jurisdiction review), each with its own golden output below.
+ */
+const WORKFLOWS = ["PAYMENT_PLANS"] as const;
+
+describe("NSW statutory workflows (Oct 2026)", () => {
+  it("are the rules recorded", () => {
+    expect(Object.fromEntries(WORKFLOWS.map((n) => [n, (NSW as Record<string, unknown>)[n]]))).toMatchSnapshot();
+  });
+});
+
 describe("NSW wording (phase 1d)", () => {
   it("is the wording the platform used before", () => {
     expect(Object.fromEntries(WORDING.map((n) => [n, (NSW as Record<string, unknown>)[n]]))).toMatchSnapshot();
@@ -73,7 +85,7 @@ describe("NSW statutory constants", () => {
     // DEBT_RECOVERY_STEPS (moved into the pack unchanged in phase 1b) by the
     // debt recovery test at the end.
     const constants = Object.entries(statutory.statutoryRulesFor("NSW"))
-      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", ...WORDING].includes(k))
+      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", ...WORDING, ...WORKFLOWS].includes(k))
       .map(([k]) => k)
       .sort();
     expect(constants).toEqual([...names].sort());

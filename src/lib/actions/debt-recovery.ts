@@ -23,10 +23,6 @@ import {
   updateDebtRecoveryCase,
   createDebtRecoveryStep,
   updateDebtRecoveryStep,
-  createPaymentPlan,
-  updatePaymentPlan,
-  createInstalment,
-  updateInstalment,
   createDebtRecoveryDocument,
   logDebtRecoveryActivity,
   generateCaseNumber,
@@ -37,6 +33,7 @@ import {
 } from "@/lib/queries/debt-recovery";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
+import { stepPausedByPlan } from "@/lib/debt-recovery/payment-plans";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
 
@@ -152,6 +149,15 @@ export async function initiateDebtRecoveryAction(
       });
     }
 
+    // A plan already being followed for the lot (agreed before any case) is
+    // linked to the case, which starts in PAYMENT_PLAN: its recovery steps
+    // wait while the plan is followed.
+    const followed = await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(lotId), p.status.eq("ACTIVE"))).first();
+    if (followed) {
+      if (!followed.caseId) await db.orm.public.PaymentPlan.where((p) => p.id.eq(followed.id)).update({ caseId: newCase.id });
+      await updateDebtRecoveryCase(newCase.id, { status: "PAYMENT_PLAN" });
+    }
+
     // Log the activity
     await logDebtRecoveryActivity({
       caseId: newCase.id,
@@ -210,6 +216,13 @@ export async function updateDebtRecoveryCaseAction(
     if (excludeFromRecovery && !(exclusionReason ?? "").trim()) {
       return { error: "Give a reason for excluding this case from recovery" };
     }
+    if (status === "REFERRED_LEGAL" && caseRow.status !== "REFERRED_LEGAL") {
+      const followed = await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all();
+      const { rules } = await rulesForScheme(schemeId);
+      if (stepPausedByPlan("LEGAL_REFERRAL", followed, rules.PAYMENT_PLANS)) {
+        return { error: "A payment plan is being followed for this lot, so the case cannot be referred for legal recovery. Mark the plan as not followed first." };
+      }
+    }
 
     if (status) data.status = status;
     if (priority) data.priority = priority;
@@ -266,6 +279,15 @@ export async function completeDebtRecoveryStepAction(
     const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id, await lotOwnerIds(schemeId, caseRow.lotId));
     if (accessProblem) return { error: accessProblem };
     if (step.status === "COMPLETED") return { error: "This step is already complete" };
+
+    // No recovery action for levies covered by a payment plan being followed (the building's rule pack).
+    const [{ rules }, lotPlans] = await Promise.all([
+      rulesForScheme(schemeId),
+      db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all(),
+    ]);
+    if (stepPausedByPlan(step.stepType, lotPlans, rules.PAYMENT_PLANS)) {
+      return { error: "A payment plan is being followed for this lot, so this step waits. Mark the plan as not followed if instalments are missed." };
+    }
 
     await db.transaction(async (tx) => {
       await updateDebtRecoveryStep(
@@ -365,110 +387,6 @@ export async function closeDebtRecoveryCaseAction(
   }
 }
 
-// ─── Create Payment Plan ────────────────────────────────────────
-
-export async function createPaymentPlanAction(
-  caseId: string,
-  schemeId: string,
-  lotId: string,
-  formData: FormData,
-): Promise<ActionResult> {
-  try {
-    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    const caseRow = await getDebtRecoveryCaseById(caseId);
-    if (!caseRow || caseRow.schemeId !== schemeId || caseRow.lotId !== lotId) {
-      return { error: "Case not found" };
-    }
-    const accessProblem = caseAccessProblem(caseRow, schemeId, profile.id, await lotOwnerIds(schemeId, caseRow.lotId));
-    if (accessProblem) return { error: accessProblem };
-
-    const totalAmount = parseFloat(formData.get("totalAmount") as string);
-    const instalmentAmount = parseFloat(formData.get("instalmentAmount") as string);
-    const frequency = formData.get("frequency") as string;
-    const startDate = formData.get("startDate") as string;
-    const numberOfInstalments = parseInt(formData.get("numberOfInstalments") as string, 10);
-    const includesInterest = formData.get("includesInterest") === "on";
-    const includesOngoing = formData.get("includesOngoing") === "on";
-    const interestWaived = formData.get("interestWaived") === "on";
-    const conditions = formData.get("conditions") as string;
-
-    if (!totalAmount || !instalmentAmount || !frequency || !startDate || !numberOfInstalments) {
-      return { error: "Missing required payment plan fields" };
-    }
-
-    // Calculate end date based on frequency and instalments
-    const start = new Date(startDate);
-    const end = new Date(start);
-    const freqDays = frequency === "WEEKLY" ? 7 : frequency === "FORTNIGHTLY" ? 14 : 30;
-    end.setDate(end.getDate() + freqDays * numberOfInstalments);
-
-    const plan = await db.transaction(async (tx) => {
-      const created = await createPaymentPlan(
-        {
-          caseId,
-          schemeId,
-          lotId,
-          totalAmount,
-          instalmentAmount,
-          frequency,
-          startDate,
-          endDate: end.toISOString().split("T")[0],
-          numberOfInstalments,
-          includesInterest,
-          includesOngoing,
-          interestWaived,
-          conditions: conditions || undefined,
-        },
-        tx.orm,
-      );
-      // StrataVerze payment plan set-up fee, recoverable from the owner.
-      await captureUsageFee(tx.orm, {
-        schemeId,
-        code: "RECOVERY_STEP",
-        variant: "PAYMENT_PLAN",
-        sourceType: "PaymentPlan",
-        sourceId: created.id,
-        actorId: profile.id,
-        payerProfileId: caseRow.ownerId ?? null,
-        confirmedCents: confirmedCentsFrom(formData),
-      });
-      return created;
-    });
-
-    // Create instalment records
-    for (let i = 0; i < numberOfInstalments; i++) {
-      const dueDate = new Date(start);
-      dueDate.setDate(dueDate.getDate() + freqDays * i);
-      await createInstalment({
-        planId: plan.id,
-        instalmentNumber: i + 1,
-        dueDate: dueDate.toISOString().split("T")[0],
-        amount: instalmentAmount,
-      });
-    }
-
-    // Update case status
-    await updateDebtRecoveryCase(caseId, { status: "PAYMENT_PLAN" });
-
-    await logDebtRecoveryActivity({
-      caseId,
-      activityType: "PAYMENT_PLAN_CREATED",
-      description: `Payment plan created: ${numberOfInstalments} ${frequency.toLowerCase()} instalments of $${instalmentAmount.toFixed(2)}`,
-      performedBy: profile.id,
-    });
-
-    revalidatePath(`/adviser/schemes/${schemeId}`);
-
-    return { success: true, id: plan.id };
-  } catch (err) {
-    if (err instanceof AuthorisationError) return { error: err.message };
-    const feeError = feeErrorMessage(err);
-    if (feeError) return { error: feeError };
-    logError("Failed to create payment plan:", err);
-    return { error: "Failed to create payment plan" };
-  }
-}
-
 // ─── Record Instalment Payment ──────────────────────────────────
 
 export async function recordInstalmentPaymentAction(
@@ -492,49 +410,25 @@ export async function recordInstalmentPaymentAction(
     }
     if (instalment.status === "PAID") return { error: "This instalment is already paid" };
 
-    // A part payment does not clear the instalment (or, in turn, the case).
-    const fullyPaid = Math.round(amountPaid * 100) >= Math.round(Number(instalment.amount) * 100);
-    await updateInstalment(instalmentId, {
-      status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-      amountPaid,
-      paidAt: new Date().toISOString(),
+    // One way of recording plan payments: they add up, and the plan and its
+    // case are completed in one place when every instalment is paid.
+    const { recordPlanInstalmentPayment } = await import("@/lib/debt-recovery/payment-plan-requests");
+    const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+    await recordPlanInstalmentPayment({
+      schemeId,
+      planId: casePlan.id,
+      instalmentId,
+      amountCents: Math.round(amountPaid * 100),
+      paidOn: await schemeToday(schemeId),
+      actorId: profile.id,
     });
-
-    await logDebtRecoveryActivity({
-      caseId,
-      activityType: "PAYMENT_RECEIVED",
-      description: `Instalment payment of $${amountPaid.toFixed(2)} recorded`,
-      performedBy: profile.id,
-    });
-
-    // Check if all instalments are paid
-    const plan = await getPaymentPlanForCase(caseId);
-    if (plan) {
-      const { getInstalmentsForPlan } = await import("@/lib/queries/debt-recovery");
-      const instalments = await getInstalmentsForPlan(plan.id);
-      const allPaid = instalments.every((i) => i.status === "PAID");
-      if (allPaid) {
-        await updatePaymentPlan(plan.id, { status: "COMPLETED" });
-        await updateDebtRecoveryCase(caseId, {
-          status: "CLOSED_PAID",
-          closedAt: new Date().toISOString(),
-          closedReason: "All payment plan instalments completed",
-          currentStep: "CLOSED",
-        });
-        await logDebtRecoveryActivity({
-          caseId,
-          activityType: "CASE_CLOSED",
-          description: "Case closed — all payment plan instalments paid",
-          performedBy: profile.id,
-        });
-      }
-    }
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
 
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof Error && err.name === "PaymentPlanError") return { error: err.message };
     logError("Failed to record payment:", err);
     return { error: "Failed to record payment" };
   }

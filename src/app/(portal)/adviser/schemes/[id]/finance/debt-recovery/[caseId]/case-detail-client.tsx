@@ -14,8 +14,6 @@ type ChipStatus = "default" | "success" | "warning" | "danger";
 import {
   completeDebtRecoveryStepAction,
   closeDebtRecoveryCaseAction,
-  createPaymentPlanAction,
-  recordInstalmentPaymentAction,
   addDebtRecoveryNoteAction,
 } from "@/lib/actions/debt-recovery";
 
@@ -70,6 +68,7 @@ type PaymentPlan = {
   endDate: string;
   numberOfInstalments: number;
   status: string;
+  requestId: string | null;
 };
 
 type Instalment = {
@@ -608,22 +607,7 @@ export function CaseDetailClient({
 
           {/* Expanded Side Panel Content */}
           {sidePanel === "payment" && (
-            <PaymentPlanPanel
-              schemeId={schemeId}
-              caseId={debtCase.id}
-              lotId={debtCase.lotId}
-              totalOwed={debtCase.totalOwed}
-              paymentPlan={paymentPlan}
-              instalments={instalments}
-              isClosed={isClosed}
-              isPending={isPending}
-              startTransition={startTransition}
-              setError={setError}
-              setSuccess={setSuccess}
-              clearMessages={clearMessages}
-              router={router}
-              fee={recoveryFees.PAYMENT_PLAN ?? null}
-            />
+            <PaymentPlanPanel schemeId={schemeId} paymentPlan={paymentPlan} instalments={instalments} />
           )}
 
           {sidePanel === "documents" && (
@@ -964,275 +948,65 @@ function WizardStepContent({
 
 // ─── Payment Plan Panel ─────────────────────────────────────────
 
+/**
+ * The case's payment plan, read only. A plan starts from the owner's request
+ * on the standard form and the meeting's decision, on the Payment plans
+ * page, where instalments are recorded too.
+ */
 function PaymentPlanPanel({
   schemeId,
-  caseId,
-  lotId,
-  totalOwed,
   paymentPlan,
   instalments,
-  isClosed,
-  isPending,
-  startTransition,
-  setError,
-  setSuccess,
-  clearMessages,
-  router,
-  fee = null,
 }: {
   schemeId: string;
-  caseId: string;
-  lotId: string;
-  totalOwed: number;
   paymentPlan: PaymentPlan | null;
   instalments: Instalment[];
-  isClosed: boolean;
-  isPending: boolean;
-  startTransition: React.TransitionStartFunction;
-  setError: (v: string | null) => void;
-  setSuccess: (v: string | null) => void;
-  clearMessages: () => void;
-  router: ReturnType<typeof useRouter>;
-  fee?: FeeView | null;
 }) {
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const feeConfirmation = useFeeConfirmation(fee);
-
-  function handleCreatePlan(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    clearMessages();
-    const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
-      const result = await createPaymentPlanAction(
-        caseId,
-        schemeId,
-        lotId,
-        formData,
-      );
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setSuccess("Payment plan created");
-        setShowCreateForm(false);
-        router.refresh();
-      }
-    });
-  }
-
-  function handleRecordPayment(instalmentId: string, amount: number) {
-    clearMessages();
-    startTransition(async () => {
-      const result = await recordInstalmentPaymentAction(
-        instalmentId,
-        caseId,
-        schemeId,
-        amount,
-      );
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setSuccess("Payment recorded");
-        router.refresh();
-      }
-    });
-  }
-
-  if (paymentPlan) {
-    const paidCount = instalments.filter((i) => i.status === "PAID").length;
-    const totalPaid = instalments
-      .filter((i) => i.status === "PAID")
-      .reduce((sum, i) => sum + (i.amountPaid ?? 0), 0);
-
+  const plansHref = `/adviser/schemes/${schemeId}/finance/debt-recovery/payment-plans`;
+  if (!paymentPlan) {
     return (
       <Card>
-        <CardHeader
-          title="Payment Plan"
-          description={`${paymentPlan.frequency.toLowerCase()} instalments`}
-        />
-        <div className="p-4 pt-0 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs text-gray-500">Per Instalment</p>
-              <p className="text-sm font-semibold tabular-nums">
-                {currency(paymentPlan.instalmentAmount)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Progress</p>
-              <p className="text-sm font-semibold">
-                {paidCount} / {paymentPlan.numberOfInstalments}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-            <div
-              className="h-full rounded-full bg-turquoise transition-all"
-              style={{
-                width: `${(paidCount / paymentPlan.numberOfInstalments) * 100}%`,
-              }}
-            />
-          </div>
-
-          <p className="text-xs text-emerald-600 font-medium">
-            {currency(totalPaid)} paid so far
-          </p>
-
-          {/* Instalments list */}
-          <div className="divide-y divide-gray-100 border-t border-gray-100">
-            {instalments.map((inst) => (
-              <div
-                key={inst.id}
-                className="flex items-center justify-between py-2"
-              >
-                <div>
-                  <p className="text-xs font-medium text-gray-900">
-                    #{inst.instalmentNumber}
-                  </p>
-                  <p className="text-[10px] text-gray-500">
-                    {fmtDate(inst.dueDate)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold tabular-nums">
-                    {currency(inst.amount)}
-                  </p>
-                  {inst.status === "PAID" ? (
-                    <StatusChip status="Paid" variant="success" />
-                  ) : inst.status === "OVERDUE" ? (
-                    <StatusChip status="Overdue" variant="danger" />
-                  ) : !isClosed ? (
-                    <button
-                      onClick={() =>
-                        handleRecordPayment(inst.id, inst.amount)
-                      }
-                      disabled={isPending}
-                      className="text-[10px] font-medium text-turquoise hover:underline disabled:opacity-50"
-                    >
-                      Record
-                    </button>
-                  ) : (
-                    <StatusChip status="Pending" variant="default" />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="p-4 space-y-3 text-sm text-gray-600">
+          <p>No payment plan. A plan starts from the owner&apos;s request on the standard form, decided at a meeting of the owners corporation or the strata committee.</p>
+          <Button variant="secondary" href={plansHref}>Payment plans</Button>
         </div>
       </Card>
     );
   }
-
-  // No payment plan
-  if (!showCreateForm) {
-    return (
-      <Card>
-        <div className="p-4 text-center space-y-3">
-          <p className="text-sm text-gray-500">No payment plan created.</p>
-          {!isClosed && (
-            <Button
-              variant="secondary"
-              onClick={() => setShowCreateForm(true)}
-            >
-              Create Plan
-            </Button>
-          )}
-        </div>
-      </Card>
-    );
-  }
-
+  const paidCount = instalments.filter((i) => i.status === "PAID").length;
+  const totalPaid = instalments.reduce((sum, i) => sum + (i.amountPaid ?? 0), 0);
+  const statusLabel: Record<string, string> = { ACTIVE: "Being followed", DEFAULTED: "Not followed", COMPLETED: "Completed", CANCELLED: "Cancelled", PROPOSED: "Proposed" };
   return (
     <Card>
-      <CardHeader title="Create Payment Plan" />
-      <form onSubmit={handleCreatePlan} className="space-y-3 p-4 pt-0">
-        <input type="hidden" name="totalAmount" value={totalOwed} />
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">
-            Instalment Amount
-          </label>
-          <input
-            type="number"
-            name="instalmentAmount"
-            step="0.01"
-            required
-            placeholder="0.00"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise"
-          />
+      <CardHeader title="Payment Plan" description={`${statusLabel[paymentPlan.status] ?? paymentPlan.status} · ${paymentPlan.frequency.toLowerCase()} instalments`} />
+      <div className="p-4 pt-0 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-gray-500">Per Instalment</p>
+            <p className="text-sm font-semibold tabular-nums">{currency(paymentPlan.instalmentAmount)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Progress</p>
+            <p className="text-sm font-semibold">{paidCount} / {paymentPlan.numberOfInstalments}</p>
+          </div>
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">
-            Frequency
-          </label>
-          <select
-            name="frequency"
-            required
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise"
-          >
-            <option value="WEEKLY">Weekly</option>
-            <option value="FORTNIGHTLY">Fortnightly</option>
-            <option value="MONTHLY">Monthly</option>
-          </select>
+        <p className="text-xs text-emerald-600 font-medium">{currency(totalPaid)} paid so far</p>
+        <div className="divide-y divide-gray-100 border-t border-gray-100">
+          {instalments.map((inst) => (
+            <div key={inst.id} className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-xs font-medium text-gray-900">#{inst.instalmentNumber}</p>
+                <p className="text-[10px] text-gray-500">{fmtDate(inst.dueDate)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-semibold tabular-nums">{currency(inst.amount)}</p>
+                {inst.status === "PAID" ? <StatusChip status="Paid" variant="success" /> : inst.status === "PARTIALLY_PAID" ? <StatusChip status="Part paid" variant="warning" /> : <StatusChip status="Pending" variant="default" />}
+              </div>
+            </div>
+          ))}
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">
-            Start Date
-          </label>
-          <input
-            type="date"
-            name="startDate"
-            required
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-700">
-            Number of Instalments
-          </label>
-          <input
-            type="number"
-            name="numberOfInstalments"
-            min="1"
-            required
-            placeholder="12"
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-turquoise focus:outline-none focus:ring-1 focus:ring-turquoise"
-          />
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <label className="flex items-center gap-1.5 text-xs text-gray-700">
-            <input type="checkbox" name="includesInterest" className="rounded" />
-            Interest
-          </label>
-          <label className="flex items-center gap-1.5 text-xs text-gray-700">
-            <input type="checkbox" name="includesOngoing" className="rounded" />
-            Ongoing levies
-          </label>
-          <label className="flex items-center gap-1.5 text-xs text-gray-700">
-            <input type="checkbox" name="interestWaived" className="rounded" />
-            Interest waived by owners corporation resolution
-          </label>
-        </div>
-        <div className="flex justify-end gap-2 pt-1">
-          <Button
-            variant="ghost"
-            onClick={() => setShowCreateForm(false)}
-            type="button"
-          >
-            Cancel
-          </Button>
-          <FeeDisclosure
-            fee={fee}
-            scheduleHref={`/adviser/schemes/${schemeId}/finance/platform-fees#fee-schedule`}
-            confirmed={feeConfirmation.confirmed}
-            onConfirmedChange={feeConfirmation.setConfirmed}
-            idSuffix="-plan"
-          />
-          <Button variant="primary" type="submit" disabled={isPending || !feeConfirmation.ready}>
-            {isPending ? "Creating..." : "Create"}
-          </Button>
-        </div>
-      </form>
+        <Button variant="secondary" href={paymentPlan.requestId ? `${plansHref}/${paymentPlan.requestId}` : plansHref}>Open payment plan</Button>
+      </div>
     </Card>
   );
 }

@@ -121,6 +121,7 @@ export default async function DebtRecoveryCaseDetailPage({
               endDate: String(debtCase.paymentPlan.endDate),
               numberOfInstalments: debtCase.paymentPlan.numberOfInstalments,
               status: debtCase.paymentPlan.status,
+              requestId: debtCase.paymentPlan.requestId ?? null,
             }
           : null
       }
