@@ -2,13 +2,15 @@
  * Rule-set repository (DB access).
  *
  * Reads the active jurisdiction rule set from `meeting_rule_sets`, falling back
- * to the NSW seed when no row exists, and records an immutable snapshot of the
- * governing rule set against a meeting.
+ * to the jurisdiction's built-in rules (`@/config/statutory`) when no row
+ * exists, and records an immutable snapshot of the governing rule set against
+ * a meeting. A state without a rule pack is refused: it never borrows another
+ * jurisdiction's rules.
  */
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
+import { rulePackFor, UnsupportedJurisdictionError } from "@/config/statutory";
 import {
-  NSW_RULE_SET,
   snapshotRuleSet,
   type MeetingRuleSet,
   type QuorumRule,
@@ -30,7 +32,7 @@ type RuleSetRow = {
   notes: string | null;
 };
 
-function rowToRuleSet(row: RuleSetRow): MeetingRuleSet {
+function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   return {
     state: row.state,
     version: row.version,
@@ -46,25 +48,28 @@ function rowToRuleSet(row: RuleSetRow): MeetingRuleSet {
     // Fall back to the seed config when an older rule-set row lacks it.
     preMeetingEvoting:
       (row.preMeetingEvoting as MeetingRuleSet["preMeetingEvoting"]) ??
-      NSW_RULE_SET.preMeetingEvoting,
+      seed.preMeetingEvoting,
     notes: row.notes ?? undefined,
   };
 }
 
 /**
- * The active rule set for a state. Falls back to the built-in NSW seed when the
- * table has no active row (for example before the seed migration has run).
+ * The active rule set for a state. Falls back to the state's built-in rules
+ * when the table has no active row (for example before the seed migration has
+ * run). Throws UnsupportedJurisdictionError for a state without a rule pack.
  */
 export async function getActiveRuleSet(state: string): Promise<MeetingRuleSet> {
+  const pack = rulePackFor(state);
+  if (!pack) throw new UnsupportedJurisdictionError((state ?? "").trim().toUpperCase());
+  const seed = pack.rules.MEETING_RULES;
+
   const row = await db.orm.public.MeetingRuleSet
-    .where((r) => and(r.state.eq(state), r.isActive.eq(true)))
+    .where((r) => and(r.state.eq(pack.state), r.isActive.eq(true)))
     .orderBy((r) => r.effectiveFrom.desc())
     .first();
 
-  if (!row) {
-    return state === "NSW" ? NSW_RULE_SET : { ...NSW_RULE_SET, state };
-  }
-  return rowToRuleSet(row as unknown as RuleSetRow);
+  if (!row) return seed;
+  return rowToRuleSet(row as unknown as RuleSetRow, seed);
 }
 
 /**

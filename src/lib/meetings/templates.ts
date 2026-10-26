@@ -12,6 +12,7 @@
  * template defaults for review, not asserted legal conclusions; see the
  * strategy doc section 4.
  */
+import { rulePackFor, UnsupportedJurisdictionError } from "@/config/statutory";
 import type { MeetingType, ResolutionCategory } from "./rules";
 
 export interface TemplateAgendaItem {
@@ -129,24 +130,43 @@ export const NSW_MOTION_LIBRARY: MotionLibraryEntry[] = [
   },
 ];
 
+/**
+ * Agenda templates and motion libraries by state. A state with no entry here
+ * has no templates: it never borrows the NSW wording (multi-jurisdiction plan,
+ * phase 1).
+ */
+const TEMPLATES_BY_STATE: Readonly<Record<string, { agm: TemplateAgendaItem[]; motions: MotionLibraryEntry[] }>> = {
+  NSW: { agm: NSW_AGM_TEMPLATE, motions: NSW_MOTION_LIBRARY },
+};
+
+function templatesFor(state: string) {
+  const key = (state ?? "").trim().toUpperCase();
+  if (!rulePackFor(key) || !Object.prototype.hasOwnProperty.call(TEMPLATES_BY_STATE, key)) {
+    throw new UnsupportedJurisdictionError(key);
+  }
+  return TEMPLATES_BY_STATE[key];
+}
+
 /** The agenda template for a meeting type (seed; DB override is a later layer). */
 export function getAgendaTemplate(
-  _state: string,
+  state: string,
   meetingType: MeetingType,
 ): TemplateAgendaItem[] {
+  const t = templatesFor(state);
   if (meetingType === "AGM" || meetingType === "FIRST_AGM") {
-    return NSW_AGM_TEMPLATE;
+    return t.agm;
   }
   return [];
 }
 
 /** The motion library for a meeting type (seed; DB override is a later layer). */
 export function getMotionLibrary(
-  _state: string,
+  state: string,
   meetingType?: MeetingType,
 ): MotionLibraryEntry[] {
-  if (!meetingType) return NSW_MOTION_LIBRARY;
-  return NSW_MOTION_LIBRARY.filter(
+  const { motions } = templatesFor(state);
+  if (!meetingType) return motions;
+  return motions.filter(
     (m) => !m.meetingTypes || m.meetingTypes.includes(meetingType),
   );
 }

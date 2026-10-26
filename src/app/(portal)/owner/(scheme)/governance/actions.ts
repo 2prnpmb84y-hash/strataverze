@@ -11,6 +11,7 @@ import {
 } from "@/lib/queries/schemes";
 import { notifyMeetingScheduled } from "@/lib/notifications";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
 import {
   validateMeetingSetup,
   createMeetingWithRuleSnapshot,
@@ -64,7 +65,13 @@ export async function createCommitteeMeetingAction(
     joinDetails: ((formData.get("joinDetails") as string) ?? "").trim() || null,
   };
 
-  const ruleSet = await getActiveRuleSet(state);
+  let ruleSet;
+  try {
+    ruleSet = await getActiveRuleSet(state);
+  } catch (err) {
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    throw err;
+  }
   const { errors } = validateMeetingSetup(input, ruleSet);
   if (Object.keys(errors).length > 0) return { fieldErrors: errors };
 
