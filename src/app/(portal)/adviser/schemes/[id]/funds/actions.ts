@@ -20,13 +20,10 @@ function validateFundForm(formData: FormData) {
 
   const name = formData.get("name") as string | null;
   const fundType = formData.get("fundType") as string | null;
-  const balance = formData.get("balance") as string | null;
 
   if (!name?.trim()) errors.name = "Fund name is required.";
   if (!fundType || !FUND_TYPES.includes(fundType))
     errors.fundType = "Select a valid fund type.";
-  if (balance !== null && balance !== "" && isNaN(Number(balance)))
-    errors.balance = "Balance must be a valid number.";
 
   return {
     errors,
@@ -34,7 +31,6 @@ function validateFundForm(formData: FormData) {
     data: {
       name: name?.trim() ?? "",
       fundType: fundType ?? "ADMINISTRATIVE",
-      balance: balance ? Number(balance) : 0,
     },
   };
 }
@@ -91,7 +87,8 @@ export async function updateFundAction(
     if (!isValid) return { fieldErrors: errors };
 
     assertInScheme(await getFundById(fundId), schemeId, "Fund");
-    await updateFund(schemeId, fundId, { name: data.name, balance: data.balance });
+    // The balance comes from the ledger: only the name can be changed (review B2).
+    await updateFund(schemeId, fundId, { name: data.name });
     revalidatePath(`/adviser/schemes/${schemeId}/funds/${fundId}`);
     return {};
   } catch (err) {

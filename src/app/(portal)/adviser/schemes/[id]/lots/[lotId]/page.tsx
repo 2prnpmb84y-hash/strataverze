@@ -283,11 +283,11 @@ export default async function LotDetailPage({
                 <CardHeader title="Financial Snapshot" />
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                   <SnapshotStat
-                    label="Opening"
+                    label="Brought forward"
                     value={lot.financials.opening}
                   />
                   <SnapshotStat
-                    label="+Annual"
+                    label="+Levies"
                     value={lot.financials.annual}
                   />
                   <SnapshotStat
@@ -295,18 +295,18 @@ export default async function LotDetailPage({
                     value={lot.financials.special}
                   />
                   <SnapshotStat
-                    label="~Paid"
+                    label="+Interest charged"
+                    value={lot.financials.interest}
+                  />
+                  <SnapshotStat
+                    label="−Paid"
                     value={lot.financials.paid}
                     className="text-green-600"
                   />
                   <SnapshotStat
-                    label="~Closing"
+                    label="=Owing"
                     value={lot.financials.closing}
                     className="font-semibold"
-                  />
-                  <SnapshotStat
-                    label="Interest"
-                    value={lot.financials.interestPaid}
                   />
                 </div>
               </Card>

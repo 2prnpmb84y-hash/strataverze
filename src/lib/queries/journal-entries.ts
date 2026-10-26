@@ -6,6 +6,7 @@ import type {
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
 import { getFinancialPeriodsForScheme } from "./financial-periods";
+import { assertFundIntegrity } from "@/lib/finance/fund-integrity";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric(value: number | string): Numeric<12, 2> {
@@ -246,6 +247,10 @@ export async function createJournalEntry(data: CreateJournalEntryInput) {
     throw new Error("Journal entry must have at least one line");
   }
 
+  // Each fund balances on its own, and each account is used for its own fund
+  // (financials review B1, 26 Oct 2026).
+  await assertFundIntegrity(db.orm, data.schemeId, data.lines);
+
   return db.transaction(async (tx) => {
     const entry = await tx.orm.public.JournalEntry.create({
       schemeId: data.schemeId,
@@ -306,6 +311,10 @@ export async function postJournalEntry(
   if (entry.status !== "DRAFT") {
     throw new Error("Only draft journal entries can be posted.");
   }
+
+  // Checked again at posting, for drafts saved before the check existed.
+  const lines = await db.orm.public.JournalLine.where((l) => l.journalEntryId.eq(entryId)).limit(10000).all();
+  await assertFundIntegrity(db.orm, entry.schemeId, lines.map((l) => ({ accountCodeId: l.accountCodeId, fundId: l.fundId, debit: l.debit, credit: l.credit })));
 
   // Validate against financial period unless explicitly skipped
   if (!skipPeriodCheck) {

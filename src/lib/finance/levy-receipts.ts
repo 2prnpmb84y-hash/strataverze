@@ -122,9 +122,13 @@ export async function receiptLevyPayments(input: {
 
   let journalEntryId: string | null = null;
   if (canPost) {
+    // From suspense: the suspense account is kept in one fund, so a payment
+    // for the other fund moves the money there in the bank (review B1).
+    const bank = input.debitFrom === "SUSPENSE" ? await getSystemAccountBySubType(input.schemeId, "BANK", "ADMINISTRATIVE") : null;
+    const holding = input.debitFrom === "SUSPENSE" && debitAccount!.fundId && bank ? { fundId: debitAccount!.fundId, bankAccountId: bank.id } : undefined;
     const lines = receiptJournalLines(
       parts,
-      { debitAccountId: debitAccount!.id, receivableByFund, advanceByFund },
+      { debitAccountId: debitAccount!.id, receivableByFund, advanceByFund, holding },
       input.debitFrom === "SUSPENSE" ? "Suspense cleared — levy payment identified" : "Bank receipt — levy payment",
     );
     const entryNumber = await getNextEntryNumber(input.schemeId);

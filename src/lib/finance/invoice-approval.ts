@@ -27,6 +27,7 @@ import {
   type ControlDecision,
   type InvoiceForControls,
 } from "./payment-controls";
+import { accountFundProblem } from "./fund-integrity";
 
 export class PaymentControlError extends Error {}
 
@@ -100,6 +101,13 @@ export async function authoriseSupplierInvoice(input: {
   if (decision.result === "blocked") throw new PaymentControlError(decision.reason);
   const conflict = await contractorConflict(loaded.invoice.supplierId, input.actorId);
   if (conflict) throw new PaymentControlError(conflict);
+  // The approval posts the expense to the invoice's fund: refuse now, before
+  // any approval is recorded, if the account belongs to the other fund
+  // (financials review B1). Invoices saved before this check could hold one.
+  if (loaded.invoice.accountCodeId) {
+    const fundProblem = await accountFundProblem(db.orm, input.schemeId, loaded.invoice.accountCodeId, loaded.invoice.fundId);
+    if (fundProblem) throw new PaymentControlError(`${fundProblem} Cancel this invoice and enter it again with an account of the invoice's fund.`);
+  }
 
   const asMember = members.find((m) => m.profileId === input.actorId && isEligibleApprover(m, settings.policy));
   const role = asMember ? (asMember.role === "COMMITTEE" ? "TREASURER" : asMember.role) : "UNKNOWN";

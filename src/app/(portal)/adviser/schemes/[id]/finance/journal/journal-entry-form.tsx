@@ -8,6 +8,7 @@ import {
   SelectField,
 } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
+import { fundImbalances } from "@/lib/finance/fund-balance-check";
 
 interface JournalLine {
   accountCodeId: string;
@@ -66,8 +67,11 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
     (sum, l) => sum + (parseFloat(l.credit) || 0),
     0,
   );
+  // Each fund must balance on its own: a journal cannot move money between
+  // funds (financials review B1, 26 Oct 2026).
+  const fundGaps = fundImbalances(lines, funds);
   const isBalanced =
-    Math.abs(totalDebits - totalCredits) < 0.01 && totalDebits > 0;
+    Math.abs(totalDebits - totalCredits) < 0.01 && totalDebits > 0 && fundGaps.length === 0;
 
   const entryTypeOptions = [
     { value: "MANUAL", label: "Manual Entry" },
@@ -304,8 +308,13 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
             className={isBalanced ? "text-green-600" : "text-red-500"}
           >
             {isBalanced
-              ? "Balanced"
-              : `Out of balance by $${Math.abs(totalDebits - totalCredits).toFixed(2)}`}
+              ? "Balanced in each fund"
+              : totalDebits === 0 && totalCredits === 0
+                ? "Enter the debits and credits"
+                : Math.abs(totalDebits - totalCredits) >= 0.01
+                  ? `Out of balance by $${Math.abs(totalDebits - totalCredits).toFixed(2)}`
+                  : fundGaps.map((g) => `${g.label} out of balance by $${g.gap.toFixed(2)}`).join("; ") +
+                    ". Each fund must balance on its own."}
           </span>
         </div>
       </div>

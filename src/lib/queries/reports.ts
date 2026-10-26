@@ -6,6 +6,10 @@ import { getAdoptedPlan, isCapitalWorksFund } from "@/lib/finance/capital-works-
 import { spendByYear } from "@/lib/finance/capital-works-plan";
 import { levyIncomeAccountPicker, recognisedIncomeExpense, type AccountingBasis, type BasisEntry, type RecognisedLine } from "@/lib/finance/accounting-basis";
 import { LEDGER_STATUSES, inLedger } from "@/lib/finance/ledger-status";
+import { fundPositions, getFundPositions, ledgerLinesUpTo } from "@/lib/finance/fund-position";
+import { NOT_ARREARS_STATUSES, arrearsCents, toArrearsNotice } from "@/lib/finance/arrears";
+import { todayInSydney } from "@/lib/onboarding/property-onboarding";
+import { getBudgetVsActual } from "./budget";
 import { migratedInvoiceEntries } from "@/lib/finance/migrated-invoices";
 import { priorYearActualLines } from "@/lib/finance/prior-year-actuals";
 
@@ -306,9 +310,9 @@ export async function getAgedArrearsReport(
   // Fetch all levy notices with outstanding balances
   // Planned notices (DRAFT) are not owed yet; written-off ones are not owed.
   const notices = await db.orm.public.LevyNotice
-    .where((ln) => and(ln.schemeId.eq(schemeId), ln.status.notIn(["DRAFT", "WRITTEN_OFF"])))
+    .where((ln) => and(ln.schemeId.eq(schemeId), ln.status.notIn([...NOT_ARREARS_STATUSES])))
     .include("lot")
-    .limit(2000)
+    .limit(100_000)
     .all();
 
   const asAt = new Date(asAtDate);
@@ -337,7 +341,7 @@ export async function getAgedArrearsReport(
         days90: 0,
         days90Plus: 0,
         total: 0,
-        interestCharged: Number(notice.interestCharged ?? 0),
+        interestCharged: 0,
       };
     }
 
@@ -630,150 +634,99 @@ export interface FundSummaryItem {
   fundId: string;
   fundName: string;
   fundType: string;
+  /** Fund balance (assets less liabilities) at the end of the day before the period. */
   openingBalance: number;
   totalIncome: number;
   totalExpenses: number;
+  /**
+   * Other changes to the fund balance in the period: the opening balances
+   * brought forward at takeover, if the takeover falls in the period.
+   */
+  broughtForward: number;
   netMovement: number;
+  /** Fund balance at the end of the period (equals the trial balance). */
   closingBalance: number;
   totalLevied: number;
   totalCollected: number;
+  /** Arrears (levy and interest owing on notices past their due date), from src/lib/finance/arrears.ts. */
   outstandingLevies: number;
+}
+
+/** The day before a YYYY-MM-DD date. */
+function dayBeforeOf(day: string): string {
+  const t = Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8, 10))) - 86_400_000;
+  return new Date(t).toISOString().slice(0, 10);
 }
 
 /**
  * Generate a fund summary showing the financial position per fund.
- * Combines journal entry aggregates with levy collection data.
+ *
+ * Balances come from the ledger (src/lib/finance/fund-position.ts), so they
+ * include the opening balances brought forward at takeover and agree with
+ * the trial balance (financials review B3, 26 Oct 2026):
+ *   opening + income - expenses + brought forward = closing.
  */
 export async function getFundSummaryReport(
   schemeId: string,
   startDate: string,
   endDate: string,
 ): Promise<FundSummaryItem[]> {
-  try {
-  // Fetch funds for the scheme
   const funds = await db.orm.public.Fund
     .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
     .limit(20)
     .all();
-
   if (funds.length === 0) return [];
 
-  // Fetch all posted journal entries in the period
-  const periodEntries = await db.orm.public.JournalEntry
-    .where((je) =>
-      and(
-        je.schemeId.eq(schemeId),
-        je.status.in(LEDGER_STATUSES),
-        je.transactionDate.gte(toTimestamp(startDate)),
-        je.transactionDate.lte(toTimestamp(endDate)),
-      ),
-    )
-    .include("lines", (l) => l.include("accountCode").include("fund"))
-    .limit(5000)
-    .all();
+  const start = startDate.slice(0, 10);
+  const end = endDate.slice(0, 10);
+  const lines = await ledgerLinesUpTo(schemeId, end);
+  const opening = fundPositions(lines, dayBeforeOf(start));
+  const closing = fundPositions(lines, end);
 
-  // Fetch entries before the period for opening balances
-  const priorEntries = await db.orm.public.JournalEntry
-    .where((je) =>
-      and(
-        je.schemeId.eq(schemeId),
-        je.status.in(LEDGER_STATUSES),
-        je.transactionDate.lt(toTimestamp(startDate)),
-      ),
-    )
-    .include("lines", (l) => l.include("accountCode").include("fund"))
-    .limit(5000)
-    .all();
-
-  // Fetch levy notices for the scheme
   // Issued notices only: planned ones (DRAFT) are not levied yet.
   const levyNotices = await db.orm.public.LevyNotice
     .where((ln) => and(ln.schemeId.eq(schemeId), ln.status.neq("DRAFT")))
-    .include("fund")
-    .limit(5000)
+    .limit(100_000)
     .all();
+  // Arrears on the period's last day, or today for a period not yet over.
+  const today = todayInSydney();
+  const arrearsDay = end < today ? end : today;
 
-  const summaries: FundSummaryItem[] = [];
-
-  for (const fund of funds) {
-    // Calculate opening balance from prior entries (net assets = assets - liabilities)
-    let openingBalance = Number(fund.balance ?? 0);
-    let priorNet = 0;
-    for (const entry of priorEntries) {
-      for (const line of entry.lines) {
-        if (line.fundId !== fund.id) continue;
-        if (!line.accountCode) continue;
-        const accountType = String(line.accountCode.accountType);
-        const debit = Number(line.debit ?? 0);
-        const credit = Number(line.credit ?? 0);
-
-        if (accountType === "INCOME") {
-          priorNet += credit - debit;
-        } else if (accountType === "EXPENSE") {
-          priorNet -= debit - credit;
-        }
+  return funds.map((fund) => {
+    let income = 0;
+    let expenses = 0;
+    for (const e of lines) {
+      if (e.date < start || e.date > end) continue;
+      for (const l of e.lines) {
+        if (l.fundId !== fund.id) continue;
+        if (l.accountType === "INCOME") income += l.creditCents - l.debitCents;
+        else if (l.accountType === "EXPENSE") expenses += l.debitCents - l.creditCents;
       }
     }
-    // If there are prior entries, use the calculated balance
-    if (priorEntries.length > 0) {
-      openingBalance = priorNet;
-    }
+    const openingCents = opening.get(fund.id)?.balanceCents ?? 0;
+    const closingCents = closing.get(fund.id)?.balanceCents ?? 0;
+    const broughtForward = closingCents - openingCents - (income - expenses);
 
-    // Calculate current period income and expenses
-    let totalIncome = 0;
-    let totalExpenses = 0;
-
-    for (const entry of periodEntries) {
-      for (const line of entry.lines) {
-        if (line.fundId !== fund.id) continue;
-        if (!line.accountCode) continue;
-        const accountType = String(line.accountCode.accountType);
-        const debit = Number(line.debit ?? 0);
-        const credit = Number(line.credit ?? 0);
-
-        if (accountType === "INCOME") {
-          totalIncome += credit - debit;
-        } else if (accountType === "EXPENSE") {
-          totalExpenses += debit - credit;
-        }
-      }
-    }
-
-    const netMovement = totalIncome - totalExpenses;
-    const closingBalance = openingBalance + netMovement;
-
-    // Levy collection data for this fund
     const fundNotices = levyNotices.filter((n) => n.fundId === fund.id);
-    const totalLevied = fundNotices.reduce(
-      (sum, n) => sum + Number(n.amountDue ?? 0),
-      0,
-    );
-    const totalCollected = fundNotices.reduce(
-      (sum, n) => sum + Number(n.amountPaid ?? 0),
-      0,
-    );
+    const totalLevied = fundNotices.reduce((sum, n) => sum + Math.round(Number(n.amountDue ?? 0) * 100), 0);
+    const totalCollected = fundNotices.reduce((sum, n) => sum + Math.round(Number(n.amountPaid ?? 0) * 100), 0);
+    const arrears = arrearsCents(fundNotices.map(toArrearsNotice), arrearsDay).totalCents;
 
-    summaries.push({
+    return {
       fundId: fund.id,
       fundName: String(fund.name),
       fundType: String(fund.fundType),
-      openingBalance: Math.round(openingBalance * 100) / 100,
-      totalIncome: Math.round(totalIncome * 100) / 100,
-      totalExpenses: Math.round(totalExpenses * 100) / 100,
-      netMovement: Math.round(netMovement * 100) / 100,
-      closingBalance: Math.round(closingBalance * 100) / 100,
-      totalLevied: Math.round(totalLevied * 100) / 100,
-      totalCollected: Math.round(totalCollected * 100) / 100,
-      outstandingLevies: Math.round((totalLevied - totalCollected) * 100) / 100,
-    });
-  }
-
-  return summaries;
-
-  } catch {
-    // Table may not exist yet
-    return [];
-  }
+      openingBalance: openingCents / 100,
+      totalIncome: income / 100,
+      totalExpenses: expenses / 100,
+      broughtForward: broughtForward / 100,
+      netMovement: (income - expenses) / 100,
+      closingBalance: closingCents / 100,
+      totalLevied: totalLevied / 100,
+      totalCollected: totalCollected / 100,
+      outstandingLevies: arrears / 100,
+    };
+  });
 }
 
 // ─── Bank Reconciliation Report ─────────────────────────────────
@@ -1155,7 +1108,10 @@ export async function getCommitteeReportingPack(
   );
 
   // 3. Aged arrears snapshot
-  const arrearsItems = await getAgedArrearsReport(schemeId, endDate);
+  // Arrears on the period's last day, or today for a period not yet over, as
+  // on the other screens (review B11).
+  const todayForArrears = todayInSydney();
+  const arrearsItems = await getAgedArrearsReport(schemeId, endDate.slice(0, 10) < todayForArrears ? endDate.slice(0, 10) : todayForArrears);
   const arrearsSnapshot: CommitteeArrearsSnapshot = {
     current: 0,
     days30: 0,
@@ -1179,7 +1135,9 @@ export async function getCommitteeReportingPack(
   arrearsSnapshot.days60 = Math.round(arrearsSnapshot.days60 * 100) / 100;
   arrearsSnapshot.days90 = Math.round(arrearsSnapshot.days90 * 100) / 100;
   arrearsSnapshot.days90Plus = Math.round(arrearsSnapshot.days90Plus * 100) / 100;
-  arrearsSnapshot.total = Math.round(arrearsSnapshot.total * 100) / 100;
+  // Arrears are what is past due (src/lib/finance/arrears.ts, review B11):
+  // amounts not yet due are shown as current but not counted as arrears.
+  arrearsSnapshot.total = Math.round((arrearsSnapshot.total - arrearsSnapshot.current) * 100) / 100;
 
   // 4. Budget vs actual per fund
   const funds = await db.orm.public.Fund
@@ -1189,95 +1147,28 @@ export async function getCommitteeReportingPack(
 
   const budgetComparisons: CommitteeBudgetComparison[] = [];
 
+  // The same comparison as the Budget page (src/lib/queries/budget.ts): every
+  // account with a budget line or activity, the scheme's own financial year,
+  // and totals for expenditure (financials review B10).
   for (const fund of funds) {
-    // Check if budget lines exist for this fund/year
-    const budgetLines = await db.orm.public.BudgetLine
-      .where((b) =>
-        and(b.fundId.eq(fund.id), b.financialYear.eq(financialYear)),
-      )
-      .limit(1)
-      .all();
-
-    if (budgetLines.length === 0) continue;
-
-    // Get account codes for the scheme
-    const accountCodes = await db.orm.public.AccountCode
-      .where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true)))
-      .limit(500)
-      .all();
-    const accountMap = new Map(accountCodes.map((a) => [a.id, a]));
-
-    // Get all budget lines for this fund
-    const allBudgetLines = await db.orm.public.BudgetLine
-      .where((b) =>
-        and(b.fundId.eq(fund.id), b.financialYear.eq(financialYear)),
-      )
-      .limit(200)
-      .all();
-
-    // Get actual amounts from posted journal entries
-    const journalLines = await db.orm.public.JournalLine
-      .where((jl) => jl.fundId.eq(fund.id))
-      .include("journalEntry")
-      .limit(50000)
-      .all();
-
-    const fyStart = `${financialYear}-07-01`;
-    const fyEnd = `${financialYear + 1}-06-30`;
-
-    const postedLines = journalLines.filter((jl) => {
-      const entry = jl.journalEntry;
-      if (!entry || entry.schemeId !== schemeId || !inLedger(entry.status)) return false;
-      const txDate = String(entry.transactionDate).slice(0, 10);
-      return txDate >= fyStart && txDate <= fyEnd;
-    });
-
-    // Net of credits, so a reversed invoice and its reversal cancel out (and
-    // the figure matches the drill-down behind it).
-    const actualCents = new Map<string, number>();
-    for (const line of postedLines) {
-      const account = accountMap.get(line.accountCodeId);
-      if (!account) continue;
-      const net = Math.round(Number(line.debit ?? 0) * 100) - Math.round(Number(line.credit ?? 0) * 100);
-      const current = actualCents.get(line.accountCodeId) ?? 0;
-      if (account.accountType === "EXPENSE") {
-        actualCents.set(line.accountCodeId, current + net);
-      } else if (account.accountType === "INCOME") {
-        actualCents.set(line.accountCodeId, current - net);
-      }
-    }
-    const actualsByAccount = new Map([...actualCents].map(([k, c]) => [k, c / 100]));
-
-    const lines = allBudgetLines.map((bl) => {
-      const account = accountMap.get(bl.accountCodeId);
-      const budgetAmount = Number(bl.budgetAmount);
-      const actualAmount = actualsByAccount.get(bl.accountCodeId) ?? 0;
-      const variance = budgetAmount - actualAmount;
-      return {
-        accountCodeId: bl.accountCodeId,
-        accountCode: account ? String(account.code) : "",
-        accountName: account ? String(account.name) : "Unknown",
-        budgetAmount,
-        actualAmount,
-        variance,
-        variancePercent: budgetAmount !== 0 ? (variance / budgetAmount) * 100 : 0,
-      };
-    }).sort((a, b) => a.accountCode.localeCompare(b.accountCode));
-
-    const totalBudget = lines.reduce((s, l) => s + l.budgetAmount, 0);
-    const totalActual = lines.reduce((s, l) => s + l.actualAmount, 0);
-    const totalVariance = totalBudget - totalActual;
-
+    const c = await getBudgetVsActual(schemeId, fund.id, financialYear);
+    if (c.lines.length === 0) continue;
     budgetComparisons.push({
       fundId: fund.id,
       fundName: String(fund.name),
-      totalBudget: Math.round(totalBudget * 100) / 100,
-      totalActual: Math.round(totalActual * 100) / 100,
-      totalVariance: Math.round(totalVariance * 100) / 100,
-      variancePercent: totalBudget !== 0
-        ? Math.round(((totalVariance / totalBudget) * 100) * 100) / 100
-        : 0,
-      lines,
+      totalBudget: c.totalBudget,
+      totalActual: c.totalActual,
+      totalVariance: c.totalVariance,
+      variancePercent: c.totalBudget !== 0 ? Math.round(((c.totalVariance / c.totalBudget) * 100) * 100) / 100 : 0,
+      lines: c.lines.map((l) => ({
+        accountCodeId: l.accountCodeId,
+        accountCode: l.accountCode,
+        accountName: l.accountName,
+        budgetAmount: l.budgetAmount,
+        actualAmount: l.actualAmount,
+        variance: l.variance,
+        variancePercent: l.variancePercent,
+      })),
     });
   }
 
@@ -1335,10 +1226,10 @@ export async function getCommitteeReportingPack(
       ? Math.round(((totalCollected / totalLevied) * 100) * 100) / 100
       : 100;
 
-  const cashPosition = bankSummaries.reduce(
-    (s, b) => s + b.closingBalance,
-    0,
-  );
+  // Cash from the ledger (each fund's share of the bank) at the period end,
+  // not the last reconciled balance, which may never have been entered
+  // (financials review B5).
+  const cashPosition = [...(await getFundPositions(schemeId, endDate.slice(0, 10))).values()].reduce((s, p) => s + p.cashCents, 0) / 100;
 
   // Period label
   const startMonth = new Date(startDate).toLocaleDateString("en-AU", {
@@ -1435,16 +1326,10 @@ export async function getCashFlowForecast(
     .first();
   const schemeName = scheme ? String(scheme.name) : "Unknown Scheme";
 
-  // 2. Starting balance from bank accounts
-  const bankAccounts = await db.orm.public.SchemeBankAccount
-    .where((ba) => and(ba.schemeId.eq(schemeId), ba.isActive.eq(true)))
-    .limit(10)
-    .all();
-
-  const startingBalance = bankAccounts.reduce(
-    (sum, ba) => sum + Number(ba.lastReconciledBalance ?? 0),
-    0,
-  );
+  // 2. Starting balance: cash in the bank today from the ledger (every
+  // fund's bank lines), not the last reconciled balance, which may never have
+  // been entered (financials review B5).
+  const startingBalance = [...(await getFundPositions(schemeId)).values()].reduce((s, p) => s + p.cashCents, 0) / 100;
 
   // 3. Build month buckets
   const now = new Date();
@@ -1741,11 +1626,13 @@ export async function getFundBalanceProjections(
     );
   }
 
-  // 6. Build projections per fund
+  // 6. Build projections per fund, starting from each fund's ledger balance
+  // today (financials review B5), not the stored fund balance.
   const projections: FundProjection[] = [];
+  const positions = await getFundPositions(schemeId);
 
   for (const fund of funds) {
-    const currentBalance = Number(fund.balance);
+    const currentBalance = (positions.get(fund.id)?.balanceCents ?? 0) / 100;
     // Use levy schedule income if available, otherwise budget income
     const annualIncome =
       fundLevyIncome.get(fund.id) ?? fundBudgetIncome.get(fund.id) ?? 0;
@@ -2073,22 +1960,25 @@ export async function getDashboardFinancialSummary(
           je.transactionDate.lte(toTimestamp(monthEnd)),
         ),
       )
-      .include("lines")
-      .limit(500)
+      .include("lines", (l) => l.include("accountCode"))
+      .limit(50_000)
       .all();
 
-    let cashIn = 0;
-    let cashOut = 0;
+    // Money into and out of the bank this month: the bank account's debits
+    // and credits. Every journal balances, so adding all credits and all
+    // debits gave the same figure twice (financials review B2). Opening
+    // balances brought forward and moves between the funds are not cash flow.
+    let inCents = 0;
+    let outCents = 0;
     for (const entry of entries) {
-      for (const line of entry.lines) {
-        const debit = Number(line.debit ?? 0);
-        const credit = Number(line.credit ?? 0);
-        // In double-entry: credits increase income/liability (cash in),
-        // debits increase expense/asset (cash out)
-        cashIn += credit;
-        cashOut += debit;
-      }
+      if (entry.sourceType === "DATA_MIGRATION") continue;
+      const bank = entry.lines.filter((l) => l.accountCode?.accountSubType === "BANK");
+      const net = bank.reduce((s, l) => s + Math.round(Number(l.debit ?? 0) * 100) - Math.round(Number(l.credit ?? 0) * 100), 0);
+      if (net > 0) inCents += net;
+      else outCents -= net;
     }
+    const cashIn = inCents / 100;
+    const cashOut = outCents / 100;
 
     // Fetch outstanding supplier invoices
     const invoices = await db.orm.public.SupplierInvoice

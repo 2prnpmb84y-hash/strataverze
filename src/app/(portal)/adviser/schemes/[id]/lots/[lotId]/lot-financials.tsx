@@ -20,7 +20,7 @@ type Financials = {
   special: number;
   paid: number;
   closing: number;
-  interestPaid: number;
+  interest: number;
 };
 
 function formatCurrency(value: number) {
@@ -69,12 +69,12 @@ export function LotFinancials({
     <div className="space-y-6">
       {/* Financial summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <SummaryCard label="Opening" value={financials.opening} />
-        <SummaryCard label="+Annual" value={financials.annual} />
+        <SummaryCard label="Brought forward" value={financials.opening} />
+        <SummaryCard label="+Levies" value={financials.annual} />
         <SummaryCard label="+Special" value={financials.special} />
-        <SummaryCard label="~Paid" value={financials.paid} variant="green" />
-        <SummaryCard label="~Closing" value={financials.closing} variant="bold" />
-        <SummaryCard label="Interest Paid" value={financials.interestPaid} />
+        <SummaryCard label="+Interest charged" value={financials.interest} />
+        <SummaryCard label="−Paid" value={financials.paid} variant="green" />
+        <SummaryCard label="=Owing" value={financials.closing} variant="bold" />
       </div>
 
       {/* Levy history */}

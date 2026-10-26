@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { withLedgerBalances } from "@/lib/finance/fund-position";
 import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getUpcomingMeetingsForOwner } from "@/lib/queries/meetings";
 import { getWorkOrdersForSchemes } from "@/lib/queries/work-orders";
@@ -38,6 +39,9 @@ export default async function OwnerDashboard() {
   if (!scheme) {
     redirect("/owner");
   }
+
+  // Fund balances from the ledger, not the stored column (financials review B2).
+  const funds = await withLedgerBalances(scheme.funds);
 
   // Committee of THIS scheme, not of any scheme.
   const isCommittee = selected.roles.includes("COMMITTEE");
@@ -88,10 +92,10 @@ export default async function OwnerDashboard() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FinancialCard
-              title="Bank Account"
-              badge="Reconciled"
+              title="Fund Balances"
+              badge="From the ledger"
               badgeColour="bg-green-100 text-green-700"
-              stats={scheme.funds.map((fund) => ({
+              stats={funds.map((fund) => ({
                 label: fund.name,
                 value: `$${Number(fund.balance).toLocaleString("en-AU", { minimumFractionDigits: 2 })}`,
                 colour:
@@ -101,7 +105,7 @@ export default async function OwnerDashboard() {
                       ? "bg-blue-400"
                       : "bg-amber-400",
               }))}
-              chartBars={scheme.funds.map((fund) => ({
+              chartBars={funds.map((fund) => ({
                 label: fund.name,
                 value: Math.abs(Number(fund.balance)),
                 colour:

@@ -382,7 +382,7 @@ export function CommitteePackClient({
           )}
 
           {/* ── Aged Arrears Snapshot ───────────────────────── */}
-          {pack.arrearsSnapshot.total > 0 && (
+          {(pack.arrearsSnapshot.total > 0 || pack.arrearsSnapshot.current > 0) && (
             <Card>
               <CardHeader
                 title="Aged Arrears"
@@ -391,7 +391,7 @@ export function CommitteePackClient({
               <div className="px-6 pb-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   <ArrearsCell
-                    label="Current"
+                    label="Current (not yet due)"
                     value={pack.arrearsSnapshot.current}
                   />
                   <ArrearsCell
@@ -412,7 +412,7 @@ export function CommitteePackClient({
                     highlight
                   />
                   <ArrearsCell
-                    label="Total"
+                    label="In arrears (past due)"
                     value={pack.arrearsSnapshot.total}
                     bold
                   />
@@ -479,7 +479,7 @@ export function CommitteePackClient({
                           ))}
                           {/* Fund totals */}
                           <tr className="font-semibold">
-                            <td className="py-2 pr-4 text-ink">Total</td>
+                            <td className="py-2 pr-4 text-ink">Total expenditure</td>
                             <td className="py-2 pr-4 text-right tabular-nums text-ink">
                               {formatCurrency(comp.totalBudget)}
                             </td>

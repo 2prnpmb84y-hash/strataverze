@@ -2,7 +2,8 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric } from "@prisma/orm-postgres/target/codec-types";
 import { workingBudgets } from "@/lib/finance/budget-status";
-import { inLedger } from "@/lib/finance/ledger-status";
+import { addDays, financialYearStart } from "@/lib/levies/notice-plan";
+import { ledgerLinesUpTo } from "@/lib/finance/fund-position";
 
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
@@ -128,95 +129,75 @@ export async function deleteBudgetLine(budgetLineId: string) {
 
 /**
  * Get budget vs actual comparison for a fund and financial year.
- * Compares budget amounts to actual posted journal entries.
+ *
+ * Every income and expense account with a budget line or with ledger
+ * activity in the year is shown, with a budget of $0 where there is no line,
+ * so unbudgeted spending is not hidden. Actuals are net of reversals. The
+ * year follows the scheme's financial year end (financials review B10,
+ * 26 Oct 2026). Totals are for expenditure; income is totalled separately.
  */
 export async function getBudgetVsActual(
   schemeId: string,
   fundId: string,
   financialYear: number,
 ) {
-  // Get budget lines for the fund
-  const budgetLines = await getBudgetLinesForFund(fundId, financialYear);
-
-  // Get all account codes for the scheme to map accountCodeId to details
-  const accountCodes = await db.orm.public.AccountCode
-    .where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true)))
-    .orderBy((a) => a.code.asc())
-    .limit(500)
-    .all();
-
+  const [budgetLines, accountCodes, scheme] = await Promise.all([
+    getBudgetLinesForFund(fundId, financialYear),
+    db.orm.public.AccountCode.where((a) => a.schemeId.eq(schemeId)).orderBy((a) => a.code.asc()).limit(5000).all(),
+    db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first(),
+  ]);
   const accountMap = new Map(accountCodes.map((a) => [a.id, a]));
+  // The financial year that starts in `financialYear` (as in the statutory pack).
+  const fyEnd = String(scheme?.financialYearEnd ?? "06-30");
+  const start = financialYearStart(financialYear, fyEnd);
+  const end = addDays(financialYearStart(financialYear + 1, fyEnd), -1);
 
-  // Financial year date range (1 Jul to 30 Jun for Australian FY)
-  const startDate = `${financialYear}-07-01`;
-  const endDate = `${financialYear + 1}-06-30`;
-
-  // Get actual amounts from posted journal entries
-  const journalLines = await db.orm.public.JournalLine
-    .where((jl) => jl.fundId.eq(fundId))
-    .include("journalEntry")
-    .limit(10000)
-    .all();
-
-  // Filter to posted entries within the date range
-  const postedLines = journalLines.filter((jl) => {
-    const entry = jl.journalEntry;
-    if (!entry || !inLedger(entry.status)) return false;
-    const txDate = String(entry.transactionDate).slice(0, 10);
-    return txDate >= startDate && txDate <= endDate;
-  });
-
-  // Aggregate actuals by account code
-  const actualsByAccount = new Map<string, number>();
-  for (const line of postedLines) {
-    const accountId = line.accountCodeId;
-    const account = accountMap.get(accountId);
-    if (!account) continue;
-
-    const current = actualsByAccount.get(accountId) ?? 0;
-    // For expenses: actuals are debits
-    // For income: actuals are credits
-    if (account.accountType === "EXPENSE") {
-      actualsByAccount.set(accountId, current + Number(line.debit ?? 0));
-    } else if (account.accountType === "INCOME") {
-      actualsByAccount.set(accountId, current + Number(line.credit ?? 0));
+  // Actuals from the ledger: net for the year, by account.
+  const actualCents = new Map<string, number>();
+  for (const e of await ledgerLinesUpTo(schemeId, end)) {
+    if (e.date < start || e.date > end) continue;
+    for (const l of e.lines) {
+      if (l.fundId !== fundId) continue;
+      if (l.accountType === "EXPENSE") actualCents.set(l.accountId, (actualCents.get(l.accountId) ?? 0) + l.debitCents - l.creditCents);
+      else if (l.accountType === "INCOME") actualCents.set(l.accountId, (actualCents.get(l.accountId) ?? 0) + l.creditCents - l.debitCents);
     }
   }
 
-  // Build comparison rows
-  const comparison = budgetLines.map((bl) => {
-    const account = accountMap.get(bl.accountCodeId);
-    const budgetAmount = Number(bl.budgetAmount);
-    const actualAmount = actualsByAccount.get(bl.accountCodeId) ?? 0;
+  const row = (accountCodeId: string, budgetAmount: number, budgetLineId: string | null, notes: string | null) => {
+    const account = accountMap.get(accountCodeId);
+    const actualAmount = (actualCents.get(accountCodeId) ?? 0) / 100;
     const variance = budgetAmount - actualAmount;
-    const variancePercent =
-      budgetAmount !== 0 ? (variance / budgetAmount) * 100 : 0;
-
     return {
-      budgetLineId: bl.id,
-      accountCodeId: bl.accountCodeId,
+      budgetLineId,
+      accountCodeId,
       accountCode: account ? String(account.code) : "—",
       accountName: account ? String(account.name) : "Unknown",
       accountType: account?.accountType ?? "EXPENSE",
       budgetAmount,
       actualAmount,
       variance,
-      variancePercent,
-      notes: bl.notes,
+      variancePercent: budgetAmount !== 0 ? (variance / budgetAmount) * 100 : 0,
+      notes,
     };
-  });
+  };
 
-  // Sort by account code
+  const comparison = budgetLines.map((bl) => row(bl.accountCodeId, Number(bl.budgetAmount), bl.id, bl.notes ?? null));
+  const budgeted = new Set(budgetLines.map((bl) => bl.accountCodeId));
+  for (const [accountCodeId, cents] of actualCents) {
+    if (!budgeted.has(accountCodeId) && cents !== 0) comparison.push(row(accountCodeId, 0, null, "No budget line"));
+  }
   comparison.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
 
-  const totalBudget = comparison.reduce((s, r) => s + r.budgetAmount, 0);
-  const totalActual = comparison.reduce((s, r) => s + r.actualAmount, 0);
-  const totalVariance = totalBudget - totalActual;
-
+  const sum = (type: string, key: "budgetAmount" | "actualAmount") =>
+    Math.round(comparison.filter((r) => r.accountType === type).reduce((s, r) => s + r[key], 0) * 100) / 100;
+  const totalBudget = sum("EXPENSE", "budgetAmount");
+  const totalActual = sum("EXPENSE", "actualAmount");
   return {
     lines: comparison,
     totalBudget,
     totalActual,
-    totalVariance,
+    totalVariance: Math.round((totalBudget - totalActual) * 100) / 100,
+    incomeBudget: sum("INCOME", "budgetAmount"),
+    incomeActual: sum("INCOME", "actualAmount"),
   };
 }

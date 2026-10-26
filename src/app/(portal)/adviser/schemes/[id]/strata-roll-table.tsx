@@ -16,7 +16,7 @@ type StrataRollRow = {
   special: number;
   paid: number;
   closing: number;
-  interestPaid: number;
+  interest: number;
   financial: boolean;
   overdueCents: number;
   oldestOverdue: string | null;
@@ -148,22 +148,22 @@ export function StrataRollTable({
               </th>
               {showMoney && (<>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                Opening
+                Brought forward
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                +Annual
+                +Levies
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 +Special
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                ~Paid
+                +Interest charged
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                ~Closing
+                −Paid
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                Interest Paid
+                =Owing
               </th>
               </>)}
             </tr>
@@ -219,14 +219,14 @@ export function StrataRollTable({
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums">
                     {formatCurrency(row.special)}
                   </td>
+                  <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-ink-muted">
+                    {formatCurrency(row.interest)}
+                  </td>
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-green-600">
                     {formatCurrency(row.paid)}
                   </td>
                   <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums font-medium">
                     {formatCurrency(row.closing)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-variant-numeric tabular-nums text-ink-muted">
-                    {formatCurrency(row.interestPaid)}
                   </td>
                   </>)}
                 </tr>

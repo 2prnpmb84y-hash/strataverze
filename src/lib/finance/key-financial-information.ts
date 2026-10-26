@@ -32,6 +32,31 @@ export function ownersFundsCents(entries: BasisEntry[], fundId: string, upTo: st
   return assets - liabilities;
 }
 
+/**
+ * The balance carried forward when the takeover falls in the period: the
+ * fund's balance before the takeover day, plus the opening balances brought
+ * forward, less any income and expenditure in those opening balances (the
+ * period's figures count those already). Other entries on the takeover day
+ * belong to the period, not to the balance carried forward.
+ */
+function carriedForwardAtTakeover(entries: BasisEntry[], fundId: string, takeover: string, dayBefore: string): number {
+  // The balance before the period, plus the takeover entry. Entries in the
+  // period other than the takeover (even ones dated before it) are counted
+  // in the period's figures, so they stay out of the carried forward.
+  let cents = ownersFundsCents(entries, fundId, dayBefore);
+  for (const e of entries) {
+    if (!(e.sourceType === "DATA_MIGRATION" && e.date === takeover)) continue;
+    for (const l of e.lines) {
+      if (l.fundId !== fundId) continue;
+      if (l.accountType === "ASSET") cents += l.debitCents - l.creditCents;
+      else if (l.accountType === "LIABILITY") cents -= l.creditCents - l.debitCents;
+      else if (l.accountType === "INCOME") cents -= l.creditCents - l.debitCents;
+      else if (l.accountType === "EXPENSE") cents += l.debitCents - l.creditCents;
+    }
+  }
+  return cents;
+}
+
 export interface UnpaidNotice {
   dueDate: string;
   owedCents: number;
@@ -59,12 +84,26 @@ export function keyFinancialInformation(input: {
 }): KeyFinancialInformation {
   let received = 0;
   let contributions = 0;
+  // The opening balances brought forward at takeover are not money received
+  // (financials review B4, 26 Oct 2026). If the takeover falls in the period,
+  // the balance carried forward is the balance at takeover.
+  const takeover = input.entries
+    .filter((e) => e.sourceType === "DATA_MIGRATION" && e.date >= input.start && e.date <= input.end)
+    .map((e) => e.date)
+    .sort()
+    .pop();
   for (const e of input.entries) {
     if (e.date < input.start || e.date > input.end) continue;
+    if (e.sourceType === "DATA_MIGRATION") continue;
+    // Money moved between the funds inside the shared bank account counts as
+    // received by the fund it moved to, and not by the one it left.
+    // A move: the entry's bank lines touch more than one fund and net to zero.
+    const bankLines = e.lines.filter((l) => l.accountSubType === "BANK");
+    const isMove = new Set(bankLines.map((l) => l.fundId)).size > 1 && bankLines.reduce((t, l) => t + l.debitCents - l.creditCents, 0) === 0;
     for (const l of e.lines) {
       if (l.fundId !== input.fundId) continue;
       // Money received into the bank for this fund.
-      if (l.accountSubType === "BANK") received += l.debitCents;
+      if (l.accountSubType === "BANK") received += isMove ? l.debitCents - l.creditCents : l.debitCents;
       // Contributions paid: receivables credited by receipts or applied credit.
       if (l.accountSubType === "ACCOUNTS_RECEIVABLE" && (e.sourceType === "PAYMENT" || e.sourceType === "OWNER_CREDIT")) {
         contributions += l.creditCents - l.debitCents;
@@ -73,7 +112,7 @@ export function keyFinancialInformation(input: {
   }
   const sum = (pred: (r: (typeof input.recognised)[number]) => boolean) => input.recognised.filter(pred).reduce((s, r) => s + r.amountCents, 0);
   return {
-    balanceCarriedForwardCents: ownersFundsCents(input.entries, input.fundId, input.dayBefore),
+    balanceCarriedForwardCents: takeover ? carriedForwardAtTakeover(input.entries, input.fundId, takeover, input.dayBefore) : ownersFundsCents(input.entries, input.fundId, input.dayBefore),
     totalIncomeReceivedCents: received,
     totalInterestEarnedCents: sum((r) => r.accountType === "INCOME" && r.accountSubType === "INTEREST_INCOME"),
     totalContributionsPaidCents: contributions,

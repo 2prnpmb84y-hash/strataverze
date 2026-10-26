@@ -5,6 +5,7 @@ import type {
   TimestampString,
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
+import { accountFundProblem } from "@/lib/finance/fund-integrity";
 
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
@@ -303,6 +304,9 @@ export async function autoMatchTransactions(
         rule,
       );
 
+      // A rule whose account belongs to the other fund would post across the
+      // funds: leave the transaction for a person to allocate (review B1).
+      if (matches && rule.targetAccountCodeId && rule.targetFundId && (await accountFundProblem(db.orm, schemeId, rule.targetAccountCodeId, rule.targetFundId))) continue;
       if (matches && rule.targetAccountCodeId && rule.targetFundId) {
         // Create a journal entry for the matched transaction
         const entryNumber = await getNextMatchEntryNumber(schemeId);

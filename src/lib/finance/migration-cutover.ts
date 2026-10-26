@@ -18,6 +18,7 @@
  *     and its detail, which must be acknowledged one by one.
  *  4. Only then can the cutover be executed, and only with the same files.
  */
+import { fundGapsCents, isSharedAccount } from "./fund-balance-check";
 
 export type CutoverDataType = "opening_balances" | "levy_arrears" | "unpaid_invoices" | "owner_credits" | "bank_balances";
 
@@ -210,6 +211,10 @@ export function parseOpeningRow(row: Record<string, string>, rowNumber: number, 
   if (debit === 0 && credit === 0 && errors.length === 0) warnings.push("Zero balance: the line will be left out.");
   const fundId = account ? fundFor(lookups, row.fundName, account.fundId ?? adminFund(lookups)) : null;
   if (account && !fundId) errors.push(row.fundName ? `Fund "${row.fundName}" is not one of the scheme's funds.` : "No fund for this account.");
+  // An account kept for one fund can only carry that fund's balance (review B1).
+  if (account && fundId && !isSharedAccount(account) && account.fundId !== fundId) {
+    errors.push(`Account ${account.code} belongs to the ${lookups.funds.find((f) => f.id === account.fundId)?.name ?? "other fund"}, so it cannot carry a balance for the ${lookups.funds.find((f) => f.id === fundId)?.name ?? "fund named"}.`);
+  }
   if (errors.length) return { rowNumber, value: null, errors, warnings };
   return {
     rowNumber,
@@ -469,8 +474,13 @@ export function cutoverReadiness(input: { files: CutoverFile[]; rows: CutoverRow
     problems.push(
       trialBalance.lines === 0
         ? "The opening trial balance has no lines."
-        : `The opening trial balance does not net to zero: debits ${(trialBalance.debitCents / 100).toFixed(2)}, credits ${(trialBalance.creditCents / 100).toFixed(2)}.`,
+        : `The opening trial balance does not net to zero: debits $${(trialBalance.debitCents / 100).toFixed(2)}, credits $${(trialBalance.creditCents / 100).toFixed(2)}.`,
     );
+  }
+  // Each fund's opening balances must balance on their own (review B1).
+  for (const [fundId, gap] of fundGapsCents(lines)) {
+    const name = input.funds.find((f) => f.id === fundId)?.name ?? "A fund";
+    problems.push(`The ${name} opening balances do not net to zero: they are out by $${(Math.abs(gap) / 100).toFixed(2)}. Each fund must balance on its own.`);
   }
   const tieOuts = controlTieOuts(input.rows, input.funds);
   return { trialBalance, tieOuts, problems, canSignOff: problems.length === 0 };

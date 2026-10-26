@@ -20,6 +20,7 @@ import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 import { DeleteSchemeButton } from "./delete-button";
 import { AnnouncementsCard } from "./_sections/announcements-card";
 import { FundsCard } from "./_sections/funds-card";
+import { withLedgerBalances } from "@/lib/finance/fund-position";
 import { LotsCard } from "./_sections/lots-card";
 import { LeviesCard } from "./_sections/levies-card";
 import { MeetingsCard } from "./_sections/meetings-card";
@@ -108,7 +109,7 @@ export default async function SchemeDetailPage({
         </div>
       )}
       <AnnouncementsCard id={id} announcements={announcements} />
-      <FundsCard id={id} funds={scheme.funds} />
+      <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} />
       <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} />
       <LeviesCard id={id} schedules={levies} />
       <MeetingsCard id={id} meetings={meetings} />

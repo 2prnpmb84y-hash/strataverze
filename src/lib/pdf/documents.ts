@@ -231,12 +231,12 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
     {
       kind: "table",
       columns: [
-        { header: "Current", width: 1, align: "right" },
+        { header: "Not yet due", width: 1, align: "right" },
         { header: "1 to 30 days", width: 1, align: "right" },
         { header: "31 to 60", width: 1, align: "right" },
         { header: "61 to 90", width: 1, align: "right" },
         { header: "Over 90", width: 1, align: "right" },
-        { header: "Total", width: 1, align: "right" },
+        { header: "In arrears", width: 1, align: "right" },
       ],
       rows: [
         [
@@ -261,7 +261,7 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
           { header: "Variance", width: 1.2, align: "right" },
         ],
         rows: b.lines.map((l) => [`${l.accountCode} ${l.accountName}`, audDollars(l.budgetAmount), audDollars(l.actualAmount), audDollars(l.variance)]),
-        totalRow: ["Total", audDollars(b.totalBudget), audDollars(b.totalActual), audDollars(b.totalVariance)],
+        totalRow: ["Total expenditure", audDollars(b.totalBudget), audDollars(b.totalActual), audDollars(b.totalVariance)],
       },
     ]),
     { kind: "heading", text: "Bank accounts", level: 2 },

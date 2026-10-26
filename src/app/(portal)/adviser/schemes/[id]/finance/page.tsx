@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getFundsForScheme } from "@/lib/queries/funds";
+import { getFundsWithBalances } from "@/lib/queries/funds";
 import { getBankAccountsForScheme } from "@/lib/queries/bank-accounts";
 import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { getLevySchedulesForScheme } from "@/lib/queries/levy-schedules";
@@ -43,13 +43,13 @@ export default async function FinanceDashboardPage({
     overdueLevies,
     overdueInvoices,
   ] = await Promise.all([
-    getFundsForScheme(id),
+    getFundsWithBalances(id),
     getBankAccountsForScheme(id),
     getAccountCodesForScheme(id),
     getLevySchedulesForScheme(id),
     getSupplierInvoicesForScheme(id),
     getJournalEntriesForScheme(id, undefined, 10),
-    getOverdueLevyNotices(id, 100),
+    getOverdueLevyNotices(id, 5000),
     getOverdueInvoices(id),
   ]);
 

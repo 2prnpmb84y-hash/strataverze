@@ -166,6 +166,7 @@ import {
   checkDocumentDuplicates,
 } from "@/lib/queries/duplicate-detection";
 import { importSummary } from "@/lib/bank-import-parser";
+import { FundIntegrityError, accountFundProblem } from "@/lib/finance/fund-integrity";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -199,6 +200,8 @@ function financePath(schemeId: string, sub = "") {
 function unexpectedError(err: unknown, fallback: string, keepMessages: readonly RegExp[] = []): string {
   const feeError = feeErrorMessage(err);
   if (feeError) return feeError;
+  // A fund out of balance, or an account used for the other fund (review B1).
+  if (err instanceof FundIntegrityError) return err.message;
   const message = err instanceof Error ? err.message : "";
   if (message && keepMessages.some((re) => re.test(message))) return message;
   logError(fallback, err);
@@ -1633,12 +1636,17 @@ export async function createSupplierInvoiceAction(
     if (!data.invoiceDate) return { error: "Invoice date is required." };
     if (!data.dueDate) return { error: "Due date is required." };
     if (data.totalAmount <= 0) return { error: "Total amount must be greater than zero." };
+    // A due date before the invoice date is a typing error (review B13).
+    if (data.dueDate.slice(0, 10) < data.invoiceDate.slice(0, 10)) return { error: "The due date must be on or after the invoice date." };
     // The supplier, account and fund must be this scheme's.
     await assertLinksInScheme(schemeId, {
       supplierIds: [data.supplierId],
       accountCodeIds: [data.accountCodeId],
       fundIds: [data.fundId],
     });
+    // The account must belong to the invoice's fund, or approval could not post (review B1).
+    const fundProblem = await accountFundProblem(db.orm, schemeId, data.accountCodeId, data.fundId);
+    if (fundProblem) return { error: fundProblem };
 
     // Duplicate detection (warn but allow override via skipDuplicateCheck)
     const duplicates = await checkInvoiceDuplicates(
@@ -2561,6 +2569,11 @@ export async function createMatchingRuleAction(
       accountCodeIds: [data.targetAccountCodeId],
       fundIds: [data.targetFundId],
     });
+    // The rule posts the account against the fund: they must match (review B1).
+    if (data.targetAccountCodeId && data.targetFundId) {
+      const fundProblem = await accountFundProblem(db.orm, schemeId, data.targetAccountCodeId, data.targetFundId);
+      if (fundProblem) return { error: fundProblem };
+    }
 
     // Build the rule from the known fields only, with the authorised scheme
     // last, so nothing the browser sends can set another scheme (SEC-004).
@@ -2628,6 +2641,11 @@ export async function updateMatchingRuleAction(
       accountCodeIds: [data.targetAccountCodeId],
       fundIds: [data.targetFundId],
     });
+    // The rule posts the account against the fund: they must match (review B1).
+    if (data.targetAccountCodeId && data.targetFundId) {
+      const fundProblem = await accountFundProblem(db.orm, schemeId, data.targetAccountCodeId, data.targetFundId);
+      if (fundProblem) return { error: fundProblem };
+    }
 
     const updated = await updateMatchingRule(schemeId, ruleId, {
       name: data.name,

@@ -43,14 +43,33 @@ export interface ReceiptLine {
 /** The lines of a single receipt journal for one or more notices. */
 export function receiptJournalLines(
   parts: ReceiptPart[],
-  accounts: { debitAccountId: string; receivableByFund: Record<string, string>; advanceByFund: Record<string, string | null> },
+  accounts: {
+    debitAccountId: string;
+    receivableByFund: Record<string, string>;
+    advanceByFund: Record<string, string | null>;
+    /**
+     * When the money is taken from a holding account kept in one fund (the
+     * suspense account), that fund and the shared bank account. A part for
+     * another fund then moves the money there in the bank, so each fund
+     * balances on its own (financials review B1, 26 Oct 2026).
+     */
+    holding?: { fundId: string; bankAccountId: string };
+  },
   debitDescription: string,
 ): ReceiptLine[] {
   const lines: ReceiptLine[] = [];
   const byFund = new Map<string, number>();
   for (const p of parts) byFund.set(p.fundId, (byFund.get(p.fundId) ?? 0) + p.appliedCents + p.excessCents);
   for (const [fundId, total] of byFund) {
-    if (total > 0) lines.push({ accountCodeId: accounts.debitAccountId, fundId, debitCents: total, description: debitDescription });
+    if (total <= 0) continue;
+    const h = accounts.holding;
+    if (h && h.fundId !== fundId) {
+      lines.push({ accountCodeId: accounts.debitAccountId, fundId: h.fundId, debitCents: total, description: debitDescription });
+      lines.push({ accountCodeId: h.bankAccountId, fundId, debitCents: total, description: "Moved to the fund it belongs to" });
+      lines.push({ accountCodeId: h.bankAccountId, fundId: h.fundId, creditCents: total, description: "Moved to the fund it belongs to" });
+    } else {
+      lines.push({ accountCodeId: accounts.debitAccountId, fundId, debitCents: total, description: debitDescription });
+    }
   }
   for (const p of parts) {
     if (p.appliedCents > 0) {

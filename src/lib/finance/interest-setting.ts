@@ -56,21 +56,29 @@ export async function statutoryInterestForScheme(schemeId: string, asAt = sydney
   // A reversed payment (dishonoured, wrong lot) never paid the notice, so interest runs as if it had not been made.
   const payments = livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all());
   return notices.map((n) => {
-    const result = statutoryInterest({
+    const base = {
       levyCents: toCents(String(n.amountDue)),
       dueDate: isoDay(n.dueDate),
       payments: payments
         .filter((p) => p.levyNoticeId === n.id)
         .map((p) => ({ date: isoDay(p.paymentDate), amountCents: toCents(String(p.amount)) })),
-      asAt,
       noInterest: setting.mode === "NO_INTEREST",
-    });
-    const previouslyChargedCents = toCents(String(n.interestCharged ?? 0));
+    };
+    const result = statutoryInterest({ ...base, asAt });
+    // A notice brought across at takeover: the old system charged the
+    // interest up to takeover (kept in migratedInterestCharged), so only
+    // interest from the takeover day on is owed here. It is compared with
+    // the interest charged here, plus the statutory interest to takeover,
+    // which the old system's charge stands in for (financials review B8).
+    const takeover = n.migrationBatchId ? isoDay(n.issuedAt) || isoDay(n.dueDate) : "";
+    const toTakeoverCents = takeover ? statutoryInterest({ ...base, asAt: takeover }).interestCents : 0;
+    const chargedHereCents = Math.max(0, toCents(String(n.interestCharged ?? 0)) - toCents(String(n.migratedInterestCharged ?? 0)));
+    const previouslyChargedCents = chargedHereCents;
     return {
       ...result,
       noticeId: n.id,
       previouslyChargedCents,
-      additionalCents: Math.max(0, result.interestCents - previouslyChargedCents),
+      additionalCents: Math.max(0, result.interestCents - toTakeoverCents - chargedHereCents),
     };
   });
 }

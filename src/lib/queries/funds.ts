@@ -1,6 +1,7 @@
 import { defaultAccountingBasis } from "@/config/statutory";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
+import { withLedgerBalances } from "@/lib/finance/fund-position";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
@@ -14,7 +15,9 @@ function toNumeric(value: number | string): Numeric<12, 2> {
 }
 
 /**
- * Fetch all funds for a scheme, ordered by fund type.
+ * Fetch all funds for a scheme, ordered by fund type. For a list or a choice
+ * of fund: the stored `balance` column is not the fund's balance, so use
+ * getFundsWithBalances wherever a balance is shown (financials review B2).
  */
 export async function getFundsForScheme(schemeId: string, limit = 200) {
   return db.orm.public.Fund
@@ -24,6 +27,11 @@ export async function getFundsForScheme(schemeId: string, limit = 200) {
     .all();
 }
 
+/** A scheme's funds with `balance` and `cash` from the ledger as at today (financials review B2). */
+export async function getFundsWithBalances(schemeId: string, limit = 200) {
+  return withLedgerBalances(await getFundsForScheme(schemeId, limit));
+}
+
 /**
  * Fetch a single fund by ID.
  */
@@ -31,6 +39,13 @@ export async function getFundById(fundId: string) {
   return db.orm.public.Fund
     .where((f) => and(f.id.eq(fundId), f.deletedAt.eq(null)))
     .first();
+}
+
+/** A single fund with `balance` and `cash` from the ledger as at today. */
+export async function getFundWithBalance(fundId: string) {
+  const fund = await getFundById(fundId);
+  if (!fund) return fund;
+  return (await withLedgerBalances([fund]))[0];
 }
 
 /**
@@ -70,15 +85,17 @@ export async function updateFund(
 }
 
 /**
- * Fetch funds across multiple schemes (for owner/committee views).
+ * Fetch funds across multiple schemes (for owner/committee views), with
+ * their ledger balances as at today.
  */
 export async function getFundsForSchemes(schemeIds: string[], limit = 200) {
   if (schemeIds.length === 0) return [];
-  return db.orm.public.Fund
+  const funds = await db.orm.public.Fund
     .where((f) => and(f.schemeId.in(schemeIds), f.deletedAt.eq(null)))
     .orderBy((f) => f.createdAt.asc())
     .limit(limit)
     .all();
+  return withLedgerBalances(funds);
 }
 
 /**

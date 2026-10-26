@@ -1586,6 +1586,11 @@ model LevyNotice {
   amountPaid         Decimal             @default(0) @db.Decimal(12, 2) @map("amount_paid")
   balanceOutstanding Decimal             @db.Decimal(12, 2) @map("balance_outstanding")
   interestCharged    Decimal             @default(0) @db.Decimal(12, 2) @map("interest_charged")
+  /// For a notice brought across at takeover: the interest the old system had
+  /// charged and received, which interestCharged and amountPaid include. Kept
+  /// apart so interest charged here is worked out on its own (review B8).
+  migratedInterestCharged Decimal        @default(0) @db.Decimal(12, 2) @map("migrated_interest_charged")
+  migratedInterestPaid    Decimal        @default(0) @db.Decimal(12, 2) @map("migrated_interest_paid")
   status             String              @default("DRAFT") // DRAFT, ISSUED, PARTIALLY_PAID, PAID, OVERDUE, WRITTEN_OFF
   issuedAt           DateTime?           @db.Timestamptz @map("issued_at")
   /// Issued, and its levy not yet posted in the ledger (25 Oct 2026). Set

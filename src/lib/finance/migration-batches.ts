@@ -34,6 +34,7 @@ import {
   type SignOff,
 } from "./migration-cutover";
 import { COLUMN_TEMPLATES, FIELDS, missingFields, suggestMapping, toRecords } from "./migration-templates";
+import { assertFundIntegrity } from "@/lib/finance/fund-integrity";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const varchar = <N extends number>(v: string) => v as unknown as Varchar<N>;
@@ -384,6 +385,13 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
   const sourceLabel = sourceSystemLabel(batch.sourceSystem);
   const now = new Date().toISOString();
 
+  // Each fund's opening balances must balance on their own (financials review B1).
+  await assertFundIntegrity(
+    db.orm,
+    input.schemeId,
+    opening.map((l) => ({ accountCodeId: l.accountId, fundId: l.fundId, debit: l.debitCents / 100, credit: l.creditCents / 100 })),
+  );
+
   const results = await db.transaction(async (tx) => {
     // 1. The opening trial balance, posted.
     const entry = await tx.orm.public.JournalEntry.create({
@@ -444,6 +452,8 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
           amountPaid: money(a.interestPaidCents),
           balanceOutstanding: money(a.levyOutstandingCents + a.interestChargedCents - a.interestPaidCents),
           interestCharged: money(a.interestChargedCents),
+          migratedInterestCharged: money(a.interestChargedCents),
+          migratedInterestPaid: money(a.interestPaidCents),
           status: "ISSUED",
           issuedAt: ts(`${date}T00:00:00.000Z`),
           migrationBatchId: batch.id,

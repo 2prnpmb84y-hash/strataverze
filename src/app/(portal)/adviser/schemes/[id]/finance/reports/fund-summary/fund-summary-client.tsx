@@ -13,6 +13,7 @@ interface FundSummaryData {
   openingBalance: number;
   totalIncome: number;
   totalExpenses: number;
+  broughtForward: number;
   netMovement: number;
   closingBalance: number;
   totalLevied: number;
@@ -117,7 +118,7 @@ export function FundSummaryClient({
               accent={totalNetMovement >= 0 ? "bg-green-500" : "bg-yellow-500"}
             />
             <StatCard
-              label="Outstanding Levies"
+              label="Arrears (levies and interest)"
               value={formatCurrency(totalOutstanding)}
               accent={totalOutstanding > 0 ? "bg-red-500" : "bg-green-500"}
             />
@@ -169,6 +170,16 @@ export function FundSummaryClient({
                         {formatCurrency(fund.netMovement)}
                       </td>
                     </tr>
+                    {Math.abs(fund.broughtForward) >= 0.005 && (
+                      <tr className="border-b border-line/50">
+                        <td className="py-2 text-ink-muted pl-4">
+                          Balances brought forward and other equity entries
+                        </td>
+                        <td className="py-2 text-right tabular-nums text-ink">
+                          {formatCurrency(fund.broughtForward)}
+                        </td>
+                      </tr>
+                    )}
                     <tr className="border-b border-line font-semibold">
                       <td className="py-2 text-ink">Closing Balance</td>
                       <td
@@ -203,7 +214,7 @@ export function FundSummaryClient({
                       </div>
                       <div className="rounded-[var(--radius-card)] bg-muted px-3 py-2 text-center">
                         <p className="text-xs text-ink-muted">
-                          Outstanding
+                          In arrears
                         </p>
                         <p className="text-sm font-medium text-red-600 tabular-nums">
                           {formatCurrency(fund.outstandingLevies)}

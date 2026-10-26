@@ -19,11 +19,37 @@ interface FundOption {
   fundType: string;
 }
 
+/**
+ * Budget totals for a fund: income and expenditure separately, and the levy
+ * to raise. The levy is the budgeted levy income where there is a levy
+ * income line, otherwise expenditure less other income (review B9).
+ */
+export function budgetTotals(
+  lines: { accountCodeId: string; budgetAmount: number }[],
+  accounts: Map<string, { accountType: string; accountSubType?: string | null }>,
+) {
+  let income = 0;
+  let levyIncome = 0;
+  let expenditure = 0;
+  for (const l of lines) {
+    const a = accounts.get(l.accountCodeId);
+    if (a?.accountType === "INCOME") {
+      income += l.budgetAmount;
+      if (a.accountSubType === "LEVY_INCOME") levyIncome += l.budgetAmount;
+    } else if (a?.accountType === "EXPENSE") {
+      expenditure += l.budgetAmount;
+    }
+  }
+  const annualLevy = levyIncome > 0 ? levyIncome : Math.max(0, expenditure - income);
+  return { income, levyIncome, expenditure, annualLevy };
+}
+
 interface AccountCodeOption {
   id: string;
   code: string;
   name: string;
   accountType: string;
+  accountSubType?: string | null;
   fundId: string | null;
 }
 
@@ -39,7 +65,7 @@ interface BudgetLineData {
 
 interface BudgetVsActualData {
   lines: {
-    budgetLineId: string;
+    budgetLineId: string | null;
     accountCodeId: string;
     accountCode: string;
     accountName: string;
@@ -215,7 +241,9 @@ export function BudgetClient({
 
   // Lines for the selected fund
   const fundLines = budgetLines.filter((bl) => bl.fundId === selectedFundId);
-  const totalBudget = fundLines.reduce((s, bl) => s + bl.budgetAmount, 0);
+  // Income and expenditure are kept apart: adding them together overstated
+  // the budget and doubled the quarterly levy (financials review B9).
+  const totals = budgetTotals(fundLines, accountMap);
 
   return (
     <div className="space-y-6">
@@ -249,18 +277,18 @@ export function BudgetClient({
       {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard
-          label="Total Budget"
-          value={formatCurrency(totalBudget)}
+          label="Budgeted Expenditure"
+          value={formatCurrency(totals.expenditure)}
           accent="bg-blue-500"
         />
         <StatCard
-          label="Budget Lines"
-          value={String(fundLines.length)}
+          label="Budgeted Income"
+          value={formatCurrency(totals.income)}
           accent="bg-emerald-500"
         />
         <StatCard
           label="Quarterly Levy"
-          value={formatCurrency(totalBudget / 4)}
+          value={formatCurrency(totals.annualLevy / 4)}
           accent="bg-violet-500"
         />
       </div>
@@ -452,17 +480,38 @@ export function BudgetClient({
                     </tr>
                   );
                 })}
-                <tr className="border-t-2 border-line font-bold">
+                <tr className="border-t-2 border-line font-semibold">
                   <td colSpan={2} className="py-3 pr-4 text-ink">
-                    Total
+                    Total income
                   </td>
                   <td className="py-3 pr-4 text-right tabular-nums text-ink">
-                    {formatCurrency(totalBudget)}
+                    {formatCurrency(totals.income)}
                   </td>
                   <td className="py-3 pr-4 text-right tabular-nums text-ink">
-                    {formatCurrency(totalBudget / 4)}
+                    {formatCurrency(totals.income / 4)}
                   </td>
                   <td colSpan={2} />
+                </tr>
+                <tr className="font-semibold">
+                  <td colSpan={2} className="py-3 pr-4 text-ink">
+                    Total expenditure
+                  </td>
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
+                    {formatCurrency(totals.expenditure)}
+                  </td>
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
+                    {formatCurrency(totals.expenditure / 4)}
+                  </td>
+                  <td colSpan={2} />
+                </tr>
+                <tr className="border-t border-line font-bold">
+                  <td colSpan={2} className="py-3 pr-4 text-ink">
+                    {totals.income - totals.expenditure >= 0 ? "Surplus" : "Deficit"}
+                  </td>
+                  <td className="py-3 pr-4 text-right tabular-nums text-ink">
+                    {formatCurrency(totals.income - totals.expenditure)}
+                  </td>
+                  <td colSpan={3} />
                 </tr>
               </tbody>
             </table>
@@ -492,7 +541,7 @@ export function BudgetClient({
               <tbody>
                 {budgetVsActual.lines.map((line) => (
                   <tr
-                    key={line.budgetLineId}
+                    key={line.budgetLineId ?? `actual-${line.accountCodeId}`}
                     className="border-b border-line/50"
                   >
                     <td className="py-2 pr-4 text-ink-muted tabular-nums">
@@ -527,7 +576,7 @@ export function BudgetClient({
                 ))}
                 <tr className="border-t-2 border-line font-bold">
                   <td colSpan={2} className="py-3 pr-4 text-ink">
-                    Totals
+                    Total expenditure
                   </td>
                   <td className="py-3 pr-4 text-right tabular-nums text-ink">
                     {formatCurrency(budgetVsActual.totalBudget)}
