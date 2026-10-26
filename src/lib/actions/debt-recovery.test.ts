@@ -32,14 +32,17 @@ const queries = {
   getInstalmentsForPlan: vi.fn(),
 };
 vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, getDebtRecoverySteps: vi.fn(async () => []) }));
-vi.mock("@/lib/jurisdiction/scheme-rules", () => ({
-  rulesForScheme: vi.fn(async () => ({ rules: { DEBT_RECOVERY_STEPS: [] }, label: "AU-NSW test" })),
-}));
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const { PAYMENT_PLANS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+  return { rulesForScheme: vi.fn(async () => ({ rules: { DEBT_RECOVERY_STEPS: [], PAYMENT_PLANS }, label: "AU-NSW test" })) };
+});
 
 const instalmentFirst = vi.fn();
 const lotFirst = vi.fn();
 const ownerMembershipFirst = vi.fn();
 const lotOwnersAll = vi.fn();
+const stepFirst = vi.fn();
+const lotPlansAll = vi.fn(async () => [] as Array<{ status: string }>);
 vi.mock("@/prisma/db", () => ({
   db: {
     orm: {
@@ -49,7 +52,8 @@ vi.mock("@/prisma/db", () => ({
         SchemeMembership: {
           where: () => ({ first: ownerMembershipFirst, limit: () => ({ all: lotOwnersAll }) }),
         },
-        DebtRecoveryStep: { where: () => ({ first: vi.fn() }) },
+        DebtRecoveryStep: { where: () => ({ first: stepFirst }) },
+        PaymentPlan: { where: () => ({ limit: () => ({ all: lotPlansAll }) }) },
       },
     },
     transaction: vi.fn(),
@@ -223,5 +227,23 @@ describe("addDebtRecoveryNoteAction", () => {
     const r = await actions.addDebtRecoveryNoteAction("case-1", SCHEME_B, "note");
     expect(r.error).toBe("Case not found.");
     expect(queries.logDebtRecoveryActivity).not.toHaveBeenCalled();
+  });
+});
+
+describe("completeDebtRecoveryStepAction while a payment plan is followed", () => {
+  const form = () => new FormData();
+
+  it("refuses the notice before action and later steps", async () => {
+    stepFirst.mockResolvedValue({ id: "step-4", caseId: "case-1", stepType: "FINAL_NOTICE", stepOrder: 4, status: "PENDING" });
+    lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
+    const r = await actions.completeDebtRecoveryStepAction("step-4", "case-1", SCHEME_A, form());
+    expect(r.error).toMatch(/payment plan is being followed/);
+  });
+
+  it("allows earlier steps", async () => {
+    stepFirst.mockResolvedValue({ id: "step-3", caseId: "case-1", stepType: "REMINDER_NOTICE", stepOrder: 3, status: "PENDING" });
+    lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
+    const r = await actions.completeDebtRecoveryStepAction("step-3", "case-1", SCHEME_A, form());
+    expect(r.error ?? "").not.toMatch(/payment plan is being followed/);
   });
 });

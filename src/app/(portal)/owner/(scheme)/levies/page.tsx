@@ -65,6 +65,9 @@ export default async function OwnerLeviesPage() {
         items={displayItems}
         actions={
           <>
+            <Button variant="secondary" href="/owner/levies/payment-plan">
+              Payment Plan
+            </Button>
             <Button variant="secondary" href="/owner/levies/debt-recovery">
               Debt Recovery
             </Button>

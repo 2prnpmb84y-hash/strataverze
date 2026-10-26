@@ -220,6 +220,7 @@ model Scheme {
   // Debt Recovery Module
   debtRecoveryCases           DebtRecoveryCase[]
   debtRecoveryPaymentPlans    PaymentPlan[]
+  paymentPlanRequests         PaymentPlanRequest[]
 
   worksSettings          WorksSettings?
   worksPreferredContractors WorksPreferredContractor[]
@@ -270,6 +271,7 @@ model Lot {
   debtCollection     LotDebtCollection?
   debtRecoveryCases  DebtRecoveryCase[]
   debtRecoveryPaymentPlans PaymentPlan[]
+  paymentPlanRequests PaymentPlanRequest[]
   proxies            LotProxy[]
   powersOfAttorney   LotPowerOfAttorney[]
   propertyManager    PropertyManager?
@@ -3270,7 +3272,8 @@ model DebtRecoveryCase {
   initiator           Profile               @relation("DebtRecoveryCaseInitiator", fields: [initiatedBy], references: [id])
   approvalMotion      Motion?               @relation(fields: [approvalMotionId], references: [id])
   steps               DebtRecoveryStep[]
-  paymentPlan         PaymentPlan?
+  paymentPlans        PaymentPlan[]
+  paymentPlanRequests PaymentPlanRequest[]
   documents           DebtRecoveryDocument[]
   activityLog         DebtRecoveryActivity[]
 
@@ -3318,9 +3321,19 @@ model DebtRecoveryStep {
 
 model PaymentPlan {
   id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  caseId              String                @unique @map("case_id") @db.Uuid
+  caseId              String?               @map("case_id") @db.Uuid // null for a plan agreed without a recovery case
   schemeId            String                @map("scheme_id") @db.Uuid
   lotId               String                @map("lot_id") @db.Uuid
+  requestId           String?               @unique @map("request_id") @db.Uuid // the owner's request on the standard form
+  agreedOn            DateTime?             @db.Date @map("agreed_on")
+  coversCurrentLevies Boolean               @default(false) @map("covers_current_levies")
+  // For the payment plan statement, as at agreement
+  leviesOwing         Decimal?              @db.Decimal(12, 2) @map("levies_owing")
+  interestOwing       Decimal?              @db.Decimal(12, 2) @map("interest_owing")
+  interestMethod      String?               @map("interest_method")
+  paymentMethods      String?               @map("payment_methods")
+  contactDetails      String?               @map("contact_details")
+  rulePack            String?               @map("rule_pack") @db.VarChar(40)
   // Plan terms
   totalAmount         Decimal               @db.Decimal(12, 2) @map("total_amount")
   instalmentAmount    Decimal               @db.Decimal(12, 2) @map("instalment_amount")
@@ -3344,14 +3357,59 @@ model PaymentPlan {
   createdAt           DateTime              @default(now()) @db.Timestamptz @map("created_at")
   updatedAt           DateTime              @updatedAt @db.Timestamptz @map("updated_at")
 
-  case                DebtRecoveryCase      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case                DebtRecoveryCase?     @relation(fields: [caseId], references: [id], onDelete: Cascade)
   scheme              Scheme                @relation(fields: [schemeId], references: [id])
   lot                 Lot                   @relation(fields: [lotId], references: [id])
+  request             PaymentPlanRequest?   @relation("PaymentPlanFromRequest", fields: [requestId], references: [id], onDelete: SetNull)
   instalments         PaymentPlanInstalment[]
 
   @@index([schemeId])
   @@index([lotId])
+  @@index([caseId])
   @@map("payment_plans")
+}
+
+/// An owner's request for a payment plan on the standard form, and the
+/// decision of the owners corporation or strata committee meeting on it.
+model PaymentPlanRequest {
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId                String            @map("scheme_id") @db.Uuid
+  lotId                   String            @map("lot_id") @db.Uuid
+  caseId                  String?           @map("case_id") @db.Uuid
+  // As on the form
+  ownerNames              String            @map("owner_names")
+  hardshipStatement       Boolean           @map("hardship_statement")
+  currentDebt             Decimal?          @db.Decimal(12, 2) @map("current_debt")
+  proposedInstalment      Decimal?          @db.Decimal(12, 2) @map("proposed_instalment")
+  proposedFrequency       String?           @map("proposed_frequency")
+  proposedMonths          Int?              @map("proposed_months")
+  interestWaiverRequested Boolean           @default(false) @map("interest_waiver_requested")
+  receivedOn              DateTime          @db.Date @map("received_on")
+  replyDueOn              DateTime          @db.Date @map("reply_due_on")
+  source                  String            // OWNER_PORTAL, RECEIVED
+  submittedBy             String?           @map("submitted_by") @db.Uuid
+  // Decision
+  status                  String            @default("RECEIVED") // RECEIVED, APPROVED, REFUSED, WITHDRAWN
+  decisionBody            String?           @map("decision_body") // STRATA_COMMITTEE, OWNERS_CORPORATION
+  decidedOn               DateTime?         @db.Date @map("decided_on") // the meeting date
+  decisionRecordedBy      String?           @map("decision_recorded_by") @db.Uuid
+  decisionRecordedAt      DateTime?         @db.Timestamptz @map("decision_recorded_at")
+  refusalReasons          String?           @map("refusal_reasons")
+  interestWaiver          String?           @map("interest_waiver") // WAIVED, NOT_WAIVED
+  repliedOn               DateTime?         @db.Date @map("replied_on")
+  rulePack                String?           @map("rule_pack") @db.VarChar(40)
+  notes                   String?
+  createdAt               DateTime          @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt               DateTime          @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme                  Scheme            @relation(fields: [schemeId], references: [id])
+  lot                     Lot               @relation(fields: [lotId], references: [id])
+  case                    DebtRecoveryCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  plan                    PaymentPlan?      @relation("PaymentPlanFromRequest")
+
+  @@index([schemeId, status])
+  @@index([lotId])
+  @@map("payment_plan_requests")
 }
 
 model PaymentPlanInstalment {

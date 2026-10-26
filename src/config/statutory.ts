@@ -52,7 +52,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.2 (26 Oct 2026): wording added (TERMINOLOGY, CITATIONS, HARDSHIP_INFORMATION, DEBT_RECOVERY_GUIDANCE); no rule value changed.
     // 2026.10.3 (26 Oct 2026): audit test counts lots without parking and utility lots (s 95, confirmed by StrataVerze);
     // debt recovery steps and guidance redrafted from sources, for review.
-    version: "2026.10.3",
+    // 2026.10.4 (26 Oct 2026): PAYMENT_PLANS added (the payment plan workflow).
+    version: "2026.10.4",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not

@@ -25,6 +25,17 @@ describe("resolveDisclosure", () => {
   });
 });
 
+describe("payment plan set-up fee", () => {
+  it("is charged to the owners corporation and never passed to the owner, whatever the price book says", () => {
+    const q = usageFee({ code: "RECOVERY_STEP", variant: "PAYMENT_PLAN", priceBook: book, date: "2026-11-01" })!;
+    expect(q.payerType).toBe("OC");
+    expect(q.recoverableFromOwner).toBe(false);
+    const v = toFeeView(q);
+    expect(v.payerLabel).toBe("Charged to the owners corporation");
+    expect(v.explanation).toMatch(/cannot be passed to the owner/);
+  });
+});
+
 describe("toFeeView", () => {
   it("explains the charge and who pays it", () => {
     const v = toFeeView(usageFee({ code: "RECOVERY_STEP", variant: "REMINDER", priceBook: book, date: "2026-11-01" })!);

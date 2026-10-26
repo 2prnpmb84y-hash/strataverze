@@ -17,6 +17,7 @@ export const TEST_PRICE_BOOK: PriceBookEntry[] = [
   { ...base, code: "MEETING_EGM", description: "General meeting (EGM or adjourned)", amountCents: 5500, unit: "PER_EVENT", payerType: "OC" },
   { ...base, code: "BALLOT", description: "Electronic ballot", amountCents: 2500, unit: "PER_EVENT", payerType: "OC" },
   { ...base, code: "RECOVERY_STEP", variant: "REMINDER", description: "Debt recovery: reminder", amountCents: 1500, unit: "PER_STEP", payerType: "OWNER_VIA_OC", recoverableFromOwner: true },
+  { ...base, code: "RECOVERY_STEP", variant: "PAYMENT_PLAN", description: "Debt recovery: payment plan set-up", amountCents: 4500, unit: "PER_STEP", payerType: "OWNER_VIA_OC", recoverableFromOwner: true },
   { ...base, code: "RECOVERY_STEP", variant: "REFERRAL", description: "Debt recovery: referral", amountCents: 6000, unit: "PER_STEP", payerType: "OWNER_VIA_OC", recoverableFromOwner: true },
   { ...base, code: "ACCOUNTANT_SEAT", description: "External accountant seat", amountCents: 2000, unit: "PER_SEAT_MONTH", payerType: "OC" },
   { ...base, code: "WORKS_CONTRACT", description: "Works contract (band 1)", amountCents: 15000, unit: "PER_EVENT", payerType: "OC", bandMin: 0, bandMax: 1_000_000 },

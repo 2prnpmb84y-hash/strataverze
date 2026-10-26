@@ -458,3 +458,60 @@ export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
   CLOSED:
     "Close the case once the debt is paid, settled or written off, and reconcile the lot ledger.",
 };
+
+/**
+ * Payment plans for overdue levies (26 Oct 2026, for StrataVerze to review).
+ * Sources, all checked on 26 Oct 2026:
+ * - NSW Fair Trading Form 1 "Request for payment plan for overdue
+ *   contributions" (FT6648, November 2025), prescribed under cl 17K(1) of the
+ *   Strata Schemes Management Regulation 2016: its fields, the 28-day written
+ *   response to a complete request, reasons for a refusal, and that a plan
+ *   and an interest waiver each need a resolution.
+ * - NSW Government, "Assessing a payment plan for unpaid strata levies" and
+ *   "How to arrange a payment plan": majority vote at an owners corporation
+ *   or strata committee meeting, recorded in the minutes, not delegable to
+ *   the strata managing agent; up to 12 months; no information beyond the
+ *   form; refusal grounds; the contents of the payment plan statement; no
+ *   recovery action for levies covered by a plan being followed.
+ * - NSW Government, "Guide to strata law changes": no fee for a request (from
+ *   27 Oct 2025); from 23 Oct 2026 a plan can cover current levies and
+ *   interest, not only overdue levies (the standard form is still the one
+ *   for overdue levies).
+ * `pausedSteps` is StrataVerze's reading of "no recovery action": the 30-day
+ * notice and every later step wait while a plan is being followed.
+ */
+export const PAYMENT_PLANS = {
+  maxMonths: 12,
+  replyWithinDays: 28,
+  /** No fee or charge to the owner for asking for or entering a plan. */
+  ownerFeeAllowed: false,
+  requestForm: "Form 1 Request for payment plan for overdue contributions (NSW Fair Trading FT6648, November 2025)",
+  requestFormSource: "Strata Schemes Management Regulation 2016 cl 17K(1)",
+  decidedBy: "a majority vote at a meeting of the owners corporation or the strata committee, recorded in the minutes",
+  notDecidedBy: "the strata managing agent",
+  /** Plans may cover current levies and interest from this date. */
+  currentLeviesFrom: "2026-10-23",
+  /** Recovery steps that wait while a plan is being followed. */
+  pausedSteps: ["FINAL_NOTICE", "COMMITTEE_REVIEW", "LEGAL_REFERRAL", "PROCEEDINGS", "ENFORCEMENT"],
+  refusalGrounds: [
+    "the capital works fund would not be enough to meet the duty to repair and maintain common property",
+    "the administrative fund would not be enough to pay its expenses",
+    "the funds would not be enough to comply with an enforceable undertaking, a compliance notice or another order under an Act",
+  ],
+  /** What the payment plan statement must contain. */
+  statementContents: [
+    "the lot owner's name, address and lot number",
+    "the levies owing",
+    "the interest payable and how it is calculated",
+    "the payment schedule and payment methods",
+    "the amount paid to date",
+    "contact details for the strata managing agent or strata committee",
+    "the owner's right to ask for an extension (the owners corporation need not agree)",
+    "the date the plan was agreed",
+  ],
+  extensionStatement:
+    "You may ask the owners corporation to extend this payment plan. The owners corporation does not have to agree.",
+  helpUrl: "https://www.nsw.gov.au/housing-and-construction/strata/living/arrange-a-payment-plan",
+  mediation: "If the request is refused, the owner can apply to NSW Fair Trading's free mediation service, then to NCAT for an order that the refusal was unreasonable.",
+  source: "Strata Schemes Management Regulation 2016 cl 17K; NSW Government guidance (27 Oct 2025 and 23 Oct 2026 changes)",
+} as const;

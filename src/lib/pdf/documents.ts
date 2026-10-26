@@ -15,7 +15,7 @@ export const aud = (cents: number) =>
 const audDollars = (dollars: number) => aud(Math.round(dollars * 100));
 export const longDate = (iso: string) =>
   new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
-const planLine = (planNumber: string | null | undefined) => (planNumber ? `Strata Plan ${planNumber}` : null);
+export const planLine = (planNumber: string | null | undefined) => (planNumber ? `Strata Plan ${planNumber}` : null);
 
 // ─── Levy notice ────────────────────────────────────────────────────────────
 

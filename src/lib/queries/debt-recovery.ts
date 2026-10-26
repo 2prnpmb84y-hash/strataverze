@@ -234,8 +234,10 @@ export async function updateDebtRecoveryStep(
 
 export async function getPaymentPlanForCase(caseId: string) {
   try {
+    // A case can have more than one plan over time: the latest.
     return await db.orm.public.PaymentPlan
       .where((p) => p.caseId.eq(caseId))
+      .orderBy((p) => p.createdAt.desc())
       .first();
   } catch {
     return null;

@@ -49,12 +49,17 @@ export const PAYER_LABELS: Record<string, string> = {
   SUPPLIER: "Paid by the supplier",
 };
 
+/** Explanations for one variant of a fee, where it differs from the fee's own. */
+export const VARIANT_EXPLANATIONS: Record<string, string> = {
+  "RECOVERY_STEP:PAYMENT_PLAN": "StrataVerze charges a flat fee for setting up a payment plan. It is charged to the owners corporation and cannot be passed to the owner.",
+};
+
 export function toFeeView(quote: FeeQuote): FeeView {
   return {
     code: quote.code,
     variant: quote.variant,
     description: quote.description,
-    explanation: EXPLANATIONS[quote.code] ?? "A StrataVerze charge for this action.",
+    explanation: VARIANT_EXPLANATIONS[`${quote.code}:${quote.variant ?? ""}`] ?? EXPLANATIONS[quote.code] ?? "A StrataVerze charge for this action.",
     exGstCents: quote.exGstCents,
     gstCents: quote.gstCents,
     totalCents: quote.totalCents,
