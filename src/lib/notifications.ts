@@ -106,6 +106,8 @@ export async function notifyMeetingScheduled(params: {
   meetingTitle: string;
   meetingType: string;
   scheduledAt: Date;
+  /** The meeting's time zone. */
+  timeZone: string;
   location?: string;
   meetingId: string;
 }) {
@@ -115,6 +117,7 @@ export async function notifyMeetingScheduled(params: {
     meetingTitle: params.meetingTitle,
     meetingType: params.meetingType,
     scheduledAt: params.scheduledAt,
+    timeZone: params.timeZone,
     location: params.location,
     detailUrl: `${APP_URL}/committee/governance/${params.meetingId}`,
   });

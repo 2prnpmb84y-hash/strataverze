@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { AuthorisationError } from "@/lib/auth/require-membership";
@@ -15,7 +16,6 @@ import { getSchemeNameById } from "@/lib/queries/schemes";
 import { logActivity } from "@/lib/queries/activity-log";
 import { notifyInvitation } from "@/lib/notifications";
 import { consumeUpload, uploadErrorMessage, verifyUpload } from "@/lib/storage/uploads";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { applyChangeOwner, checkChangeOwner } from "@/lib/owner/change-owner";
 import { captureLibraryDocument, captureQuietly } from "@/lib/vault/sources";
 import { getTrialVault } from "@/lib/vault/capture";
@@ -35,7 +35,7 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
 
-    const checked = checkChangeOwner(Object.fromEntries(formData.entries()), sydneyToday());
+    const checked = checkChangeOwner(Object.fromEntries(formData.entries()), await schemeToday(schemeId));
     if (!checked.ok) return { fieldErrors: checked.fieldErrors };
     const input = checked.value;
     const invite = formData.get("invite") === "on" && !!input.email;

@@ -6,6 +6,7 @@
  * ledger) once the approvals it needs are in.
  */
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { approveInvoice, getSupplierInvoiceById } from "@/lib/queries/supplier-invoices";
@@ -171,7 +172,7 @@ async function finaliseSupplierInvoiceApproval(schemeId: string, invoiceId: stri
 
     if (payableAccount && invoice.accountCodeId) {
       const entryNumber = await getNextEntryNumber(schemeId);
-      const today = new Date().toISOString().split("T")[0];
+      const today = await schemeToday(schemeId);
       const lines: Array<{
         accountCodeId: string;
         fundId: string;

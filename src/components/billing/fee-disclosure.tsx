@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatAud } from "@/lib/billing/money";
 import { toFeeView, type FeeView } from "@/lib/billing/disclosure";
@@ -92,7 +93,7 @@ export function useTransactionFeeView(
         paymentCents: Math.round(amountDollars * 100),
         mode: table.mode,
         priceBook: table.priceBook,
-        date: new Date().toISOString().slice(0, 10),
+        date: platformToday(),
       });
       return quote ? toFeeView(quote) : null;
     } catch {

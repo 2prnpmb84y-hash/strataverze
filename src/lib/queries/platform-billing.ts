@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { referralIncomeEnabled } from "@/lib/billing/referral";
 import { getReferralIncomeForScheme, type ReferralIncomeRow } from "@/lib/queries/referral-income";
 import { toCents } from "@/lib/billing/money";
@@ -54,7 +55,8 @@ export interface PlatformFeesData {
 
 /** Everything the scheme's StrataVerze fees page shows. Caller checks access. */
 export async function getPlatformFeesData(schemeId: string, lotCount: number): Promise<PlatformFeesData> {
-  const today = new Date().toISOString().slice(0, 10);
+  // StrataVerze's own billing day.
+  const today = platformToday();
   const [priceBook, subscription, eventRows, invoiceRows] = await Promise.all([
     loadPriceBook(),
     db.orm.public.SchemeSubscription.where((s) => s.schemeId.eq(schemeId)).first(),

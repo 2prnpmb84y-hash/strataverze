@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { Button } from "@/components/ui/button";
 import { recordReferralIncomeAction, type ReferralFormState } from "@/lib/actions/referral-income";
 import { renderReferralDisclosure } from "@/lib/billing/referral";
@@ -21,7 +22,7 @@ export function ReferralForm({ schemes, template }: { schemes: SchemeOption[]; t
   const [amount, setAmount] = useState("");
   const [text, setText] = useState(template);
   const policies = schemes.find((s) => s.id === schemeId)?.policies ?? [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = platformToday();
   const preview = useMemo(
     () =>
       renderReferralDisclosure(text, {

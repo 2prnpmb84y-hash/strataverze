@@ -356,9 +356,11 @@ export interface LevyItem {
  */
 export function levyItems(
   notices: Array<LedgerNotice & { schemeId: string }>,
-  today: string,
+  /** Today, or today for a building (each building's own time zone). */
+  today: string | ((schemeId: string) => string),
   lots: Map<string, { label: string; schemeId: string }>,
 ): LevyItem[] {
+  const todayFor = typeof today === "string" ? () => today : today;
   const items = notices
     .filter((n) => String(n.status) !== "DRAFT")
     .map((n) => ({
@@ -370,7 +372,7 @@ export function levyItems(
       noticeNumber: String(n.noticeNumber),
       fundName: n.fund ? String(n.fund.name) : "",
       dueDate: toIsoDay(n.dueDate),
-      status: effectiveStatus(n, today),
+      status: effectiveStatus(n, todayFor(lots.get(n.lotId)?.schemeId ?? n.schemeId)),
       amountDue: Number(n.amountDue ?? 0) + Number(n.interestCharged ?? 0),
       amountPaid: Number(n.amountPaid ?? 0),
       balance: Number(n.balanceOutstanding ?? 0),

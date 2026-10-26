@@ -6,6 +6,7 @@
  * side, and proposing one to approve. Approving goes to the committee's vote.
  */
 import { useActionState, useState, useTransition } from "react";
+import { dayIn, formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,11 +22,9 @@ import type { rfqForCommittee } from "@/lib/works/marketplace";
 
 type Rfq = NonNullable<Awaited<ReturnType<typeof rfqForCommittee>>>;
 const money = (n: number) => `$${n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" }) : "Not set");
-const dateInput = (iso: string | null, plusDays = 0) => {
-  const d = iso ? new Date(iso) : new Date(Date.now() + plusDays * 86_400_000);
-  return d.toLocaleDateString("en-CA", { timeZone: "Australia/Sydney" });
-};
+/** Deadlines are shown, and entered, as days in the building's time zone (the server reads them the same way). */
+const when = (tz: string, iso: string | null) => (iso ? formatDateTimeIn(tz, iso, { weekday: "short", year: undefined }) : "Not set");
+const dateInput = (tz: string, iso: string | null, plusDays = 0) => dayIn(tz, iso ? new Date(iso) : new Date(Date.now() + plusDays * 86_400_000));
 const field = "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise";
 
 function Message({ state }: { state: WorksFormState }) {
@@ -124,11 +123,11 @@ function Deadlines({ schemeId, requestId, rfq }: { schemeId: string; requestId: 
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <div>
           <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">Interest closes</dt>
-          <dd className="text-ink">{when(rfq.interestClosesAt)}</dd>
+          <dd className="text-ink">{when(rfq.timeZone, rfq.interestClosesAt)}</dd>
         </div>
         <div>
           <dt className="text-xs font-medium text-ink-muted uppercase tracking-wide">Quotes close</dt>
-          <dd className="text-ink">{rfq.quoteClosesAt ? when(rfq.quoteClosesAt) : "Set when you invite"}</dd>
+          <dd className="text-ink">{rfq.quoteClosesAt ? when(rfq.timeZone, rfq.quoteClosesAt) : "Set when you invite"}</dd>
         </div>
       </dl>
       {rfq.canChangeDeadlines && !open && (
@@ -139,13 +138,13 @@ function Deadlines({ schemeId, requestId, rfq }: { schemeId: string; requestId: 
           {rfq.status === "INTEREST" && (
             <div>
               <label htmlFor="d-interest" className="block text-sm text-ink mb-1">Interest closes (end of day)</label>
-              <input id="d-interest" name="interestClosesAt" type="date" defaultValue={dateInput(rfq.interestClosesAt)} className={field} />
+              <input id="d-interest" name="interestClosesAt" type="date" defaultValue={dateInput(rfq.timeZone, rfq.interestClosesAt)} className={field} />
             </div>
           )}
           {(rfq.status === "QUOTING" || rfq.status === "CLOSED") && (
             <div>
               <label htmlFor="d-quote" className="block text-sm text-ink mb-1">Quotes close (end of day)</label>
-              <input id="d-quote" name="quoteClosesAt" type="date" defaultValue={dateInput(rfq.quoteClosesAt)} className={field} />
+              <input id="d-quote" name="quoteClosesAt" type="date" defaultValue={dateInput(rfq.timeZone, rfq.quoteClosesAt)} className={field} />
             </div>
           )}
           <div className="flex gap-2">
@@ -201,7 +200,7 @@ function Invite({ schemeId, requestId, rfq, direct }: { schemeId: string; reques
         </div>
         <div>
           <label htmlFor="inv-closes" className="block text-xs text-ink-muted mb-1">Quotes close (end of day)</label>
-          <input id="inv-closes" name="quoteClosesAt" type="date" defaultValue={dateInput(rfq.quoteClosesAt, 7)} className={field} />
+          <input id="inv-closes" name="quoteClosesAt" type="date" defaultValue={dateInput(rfq.timeZone, rfq.quoteClosesAt, 7)} className={field} />
         </div>
       </div>
       <Message state={state} />

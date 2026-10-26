@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import Link from "next/link";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
@@ -53,6 +54,8 @@ type MeetingItem = {
   meetingType: string;
   schemeId: string;
   scheduledAt: unknown;
+  /** The meeting's time zone; its times are shown in it. */
+  timezone?: string | null;
   location: string | null;
   motions: MotionItem[];
 };
@@ -138,6 +141,7 @@ export function CommitteeMeetingList({
               <div className="flex flex-col gap-2">
                 {scheduled.map((meeting) => {
                   const scheduledDate = new Date(String(meeting.scheduledAt));
+                  const meetingTz = meetingZone(meeting);
                   const pendingCount = meeting.motions.filter(
                     (mo) => mo.status === "PROPOSED",
                   ).length;
@@ -166,14 +170,14 @@ export function CommitteeMeetingList({
                         {meetingTypeLabels[meeting.meetingType] ??
                           meeting.meetingType}
                         {" · "}
-                        {scheduledDate.toLocaleDateString("en-AU", {
+                        {scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz,
                           weekday: "short",
                           day: "numeric",
                           month: "short",
                           year: "numeric",
                         })}
                         {" at "}
-                        {scheduledDate.toLocaleTimeString("en-AU", {
+                        {scheduledDate.toLocaleTimeString("en-AU", { timeZone: meetingTz,
                           hour: "numeric",
                           minute: "2-digit",
                         })}
@@ -214,6 +218,7 @@ export function CommitteeMeetingList({
               <div className="flex flex-col gap-2">
                 {completed.map((meeting) => {
                   const scheduledDate = new Date(String(meeting.scheduledAt));
+                  const meetingTz = meetingZone(meeting);
                   const passed = meeting.motions.filter(
                     (mo) => mo.status === "PASSED",
                   ).length;
@@ -236,7 +241,7 @@ export function CommitteeMeetingList({
                         <p className="text-xs text-ink-muted">
                           {schemeNames[meeting.schemeId] ?? ""}
                           {" · "}
-                          {scheduledDate.toLocaleDateString("en-AU", {
+                          {scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz,
                             day: "numeric",
                             month: "short",
                             year: "numeric",

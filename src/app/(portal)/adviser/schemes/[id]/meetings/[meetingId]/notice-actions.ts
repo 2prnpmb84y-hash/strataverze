@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { captureMeetingNotice } from "@/lib/vault/sources";
 import { AuthorisationError } from "@/lib/auth/require-membership";
 import { requireSchemeAccess } from "@/lib/auth/require-access";
@@ -74,7 +76,7 @@ export async function issueNoticeAction(
     const startIso = String(meeting.startTime ?? meeting.scheduledAt);
     const ruleSet = await getActiveRuleSet(scheme.state);
     const validation = type
-      ? validateNoticePeriod(ruleSet, type, new Date(), new Date(startIso))
+      ? validateNoticePeriod(ruleSet, type, new Date(), new Date(startIso), meetingZone(meeting, await schemeTimeZone(schemeId)))
       : { requiredDays: null, actualDays: 0, compliant: true };
 
     const content = assembleNoticeContent({
@@ -183,6 +185,7 @@ export async function issueNoticeAction(
       meetingTitle: meeting.title,
       meetingType: meeting.meetingType,
       scheduledAt: new Date(startIso),
+      timeZone: meetingZone(meeting, await schemeTimeZone(schemeId)),
       location: meeting.location ?? undefined,
       meetingId,
     }).catch(() => {});

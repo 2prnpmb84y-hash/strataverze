@@ -3,6 +3,8 @@
  * failed email never undoes the change it reports (it is logged).
  */
 import { and } from "@prisma/orm-postgres/orm-client";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { db } from "@/prisma/db";
 import { sendEmail } from "@/lib/email";
 import { siteUrl } from "@/lib/site-url";
@@ -309,17 +311,19 @@ async function contractorContacts(businessIds: string[]) {
 }
 
 const supplierJob = (rfqId: string) => `${siteUrl()}/supplier/quotes/${rfqId}`;
-const sydneyDate = (iso: string) => new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
+/** A deadline as the building's local time, for an email. */
+const localDeadline = (tz: string, iso: string) => formatDateTimeIn(tz, iso, { weekday: "short", year: undefined });
 
 /** A new job on the marketplace: to contractors who list the trade and work in the postcode. */
-export async function notifyRfqOpened(input: { rfqId: string; title: string; trade: string; suburb: string | null; interestClosesAt: string; businessIds: string[] }) {
+export async function notifyRfqOpened(input: { schemeId: string; rfqId: string; title: string; trade: string; suburb: string | null; interestClosesAt: string; businessIds: string[] }) {
   try {
+    const tz = await schemeTimeZone(input.schemeId);
     await send(await contractorContacts(input.businessIds), (p) =>
       worksEmail({
         to: p.email,
         subject: `New job: ${input.trade}${input.suburb ? ` in ${input.suburb}` : ""}`,
         heading: "A building is looking for quotes",
-        lines: [`Hello ${p.name},`, `"${input.title}": ${input.trade}${input.suburb ? `, ${input.suburb}` : ""}.`, `If you would like to quote, say you are interested by ${sydneyDate(input.interestClosesAt)}. The committee then chooses who to invite.`],
+        lines: [`Hello ${p.name},`, `"${input.title}": ${input.trade}${input.suburb ? `, ${input.suburb}` : ""}.`, `If you would like to quote, say you are interested by ${localDeadline(tz, input.interestClosesAt)}. The committee then chooses who to invite.`],
         buttonLabel: "See the job",
         url: supplierJob(input.rfqId),
       }),
@@ -332,13 +336,14 @@ export async function notifyRfqOpened(input: { rfqId: string; title: string; tra
 /** Invited to quote: to the invited contractors. */
 export async function notifyInvited(input: { schemeId: string; rfqId: string; rfqNumber: string; title: string; businessIds: string[]; quoteClosesAt: string }) {
   try {
+    const tz = await schemeTimeZone(input.schemeId);
     const s = await scheme(input.schemeId);
     await send(await contractorContacts(input.businessIds), (p) =>
       worksEmail({
         to: p.email,
         subject: `Invited to quote: ${input.title}`,
         heading: "You are invited to quote",
-        lines: [`Hello ${p.name},`, `${s.name} has invited you to quote for "${input.title}" (${input.rfqNumber}).`, `Quotes close ${sydneyDate(input.quoteClosesAt)}. The address and a contact are now on the job page.`],
+        lines: [`Hello ${p.name},`, `${s.name} has invited you to quote for "${input.title}" (${input.rfqNumber}).`, `Quotes close ${localDeadline(tz, input.quoteClosesAt)}. The address and a contact are now on the job page.`],
         buttonLabel: "See the job and quote",
         url: supplierJob(input.rfqId),
       }),

@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { formatDateIn, todayIn } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getIssuedLevyNoticesForScheme } from "@/lib/queries/levy-schedules";
@@ -46,6 +48,8 @@ export default async function AgedArrearsPage({
   if (!isAdviser) notFound();
 
   const notices = await getIssuedLevyNoticesForScheme(id);
+  // Arrears as at today in the building's time zone.
+  const tz = timeZoneOf(scheme);
   const now = new Date();
   const lotInfo = new Map(
     notices.map((n) => [
@@ -59,7 +63,7 @@ export default async function AgedArrearsPage({
 
   // Outstanding balances by lot, bucketed by days past the due date
   const lotMap = new Map<string, ArrearRow>(
-    agedArrears(notices, now.toISOString().slice(0, 10)).map((r) => [
+    agedArrears(notices, todayIn(tz, now)).map((r) => [
       r.lotId,
       {
         lotNumber: lotInfo.get(r.lotId)?.lotNumber ?? "0",
@@ -94,7 +98,7 @@ export default async function AgedArrearsPage({
     <div className="space-y-6">
       <PageHeader
         title="Aged Arrears"
-        description={`${String(scheme.name)} | As at ${now.toLocaleDateString("en-AU")}`}
+        description={`${String(scheme.name)} | As at ${formatDateIn(tz, now, { day: "2-digit", month: "2-digit", year: "numeric" })}`}
         backHref={`/adviser/schemes/${id}/finance/reports`}
         backLabel="Reports"
       />

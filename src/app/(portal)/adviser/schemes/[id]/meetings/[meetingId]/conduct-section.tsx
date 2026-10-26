@@ -36,6 +36,7 @@ export function ConductSection({
   openedAt,
   closedAt,
   items,
+  timeZone,
 }: {
   schemeId: string;
   meetingId: string;
@@ -43,6 +44,8 @@ export function ConductSection({
   openedAt: string | null;
   closedAt: string | null;
   items: ConductItemView[];
+  /** The meeting's time zone. */
+  timeZone: string;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +99,7 @@ export function ConductSection({
             {openedAt && (
               <span>
                 Opened{" "}
-                {new Date(openedAt).toLocaleString("en-AU", {
+                {new Date(openedAt).toLocaleString("en-AU", { timeZone,
                   day: "numeric",
                   month: "short",
                   hour: "numeric",
@@ -107,7 +110,7 @@ export function ConductSection({
             {closedAt && (
               <span>
                 {" · Closed "}
-                {new Date(closedAt).toLocaleString("en-AU", {
+                {new Date(closedAt).toLocaleString("en-AU", { timeZone,
                   day: "numeric",
                   month: "short",
                   hour: "numeric",

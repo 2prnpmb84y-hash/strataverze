@@ -4,6 +4,7 @@
  *
  * Money is handled in whole cents. Nothing here reads the database.
  */
+import { dayIn } from "@/lib/jurisdiction/time-zone";
 
 // ─── Scheme payment policy ──────────────────────────────────────────────────
 
@@ -224,12 +225,9 @@ export interface BankDetailVersionForControls {
 /** Default cooling-off period after a bank detail change, in business days. */
 export const DEFAULT_BANK_CHANGE_COOLING_OFF_BUSINESS_DAYS = 5;
 
-/** Monday to Friday business days from `from` to `to` (Sydney dates). Public holidays are not excluded. */
-export function businessDaysBetween(fromIso: string, toIso: string): number {
-  const toDay = (iso: string) =>
-    new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(
-      new Date(iso),
-    );
+/** Monday to Friday business days from `from` to `to` (dates in the building's time zone). Public holidays are not excluded. */
+export function businessDaysBetween(fromIso: string, toIso: string, timeZone: string): number {
+  const toDay = (iso: string) => dayIn(timeZone, iso);
   const start = new Date(`${toDay(fromIso)}T00:00:00Z`);
   const end = new Date(`${toDay(toIso)}T00:00:00Z`);
   let days = 0;
@@ -250,7 +248,9 @@ export function businessDaysBetween(fromIso: string, toIso: string): number {
 export function checkBankDetailsForPayment(
   latest: BankDetailVersionForControls | null,
   now: string,
-  coolingOffBusinessDays = DEFAULT_BANK_CHANGE_COOLING_OFF_BUSINESS_DAYS,
+  coolingOffBusinessDays: number,
+  /** The building's time zone: business days are counted in it. */
+  timeZone: string,
 ): ControlDecision {
   if (!latest) return { result: "allowed" };
   if (latest.status === "PENDING") {
@@ -259,7 +259,7 @@ export function checkBankDetailsForPayment(
   if (latest.status === "REJECTED") {
     return { result: "blocked", reason: "The supplier's latest bank details were rejected. Enter and verify correct details before paying." };
   }
-  const withinCoolingOff = businessDaysBetween(latest.changedAt, now) < coolingOffBusinessDays;
+  const withinCoolingOff = businessDaysBetween(latest.changedAt, now, timeZone) < coolingOffBusinessDays;
   if (withinCoolingOff && !latest.secondVerifiedById) {
     return {
       result: "blocked",

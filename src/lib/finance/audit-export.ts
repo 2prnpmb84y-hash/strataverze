@@ -4,6 +4,7 @@
  * the audit trail, for a financial year.
  */
 import { zipSync, strToU8 } from "fflate";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -128,7 +129,7 @@ export async function buildAuditExport(schemeId: string, financialYear: number):
     "trial-balance.csv": strToU8(csv(tb)),
     "journal.csv": strToU8(csv(journal)),
     "bank-reconciliation.csv": strToU8(csv(bank)),
-    "audit-trail.csv": strToU8(formatAuditTrailCsv(trail)),
+    "audit-trail.csv": strToU8(formatAuditTrailCsv(trail, await schemeTimeZone(schemeId))),
   });
   const name = String(scheme.planNumber ? `SP${scheme.planNumber}` : scheme.name).replace(/[^A-Za-z0-9]+/g, "-");
   return { fileName: `audit-export-${name}-FY${financialYear}.zip`, zip };

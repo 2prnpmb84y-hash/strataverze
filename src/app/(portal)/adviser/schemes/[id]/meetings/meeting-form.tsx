@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { instantToLocalInput, zoneOr } from "@/lib/jurisdiction/time-zone";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField, TextareaField } from "@/components/ui/form-field";
 import {
@@ -44,6 +45,7 @@ export function MeetingForm({
   meetingId,
   defaults,
   noticePeriods = {},
+  timeZone,
 }: {
   mode: "create" | "edit";
   schemeId: string;
@@ -62,7 +64,12 @@ export function MeetingForm({
   };
   /** Minimum notice days by meeting type, for the live notice-period hint. */
   noticePeriods?: Partial<Record<string, number>>;
+  /** The building's time zone: the default for a new meeting. */
+  timeZone: string;
 }) {
+  // Times on the form are local times in the meeting's time zone.
+  // An older meeting may hold a time zone typed by hand ("AEST"): fall back to the building's.
+  const meetingZone = zoneOr(defaults?.timezone, timeZone);
   const action =
     mode === "create"
       ? createMeetingAction.bind(null, schemeId)
@@ -77,14 +84,8 @@ export function MeetingForm({
     defaults?.meetingType ?? "AGM",
   );
   const [format, setFormat] = useState(defaults?.format ?? "IN_PERSON");
-  const [startValue, setStartValue] = useState(
-    defaults?.scheduledAt
-      ? new Date(defaults.scheduledAt).toISOString().slice(0, 16)
-      : "",
-  );
-  const endValue = defaults?.endTime
-    ? new Date(defaults.endTime).toISOString().slice(0, 16)
-    : "";
+  const [startValue, setStartValue] = useState(instantToLocalInput(meetingZone, defaults?.scheduledAt));
+  const endValue = instantToLocalInput(meetingZone, defaults?.endTime);
 
   const requiredDays = noticePeriods[normaliseType(meetingType)];
   const daysAway = wholeDaysFromToday(startValue);
@@ -216,8 +217,9 @@ export function MeetingForm({
       <FormField
         label="Timezone"
         name="timezone"
-        defaultValue={defaults?.timezone ?? "Australia/Sydney"}
-        helpText="IANA timezone for the meeting."
+        defaultValue={meetingZone}
+        error={state.fieldErrors?.timezone}
+        helpText="IANA time zone for the meeting. The date and time above are in this time zone."
       />
 
       <TextareaField

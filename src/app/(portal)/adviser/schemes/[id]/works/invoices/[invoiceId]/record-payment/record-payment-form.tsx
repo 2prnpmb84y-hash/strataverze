@@ -24,10 +24,13 @@ export function RecordPaymentForm({
   schemeId,
   invoiceId,
   instructions,
+  today,
 }: {
   schemeId: string;
   invoiceId: string;
   instructions: InstructionOption[];
+  /** Today in the building's time zone (the default payment date). */
+  today: string;
 }) {
   const router = useRouter();
 
@@ -109,7 +112,7 @@ export function RecordPaymentForm({
         name="paymentDate"
         type="date"
         required
-        defaultValue={new Date().toISOString().split("T")[0]}
+        defaultValue={today}
       />
 
       <FormField

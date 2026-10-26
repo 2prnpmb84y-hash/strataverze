@@ -14,6 +14,8 @@
  * cannot issue two orders or both answer one. Callers authorise first.
  */
 import { and } from "@prisma/orm-postgres/orm-client";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { requestPhotos } from "./requests";
@@ -294,6 +296,8 @@ export async function orderForContractor(workOrderId: string, businessIds: strin
     ended,
     id: order.id,
     contractorBusinessId: order.contractorBusinessId,
+    /** The building's time zone: the job's dates are days there. */
+    timeZone: scheme ? timeZoneOf(scheme) : PLATFORM_TIME_ZONE,
     workOrderNumber: String(order.workOrderNumber),
     title: String(order.title),
     description: ended ? "" : String(order.description ?? ""),

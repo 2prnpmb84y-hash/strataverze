@@ -25,12 +25,15 @@ export function EvotingSection({
   canOpen,
   ballot,
   fee = null,
+  timeZone,
 }: {
   schemeId: string;
   meetingId: string;
   adopted: boolean;
   canOpen: boolean;
   ballot: BallotView | null;
+  /** The meeting's time zone. */
+  timeZone: string;
   /** The StrataVerze fee for opening a ballot, if any. */
   fee?: FeeView | null;
 }) {
@@ -110,8 +113,8 @@ export function EvotingSection({
             </span>
           </div>
           <p className="text-xs text-ink-muted">
-            Opens {new Date(ballot.opensAt).toLocaleString("en-AU")} · Closes{" "}
-            {new Date(ballot.closesAt).toLocaleString("en-AU")}
+            Opens {new Date(ballot.opensAt).toLocaleString("en-AU", { timeZone })} · Closes{" "}
+            {new Date(ballot.closesAt).toLocaleString("en-AU", { timeZone })}
           </p>
           {ballot.status === "OPEN" ? (
             <Button

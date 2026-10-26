@@ -5,6 +5,7 @@
  * governing rule set onto the meeting and records the opening audit event.
  */
 import { getActiveRuleSet, applyRuleSetToMeeting } from "./rule-set-repo";
+import { PLATFORM_TIME_ZONE, zoneOr } from "@/lib/jurisdiction/time-zone";
 import { recordMeetingEvent } from "./events";
 import {
   earliestCompliantMeetingDate,
@@ -24,7 +25,8 @@ export const MEETING_TYPES: MeetingType[] = [
 export const MEETING_FORMATS = ["IN_PERSON", "VIRTUAL", "HYBRID"] as const;
 export type MeetingFormat = (typeof MEETING_FORMATS)[number];
 
-export const DEFAULT_TIMEZONE = "Australia/Sydney";
+/** Only when no time zone is given. The meeting actions always pass the meeting's (the building's by default). */
+export const DEFAULT_TIMEZONE = PLATFORM_TIME_ZONE;
 
 /** Map a legacy or alias meeting type to the canonical rule type. */
 export function normaliseMeetingType(value: string): MeetingType | null {
@@ -90,7 +92,7 @@ export function validateMeetingSetup(
   }
 
   if (type && start && !Number.isNaN(start.getTime())) {
-    const v = validateNoticePeriod(ruleSet, type, now, start);
+    const v = validateNoticePeriod(ruleSet, type, now, start, zoneOr(input.timezone, PLATFORM_TIME_ZONE));
     if (!v.compliant && v.requiredDays != null) {
       warnings.startTime = `This is short of the ${v.requiredDays}-day notice period for this meeting type (currently ${v.actualDays} day(s) away).`;
     }

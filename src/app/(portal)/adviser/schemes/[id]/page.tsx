@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getStrataRollData } from "@/lib/queries/lots";
 import { getLevySchedulesForScheme } from "@/lib/queries/levy-schedules";
@@ -16,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { SchemeForm } from "../scheme-form";
-import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 import { DeleteSchemeButton } from "./delete-button";
 import { AnnouncementsCard } from "./_sections/announcements-card";
 import { FundsCard } from "./_sections/funds-card";
@@ -111,7 +111,7 @@ export default async function SchemeDetailPage({
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} />
       <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} />
-      <LeviesCard id={id} schedules={levies} />
+      <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} />
       <WorkOrdersCard id={id} workOrders={workOrders} />
@@ -148,7 +148,7 @@ export default async function SchemeDetailPage({
           mode="edit"
           schemeId={scheme.id}
           lockCore={!profile?.isPlatformAdmin}
-          today={todayInSydney()}
+          today={await schemeToday(id)}
           defaults={{
             name: scheme.name,
             planNumber: scheme.planNumber,

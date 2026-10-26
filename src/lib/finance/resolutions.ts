@@ -3,6 +3,8 @@
  * decision can rely on, and checking a chosen meeting and motion.
  */
 import { db } from "@/prisma/db";
+import { formatDateIn, isTimeZone } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 
 export const GENERAL_MEETING_TYPES = ["AGM", "EGM", "SGM", "FIRST_AGM"];
@@ -24,6 +26,7 @@ export async function resolutionMeetings(schemeId: string, types: string[] = GEN
     .limit(100)
     .all();
   if (meetings.length === 0) return [];
+  const tz = await schemeTimeZone(schemeId);
   const items = await db.orm.public.AgendaItem
     .where((a) => a.meetingId.in(meetings.map((m) => m.id)))
     .orderBy((a) => a.position.asc())
@@ -33,7 +36,8 @@ export async function resolutionMeetings(schemeId: string, types: string[] = GEN
     .map((m) => ({
       id: m.id,
       meetingType: m.meetingType,
-      label: `${m.title} (${new Date(String(m.scheduledAt)).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" })})`,
+      // The meeting's date in its own time zone (the building's if none is recorded).
+      label: `${m.title} (${formatDateIn(isTimeZone(m.timezone) ? String(m.timezone) : tz, String(m.scheduledAt))})`,
       motions: items.filter((a) => a.meetingId === m.id && carried(a)).map((a) => ({ id: a.id, label: `${a.position}. ${a.title}` })),
     }))
     .filter((m) => m.motions.length > 0);

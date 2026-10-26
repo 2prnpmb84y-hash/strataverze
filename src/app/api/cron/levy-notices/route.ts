@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { NO_STORE } from "@/lib/http/no-store";
 import { bearerMatches } from "@/lib/auth/secret-compare";
-import { sydneyToday } from "@/lib/finance/interest-setting";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { runLevyNoticeDay } from "@/lib/levies/issue-notices";
 import { runWorksDay } from "@/lib/works/daily";
 import { logError } from "@/lib/log";
@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
   if (!bearerMatches(request.headers.get("authorization"), process.env.CRON_SECRET)) {
     return new NextResponse("Unauthorized", { status: 401, headers: NO_STORE });
   }
-  const today = sydneyToday();
+  // Each building's day is worked out in its own time zone; this is StrataVerze's, for the report.
+  const now = new Date();
+  const today = platformToday(now);
   // First, and caught: the works run is quick, and neither run stops the other.
   let works: { interestClosed: number; quotesClosed: number } | { error: string };
   try {
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
     logError("[cron] works marketplace day failed:", err);
     works = { error: "failed" };
   }
-  const { recovered, issued, resent } = await runLevyNoticeDay(today);
+  const { recovered, issued, resent } = await runLevyNoticeDay(now);
   return NextResponse.json(
     {
       today,

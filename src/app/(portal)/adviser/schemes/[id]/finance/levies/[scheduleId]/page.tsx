@@ -1,5 +1,5 @@
 import { issueDateFor, issueTiming } from "@/lib/levies/issue-timing";
-import { sydneyToday } from "@/lib/finance/interest-setting";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
@@ -122,7 +122,7 @@ export default async function LevyScheduleDetailPage({
   const totalPlanned = plannedNotices.reduce((s, n) => s + Number(n.amountDue ?? 0), 0);
   const totalPaid = notices.reduce((s, n) => s + Number(n.amountPaid ?? 0), 0);
   // Planned notices past their 5-week mark wait for the Adviser to confirm.
-  const today = sydneyToday();
+  const today = await schemeToday(id);
   const levyRule = rulesForState(scheme.state).rules.LEVY_NOTICE_RULES;
   const overdueCount = status === "ACTIVE" ? plannedNotices.filter((n) => issueTiming(toIsoDay(n.dueDate), today, levyRule).kind !== "planned").length : 0;
 
@@ -349,6 +349,7 @@ export default async function LevyScheduleDetailPage({
                       balance={balance}
                       isSpecialLevy={isSpecial}
                       feeTable={feeTable}
+                      today={today}
                     />}
                 </div>
               );

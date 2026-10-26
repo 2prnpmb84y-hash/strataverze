@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getLotDetail } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -26,7 +28,6 @@ import { TenancyDetails } from "./tenancy-details";
 import { LotActionButtons } from "./lot-action-buttons";
 import { RollOwnerName } from "./roll-owner-name";
 import { ChangeOwnerButton } from "@/components/lots/change-owner-button";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { connection } from "next/server";
 import { loadLotLevyView } from "@/lib/levies/lot-levy-view";
 import { LevyNoticesView } from "@/components/levies/levy-notices-view";
@@ -109,7 +110,7 @@ export default async function LotDetailPage({
           lotId={lotId}
           lotLabel={lotLabel}
           currentOwner={lotDetailExt?.rollOwnerName ?? (lot.owners.length > 0 ? ownerName : null)}
-          today={sydneyToday()}
+          today={await schemeToday(id)}
         />
       </div>
 
@@ -316,6 +317,7 @@ export default async function LotDetailPage({
           /* ── Financials tab ─────────────────────────────── */
           financials: (
             <LotFinancials
+              timeZone={timeZoneOf(scheme)}
               financials={lot.financials}
               levyHistory={lot.levyHistory.map((lh) => ({
                 ...lh,
@@ -399,6 +401,7 @@ export default async function LotDetailPage({
           /* ── Documents tab ──────────────────────────────── */
           documents: (
             <LotDocuments
+              timeZone={timeZoneOf(scheme)}
               documents={await Promise.all(
                 documents.map(async (d) => ({
                   id: String(d.id),

@@ -1,5 +1,6 @@
 "use server";
 import { logError } from "@/lib/log";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/prisma/db";
@@ -28,7 +29,7 @@ export async function recordReferralIncomeAction(_prev: ReferralFormState, formD
     const receivedAt = String(formData.get("receivedAt") ?? "");
     const template = String(formData.get("disclosureTemplate") ?? "");
     const disclosureText = renderReferralDisclosure(template, { partnerName, amountCents: Number.isNaN(amountCents) ? 0 : amountCents });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = platformToday();
 
     const problem = referralIncomeProblem(
       { schemeId, insurancePolicyId: policyId, partnerName, amountCents, receivedAt, disclosureText },

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getIssuedLevyNoticesForScheme } from "@/lib/queries/levy-schedules";
@@ -36,7 +37,7 @@ export default async function AccountantLevyRegisterPage({
 
   const levies = levyRegister(
     await getIssuedLevyNoticesForScheme(id),
-    new Date().toISOString().slice(0, 10),
+    await schemeToday(id),
   );
 
   // Calculate totals

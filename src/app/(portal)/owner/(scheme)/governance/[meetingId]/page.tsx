@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { meetingZone } from "@/lib/jurisdiction/time-zone";
 import { requireCommitteeAccess } from "@/lib/queries/committee-access";
 import { getMeetingById } from "@/lib/queries/meetings";
 import { PageHeader } from "@/components/ui/page-header";
@@ -26,6 +27,8 @@ export default async function OwnerMeetingDetailPage({
   if (!hasAccess) notFound();
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
+  // Shown in the meeting's own time zone (stored times are instants).
+  const meetingTz = meetingZone(meeting);
   const motionCount = meeting.motions.length;
 
   const votedMotions = meeting.motions.filter(
@@ -48,7 +51,7 @@ export default async function OwnerMeetingDetailPage({
     <div className="max-w-3xl">
       <PageHeader
         title={meeting.title}
-        description={`${meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType} · ${scheduledDate.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} at ${scheduledDate.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })}`}
+        description={`${meetingTypeLabels[meeting.meetingType] ?? meeting.meetingType} · ${scheduledDate.toLocaleDateString("en-AU", { timeZone: meetingTz, weekday: "long", day: "numeric", month: "long", year: "numeric" })} at ${scheduledDate.toLocaleTimeString("en-AU", { timeZone: meetingTz, hour: "numeric", minute: "2-digit" })}`}
         backHref="/owner/governance"
         backLabel="Governance"
       />

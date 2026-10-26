@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { myContractorBusinessIds } from "@/lib/works/urgent-orders";
 import { jobsForContractor } from "@/lib/works/marketplace";
 import { Card, CardHeader } from "@/components/ui/card";
 
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-AU", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" }) : "");
+/** A deadline in the job's building's time zone. */
+const when = (tz: string, iso: string | null) => (iso ? formatDateTimeIn(tz, iso, { weekday: "short", year: undefined }) : "Not set");
 
 /**
  * Jobs to quote (works marketplace stage 3, 25 Oct 2026): jobs open to the
@@ -36,7 +38,7 @@ export default async function SupplierQuotesPage() {
                 <Link href={`/supplier/quotes/${j.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-ink truncate">{j.title}</p>
-                    <p className="text-xs text-ink-muted">{[j.trade, j.suburb].filter(Boolean).join(" · ")}{j.quoteClosesAt ? ` · quotes close ${when(j.quoteClosesAt)}` : ""}</p>
+                    <p className="text-xs text-ink-muted">{[j.trade, j.suburb].filter(Boolean).join(" · ")}{j.quoteClosesAt ? ` · quotes close ${when(j.timeZone, j.quoteClosesAt)}` : ""}</p>
                   </div>
                   <span className="text-xs text-ink-muted">{j.invitationStatus === "DECLINED" ? "You declined" : j.quoteStatus === "SUBMITTED" ? "Quoted" : j.quoteStatus === "ACCEPTED" ? "Your quote was approved" : j.quoteStatus === "DECLINED" ? "Not selected" : j.statusLabel}</span>
                 </Link>
@@ -57,7 +59,7 @@ export default async function SupplierQuotesPage() {
                 <Link href={`/supplier/quotes/${j.id}`} className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-ink truncate">{j.title}</p>
-                    <p className="text-xs text-ink-muted">{[j.trade, j.suburb].filter(Boolean).join(" · ")} · interest closes {when(j.interestClosesAt)}</p>
+                    <p className="text-xs text-ink-muted">{[j.trade, j.suburb].filter(Boolean).join(" · ")} · interest closes {when(j.timeZone, j.interestClosesAt)}</p>
                   </div>
                   <span className="text-xs text-ink-muted">{j.interested ? "You are interested" : "Open"}</span>
                 </Link>

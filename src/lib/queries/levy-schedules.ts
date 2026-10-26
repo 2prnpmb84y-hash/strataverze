@@ -1,4 +1,5 @@
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { captureTransactionFee } from "@/lib/billing/capture";
 import { toCents } from "@/lib/billing/money";
 import { splitLevyPayment } from "@/lib/finance/owner-credit";
@@ -6,7 +7,6 @@ import { recordCreditMovement } from "@/lib/finance/owner-credits";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { NOT_ARREARS_STATUSES, isInArrears, toArrearsNotice } from "@/lib/finance/arrears";
-import { todayInSydney } from "@/lib/onboarding/property-onboarding";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric<P extends number = 12, S extends number = 2>(value: number | string): Numeric<P, S> {
@@ -379,8 +379,6 @@ export async function recordLevyPayment(
     feeConfirmedCents?: number | null;
     /** False when the fee is captured once for a bank deposit split across notices. */
     captureFee?: boolean;
-  } = {
-    paymentDate: new Date().toISOString().slice(0, 10),
   },
 ): Promise<{ appliedCents: number; excessCents: number; creditTxId: string | null; receiptId: string | null }> {
   return db.transaction(async (tx) => {
@@ -491,11 +489,11 @@ export async function getIssuedLevyNoticesForLot(schemeId: string, lotId: string
 
 /**
  * Fetch the levy notices in arrears for a scheme: issued, past their due date
- * (in Sydney) and not paid. This is the one arrears definition
+ * (today in the building's time zone) and not paid. This is the one arrears definition
  * (src/lib/finance/arrears.ts, financials review B11).
  */
 export async function getOverdueLevyNotices(schemeId: string, limit = 500) {
-  const today = todayInSydney();
+  const today = await schemeToday(schemeId);
   const notices = await db.orm.public.LevyNotice
     .where((ln) =>
       and(

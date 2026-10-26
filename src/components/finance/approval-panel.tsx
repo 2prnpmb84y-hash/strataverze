@@ -1,4 +1,5 @@
 import type { InvoiceControlView } from "@/lib/finance/control-view";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 
 const ROLE_LABELS: Record<string, string> = {
   TREASURER: "Treasurer",
@@ -6,8 +7,7 @@ const ROLE_LABELS: Record<string, string> = {
   ADVISER: "Adviser",
 };
 
-const when = (iso: string) =>
-  new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
+const when = (tz: string, iso: string) => formatDateTimeIn(tz, iso, { year: undefined });
 
 /** Approvals so far and what is still needed before the invoice can be paid. */
 export function ApprovalPanel({ view, status }: { view: InvoiceControlView; status: string }) {
@@ -31,7 +31,7 @@ export function ApprovalPanel({ view, status }: { view: InvoiceControlView; stat
           <ul className="mt-2 space-y-1">
             {view.approvals.map((a, i) => (
               <li key={i} className="text-ink-muted">
-                {i + 1}. {a.name} ({ROLE_LABELS[a.role] ?? a.role}), {when(a.approvedAt)}
+                {i + 1}. {a.name} ({ROLE_LABELS[a.role] ?? a.role}), {when(view.timeZone, a.approvedAt)}
               </li>
             ))}
           </ul>

@@ -21,6 +21,7 @@
  * invoice per works invoice. Callers authorise first.
  */
 import { and } from "@prisma/orm-postgres/orm-client";
+import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
 import { WORKS_PHOTOS_MAX } from "@/config/works";
@@ -50,10 +51,6 @@ function isUniqueViolation(err: unknown): boolean {
   return /23505|unique|duplicate key/i.test(text);
 }
 
-/** Today's date in Sydney, YYYY-MM-DD. */
-export function sydneyToday(now = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-}
 
 function isDate(v: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
@@ -326,7 +323,9 @@ export async function submitInvoice(input: { workOrderId: string; businessIds: s
   const fullLimit = order.amountLimit != null ? Number(order.amountLimit) : null;
   // What is left of the work order's amount after anything already paid on it.
   const amountLimit = fullLimit == null ? null : Math.max(0, fullLimit - (await paidOnOrderBefore(order.id, null)));
-  const checked = checkInvoice(input.raw, { today: sydneyToday(input.now), amountLimit, gstRegistered: !!business?.gstRegistered });
+  // The invoice's dates are checked against today in the building's time zone.
+  const buildingToday = await schemeToday(order.schemeId, input.now ?? new Date());
+  const checked = checkInvoice(input.raw, { today: buildingToday, amountLimit, gstRegistered: !!business?.gstRegistered });
   if (!checked.ok) return checked;
   const v = checked.value;
   // The same invoice number from this contractor for this building, still in progress or paid.
@@ -335,7 +334,7 @@ export async function submitInvoice(input: { workOrderId: string; businessIds: s
     .first();
   if (same) return { ok: false as const, fieldErrors: { invoiceNumber: "You have already sent this building an invoice with this number." } };
   const upload = await verifyUpload({ uploadId: v.uploadId, schemeId: order.schemeId, purpose: "works_invoice", profileId: input.profileId });
-  const today = sydneyToday(input.now);
+  const today = buildingToday;
   let created;
   try {
     created = await consumeUpload(
@@ -704,7 +703,7 @@ export async function closeOutForCommittee(schemeId: string, requestId: string, 
     invoices.map(async ({ row, documentUrl }) => {
       const variation = await variationState(row);
       const si = await db.orm.public.SupplierInvoice.where((s) => s.worksInvoiceId.eq(row.id)).first();
-      const bank = si ? await bankState(si.supplierId, payment.coolingOffDays) : null;
+      const bank = si ? await bankState(si.supplierId, payment.coolingOffDays, await schemeTimeZone(schemeId)) : null;
       const status = String(row.status);
       return {
         id: row.id,
@@ -775,7 +774,7 @@ export async function closeOutForCommittee(schemeId: string, requestId: string, 
 }
 
 /** Where the contractor's bank details stand with the building, for the committee's view. */
-async function bankState(supplierId: string, coolingOffDays: number) {
+async function bankState(supplierId: string, coolingOffDays: number, timeZone: string) {
   const versions = await db.orm.public.SupplierBankDetailVersion.where((v) => v.supplierId.eq(supplierId)).limit(100).all();
   const latest = versions.sort((a, b) => String(b.changedAt).localeCompare(String(a.changedAt)))[0] ?? null;
   if (!latest) return { status: "NONE" as const, label: "The contractor has not given bank details yet." };
@@ -785,6 +784,7 @@ async function bankState(supplierId: string, coolingOffDays: number) {
     { status: "VERIFIED", changedById: latest.changedBy, changedAt: new Date(String(latest.changedAt)).toISOString(), verifiedById: latest.verifiedBy ?? null, verifiedAt: latest.verifiedAt ? String(latest.verifiedAt) : null, verificationMethod: null, secondVerifiedById: latest.secondVerifiedBy ?? null },
     new Date().toISOString(),
     coolingOffDays,
+    timeZone,
   );
   if (check.result === "blocked") return { status: "PENDING" as const, label: "Bank details verified once. They changed recently, so a second person must also verify them before payment." };
   return { status: "VERIFIED" as const, label: latest.secondVerifiedBy ? "Bank details verified twice." : "Bank details verified." };

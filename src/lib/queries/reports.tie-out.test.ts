@@ -19,7 +19,7 @@ vi.mock("@/prisma/db", () => {
   return { db: { orm: { public: new Proxy({}, { get: (_t, n: string) => model(n) }) } } };
 });
 vi.mock("@prisma/orm-postgres/orm-client", () => ({ and: (...c: unknown[]) => c, or: (...c: unknown[]) => c }));
-vi.mock("@/lib/onboarding/property-onboarding", () => ({ todayInSydney: () => "2026-10-26" }));
+vi.mock("@/lib/jurisdiction/scheme-time", async () => ({ ...(await vi.importActual<typeof import("@/lib/jurisdiction/scheme-time")>("@/lib/jurisdiction/scheme-time")), schemeToday: async () => "2026-10-26" }));
 
 import { getFundSummaryReport, getTrialBalanceReport } from "./reports";
 import { fundPositions, getFundPositions } from "@/lib/finance/fund-position";

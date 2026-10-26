@@ -1,5 +1,6 @@
 "use server";
 import { logError } from "@/lib/log";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
@@ -106,7 +107,7 @@ export async function adoptPlanAction(schemeId: string, planId: string, meetingI
 export async function reviewPlanAction(schemeId: string, planId: string): Promise<PlanActionState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const today = await schemeToday(schemeId);
     const draft = await copyPlanForReview(schemeId, planId, today, profile.id);
     revalidatePath(base(schemeId));
     return { success: true, id: draft.id };

@@ -1,6 +1,8 @@
 "use server";
 
 import { isWorksTrade } from "@/config/works";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
 import {
@@ -511,8 +513,8 @@ export async function saveInsurance(
       policyNumber: toVarchar<100>(
         ((formData.get("policyNumber") as string) ?? "").trim(),
       ),
-      startDate: (formData.get("startDate") as string) || new Date().toISOString().slice(0, 10),
-      expiryDate: (formData.get("expiryDate") as string) || new Date().toISOString().slice(0, 10),
+      startDate: (formData.get("startDate") as string) || platformToday(),
+      expiryDate: (formData.get("expiryDate") as string) || platformToday(),
       coverageAmount: toNumeric<14, 2>(
         (formData.get("coverageAmount") as string) || "0",
       ),
@@ -802,7 +804,7 @@ export async function acceptMembership(
         ...(plan
           ? { planMonthlyPrice: toNumeric<10, 2>(plan.cents / 100), planGstInclusive: plan.gstInclusive }
           : {}),
-        billingTimezone: toVarchar<100>("Australia/Sydney"),
+        billingTimezone: toVarchar<100>(PLATFORM_TIME_ZONE),
       });
     }
 

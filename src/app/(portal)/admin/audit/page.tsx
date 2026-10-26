@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 import { requirePlatformAdminPage } from "@/lib/auth/require-access";
 import { latestAuditCheck, listSecurityEvents } from "@/lib/queries/security-audit";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
@@ -58,8 +59,8 @@ export default async function AdminAuditPage({
             <div className="space-y-1">
               <p className={`text-sm ${check.ok ? "text-ink" : "text-red-700 font-medium"}`}>
                 {check.ok
-                  ? `Unbroken at the last check (${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })}, ${check.rowsChecked.toLocaleString("en-AU")} events checked${check.fullCheck ? ", full check" : ""}).`
-                  : `BROKEN at event #${check.firstBadSeq}: ${check.problem ?? "the chain does not match"} (checked ${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: "Australia/Sydney" })}). Follow the incident steps in the security runbook.`}
+                  ? `Unbroken at the last check (${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: PLATFORM_TIME_ZONE })}, ${check.rowsChecked.toLocaleString("en-AU")} events checked${check.fullCheck ? ", full check" : ""}).`
+                  : `BROKEN at event #${check.firstBadSeq}: ${check.problem ?? "the chain does not match"} (checked ${new Date(check.checkedAt).toLocaleString("en-AU", { timeZone: PLATFORM_TIME_ZONE })}). Follow the incident steps in the security runbook.`}
               </p>
               {check.stale && (
                 <p className="text-sm text-amber-800 font-medium">

@@ -196,11 +196,14 @@ export function RecordPaymentForm({
   balance,
   isSpecialLevy = false,
   feeTable = null,
+  today,
 }: {
   schemeId: string;
   noticeId: string;
   balance: number;
   isSpecialLevy?: boolean;
+  /** Today in the building's time zone (the default payment date). */
+  today: string;
   /** StrataVerze transaction fee rows, or null when no fee is charged. */
   feeTable?: TransactionFeeTable | null;
 }) {
@@ -208,7 +211,6 @@ export function RecordPaymentForm({
     recordLevyPaymentFormAction.bind(null, schemeId, noticeId),
     {},
   );
-  const today = new Date().toISOString().slice(0, 10);
   const [amount, setAmount] = useState(balance);
   const [feeConfirmed, setFeeConfirmed] = useState(false);
   const [creditConfirmed, setCreditConfirmed] = useState(false);

@@ -384,7 +384,7 @@ async function openForQuotes(schemeId: string, requestId: string, actorId: strin
   const rfq = await openRfq({ schemeId, requestId, openedById: actorId, summary });
   const businesses = await eligibleBusinesses(rfq);
   await logActivity({ schemeId, actorId, action: "WORKS_RFQ_OPENED", entityType: "WorksRequest", entityId: requestId, metadata: { rfqNumber: String(rfq.rfqNumber), contractorsTold: businesses.length } });
-  await notifyRfqOpened({ rfqId: rfq.id, title: String(rfq.title), trade: String(rfq.trade), suburb: rfq.suburb ? String(rfq.suburb) : null, interestClosesAt: String(rfq.interestClosesAt), businessIds: businesses.map((b) => b.id) });
+  await notifyRfqOpened({ schemeId, rfqId: rfq.id, title: String(rfq.title), trade: String(rfq.trade), suburb: rfq.suburb ? String(rfq.suburb) : null, interestClosesAt: String(rfq.interestClosesAt), businessIds: businesses.map((b) => b.id) });
   return rfq;
 }
 

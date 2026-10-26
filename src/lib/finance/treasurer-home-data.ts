@@ -1,15 +1,16 @@
 /** Loading the treasurer's "this month" view (server). */
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { getInvoicesAwaitingApproval, getWorksInvoicesAwaitingApproval } from "./invoice-approval";
 import { getOwnerCreditRefunds } from "./owner-credits";
-import { sydneyToday } from "./interest-setting";
 import { treasurerMonth, type TreasurerInputs, type TreasurerMonth } from "./treasurer-home";
 
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
 const cents = (v: unknown) => Math.round(Number(v ?? 0) * 100);
 
-export async function getTreasurerMonth(schemeId: string, today = sydneyToday()): Promise<TreasurerMonth> {
+export async function getTreasurerMonth(schemeId: string, todayDay?: string): Promise<TreasurerMonth> {
+  const today = todayDay ?? (await schemeToday(schemeId));
   const [txns, invoices, works, refunds, notices, suspense, periods] = await Promise.all([
     db.orm.public.BankTransaction
       .where((t) => and(t.schemeId.eq(schemeId), t.reconciliationStatus.eq("UNMATCHED"), t.isDuplicate.eq(false)))

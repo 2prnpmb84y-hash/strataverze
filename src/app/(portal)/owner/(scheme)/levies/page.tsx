@@ -1,4 +1,6 @@
 import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -44,10 +46,11 @@ export default async function OwnerLeviesPage() {
   const notices = (await getLevyNoticesForLots(lotIds)).filter(
     (n) => String(n.status) !== "DRAFT",
   );
-  const today = new Date().toISOString().slice(0, 10);
+  // Today in each building's own time zone.
+  const todayBy = new Map(schemes.map((s) => [s.id, todayIn(timeZoneOf(s))]));
   const displayItems = levyItems(
     notices,
-    today,
+    (schemeId) => todayBy.get(schemeId) ?? todayIn(timeZoneOf(schemes[0])),
     new Map(lotEntries.map((e) => [e.lotId, { label: lotLabels.get(e.lotId) ?? "", schemeId: e.schemeId }])),
   );
 

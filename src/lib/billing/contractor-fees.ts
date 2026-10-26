@@ -9,6 +9,7 @@
  * provided the price has not changed since.
  */
 import { db } from "@/prisma/db";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { fromCents } from "./money";
@@ -21,7 +22,8 @@ type Orm = typeof db.orm;
 const numeric = (cents: number) => String(fromCents(cents)) as unknown as Numeric<12, 2>;
 const ts = (iso: string) => iso as unknown as TimestampString<3>;
 const isoTime = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? ""));
-const today = () => new Date().toISOString().slice(0, 10);
+// StrataVerze's own billing day (not UTC).
+const today = () => platformToday();
 
 export const COMPLIANCE_FEE_DECLARATION = "COMPLIANCE_VERIFICATION_FEE";
 

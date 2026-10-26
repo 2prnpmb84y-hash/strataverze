@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
+import { schemeToday, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import { connection } from "next/server";
 import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getLotInScheme, getStrataRollData } from "@/lib/queries/lots";
 import { getLotDetailExtended } from "@/lib/queries/lot-workflows";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { formatLotLabel } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -31,7 +32,7 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
   await recordSecurityEventLater({ action: "view.owner_details", outcome: "allowed", actorRole: "COMMITTEE", schemeId, resourceType: "Lot", resourceId: lotId });
 
   const lotLabel = `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${lot.unitNumber})` : ""}`;
-  const settled = detail?.lastSettled ? new Date(String(detail.lastSettled)).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" }) : "—";
+  const settled = detail?.lastSettled && scheme ? formatDateIn(timeZoneOf(scheme), String(detail.lastSettled), { day: "2-digit", month: "2-digit" }) : "—";
   const rows: Array<[string, string]> = [
     ["Owner (strata roll)", detail?.rollOwnerName || row?.ownerNames || "—"],
     ["Email", detail?.ownerEmail || "—"],
@@ -51,7 +52,7 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
         backLabel="Strata Roll"
       />
       <div className="flex flex-wrap items-center gap-3">
-        <ChangeOwnerButton schemeId={schemeId} lotId={lotId} lotLabel={lotLabel} currentOwner={detail?.rollOwnerName ?? null} today={sydneyToday()} />
+        <ChangeOwnerButton schemeId={schemeId} lotId={lotId} lotLabel={lotLabel} currentOwner={detail?.rollOwnerName ?? null} today={await schemeToday(schemeId)} />
         {row && <FinancialStatusChip financial={row.financial} overdueCents={row.overdueCents} oldestOverdue={row.oldestOverdue} />}
       </div>
       <Card>

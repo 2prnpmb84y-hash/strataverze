@@ -4,6 +4,8 @@
  * record payment, and the supplier's bank detail status.
  */
 import { formatAud } from "@/lib/billing/money";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { getApprovalMembers, getLatestBankDetailVersion, getPaymentSettings } from "@/lib/queries/payment-controls";
 import {
   approversRequired,
@@ -28,10 +30,10 @@ const METHOD_LABELS: Record<string, string> = {
   DOCUMENT: "a document from the supplier",
 };
 
-const day = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" });
 
 export interface InvoiceControlView {
+  /** The building's time zone, for showing when each approval was given. */
+  timeZone: string;
   approvals: { name: string; role: string; approvedAt: string; isException: boolean }[];
   required: number;
   thresholdText: string;
@@ -47,6 +49,9 @@ export async function getInvoiceControlView(
   target: { supplierInvoiceId: string } | { worksInvoiceId: string } | { ownerCreditRefundId: string },
   viewerId: string,
 ): Promise<InvoiceControlView | null> {
+  // Dates shown are days in the building's time zone.
+  const tz = await schemeTimeZone(schemeId);
+  const day = (iso: string) => formatDateIn(tz, iso, { month: "long" });
   const loaded =
     "supplierInvoiceId" in target
       ? await supplierInvoiceControls(target.supplierInvoiceId)
@@ -67,7 +72,7 @@ export async function getInvoiceControlView(
   if ("supplierInvoiceId" in target) {
     const supplierId = (loaded.invoice as { supplierId: string }).supplierId;
     const latest = await getLatestBankDetailVersion(supplierId);
-    const decision = checkBankDetailsForPayment(latest, new Date().toISOString(), settings.coolingOffDays);
+    const decision = checkBankDetailsForPayment(latest, new Date().toISOString(), settings.coolingOffDays, await schemeTimeZone(schemeId));
     const contractor = !latest ? (await db.orm.public.Supplier.where((s) => s.id.eq(supplierId)).first())?.contractorBusinessId : null;
     if (contractor) {
       // A marketplace contractor is paid only to bank details they gave (works stage 4).
@@ -85,6 +90,7 @@ export async function getInvoiceControlView(
   }
 
   return {
+    timeZone: tz,
     approvals: loaded.auths.map((a) => ({ name: name(a.approverId), role: a.role, approvedAt: a.approvedAt, isException: a.isException })),
     required,
     thresholdText:

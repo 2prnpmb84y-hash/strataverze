@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5235fc41692c825370ea08bd140a2fb6e43c1130e0298e954beff48622ad9939'>;
+  StorageHashBase<'dde94df1233d06cd4ac75bb23c05e9e2c588d9b3b95dccf93d2d97817d136b8d'>;
 export type ExecutionHash =
   ExecutionHashBase<'3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15'>;
 export type ProfileHash =
@@ -2491,6 +2491,7 @@ export namespace Models {
     preMeetingEvotingAdopted: FieldOutputTypes['public']['Scheme']['preMeetingEvotingAdopted'];
     state: FieldOutputTypes['public']['Scheme']['state'];
     suburb: FieldOutputTypes['public']['Scheme']['suburb'];
+    timeZone: FieldOutputTypes['public']['Scheme']['timeZone'];
     totalEntitlement: FieldOutputTypes['public']['Scheme']['totalEntitlement'];
     totalLots: FieldOutputTypes['public']['Scheme']['totalLots'];
     updatedAt: FieldOutputTypes['public']['Scheme']['updatedAt'];
@@ -16894,6 +16895,17 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly time_zone: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'sql/varchar@1', 'Australia/Sydney'>;
+                  };
+                  readonly typeParams: { readonly length: 64 };
                   readonly many: false;
                 };
                 readonly total_entitlement: {
@@ -38403,6 +38415,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly timeZone: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 64 };
+                };
+              };
               readonly totalEntitlement: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
@@ -39032,6 +39052,7 @@ type ContractBase = Omit<
                 };
                 readonly state: { readonly column: 'state' };
                 readonly suburb: { readonly column: 'suburb' };
+                readonly timeZone: { readonly column: 'time_zone' };
                 readonly totalEntitlement: { readonly column: 'total_entitlement' };
                 readonly totalLots: { readonly column: 'total_lots' };
                 readonly updatedAt: { readonly column: 'updated_at' };

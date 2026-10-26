@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getGstSummaryReport } from "@/lib/queries/reports";
@@ -28,23 +29,24 @@ export default async function AccountantGstSummaryPage({
 
   // Default to current BAS quarter
   // Australian BAS quarters: Jul-Sep (Q1), Oct-Dec (Q2), Jan-Mar (Q3), Apr-Jun (Q4)
-  const now = new Date();
-  const month = now.getMonth(); // 0-based
+  // Noon (UTC) on today in the building's time zone, so the year and month are the building's.
+  const now = new Date(`${await schemeToday(id)}T12:00:00Z`);
+  const month = now.getUTCMonth(); // 0-based
   let defaultStartDate: string;
   let defaultEndDate: string;
 
   if (month >= 6 && month <= 8) {
-    defaultStartDate = `${now.getFullYear()}-07-01`;
-    defaultEndDate = `${now.getFullYear()}-09-30`;
+    defaultStartDate = `${now.getUTCFullYear()}-07-01`;
+    defaultEndDate = `${now.getUTCFullYear()}-09-30`;
   } else if (month >= 9 && month <= 11) {
-    defaultStartDate = `${now.getFullYear()}-10-01`;
-    defaultEndDate = `${now.getFullYear()}-12-31`;
+    defaultStartDate = `${now.getUTCFullYear()}-10-01`;
+    defaultEndDate = `${now.getUTCFullYear()}-12-31`;
   } else if (month >= 0 && month <= 2) {
-    defaultStartDate = `${now.getFullYear()}-01-01`;
-    defaultEndDate = `${now.getFullYear()}-03-31`;
+    defaultStartDate = `${now.getUTCFullYear()}-01-01`;
+    defaultEndDate = `${now.getUTCFullYear()}-03-31`;
   } else {
-    defaultStartDate = `${now.getFullYear()}-04-01`;
-    defaultEndDate = `${now.getFullYear()}-06-30`;
+    defaultStartDate = `${now.getUTCFullYear()}-04-01`;
+    defaultEndDate = `${now.getUTCFullYear()}-06-30`;
   }
 
   const startDate = sp.startDate || defaultStartDate;
@@ -58,8 +60,8 @@ export default async function AccountantGstSummaryPage({
   }
 
   const quarters: { start: string; end: string; label: string }[] = [];
-  const baseYear = now.getFullYear();
-  const baseMonth = now.getMonth();
+  const baseYear = now.getUTCFullYear();
+  const baseMonth = now.getUTCMonth();
 
   for (let i = 0; i < 4; i++) {
     const qMonth = baseMonth - i * 3;

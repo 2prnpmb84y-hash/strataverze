@@ -1,4 +1,6 @@
 import { logError } from "@/lib/log";
+import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
+import { defaultTimeZone } from "@/lib/jurisdiction/time-zone";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
@@ -125,6 +127,9 @@ export async function createScheme(
 ) {
   // The building's rule pack. A state with no pack is refused before anything is created.
   const { rules } = rulesForState(data.state);
+  // The building's time zone, from its state and postcode.
+  const timeZone = defaultTimeZone(data.state, data.postcode);
+  if (!timeZone) throw new Error(`No time zone is known for ${data.state}.`);
   const created = await db.transaction(async (tx) => {
     const scheme = await tx.orm.public.Scheme.create({
       name: data.name,
@@ -133,6 +138,7 @@ export async function createScheme(
       suburb: data.suburb,
       state: data.state,
       postcode: data.postcode,
+      timeZone: timeZone as unknown as Varchar<64>,
       totalLots: data.totalLots,
       totalEntitlement: data.totalEntitlement,
       financialYearEnd: data.financialYearEnd ?? "06-30",
@@ -219,7 +225,20 @@ export async function updateScheme(
     debtCollection: boolean;
   }>,
 ) {
-  return db.orm.public.Scheme.where({ id: schemeId }).update(data);
+  // A changed state or postcode can mean a new time zone (Broken Hill, Lord
+  // Howe Island). Only a real change resets it, so a time zone StrataVerze set
+  // by hand survives other edits.
+  let timeZone: string | null = null;
+  if (data.state !== undefined || data.postcode !== undefined) {
+    const current = await db.orm.public.Scheme.where({ id: schemeId }).first();
+    const norm = (v: unknown) => String(v ?? "").trim().toUpperCase();
+    const changed = (data.state !== undefined && norm(data.state) !== norm(current?.state)) || (data.postcode !== undefined && norm(data.postcode) !== norm(current?.postcode));
+    if (changed) {
+      timeZone = defaultTimeZone(data.state ?? current?.state, data.postcode ?? current?.postcode);
+      if (!timeZone) throw new Error(`No time zone is known for ${data.state ?? current?.state ?? "this state"}.`);
+    }
+  }
+  return db.orm.public.Scheme.where({ id: schemeId }).update({ ...data, ...(timeZone ? { timeZone: timeZone as unknown as Varchar<64> } : {}) });
 }
 
 /**

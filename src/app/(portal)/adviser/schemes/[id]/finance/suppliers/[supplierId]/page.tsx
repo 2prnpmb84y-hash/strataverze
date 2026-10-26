@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
+import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getFinancialSupplierById } from "@/lib/queries/supplier-invoices";
@@ -102,13 +104,13 @@ export default async function SupplierDetailPage({
     getApprovalMembers(id),
   ]);
   const latestVersion = versions[0] ?? null;
-  const bankDecision = checkBankDetailsForPayment(latestVersion, new Date().toISOString(), settings.coolingOffDays);
+  const bankDecision = checkBankDetailsForPayment(latestVersion, new Date().toISOString(), settings.coolingOffDays, await schemeTimeZone(id));
   const verifyCheck = latestVersion ? canVerifyBankChange(latestVersion, profile.id) : null;
   const needsVerification = latestVersion && (latestVersion.status === "PENDING" || bankDecision.result === "blocked");
   const verifySlot = needsVerification && verifyCheck?.ok ? verifyCheck.slot : null;
   const memberName = (pid: string) => members.find((m) => m.profileId === pid)?.name ?? "a former member";
-  const when = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" });
+  const tz = await schemeTimeZone(id);
+  const when = (iso: string) => formatDateIn(tz, iso);
 
   const invoices = supplier.supplierInvoices ?? [];
 

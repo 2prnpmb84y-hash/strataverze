@@ -8,6 +8,7 @@
  * balance from them.
  */
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { fromCents, toCents } from "@/lib/billing/money";
@@ -100,7 +101,7 @@ export async function recordCreditMovement(
     levyPaymentId: input.levyPaymentId ?? null,
     refundId: input.refundId ?? null,
     journalEntryId: null,
-    effectiveDate: ts(input.effectiveDate ?? new Date().toISOString().slice(0, 10)),
+    effectiveDate: ts(input.effectiveDate ?? (await schemeToday(input.schemeId, new Date(), orm))),
     note: input.note ?? null,
     createdBy: input.createdBy,
   });
@@ -164,7 +165,7 @@ export async function leviesInAdvanceAccountId(schemeId: string, fundId: string)
  * auto-apply on) and from the owner credits page. Returns the total applied.
  */
 export async function applyOwnerCredit(input: { schemeId: string; lotIds?: string[]; actorId: string; date?: string }) {
-  const date = input.date ?? new Date().toISOString().slice(0, 10);
+  const date = input.date ?? (await schemeToday(input.schemeId));
   const balances = await db.orm.public.OwnerCreditBalance.where((b) => b.schemeId.eq(input.schemeId)).limit(5000).all();
   const pending = await pendingRefundsByKey(input.schemeId);
   let appliedTotal = 0;

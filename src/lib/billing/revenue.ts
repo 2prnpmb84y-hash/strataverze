@@ -4,6 +4,7 @@
  * their promotional period.
  */
 import { isPromotional, subscriptionPrice, type SubscriptionTier } from "./subscription-tier";
+import { platformToday } from "@/lib/jurisdiction/time-zone";
 import type { PriceBookEntry } from "./price-book";
 import { sydneyMonth } from "./invoice";
 
@@ -54,7 +55,8 @@ export function revenueSummary(input: {
   invoices: RevenueInvoice[];
   now: Date;
 }): RevenueSummary {
-  const today = input.now.toISOString().slice(0, 10);
+  // StrataVerze's own day (not UTC).
+  const today = platformToday(input.now);
   const tiers = new Map<SubscriptionTier, TierLine>(
     TIERS.map((t) => [t, { tier: t, payingSchemes: 0, promotionalSchemes: 0, mrrCents: 0, needsQuote: 0 }]),
   );

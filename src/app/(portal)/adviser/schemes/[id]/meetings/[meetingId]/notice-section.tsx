@@ -31,7 +31,10 @@ export function NoticeSection({
   noticePeriod,
   notices,
   fee = null,
+  timeZone,
 }: {
+  /** The meeting's time zone. */
+  timeZone: string;
   schemeId: string;
   meetingId: string;
   canIssue: boolean;
@@ -116,6 +119,7 @@ export function NoticeSection({
             <span className="text-sm font-medium text-ink">
               Version {current.version} issued{" "}
               {new Date(current.issuedAt).toLocaleDateString("en-AU", {
+                timeZone,
                 day: "numeric",
                 month: "long",
                 year: "numeric",

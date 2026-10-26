@@ -7,6 +7,7 @@
  * the building delegates works decisions.
  */
 import { useActionState, useState, useTransition } from "react";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { proposeWorksRouteAction, voteWorksDecisionAction, withdrawWorksDecisionAction, type WorksFormState } from "@/lib/actions/works-marketplace";
@@ -146,8 +147,8 @@ function WithdrawButton({ schemeId, requestId, decisionId }: { schemeId: string;
 
 const STATUS_TEXT: Record<string, string> = { OPEN: "Open for votes", DECIDED: "Decided", NOT_AGREED: "Not agreed", WITHDRAWN: "Withdrawn" };
 
-function when(iso: string) {
-  return new Date(iso).toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Australia/Sydney" });
+function when(tz: string, iso: string) {
+  return formatDateTimeIn(tz, iso);
 }
 
 export function DecisionRecord({ decision }: { decision: DecisionView }) {
@@ -157,7 +158,7 @@ export function DecisionRecord({ decision }: { decision: DecisionView }) {
         <p className="text-sm font-medium text-ink">{decision.outcomeLabel}</p>
         <span className="text-xs text-ink-muted">{STATUS_TEXT[decision.status] ?? decision.status}</span>
       </div>
-      <p className="text-xs text-ink-muted">Proposed by {decision.proposedByName}, {when(decision.createdAt)}{decision.byDelegation ? ", as Adviser under the building's delegation" : ""}</p>
+      <p className="text-xs text-ink-muted">Proposed by {decision.proposedByName}, {when(decision.timeZone, decision.createdAt)}{decision.byDelegation ? ", as Adviser under the building's delegation" : ""}</p>
       {decision.amount != null && <p className="text-sm text-ink">Not to exceed ${decision.amount.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>}
       {decision.note && <p className="text-sm text-ink whitespace-pre-wrap">{decision.note}</p>}
       {decision.summary && (
@@ -174,7 +175,7 @@ export function DecisionRecord({ decision }: { decision: DecisionView }) {
             <li key={i} className="py-1.5 flex flex-wrap gap-x-2">
               <span className={v.vote === "FOR" ? "text-emerald-700 font-medium" : "text-red-700 font-medium"}>{v.vote === "FOR" ? "For" : "Against"}</span>
               <span className="text-ink">{v.voterName}</span>
-              <span className="text-ink-muted text-xs self-center">{when(v.at)}</span>
+              <span className="text-ink-muted text-xs self-center">{when(decision.timeZone, v.at)}</span>
               {v.comment && <span className="basis-full text-ink-muted">{v.comment}</span>}
             </li>
           ))}

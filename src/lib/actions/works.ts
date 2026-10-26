@@ -1,5 +1,6 @@
 "use server";
 import { logError } from "@/lib/log";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 
 import { feeErrorMessage } from "@/lib/billing/disclosure";
 import { requireRecentMfa } from "@/lib/auth/mfa-enforcement";
@@ -1060,7 +1061,7 @@ export async function submitWorksInvoice(
       submittedById: profile.id,
       invoiceNumber: toVarchar<50>(invoiceNumber),
       invoiceDate: toTimestamp(invoiceDate),
-      dateReceived: toTimestamp(new Date().toISOString().split("T")[0]),
+      dateReceived: toTimestamp(await schemeToday(schemeId)),
       dueDate: toTimestamp(dueDate),
       claimedAmount: toNumeric(Number(claimedAmountRaw)),
       gstAmount: toNumeric(Number(gstAmountRaw)),

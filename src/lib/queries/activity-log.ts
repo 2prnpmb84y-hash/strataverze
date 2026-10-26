@@ -477,7 +477,8 @@ export async function getAuditTrailForExport(
 /**
  * Generate CSV content from audit trail rows.
  */
-export function formatAuditTrailCsv(rows: AuditTrailRow[]): string {
+/** `timeZone`: the building's, for the date and time of each row. */
+export function formatAuditTrailCsv(rows: AuditTrailRow[], timeZone: string): string {
   const headers = [
     "Date/Time",
     "User",
@@ -498,9 +499,7 @@ export function formatAuditTrailCsv(rows: AuditTrailRow[]): string {
   const lines = [headers.map(escCsv).join(",")];
 
   for (const row of rows) {
-    const dateStr = new Date(row.createdAt).toLocaleString("en-AU", {
-      timeZone: "Australia/Sydney",
-    });
+    const dateStr = new Date(row.createdAt).toLocaleString("en-AU", { timeZone });
     const details = row.metadata
       ? Object.entries(row.metadata)
           .map(([k, v]) => `${k}: ${String(v)}`)

@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import {
@@ -89,7 +90,7 @@ export default async function MembershipPage() {
         day: "numeric",
         month: "long",
         year: "numeric",
-        timeZone: "Australia/Sydney",
+        timeZone: PLATFORM_TIME_ZONE,
       })
     : "the end of the promotion";
   const monthlyFee = formatAud(toCents(String(membership.planMonthlyPrice)));

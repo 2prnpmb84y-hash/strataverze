@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getFundsForScheme } from "@/lib/queries/funds";
@@ -31,7 +32,7 @@ export default async function TrialBalancePage({
   const funds = await getFundsForScheme(id);
 
   // Default to today if no date specified
-  const reportDate = asAtDate || new Date().toISOString().split("T")[0];
+  const reportDate = asAtDate || (await schemeToday(id));
 
   const report = await getTrialBalanceReport(
     id,

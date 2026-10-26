@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
@@ -46,6 +47,7 @@ export default async function RecordPaymentPage({
           schemeId={id}
           invoiceId={invoiceId}
           instructions={instructionOptions}
+          today={await schemeToday(id)}
         />
       </Card>
     </div>

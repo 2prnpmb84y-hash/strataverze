@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getFundsForScheme } from "@/lib/queries/funds";
@@ -25,7 +26,7 @@ export default async function AccountantTrialBalancePage({
 
   const funds = await getFundsForScheme(id);
 
-  const reportDate = asAtDate || new Date().toISOString().split("T")[0];
+  const reportDate = asAtDate || (await schemeToday(id));
 
   const report = await getTrialBalanceReport(
     id,

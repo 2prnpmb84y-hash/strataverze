@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
 import {
   blankLots,
   buildCutoverFiles,
@@ -10,7 +11,6 @@ import {
   emptyOpeningBalances,
   formatMoney,
   parseMoney,
-  todayInSydney,
   yearStartFor,
   type OpeningBalancesInput,
 } from "./property-onboarding";
@@ -59,8 +59,8 @@ describe("financial year end", () => {
 
   it("gives today's date in Sydney", () => {
     // 2026-10-24 14:30 UTC is 25 October in Sydney (daylight saving, UTC+11).
-    expect(todayInSydney(new Date("2026-10-24T14:30:00Z"))).toBe("2026-10-25");
-    expect(todayInSydney(new Date("2026-10-24T02:00:00Z"))).toBe("2026-10-24");
+    expect(todayIn("Australia/Sydney", new Date("2026-10-24T14:30:00Z"))).toBe("2026-10-25");
+    expect(todayIn("Australia/Sydney", new Date("2026-10-24T02:00:00Z"))).toBe("2026-10-24");
   });
 });
 

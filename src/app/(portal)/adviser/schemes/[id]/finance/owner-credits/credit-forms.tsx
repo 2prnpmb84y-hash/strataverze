@@ -79,12 +79,12 @@ export function RefundRequestForm({ schemeId, lotId, fundId, availableCents }: {
   );
 }
 
-export function RecordRefundPaidForm({ schemeId, refundId }: { schemeId: string; refundId: string }) {
+/** `today` is today in the building's time zone (the default payment date). */
+export function RecordRefundPaidForm({ schemeId, refundId, today }: { schemeId: string; refundId: string; today: string }) {
   const [state, formAction, pending] = useActionState<CreditActionState, FormData>(
     recordOwnerCreditRefundPaidAction.bind(null, schemeId, refundId),
     {},
   );
-  const today = new Date().toISOString().slice(0, 10);
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-2">
       <label className="text-xs text-ink-muted">

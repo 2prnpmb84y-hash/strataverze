@@ -93,7 +93,7 @@ import {
   getSuspenseItems,
 } from "@/lib/finance/bank-allocations";
 import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconciliation";
-import { sydneyToday } from "@/lib/finance/interest-setting";
+import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
@@ -728,7 +728,8 @@ export async function reverseJournalEntryAction(
       }
     }
 
-    await validatePeriodForPosting(schemeId, new Date().toISOString().slice(0, 10), "REVERSAL");
+    // The reversal is dated today in the building's time zone (see reverseJournalEntry).
+    await validatePeriodForPosting(schemeId, await schemeToday(schemeId), "REVERSAL");
     const entryNumber = await getNextEntryNumber(schemeId);
 
     const reversal = await reverseJournalEntry(originalEntryId, {
@@ -1146,7 +1147,7 @@ export async function issueScheduleNoticesAction(
     });
     if (issues.length > 0) return { error: issues.map((i) => i.message).join(" ") };
 
-    const today = sydneyToday();
+    const today = await schemeToday(schemeId);
     // Levies are paid in advance: a budget levy instalment falls due on the
     // first day of the period it covers. A special levy has its own date.
     const periodStart = isSpecial
@@ -1297,7 +1298,7 @@ export async function issueOverdueNoticesAction(
     const schedule = await loadScheduleForScheme(schemeId, scheduleId);
     if (!schedule) return { error: "Levy schedule not found." };
     if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be sent." };
-    const today = sydneyToday();
+    const today = await schemeToday(schemeId);
     const list = await overdueDrafts(schemeId, scheduleId, today);
     if (!list.length) return { error: "No planned notice is past its 5-week mark." };
     const levyRule = (await rulesForScheme(schemeId)).rules.LEVY_NOTICE_RULES;
@@ -1798,7 +1799,7 @@ export async function recordInvoicePaymentAction(
     if (!latestBank && (await contractorOfSupplier(invoice.supplierId))) {
       return { error: "The contractor has not given bank details yet. Ask them to add them in StrataVerze, then verify them before paying." };
     }
-    const bank = checkBankDetailsForPayment(latestBank, new Date().toISOString(), settings.coolingOffDays);
+    const bank = checkBankDetailsForPayment(latestBank, new Date().toISOString(), settings.coolingOffDays, await schemeTimeZone(schemeId));
     if (bank.result === "blocked") return { error: bank.reason };
     if (sod.result === "exception") {
       await logActivity({
@@ -2775,9 +2776,9 @@ export async function exportAuditTrailAction(
       resourceId: schemeId,
       metadata: { kind: "finance_audit_trail", rows: rows.length },
     });
-    const csv = formatAuditTrailCsv(rows);
+    const csv = formatAuditTrailCsv(rows, await schemeTimeZone(schemeId));
 
-    const datePart = new Date().toISOString().slice(0, 10);
+    const datePart = await schemeToday(schemeId);
     const filename = `audit-trail-${datePart}.csv`;
 
     return { data: { csv, filename } };

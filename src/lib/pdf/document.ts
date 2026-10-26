@@ -1,4 +1,5 @@
 import { logError } from "@/lib/log";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 /**
  * PDF layout for StrataVerze documents (server side, no browser). Pages are
  * A4, set in Inter (the brand typeface for legal documents) with the scheme
@@ -154,7 +155,8 @@ export async function renderPdf(input: PdfInput): Promise<Uint8Array> {
   doc.setAuthor("StrataVerze");
   doc.setCreator("StrataVerze");
   doc.setProducer("StrataVerze");
-  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).format(input.generatedAt ?? new Date());
+  // The PDF's creation date is the day in StrataVerze's time zone, so a document made twice that day is identical.
+  const day = new Intl.DateTimeFormat("en-CA", { timeZone: PLATFORM_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(input.generatedAt ?? new Date());
   const generated = new Date(`${day}T00:00:00Z`);
   doc.setCreationDate(generated);
   doc.setModificationDate(generated);

@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { financialYearRange, getStatutoryStatementsPack } from "@/lib/finance/statutory-pack";
 import { getSchemeById } from "@/lib/queries/schemes";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatutoryPackView } from "@/components/finance/statutory-pack-view";
 
@@ -16,7 +16,7 @@ export default async function AccountantStatutoryPackPage({ params, searchParams
   } catch {
     notFound();
   }
-  const today = sydneyToday();
+  const today = await schemeToday(id);
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
   let defaultYear = Number(today.slice(0, 4));

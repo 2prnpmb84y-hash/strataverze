@@ -1,11 +1,11 @@
 import { db } from "@/prisma/db";
+import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 
 import { effectiveStatus, noticeLabel } from "@/lib/levies/levy-ledger";
 import { toIsoDay } from "@/lib/levies/notice-plan";
 import { lotFinancialStatus } from "@/lib/levies/financial-status";
-import { sydneyToday } from "@/lib/finance/interest-setting";
 
 type LotNotice = {
   amountDue: unknown;
@@ -192,6 +192,8 @@ export async function getLotDetail(lotId: string) {
   }
 
   if (!lot) return null;
+  // Today in the building's time zone, for each notice's status.
+  const today = await schemeToday(lot.schemeId);
 
   const owners = lot.memberships
     .filter((m) => m.role === "OWNER")
@@ -222,7 +224,7 @@ export async function getLotDetail(lotId: string) {
       dueDate: n.dueDate,
       amount: Number(n.amountDue ?? 0) + Number(n.interestCharged ?? 0),
       paidAmount: Number(n.amountPaid ?? 0),
-      status: effectiveStatus(n, new Date().toISOString().slice(0, 10)),
+      status: effectiveStatus(n, today),
       paidAt: n.paidInFullAt,
     }));
 
@@ -252,7 +254,7 @@ export async function getLotDetail(lotId: string) {
  * Fetch strata roll data for a scheme: lots with owners and levy financials.
  */
 export async function getStrataRollData(schemeId: string, limit = 500) {
-  const today = sydneyToday();
+  const today = await schemeToday(schemeId);
   let lots;
   try {
     lots = await db.orm.public.Lot

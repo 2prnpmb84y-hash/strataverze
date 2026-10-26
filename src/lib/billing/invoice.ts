@@ -9,10 +9,12 @@
  * fees are still charged.
  */
 import { splitGst } from "./money";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 import { subscriptionPrice, isPromotional, type SubscriptionTier } from "./subscription-tier";
 import type { PriceBookEntry } from "./price-book";
 
-export const BILLING_TIME_ZONE = "Australia/Sydney";
+/** StrataVerze bills on its own time zone. */
+export const BILLING_TIME_ZONE = PLATFORM_TIME_ZONE;
 
 /** The calendar month (YYYY-MM) in Sydney at an instant. */
 export function sydneyMonth(at: Date): string {
