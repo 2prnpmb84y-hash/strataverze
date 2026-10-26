@@ -51,7 +51,7 @@ const WORDING = ["TERMINOLOGY", "CITATIONS", "HARDSHIP_INFORMATION", "DEBT_RECOV
  * The NSW statutory workflows added in October 2026 (the gaps found by the
  * multi-jurisdiction review), each with its own golden output below.
  */
-const WORKFLOWS = ["PAYMENT_PLANS"] as const;
+const WORKFLOWS = ["PAYMENT_PLANS", "COMMITTEE_TRAINING"] as const;
 
 describe("NSW statutory workflows (Oct 2026)", () => {
   it("are the rules recorded", () => {

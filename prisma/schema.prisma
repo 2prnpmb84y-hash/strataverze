@@ -126,6 +126,7 @@ model Profile {
   worksPreferredCreated  WorksPreferredContractor[] @relation("WorksPreferredCreatedBy")
   worksDecisionsProposed WorksDecision[]            @relation("WorksDecisionProposedBy")
   worksDecisionVotes     WorksDecisionVote[]        @relation("WorksDecisionVoter")
+  committeeTraining CommitteeTraining[] @relation("CommitteeTrainingMember")
   @@map("profiles")
 }
 
@@ -221,6 +222,7 @@ model Scheme {
   debtRecoveryCases           DebtRecoveryCase[]
   debtRecoveryPaymentPlans    PaymentPlan[]
   paymentPlanRequests         PaymentPlanRequest[]
+  committeeTraining           CommitteeTraining[]
 
   worksSettings          WorksSettings?
   worksPreferredContractors WorksPreferredContractor[]
@@ -4331,4 +4333,28 @@ model WorksDecisionVote {
 
   @@unique([decisionId, voterId])
   @@map("works_decision_votes")
+}
+
+/// A strata committee member's training: when they were appointed, when
+/// they completed the training, or why they are exempt. One row per member
+/// of a scheme; the appointment date is updated when they are re-appointed.
+model CommitteeTraining {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId      String    @map("scheme_id") @db.Uuid
+  profileId     String    @map("profile_id") @db.Uuid
+  appointedOn   DateTime  @db.Date @map("appointed_on")
+  completedOn   DateTime? @db.Date @map("completed_on")
+  exemption     String?   // ACSL_MEMBER, STRATA_MANAGING_AGENT, CASUAL_VACANCY_SHORT
+  note          String?
+  lastReminderOn DateTime? @db.Date @map("last_reminder_on") // the day the last reminder was sent (claimed so a repeated run sends none)
+  appointedRecordedBy String? @map("appointed_recorded_by") @db.Uuid // the adviser who recorded the appointment date; null while it is only the date committee access began
+  completedRecordedBy String? @map("completed_recorded_by") @db.Uuid // who recorded the completion (the member or an adviser)
+  createdAt     DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt     DateTime  @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme        Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  profile       Profile   @relation("CommitteeTrainingMember", fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([schemeId, profileId])
+  @@map("committee_training")
 }
