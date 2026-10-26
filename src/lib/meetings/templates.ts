@@ -142,7 +142,7 @@ const TEMPLATES_BY_STATE: Readonly<Record<string, { agm: TemplateAgendaItem[]; m
 function templatesFor(state: string) {
   const key = (state ?? "").trim().toUpperCase();
   if (!rulePackFor(key) || !Object.prototype.hasOwnProperty.call(TEMPLATES_BY_STATE, key)) {
-    throw new UnsupportedJurisdictionError(state);
+    throw new UnsupportedJurisdictionError(key);
   }
   return TEMPLATES_BY_STATE[key];
 }

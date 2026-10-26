@@ -52,8 +52,9 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
 /** A building is in a jurisdiction whose rules have not been added. */
 export class UnsupportedJurisdictionError extends Error {
   constructor(readonly state: string) {
+    const supported = Object.values(RULE_PACKS).map((p) => p.name).join(", ");
     super(
-      `StrataVerze has no strata rules for ${state || "this state"} yet, so this building cannot be managed here. Only New South Wales buildings are supported.`,
+      `StrataVerze has no strata rules for ${state || "this state"} yet, so this building cannot be managed here. Buildings can be in: ${supported}.`,
     );
     this.name = "UnsupportedJurisdictionError";
   }
@@ -68,6 +69,6 @@ export function rulePackFor(state: string | null | undefined): RulePack | null {
 /** A building's statutory rules. Throws UnsupportedJurisdictionError when its state has no pack. */
 export function statutoryRulesFor(state: string | null | undefined): StatutoryRules {
   const pack = rulePackFor(state);
-  if (!pack) throw new UnsupportedJurisdictionError((state ?? "").trim());
+  if (!pack) throw new UnsupportedJurisdictionError((state ?? "").trim().toUpperCase());
   return pack.rules;
 }

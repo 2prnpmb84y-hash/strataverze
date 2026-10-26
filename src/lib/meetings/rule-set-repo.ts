@@ -60,7 +60,7 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
  */
 export async function getActiveRuleSet(state: string): Promise<MeetingRuleSet> {
   const pack = rulePackFor(state);
-  if (!pack) throw new UnsupportedJurisdictionError(state);
+  if (!pack) throw new UnsupportedJurisdictionError((state ?? "").trim().toUpperCase());
   const seed = pack.rules.MEETING_RULES;
 
   const row = await db.orm.public.MeetingRuleSet

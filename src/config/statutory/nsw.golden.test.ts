@@ -56,6 +56,13 @@ describe("NSW statutory constants", () => {
       "WORKS_SPENDING_RULES",
     ] as const;
     expect(Object.fromEntries(names.map((n) => [n, statutory[n]]))).toMatchSnapshot();
+    // A new NSW constant must be added to this list (and its golden output)
+    // on purpose: MEETING_RULES is covered by the meeting tests below.
+    const constants = Object.entries(statutory.statutoryRulesFor("NSW"))
+      .filter(([k, v]) => typeof v !== "function" && k !== "MEETING_RULES")
+      .map(([k]) => k)
+      .sort();
+    expect(constants).toEqual([...names].sort());
     // The NSW pack holds the same values.
     for (const n of names) expect(statutory.statutoryRulesFor("NSW")[n]).toBe(statutory[n]);
     expect(statutory.statutoryRulesFor("NSW").MEETING_RULES).toBe(NSW_RULE_SET);

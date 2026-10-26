@@ -7,13 +7,17 @@ describe("rule packs", () => {
   it("has an NSW pack only, and buildings can only be in a state with a pack", () => {
     expect(Object.keys(RULE_PACKS)).toEqual(["NSW"]);
     expect(RULE_PACKS.NSW.code).toBe("AU-NSW");
-    expect(SUPPORTED_SCHEME_STATES).toEqual(["NSW"]);
+    expect([...SUPPORTED_SCHEME_STATES].sort()).toEqual(Object.keys(RULE_PACKS).sort());
   });
 
   it("gives an NSW building the NSW rules", () => {
     expect(statutoryRulesFor("NSW").STATUTORY_INTEREST).toBe(STATUTORY_INTEREST);
     expect(statutoryRulesFor("nsw")).toBe(statutoryRulesFor("NSW"));
     expect(rulePackFor(" nsw ")?.code).toBe("AU-NSW");
+  });
+
+  it("names the supported jurisdictions in its refusal", () => {
+    expect(() => statutoryRulesFor(" vic ")).toThrow("StrataVerze has no strata rules for VIC yet, so this building cannot be managed here. Buildings can be in: New South Wales.");
   });
 
   it("refuses a jurisdiction without a pack rather than falling back to NSW", () => {

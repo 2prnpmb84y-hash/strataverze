@@ -11,7 +11,6 @@
  *
  * Plan: https://claude.ai/artifact/4mgrKi2E7VeBdSqTSgZhyc
  */
-import { rulePackFor } from "@/config/statutory";
 
 /** Australian state and territory codes, as stored in `state` columns. */
 export const AUSTRALIAN_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
@@ -28,8 +27,13 @@ export const STATE_NAMES: Record<AustralianState, string> = {
   ACT: "Australian Capital Territory",
 };
 
-/** States whose strata law the platform applies today: those with a rule pack. */
-export const SUPPORTED_SCHEME_STATES: readonly AustralianState[] = AUSTRALIAN_STATES.filter((s) => rulePackFor(s) !== null);
+/**
+ * States whose strata law the platform applies today: exactly the states with
+ * a rule pack (`RULE_PACKS` in `@/config/statutory`, checked by
+ * src/config/statutory.test.ts). Kept as a plain list so the browser forms
+ * do not load the rules themselves.
+ */
+export const SUPPORTED_SCHEME_STATES: readonly AustralianState[] = ["NSW"];
 
 /** The state a new building starts with in forms. */
 export const DEFAULT_SCHEME_STATE: AustralianState = "NSW";

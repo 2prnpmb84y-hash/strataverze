@@ -66,8 +66,8 @@ export interface MeetingRuleSet {
 /**
  * NSW meeting rules. The values live with the other NSW statutory rules in
  * `src/config/statutory/nsw.ts` (multi-jurisdiction plan, phase 1); this name
- * is kept for existing callers. Use `meetingRulesFor(state)` to pick a
- * building's rules.
+ * is kept for existing callers. For a building's rules use `getActiveRuleSet`
+ * (or `statutoryRulesFor(state).MEETING_RULES` for the built-in set).
  */
 export const NSW_RULE_SET: MeetingRuleSet = MEETING_RULES;
 
