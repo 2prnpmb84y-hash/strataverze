@@ -22,7 +22,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'849d28ee8c8b099b32cd4bb32013e7fecfa81c20fa436e0a8f55d6e91eb5186f'>;
+  StorageHashBase<'881af7635ebce92dd5bc6218fe45b2eb3a69bced7c3421f694567f5a9068732d'>;
 export type ExecutionHash =
   ExecutionHashBase<'b1f03b5e7263f73edfaec1e4b8185daaf67e2e87d4632ba5d4e88465c24bbd92'>;
 export type ProfileHash =
@@ -8636,7 +8636,7 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
-                  readonly many: { readonly elementNullable: false };
+                  readonly many: { readonly elementNullable: true };
                 };
                 readonly trading_name: {
                   readonly dataType: 'pg/varchar';
@@ -13019,7 +13019,7 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
-                  readonly many: { readonly elementNullable: false };
+                  readonly many: { readonly elementNullable: true };
                 };
                 readonly created_at: {
                   readonly dataType: 'pg/timestamptz';
@@ -14115,7 +14115,7 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
-                  readonly many: { readonly elementNullable: false };
+                  readonly many: { readonly elementNullable: true };
                 };
                 readonly updated_at: {
                   readonly dataType: 'pg/timestamptz';
@@ -15572,7 +15572,7 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
-                  readonly many: { readonly elementNullable: false };
+                  readonly many: { readonly elementNullable: true };
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
@@ -20300,7 +20300,7 @@ type ContractBase = Omit<
               readonly tradeCategories: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-                readonly many: { readonly elementNullable: false };
+                readonly many: { readonly elementNullable: true };
               };
               readonly tradingName: {
                 readonly nullable: true;
@@ -25780,7 +25780,7 @@ type ContractBase = Omit<
               readonly approverRoles: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-                readonly many: { readonly elementNullable: false };
+                readonly many: { readonly elementNullable: true };
               };
               readonly createdAt: {
                 readonly nullable: false;
@@ -26789,7 +26789,7 @@ type ContractBase = Omit<
               readonly tradeCategories: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-                readonly many: { readonly elementNullable: false };
+                readonly many: { readonly elementNullable: true };
               };
               readonly updatedAt: {
                 readonly nullable: false;
@@ -28174,7 +28174,7 @@ type ContractBase = Omit<
               readonly variationReferences: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-                readonly many: { readonly elementNullable: false };
+                readonly many: { readonly elementNullable: true };
               };
             };
             readonly relations: {
