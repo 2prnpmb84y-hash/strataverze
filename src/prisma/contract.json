@@ -64,6 +64,10 @@
       "model": "Comment",
       "namespace": "public"
     },
+    "committee_training": {
+      "model": "CommitteeTraining",
+      "namespace": "public"
+    },
     "compliance_items": {
       "model": "ComplianceItem",
       "namespace": "public"
@@ -3050,6 +3054,144 @@
               },
               "namespaceId": "public",
               "table": "comments"
+            }
+          },
+          "CommitteeTraining": {
+            "fields": {
+              "appointedOn": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "completedOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "exemption": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastReminderOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "recordedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "schemeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "scheme": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "schemeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Scheme",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "appointedOn": {
+                  "column": "appointed_on"
+                },
+                "completedOn": {
+                  "column": "completed_on"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "exemption": {
+                  "column": "exemption"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "lastReminderOn": {
+                  "column": "last_reminder_on"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "profileId": {
+                  "column": "profile_id"
+                },
+                "recordedBy": {
+                  "column": "recorded_by"
+                },
+                "schemeId": {
+                  "column": "scheme_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "committee_training"
             }
           },
           "ComplianceItem": {
@@ -20196,6 +20338,21 @@
                   "namespace": "public"
                 }
               },
+              "committeeTraining": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "schemeId"
+                  ]
+                },
+                "to": {
+                  "model": "CommitteeTraining",
+                  "namespace": "public"
+                }
+              },
               "compliance": {
                 "cardinality": "1:N",
                 "on": {
@@ -36692,6 +36849,112 @@
                 }
               ],
               "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "committee_training": {
+              "columns": {
+                "appointed_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": false
+                },
+                "completed_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "exemption": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "last_reminder_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "profile_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "scheme_id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "committee_training_scheme_id_profile_id_key"
+                  },
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "scheme_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "committee_training"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "schemes"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "scheme_id",
+                    "profile_id"
+                  ],
+                  "name": "committee_training_scheme_id_profile_id_key",
+                  "unique": true
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -59193,10 +59456,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "fef88172c963f6e866924b8aff2a4623de574a2dad53597bd422f4610929fefc"
+    "storageHash": "bea0aa0eb356d5164e0e04e594f120d7630849b3a6e73a0054167a22c5f85603"
   },
   "execution": {
-    "executionHash": "38fe1a63c62df3d1a0a9ea1fb81cac618336f1f71e6ec7b6f747a3e57a8f489c",
+    "executionHash": "5e817cab30fd1e20bee97158f3305d2f1d63516069bf9191427d4e527e012094",
     "mutations": {
       "defaults": [
         {
@@ -59270,6 +59533,21 @@
           },
           "ref": {
             "entry": "bylaws",
+            "field": "updated_at",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestamptzStringNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "committee_training",
             "field": "updated_at",
             "namespace": "public"
           }

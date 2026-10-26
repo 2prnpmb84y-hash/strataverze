@@ -1906,6 +1906,23 @@ exports[`NSW statutory constants > give the same default accounting basis 1`] = 
 
 exports[`NSW statutory workflows (Oct 2026) > are the rules recorded 1`] = `
 {
+  "COMMITTEE_TRAINING": {
+    "consequence": "A member who has not completed the training within 3 months of appointment automatically stops being a committee member.",
+    "course": "Introduction to Strata Committee Rights and Responsibilities (NSW Fair Trading, free online on Strata Hub)",
+    "exemptLotCount": 2,
+    "exemptions": {
+      "ACSL_MEMBER": "member of the Australian College of Strata Lawyers",
+      "CASUAL_VACANCY_SHORT": "appointed to a casual vacancy for less than 3 months",
+      "STRATA_MANAGING_AGENT": "licensed NSW strata managing agent",
+    },
+    "helpUrl": "https://www.nsw.gov.au/housing-and-construction/strata/serving-on-a-committee/strata-committee-training",
+    "recommendation": "Give a copy of the certificate of completion to the secretary.",
+    "repeatNote": "Whether the training must be repeated each year is not yet confirmed; NSW Fair Trading will publish further details in 2027.",
+    "repeatsEachYear": null,
+    "source": "NSW Government, Strata committee training (from 1 Oct 2026)",
+    "startsOn": "2026-10-01",
+    "withinMonths": 3,
+  },
   "PAYMENT_PLANS": {
     "currentLeviesFrom": "2026-10-23",
     "decidedBy": "a majority vote at a meeting of the owners corporation or the strata committee, recorded in the minutes",

@@ -8,6 +8,8 @@
  * - Payment plan requests: the written reply is due within the rule pack's
  *   reply period of a complete request. The advisers and the committee are
  *   reminded until a decision and reply date are recorded.
+ * - Committee training: each committee member is reminded before their
+ *   date; when it passes, the member and the advisers are told.
  */
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
@@ -17,6 +19,8 @@ import { logError } from "@/lib/log";
 import { daysToReply } from "@/lib/debt-recovery/payment-plans";
 import { notifyPaymentPlanReplyDue } from "@/lib/debt-recovery/payment-plan-notify";
 import { reminderDue } from "./reminder-days";
+import { claimTrainingReminder, committeeTrainingRows } from "@/lib/governance/committee-training-store";
+import { notifyTrainingDue, notifyTrainingOverdue } from "@/lib/governance/training-notify";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -46,5 +50,38 @@ export async function runComplianceDay(now: Date = new Date()) {
   } catch (err) {
     logError("[compliance] payment plan reminders failed:", err);
   }
-  return { paymentPlanReminders };
+  const trainingReminders = await committeeTrainingReminders(now);
+  return { paymentPlanReminders, trainingReminders };
+}
+
+async function committeeTrainingReminders(now: Date) {
+  let sent = 0;
+  try {
+    const members = await db.orm.public.SchemeMembership.where((m) => and(m.role.eq("COMMITTEE"), m.isActive.eq(true))).limit(10000).all();
+    for (const schemeId of new Set(members.map((m) => m.schemeId))) {
+      try {
+        const data = await committeeTrainingRows(schemeId, now);
+        if (!data) continue;
+        for (const row of data.rows) {
+          if (row.daysLeft == null) continue;
+          const kind = reminderDue(row.daysLeft);
+          const wanted = (row.status === "DUE" && kind === "UPCOMING") || (row.status === "OVERDUE" && kind === "OVERDUE");
+          // Claim today's reminder, so a repeated run (a retried cron) sends none.
+          if (!wanted || !(await claimTrainingReminder({ schemeId, profileId: row.profileId, appointedOn: row.appointedOn, today: data.today }))) continue;
+          if (row.status === "DUE") {
+            await notifyTrainingDue({ schemeName: String(data.scheme.name), row, course: data.rules.course, consequence: data.rules.consequence, helpUrl: data.rules.helpUrl });
+            sent++;
+          } else {
+            await notifyTrainingOverdue({ schemeId, schemeName: String(data.scheme.name), row, consequence: data.rules.consequence });
+            sent++;
+          }
+        }
+      } catch (err) {
+        logError("[compliance] committee training reminders failed for a scheme:", err);
+      }
+    }
+  } catch (err) {
+    logError("[compliance] committee training reminders failed:", err);
+  }
+  return sent;
 }

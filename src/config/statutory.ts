@@ -53,7 +53,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.3 (26 Oct 2026): audit test counts lots without parking and utility lots (s 95, confirmed by StrataVerze);
     // debt recovery steps and guidance redrafted from sources, for review.
     // 2026.10.4 (26 Oct 2026): PAYMENT_PLANS added (the payment plan workflow).
-    version: "2026.10.4",
+    // 2026.10.5 (26 Oct 2026): COMMITTEE_TRAINING added (committee training tracking).
+    version: "2026.10.5",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not

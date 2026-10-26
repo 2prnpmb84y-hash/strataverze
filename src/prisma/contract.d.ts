@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'fef88172c963f6e866924b8aff2a4623de574a2dad53597bd422f4610929fefc'>;
+  StorageHashBase<'bea0aa0eb356d5164e0e04e594f120d7630849b3a6e73a0054167a22c5f85603'>;
 export type ExecutionHash =
-  ExecutionHashBase<'38fe1a63c62df3d1a0a9ea1fb81cac618336f1f71e6ec7b6f747a3e57a8f489c'>;
+  ExecutionHashBase<'5e817cab30fd1e20bee97158f3305d2f1d63516069bf9191427d4e527e012094'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -727,6 +727,21 @@ export namespace Models {
     author: public_Profile;
     workOrder: public_WorkOrder;
     readonly [RelationKeys]?: 'author' | 'workOrder';
+  };
+  export type public_CommitteeTraining = {
+    appointedOn: FieldOutputTypes['public']['CommitteeTraining']['appointedOn'];
+    completedOn: FieldOutputTypes['public']['CommitteeTraining']['completedOn'];
+    createdAt: FieldOutputTypes['public']['CommitteeTraining']['createdAt'];
+    exemption: FieldOutputTypes['public']['CommitteeTraining']['exemption'];
+    id: FieldOutputTypes['public']['CommitteeTraining']['id'];
+    lastReminderOn: FieldOutputTypes['public']['CommitteeTraining']['lastReminderOn'];
+    note: FieldOutputTypes['public']['CommitteeTraining']['note'];
+    profileId: FieldOutputTypes['public']['CommitteeTraining']['profileId'];
+    recordedBy: FieldOutputTypes['public']['CommitteeTraining']['recordedBy'];
+    schemeId: FieldOutputTypes['public']['CommitteeTraining']['schemeId'];
+    updatedAt: FieldOutputTypes['public']['CommitteeTraining']['updatedAt'];
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'scheme';
   };
   export type public_ComplianceItem = {
     category: FieldOutputTypes['public']['ComplianceItem']['category'];
@@ -2550,6 +2565,7 @@ export namespace Models {
     bankAccounts: public_SchemeBankAccount[];
     bankTransactions: public_BankTransaction[];
     bylaws: public_ByLaw[];
+    committeeTraining: public_CommitteeTraining[];
     compliance: public_ComplianceItem[];
     contacts: public_Contact[];
     debtRecoveryCases: public_DebtRecoveryCase[];
@@ -2604,6 +2620,7 @@ export namespace Models {
       | 'bankAccounts'
       | 'bankTransactions'
       | 'bylaws'
+      | 'committeeTraining'
       | 'compliance'
       | 'contacts'
       | 'debtRecoveryCases'
@@ -4082,6 +4099,7 @@ export declare const models: {
     CapitalWorksPlan: Models.public_CapitalWorksPlan;
     CapitalWorksPlanItem: Models.public_CapitalWorksPlanItem;
     Comment: Models.public_Comment;
+    CommitteeTraining: Models.public_CommitteeTraining;
     ComplianceItem: Models.public_ComplianceItem;
     Contact: Models.public_Contact;
     ContractorBusiness: Models.public_ContractorBusiness;
@@ -5943,6 +5961,104 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'profiles';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly committee_training: {
+              columns: {
+                readonly appointed_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly completed_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly exemption: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly last_reminder_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly profile_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'committee_training_scheme_id_profile_id_key';
+                  readonly columns: readonly ['scheme_id', 'profile_id'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'committee_training';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -26212,6 +26328,10 @@ type ContractBase = Omit<
       readonly model: 'CapitalWorksPlan';
     };
     readonly comments: { readonly namespace: 'public' & NamespaceId; readonly model: 'Comment' };
+    readonly committee_training: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'CommitteeTraining';
+    };
     readonly compliance_items: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ComplianceItem';
@@ -28285,6 +28405,91 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly id: { readonly column: 'id' };
                 readonly workOrderId: { readonly column: 'work_order_id' };
+              };
+            };
+          };
+          readonly CommitteeTraining: {
+            readonly fields: {
+              readonly appointedOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly completedOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly exemption: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lastReminderOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly note: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly profileId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly recordedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'committee_training';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly appointedOn: { readonly column: 'appointed_on' };
+                readonly completedOn: { readonly column: 'completed_on' };
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly exemption: { readonly column: 'exemption' };
+                readonly id: { readonly column: 'id' };
+                readonly lastReminderOn: { readonly column: 'last_reminder_on' };
+                readonly note: { readonly column: 'note' };
+                readonly profileId: { readonly column: 'profile_id' };
+                readonly recordedBy: { readonly column: 'recorded_by' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
           };
@@ -39188,6 +39393,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['schemeId'];
                 };
               };
+              readonly committeeTraining: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CommitteeTraining';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
               readonly compliance: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -48759,6 +48975,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'bylaws';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'committee_training';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };

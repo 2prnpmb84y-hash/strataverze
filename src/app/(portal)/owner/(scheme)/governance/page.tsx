@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import { CommitteeMeetingList } from "@/components/committee-meeting-list";
 import { connection } from "next/server";
+import { committeeTrainingRows } from "@/lib/governance/committee-training-store";
+import { TRAINING_STATUS_LABELS } from "@/lib/governance/committee-training";
+import { recordMyTrainingAction } from "@/lib/actions/committee-training";
+import { Card, CardHeader } from "@/components/ui/card";
+import { MyTrainingForm } from "@/components/governance/training-forms";
 
 export default async function OwnerGovernancePage({
   searchParams,
@@ -46,6 +51,17 @@ export default async function OwnerGovernancePage({
     0,
   );
 
+  // The member's own committee training, for each scheme they are on the committee of.
+  const training = (
+    await Promise.all(
+      schemes.map(async (s) => {
+        const data = await committeeTrainingRows(s.id);
+        const row = data?.rows.find((r) => r.profileId === access.profile.id);
+        return data && row ? { schemeId: s.id, schemeName: String(s.name), row, rules: data.rules, today: data.today } : null;
+      }),
+    )
+  ).filter((x): x is NonNullable<typeof x> => x !== null);
+
   const sp = await searchParams;
   const { page } = parsePage(sp);
   const { data: paginatedMeetings, meta } = paginateArray(meetings, page);
@@ -77,6 +93,29 @@ export default async function OwnerGovernancePage({
           accent="bg-yellow-500"
         />
       </div>
+
+      {training.map((t) => (
+        <Card key={t.schemeId} className="mb-6">
+          <CardHeader
+            title={`Committee training: ${t.schemeName}`}
+            description={
+              t.row.status === "DUE"
+                ? `Complete ${t.rules.course} by ${t.row.dueOn}. ${t.rules.consequence}`
+                : t.row.status === "OVERDUE"
+                  ? `Your training was due by ${t.row.dueOn}. ${t.rules.consequence} Contact your strata manager or the secretary.`
+                  : `${TRAINING_STATUS_LABELS[t.row.status]}${t.row.completedOn ? ` (${t.row.completedOn})` : ""}.`
+            }
+          />
+          {(t.row.status === "DUE" || t.row.status === "OVERDUE" || t.row.status === "NOT_YET_REQUIRED") && (
+            <div className="space-y-3">
+              <a href={t.rules.helpUrl} target="_blank" rel="noreferrer" className="text-sm text-turquoise underline">
+                About the training and where to do it
+              </a>
+              <MyTrainingForm action={recordMyTrainingAction.bind(null, t.schemeId)} today={t.today} />
+            </div>
+          )}
+        </Card>
+      ))}
 
       <CommitteeMeetingList meetings={paginatedMeetings} schemeNames={schemeNames} />
 

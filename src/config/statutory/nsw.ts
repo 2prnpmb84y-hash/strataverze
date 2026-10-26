@@ -518,3 +518,42 @@ export const PAYMENT_PLANS = {
   mediation: "If the request is refused, the owner can apply to NSW Fair Trading's free mediation service, then to NCAT for an order that the refusal was unreasonable.",
   source: "Strata Schemes Management Regulation 2016 cl 17K; NSW Government guidance (27 Oct 2025 and 23 Oct 2026 changes)",
 } as const;
+
+/**
+ * Strata committee training (26 Oct 2026, for StrataVerze to review).
+ * Source: NSW Government, "Strata committee training" (checked 26 Oct 2026),
+ * and "Guide to strata law changes" (1 Oct 2026 changes):
+ * - from 1 Oct 2026 new and returning committee members, and members
+ *   appointed to a vacancy for more than 3 months, complete NSW Fair
+ *   Trading's free online training within 3 months of being appointed;
+ * - members appointed before 1 Oct 2026 need not train until they are next
+ *   appointed;
+ * - a member who has not completed it within 3 months automatically stops
+ *   being a committee member;
+ * - exempt: two-lot schemes, members of the Australian College of Strata
+ *   Lawyers, NSW strata managing agents, casual vacancies under 3 months;
+ * - recommended (not required): a copy of the certificate to the secretary.
+ * NOT CONFIRMED: whether a member who has completed it must repeat it each
+ * year. The guide says "each year"; the training page says a member who has
+ * completed it will not need to complete the same training again, and that
+ * further details will be published in 2027. The platform counts any
+ * recorded completion until that is settled (`repeatsEachYear: null`).
+ */
+export const COMMITTEE_TRAINING = {
+  startsOn: "2026-10-01",
+  withinMonths: 3,
+  course: "Introduction to Strata Committee Rights and Responsibilities (NSW Fair Trading, free online on Strata Hub)",
+  /** Schemes with this many lots are exempt (two-lot schemes). */
+  exemptLotCount: 2,
+  exemptions: {
+    ACSL_MEMBER: "member of the Australian College of Strata Lawyers",
+    STRATA_MANAGING_AGENT: "licensed NSW strata managing agent",
+    CASUAL_VACANCY_SHORT: "appointed to a casual vacancy for less than 3 months",
+  },
+  consequence: "A member who has not completed the training within 3 months of appointment automatically stops being a committee member.",
+  recommendation: "Give a copy of the certificate of completion to the secretary.",
+  repeatsEachYear: null,
+  repeatNote: "Whether the training must be repeated each year is not yet confirmed; NSW Fair Trading will publish further details in 2027.",
+  helpUrl: "https://www.nsw.gov.au/housing-and-construction/strata/serving-on-a-committee/strata-committee-training",
+  source: "NSW Government, Strata committee training (from 1 Oct 2026)",
+} as const;
