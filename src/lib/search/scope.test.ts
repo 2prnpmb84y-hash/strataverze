@@ -46,7 +46,7 @@ describe("searchScopes", () => {
 });
 
 describe("searchPlan", () => {
-  it("gives a supplier only work orders awarded to them", () => {
+  it("gives a supplier nothing to search: the old work orders are retired", () => {
     expect(searchPlan([{ schemeId: A, level: "supplier" }])).toEqual({
       schemes: [],
       lots: [],
@@ -54,7 +54,7 @@ describe("searchPlan", () => {
       contacts: [],
       workOrdersAll: [],
       workOrdersRaised: [],
-      workOrdersAwarded: [A],
+      workOrdersAwarded: [],
     });
   });
 
