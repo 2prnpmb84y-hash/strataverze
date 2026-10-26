@@ -10,7 +10,8 @@ import { storedDayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
 import { TrainingError, recordOwnCompletion, saveCommitteeTraining } from "@/lib/governance/committee-training-store";
 
-export type TrainingFormState = { error?: string; fieldErrors?: Record<string, string>; success?: string };
+export type TrainingFormState = { error?: string; fieldErrors?: Record<string, string>; success?: string; values?: Record<string, string> };
+const echo = (f: FormData) => Object.fromEntries([...f.entries()].filter(([, v]) => typeof v === "string")) as Record<string, string>;
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
@@ -37,7 +38,7 @@ export async function saveCommitteeTrainingAction(schemeId: string, profileId: s
     revalidatePath(`/adviser/schemes/${schemeId}/members`, "layout");
     return { success: "Saved." };
   } catch (err) {
-    return failure(err);
+    return { ...failure(err), values: echo(formData) };
   }
 }
 
@@ -53,8 +54,8 @@ export async function recordMyTrainingAction(schemeId: string, _prev: TrainingFo
       defaultAppointedOn: storedDayIn(tz, membership.startDate),
     });
     revalidatePath("/owner/governance");
-    return { success: "Thank you. Your training is recorded. Give a copy of your certificate to the secretary." };
+    return { success: "Thank you. Your training is recorded. It is recommended that you give a copy of your certificate to the secretary." };
   } catch (err) {
-    return failure(err);
+    return { ...failure(err), values: echo(formData) };
   }
 }

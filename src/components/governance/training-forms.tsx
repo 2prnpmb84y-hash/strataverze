@@ -33,6 +33,8 @@ export function MemberTrainingForm({
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState<TrainingFormState, FormData>(action, {});
   const e = state.fieldErrors ?? {};
+  // After an error the form is reset, so show what was entered again.
+  const v = state.success ? {} : (state.values ?? {});
   if (!open) {
     return (
       <Button type="button" variant="ghost" onClick={() => setOpen(true)}>
@@ -47,17 +49,17 @@ export function MemberTrainingForm({
       </div>
       <label className="text-sm">
         <span className="block mb-1 font-medium text-ink">Appointed on</span>
-        <input name="appointedOn" type="date" max={today} defaultValue={appointedOn} required className={input} />
+        <input name="appointedOn" type="date" max={today} defaultValue={v.appointedOn ?? appointedOn} required className={input} />
         {e.appointedOn && <span className="text-xs text-red-600">{e.appointedOn}</span>}
       </label>
       <label className="text-sm">
         <span className="block mb-1 font-medium text-ink">Training completed on (certificate date)</span>
-        <input name="completedOn" type="date" max={today} defaultValue={completedOn ?? ""} className={input} />
+        <input name="completedOn" type="date" max={today} defaultValue={v.completedOn ?? completedOn ?? ""} className={input} />
         {e.completedOn && <span className="text-xs text-red-600">{e.completedOn}</span>}
       </label>
       <label className="text-sm">
         <span className="block mb-1 font-medium text-ink">Exemption</span>
-        <select name="exemption" defaultValue={exemption ?? ""} className={input}>
+        <select name="exemption" defaultValue={v.exemption ?? exemption ?? ""} className={input}>
           <option value="">None</option>
           {Object.entries(exemptions).map(([k, v]) => (
             <option key={k} value={k}>
@@ -69,7 +71,7 @@ export function MemberTrainingForm({
       </label>
       <label className="text-sm">
         <span className="block mb-1 font-medium text-ink">Note (evidence of an exemption)</span>
-        <input name="note" defaultValue={note ?? ""} className={input} />
+        <input name="note" defaultValue={v.note ?? note ?? ""} className={input} />
         {e.note && <span className="text-xs text-red-600">{e.note}</span>}
       </label>
       <div className="sm:col-span-2 flex justify-end gap-2">

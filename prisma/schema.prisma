@@ -126,6 +126,7 @@ model Profile {
   worksPreferredCreated  WorksPreferredContractor[] @relation("WorksPreferredCreatedBy")
   worksDecisionsProposed WorksDecision[]            @relation("WorksDecisionProposedBy")
   worksDecisionVotes     WorksDecisionVote[]        @relation("WorksDecisionVoter")
+  committeeTraining CommitteeTraining[] @relation("CommitteeTrainingMember")
   @@map("profiles")
 }
 
@@ -4346,11 +4347,13 @@ model CommitteeTraining {
   exemption     String?   // ACSL_MEMBER, STRATA_MANAGING_AGENT, CASUAL_VACANCY_SHORT
   note          String?
   lastReminderOn DateTime? @db.Date @map("last_reminder_on") // the day the last reminder was sent (claimed so a repeated run sends none)
-  recordedBy    String?   @map("recorded_by") @db.Uuid
+  appointedRecordedBy String? @map("appointed_recorded_by") @db.Uuid // the adviser who recorded the appointment date; null while it is only the date committee access began
+  completedRecordedBy String? @map("completed_recorded_by") @db.Uuid // who recorded the completion (the member or an adviser)
   createdAt     DateTime  @default(now()) @db.Timestamptz @map("created_at")
   updatedAt     DateTime  @updatedAt @db.Timestamptz @map("updated_at")
 
   scheme        Scheme    @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  profile       Profile   @relation("CommitteeTrainingMember", fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([schemeId, profileId])
   @@map("committee_training")

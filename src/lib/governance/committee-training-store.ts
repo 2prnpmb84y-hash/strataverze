@@ -33,12 +33,17 @@ export interface TrainingRow {
   status: TrainingStatus;
   dueOn: string | null;
   daysLeft: number | null;
+  /** The recorded appointment is old enough that the member may have been re-elected since. */
+  checkAppointment: boolean;
 }
 
-/** The number of lots, for the two-lot exemption: the roll, or the recorded total when the roll is empty. */
+/**
+ * The number of lots, for the two-lot exemption: the larger of the roll and
+ * the recorded total, so a partly loaded roll never makes a scheme exempt.
+ */
 async function schemeLotCount(scheme: { id: string; totalLots: number }) {
   const lots = await db.orm.public.Lot.where((l) => l.schemeId.eq(scheme.id)).limit(5000).all();
-  return lots.length || scheme.totalLots;
+  return Math.max(lots.length, scheme.totalLots);
 }
 
 /** Every active committee member of a scheme with their training status. */
@@ -57,9 +62,11 @@ export async function committeeTrainingRows(schemeId: string, now: Date = new Da
   const rows: TrainingRow[] = members.map((m) => {
     const p = profiles.find((x) => x.id === m.profileId);
     const r = records.find((x) => x.profileId === m.profileId);
-    const appointedOn = r ? day(r.appointedOn) : storedDayIn(tz, m.startDate);
+    // Until an adviser records the appointment date, the date committee access began is shown (not used for a due date).
+    const appointmentRecorded = !!r?.appointedRecordedBy;
+    const appointedOn = r && appointmentRecorded ? day(r.appointedOn) : storedDayIn(tz, m.startDate);
     const s = trainingStatus(
-      { appointedOn, completedOn: r?.completedOn ? day(r.completedOn) : null, exemption: r?.exemption ?? null, schemeLots, today },
+      { appointedOn, appointmentRecorded, completedOn: r?.completedOn ? day(r.completedOn) : null, exemption: r?.exemption ?? null, schemeLots, today },
       rules.COMMITTEE_TRAINING,
     );
     return {
@@ -67,7 +74,7 @@ export async function committeeTrainingRows(schemeId: string, now: Date = new Da
       name: `${p?.firstName ?? ""} ${p?.lastName ?? ""}`.trim() || String(p?.email ?? "Member"),
       email: p?.email ?? null,
       appointedOn,
-      appointedOnRecorded: !!r?.recordedBy,
+      appointedOnRecorded: appointmentRecorded,
       completedOn: r?.completedOn ? day(r.completedOn) : null,
       exemption: r?.exemption ?? null,
       note: r?.note ?? null,
@@ -105,7 +112,8 @@ export async function saveCommitteeTraining(input: {
     completedOn: input.completedOn,
     exemption: input.exemption,
     note: input.note?.trim() || null,
-    recordedBy: input.actorId,
+    appointedRecordedBy: input.actorId,
+    completedRecordedBy: input.completedOn ? input.actorId : null,
   });
 }
 
@@ -114,16 +122,19 @@ export async function recordOwnCompletion(input: { schemeId: string; profileId: 
   if (!ISO.test(input.completedOn) || input.completedOn > input.today) throw new TrainingError("Enter the date on your certificate.", { completedOn: "Enter the date on your certificate (not in the future)." });
   if (!(await activeCommitteeMember(input.schemeId, input.profileId))) throw new TrainingError("You are not on the committee of this scheme.");
   const existing = await db.orm.public.CommitteeTraining.where((t) => and(t.schemeId.eq(input.schemeId), t.profileId.eq(input.profileId))).first();
-  await upsert(input.schemeId, input.profileId, {
-    appointedOn: existing ? day(existing.appointedOn) : input.defaultAppointedOn,
-    completedOn: input.completedOn,
-    exemption: existing?.exemption ?? null,
-    note: existing?.note ?? null,
-    recordedBy: input.profileId,
-  });
+  // Only the completion: the appointment date and who recorded it are left as they are.
+  if (existing) {
+    await db.orm.public.CommitteeTraining.where((t) => t.id.eq(existing.id)).update({ completedOn: input.completedOn, completedRecordedBy: input.profileId });
+  } else {
+    await db.orm.public.CommitteeTraining.create({ schemeId: input.schemeId, profileId: input.profileId, appointedOn: input.defaultAppointedOn, completedOn: input.completedOn, completedRecordedBy: input.profileId });
+  }
 }
 
-async function upsert(schemeId: string, profileId: string, data: { appointedOn: string; completedOn: string | null; exemption: string | null; note: string | null; recordedBy: string }) {
+async function upsert(
+  schemeId: string,
+  profileId: string,
+  data: { appointedOn: string; completedOn: string | null; exemption: string | null; note: string | null; appointedRecordedBy: string; completedRecordedBy: string | null },
+) {
   const existing = await db.orm.public.CommitteeTraining.where((t) => and(t.schemeId.eq(schemeId), t.profileId.eq(profileId))).first();
   if (existing) await db.orm.public.CommitteeTraining.where((t) => t.id.eq(existing.id)).update(data);
   else await db.orm.public.CommitteeTraining.create({ schemeId, profileId, ...data });
@@ -131,19 +142,12 @@ async function upsert(schemeId: string, profileId: string, data: { appointedOn: 
 
 /**
  * Claim today's reminder for a member (true when this run should send it).
- * A member with no training record yet gets one, dated from when their
- * committee access began, as shown on the page.
+ * Reminders go only to members whose appointment date an adviser recorded,
+ * so the record exists.
  */
-export async function claimTrainingReminder(input: { schemeId: string; profileId: string; appointedOn: string; today: string }): Promise<boolean> {
-  const existing = await db.orm.public.CommitteeTraining.where((t) => and(t.schemeId.eq(input.schemeId), t.profileId.eq(input.profileId))).first();
-  if (!existing) {
-    try {
-      await db.orm.public.CommitteeTraining.create({ schemeId: input.schemeId, profileId: input.profileId, appointedOn: input.appointedOn, lastReminderOn: input.today });
-      return true;
-    } catch {
-      return false; // another run created it first
-    }
-  }
-  const n = await db.orm.public.CommitteeTraining.where((t) => and(t.id.eq(existing.id), or(t.lastReminderOn.isNull(), t.lastReminderOn.lt(input.today)))).updateAndCount({ lastReminderOn: input.today });
+export async function claimTrainingReminder(input: { schemeId: string; profileId: string; today: string }): Promise<boolean> {
+  const n = await db.orm.public.CommitteeTraining.where((t) =>
+    and(t.schemeId.eq(input.schemeId), t.profileId.eq(input.profileId), t.appointedRecordedBy.isNotNull(), or(t.lastReminderOn.isNull(), t.lastReminderOn.lt(input.today))),
+  ).updateAndCount({ lastReminderOn: input.today });
   return n === 1;
 }

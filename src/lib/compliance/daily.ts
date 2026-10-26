@@ -66,14 +66,15 @@ async function committeeTrainingReminders(now: Date) {
           if (row.daysLeft == null) continue;
           const kind = reminderDue(row.daysLeft);
           const wanted = (row.status === "DUE" && kind === "UPCOMING") || (row.status === "OVERDUE" && kind === "OVERDUE");
-          // Claim today's reminder, so a repeated run (a retried cron) sends none.
-          if (!wanted || !(await claimTrainingReminder({ schemeId, profileId: row.profileId, appointedOn: row.appointedOn, today: data.today }))) continue;
-          if (row.status === "DUE") {
-            await notifyTrainingDue({ schemeName: String(data.scheme.name), row, course: data.rules.course, consequence: data.rules.consequence, helpUrl: data.rules.helpUrl });
+          if (!wanted) continue;
+          try {
+            // Claim today's reminder, so a repeated run (a retried cron) sends none.
+            if (!(await claimTrainingReminder({ schemeId, profileId: row.profileId, today: data.today }))) continue;
+            if (row.status === "DUE") await notifyTrainingDue({ schemeName: String(data.scheme.name), row, course: data.rules.course, consequence: data.rules.consequence, helpUrl: data.rules.helpUrl });
+            else await notifyTrainingOverdue({ schemeId, schemeName: String(data.scheme.name), row, consequence: data.rules.consequence });
             sent++;
-          } else {
-            await notifyTrainingOverdue({ schemeId, schemeName: String(data.scheme.name), row, consequence: data.rules.consequence });
-            sent++;
+          } catch (err) {
+            logError("[compliance] committee training reminder failed:", err);
           }
         }
       } catch (err) {

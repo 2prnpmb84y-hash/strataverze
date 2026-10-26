@@ -542,18 +542,19 @@ export const PAYMENT_PLANS = {
 export const COMMITTEE_TRAINING = {
   startsOn: "2026-10-01",
   withinMonths: 3,
-  course: "Introduction to Strata Committee Rights and Responsibilities (NSW Fair Trading, free online on Strata Hub)",
+  /** The course for appointments from 1 Oct 2026 to 30 Sep 2027 (NSW Government training page). */
+  course: "NSW Fair Trading's free online training, Introduction to Strata Committee Rights and Responsibilities (on Strata Hub)",
   /** Schemes with this many lots are exempt (two-lot schemes). */
   exemptLotCount: 2,
   exemptions: {
     ACSL_MEMBER: "member of the Australian College of Strata Lawyers",
-    STRATA_MANAGING_AGENT: "licensed NSW strata managing agent",
+    STRATA_MANAGING_AGENT: "NSW strata managing agent",
     CASUAL_VACANCY_SHORT: "appointed to a casual vacancy for less than 3 months",
   },
   consequence: "A member who has not completed the training within 3 months of appointment automatically stops being a committee member.",
-  recommendation: "Give a copy of the certificate of completion to the secretary.",
+  recommendation: "It is recommended that each member gives a copy of their certificate of completion to the secretary.",
   repeatsEachYear: null,
-  repeatNote: "Whether the training must be repeated each year is not yet confirmed; NSW Fair Trading will publish further details in 2027.",
+  repeatNote: "Whether the training must be repeated each year is not yet confirmed. The training page says further details will be published in 2027.",
   helpUrl: "https://www.nsw.gov.au/housing-and-construction/strata/serving-on-a-committee/strata-committee-training",
   source: "NSW Government, Strata committee training (from 1 Oct 2026)",
 } as const;

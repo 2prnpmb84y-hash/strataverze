@@ -3065,10 +3065,24 @@
                   "kind": "scalar"
                 }
               },
+              "appointedRecordedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "completedOn": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "completedRecordedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               },
@@ -3114,13 +3128,6 @@
                   "kind": "scalar"
                 }
               },
-              "recordedBy": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
-              },
               "schemeId": {
                 "nullable": false,
                 "type": {
@@ -3137,6 +3144,22 @@
               }
             },
             "relations": {
+              "profile": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "profileId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Profile",
+                  "namespace": "public"
+                }
+              },
               "scheme": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -3159,8 +3182,14 @@
                 "appointedOn": {
                   "column": "appointed_on"
                 },
+                "appointedRecordedBy": {
+                  "column": "appointed_recorded_by"
+                },
                 "completedOn": {
                   "column": "completed_on"
+                },
+                "completedRecordedBy": {
+                  "column": "completed_recorded_by"
                 },
                 "createdAt": {
                   "column": "created_at"
@@ -3179,9 +3208,6 @@
                 },
                 "profileId": {
                   "column": "profile_id"
-                },
-                "recordedBy": {
-                  "column": "recorded_by"
                 },
                 "schemeId": {
                   "column": "scheme_id"
@@ -18335,6 +18361,21 @@
                 },
                 "to": {
                   "model": "Comment",
+                  "namespace": "public"
+                }
+              },
+              "committeeTraining": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "profileId"
+                  ]
+                },
+                "to": {
+                  "model": "CommitteeTraining",
                   "namespace": "public"
                 }
               },
@@ -36863,9 +36904,19 @@
                   "dataType": "pg/date",
                   "nullable": false
                 },
+                "appointed_recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
                 "completed_on": {
                   "codecId": "pg/date-string@1",
                   "dataType": "pg/date",
+                  "nullable": true
+                },
+                "completed_recorded_by": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
                   "nullable": true
                 },
                 "created_at": {
@@ -36906,11 +36957,6 @@
                   "dataType": "pg/uuid",
                   "nullable": false
                 },
-                "recorded_by": {
-                  "codecId": "pg/uuid@1",
-                  "dataType": "pg/uuid",
-                  "nullable": true
-                },
                 "scheme_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -36942,6 +36988,24 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "schemes"
+                  }
+                },
+                {
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "profile_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "committee_training"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "profiles"
                   }
                 }
               ],
@@ -59456,7 +59520,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "bea0aa0eb356d5164e0e04e594f120d7630849b3a6e73a0054167a22c5f85603"
+    "storageHash": "77212e9dec5de6ad8ca5bdc315342c3634477972797b24cc0404a28c230d1118"
   },
   "execution": {
     "executionHash": "5e817cab30fd1e20bee97158f3305d2f1d63516069bf9191427d4e527e012094",

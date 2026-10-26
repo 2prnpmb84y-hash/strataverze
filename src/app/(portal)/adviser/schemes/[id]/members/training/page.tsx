@@ -14,6 +14,8 @@ const VARIANT: Record<TrainingStatus, "default" | "success" | "warning" | "dange
   SCHEME_EXEMPT: "default",
   EXEMPT: "default",
   TRAINED: "success",
+  COMPLETED_LATE: "danger",
+  APPOINTMENT_NOT_RECORDED: "warning",
   NOT_YET_REQUIRED: "default",
   DUE: "warning",
   OVERDUE: "danger",
@@ -36,12 +38,15 @@ export default async function CommitteeTrainingPage({ params }: { params: Promis
     <div className="space-y-6 max-w-4xl">
       <PageHeader
         title="Committee training"
-        description={`From ${t.startsOn}, each committee member must complete ${t.course} within ${t.withinMonths} months of being appointed.`}
+        description={`Committee members appointed from ${t.startsOn} must complete ${t.course} within ${t.withinMonths} months of being appointed, unless the scheme or the member is exempt.`}
         backHref={`/adviser/schemes/${id}/members`}
         backLabel="Members"
       />
       <Card>
-        <CardHeader title="Members" description={`${t.consequence} Members get a reminder by email 14, 7 and 1 days before their date.`} />
+        <CardHeader
+          title="Members"
+          description={`Record each member's appointment date (the AGM or meeting that appointed them, and again when they are re-elected). Once it is recorded, members get email reminders 14, 7 and 1 days before their date. ${t.consequence}`}
+        />
         {data.rows.length === 0 ? (
           <p className="text-sm text-ink-muted">No committee members.</p>
         ) : (
@@ -53,20 +58,27 @@ export default async function CommitteeTrainingPage({ params }: { params: Promis
                     <p className="text-sm font-medium text-ink">{r.name}</p>
                     <p className="text-xs text-ink-muted">
                       Appointed {r.appointedOn}
-                      {r.appointedOnRecorded ? "" : " (date their committee access began; record the appointment date)"}
+                      {r.appointedOnRecorded ? "" : " (the date their committee access began, not their appointment: record the appointment date)"}
                       {r.dueOn ? ` · due by ${r.dueOn}` : ""}
                       {r.completedOn ? ` · completed ${r.completedOn}` : ""}
                       {r.exemption ? ` · ${t.exemptions[r.exemption as keyof typeof t.exemptions] ?? r.exemption}` : ""}
                     </p>
                     {r.status === "OVERDUE" && (
                       <p className="mt-1 text-xs text-red-700">
-                        Not completed by {r.dueOn}. Under the training rule they stopped being a committee member on that date. Check, then update the committee.
+                        No completion recorded by {r.dueOn}. If the appointment date is right and the training was not completed by then, under the training rule they are no longer a committee member. Check, then update the committee.
                       </p>
                     )}
+                    {r.status === "COMPLETED_LATE" && (
+                      <p className="mt-1 text-xs text-red-700">
+                        Completed on {r.completedOn}, after the date it was due ({r.dueOn}). Under the training rule they stopped being a committee member, so they need to be appointed again.
+                      </p>
+                    )}
+                    {r.status === "NOT_YET_REQUIRED" && <p className="mt-1 text-xs text-ink-muted">Update the appointment date when they are next appointed (for example at the next AGM).</p>}
+                    {r.checkAppointment && <p className="mt-1 text-xs text-amber-700">Appointed more than 15 months ago. If they were re-elected at a later AGM, update the appointment date.</p>}
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusChip
-                      status={r.status === "DUE" && r.daysLeft != null ? `Due in ${r.daysLeft} days` : TRAINING_STATUS_LABELS[r.status]}
+                      status={r.status === "DUE" && r.daysLeft != null ? (r.daysLeft === 0 ? "Due today" : `Due in ${r.daysLeft} ${r.daysLeft === 1 ? "day" : "days"}`) : TRAINING_STATUS_LABELS[r.status]}
                       variant={VARIANT[r.status]}
                     />
                   </div>

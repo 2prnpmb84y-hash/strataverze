@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'bea0aa0eb356d5164e0e04e594f120d7630849b3a6e73a0054167a22c5f85603'>;
+  StorageHashBase<'77212e9dec5de6ad8ca5bdc315342c3634477972797b24cc0404a28c230d1118'>;
 export type ExecutionHash =
   ExecutionHashBase<'5e817cab30fd1e20bee97158f3305d2f1d63516069bf9191427d4e527e012094'>;
 export type ProfileHash =
@@ -730,18 +730,20 @@ export namespace Models {
   };
   export type public_CommitteeTraining = {
     appointedOn: FieldOutputTypes['public']['CommitteeTraining']['appointedOn'];
+    appointedRecordedBy: FieldOutputTypes['public']['CommitteeTraining']['appointedRecordedBy'];
     completedOn: FieldOutputTypes['public']['CommitteeTraining']['completedOn'];
+    completedRecordedBy: FieldOutputTypes['public']['CommitteeTraining']['completedRecordedBy'];
     createdAt: FieldOutputTypes['public']['CommitteeTraining']['createdAt'];
     exemption: FieldOutputTypes['public']['CommitteeTraining']['exemption'];
     id: FieldOutputTypes['public']['CommitteeTraining']['id'];
     lastReminderOn: FieldOutputTypes['public']['CommitteeTraining']['lastReminderOn'];
     note: FieldOutputTypes['public']['CommitteeTraining']['note'];
     profileId: FieldOutputTypes['public']['CommitteeTraining']['profileId'];
-    recordedBy: FieldOutputTypes['public']['CommitteeTraining']['recordedBy'];
     schemeId: FieldOutputTypes['public']['CommitteeTraining']['schemeId'];
     updatedAt: FieldOutputTypes['public']['CommitteeTraining']['updatedAt'];
+    profile: public_Profile;
     scheme: public_Scheme;
-    readonly [RelationKeys]?: 'scheme';
+    readonly [RelationKeys]?: 'profile' | 'scheme';
   };
   export type public_ComplianceItem = {
     category: FieldOutputTypes['public']['ComplianceItem']['category'];
@@ -2319,6 +2321,7 @@ export namespace Models {
     announcements: public_Announcement[];
     awardedOrders: public_WorkOrder[];
     comments: public_Comment[];
+    committeeTraining: public_CommitteeTraining[];
     contractorContacts: public_ContractorContact[];
     contractorDeclarations: public_ContractorDeclaration[];
     contractorMembershipsAccepted: public_ContractorMembership[];
@@ -2389,6 +2392,7 @@ export namespace Models {
       | 'announcements'
       | 'awardedOrders'
       | 'comments'
+      | 'committeeTraining'
       | 'contractorContacts'
       | 'contractorDeclarations'
       | 'contractorMembershipsAccepted'
@@ -5974,9 +5978,21 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
+                readonly appointed_recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly completed_on: {
                   readonly dataType: 'pg/date';
                   readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly completed_recorded_by: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -6021,12 +6037,6 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly many: false;
                 };
-                readonly recorded_by: {
-                  readonly dataType: 'pg/uuid';
-                  readonly codecId: 'pg/uuid@1';
-                  readonly nullable: true;
-                  readonly many: false;
-                };
                 readonly scheme_id: {
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -6059,6 +6069,18 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'committee_training';
+                    readonly columns: readonly ['profile_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'profiles';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -28414,9 +28436,17 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
               };
+              readonly appointedRecordedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
               readonly completedOn: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly completedRecordedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
               readonly createdAt: {
                 readonly nullable: false;
@@ -28445,10 +28475,6 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
-              readonly recordedBy: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
-              };
               readonly schemeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -28462,6 +28488,18 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly profile: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Profile';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['profileId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
               readonly scheme: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -28480,14 +28518,15 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly appointedOn: { readonly column: 'appointed_on' };
+                readonly appointedRecordedBy: { readonly column: 'appointed_recorded_by' };
                 readonly completedOn: { readonly column: 'completed_on' };
+                readonly completedRecordedBy: { readonly column: 'completed_recorded_by' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly exemption: { readonly column: 'exemption' };
                 readonly id: { readonly column: 'id' };
                 readonly lastReminderOn: { readonly column: 'last_reminder_on' };
                 readonly note: { readonly column: 'note' };
                 readonly profileId: { readonly column: 'profile_id' };
-                readonly recordedBy: { readonly column: 'recorded_by' };
                 readonly schemeId: { readonly column: 'scheme_id' };
                 readonly updatedAt: { readonly column: 'updated_at' };
               };
@@ -38025,6 +38064,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['authorId'];
+                };
+              };
+              readonly committeeTraining: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'CommitteeTraining';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['profileId'];
                 };
               };
               readonly contractorContacts: {
