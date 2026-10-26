@@ -10,17 +10,7 @@ import {
   updateSchemeAction,
   type SchemeFormState,
 } from "./actions";
-
-const STATES = [
-  { value: "VIC", label: "Victoria" },
-  { value: "NSW", label: "New South Wales" },
-  { value: "QLD", label: "Queensland" },
-  { value: "SA", label: "South Australia" },
-  { value: "WA", label: "Western Australia" },
-  { value: "TAS", label: "Tasmania" },
-  { value: "NT", label: "Northern Territory" },
-  { value: "ACT", label: "Australian Capital Territory" },
-];
+import { DEFAULT_SCHEME_STATE, SCHEME_STATE_HELP, SCHEME_STATE_OPTIONS } from "@/config/jurisdictions";
 
 type SchemeDefaults = {
   name?: string;
@@ -127,8 +117,9 @@ export function SchemeForm({
               name="state"
             readOnly={lockCore}
               required
-              defaultValue={defaults?.state ?? "VIC"}
-              options={STATES}
+              defaultValue={defaults?.state ?? DEFAULT_SCHEME_STATE}
+              options={SCHEME_STATE_OPTIONS}
+              helpText={SCHEME_STATE_HELP}
               error={state.fieldErrors?.state}
             />
             <FormField

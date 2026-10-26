@@ -30,6 +30,7 @@ import {
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
 import { BalancesStep, LotBalancesStep, LotsStep, RollNotes, StepProblems } from "./onboarding-steps";
+import { DEFAULT_SCHEME_STATE, SCHEME_STATE_HELP, SCHEME_STATE_OPTIONS, schemeStateProblem } from "@/config/jurisdictions";
 
 const STEPS = [
   { id: "upload", label: "Strata Roll" },
@@ -40,17 +41,6 @@ const STEPS = [
   { id: "lotBalances", label: "Lot Balances" },
   { id: "review", label: "Review & Create" },
 ] as const;
-
-const STATES = [
-  { value: "VIC", label: "Victoria" },
-  { value: "NSW", label: "New South Wales" },
-  { value: "QLD", label: "Queensland" },
-  { value: "SA", label: "South Australia" },
-  { value: "WA", label: "Western Australia" },
-  { value: "TAS", label: "Tasmania" },
-  { value: "NT", label: "Northern Territory" },
-  { value: "ACT", label: "Australian Capital Territory" },
-];
 
 const BUILDING_TYPES = [
   { value: "", label: "Select type..." },
@@ -487,7 +477,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               />
               <FormField label="Suburb" name="suburb" required placeholder="e.g. Melbourne" defaultValue={defaults.suburb} error={state.fieldErrors?.suburb} />
               <div className="grid grid-cols-2 gap-4">
-                <SelectField label="State" name="state" required defaultValue={defaults.state || "NSW"} options={STATES} error={state.fieldErrors?.state} />
+                <SelectField label="State" name="state" required defaultValue={defaults.state || DEFAULT_SCHEME_STATE} options={SCHEME_STATE_OPTIONS} helpText={SCHEME_STATE_HELP} error={state.fieldErrors?.state ?? (defaults.state ? (schemeStateProblem(defaults.state) ?? undefined) : undefined)} />
                 <FormField label="Postcode" name="postcode" required placeholder="2000" defaultValue={defaults.postcode} error={state.fieldErrors?.postcode} />
               </div>
               <FormField

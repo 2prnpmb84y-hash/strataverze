@@ -1,0 +1,1899 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
+[
+  {
+    "actionRequired": "Verify all levy notices, payments, and outstanding balances on the lot ledger",
+    "approvalRequired": false,
+    "legalBasis": "s 83 SSMA 2015",
+    "responsibleParty": "ADVISER",
+    "stepOrder": 1,
+    "stepType": "LEDGER_VERIFICATION",
+    "triggerCondition": "Case opened",
+  },
+  {
+    "actionRequired": "Make initial contact with the lot owner regarding overdue levies",
+    "approvalRequired": false,
+    "noticeType": "REMINDER",
+    "responsibleParty": "ADVISER",
+    "stepOrder": 2,
+    "stepType": "INITIAL_CONTACT",
+    "triggerCondition": "Ledger verified",
+  },
+  {
+    "actionRequired": "Issue formal reminder notice with 14-day payment deadline",
+    "approvalRequired": false,
+    "legalBasis": "s 85 SSMA 2015",
+    "noticeType": "DEMAND",
+    "responsibleParty": "ADVISER",
+    "stepOrder": 3,
+    "stepType": "REMINDER_NOTICE",
+    "triggerCondition": "14 days after initial contact with no payment",
+  },
+  {
+    "actionRequired": "Issue final demand notice warning of legal action if payment is not received within 21 days",
+    "approvalRequired": false,
+    "legalBasis": "s 85 SSMA 2015",
+    "noticeType": "FINAL_DEMAND",
+    "responsibleParty": "ADVISER",
+    "stepOrder": 4,
+    "stepType": "FINAL_NOTICE",
+    "triggerCondition": "14 days after reminder notice",
+  },
+  {
+    "actionRequired": "Review any hardship application or payment plan request from the owner",
+    "approvalRequired": true,
+    "responsibleParty": "COMMITTEE",
+    "stepOrder": 5,
+    "stepType": "HARDSHIP_REVIEW",
+    "triggerCondition": "Owner submits hardship application or payment plan request",
+  },
+  {
+    "actionRequired": "Committee review and resolution to approve legal referral (ordinary resolution required)",
+    "approvalRequired": true,
+    "legalBasis": "s 103 SSMA 2015",
+    "responsibleParty": "COMMITTEE",
+    "stepOrder": 6,
+    "stepType": "COMMITTEE_REVIEW",
+    "triggerCondition": "Final notice period expired with no payment or payment plan",
+  },
+  {
+    "actionRequired": "Refer matter to solicitor for recovery proceedings",
+    "approvalRequired": true,
+    "legalBasis": "s 86 SSMA 2015",
+    "responsibleParty": "ADVISER",
+    "stepOrder": 7,
+    "stepType": "LEGAL_REFERRAL",
+    "triggerCondition": "Committee approval granted",
+  },
+  {
+    "actionRequired": "Solicitor files claim in NCAT or Local Court (amounts under $500 to NCAT; over $500 to Local Court)",
+    "approvalRequired": false,
+    "legalBasis": "s 86, s 229 SSMA 2015; Civil & Administrative Tribunal Act 2013",
+    "responsibleParty": "SOLICITOR",
+    "stepOrder": 8,
+    "stepType": "PROCEEDINGS",
+    "triggerCondition": "Legal referral accepted",
+  },
+  {
+    "actionRequired": "Enforce judgment via garnishee order, writ of execution, or interest registration on lot",
+    "approvalRequired": false,
+    "legalBasis": "s 86(4) SSMA 2015",
+    "responsibleParty": "SOLICITOR",
+    "stepOrder": 9,
+    "stepType": "ENFORCEMENT",
+    "triggerCondition": "Judgment obtained",
+  },
+  {
+    "actionRequired": "Close recovery case and update ledger",
+    "approvalRequired": false,
+    "responsibleParty": "ADVISER",
+    "stepOrder": 10,
+    "stepType": "CLOSED",
+    "triggerCondition": "Debt fully recovered, written off, or settled",
+  },
+]
+`;
+
+exports[`NSW finance reporting > audit test is unchanged 1`] = `
+[
+  {
+    "leviesRaisedCents": 25000000,
+    "lots": 100,
+    "result": {
+      "byBudget": false,
+      "byLots": false,
+      "required": false,
+    },
+  },
+  {
+    "leviesRaisedCents": 0,
+    "lots": 101,
+    "result": {
+      "byBudget": false,
+      "byLots": true,
+      "required": true,
+    },
+  },
+  {
+    "leviesRaisedCents": 25000001,
+    "lots": 10,
+    "result": {
+      "byBudget": true,
+      "byLots": false,
+      "required": true,
+    },
+  },
+  {
+    "leviesRaisedCents": 30000000,
+    "lots": 150,
+    "result": {
+      "byBudget": true,
+      "byLots": true,
+      "required": true,
+    },
+  },
+]
+`;
+
+exports[`NSW finance reporting > capital works plan maths is unchanged 1`] = `
+{
+  "average": 1100000,
+  "level": 1222300,
+  "projection": [
+    {
+      "closingCents": 1000000,
+      "contributionCents": 1500000,
+      "openingCents": 500000,
+      "spendCents": 1000000,
+      "year": 2027,
+    },
+    {
+      "closingCents": 2500000,
+      "contributionCents": 1500000,
+      "openingCents": 1000000,
+      "spendCents": 0,
+      "year": 2028,
+    },
+    {
+      "closingCents": 1500000,
+      "contributionCents": 1500000,
+      "openingCents": 2500000,
+      "spendCents": 2500000,
+      "year": 2029,
+    },
+    {
+      "closingCents": 3000000,
+      "contributionCents": 1500000,
+      "openingCents": 1500000,
+      "spendCents": 0,
+      "year": 2030,
+    },
+    {
+      "closingCents": 4500000,
+      "contributionCents": 1500000,
+      "openingCents": 3000000,
+      "spendCents": 0,
+      "year": 2031,
+    },
+    {
+      "closingCents": 6000000,
+      "contributionCents": 1500000,
+      "openingCents": 4500000,
+      "spendCents": 0,
+      "year": 2032,
+    },
+    {
+      "closingCents": 7500000,
+      "contributionCents": 1500000,
+      "openingCents": 6000000,
+      "spendCents": 0,
+      "year": 2033,
+    },
+    {
+      "closingCents": 9000000,
+      "contributionCents": 1500000,
+      "openingCents": 7500000,
+      "spendCents": 0,
+      "year": 2034,
+    },
+    {
+      "closingCents": 2500000,
+      "contributionCents": 1500000,
+      "openingCents": 9000000,
+      "spendCents": 8000000,
+      "year": 2035,
+    },
+    {
+      "closingCents": 4000000,
+      "contributionCents": 1500000,
+      "openingCents": 2500000,
+      "spendCents": 0,
+      "year": 2036,
+    },
+  ],
+  "reviewDue": "2031-04-01",
+  "reviewDueLeap": "2033-02-28",
+  "spend": [
+    1000000,
+    0,
+    2500000,
+    0,
+    0,
+    0,
+    0,
+    0,
+    8000000,
+    0,
+  ],
+}
+`;
+
+exports[`NSW finance reporting > statutory pack PDF content is unchanged 1`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Financial statements",
+  },
+  {
+    "kind": "text",
+    "text": "For the financial year 1 July 2026 to 30 June 2027.",
+  },
+  {
+    "kind": "heading",
+    "text": "Administrative Fund (cash basis)",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Statement of key financial information",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "text": "Strata Schemes Management Act 2015 (NSW) s 94(2), approved form (NSW Government)",
+  },
+  {
+    "columns": [
+      {
+        "header": "",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Amount",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "Balance carried forward",
+        "$5,000.00",
+      ],
+      [
+        "Total income received",
+        "$8,000.00",
+      ],
+      [
+        "Total interest earned",
+        "$0.00",
+      ],
+      [
+        "Total contributions paid",
+        "$8,000.00",
+      ],
+      [
+        "Total unpaid contributions",
+        "$2,000.00",
+      ],
+      [
+        "Total expenditure for maintenance",
+        "$3,000.00",
+      ],
+      [
+        "Total expenditure for administration",
+        "$500.00",
+      ],
+    ],
+    "totalRow": [
+      "Balance at the end of the period",
+      "$9,500.00",
+    ],
+  },
+  {
+    "bold": true,
+    "kind": "text",
+    "text": "Principal items of expenditure for the next period",
+  },
+  {
+    "columns": [
+      {
+        "header": "Item",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Estimate",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "Insurance",
+        "$600.00",
+      ],
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Income and expenditure",
+  },
+  {
+    "columns": [
+      {
+        "header": "Account",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "This year",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "4-1000 Levy Income",
+        "$8,000.00",
+      ],
+      [
+        "Total income",
+        "$8,000.00",
+      ],
+      [
+        "Total expenditure",
+        "$3,500.00",
+      ],
+    ],
+    "totalRow": [
+      "Surplus (deficit). Prior year: $0.00",
+      "$4,500.00",
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Balance sheet at year end",
+  },
+  {
+    "columns": [
+      {
+        "header": "Account",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Amount",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [],
+    "totalRow": [
+      "Owners' funds",
+      "$9,500.00",
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Contributions unpaid at year end",
+  },
+  {
+    "columns": [
+      {
+        "header": "Lot",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Unpaid",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "Lot 3",
+        "$2,000.00",
+      ],
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Levy register",
+  },
+  {
+    "columns": [
+      {
+        "header": "Lot",
+        "width": 0.8,
+      },
+      {
+        "header": "Notice",
+        "width": 1.2,
+      },
+      {
+        "header": "Due",
+        "width": 1.4,
+      },
+      {
+        "align": "right",
+        "header": "Owed",
+        "width": 1.2,
+      },
+      {
+        "align": "right",
+        "header": "Paid by year end",
+        "width": 1.4,
+      },
+      {
+        "align": "right",
+        "header": "Unpaid",
+        "width": 1.2,
+      },
+    ],
+    "kind": "table",
+    "rows": [],
+  },
+  {
+    "kind": "pageBreak",
+  },
+  {
+    "kind": "heading",
+    "text": "Capital Works Fund (accrual basis)",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Statement of key financial information",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "text": "Strata Schemes Management Act 2015 (NSW) s 94(2), approved form (NSW Government)",
+  },
+  {
+    "columns": [
+      {
+        "header": "",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Amount",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "Balance carried forward",
+        "$5,000.00",
+      ],
+      [
+        "Total income received",
+        "$8,000.00",
+      ],
+      [
+        "Total interest earned",
+        "$0.00",
+      ],
+      [
+        "Total contributions paid",
+        "$8,000.00",
+      ],
+      [
+        "Total unpaid contributions",
+        "$2,000.00",
+      ],
+      [
+        "Total expenditure for maintenance",
+        "$3,000.00",
+      ],
+      [
+        "Total expenditure for administration",
+        "$500.00",
+      ],
+    ],
+    "totalRow": [
+      "Balance at the end of the period",
+      "$9,500.00",
+    ],
+  },
+  {
+    "bold": true,
+    "kind": "text",
+    "text": "Principal items of expenditure for the next period",
+  },
+  {
+    "columns": [
+      {
+        "header": "Item",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Estimate",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "Insurance",
+        "$600.00",
+      ],
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Income and expenditure",
+  },
+  {
+    "columns": [
+      {
+        "header": "Account",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "This year",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "4-1000 Levy Income",
+        "$8,000.00",
+      ],
+      [
+        "Total income",
+        "$8,000.00",
+      ],
+      [
+        "Total expenditure",
+        "$3,500.00",
+      ],
+    ],
+    "totalRow": [
+      "Surplus (deficit). Prior year: $0.00",
+      "$4,500.00",
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Balance sheet at year end",
+  },
+  {
+    "columns": [
+      {
+        "header": "Account",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Amount",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [],
+    "totalRow": [
+      "Owners' funds",
+      "$9,500.00",
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Contributions unpaid at year end",
+  },
+  {
+    "columns": [
+      {
+        "header": "Lot",
+        "width": 4,
+      },
+      {
+        "align": "right",
+        "header": "Unpaid",
+        "width": 1.5,
+      },
+    ],
+    "kind": "table",
+    "rows": [
+      [
+        "Lot 3",
+        "$2,000.00",
+      ],
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "Levy register",
+  },
+  {
+    "columns": [
+      {
+        "header": "Lot",
+        "width": 0.8,
+      },
+      {
+        "header": "Notice",
+        "width": 1.2,
+      },
+      {
+        "header": "Due",
+        "width": 1.4,
+      },
+      {
+        "align": "right",
+        "header": "Owed",
+        "width": 1.2,
+      },
+      {
+        "align": "right",
+        "header": "Paid by year end",
+        "width": 1.4,
+      },
+      {
+        "align": "right",
+        "header": "Unpaid",
+        "width": 1.2,
+      },
+    ],
+    "kind": "table",
+    "rows": [],
+  },
+  {
+    "kind": "pageBreak",
+  },
+  {
+    "kind": "heading",
+    "text": "Notes",
+  },
+  {
+    "kind": "text",
+    "text": "1. An audit is not required by size.",
+  },
+]
+`;
+
+exports[`NSW levies > interest is unchanged 1`] = `
+{
+  "afterGrace": {
+    "daysAccrued": 59,
+    "graceEnds": "2026-02-28",
+    "interestCents": 1616,
+    "reason": "ACCRUED",
+  },
+  "graceEndsMonthEnd": {
+    "daysAccrued": 0,
+    "graceEnds": "2026-02-28",
+    "interestCents": 0,
+    "reason": "IN_GRACE",
+  },
+  "inGrace": {
+    "daysAccrued": 0,
+    "graceEnds": "2026-02-28",
+    "interestCents": 0,
+    "reason": "IN_GRACE",
+  },
+  "noInterest": {
+    "daysAccrued": 0,
+    "graceEnds": "2026-02-28",
+    "interestCents": 0,
+    "reason": "NO_INTEREST_RESOLUTION",
+  },
+  "notYetDue": {
+    "daysAccrued": 0,
+    "graceEnds": "2026-02-28",
+    "interestCents": 0,
+    "reason": "NOT_YET_DUE",
+  },
+  "nothingOwing": {
+    "daysAccrued": 0,
+    "graceEnds": "2026-02-28",
+    "interestCents": 0,
+    "reason": "NOTHING_OWING",
+  },
+  "oneYear": {
+    "daysAccrued": 365,
+    "graceEnds": "2026-02-28",
+    "interestCents": 10000,
+    "reason": "ACCRUED",
+  },
+  "paidInGrace": {
+    "daysAccrued": 0,
+    "graceEnds": "2026-02-28",
+    "interestCents": 0,
+    "reason": "PAID_IN_GRACE",
+  },
+  "partPaid": {
+    "daysAccrued": 150,
+    "graceEnds": "2026-02-28",
+    "interestCents": 3123,
+    "reason": "ACCRUED",
+  },
+  "stopped": {
+    "daysAccrued": 90,
+    "graceEnds": "2026-02-28",
+    "interestCents": 2466,
+    "reason": "ACCRUED",
+  },
+}
+`;
+
+exports[`NSW levies > issue timing is unchanged 1`] = `
+{
+  "issueDate": "2026-10-27",
+  "out": [
+    {
+      "message": null,
+      "timing": {
+        "dueDate": "2026-12-01",
+        "issueOn": "2026-10-27",
+        "kind": "planned",
+      },
+      "today": "2026-10-01",
+    },
+    {
+      "message": null,
+      "timing": {
+        "dueDate": "2026-12-01",
+        "issueOn": "2026-10-27",
+        "kind": "planned",
+      },
+      "today": "2026-10-27",
+    },
+    {
+      "message": "Q3 levy: due 01/12/2026, so it goes out today with 34 days' notice instead of 5 weeks.",
+      "timing": {
+        "daysNotice": 34,
+        "dueDate": "2026-12-01",
+        "issueOn": "2026-10-28",
+        "kind": "late",
+      },
+      "today": "2026-10-28",
+    },
+    {
+      "message": "Q3 levy: due 01/12/2026, so it goes out today with 30 days' notice instead of 5 weeks.",
+      "timing": {
+        "daysNotice": 30,
+        "dueDate": "2026-12-01",
+        "issueOn": "2026-11-01",
+        "kind": "late",
+      },
+      "today": "2026-11-01",
+    },
+    {
+      "message": "Q3 levy: due 01/12/2026, fewer than 30 days away, so it goes out today and falls due on 20/12/2026 (the statutory 30 days).",
+      "timing": {
+        "dueDate": "2026-12-20",
+        "issueOn": "2026-11-20",
+        "kind": "moved",
+        "originalDueDate": "2026-12-01",
+      },
+      "today": "2026-11-20",
+    },
+  ],
+}
+`;
+
+exports[`NSW levies > levy notice content checks are unchanged 1`] = `
+{
+  "helplineName": "National Debt Helpline",
+  "helplinePhone": "1800 007 007",
+  "helplineWeb": "ndh.org.au",
+  "moreInformationUrl": "https://www.nsw.gov.au/strata-levies-help",
+  "summary": "If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.",
+  "title": "Financial Hardship Information Statement",
+}
+`;
+
+exports[`NSW levies > levy notice content checks are unchanged 2`] = `
+{
+  "complete": [],
+  "nothingFilled": [
+    {
+      "code": "PLAN_NUMBER",
+      "message": "The strata plan number.",
+    },
+    {
+      "code": "SCHEME_NAME",
+      "message": "The scheme name.",
+    },
+    {
+      "code": "LOT",
+      "message": "The lot number.",
+    },
+    {
+      "code": "OWNER",
+      "message": "The owner's name. Record the lot owner on the strata roll.",
+    },
+    {
+      "code": "FUND",
+      "message": "The fund the levy is for (administrative or capital works).",
+    },
+    {
+      "code": "AMOUNT",
+      "message": "The amount payable.",
+    },
+    {
+      "code": "PAYMENT_DETAILS",
+      "message": "How to pay: the scheme's bank account name, BSB and account number. Add the operating bank account in Finance.",
+    },
+    {
+      "code": "PAYMENT_REFERENCE",
+      "message": "A payment reference for the owner to quote.",
+    },
+    {
+      "code": "CONTACT",
+      "message": "Who to contact with questions (name and email or phone).",
+    },
+    {
+      "code": "INTEREST_WARNING",
+      "message": "A warning that interest is charged on overdue amounts.",
+    },
+    {
+      "code": "LEDGER_ACCESS",
+      "message": "How the owner can check their levy ledger.",
+    },
+    {
+      "code": "HARDSHIP_STATEMENT",
+      "message": "The Financial Hardship Information Statement.",
+    },
+    {
+      "code": "NOTICE_PERIOD",
+      "message": "At least 30 days' notice to pay. The due date is 1 days after the notice date.",
+    },
+  ],
+  "shortNotice": [
+    {
+      "code": "NOTICE_PERIOD",
+      "message": "At least 30 days' notice to pay. The due date is 19 days after the notice date.",
+    },
+  ],
+  "urgentFourteenDays": [],
+  "urgentTooShort": [
+    {
+      "code": "NOTICE_PERIOD",
+      "message": "At least 14 days' notice to pay. The due date is 9 days after the notice date.",
+    },
+  ],
+}
+`;
+
+exports[`NSW levies > levy notice email and PDF are unchanged 1`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Levy notice LN-0042",
+  },
+  {
+    "kind": "text",
+    "text": "To: Alex Nguyen, owner of lot 7",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Lot",
+        "7",
+      ],
+      [
+        "Notice date",
+        "1 October 2026",
+      ],
+      [
+        "Fund",
+        "Administrative Fund",
+      ],
+      [
+        "Period",
+        "1 October 2026 to 31 December 2026",
+      ],
+      [
+        "Amount payable",
+        "$825.09",
+      ],
+      [
+        "Due date",
+        "5 November 2026",
+      ],
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "How to pay",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Account name",
+        "The Owners SP 12345",
+      ],
+      [
+        "BSB",
+        "062-000",
+      ],
+      [
+        "Account number",
+        "12345678",
+      ],
+      [
+        "Reference",
+        "LN-0042",
+      ],
+    ],
+  },
+  {
+    "kind": "text",
+    "text": "Interest: if this levy is not paid within one month after the due date, simple interest of 10% a year is charged from the due date until it is paid (Strata Schemes Management Act 2015 (NSW) s 85).",
+  },
+  {
+    "kind": "text",
+    "text": "You can check your levy ledger at any time in the StrataVerze owner portal (https://app.strataverze.com/owner/levies). For questions contact Sam Adviser (sam@example.com).",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.",
+      "National Debt Helpline: 1800 007 007 or ndh.org.au.",
+      "More information, including translations: https://www.nsw.gov.au/strata-levies-help",
+    ],
+    "title": "Financial Hardship Information Statement",
+  },
+]
+`;
+
+exports[`NSW levies > levy notice email and PDF are unchanged 2`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Levy notice LN-0042",
+  },
+  {
+    "kind": "text",
+    "text": "To: Alex Nguyen, owner of lot 7",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Lot",
+        "7",
+      ],
+      [
+        "Notice date",
+        "1 October 2026",
+      ],
+      [
+        "Fund",
+        "Administrative Fund",
+      ],
+      [
+        "Period",
+        "1 October 2026 to 31 December 2026",
+      ],
+      [
+        "Amount payable",
+        "$825.09",
+      ],
+      [
+        "Due date",
+        "5 November 2026",
+      ],
+    ],
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "How to pay",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Account name",
+        "The Owners SP 12345",
+      ],
+      [
+        "BSB",
+        "062-000",
+      ],
+      [
+        "Account number",
+        "12345678",
+      ],
+      [
+        "Reference",
+        "LN-0042",
+      ],
+    ],
+  },
+  {
+    "kind": "text",
+    "text": "The owners corporation has resolved not to charge interest on overdue levies.",
+  },
+  {
+    "kind": "text",
+    "text": "You can check your levy ledger at any time in the StrataVerze owner portal (https://app.strataverze.com/owner/levies). For questions contact Sam Adviser (sam@example.com).",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.",
+      "National Debt Helpline: 1800 007 007 or ndh.org.au.",
+      "More information, including translations: https://www.nsw.gov.au/strata-levies-help",
+    ],
+    "title": "Financial Hardship Information Statement",
+  },
+]
+`;
+
+exports[`NSW levies > levy notice email and PDF are unchanged 3`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StrataVerze</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFB;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="padding-bottom:24px;text-align:center;">
+              <span style="font-size:20px;font-weight:700;color:#1A202C;letter-spacing:-0.02em;">Strata<span style="color:#00D4BF;">Verze</span></span>
+            </td>
+          </tr>
+          <!-- Content Card -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+              
+    <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;">Levy notice LN-0042</h1>
+    <p style="margin:0 0 16px;font-size:14px;color:#64748B;">Harbour View, Strata Plan 12345</p>
+    <p style="margin:0 0 16px;font-size:15px;color:#1A202C;line-height:1.6;">Dear Alex Nguyen,</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Lot</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">7</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Notice date</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">1 October 2026</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Fund</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">Administrative Fund</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Amount payable</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;"><strong>$$825.09</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Due date</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;"><strong>5 November 2026</strong></td></tr>
+    </table>
+    <h2 style="margin:16px 0 6px;font-size:15px;color:#1a1a2e;">How to pay</h2>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Account name</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">The Owners SP 12345</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">BSB</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">062-000</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Account number</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">12345678</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">Reference</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;"><strong>LN-0042</strong></td></tr>
+    </table>
+    <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
+      Interest: if this levy is not paid within one month after the due date, simple interest of 10% a year is charged from the due date until it is paid (Strata Schemes Management Act 2015 (NSW) s 85).
+    </p>
+    <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
+      You can check your levy ledger at any time in the StrataVerze owner portal. For questions contact Sam Adviser (sam@example.com).
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
+  <tr>
+    <td style="background-color:#00D4BF;border-radius:8px;">
+      <a href="http://localhost:3000/" target="_blank" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">
+        View your levy ledger
+      </a>
+    </td>
+  </tr>
+</table>
+    <div style="margin:20px 0 0;padding:12px 16px;background-color:#F8FAFB;border-radius:8px;">
+      <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#1a1a2e;">Financial Hardship Information Statement</p>
+      <p style="margin:0 0 6px;font-size:13px;color:#1A202C;line-height:1.6;">If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.</p>
+      <p style="margin:0;font-size:13px;color:#1A202C;line-height:1.6;">
+        National Debt Helpline: 1800 007 007 or ndh.org.au.
+        More information, including translations: https://www.nsw.gov.au/strata-levies-help
+      </p>
+    </div>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding-top:24px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
+                This is an automated notification from StrataVerze.<br />
+                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "Levy notice LN-0042: $$825.09 due 5 November 2026 (Harbour View)",
+  "to": "alex@example.com",
+}
+`;
+
+exports[`NSW levies > payment allocation and interest settings are unchanged 1`] = `
+[
+  {
+    "excessCents": 0,
+    "interestCents": 0,
+    "levyCents": 10000,
+    "recoveryCostsCents": 0,
+  },
+  {
+    "excessCents": 0,
+    "interestCents": 1000,
+    "levyCents": 50000,
+    "recoveryCostsCents": 0,
+  },
+  {
+    "excessCents": 0,
+    "interestCents": 2000,
+    "levyCents": 50000,
+    "recoveryCostsCents": 10000,
+  },
+  {
+    "excessCents": 8000,
+    "interestCents": 2000,
+    "levyCents": 50000,
+    "recoveryCostsCents": 10000,
+  },
+]
+`;
+
+exports[`NSW levies > payment allocation and interest settings are unchanged 2`] = `
+[
+  null,
+  "The interest rate is fixed at 10% a year by Strata Schemes Management Act 2015 (NSW) s 85. The owners corporation can only resolve to charge no interest.",
+  "Charging no interest needs the general meeting resolution that decided it. Choose the meeting and motion.",
+  null,
+  "Choose the statutory rate or no interest.",
+]
+`;
+
+exports[`NSW meetings > AGM template and motion library are unchanged 1`] = `
+[
+  {
+    "explanatoryNote": "Confirmation of the minutes of the previous general meeting (Schedule 1 of the Strata Schemes Management Act 2015 (NSW)).",
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution that the minutes of the last General Meeting held on {{LAST_MEETING_DATE}} be approved.",
+    "title": "Confirmation of Minutes",
+  },
+  {
+    "explanatoryNote": "Adoption of the financial statements for the most recent financial year.",
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to consider and adopt the account records and statements prepared for the most recent financial period.",
+    "title": "Accounting Records and Financial Statements",
+  },
+  {
+    "explanatoryNote": "A large strata scheme, or a scheme whose annual budget exceeds the prescribed amount, must have its accounts and financial statements audited; optional for other schemes.",
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to appoint an auditor to review the accounts and financial statements of the owners corporation for the coming financial year.",
+    "title": "Audit",
+  },
+  {
+    "explanatoryNote": "The owners corporation must have a 10-year capital works fund plan and review it at least once every 5 years.",
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to revise or replace the plan for the capital works fund for the 10-year capital works fund plan.",
+    "title": "Ten-Year Capital Works Fund Plan",
+  },
+  {
+    "explanatoryNote": "Consideration of the owners corporation's insurances as required business at the AGM.",
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to note the current insurances of the owners corporation and determine any additional insurances required.",
+    "title": "Insurance",
+  },
+  {
+    "explanatoryNote": "Estimates and levies for the administrative and capital works funds.",
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to determine the estimated contributions to the administrative fund and the capital works fund for the coming financial year.",
+    "title": "Contributions to Administrative and Capital Works Funds",
+  },
+  {
+    "explanatoryNote": "Environmental sustainability item added to the mandatory AGM agenda by the 2025 reforms.",
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to consider matters concerning the environmental sustainability of the common property and the scheme.",
+    "title": "Environmental Sustainability",
+  },
+]
+`;
+
+exports[`NSW meetings > AGM template and motion library are unchanged 2`] = `
+[
+  {
+    "category": "General",
+    "defaultResolutionCategory": "ORDINARY",
+    "explanatoryNote": "Required motion to confirm the previous minutes.",
+    "key": "confirmation-of-minutes",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution that the minutes of the last General Meeting held on {{LAST_MEETING_DATE}} be approved.",
+    "title": "Confirmation of Minutes",
+  },
+  {
+    "category": "Financial",
+    "defaultResolutionCategory": "ORDINARY",
+    "key": "accounting-records",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to consider and adopt the account records and statements prepared for the most recent financial period.",
+    "title": "Accounting Records and Financial Statements",
+  },
+  {
+    "category": "Financial",
+    "defaultResolutionCategory": "ORDINARY",
+    "key": "audit",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to appoint an auditor to review the accounts and financial statements of the owners corporation for the coming financial year.",
+    "title": "Audit",
+  },
+  {
+    "category": "Financial",
+    "defaultResolutionCategory": "ORDINARY",
+    "key": "capital-works-plan",
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by ordinary resolution to revise or replace the plan for the capital works fund for the 10-year capital works fund plan.",
+    "title": "Ten-Year Capital Works Fund Plan",
+  },
+  {
+    "category": "By-laws",
+    "defaultResolutionCategory": "SPECIAL",
+    "explanatoryNote": "Adding, amending or repealing a by-law requires a special resolution.",
+    "key": "by-law-amendment",
+    "meetingTypes": [
+      "AGM",
+      "EGM",
+    ],
+    "resolutionText": "The Owners - Strata Plan No. {{PLAN_NUMBER}} RESOLVES by special resolution to add, amend or repeal a by-law in the terms tabled.",
+    "title": "Amendment of By-laws",
+  },
+]
+`;
+
+exports[`NSW meetings > AGM template and motion library are unchanged 3`] = `
+[
+  {
+    "motions": [
+      "Confirmation of Minutes",
+      "Accounting Records and Financial Statements",
+      "Audit",
+      "Ten-Year Capital Works Fund Plan",
+      "Amendment of By-laws",
+    ],
+    "t": "AGM",
+  },
+  {
+    "motions": [
+      "Confirmation of Minutes",
+      "Accounting Records and Financial Statements",
+      "Audit",
+      "Ten-Year Capital Works Fund Plan",
+      "Amendment of By-laws",
+    ],
+    "t": "EGM",
+  },
+  {
+    "motions": [
+      "Confirmation of Minutes",
+      "Accounting Records and Financial Statements",
+      "Audit",
+      "Ten-Year Capital Works Fund Plan",
+    ],
+    "t": "COMMITTEE",
+  },
+  {
+    "motions": [
+      "Confirmation of Minutes",
+      "Accounting Records and Financial Statements",
+      "Audit",
+      "Ten-Year Capital Works Fund Plan",
+    ],
+    "t": "FIRST_AGM",
+  },
+]
+`;
+
+exports[`NSW meetings > AGM template and motion library are unchanged 4`] = `
+[
+  {
+    "explanatoryNote": "Confirmation of the minutes of the previous general meeting (Schedule 1 of the Strata Schemes Management Act 2015 (NSW)).",
+    "position": 1,
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. 12345 RESOLVES by ordinary resolution that the minutes of the last General Meeting held on 15/03/2026 be approved.",
+    "title": "Confirmation of Minutes",
+  },
+  {
+    "explanatoryNote": "Adoption of the financial statements for the most recent financial year.",
+    "position": 2,
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. 12345 RESOLVES by ordinary resolution to consider and adopt the account records and statements prepared for the most recent financial period.",
+    "title": "Accounting Records and Financial Statements",
+  },
+  {
+    "explanatoryNote": "A large strata scheme, or a scheme whose annual budget exceeds the prescribed amount, must have its accounts and financial statements audited; optional for other schemes.",
+    "position": 3,
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. 12345 RESOLVES by ordinary resolution to appoint an auditor to review the accounts and financial statements of the owners corporation for the coming financial year.",
+    "title": "Audit",
+  },
+  {
+    "explanatoryNote": "The owners corporation must have a 10-year capital works fund plan and review it at least once every 5 years.",
+    "position": 4,
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. 12345 RESOLVES by ordinary resolution to revise or replace the plan for the capital works fund for the 10-year capital works fund plan.",
+    "title": "Ten-Year Capital Works Fund Plan",
+  },
+  {
+    "explanatoryNote": "Consideration of the owners corporation's insurances as required business at the AGM.",
+    "position": 5,
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. 12345 RESOLVES by ordinary resolution to note the current insurances of the owners corporation and determine any additional insurances required.",
+    "title": "Insurance",
+  },
+  {
+    "explanatoryNote": "Estimates and levies for the administrative and capital works funds.",
+    "position": 6,
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. 12345 RESOLVES by ordinary resolution to determine the estimated contributions to the administrative fund and the capital works fund for the coming financial year.",
+    "title": "Contributions to Administrative and Capital Works Funds",
+  },
+  {
+    "explanatoryNote": "Environmental sustainability item added to the mandatory AGM agenda by the 2025 reforms.",
+    "position": 7,
+    "resolutionCategory": "ORDINARY",
+    "resolutionText": "The Owners - Strata Plan No. 12345 RESOLVES by ordinary resolution to consider matters concerning the environmental sustainability of the common property and the scheme.",
+    "title": "Environmental Sustainability",
+  },
+]
+`;
+
+exports[`NSW meetings > notice content is unchanged 1`] = `
+[
+  {
+    "heading": "NOTICE OF ANNUAL GENERAL MEETING — THE OWNERS - STRATA PLAN 12345",
+    "items": [
+      {
+        "explanatoryNote": null,
+        "position": 1,
+        "resolutionCategory": "ORDINARY",
+        "resolutionText": "That the minutes be approved.",
+        "title": "Confirmation of Minutes",
+      },
+    ],
+    "meeting": {
+      "format": "IN_PERSON",
+      "joinDetails": null,
+      "joinUrl": null,
+      "location": "Foyer",
+      "meetingType": "AGM",
+      "startTime": "2026-04-01T08:00:00Z",
+      "timezone": "Australia/Sydney",
+      "title": "Meeting",
+    },
+    "scheme": {
+      "address": "1 Harbour St",
+      "name": "Harbour View",
+      "planNumber": "12345",
+      "postcode": "2000",
+      "state": "NSW",
+      "suburb": "Sydney",
+    },
+  },
+  {
+    "heading": "NOTICE OF FIRST ANNUAL GENERAL MEETING — THE OWNERS - STRATA PLAN 12345",
+    "items": [
+      {
+        "explanatoryNote": null,
+        "position": 1,
+        "resolutionCategory": "ORDINARY",
+        "resolutionText": "That the minutes be approved.",
+        "title": "Confirmation of Minutes",
+      },
+    ],
+    "meeting": {
+      "format": "IN_PERSON",
+      "joinDetails": null,
+      "joinUrl": null,
+      "location": "Foyer",
+      "meetingType": "FIRST_AGM",
+      "startTime": "2026-04-01T08:00:00Z",
+      "timezone": "Australia/Sydney",
+      "title": "Meeting",
+    },
+    "scheme": {
+      "address": "1 Harbour St",
+      "name": "Harbour View",
+      "planNumber": "12345",
+      "postcode": "2000",
+      "state": "NSW",
+      "suburb": "Sydney",
+    },
+  },
+  {
+    "heading": "NOTICE OF GENERAL MEETING — THE OWNERS - STRATA PLAN 12345",
+    "items": [
+      {
+        "explanatoryNote": null,
+        "position": 1,
+        "resolutionCategory": "ORDINARY",
+        "resolutionText": "That the minutes be approved.",
+        "title": "Confirmation of Minutes",
+      },
+    ],
+    "meeting": {
+      "format": "IN_PERSON",
+      "joinDetails": null,
+      "joinUrl": null,
+      "location": "Foyer",
+      "meetingType": "EGM",
+      "startTime": "2026-04-01T08:00:00Z",
+      "timezone": "Australia/Sydney",
+      "title": "Meeting",
+    },
+    "scheme": {
+      "address": "1 Harbour St",
+      "name": "Harbour View",
+      "planNumber": "12345",
+      "postcode": "2000",
+      "state": "NSW",
+      "suburb": "Sydney",
+    },
+  },
+  {
+    "heading": "NOTICE OF GENERAL MEETING — THE OWNERS - STRATA PLAN 12345",
+    "items": [
+      {
+        "explanatoryNote": null,
+        "position": 1,
+        "resolutionCategory": "ORDINARY",
+        "resolutionText": "That the minutes be approved.",
+        "title": "Confirmation of Minutes",
+      },
+    ],
+    "meeting": {
+      "format": "IN_PERSON",
+      "joinDetails": null,
+      "joinUrl": null,
+      "location": "Foyer",
+      "meetingType": "SGM",
+      "startTime": "2026-04-01T08:00:00Z",
+      "timezone": "Australia/Sydney",
+      "title": "Meeting",
+    },
+    "scheme": {
+      "address": "1 Harbour St",
+      "name": "Harbour View",
+      "planNumber": "12345",
+      "postcode": "2000",
+      "state": "NSW",
+      "suburb": "Sydney",
+    },
+  },
+  {
+    "heading": "NOTICE OF STRATA COMMITTEE MEETING — THE OWNERS - STRATA PLAN 12345",
+    "items": [
+      {
+        "explanatoryNote": null,
+        "position": 1,
+        "resolutionCategory": "ORDINARY",
+        "resolutionText": "That the minutes be approved.",
+        "title": "Confirmation of Minutes",
+      },
+    ],
+    "meeting": {
+      "format": "IN_PERSON",
+      "joinDetails": null,
+      "joinUrl": null,
+      "location": "Foyer",
+      "meetingType": "COMMITTEE",
+      "startTime": "2026-04-01T08:00:00Z",
+      "timezone": "Australia/Sydney",
+      "title": "Meeting",
+    },
+    "scheme": {
+      "address": "1 Harbour St",
+      "name": "Harbour View",
+      "planNumber": "12345",
+      "postcode": "2000",
+      "state": "NSW",
+      "suburb": "Sydney",
+    },
+  },
+]
+`;
+
+exports[`NSW meetings > notice dates and minutes deadlines are unchanged 1`] = `
+[
+  {
+    "earliest": "2026-03-15T00:00:00.000Z",
+    "fourteenDays": {
+      "actualDays": 14,
+      "compliant": true,
+      "requiredDays": 14,
+    },
+    "minutesBy": "2026-03-08T00:00:00.000Z",
+    "sixDays": {
+      "actualDays": 6,
+      "compliant": false,
+      "requiredDays": 14,
+    },
+    "type": "AGM",
+  },
+  {
+    "earliest": "2026-03-08T00:00:00.000Z",
+    "fourteenDays": {
+      "actualDays": 14,
+      "compliant": true,
+      "requiredDays": 7,
+    },
+    "minutesBy": "2026-03-08T00:00:00.000Z",
+    "sixDays": {
+      "actualDays": 6,
+      "compliant": false,
+      "requiredDays": 7,
+    },
+    "type": "EGM",
+  },
+  {
+    "earliest": "2026-03-04T00:00:00.000Z",
+    "fourteenDays": {
+      "actualDays": 14,
+      "compliant": true,
+      "requiredDays": 3,
+    },
+    "minutesBy": "2026-03-08T00:00:00.000Z",
+    "sixDays": {
+      "actualDays": 6,
+      "compliant": true,
+      "requiredDays": 3,
+    },
+    "type": "COMMITTEE",
+  },
+  {
+    "earliest": "2026-03-15T00:00:00.000Z",
+    "fourteenDays": {
+      "actualDays": 14,
+      "compliant": true,
+      "requiredDays": 14,
+    },
+    "minutesBy": "2026-03-08T00:00:00.000Z",
+    "sixDays": {
+      "actualDays": 6,
+      "compliant": false,
+      "requiredDays": 14,
+    },
+    "type": "FIRST_AGM",
+  },
+]
+`;
+
+exports[`NSW meetings > resolution results are unchanged 1`] = `
+[
+  {
+    "category": "ORDINARY",
+    "results": {
+      "clearFor": {
+        "passed": true,
+        "reason": "Majority of votes cast",
+      },
+      "halfAgainst": {
+        "passed": false,
+        "reason": "Not a majority of votes cast",
+      },
+      "justUnderQuarter": {
+        "passed": true,
+        "reason": "Majority of votes cast",
+      },
+      "noUE": {
+        "passed": true,
+        "reason": "Majority of votes cast",
+      },
+      "noVotes": {
+        "passed": false,
+        "reason": "Not a majority of votes cast",
+      },
+      "noneAgainst": {
+        "passed": true,
+        "reason": "Majority of votes cast",
+      },
+      "pollReverses": {
+        "passed": false,
+        "reason": "Not carried by unit entitlement on a poll",
+      },
+      "quarterAgainst": {
+        "passed": true,
+        "reason": "Majority of votes cast",
+      },
+      "tied": {
+        "passed": false,
+        "reason": "Not a majority of votes cast",
+      },
+    },
+  },
+  {
+    "category": "SPECIAL",
+    "results": {
+      "clearFor": {
+        "passed": true,
+        "reason": "Against share 10.0% is below the 25% failure threshold",
+      },
+      "halfAgainst": {
+        "passed": false,
+        "reason": "Against share 50.0% meets or exceeds the 25% failure threshold",
+      },
+      "justUnderQuarter": {
+        "passed": true,
+        "reason": "Against share 24.9% is below the 25% failure threshold",
+      },
+      "noUE": {
+        "passed": false,
+        "reason": "Unit-entitlement totals are required to evaluate this resolution category",
+      },
+      "noVotes": {
+        "passed": false,
+        "reason": "No votes cast",
+      },
+      "noneAgainst": {
+        "passed": true,
+        "reason": "Against share 0.0% is below the 25% failure threshold",
+      },
+      "pollReverses": {
+        "passed": false,
+        "reason": "Against share 70.0% meets or exceeds the 25% failure threshold",
+      },
+      "quarterAgainst": {
+        "passed": false,
+        "reason": "Against share 25.0% meets or exceeds the 25% failure threshold",
+      },
+      "tied": {
+        "passed": false,
+        "reason": "Against share 50.0% meets or exceeds the 25% failure threshold",
+      },
+    },
+  },
+  {
+    "category": "UNANIMOUS",
+    "results": {
+      "clearFor": {
+        "passed": false,
+        "reason": "2 vote(s) against",
+      },
+      "halfAgainst": {
+        "passed": false,
+        "reason": "7 vote(s) against",
+      },
+      "justUnderQuarter": {
+        "passed": false,
+        "reason": "4 vote(s) against",
+      },
+      "noUE": {
+        "passed": false,
+        "reason": "1 vote(s) against",
+      },
+      "noVotes": {
+        "passed": true,
+        "reason": "No vote cast against (unanimous)",
+      },
+      "noneAgainst": {
+        "passed": true,
+        "reason": "No vote cast against (unanimous)",
+      },
+      "pollReverses": {
+        "passed": false,
+        "reason": "3 vote(s) against",
+      },
+      "quarterAgainst": {
+        "passed": false,
+        "reason": "4 vote(s) against",
+      },
+      "tied": {
+        "passed": false,
+        "reason": "5 vote(s) against",
+      },
+    },
+  },
+  {
+    "category": "SUSTAINABILITY_INFRASTRUCTURE",
+    "results": {
+      "clearFor": {
+        "passed": true,
+        "reason": "Against share 10.0% is below the 50% failure threshold",
+      },
+      "halfAgainst": {
+        "passed": false,
+        "reason": "Against share 50.0% meets or exceeds the 50% failure threshold",
+      },
+      "justUnderQuarter": {
+        "passed": true,
+        "reason": "Against share 24.9% is below the 50% failure threshold",
+      },
+      "noUE": {
+        "passed": false,
+        "reason": "Unit-entitlement totals are required to evaluate this resolution category",
+      },
+      "noVotes": {
+        "passed": false,
+        "reason": "No votes cast",
+      },
+      "noneAgainst": {
+        "passed": true,
+        "reason": "Against share 0.0% is below the 50% failure threshold",
+      },
+      "pollReverses": {
+        "passed": false,
+        "reason": "Against share 70.0% meets or exceeds the 50% failure threshold",
+      },
+      "quarterAgainst": {
+        "passed": true,
+        "reason": "Against share 25.0% is below the 50% failure threshold",
+      },
+      "tied": {
+        "passed": false,
+        "reason": "Against share 50.0% meets or exceeds the 50% failure threshold",
+      },
+    },
+  },
+]
+`;
+
+exports[`NSW meetings > rule set and its stored snapshot are unchanged 1`] = `
+{
+  "effectiveFrom": "2025-01-01",
+  "minutesDeadlines": {
+    "AGM": 7,
+    "COMMITTEE": 7,
+    "EGM": 7,
+    "FIRST_AGM": 7,
+  },
+  "notes": "Seed rule set for NSW. Clause citations to be re-pinned to the live in-force consolidation before deadline logic is relied upon.",
+  "noticePeriods": {
+    "AGM": 14,
+    "COMMITTEE": 3,
+    "EGM": 7,
+    "FIRST_AGM": 14,
+  },
+  "preMeetingEvoting": {
+    "ballotCloseHoursBefore": {
+      "AGM": 24,
+      "COMMITTEE": 0,
+      "EGM": 24,
+      "FIRST_AGM": 24,
+    },
+    "ballotOpenDaysBefore": 7,
+  },
+  "quorumRules": {
+    "AGM": {
+      "basis": "PERCENT_PRESENT_OR_UE",
+      "minPersons": 2,
+      "percent": 0.25,
+    },
+    "COMMITTEE": {
+      "basis": "HALF_MEMBERS",
+    },
+    "EGM": {
+      "basis": "PERCENT_PRESENT_OR_UE",
+      "minPersons": 2,
+      "percent": 0.25,
+    },
+    "FIRST_AGM": {
+      "basis": "PERCENT_PRESENT_OR_UE",
+      "minPersons": 2,
+      "percent": 0.25,
+    },
+  },
+  "resolutionCategories": {
+    "ORDINARY": {
+      "basis": "COUNT_MAJORITY",
+    },
+    "SPECIAL": {
+      "againstThreshold": 0.25,
+      "basis": "UE_AGAINST_THRESHOLD",
+    },
+    "SUSTAINABILITY_INFRASTRUCTURE": {
+      "againstThreshold": 0.5,
+      "basis": "UE_AGAINST_THRESHOLD",
+    },
+    "UNANIMOUS": {
+      "basis": "NO_AGAINST",
+    },
+  },
+  "retention": {
+    "generalYears": 7,
+    "secretBallotMonths": 13,
+  },
+  "state": "NSW",
+  "version": "NSW-2025.1",
+}
+`;
+
+exports[`NSW statutory constants > are unchanged 1`] = `
+{
+  "AUDIT_THRESHOLD": {
+    "leviesRaisedMoreThanCents": 25000000,
+    "lotsMoreThan": 100,
+    "measure": "total levies raised for the financial year",
+    "source": "Strata Schemes Management Act 2015 (NSW) s 95; Strata Schemes Management Regulation 2016 cl 21",
+  },
+  "CAPITAL_WORKS_PLAN": {
+    "horizonYears": 10,
+    "reviewEveryYears": 5,
+    "source": "Strata Schemes Management Act 2015 (NSW) s 80; Strata Schemes Legislation Amendment Act 2025",
+    "standardFormFrom": "2026-04-01",
+  },
+  "DEFAULT_ACCOUNTING_BASIS": {
+    "ADMINISTRATIVE": "CASH",
+    "CAPITAL_WORKS": "ACCRUAL",
+  },
+  "KEY_FINANCIAL_INFORMATION": {
+    "rows": [
+      "Balance carried forward",
+      "Total income received",
+      "Total interest earned",
+      "Total contributions paid",
+      "Total unpaid contributions",
+      "Total expenditure for maintenance",
+      "Total expenditure for administration",
+      "Balance at the end of the period",
+      "Principal items of expenditure for the next period",
+    ],
+    "source": "Strata Schemes Management Act 2015 (NSW) s 94(2), approved form (NSW Government)",
+  },
+  "LEVY_NOTICE_RULES": {
+    "hardshipStatementRequiredFrom": "2025-10-27",
+    "issueDaysBeforeDue": 35,
+    "minimumNoticeDays": 30,
+    "source": "NSW Government, Strata levies and Strata levy notices guidance (2025)",
+    "urgentSpecialLevyNoticeDays": 14,
+  },
+  "PAYMENT_ALLOCATION_ORDER": [
+    "LEVY",
+    "INTEREST",
+    "RECOVERY_COSTS",
+  ],
+  "STATUTORY_INTEREST": {
+    "annualRatePercent": 10,
+    "graceMonths": 1,
+    "simple": true,
+    "source": "Strata Schemes Management Act 2015 (NSW) s 85",
+  },
+  "WORKS_SPENDING_RULES": {
+    "minimumQuotes": 2,
+    "source": "SSMA 2015 s 102; PBL Legal, Strata scheme spending limits (Oct 2025); confirmed by Matthew 25 Oct 2026",
+    "twoQuoteThreshold": 30000,
+    "urgentWorksExempt": true,
+  },
+}
+`;
+
+exports[`NSW statutory constants > give the same default accounting basis 1`] = `
+{
+  "": "CASH",
+  "ADMIN": "CASH",
+  "ADMINISTRATIVE": "CASH",
+  "CAPITAL_WORKS": "ACCRUAL",
+  "SINKING": "ACCRUAL",
+  "SPECIAL": "CASH",
+}
+`;

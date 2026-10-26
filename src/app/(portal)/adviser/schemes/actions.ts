@@ -30,6 +30,7 @@ import {
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
 import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
+import { schemeStateProblem } from "@/config/jurisdictions";
 
 /** The Add Property steps a server-side problem can send the wizard back to. */
 export type OnboardingStep = "details" | "address" | "lots" | "balances" | "lotBalances";
@@ -53,8 +54,6 @@ export type StrataRollParseResult = {
   data?: ParsedStrataRoll;
 };
 
-const AUSTRALIAN_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"];
-
 function validateSchemeForm(formData: FormData) {
   const errors: Record<string, string> = {};
 
@@ -71,8 +70,8 @@ function validateSchemeForm(formData: FormData) {
   if (!planNumber?.trim()) errors.planNumber = "Plan number is required.";
   if (!address?.trim()) errors.address = "Address is required.";
   if (!suburb?.trim()) errors.suburb = "Suburb is required.";
-  if (!state || !AUSTRALIAN_STATES.includes(state))
-    errors.state = "Select a valid state.";
+  const stateProblem = schemeStateProblem(state);
+  if (stateProblem) errors.state = stateProblem;
   if (!postcode?.trim() || !/^\d{4}$/.test(postcode.trim()))
     errors.postcode = "Enter a valid 4-digit postcode.";
   if (!totalLots || !Number.isInteger(Number(totalLots)) || Number(totalLots) < 1)
@@ -94,7 +93,7 @@ function validateSchemeForm(formData: FormData) {
       planNumber: planNumber?.trim() ?? "",
       address: address?.trim() ?? "",
       suburb: suburb?.trim() ?? "",
-      state: state ?? "VIC",
+      state: (state ?? "").trim().toUpperCase(),
       postcode: postcode?.trim() ?? "",
       totalLots: Number(totalLots),
       totalEntitlement: Number(totalEntitlement),

@@ -136,7 +136,7 @@ model Scheme {
   planNumber          String              @unique @map("plan_number")
   address             String
   suburb              String
-  state               String              @default("VIC")
+  state               String              @default("NSW") // Only NSW buildings can be set up (src/config/jurisdictions.ts)
   postcode            String
   totalLots           Int                 @map("total_lots")
   totalEntitlement    Int                 @map("total_entitlement")
@@ -1792,7 +1792,7 @@ model Organisation {
   email         String?                  @db.VarChar(320)
   address       String?
   suburb        String?
-  state         String?                  @default("VIC")
+  state         String?
   postcode      String?                  @db.VarChar(10)
   logoUrl       String?                  @map("logo_url")
   isActive      Boolean                  @default(true) @map("is_active")
@@ -2180,7 +2180,7 @@ model ContractorBusiness {
   businessDescription   String?                   @map("business_description")
   postalAddress         String?                   @map("postal_address")
   suburb                String?                   @db.VarChar(100)
-  state                 String?                   @db.VarChar(3) @default("VIC")
+  state                 String?                   @db.VarChar(3)
   postcode              String?                   @db.VarChar(4)
   logoUrl               String?                   @map("logo_url")
   specialistServices    String[]                  @map("specialist_services")
