@@ -1,5 +1,7 @@
 /**
- * Statutory deadline reminders, run once a day from the daily cron. Each
+ * Statutory deadline reminders, run once a day from the daily cron, after
+ * the levy notices. Each reminder is claimed for the day before it is sent,
+ * so a repeated run sends it once. Each
  * building's day is its own (its time zone). A failure for one building or
  * one kind of reminder never stops the rest (it is logged).
  *
@@ -7,6 +9,7 @@
  *   reply period of a complete request. The advisers and the committee are
  *   reminded until a decision and reply date are recorded.
  */
+import { and, or } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
 import { todayIn } from "@/lib/jurisdiction/time-zone";
@@ -21,15 +24,19 @@ export async function runComplianceDay(now: Date = new Date()) {
   let paymentPlanReminders = 0;
   try {
     // Requests not yet decided, and decided ones with no reply date recorded.
-    const open = await db.orm.public.PaymentPlanRequest.where((r) => r.repliedOn.isNull()).limit(5000).all();
+    const open = await db.orm.public.PaymentPlanRequest.where((r) => r.repliedOn.isNull()).orderBy((r) => r.createdAt.asc()).limit(5000).all();
     const waiting = open.filter((r) => r.status === "RECEIVED" || r.status === "APPROVED" || r.status === "REFUSED");
     const zones = await schemeTimeZones([...new Set(waiting.map((r) => r.schemeId))]);
     for (const r of waiting) {
       const tz = zones.get(r.schemeId);
       if (!tz) continue;
-      const kind = reminderDue(daysToReply(day(r.replyDueOn), todayIn(tz, now)));
+      const today = todayIn(tz, now);
+      const kind = reminderDue(daysToReply(day(r.replyDueOn), today));
       if (!kind) continue;
       try {
+        // Claim today's reminder, so a repeated run (a retried cron) sends none.
+        const claimed = await db.orm.public.PaymentPlanRequest.where((x) => and(x.id.eq(r.id), or(x.lastReminderOn.isNull(), x.lastReminderOn.lt(today)))).updateAndCount({ lastReminderOn: today });
+        if (claimed !== 1) continue;
         await notifyPaymentPlanReplyDue({ schemeId: r.schemeId, requestId: r.id, lotId: r.lotId, replyDueOn: day(r.replyDueOn), overdue: kind === "OVERDUE", decided: r.status !== "RECEIVED" });
         paymentPlanReminders++;
       } catch (err) {

@@ -20,6 +20,9 @@ const store = {
   withdrawPaymentPlanRequest: vi.fn(),
   markPaymentPlanNotFollowed: vi.fn(),
   recordPlanInstalmentPayment: vi.fn(),
+  lotOwnerProfileIds: vi.fn(async () => [] as string[]),
+  lotOfRequest: vi.fn(async () => "lot-1"),
+  lotOfPlan: vi.fn(async () => "lot-1"),
 };
 vi.mock("@/lib/debt-recovery/payment-plan-requests", async () => {
   const actual = await vi.importActual<typeof import("@/lib/debt-recovery/payment-plan-requests")>("@/lib/debt-recovery/payment-plan-requests");
@@ -87,6 +90,27 @@ describe("adviser actions", () => {
     }
     for (const c of membership.mock.calls) expect(c[1]).toEqual(["ADVISER"]);
     expect(store.recordPaymentPlanDecision).not.toHaveBeenCalled();
+  });
+
+  it("are refused to an adviser who owns the lot (SEC-003)", async () => {
+    membership.mockResolvedValue({ profile: { id: "adviser-owner" }, membership: {}, roles: ["ADVISER"] });
+    store.lotOwnerProfileIds.mockResolvedValue(["adviser-owner"]);
+    const r = await actions.recordPaymentPlanDecisionAction(SCHEME, "req-1", {}, form({ decision: "APPROVED" }));
+    expect(r.error).toMatch(/You own this lot/);
+    const p = await actions.recordPlanInstalmentPaymentAction(SCHEME, "plan-1", {}, form({ amount: "10" }));
+    expect(p.error).toMatch(/You own this lot/);
+    expect(store.recordPaymentPlanDecision).not.toHaveBeenCalled();
+    expect(store.recordPlanInstalmentPayment).not.toHaveBeenCalled();
+    store.lotOwnerProfileIds.mockResolvedValue([]);
+  });
+
+  it("give the entered values back after an error", async () => {
+    membership.mockResolvedValue({ profile: { id: "adviser-1" }, membership: {}, roles: ["ADVISER"] });
+    const { PaymentPlanError } = await import("@/lib/debt-recovery/payment-plan-requests");
+    store.recordPaymentPlanDecision.mockRejectedValueOnce(new PaymentPlanError("Check the decision.", { meetingOn: "Enter the date of the meeting." }));
+    const r = await actions.recordPaymentPlanDecisionAction(SCHEME, "req-1", {}, form({ decision: "REFUSED", refusalReasons: "Kept text" }));
+    expect(r.fieldErrors?.meetingOn).toBeDefined();
+    expect(r.values?.refusalReasons).toBe("Kept text");
   });
 
   it("pass a refusal without terms or a fee", async () => {

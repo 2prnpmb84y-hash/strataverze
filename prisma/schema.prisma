@@ -3357,7 +3357,7 @@ model PaymentPlan {
   createdAt           DateTime              @default(now()) @db.Timestamptz @map("created_at")
   updatedAt           DateTime              @updatedAt @db.Timestamptz @map("updated_at")
 
-  case                DebtRecoveryCase?     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case                DebtRecoveryCase?     @relation(fields: [caseId], references: [id], onDelete: SetNull)
   scheme              Scheme                @relation(fields: [schemeId], references: [id])
   lot                 Lot                   @relation(fields: [lotId], references: [id])
   request             PaymentPlanRequest?   @relation("PaymentPlanFromRequest", fields: [requestId], references: [id], onDelete: SetNull)
@@ -3397,6 +3397,7 @@ model PaymentPlanRequest {
   refusalReasons          String?           @map("refusal_reasons")
   interestWaiver          String?           @map("interest_waiver") // WAIVED, NOT_WAIVED
   repliedOn               DateTime?         @db.Date @map("replied_on")
+  lastReminderOn          DateTime?         @db.Date @map("last_reminder_on") // the day the last reply reminder was sent (claimed so a repeated run sends none)
   rulePack                String?           @map("rule_pack") @db.VarChar(40)
   notes                   String?
   createdAt               DateTime          @default(now()) @db.Timestamptz @map("created_at")

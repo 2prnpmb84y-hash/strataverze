@@ -88,7 +88,7 @@ export function paymentPlanReplyBlocks(d: PaymentPlanReplyDocument): PdfBlock[] 
       totalRow: ["Total", "", aud(p.instalments.reduce((s, i) => s + i.amountCents, 0)), aud(p.paidToDateCents)],
     },
     { kind: "keyValues", rows: [["How to pay", p.paymentMethods], ["Contact", p.contactDetails]] },
-    { kind: "box", tone: "note", lines: [d.extensionStatement, "Keep paying new levies as they fall due."] },
+    { kind: "box", tone: "note", lines: p.coversCurrentLevies ? [d.extensionStatement] : [d.extensionStatement, "Keep paying new levies as they fall due."] },
   );
   return blocks;
 }

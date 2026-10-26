@@ -14,6 +14,9 @@ import { logError } from "@/lib/log";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import {
   PaymentPlanError,
+  lotOfPlan,
+  lotOfRequest,
+  lotOwnerProfileIds,
   markPaymentPlanNotFollowed,
   recordPaymentPlanDecision,
   recordPaymentPlanReply,
@@ -24,7 +27,28 @@ import {
 import { notifyPaymentPlanDecision, notifyPaymentPlanRequest } from "@/lib/debt-recovery/payment-plan-notify";
 import type { RequestInput } from "@/lib/debt-recovery/payment-plans";
 
-export type PaymentPlanFormState = { error?: string; fieldErrors?: Record<string, string>; success?: string; id?: string };
+export type PaymentPlanFormState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  success?: string;
+  id?: string;
+  /** The values submitted, so a form shows them again after an error. */
+  values?: Record<string, string>;
+};
+
+/** The submitted text values (not files), echoed back after an error. */
+const echo = (f: FormData) => Object.fromEntries([...f.entries()].filter(([, v]) => typeof v === "string")) as Record<string, string>;
+
+/**
+ * An adviser who owns (or recently owned) the lot does not act on its
+ * payment plan (security finding SEC-003). Throws AuthorisationError.
+ */
+async function notOwnLot(schemeId: string, profileId: string, lotId: string | null) {
+  if (!lotId) throw new PaymentPlanError("Not found.");
+  if ((await lotOwnerProfileIds(schemeId, lotId)).includes(profileId)) {
+    throw new AuthorisationError("You own this lot, so another adviser or the committee must handle its payment plan.");
+  }
+}
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 /** Dollars as typed ("1,250.50") to cents, or null when blank, or NaN when not a number. */
@@ -70,6 +94,7 @@ export async function recordPaymentPlanRequestAction(schemeId: string, _prev: Pa
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     const lotId = text(formData, "lotId");
+    await notOwnLot(schemeId, profile.id, lotId || null);
     const r = await recordPaymentPlanRequest({
       schemeId,
       lotId,
@@ -82,7 +107,7 @@ export async function recordPaymentPlanRequestAction(schemeId: string, _prev: Pa
     paths(schemeId);
     return { success: `Request recorded. The written reply is due by ${r.replyDueOn}.`, id: r.id };
   } catch (err) {
-    return failure(err, "record the request");
+    return { ...failure(err, "record the request"), values: echo(formData) };
   }
 }
 
@@ -107,7 +132,7 @@ export async function ownerRequestPaymentPlanAction(schemeId: string, lotId: str
     paths(schemeId);
     return { success: `Your request has been sent. You will get a written reply by ${r.replyDueOn}.`, id: r.id };
   } catch (err) {
-    return failure(err, "send the request");
+    return { ...failure(err, "send the request"), values: echo(formData) };
   }
 }
 
@@ -130,7 +155,8 @@ export async function ownerWithdrawPaymentPlanRequestAction(schemeId: string, lo
 /** Adviser: withdraw a request at the owner's direction. */
 export async function withdrawPaymentPlanRequestAction(schemeId: string, requestId: string): Promise<PaymentPlanFormState> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await notOwnLot(schemeId, profile.id, await lotOfRequest(schemeId, requestId));
     await withdrawPaymentPlanRequest({ schemeId, requestId });
     paths(schemeId);
     return { success: "Request withdrawn." };
@@ -143,6 +169,7 @@ export async function withdrawPaymentPlanRequestAction(schemeId: string, request
 export async function recordPaymentPlanDecisionAction(schemeId: string, requestId: string, _prev: PaymentPlanFormState, formData: FormData): Promise<PaymentPlanFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await notOwnLot(schemeId, profile.id, await lotOfRequest(schemeId, requestId));
     const decision = text(formData, "decision");
     const approved = decision === "APPROVED";
     const total = cents(formData, "totalAmount");
@@ -181,19 +208,20 @@ export async function recordPaymentPlanDecisionAction(schemeId: string, requestI
     paths(schemeId);
     return { success: approved ? "Approval recorded and the plan set up. Give the owner the written reply." : "Refusal recorded. Give the owner the written reply with the reasons.", id: r.planId ?? undefined };
   } catch (err) {
-    return failure(err, "record the decision");
+    return { ...failure(err, "record the decision"), values: echo(formData) };
   }
 }
 
 /** Adviser: record the date the written reply was given. */
 export async function recordPaymentPlanReplyAction(schemeId: string, requestId: string, _prev: PaymentPlanFormState, formData: FormData): Promise<PaymentPlanFormState> {
   try {
-    await requireSchemeMembership(schemeId, ["ADVISER"]);
+    const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await notOwnLot(schemeId, profile.id, await lotOfRequest(schemeId, requestId));
     await recordPaymentPlanReply({ schemeId, requestId, repliedOn: text(formData, "repliedOn") });
     paths(schemeId);
     return { success: "Reply date recorded." };
   } catch (err) {
-    return failure(err, "record the reply date");
+    return { ...failure(err, "record the reply date"), values: echo(formData) };
   }
 }
 
@@ -201,11 +229,12 @@ export async function recordPaymentPlanReplyAction(schemeId: string, requestId: 
 export async function markPaymentPlanNotFollowedAction(schemeId: string, planId: string, _prev: PaymentPlanFormState, formData: FormData): Promise<PaymentPlanFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await notOwnLot(schemeId, profile.id, await lotOfPlan(schemeId, planId));
     await markPaymentPlanNotFollowed({ schemeId, planId, reason: text(formData, "reason"), actorId: profile.id });
     paths(schemeId);
     return { success: "Plan marked as not followed. Recovery steps can go ahead." };
   } catch (err) {
-    return failure(err, "update the plan");
+    return { ...failure(err, "update the plan"), values: echo(formData) };
   }
 }
 
@@ -213,6 +242,7 @@ export async function markPaymentPlanNotFollowedAction(schemeId: string, planId:
 export async function recordPlanInstalmentPaymentAction(schemeId: string, planId: string, _prev: PaymentPlanFormState, formData: FormData): Promise<PaymentPlanFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    await notOwnLot(schemeId, profile.id, await lotOfPlan(schemeId, planId));
     const r = await recordPlanInstalmentPayment({
       schemeId,
       planId,
@@ -224,6 +254,6 @@ export async function recordPlanInstalmentPaymentAction(schemeId: string, planId
     paths(schemeId);
     return { success: r.completed ? "Payment recorded. Every instalment is paid and the plan is complete." : "Payment recorded." };
   } catch (err) {
-    return failure(err, "record the payment");
+    return { ...failure(err, "record the payment"), values: echo(formData) };
   }
 }

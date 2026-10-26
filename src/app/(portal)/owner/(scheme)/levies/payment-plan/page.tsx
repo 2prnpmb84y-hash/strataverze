@@ -8,7 +8,8 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
-import { todayIn } from "@/lib/jurisdiction/time-zone";
+import { storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
+import { ownerMaySeeRequest } from "@/lib/debt-recovery/payment-plan-requests";
 import { ownerRequestPaymentPlanAction } from "@/lib/actions/payment-plans";
 import { formatLotLabel } from "@/lib/format";
 import { formatAud, toCents } from "@/lib/billing/money";
@@ -33,7 +34,7 @@ export default async function OwnerPaymentPlanPage() {
   const lots = schemes.flatMap((s) =>
     s.memberships
       .filter((m) => m.lotId && m.role === "OWNER" && m.isActive && m.profileId === profile.id)
-      .map((m) => ({ scheme: s, lotId: m.lotId!, label: `${formatLotLabel(m.lot ? String(m.lot.lotNumber) : "")}${m.lot?.unitNumber ? ` (Unit ${m.lot.unitNumber})` : ""}` })),
+      .map((m) => ({ scheme: s, lotId: m.lotId!, ownerSince: storedDayIn(timeZoneOf(s), m.startDate), label: `${formatLotLabel(m.lot ? String(m.lot.lotNumber) : "")}${m.lot?.unitNumber ? ` (Unit ${m.lot.unitNumber})` : ""}` })),
   );
   const lotIds = lots.map((l) => l.lotId);
   const [requests, plans] = lotIds.length
@@ -56,10 +57,13 @@ export default async function OwnerPaymentPlanPage() {
         const pp = pack.PAYMENT_PLANS;
         const oc = pack.TERMINOLOGY.ownersCorporation;
         const today = todayIn(timeZoneOf(lot.scheme));
-        const lotRequests = requests.filter((r) => r.lotId === lot.lotId);
-        const open = lotRequests.find((r) => r.status === "RECEIVED");
+        // Only requests and plans from this owner's own ownership (not the previous owner's).
+        const viewer = { profileId: profile.id, ownerSince: lot.ownerSince };
+        const lotRequests = requests.filter((r) => r.lotId === lot.lotId && ownerMaySeeRequest(r, viewer));
+        const seen = new Set(lotRequests.map((r) => r.id));
+        const open = requests.find((r) => r.lotId === lot.lotId && r.status === "RECEIVED");
         const active = plans.find((p) => p.lotId === lot.lotId && p.status === "ACTIVE");
-        const lotPlans = plans.filter((p) => p.lotId === lot.lotId);
+        const lotPlans = plans.filter((p) => p.lotId === lot.lotId && ((p.requestId && seen.has(p.requestId)) || (!p.requestId && day(p.agreedOn) >= lot.ownerSince)));
         return (
           <div key={lot.lotId} className="space-y-4">
             <h2 className="text-base font-semibold text-ink">
@@ -133,6 +137,11 @@ export default async function OwnerPaymentPlanPage() {
                 )}
               </Card>
             ))}
+            {((open && !seen.has(open.id)) || (active && !lotPlans.some((p) => p.id === active.id))) && (
+              <Card>
+                <p className="text-sm text-ink">A payment plan request or plan from before your ownership is still open for this lot. Contact your strata manager.</p>
+              </Card>
+            )}
             {!open && !active && (
               <Card>
                 <CardHeader

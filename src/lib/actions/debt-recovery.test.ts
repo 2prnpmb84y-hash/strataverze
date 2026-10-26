@@ -53,13 +53,16 @@ vi.mock("@/prisma/db", () => ({
           where: () => ({ first: ownerMembershipFirst, limit: () => ({ all: lotOwnersAll }) }),
         },
         DebtRecoveryStep: { where: () => ({ first: stepFirst }) },
-        PaymentPlan: { where: () => ({ limit: () => ({ all: lotPlansAll }) }) },
+        PaymentPlan: { where: () => ({ limit: () => ({ all: lotPlansAll }), first: vi.fn(async () => null) }) },
       },
     },
     transaction: vi.fn(),
   },
 }));
 vi.mock("@prisma/orm-postgres/orm-client", () => ({ and: (...c: unknown[]) => c }));
+const recordPlanInstalmentPayment = vi.fn(async () => ({ completed: false }));
+vi.mock("@/lib/debt-recovery/payment-plan-requests", () => ({ recordPlanInstalmentPayment: (...a: unknown[]) => recordPlanInstalmentPayment(...(a as [])) }));
+vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: vi.fn(async () => "2026-10-26") }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/billing/capture", () => ({ captureUsageFee: vi.fn() }));
 vi.mock("@/lib/billing/disclosure", () => ({ confirmedCentsFrom: vi.fn(), feeErrorMessage: () => null }));
@@ -86,20 +89,20 @@ describe("recordInstalmentPaymentAction", () => {
     membership.mockRejectedValue(new AuthorisationError("You do not have permission to perform this action."));
     const r = await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 100);
     expect(r.error).toMatch(/permission/);
-    expect(queries.updateInstalment).not.toHaveBeenCalled();
+    expect(recordPlanInstalmentPayment).not.toHaveBeenCalled();
   });
 
   it("rejects a case id from another scheme", async () => {
     const r = await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_B, 100);
     expect(r.error).toBe("Case not found.");
-    expect(queries.updateInstalment).not.toHaveBeenCalled();
+    expect(recordPlanInstalmentPayment).not.toHaveBeenCalled();
   });
 
   it("rejects the debtor recording their own payment, even with a committee role", async () => {
     membership.mockResolvedValue({ profile: { id: "debtor" }, membership: {}, roles: ["COMMITTEE"] });
     const r = await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 100);
     expect(r.error).toMatch(/your own lot/);
-    expect(queries.updateInstalment).not.toHaveBeenCalled();
+    expect(recordPlanInstalmentPayment).not.toHaveBeenCalled();
   });
 
   it("rejects a committee member who co-owns the debtor's lot", async () => {
@@ -110,7 +113,7 @@ describe("recordInstalmentPaymentAction", () => {
     ]);
     const r = await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 100);
     expect(r.error).toMatch(/your own lot/);
-    expect(queries.updateInstalment).not.toHaveBeenCalled();
+    expect(recordPlanInstalmentPayment).not.toHaveBeenCalled();
     const close = await actions.closeDebtRecoveryCaseAction("case-1", SCHEME_A, "x", "CLOSED_WRITTEN_OFF");
     expect(close.error).toMatch(/your own lot/);
   });
@@ -124,9 +127,9 @@ describe("recordInstalmentPaymentAction", () => {
     expect(r.error).toMatch(/your own lot/);
   });
 
-  it("records a part payment as partly paid, not paid", async () => {
+  it("records a part payment through the plan's own payment record, in cents", async () => {
     await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 0.01);
-    expect(queries.updateInstalment).toHaveBeenCalledWith("inst-1", expect.objectContaining({ status: "PARTIALLY_PAID" }));
+    expect(recordPlanInstalmentPayment).toHaveBeenCalledWith(expect.objectContaining({ planId: "plan-1", instalmentId: "inst-1", amountCents: 1, paidOn: "2026-10-26" }));
     expect(queries.updateDebtRecoveryCase).not.toHaveBeenCalled();
   });
 
@@ -134,7 +137,7 @@ describe("recordInstalmentPaymentAction", () => {
     instalmentFirst.mockResolvedValue({ id: "inst-9", planId: "other-plan", status: "UPCOMING" });
     const r = await actions.recordInstalmentPaymentAction("inst-9", "case-1", SCHEME_A, 100);
     expect(r.error).toBe("Instalment not found");
-    expect(queries.updateInstalment).not.toHaveBeenCalled();
+    expect(recordPlanInstalmentPayment).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid amount", async () => {
@@ -145,7 +148,7 @@ describe("recordInstalmentPaymentAction", () => {
   it("records a payment for an authorised adviser on the right case", async () => {
     const r = await actions.recordInstalmentPaymentAction("inst-1", "case-1", SCHEME_A, 100);
     expect(r).toEqual({ success: true });
-    expect(queries.updateInstalment).toHaveBeenCalledWith("inst-1", expect.objectContaining({ status: "PAID" }));
+    expect(recordPlanInstalmentPayment).toHaveBeenCalledWith(expect.objectContaining({ instalmentId: "inst-1", amountCents: 10_000, actorId: "adviser-profile" }));
   });
 });
 

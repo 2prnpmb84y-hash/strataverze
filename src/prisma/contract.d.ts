@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5a57a962bb8cc2249adfd7c95984f41f37b6b2ccefd43b2eb6eeb6b480a7ee64'>;
+  StorageHashBase<'fef88172c963f6e866924b8aff2a4623de574a2dad53597bd422f4610929fefc'>;
 export type ExecutionHash =
   ExecutionHashBase<'38fe1a63c62df3d1a0a9ea1fb81cac618336f1f71e6ec7b6f747a3e57a8f489c'>;
 export type ProfileHash =
@@ -2184,6 +2184,7 @@ export namespace Models {
     id: FieldOutputTypes['public']['PaymentPlanRequest']['id'];
     interestWaiver: FieldOutputTypes['public']['PaymentPlanRequest']['interestWaiver'];
     interestWaiverRequested: FieldOutputTypes['public']['PaymentPlanRequest']['interestWaiverRequested'];
+    lastReminderOn: FieldOutputTypes['public']['PaymentPlanRequest']['lastReminderOn'];
     lotId: FieldOutputTypes['public']['PaymentPlanRequest']['lotId'];
     notes: FieldOutputTypes['public']['PaymentPlanRequest']['notes'];
     ownerNames: FieldOutputTypes['public']['PaymentPlanRequest']['ownerNames'];
@@ -14884,6 +14885,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', false>;
                   };
+                  readonly many: false;
+                };
+                readonly last_reminder_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly lot_id: {
@@ -37092,6 +37099,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly lastReminderOn: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
               readonly lotId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -37230,6 +37241,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly interestWaiver: { readonly column: 'interest_waiver' };
                 readonly interestWaiverRequested: { readonly column: 'interest_waiver_requested' };
+                readonly lastReminderOn: { readonly column: 'last_reminder_on' };
                 readonly lotId: { readonly column: 'lot_id' };
                 readonly notes: { readonly column: 'notes' };
                 readonly ownerNames: { readonly column: 'owner_names' };

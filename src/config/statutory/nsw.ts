@@ -471,8 +471,11 @@ export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
  *   "How to arrange a payment plan": majority vote at an owners corporation
  *   or strata committee meeting, recorded in the minutes, not delegable to
  *   the strata managing agent; up to 12 months; no information beyond the
- *   form; refusal grounds; the contents of the payment plan statement; no
- *   recovery action for levies covered by a plan being followed.
+ *   form; refusal grounds (a fund left short, as listed in `refusalGrounds`);
+ *   the contents of the payment plan statement; no recovery action for
+ *   levies covered by a plan being followed; after a refusal, Fair Trading's
+ *   free mediation, then an application to NCAT for an order that the
+ *   refusal was unreasonable (`mediation`).
  * - NSW Government, "Guide to strata law changes": no fee for a request (from
  *   27 Oct 2025); from 23 Oct 2026 a plan can cover current levies and
  *   interest, not only overdue levies (the standard form is still the one

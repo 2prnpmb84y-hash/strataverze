@@ -47,13 +47,24 @@ export async function notifyPaymentPlanRequest(input: { schemeId: string; reques
     const skip = new Set([...lotOwners, input.submittedBy]);
     const committee = (await people(await members(input.schemeId, "COMMITTEE"))).filter((p) => !skip.has(p.id));
     const advisers = (await people(await members(input.schemeId, "ADVISER"))).filter((p) => !skip.has(p.id));
+    const req = await db.orm.public.PaymentPlanRequest.where((r) => r.id.eq(input.requestId)).first();
+    const aud = (v: unknown) => `$${Number(v ?? 0).toFixed(2)}`;
+    const proposed = req
+      ? [
+          req.currentDebt != null ? `debt ${aud(req.currentDebt)}` : null,
+          req.proposedInstalment != null ? `instalments of ${aud(req.proposedInstalment)}${req.proposedFrequency ? ` ${String(req.proposedFrequency).toLowerCase()}` : ""}` : null,
+          req.proposedMonths ? `over ${req.proposedMonths} months` : null,
+          req.interestWaiverRequested ? "and asks for interest to be waived" : null,
+        ].filter(Boolean).join(", ")
+      : "";
     const lines = [
-      `The owner of ${lotLabel} at ${name} has asked for a payment plan for overdue levies.`,
+      `The owner of ${lotLabel} at ${name} has asked for a payment plan for overdue levies${proposed ? ` (as on the form: ${proposed})` : ""}.`,
       `It must be decided by a majority vote at a meeting of the owners corporation or the strata committee, and the owner given a written reply by ${input.replyDueOn}.`,
     ];
     await send(committee, (p) =>
       complianceEmail({ to: p.email, subject: `Payment plan request for ${lotLabel}, ${name}`, heading: "A payment plan request needs a decision", lines: [`Hello ${p.name},`, ...lines], buttonLabel: "Open StrataVerze", url: `${siteUrl()}/owner` }),
     );
+    // The committee decides at a meeting; the adviser records the decision in StrataVerze.
     await send(advisers, (p) =>
       complianceEmail({ to: p.email, subject: `Payment plan request for ${lotLabel}, ${name}`, heading: "Payment plan request received", lines, buttonLabel: "Open the request", url: `${siteUrl()}/adviser/schemes/${input.schemeId}/finance/debt-recovery/payment-plans/${input.requestId}` }),
     );

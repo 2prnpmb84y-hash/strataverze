@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
     logError("[cron] works marketplace day failed:", err);
     works = { error: "failed" };
   }
+  const { recovered, issued, resent } = await runLevyNoticeDay(now);
+  // After the levy notices, so reminders never hold them up.
   let compliance: { paymentPlanReminders: number } | { error: string };
   try {
     compliance = await runComplianceDay(now);
@@ -42,7 +44,6 @@ export async function GET(request: NextRequest) {
     logError("[cron] compliance reminders failed:", err);
     compliance = { error: "failed" };
   }
-  const { recovered, issued, resent } = await runLevyNoticeDay(now);
   return NextResponse.json(
     {
       today,

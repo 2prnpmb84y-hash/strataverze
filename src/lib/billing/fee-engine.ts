@@ -54,8 +54,8 @@ export class FeeConfigError extends Error {}
 
 /**
  * Fees that are never passed to an owner, whatever the price book says: no
- * fee or charge for a payment plan can be passed to the owner (NSW, from
- * 27 Oct 2025). StrataVerze charges the owners corporation only (decided
+ * fee can be charged for a payment plan request (NSW Government guide to
+ * strata law changes, from 27 Oct 2025). StrataVerze charges the owners corporation only (decided
  * 26 Oct 2026).
  */
 export const NEVER_RECOVERABLE_FROM_OWNER: ReadonlyArray<{ code: string; variant: string }> = [{ code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" }];

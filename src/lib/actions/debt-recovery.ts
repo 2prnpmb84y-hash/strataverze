@@ -23,8 +23,6 @@ import {
   updateDebtRecoveryCase,
   createDebtRecoveryStep,
   updateDebtRecoveryStep,
-  updatePaymentPlan,
-  updateInstalment,
   createDebtRecoveryDocument,
   logDebtRecoveryActivity,
   generateCaseNumber,
@@ -151,6 +149,15 @@ export async function initiateDebtRecoveryAction(
       });
     }
 
+    // A plan already being followed for the lot (agreed before any case) is
+    // linked to the case, which starts in PAYMENT_PLAN: its recovery steps
+    // wait while the plan is followed.
+    const followed = await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(lotId), p.status.eq("ACTIVE"))).first();
+    if (followed) {
+      if (!followed.caseId) await db.orm.public.PaymentPlan.where((p) => p.id.eq(followed.id)).update({ caseId: newCase.id });
+      await updateDebtRecoveryCase(newCase.id, { status: "PAYMENT_PLAN" });
+    }
+
     // Log the activity
     await logDebtRecoveryActivity({
       caseId: newCase.id,
@@ -208,6 +215,13 @@ export async function updateDebtRecoveryCaseAction(
     }
     if (excludeFromRecovery && !(exclusionReason ?? "").trim()) {
       return { error: "Give a reason for excluding this case from recovery" };
+    }
+    if (status === "REFERRED_LEGAL" && caseRow.status !== "REFERRED_LEGAL") {
+      const followed = await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all();
+      const { rules } = await rulesForScheme(schemeId);
+      if (stepPausedByPlan("LEGAL_REFERRAL", followed, rules.PAYMENT_PLANS)) {
+        return { error: "A payment plan is being followed for this lot, so the case cannot be referred for legal recovery. Mark the plan as not followed first." };
+      }
     }
 
     if (status) data.status = status;
@@ -396,49 +410,25 @@ export async function recordInstalmentPaymentAction(
     }
     if (instalment.status === "PAID") return { error: "This instalment is already paid" };
 
-    // A part payment does not clear the instalment (or, in turn, the case).
-    const fullyPaid = Math.round(amountPaid * 100) >= Math.round(Number(instalment.amount) * 100);
-    await updateInstalment(instalmentId, {
-      status: fullyPaid ? "PAID" : "PARTIALLY_PAID",
-      amountPaid,
-      paidAt: new Date().toISOString(),
+    // One way of recording plan payments: they add up, and the plan and its
+    // case are completed in one place when every instalment is paid.
+    const { recordPlanInstalmentPayment } = await import("@/lib/debt-recovery/payment-plan-requests");
+    const { schemeToday } = await import("@/lib/jurisdiction/scheme-time");
+    await recordPlanInstalmentPayment({
+      schemeId,
+      planId: casePlan.id,
+      instalmentId,
+      amountCents: Math.round(amountPaid * 100),
+      paidOn: await schemeToday(schemeId),
+      actorId: profile.id,
     });
-
-    await logDebtRecoveryActivity({
-      caseId,
-      activityType: "PAYMENT_RECEIVED",
-      description: `Instalment payment of $${amountPaid.toFixed(2)} recorded`,
-      performedBy: profile.id,
-    });
-
-    // Check if all instalments are paid
-    const plan = await getPaymentPlanForCase(caseId);
-    if (plan) {
-      const { getInstalmentsForPlan } = await import("@/lib/queries/debt-recovery");
-      const instalments = await getInstalmentsForPlan(plan.id);
-      const allPaid = instalments.every((i) => i.status === "PAID");
-      if (allPaid) {
-        await updatePaymentPlan(plan.id, { status: "COMPLETED" });
-        await updateDebtRecoveryCase(caseId, {
-          status: "CLOSED_PAID",
-          closedAt: new Date().toISOString(),
-          closedReason: "All payment plan instalments completed",
-          currentStep: "CLOSED",
-        });
-        await logDebtRecoveryActivity({
-          caseId,
-          activityType: "CASE_CLOSED",
-          description: "Case closed — all payment plan instalments paid",
-          performedBy: profile.id,
-        });
-      }
-    }
 
     revalidatePath(`/adviser/schemes/${schemeId}`);
 
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof Error && err.name === "PaymentPlanError") return { error: err.message };
     logError("Failed to record payment:", err);
     return { error: "Failed to record payment" };
   }

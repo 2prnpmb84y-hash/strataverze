@@ -17000,6 +17000,13 @@
                   "kind": "scalar"
                 }
               },
+              "lastReminderOn": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/date-string@1",
+                  "kind": "scalar"
+                }
+              },
               "lotId": {
                 "nullable": false,
                 "type": {
@@ -17220,6 +17227,9 @@
                 },
                 "interestWaiverRequested": {
                   "column": "interest_waiver_requested"
+                },
+                "lastReminderOn": {
+                  "column": "last_reminder_on"
                 },
                 "lotId": {
                   "column": "lot_id"
@@ -46378,6 +46388,11 @@
                   },
                   "nullable": false
                 },
+                "last_reminder_on": {
+                  "codecId": "pg/date-string@1",
+                  "dataType": "pg/date",
+                  "nullable": true
+                },
                 "lot_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -46766,7 +46781,7 @@
                   "index": {
                     "name": "payment_plans_case_id_idx"
                   },
-                  "onDelete": "cascade",
+                  "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
@@ -59178,7 +59193,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5a57a962bb8cc2249adfd7c95984f41f37b6b2ccefd43b2eb6eeb6b480a7ee64"
+    "storageHash": "fef88172c963f6e866924b8aff2a4623de574a2dad53597bd422f4610929fefc"
   },
   "execution": {
     "executionHash": "38fe1a63c62df3d1a0a9ea1fb81cac618336f1f71e6ec7b6f747a3e57a8f489c",

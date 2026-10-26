@@ -10,8 +10,9 @@
 --   than one plan over time, so case_id is optional and no longer unique.
 --   At most one plan per lot can be ACTIVE (being followed) at a time.
 -- - The StrataVerze payment plan set-up fee is charged to the owners
---   corporation only. No fee or charge for a payment plan can be passed to
---   the owner (NSW, from 27 Oct 2025); decided by StrataVerze on 26 Oct 2026.
+--   corporation only. No fee can be charged for a payment plan request
+--   (NSW Government guide to strata law changes, from 27 Oct 2025);
+--   decided by StrataVerze on 26 Oct 2026.
 --
 -- On 26 Oct 2026 production had no payment plans and no debt recovery cases.
 -- APPLY THIS BEFORE DEPLOYING THE CODE THAT NEEDS IT: the app reads every
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS public.payment_plan_requests (
   refusal_reasons           text,
   interest_waiver           text CHECK (interest_waiver IN ('WAIVED', 'NOT_WAIVED')),
   replied_on                date,
+  last_reminder_on          date,
   rule_pack                 varchar(40),
   notes                     text,
   created_at                timestamptz NOT NULL DEFAULT now(),
@@ -53,11 +55,16 @@ CREATE TABLE IF NOT EXISTS public.payment_plan_requests (
 );
 CREATE INDEX IF NOT EXISTS idx_payment_plan_requests_scheme_status ON public.payment_plan_requests(scheme_id, status);
 CREATE INDEX IF NOT EXISTS idx_payment_plan_requests_lot ON public.payment_plan_requests(lot_id);
+-- One request waiting for a decision per lot.
+CREATE UNIQUE INDEX IF NOT EXISTS payment_plan_requests_one_open_per_lot ON public.payment_plan_requests(lot_id) WHERE status = 'RECEIVED';
 -- RLS on, no policies: the Data API is denied; the app connects as the owner.
 ALTER TABLE public.payment_plan_requests ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.payment_plans DROP CONSTRAINT IF EXISTS payment_plans_case_id_key;
 ALTER TABLE public.payment_plans ALTER COLUMN case_id DROP NOT NULL;
+-- Deleting a case keeps its plans (they came from the owner's request).
+ALTER TABLE public.payment_plans DROP CONSTRAINT IF EXISTS payment_plans_case_id_fkey;
+ALTER TABLE public.payment_plans ADD CONSTRAINT payment_plans_case_id_fkey FOREIGN KEY (case_id) REFERENCES public.debt_recovery_cases(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_payment_plans_case ON public.payment_plans(case_id);
 ALTER TABLE public.payment_plans
   ADD COLUMN IF NOT EXISTS request_id uuid UNIQUE REFERENCES public.payment_plan_requests(id) ON DELETE SET NULL,

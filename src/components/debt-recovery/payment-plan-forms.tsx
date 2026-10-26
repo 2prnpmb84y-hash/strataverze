@@ -79,6 +79,8 @@ export function PaymentPlanRequestForm({
 }) {
   const [state, formAction, pending] = useActionState<PaymentPlanFormState, FormData>(action, {});
   const e = state.fieldErrors ?? {};
+  // After an error the form is reset, so show what was entered again.
+  const v = state.success ? {} : (state.values ?? {});
   return (
     <form action={formAction} className="space-y-4">
       <Messages state={state} />
@@ -86,7 +88,7 @@ export function PaymentPlanRequestForm({
       {lots && (
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Lot" name="lotId" error={e.lotId}>
-            <select id="lotId" name="lotId" required className={input} defaultValue="">
+            <select id="lotId" name="lotId" required className={input} defaultValue={v.lotId ?? ""}>
               <option value="" disabled>
                 Choose a lot
               </option>
@@ -98,15 +100,15 @@ export function PaymentPlanRequestForm({
             </select>
           </Field>
           <Field label="Date the complete request was received" name="receivedOn" error={e.receivedOn} help="The reply period runs from this date.">
-            <input id="receivedOn" name="receivedOn" type="date" max={today} defaultValue={today} required className={input} />
+            <input id="receivedOn" name="receivedOn" type="date" max={today} defaultValue={v.receivedOn ?? today} required className={input} />
           </Field>
         </div>
       )}
       <Field label={owner ? "Your name (each co-owner)" : "Owner's name, as on the form (each co-owner)"} name="ownerNames" error={e.ownerNames}>
-        <input id="ownerNames" name="ownerNames" defaultValue={defaultOwnerNames} required className={input} />
+        <input id="ownerNames" name="ownerNames" defaultValue={v.ownerNames ?? defaultOwnerNames} required className={input} />
       </Field>
       <label className="flex items-start gap-2 text-sm text-ink">
-        <input type="checkbox" name="hardshipStatement" className="mt-1" required />
+        <input type="checkbox" name="hardshipStatement" className="mt-1" required defaultChecked={v.hardshipStatement === "on"} />
         <span>
           {owner
             ? `Due to financial hardship I cannot pay the full overdue amount, and I ask the ${ownersCorporation} to approve the payment plan below.`
@@ -116,13 +118,13 @@ export function PaymentPlanRequestForm({
       {e.hardshipStatement && <p className="text-xs text-red-600">{e.hardshipStatement}</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Current debt ($)" name="currentDebt" error={e.currentDebtCents}>
-          <input id="currentDebt" name="currentDebt" inputMode="decimal" className={input} placeholder="0.00" />
+          <input id="currentDebt" name="currentDebt" inputMode="decimal" className={input} placeholder="0.00" defaultValue={v.currentDebt ?? ""} />
         </Field>
         <Field label="Proposed instalment ($)" name="proposedInstalment" error={e.proposedInstalmentCents}>
-          <input id="proposedInstalment" name="proposedInstalment" inputMode="decimal" className={input} placeholder="0.00" />
+          <input id="proposedInstalment" name="proposedInstalment" inputMode="decimal" className={input} placeholder="0.00" defaultValue={v.proposedInstalment ?? ""} />
         </Field>
         <Field label="Proposed frequency" name="proposedFrequency" error={e.proposedFrequency}>
-          <select id="proposedFrequency" name="proposedFrequency" className={input} defaultValue="">
+          <select id="proposedFrequency" name="proposedFrequency" className={input} defaultValue={v.proposedFrequency ?? ""}>
             <option value="">Not stated</option>
             {FREQUENCIES.map((f) => (
               <option key={f.value} value={f.value}>
@@ -132,16 +134,16 @@ export function PaymentPlanRequestForm({
           </select>
         </Field>
         <Field label={`Duration in months (up to ${maxMonths})`} name="proposedMonths" error={e.proposedMonths}>
-          <input id="proposedMonths" name="proposedMonths" type="number" min={1} max={maxMonths} className={input} />
+          <input id="proposedMonths" name="proposedMonths" type="number" min={1} max={maxMonths} className={input} defaultValue={v.proposedMonths ?? ""} />
         </Field>
       </div>
       <label className="flex items-start gap-2 text-sm text-ink">
-        <input type="checkbox" name="interestWaiverRequested" className="mt-1" />
+        <input type="checkbox" name="interestWaiverRequested" className="mt-1" defaultChecked={v.interestWaiverRequested === "on"} />
         <span>{owner ? "I also ask that interest on the overdue levies be waived." : "The owner also asks for interest on the overdue levies to be waived."}</span>
       </label>
       {!owner && (
         <Field label="Notes (optional)" name="notes">
-          <textarea id="notes" name="notes" rows={2} className={input} />
+          <textarea id="notes" name="notes" rows={2} className={input} defaultValue={v.notes ?? ""} />
         </Field>
       )}
       <div className="flex justify-end">
@@ -190,6 +192,8 @@ export function PaymentPlanDecisionForm({
   const [waiver, setWaiver] = useState("");
   const feeConfirmation = useFeeConfirmation(decision === "APPROVED" ? fee : null);
   const e = state.fieldErrors ?? {};
+  // After an error the form is reset, so show what was entered again.
+  const v = state.success ? {} : (state.values ?? {});
   const owing = defaults.leviesCents + (waiver === "WAIVED" ? 0 : defaults.interestCents);
   return (
     <form action={formAction} className="space-y-4">
@@ -205,17 +209,17 @@ export function PaymentPlanDecisionForm({
           </select>
         </Field>
         <Field label="Meeting" name="body" error={e.body}>
-          <select id="body" name="body" className={input} defaultValue="STRATA_COMMITTEE">
+          <select id="body" name="body" className={input} defaultValue={v.body ?? "STRATA_COMMITTEE"}>
             <option value="STRATA_COMMITTEE">Strata committee meeting</option>
             <option value="OWNERS_CORPORATION">General meeting of the owners corporation</option>
           </select>
         </Field>
         <Field label="Meeting date" name="meetingOn" error={e.meetingOn}>
-          <input id="meetingOn" name="meetingOn" type="date" min={receivedOn} max={defaults.today} required className={input} />
+          <input id="meetingOn" name="meetingOn" type="date" min={receivedOn} max={defaults.today} required className={input} defaultValue={v.meetingOn ?? ""} />
         </Field>
       </div>
       <label className="flex items-start gap-2 text-sm text-ink">
-        <input type="checkbox" name="majorityVote" className="mt-1" required />
+        <input type="checkbox" name="majorityVote" className="mt-1" required defaultChecked={v.majorityVote === "on"} />
         <span>The decision was made by a majority vote at that meeting and is recorded in its minutes.</span>
       </label>
       {e.majorityVote && <p className="text-xs text-red-600">{e.majorityVote}</p>}
@@ -234,7 +238,7 @@ export function PaymentPlanDecisionForm({
 
       {decision === "REFUSED" ? (
         <Field label="Reasons for the refusal, and how they apply to this request" name="refusalReasons" error={e.refusalReasons}>
-          <textarea id="refusalReasons" name="refusalReasons" rows={4} className={input} required />
+          <textarea id="refusalReasons" name="refusalReasons" rows={4} className={input} required defaultValue={v.refusalReasons ?? ""} />
           <ul className="mt-2 list-disc pl-5 text-xs text-ink-muted space-y-1">
             {defaults.refusalGrounds.map((g) => (
               <li key={g}>A request may be refused if {g}.</li>
@@ -246,22 +250,22 @@ export function PaymentPlanDecisionForm({
           <p className="text-sm font-semibold text-ink">Agreed terms</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Levies owing ($)" name="leviesOwing" error={e.leviesOwingCents}>
-              <input id="leviesOwing" name="leviesOwing" inputMode="decimal" defaultValue={dollars(defaults.leviesCents)} className={input} />
+              <input id="leviesOwing" name="leviesOwing" inputMode="decimal" defaultValue={v.leviesOwing ?? dollars(defaults.leviesCents)} className={input} />
             </Field>
             <Field label="Interest owing ($)" name="interestOwing">
-              <input id="interestOwing" name="interestOwing" inputMode="decimal" defaultValue={dollars(defaults.interestCents)} className={input} />
+              <input id="interestOwing" name="interestOwing" inputMode="decimal" defaultValue={v.interestOwing ?? dollars(defaults.interestCents)} className={input} />
             </Field>
             <Field label="Amount the plan covers ($)" name="totalAmount" error={e.totalCents} help="Overdue levies, plus interest unless waived.">
-              <input key={owing} id="totalAmount" name="totalAmount" inputMode="decimal" defaultValue={dollars(owing)} required className={input} />
+              <input key={owing} id="totalAmount" name="totalAmount" inputMode="decimal" defaultValue={v.totalAmount ?? dollars(owing)} required className={input} />
             </Field>
             <Field label="Date agreed" name="agreedOn" error={e.agreedOn}>
-              <input id="agreedOn" name="agreedOn" type="date" max={defaults.today} defaultValue={defaults.today} required className={input} />
+              <input id="agreedOn" name="agreedOn" type="date" max={defaults.today} defaultValue={v.agreedOn ?? defaults.today} required className={input} />
             </Field>
             <Field label="First instalment" name="startOn" error={e.startOn}>
-              <input id="startOn" name="startOn" type="date" required className={input} />
+              <input id="startOn" name="startOn" type="date" required className={input} defaultValue={v.startOn ?? ""} />
             </Field>
             <Field label="Frequency" name="frequency" error={e.frequency}>
-              <select id="frequency" name="frequency" className={input} defaultValue="MONTHLY">
+              <select id="frequency" name="frequency" className={input} defaultValue={v.frequency ?? "MONTHLY"}>
                 {FREQUENCIES.map((f) => (
                   <option key={f.value} value={f.value}>
                     {f.label}
@@ -270,22 +274,22 @@ export function PaymentPlanDecisionForm({
               </select>
             </Field>
             <Field label="Number of instalments" name="numberOfInstalments" error={e.numberOfInstalments} help={`The last must fall within ${defaults.maxMonths} months of agreement.`}>
-              <input id="numberOfInstalments" name="numberOfInstalments" type="number" min={1} required className={input} />
+              <input id="numberOfInstalments" name="numberOfInstalments" type="number" min={1} required className={input} defaultValue={v.numberOfInstalments ?? ""} />
             </Field>
           </div>
           <label className="flex items-start gap-2 text-sm text-ink">
-            <input type="checkbox" name="coversCurrentLevies" className="mt-1" />
+            <input type="checkbox" name="coversCurrentLevies" className="mt-1" defaultChecked={v.coversCurrentLevies === "on"} />
             <span>The plan also covers current levies (allowed for plans agreed from {defaults.currentLeviesFrom}).</span>
           </label>
           {e.coversCurrentLevies && <p className="text-xs text-red-600">{e.coversCurrentLevies}</p>}
           <Field label="How interest is calculated" name="interestMethod" error={e.interestMethod}>
-            <textarea id="interestMethod" name="interestMethod" rows={2} defaultValue={defaults.interestMethod} className={input} />
+            <textarea id="interestMethod" name="interestMethod" rows={2} defaultValue={v.interestMethod ?? defaults.interestMethod} className={input} />
           </Field>
           <Field label="How the owner can pay" name="paymentMethods" error={e.paymentMethods}>
-            <textarea id="paymentMethods" name="paymentMethods" rows={2} defaultValue={defaults.paymentMethods} className={input} />
+            <textarea id="paymentMethods" name="paymentMethods" rows={2} defaultValue={v.paymentMethods ?? defaults.paymentMethods} className={input} />
           </Field>
           <Field label="Contact for questions about the plan" name="contactDetails" error={e.contactDetails}>
-            <input id="contactDetails" name="contactDetails" defaultValue={defaults.contactDetails} className={input} />
+            <input id="contactDetails" name="contactDetails" defaultValue={v.contactDetails ?? defaults.contactDetails} className={input} />
           </Field>
           <FeeDisclosure fee={fee} scheduleHref={feeScheduleHref} confirmed={feeConfirmation.confirmed} onConfirmedChange={feeConfirmation.setConfirmed} idSuffix="-plan" />
         </div>
@@ -313,6 +317,7 @@ export function SmallActionForm({
 }) {
   const [state, formAction, pending] = useActionState<PaymentPlanFormState, FormData>(action, {});
   const e = state.fieldErrors ?? {};
+  const v = state.success ? {} : (state.values ?? {});
   return (
     <form action={formAction} className="space-y-3">
       <Messages state={state} />
@@ -323,14 +328,14 @@ export function SmallActionForm({
         {fields.map((f) => (
           <Field key={f.name} label={f.label} name={f.name} error={e[f.name] ?? (f.type === "money" ? e.amount : undefined)}>
             {f.type === "textarea" ? (
-              <textarea id={f.name} name={f.name} rows={2} defaultValue={f.defaultValue} className={input} required />
+              <textarea id={f.name} name={f.name} rows={2} defaultValue={v[f.name] ?? f.defaultValue} className={input} required />
             ) : (
               <input
                 id={f.name}
                 name={f.name}
                 type={f.type === "date" ? "date" : "text"}
                 inputMode={f.type === "money" ? "decimal" : undefined}
-                defaultValue={f.defaultValue}
+                defaultValue={v[f.name] ?? f.defaultValue}
                 max={f.max}
                 required
                 className={input}

@@ -35,6 +35,45 @@ export class PaymentPlanError extends Error {
   }
 }
 
+/** True for a Postgres unique violation, wherever the driver puts the code. */
+function isUniqueViolation(err: unknown): boolean {
+  const text = err instanceof Error ? `${err.message} ${JSON.stringify((err as { cause?: unknown }).cause ?? "")} ${String((err as { code?: unknown }).code ?? "")}` : String(err);
+  return /23505|unique|duplicate key/i.test(text);
+}
+
+/** Days after an ownership ends during which the former owner still counts as an owner of the lot. */
+const OWNER_CONFLICT_DAYS = 30;
+
+/**
+ * Profiles holding an OWNER membership on the lot, active or ended in the
+ * last 30 days. Nobody acts on their own lot's payment plan as adviser
+ * (security finding SEC-003).
+ */
+export async function lotOwnerProfileIds(schemeId: string, lotId: string): Promise<string[]> {
+  const rows = await db.orm.public.SchemeMembership.where((m) => and(m.schemeId.eq(schemeId), m.lotId.eq(lotId), m.role.eq("OWNER"))).limit(50).all();
+  const cutoff = Date.now() - OWNER_CONFLICT_DAYS * 86_400_000;
+  return rows.filter((m) => m.isActive || (m.endDate != null && new Date(String(m.endDate)).getTime() >= cutoff)).map((m) => m.profileId);
+}
+
+/** The lot a request or plan belongs to, for the own-lot check. */
+export async function lotOfRequest(schemeId: string, requestId: string) {
+  const r = await db.orm.public.PaymentPlanRequest.where((x) => x.id.eq(requestId)).first();
+  return r && r.schemeId === schemeId ? r.lotId : null;
+}
+export async function lotOfPlan(schemeId: string, planId: string) {
+  const p = await db.orm.public.PaymentPlan.where((x) => x.id.eq(planId)).first();
+  return p && p.schemeId === schemeId ? p.lotId : null;
+}
+
+/**
+ * Whether an owner may see a request: one they made, or one received on or
+ * after their ownership began (a new owner does not see the previous
+ * owner's hardship request or its reply).
+ */
+export function ownerMaySeeRequest(r: { submittedBy: string | null; receivedOn: unknown }, viewer: { profileId: string; ownerSince: string }) {
+  return r.submittedBy === viewer.profileId || day(r.receivedOn) >= viewer.ownerSince;
+}
+
 const money = (cents: number) => fromCents(cents).toFixed(2) as unknown as Numeric<12, 2>;
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -90,6 +129,7 @@ export async function recordPaymentPlanRequest(input: {
 
   const caseRow = await openCaseFor(input.schemeId, input.lotId);
   const f = input.form;
+  // One request waiting per lot (payment_plan_requests_one_open_per_lot): a second sent at the same moment is refused.
   const created = await db.orm.public.PaymentPlanRequest.create({
     schemeId: input.schemeId,
     lotId: input.lotId,
@@ -108,6 +148,9 @@ export async function recordPaymentPlanRequest(input: {
     status: "RECEIVED",
     rulePack: label,
     notes: input.notes?.trim() || null,
+  }).catch((err: unknown) => {
+    if (isUniqueViolation(err)) throw new PaymentPlanError("A request for this lot is already waiting for a decision.");
+    throw err;
   });
   if (caseRow) {
     await logDebtRecoveryActivity({
@@ -156,6 +199,13 @@ export async function recordPaymentPlanDecision(input: {
     else {
       Object.assign(problems, termsProblems(input.terms, rules.PAYMENT_PLANS));
       if (input.terms.agreedOn < decision.meetingOn) problems.agreedOn = "The plan cannot be agreed before the meeting that approved it.";
+      if (input.terms.agreedOn > today) problems.agreedOn = "The date agreed cannot be in the future.";
+      // The statement must add up: overdue levies plus interest (unless waived), plus current levies if covered.
+      const owing = input.terms.leviesOwingCents + (decision.interestWaiver === "WAIVED" ? 0 : input.terms.interestOwingCents);
+      if (!problems.totalCents && !input.terms.coversCurrentLevies && input.terms.totalCents !== owing) {
+        problems.totalCents = `The plan covers overdue levies only, so the amount should be the levies owing${decision.interestWaiver === "WAIVED" ? "" : " plus the interest owing"}.`;
+      }
+      if (!problems.totalCents && input.terms.coversCurrentLevies && input.terms.totalCents < owing) problems.totalCents = "The amount cannot be less than the overdue levies and interest it covers.";
       if (!input.terms.paymentMethods.trim()) problems.paymentMethods = "Enter how the owner can pay.";
       if (!input.terms.contactDetails.trim()) problems.contactDetails = "Enter the contact for questions about the plan.";
       if (!input.terms.interestMethod.trim()) problems.interestMethod = "Say how interest is calculated (or that it is waived).";
@@ -168,10 +218,24 @@ export async function recordPaymentPlanDecision(input: {
   if (decision.decision === "APPROVED" && active) throw new PaymentPlanError("This lot already has a payment plan being followed.");
 
   const recordedAt = new Date().toISOString();
-  const caseId = request.caseId ?? (await openCaseFor(input.schemeId, request.lotId))?.id ?? null;
+  // The lot's open case now (the one the request was linked to may have closed since).
+  const caseId = (await openCaseFor(input.schemeId, request.lotId))?.id ?? null;
   let planId: string | null = null;
 
+  try {
   await db.transaction(async (tx) => {
+    // Claim the request first: a decision or withdrawal made at the same moment finds it no longer RECEIVED.
+    const claimed = await tx.orm.public.PaymentPlanRequest.where((r) => and(r.id.eq(request.id), r.status.eq("RECEIVED"))).updateAndCount({
+      status: decision.decision,
+      caseId,
+      decisionBody: decision.body,
+      decidedOn: decision.meetingOn,
+      decisionRecordedBy: input.actorId,
+      decisionRecordedAt: recordedAt,
+      refusalReasons: decision.decision === "REFUSED" ? decision.refusalReasons.trim() : null,
+      interestWaiver: request.interestWaiverRequested ? decision.interestWaiver : null,
+    });
+    if (claimed !== 1) throw new PaymentPlanError("This request has just been decided or withdrawn. Reload the page.");
     if (decision.decision === "APPROVED" && input.terms) {
       const t = input.terms;
       const schedule = instalmentSchedule({ totalCents: t.totalCents, numberOfInstalments: t.numberOfInstalments, startOn: t.startOn, frequency: t.frequency as PlanFrequency });
@@ -217,17 +281,11 @@ export async function recordPaymentPlanDecision(input: {
         confirmedCents: input.feeConfirmedCents,
       });
     }
-    await tx.orm.public.PaymentPlanRequest.where((r) => r.id.eq(request.id)).update({
-      status: decision.decision,
-      caseId,
-      decisionBody: decision.body,
-      decidedOn: decision.meetingOn,
-      decisionRecordedBy: input.actorId,
-      decisionRecordedAt: recordedAt,
-      refusalReasons: decision.decision === "REFUSED" ? decision.refusalReasons.trim() : null,
-      interestWaiver: request.interestWaiverRequested ? decision.interestWaiver : null,
-    });
   });
+  } catch (err) {
+    if (isUniqueViolation(err)) throw new PaymentPlanError("This lot already has a payment plan being followed.");
+    throw err;
+  }
 
   if (caseId) {
     if (planId) await updateDebtRecoveryCase(caseId, { status: "PAYMENT_PLAN" });
@@ -251,8 +309,8 @@ export async function recordPaymentPlanReply(input: { schemeId: string; requestI
   ]);
   if (!request || request.schemeId !== input.schemeId) throw new PaymentPlanError("Request not found.");
   if (request.status !== "APPROVED" && request.status !== "REFUSED") throw new PaymentPlanError("Record the decision before the reply.");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.repliedOn) || input.repliedOn > today || input.repliedOn < day(request.receivedOn)) {
-    throw new PaymentPlanError("Enter the date the written reply was given.", { repliedOn: "Enter a date from the day the request was received to today." });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.repliedOn) || input.repliedOn > today || input.repliedOn < day(request.decidedOn)) {
+    throw new PaymentPlanError("Enter the date the written reply was given.", { repliedOn: "Enter a date from the day of the meeting that decided it to today." });
   }
   await db.orm.public.PaymentPlanRequest.where((r) => r.id.eq(input.requestId)).update({ repliedOn: input.repliedOn });
 }
@@ -261,8 +319,8 @@ export async function recordPaymentPlanReply(input: { schemeId: string; requestI
 export async function withdrawPaymentPlanRequest(input: { schemeId: string; requestId: string; lotId?: string }) {
   const request = await db.orm.public.PaymentPlanRequest.where((r) => r.id.eq(input.requestId)).first();
   if (!request || request.schemeId !== input.schemeId || (input.lotId && request.lotId !== input.lotId)) throw new PaymentPlanError("Request not found.");
-  if (request.status !== "RECEIVED") throw new PaymentPlanError("Only a request waiting for a decision can be withdrawn.");
-  await db.orm.public.PaymentPlanRequest.where((r) => r.id.eq(input.requestId)).update({ status: "WITHDRAWN" });
+  const n = await db.orm.public.PaymentPlanRequest.where((r) => and(r.id.eq(input.requestId), r.status.eq("RECEIVED"))).updateAndCount({ status: "WITHDRAWN" });
+  if (n !== 1) throw new PaymentPlanError("Only a request waiting for a decision can be withdrawn.");
 }
 
 /**
@@ -272,11 +330,12 @@ export async function withdrawPaymentPlanRequest(input: { schemeId: string; requ
 export async function markPaymentPlanNotFollowed(input: { schemeId: string; planId: string; reason: string; actorId: string }) {
   const plan = await db.orm.public.PaymentPlan.where((p) => p.id.eq(input.planId)).first();
   if (!plan || plan.schemeId !== input.schemeId) throw new PaymentPlanError("Payment plan not found.");
-  if (plan.status !== "ACTIVE") throw new PaymentPlanError("Only a plan being followed can be marked as not followed.");
   if (input.reason.trim().length < 10) throw new PaymentPlanError("Say how the plan was not followed.", { reason: "Say how the plan was not followed (for example, which instalments were missed)." });
-  await db.orm.public.PaymentPlan.where((p) => p.id.eq(input.planId)).update({ status: "DEFAULTED", defaultedAt: new Date().toISOString(), defaultReason: input.reason.trim() });
+  const n = await db.orm.public.PaymentPlan.where((p) => and(p.id.eq(input.planId), p.status.eq("ACTIVE"))).updateAndCount({ status: "DEFAULTED", defaultedAt: new Date().toISOString(), defaultReason: input.reason.trim() });
+  if (n !== 1) throw new PaymentPlanError("Only a plan being followed can be marked as not followed.");
   if (plan.caseId) {
-    await updateDebtRecoveryCase(plan.caseId, { status: "IN_PROGRESS" });
+    const c = await db.orm.public.DebtRecoveryCase.where((x) => x.id.eq(plan.caseId!)).first();
+    if (c && !(CLOSED_STATUSES as readonly string[]).includes(String(c.status))) await updateDebtRecoveryCase(plan.caseId, { status: "IN_PROGRESS" });
     await logDebtRecoveryActivity({ caseId: plan.caseId, activityType: "PAYMENT_PLAN_DEFAULTED", description: `Payment plan marked as not followed: ${input.reason.trim()}`, performedBy: input.actorId });
   }
 }
@@ -297,20 +356,36 @@ export async function recordPlanInstalmentPayment(input: { schemeId: string; pla
   if (!plan || plan.schemeId !== input.schemeId || !instalment || instalment.planId !== plan.id) throw new PaymentPlanError("Instalment not found.");
   if (plan.status !== "ACTIVE" && plan.status !== "DEFAULTED") throw new PaymentPlanError("This plan is not open.");
   if (instalment.status === "PAID") throw new PaymentPlanError("This instalment is already paid.");
-  const paidCents = toCents(String(instalment.amountPaid ?? 0)) + input.amountCents;
+  const previous = String(instalment.amountPaid ?? 0);
+  const paidCents = toCents(previous) + input.amountCents;
   const fully = paidCents >= toCents(String(instalment.amount));
-  await db.orm.public.PaymentPlanInstalment.where((i) => i.id.eq(instalment.id)).update({
+  // Only if nobody recorded a payment in the meantime (the amount paid is still what was read).
+  const n = await db.orm.public.PaymentPlanInstalment.where((i) => and(i.id.eq(instalment.id), i.amountPaid.eq(instalment.amountPaid))).updateAndCount({
     amountPaid: money(paidCents),
     status: fully ? "PAID" : "PARTIALLY_PAID",
     paidAt: `${input.paidOn}T00:00:00Z`,
   });
+  if (n !== 1) throw new PaymentPlanError(`Another payment was recorded on this instalment at the same moment (${previous} was paid before). Reload the page and check.`);
   const all = await db.orm.public.PaymentPlanInstalment.where((i) => i.planId.eq(plan.id)).limit(500).all();
-  const allPaid = all.every((i) => (i.id === instalment.id ? fully : i.status === "PAID"));
-  if (allPaid) await db.orm.public.PaymentPlan.where((p) => p.id.eq(plan.id)).update({ status: "COMPLETED" });
+  const allPaid = all.every((i) => i.status === "PAID");
   if (plan.caseId) {
     await logDebtRecoveryActivity({ caseId: plan.caseId, activityType: "PAYMENT_RECEIVED", description: `Instalment ${instalment.instalmentNumber} payment of $${fromCents(input.amountCents).toFixed(2)} recorded (paid ${input.paidOn}).`, performedBy: input.actorId });
   }
+  if (allPaid) await completePlan({ planId: plan.id, caseId: plan.caseId ?? null, actorId: input.actorId });
   return { completed: allPaid };
+}
+
+/**
+ * Every instalment is paid: the plan is completed, and its recovery case (if
+ * open) is closed as paid. The one place this happens.
+ */
+async function completePlan(input: { planId: string; caseId: string | null; actorId: string }) {
+  const n = await db.orm.public.PaymentPlan.where((p) => and(p.id.eq(input.planId), p.status.in(["ACTIVE", "DEFAULTED"]))).updateAndCount({ status: "COMPLETED" });
+  if (n !== 1 || !input.caseId) return;
+  const c = await db.orm.public.DebtRecoveryCase.where((x) => x.id.eq(input.caseId!)).first();
+  if (!c || (CLOSED_STATUSES as readonly string[]).includes(String(c.status))) return;
+  await updateDebtRecoveryCase(input.caseId, { status: "CLOSED_PAID", closedAt: new Date().toISOString(), closedReason: "All payment plan instalments paid", currentStep: "CLOSED" });
+  await logDebtRecoveryActivity({ caseId: input.caseId, activityType: "CASE_CLOSED", description: "Case closed: all payment plan instalments paid", performedBy: input.actorId });
 }
 
 /** Requests and plans for a building, newest first, with lot numbers. */
