@@ -238,8 +238,9 @@ export function StepBusiness({ business, abnLookups, onNext, onBack }: StepBusin
             <SelectField
               label="State"
               name="state"
-              defaultValue={(business?.state as string) ?? "VIC"}
+              defaultValue={(business?.state as string) ?? ""}
               options={[
+                { value: "", label: "Select..." },
                 { value: "NSW", label: "NSW" },
                 { value: "VIC", label: "VIC" },
                 { value: "QLD", label: "QLD" },

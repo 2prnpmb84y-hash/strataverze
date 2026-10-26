@@ -30,6 +30,7 @@ import {
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
 import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
+import { AUSTRALIAN_STATES, schemeLocationProblems } from "@/config/jurisdictions";
 
 /** The Add Property steps a server-side problem can send the wizard back to. */
 export type OnboardingStep = "details" | "address" | "lots" | "balances" | "lotBalances";
@@ -53,8 +54,6 @@ export type StrataRollParseResult = {
   data?: ParsedStrataRoll;
 };
 
-const AUSTRALIAN_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"];
-
 function validateSchemeForm(formData: FormData) {
   const errors: Record<string, string> = {};
 
@@ -71,7 +70,7 @@ function validateSchemeForm(formData: FormData) {
   if (!planNumber?.trim()) errors.planNumber = "Plan number is required.";
   if (!address?.trim()) errors.address = "Address is required.";
   if (!suburb?.trim()) errors.suburb = "Suburb is required.";
-  if (!state || !AUSTRALIAN_STATES.includes(state))
+  if (!state || !(AUSTRALIAN_STATES as readonly string[]).includes(state.trim().toUpperCase()))
     errors.state = "Select a valid state.";
   if (!postcode?.trim() || !/^\d{4}$/.test(postcode.trim()))
     errors.postcode = "Enter a valid 4-digit postcode.";
@@ -94,7 +93,7 @@ function validateSchemeForm(formData: FormData) {
       planNumber: planNumber?.trim() ?? "",
       address: address?.trim() ?? "",
       suburb: suburb?.trim() ?? "",
-      state: state ?? "VIC",
+      state: (state ?? "").trim().toUpperCase(),
       postcode: postcode?.trim() ?? "",
       totalLots: Number(totalLots),
       totalEntitlement: Number(totalEntitlement),
@@ -154,7 +153,10 @@ export async function createSchemeAction(
   _prev: SchemeFormState,
   formData: FormData,
 ): Promise<SchemeFormState> {
-  const { errors, isValid, data, yearEnd } = validateSchemeForm(formData);
+  const { errors: formErrors, isValid: formValid, data, yearEnd } = validateSchemeForm(formData);
+  // Only buildings in a supported jurisdiction, with a postcode there.
+  const errors = { ...schemeLocationProblems(data), ...formErrors };
+  const isValid = formValid && Object.keys(errors).length === 0;
   if (!isValid) {
     const onDetails = Object.keys(errors).some((k) => DETAIL_FIELDS.includes(k));
     return { fieldErrors: errors, step: onDetails ? "details" : "address", stepErrors: Object.values(errors) };
@@ -285,6 +287,10 @@ export async function updateSchemeAction(
     // change the display name, ABN and financial year end.
     const current = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
     if (!current) return { error: "Scheme not found." };
+    // A changed state or postcode must be a supported jurisdiction. An
+    // unchanged one is not checked again, so an older record can be edited.
+    const location = schemeLocationProblems(data, { state: current.state, postcode: current.postcode });
+    if (Object.keys(location).length) return { fieldErrors: location };
     const locked = changedLockedFields(LOCKED_SCHEME_FIELDS, current as Record<string, unknown>, data);
     if (locked.length && !isAdmin) {
       await recordSecurityEvent({

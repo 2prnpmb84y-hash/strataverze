@@ -10,17 +10,16 @@ import {
   updateSchemeAction,
   type SchemeFormState,
 } from "./actions";
+import { DEFAULT_SCHEME_STATE, SCHEME_STATE_HELP, SCHEME_STATE_OPTIONS, STATE_NAMES, type AustralianState } from "@/config/jurisdictions";
 
-const STATES = [
-  { value: "VIC", label: "Victoria" },
-  { value: "NSW", label: "New South Wales" },
-  { value: "QLD", label: "Queensland" },
-  { value: "SA", label: "South Australia" },
-  { value: "WA", label: "Western Australia" },
-  { value: "TAS", label: "Tasmania" },
-  { value: "NT", label: "Northern Territory" },
-  { value: "ACT", label: "Australian Capital Territory" },
-];
+/**
+ * The state choices: the supported states, plus a building's stored state if
+ * it is another one, so an older record shows and keeps its real state.
+ */
+function stateOptions(stored: string | undefined) {
+  if (!stored || SCHEME_STATE_OPTIONS.some((o) => o.value === stored)) return SCHEME_STATE_OPTIONS;
+  return [...SCHEME_STATE_OPTIONS, { value: stored, label: STATE_NAMES[stored as AustralianState] ?? stored }];
+}
 
 type SchemeDefaults = {
   name?: string;
@@ -87,7 +86,7 @@ export function SchemeForm({
             readOnly={lockCore}
             required
             defaultValue={defaults?.planNumber}
-            placeholder="e.g. PS 123456"
+            placeholder="e.g. SP 12345"
             error={state.fieldErrors?.planNumber}
           />
 
@@ -106,7 +105,7 @@ export function SchemeForm({
             readOnly={lockCore}
             required
             defaultValue={defaults?.address}
-            placeholder="e.g. 42 Collins Street"
+            placeholder="e.g. 42 Macquarie Street"
             error={state.fieldErrors?.address}
             className="sm:col-span-2"
           />
@@ -117,7 +116,7 @@ export function SchemeForm({
             readOnly={lockCore}
             required
             defaultValue={defaults?.suburb}
-            placeholder="e.g. Melbourne"
+            placeholder="e.g. Sydney"
             error={state.fieldErrors?.suburb}
           />
 
@@ -127,8 +126,9 @@ export function SchemeForm({
               name="state"
             readOnly={lockCore}
               required
-              defaultValue={defaults?.state ?? "VIC"}
-              options={STATES}
+              defaultValue={defaults?.state ?? DEFAULT_SCHEME_STATE}
+              options={stateOptions(defaults?.state)}
+              helpText={SCHEME_STATE_HELP}
               error={state.fieldErrors?.state}
             />
             <FormField
@@ -137,7 +137,7 @@ export function SchemeForm({
             readOnly={lockCore}
               required
               defaultValue={defaults?.postcode}
-              placeholder="3000"
+              placeholder="2000"
               error={state.fieldErrors?.postcode}
             />
           </div>

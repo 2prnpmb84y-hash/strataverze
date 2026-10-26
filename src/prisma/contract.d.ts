@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ee6b5ad963de18b76b9a1a7f47a254c10822253092ce8ba9436787649011fec1'>;
+  StorageHashBase<'3438c3dab2494aa6e3db5e25d308431179b7c70145f09e6310a88868ab6dd5e7'>;
 export type ExecutionHash =
   ExecutionHashBase<'3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15'>;
 export type ProfileHash =
@@ -6270,10 +6270,6 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/varchar';
                   readonly codecId: 'sql/varchar@1';
                   readonly nullable: true;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'sql/varchar@1', 'VIC'>;
-                  };
                   readonly typeParams: { readonly length: 3 };
                   readonly many: false;
                 };
@@ -14154,10 +14150,6 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/text@1', 'VIC'>;
-                  };
                   readonly many: false;
                 };
                 readonly suburb: {
@@ -16846,7 +16838,7 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/text@1', 'VIC'>;
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'NSW'>;
                   };
                   readonly many: false;
                 };

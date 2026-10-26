@@ -36476,10 +36476,6 @@
                 "state": {
                   "codecId": "sql/varchar@1",
                   "dataType": "pg/varchar",
-                  "default": {
-                    "kind": "literal",
-                    "value": "VIC"
-                  },
                   "nullable": true,
                   "typeParams": {
                     "length": 3
@@ -45072,10 +45068,6 @@
                 "state": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
-                  "default": {
-                    "kind": "literal",
-                    "value": "VIC"
-                  },
                   "nullable": true
                 },
                 "suburb": {
@@ -47931,7 +47923,7 @@
                   "dataType": "pg/text",
                   "default": {
                     "kind": "literal",
-                    "value": "VIC"
+                    "value": "NSW"
                   },
                   "nullable": false
                 },
@@ -58183,7 +58175,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ee6b5ad963de18b76b9a1a7f47a254c10822253092ce8ba9436787649011fec1"
+    "storageHash": "3438c3dab2494aa6e3db5e25d308431179b7c70145f09e6310a88868ab6dd5e7"
   },
   "execution": {
     "executionHash": "3bc021c0318f4f6dad811d9100f017d94928fabfd714c46bec9a4edbe5401a15",
