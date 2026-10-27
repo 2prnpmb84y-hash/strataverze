@@ -5,6 +5,7 @@ import { paymentPlanReplyBlocks, renderPaymentPlanReplyPdf, type PaymentPlanRepl
 const base: PaymentPlanReplyDocument = {
   schemeName: "Harbour View",
   planNumber: "12345",
+  planLabel: "Strata Plan",
   ownersCorporation: "owners corporation",
   lotNumber: "Lot 7",
   ownerNames: "Jo Citizen",

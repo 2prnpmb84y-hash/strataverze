@@ -7,6 +7,9 @@ import {
   noticeTotals,
   type LedgerNotice,
 } from "./levy-ledger";
+import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+
+const NSW = statutoryRulesFor("NSW").TERMINOLOGY;
 
 const base = {
   fund: { name: "Administrative Fund" },
@@ -50,7 +53,7 @@ describe("buildStatement", () => {
   ];
 
   it("lists charges and each payment with a running balance", () => {
-    const s = buildStatement([q1, q2], payments);
+    const s = buildStatement([q1, q2], payments, {}, [], NSW);
     expect(s.lines.map((l) => [l.date, l.type, l.charge, l.payment, l.balance])).toEqual([
       ["2026-07-01", "Levy", 825.09, 0, 825.09],
       ["2026-07-10", "Payment", 0, 200, 625.09],
@@ -65,7 +68,7 @@ describe("buildStatement", () => {
     const s = buildStatement([after], [
       { ...payments[0], reversedAt: "2026-07-20T02:00:00Z", reversalDate: "2026-07-18", reversalReason: "DISHONOURED", reversalNote: "Direct debit failed" },
       payments[1],
-    ]);
+    ], {}, [], NSW);
     expect(s.lines.map((l) => [l.date, l.type, l.charge, l.payment, l.balance, l.description])).toEqual([
       ["2026-07-01", "Levy", 825.09, 0, 825.09, expect.any(String)],
       ["2026-07-10", "Payment", 0, 200, 625.09, "Payment for LN-0001"],
@@ -76,7 +79,7 @@ describe("buildStatement", () => {
   });
 
   it("rolls earlier entries into the opening balance", () => {
-    const s = buildStatement([q1, q2], payments, { startDate: "2026-08-01" });
+    const s = buildStatement([q1, q2], payments, { startDate: "2026-08-01" }, [], NSW);
     expect(s.openingBalance).toBe(625.09);
     expect(s.lines[0].balance).toBe(525.09);
     expect(s.closingBalance).toBe(1350.17);
@@ -94,7 +97,7 @@ describe("buildStatement", () => {
       { id: "c2", type: "APPLIED", amount: "100", effectiveDate: "2026-10-01", levyPaymentId: "p-credit" },
       { id: "c3", type: "REFUNDED", amount: "50", effectiveDate: "2026-10-05" },
     ];
-    const s = buildStatement([paid, second], receipts, {}, credits);
+    const s = buildStatement([paid, second], receipts, {}, credits, NSW);
     expect(s.lines.map((l) => [l.date, l.type, l.charge, l.payment, l.balance])).toEqual([
       ["2026-07-01", "Levy", 825.09, 0, 825.09],
       ["2026-07-10", "Payment", 0, 825.09, 0],
@@ -110,15 +113,36 @@ describe("buildStatement", () => {
     const receipts = [{ id: "p1", levyNoticeId: "n1", amount: "825.09", paymentDate: "2026-07-10" }];
     const credits = [{ id: "c1", type: "OVERPAYMENT", amount: "100", effectiveDate: "2026-07-10" }];
     // Statement from 1 September: Q1 levied and paid, plus $100 credit held, so it opens $100 in credit.
-    const s = buildStatement([paid, q2], receipts, { startDate: "2026-09-01" }, credits);
+    const s = buildStatement([paid, q2], receipts, { startDate: "2026-09-01" }, credits, NSW);
     expect(s.openingBalance).toBe(-100);
     expect(s.lines.map((l) => [l.date, l.balance])).toEqual([["2026-10-01", 725.08]]);
     expect(s.closingBalance).toBe(725.08);
   });
 
   it("accounts for amounts paid before receipts were kept", () => {
-    const s = buildStatement([{ ...q1, updatedAt: "2026-07-20T03:00:00Z" }], []);
+    const s = buildStatement([{ ...q1, updatedAt: "2026-07-20T03:00:00Z" }], [], {}, [], NSW);
     expect(s.lines.find((l) => l.type === "Payment")).toMatchObject({ date: "2026-07-20", payment: 300 });
+  });
+});
+
+describe("buildStatement wording", () => {
+  const charged = { ...q1, amountPaid: "0", interestCharged: "12.50" };
+
+  it("names an NSW late charge interest, as it always has", () => {
+    const s = buildStatement([charged], [], {}, [], NSW);
+    expect(s.lines.map((l) => [l.kind, l.type, l.description])).toEqual([
+      ["LEVY", "Levy", expect.any(String)],
+      ["LATE_CHARGE", "Interest", "Interest on LN-0001"],
+    ]);
+  });
+
+  it("names a Queensland late charge penalty, never interest, and a levy a contribution", () => {
+    const s = buildStatement([charged], [], {}, [], PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY);
+    expect(s.lines.map((l) => [l.kind, l.type, l.description])).toEqual([
+      ["LEVY", "Contribution", expect.any(String)],
+      ["LATE_CHARGE", "Penalty", "Penalty on LN-0001"],
+    ]);
+    expect(s.lines.map((l) => `${l.type} ${l.description}`).join(" ")).not.toMatch(/interest/i);
   });
 });
 

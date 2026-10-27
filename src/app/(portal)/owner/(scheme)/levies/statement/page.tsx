@@ -6,6 +6,7 @@ import { getSchemesForOwner } from "@/lib/queries/schemes";
 import { getLevyNoticesForLots } from "@/lib/queries/levies";
 import { getLevyPaymentsForNotices } from "@/lib/queries/levy-schedules";
 import { buildStatement } from "@/lib/levies/levy-ledger";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getCreditMovements } from "@/lib/finance/owner-credits";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatLotLabel } from "@/lib/format";
@@ -40,6 +41,7 @@ export default async function OwnerStatementPage({
         lotId: m.lotId!,
         schemeId: s.id,
         schemeName: String(s.name),
+        schemeState: s.state,
         lotNumber: m.lot ? String(m.lot.lotNumber) : "",
         unitNumber: m.lot?.unitNumber ? String(m.lot.unitNumber) : null,
       })),
@@ -62,6 +64,7 @@ export default async function OwnerStatementPage({
   interface StatementLine {
     id: string;
     date: string;
+    kind: string;
     type: string;
     description: string;
     charge: number;
@@ -82,7 +85,7 @@ export default async function OwnerStatementPage({
     const payments = await getLevyPaymentsForNotices(notices.map((n) => n.id));
     const entry = lotEntries.find((e) => e.lotId === effectiveLotId)!;
     const credits = await getCreditMovements(entry.schemeId, effectiveLotId);
-    const statement = buildStatement(notices, payments, { startDate, endDate }, credits);
+    const statement = buildStatement(notices, payments, { startDate, endDate }, credits, rulesForState(entry.schemeState).rules.TERMINOLOGY);
     statementLines = statement.lines;
     openingBalance = statement.openingBalance;
     totalCharges = statement.totalCharges;

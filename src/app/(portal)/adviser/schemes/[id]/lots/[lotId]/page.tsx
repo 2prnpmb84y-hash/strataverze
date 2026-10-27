@@ -69,7 +69,7 @@ export default async function LotDetailPage({
       getDebtCollection(lotId),
       getDocumentsForScheme(id),
       // What the lot's owner sees for this lot in the owner portal (read only here).
-      loadLotLevyView(id, lotId, lotLabel),
+      loadLotLevyView(id, lotId, lotLabel, rulesForState(scheme.state).rules.TERMINOLOGY),
     ]);
 
   // Find the operating bank account for this scheme

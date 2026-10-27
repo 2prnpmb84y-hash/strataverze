@@ -36,6 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const bytes = await renderCertificatePdf({
     schemeName: String(scheme?.name ?? ""),
     planNumber: scheme?.planNumber ? String(scheme.planNumber) : null,
+    planLabel: rules.TERMINOLOGY.planLabel,
     title: c.title,
     section: c.section,
     number: cert.number,

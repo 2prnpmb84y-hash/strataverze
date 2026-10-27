@@ -5,7 +5,7 @@
  */
 import { renderPdf, type PdfBlock } from "./document";
 import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
-import { graceText } from "@/lib/jurisdiction/wording";
+import { capitalise, graceText, planLine, type Terms } from "@/lib/jurisdiction/wording";
 import type { InterestRule } from "@/lib/finance/statutory-interest";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 import type { CommitteeReportingPack } from "@/lib/queries/reports";
@@ -15,7 +15,9 @@ export const aud = (cents: number) =>
 const audDollars = (dollars: number) => aud(Math.round(dollars * 100));
 export const longDate = (iso: string) =>
   new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
-export const planLine = (planNumber: string | null | undefined) => (planNumber ? `Strata Plan ${planNumber}` : null);
+
+/** The building's words a document uses (`rules.TERMINOLOGY`). */
+export type DocumentTerms = Pick<Terms, "ownersCorporation" | "levy" | "levies" | "lateCharge" | "planLabel">;
 
 // ─── Levy notice ────────────────────────────────────────────────────────────
 
@@ -39,13 +41,14 @@ export interface LevyNoticeDocument {
   interest: InterestRule;
   /** The building's hardship statement (`rules.HARDSHIP_INFORMATION`). */
   hardship: HardshipInformation;
-  /** The building's term for the owners corporation (`rules.TERMINOLOGY.ownersCorporation`). */
-  ownersCorporation: string;
+  /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
+  terms: DocumentTerms;
 }
 
 export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
+  const t = d.terms;
   return [
-    { kind: "heading", text: `Levy notice ${d.noticeNumber}` },
+    { kind: "heading", text: `${capitalise(t.levy)} notice ${d.noticeNumber}` },
     { kind: "text", text: `To: ${d.ownerNames.join(", ") || "The owner"}, owner of lot ${d.lotNumber}` },
     {
       kind: "keyValues",
@@ -71,12 +74,12 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
     {
       kind: "text",
       text: d.noInterest
-        ? `The ${d.ownersCorporation} has resolved not to charge interest on overdue levies.`
-        : `Interest: if this levy is not paid within ${graceText(d.interest)} after the due date, simple interest of ${d.interest.annualRatePercent}% a year is charged from the due date until it is paid (${d.interest.source}).`,
+        ? `The ${t.ownersCorporation} has resolved not to charge ${t.lateCharge} on overdue ${t.levies}.`
+        : `${capitalise(t.lateCharge)}: if this ${t.levy} is not paid within ${graceText(d.interest)} after the due date, simple ${t.lateCharge} of ${d.interest.annualRatePercent}% a year is charged from the due date until it is paid (${d.interest.source}).`,
     },
     {
       kind: "text",
-      text: `You can check your levy ledger at any time in the StrataVerze owner portal (${d.ledgerUrl}). For questions contact ${d.contact.name} (${d.contact.emailOrPhone}).`,
+      text: `You can check your ${t.levy} ledger at any time in the StrataVerze owner portal (${d.ledgerUrl}). For questions contact ${d.contact.name} (${d.contact.emailOrPhone}).`,
     },
     {
       kind: "box",
@@ -91,7 +94,7 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
 }
 
 export function renderLevyNoticePdf(d: LevyNoticeDocument) {
-  return renderPdf({ title: `Levy notice ${d.noticeNumber}`, schemeName: d.schemeName, schemeLine: planLine(d.planNumber), blocks: levyNoticeBlocks(d), footerNote: d.noticeNumber });
+  return renderPdf({ title: `${capitalise(d.terms.levy)} notice ${d.noticeNumber}`, schemeName: d.schemeName, schemeLine: planLine(d.terms, d.planNumber), blocks: levyNoticeBlocks(d), footerNote: d.noticeNumber });
 }
 
 // ─── Owner statement ────────────────────────────────────────────────────────
@@ -108,12 +111,14 @@ export interface OwnerStatementDocument {
   totalCharges: number;
   totalPayments: number;
   closingBalance: number;
+  /** The building's words (`rules.TERMINOLOGY`). */
+  terms: Pick<DocumentTerms, "levy" | "planLabel">;
 }
 
 export function ownerStatementBlocks(d: OwnerStatementDocument): PdfBlock[] {
   const balance = (v: number) => (v < 0 ? `${audDollars(-v)} credit` : audDollars(v));
   return [
-    { kind: "heading", text: "Owner levy statement" },
+    { kind: "heading", text: `Owner ${d.terms.levy} statement` },
     {
       kind: "keyValues",
       rows: [
@@ -140,13 +145,13 @@ export function ownerStatementBlocks(d: OwnerStatementDocument): PdfBlock[] {
     {
       kind: "text",
       muted: true,
-      text: d.closingBalance < 0 ? "The lot is in credit. The credit is applied to the next levy notice or can be refunded." : "A positive balance is the amount owing.",
+      text: d.closingBalance < 0 ? `The lot is in credit. The credit is applied to the next ${d.terms.levy} notice or can be refunded.` : "A positive balance is the amount owing.",
     },
   ];
 }
 
 export function renderOwnerStatementPdf(d: OwnerStatementDocument) {
-  return renderPdf({ title: "Owner levy statement", schemeName: d.schemeName, schemeLine: planLine(d.planNumber), blocks: ownerStatementBlocks(d), footerNote: d.lotLabel });
+  return renderPdf({ title: `Owner ${d.terms.levy} statement`, schemeName: d.schemeName, schemeLine: planLine(d.terms, d.planNumber), blocks: ownerStatementBlocks(d), footerNote: d.lotLabel });
 }
 
 // ─── Remittance advice ──────────────────────────────────────────────────────
@@ -162,10 +167,13 @@ export interface RemittanceDocument {
   invoiceTotalCents: number;
   payments: { date: string; amountCents: number; reference: string | null }[];
   bankAccountEnding: string | null;
+  /** The building's words (`rules.TERMINOLOGY`). */
+  terms: Pick<DocumentTerms, "ownersCorporation" | "planLabel">;
 }
 
 export function remittanceBlocks(d: RemittanceDocument): PdfBlock[] {
   const paid = d.payments.reduce((s, p) => s + p.amountCents, 0);
+  const plan = planLine(d.terms, d.planNumber);
   return [
     { kind: "heading", text: "Remittance advice" },
     { kind: "text", text: `To: ${d.supplierName}${d.supplierAbn ? ` (ABN ${d.supplierAbn})` : ""}` },
@@ -192,17 +200,18 @@ export function remittanceBlocks(d: RemittanceDocument): PdfBlock[] {
     ...(paid < d.invoiceTotalCents
       ? ([{ kind: "text", text: `${aud(d.invoiceTotalCents - paid)} of this invoice is still to be paid.` }] as PdfBlock[])
       : []),
-    { kind: "text", muted: true, text: `Paid on behalf of the owners corporation of ${d.schemeName}${d.planNumber ? `, Strata Plan ${d.planNumber}` : ""}.` },
+    { kind: "text", muted: true, text: `Paid on behalf of the ${d.terms.ownersCorporation} of ${d.schemeName}${plan ? `, ${plan}` : ""}.` },
   ];
 }
 
 export function renderRemittancePdf(d: RemittanceDocument) {
-  return renderPdf({ title: "Remittance advice", schemeName: d.schemeName, schemeLine: planLine(d.planNumber), blocks: remittanceBlocks(d), footerNote: d.invoiceNumber });
+  return renderPdf({ title: "Remittance advice", schemeName: d.schemeName, schemeLine: planLine(d.terms, d.planNumber), blocks: remittanceBlocks(d), footerNote: d.invoiceNumber });
 }
 
 // ─── Committee pack ─────────────────────────────────────────────────────────
 
-export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
+export function committeePackBlocks(p: CommitteeReportingPack, terms: Pick<DocumentTerms, "levy" | "levies">): PdfBlock[] {
+  const Levy = capitalise(terms.levy);
   return [
     { kind: "heading", text: "Committee financial report" },
     {
@@ -211,7 +220,7 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
         ["Period", `${longDate(p.startDate)} to ${longDate(p.endDate)}`],
         ["Total fund balances", audDollars(p.totalFundBalance)],
         ["Cash position", audDollars(p.cashPosition)],
-        ["Levy collection rate", `${p.levyCollectionRate.toFixed(1)}%`],
+        [`${Levy} collection rate`, `${p.levyCollectionRate.toFixed(1)}%`],
       ],
     },
     { kind: "heading", text: "Funds", level: 2 },
@@ -223,7 +232,7 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
         { header: "Income", width: 1.3, align: "right" },
         { header: "Expenses", width: 1.3, align: "right" },
         { header: "Closing", width: 1.3, align: "right" },
-        { header: "Levies owing", width: 1.3, align: "right" },
+        { header: `${capitalise(terms.levies)} owing`, width: 1.3, align: "right" },
       ],
       rows: p.fundSummaries.map((f) => [
         f.fundName,
@@ -234,7 +243,7 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
         audDollars(f.outstandingLevies),
       ]),
     },
-    { kind: "heading", text: "Levy arrears", level: 2 },
+    { kind: "heading", text: `${Levy} arrears`, level: 2 },
     {
       kind: "table",
       columns: [
@@ -285,8 +294,8 @@ export function committeePackBlocks(p: CommitteeReportingPack): PdfBlock[] {
   ];
 }
 
-export function renderCommitteePackPdf(p: CommitteeReportingPack, planNumber: string | null) {
-  return renderPdf({ title: "Committee financial report", schemeName: p.schemeName, schemeLine: planLine(planNumber), blocks: committeePackBlocks(p), footerNote: `${p.startDate} to ${p.endDate}` });
+export function renderCommitteePackPdf(p: CommitteeReportingPack, planNumber: string | null, terms: Pick<DocumentTerms, "levy" | "levies" | "planLabel">) {
+  return renderPdf({ title: "Committee financial report", schemeName: p.schemeName, schemeLine: planLine(terms, planNumber), blocks: committeePackBlocks(p, terms), footerNote: `${p.startDate} to ${p.endDate}` });
 }
 
 // ─── Statutory statements pack ──────────────────────────────────────────────
@@ -378,11 +387,12 @@ export function statutoryPackBlocks(pack: StatutoryPack): PdfBlock[] {
   return blocks;
 }
 
-export function renderStatutoryPackPdf(pack: StatutoryPack) {
+/** `terms` is the building's TERMINOLOGY, for the plan line in the header. */
+export function renderStatutoryPackPdf(pack: StatutoryPack, terms: Pick<DocumentTerms, "planLabel">) {
   return renderPdf({
     title: `Financial statements FY ${pack.financialYear}`,
     schemeName: pack.scheme.name,
-    schemeLine: planLine(pack.scheme.planNumber),
+    schemeLine: planLine(terms, pack.scheme.planNumber),
     blocks: statutoryPackBlocks(pack),
     footerNote: `${pack.start} to ${pack.end}`,
   });

@@ -4,6 +4,7 @@
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
+import { bodyCorporateName, type Terms } from "@/lib/jurisdiction/wording";
 import { formatAud } from "./money";
 import { STRATAVERZE_SUPPLIER, formatAbn } from "./strataverze-supplier";
 
@@ -60,7 +61,8 @@ function wrap(text: string, font: PDFFont, size: number, width: number): string[
   return lines;
 }
 
-export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Array> {
+/** `terms` is the building's TERMINOLOGY, for the name of the owners corporation billed. */
+export async function renderInvoicePdf(input: InvoicePdfInput, terms: Pick<Terms, "bodyCorporateName" | "ownersCorporation">): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`StrataVerze invoice ${input.invoiceNumber}`);
   doc.setAuthor("StrataVerze");
@@ -98,8 +100,7 @@ export async function renderInvoicePdf(input: InvoicePdfInput): Promise<Uint8Arr
   // Bill to
   text("Bill to", MARGIN, 9, bold, MUTED);
   y -= 14;
-  const planLine = input.scheme.planNumber ? `The Owners - Strata Plan No. ${input.scheme.planNumber}` : "The Owners Corporation";
-  text(planLine, MARGIN, 11, bold);
+  text(bodyCorporateName(terms, input.scheme), MARGIN, 11, bold);
   y -= 14;
   text(input.scheme.name, MARGIN, 10);
   const address = [input.scheme.address, [input.scheme.suburb, input.scheme.state, input.scheme.postcode].filter(Boolean).join(" ")]

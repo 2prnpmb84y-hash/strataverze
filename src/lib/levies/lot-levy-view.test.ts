@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { levyItemTotals, levyItems } from "./levy-ledger";
+import { statutoryRulesFor } from "@/config/statutory";
 
 /**
  * A lot's levies as its owner sees them (24 Oct 2026): the list the owner's
@@ -61,7 +62,7 @@ describe("loadLotLevyView", () => {
       notice({ id: "n9", status: "DRAFT", dueDate: "2026-10-01" }),
       notice({ id: "n8", schemeId: "other" }),
     ];
-    const v = await loadLotLevyView("s1", "l14", "Lot 14 (Unit 14)", "2026-08-01");
+    const v = await loadLotLevyView("s1", "l14", "Lot 14 (Unit 14)", statutoryRulesFor("NSW").TERMINOLOGY, "2026-08-01");
     expect(v.items.map((i) => i.id)).toEqual(["n1"]);
     expect(v.totals).toEqual({ totalDue: 263.56, totalPaid: 100, totalOutstanding: 163.56 });
     expect(v.statement.lines.map((l) => [l.date, l.type, l.charge, l.payment, l.balance])).toEqual([

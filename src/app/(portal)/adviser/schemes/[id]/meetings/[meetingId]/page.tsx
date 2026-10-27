@@ -253,6 +253,7 @@ export default async function MeetingDetailPage({
         allowedCategories={allowedCategories}
         canLoadTemplate={canLoadTemplate}
         editable={agendaEditable}
+        terms={rulesForState(scheme.state).rules.TERMINOLOGY}
       />
 
       {/* Notice */}

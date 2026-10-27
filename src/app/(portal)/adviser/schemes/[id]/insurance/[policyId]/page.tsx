@@ -7,6 +7,7 @@ import { getAuditTrail, formatActionLabel } from "@/lib/queries/activity-log";
 import { InsuranceDocumentsSection } from "./documents-section";
 import { StartRenewalButton } from "./start-renewal-button";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
@@ -364,6 +365,7 @@ export default async function InsurancePolicyDetailPage({
           schemeId={id}
           policyId={policyId}
           defaults={defaults}
+          terms={rulesForState(scheme.state).rules.TERMINOLOGY}
         />
       </Card>
 

@@ -32,13 +32,14 @@ export default async function InspectionsPage({ params }: { params: Promise<{ id
   ]);
   if (!rules.FEATURES.recordsInspections) notFound();
   const r = needRule(rules, "RECORDS_INSPECTION");
+  const oc = rules.TERMINOLOGY.ownersCorporation;
   const lotLabel = new Map(lots.map((l) => [l.id, formatLotLabel(String(l.lotNumber))]));
   const lotOptions = [...lots].sort((a, b) => String(a.lotNumber).localeCompare(String(b.lotNumber), "en-AU", { numeric: true })).map((l) => ({ value: l.id, label: formatLotLabel(String(l.lotNumber)) }));
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
         title="Records inspections"
-        description={`${r.section}. If a time and place cannot be agreed within ${r.agreeWithinDays} days, the owners corporation may set a date within ${r.setWithinDays} days of the request by written notice. Fees include GST and are paid into ${r.paidInto}: an owner ${aud(r.fees.OWNER.firstHourCents)} for the first hour and ${aud(r.fees.OWNER.extraHalfHourCents)} for each further half hour; another authorised person ${aud(r.fees.AUTHORISED_PERSON.firstHourCents)} and ${aud(r.fees.AUTHORISED_PERSON.extraHalfHourCents)}. ${r.partHalfHour}`}
+        description={`${r.section}. If a time and place cannot be agreed within ${r.agreeWithinDays} days, the ${oc} may set a date within ${r.setWithinDays} days of the request by written notice. Fees include GST and are paid into ${r.paidInto}: an owner ${aud(r.fees.OWNER.firstHourCents)} for the first hour and ${aud(r.fees.OWNER.extraHalfHourCents)} for each further half hour; another authorised person ${aud(r.fees.AUTHORISED_PERSON.firstHourCents)} and ${aud(r.fees.AUTHORISED_PERSON.extraHalfHourCents)}. ${r.partHalfHour}`}
         backHref={`/adviser/schemes/${id}/governance`}
         backLabel="Governance"
       />
@@ -60,7 +61,7 @@ export default async function InspectionsPage({ params }: { params: Promise<{ id
                   fields={[
                     { name: "when", label: "Date and time", type: "datetime-local" },
                     { name: "place", label: "Place (or how the records are given electronically)", type: "text" },
-                    { name: "setByNotice", label: "Set by the owners corporation's written notice (not agreed)", type: "checkbox", wide: true },
+                    { name: "setByNotice", label: `Set by the ${oc}'s written notice (not agreed)`, type: "checkbox", wide: true },
                   ]}
                 />
                 <RecordsForm action={completeInspectionAction.bind(null, id, x.id)} submitLabel="Record inspection made" fields={[{ name: "minutes", label: "How long it took (minutes)", type: "number" }]} />

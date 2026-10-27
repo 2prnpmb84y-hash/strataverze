@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField, TextareaField } from "@/components/ui/form-field";
 import { UnsavedGuard } from "@/components/ui/unsaved-guard";
+import { bodyCorporateShortName, type Terms } from "@/lib/jurisdiction/wording";
 import {
   createInsuranceAction,
   updateInsuranceAction,
@@ -159,10 +160,14 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The building's words for its owners corporation (`rules.TERMINOLOGY`), for the example entity name. */
+type EntityTerms = Pick<Terms, "bodyCorporateShortName">;
+
 function PolicyFormInner({
   mode,
   action,
   defaults,
+  terms,
 }: {
   mode: "create" | "edit";
   action: (
@@ -170,6 +175,7 @@ function PolicyFormInner({
     data: FormData,
   ) => Promise<InsuranceFormState>;
   defaults: PolicyFormDefaults;
+  terms: EntityTerms;
 }) {
   const [state, formAction, isPending] = useActionState<
     InsuranceFormState,
@@ -301,7 +307,7 @@ function PolicyFormInner({
             label="Insured entity name"
             name="insuredEntityName"
             defaultValue={defaults.insuredEntityName}
-            placeholder="e.g. The Owners - Strata Plan 3782"
+            placeholder={`e.g. ${bodyCorporateShortName(terms, { name: "Harbour View", planNumber: "3782" })}`}
           />
           <FormField
             label="Insured property address"
@@ -588,12 +594,13 @@ function PolicyFormInner({
   );
 }
 
-export function InsurancePolicyForm({ schemeId }: { schemeId: string }) {
+export function InsurancePolicyForm({ schemeId, terms }: { schemeId: string; terms: EntityTerms }) {
   return (
     <PolicyFormInner
       mode="create"
       action={createInsuranceAction.bind(null, schemeId)}
       defaults={emptyDefaults()}
+      terms={terms}
     />
   );
 }
@@ -602,16 +609,19 @@ export function InsurancePolicyEditForm({
   schemeId,
   policyId,
   defaults,
+  terms,
 }: {
   schemeId: string;
   policyId: string;
   defaults: PolicyFormDefaults;
+  terms: EntityTerms;
 }) {
   return (
     <PolicyFormInner
       mode="edit"
       action={updateInsuranceAction.bind(null, schemeId, policyId)}
       defaults={defaults}
+      terms={terms}
     />
   );
 }

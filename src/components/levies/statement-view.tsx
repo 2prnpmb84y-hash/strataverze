@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 export interface StatementViewLine {
   id: string;
   date: string;
+  /** What the entry is (`StatementEntryKind`); `type` is how the building names it. */
+  kind: string;
   type: string;
   description: string;
   charge: number;
@@ -138,9 +140,9 @@ export function StatementView({
                       <td className="px-4 py-2">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            line.type === "Payment"
+                            line.kind === "PAYMENT"
                               ? "bg-green-100 text-green-700"
-                              : line.type === "Interest"
+                              : line.kind === "LATE_CHARGE"
                                 ? "bg-amber-100 text-amber-700"
                                 : "bg-blue-100 text-blue-700"
                           }`}

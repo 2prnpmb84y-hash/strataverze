@@ -23,6 +23,7 @@ import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { assembleNoticeContent } from "@/lib/meetings/notice";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { recordMeetingEvent } from "@/lib/meetings/events";
 import { canTransition } from "@/lib/meetings/lifecycle";
 import { notifyMeetingScheduled } from "@/lib/notifications";
@@ -113,7 +114,7 @@ export async function issueNoticeAction(
         explanatoryNote: a.explanatoryNote,
         resolutionCategory: a.resolutionCategory,
       })),
-    });
+    }, rulesForState(scheme.state).rules.TERMINOLOGY);
 
     const prior = await getLatestNoticeVersion(meetingId);
     if (prior > 0) await supersedeNotices(meetingId);

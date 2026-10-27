@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FormField, TextareaField, SelectField } from "@/components/ui/form-field";
+import { bodyCorporateName, type Terms } from "@/lib/jurisdiction/wording";
 import {
   addAgendaItemAction,
   loadAgendaTemplateAction,
@@ -49,6 +50,7 @@ export function AgendaSection({
   allowedCategories,
   canLoadTemplate,
   editable,
+  terms,
 }: {
   schemeId: string;
   meetingId: string;
@@ -57,6 +59,8 @@ export function AgendaSection({
   allowedCategories: string[];
   canLoadTemplate: boolean;
   editable: boolean;
+  /** The building's words for its owners corporation (`rules.TERMINOLOGY`), for the example resolution. */
+  terms: Pick<Terms, "bodyCorporateName" | "ownersCorporation">;
 }) {
   const [state, formAction, isPending] = useActionState<
     AgendaFormState,
@@ -225,7 +229,7 @@ export function AgendaSection({
               label="Proposed resolution"
               name="resolutionText"
               rows={2}
-              placeholder="The Owners - Strata Plan No. ... RESOLVES ..."
+              placeholder={`${bodyCorporateName(terms, { name: "...", planNumber: "..." })} RESOLVES ...`}
             />
             <TextareaField
               label="Explanatory note (optional)"

@@ -81,6 +81,25 @@ export interface SharedTerminology {
   jurisdictionShort: string;
   /** The tribunal that hears levy claims. */
   tribunal: string;
+  /** One amount owners pay towards the funds, lower case: "levy", "contribution". */
+  levy: string;
+  /** The same, plural: "levies", "contributions". */
+  levies: string;
+  /** What is charged on an overdue amount, lower case: "interest", "penalty". */
+  lateCharge: string;
+  /** How the plan is named before its number on notices and PDFs: "Strata Plan", "Community titles scheme". */
+  planLabel: string;
+  /**
+   * The legal entity's name, with `{plan}` for the plan or scheme number and
+   * `{name}` for the building's name: "The Owners - Strata Plan No. {plan}".
+   */
+  bodyCorporateName: string;
+  /**
+   * The legal entity's name as meeting notices, minutes and examples head it,
+   * with the same tokens. NSW leaves out "No." here ("The Owners - Strata Plan
+   * {plan}"); a pack with no short form gives its full name.
+   */
+  bodyCorporateShortName: string;
 }
 
 /**

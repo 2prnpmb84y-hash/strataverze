@@ -1,7 +1,8 @@
 import { emailLayout, emailButton } from "./layout";
 import { html, plainSubject, type SafeHtml } from "./html";
 import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
-import { graceText } from "@/lib/jurisdiction/wording";
+import { capitalise, graceText } from "@/lib/jurisdiction/wording";
+import type { DocumentTerms } from "@/lib/pdf/documents";
 import type { InterestRule } from "@/lib/finance/statutory-interest";
 
 
@@ -24,8 +25,8 @@ export interface LevyNoticeEmail {
   interest: InterestRule;
   /** The building's hardship statement (`rules.HARDSHIP_INFORMATION`). */
   hardship: HardshipInformation;
-  /** The building's term for the owners corporation (`rules.TERMINOLOGY.ownersCorporation`). */
-  ownersCorporation: string;
+  /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
+  terms: DocumentTerms;
 }
 
 const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
@@ -34,9 +35,11 @@ const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-
 export function levyNoticeEmail(p: LevyNoticeEmail) {
   const row = (label: string, value: string | SafeHtml) =>
     html`<tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">${label}</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">${value}</td></tr>`;
+  const t = p.terms;
+  const Levy = capitalise(t.levy);
   const content = html`
-    <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;">Levy notice ${p.noticeNumber}</h1>
-    <p style="margin:0 0 16px;font-size:14px;color:#64748B;">${p.schemeName}, Strata Plan ${p.planNumber}</p>
+    <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;">${Levy} notice ${p.noticeNumber}</h1>
+    <p style="margin:0 0 16px;font-size:14px;color:#64748B;">${p.schemeName}, ${t.planLabel} ${p.planNumber}</p>
     <p style="margin:0 0 16px;font-size:15px;color:#1A202C;line-height:1.6;">Dear ${p.ownerName},</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;">
       ${row("Lot", p.lotNumber)}
@@ -55,14 +58,14 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
     <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
       ${
         p.noInterest
-          ? `The ${p.ownersCorporation} has resolved not to charge interest on overdue levies.`
-          : `Interest: if this levy is not paid within ${graceText(p.interest)} after the due date, simple interest of ${p.interest.annualRatePercent}% a year is charged from the due date until it is paid (${p.interest.source}).`
+          ? `The ${t.ownersCorporation} has resolved not to charge ${t.lateCharge} on overdue ${t.levies}.`
+          : `${capitalise(t.lateCharge)}: if this ${t.levy} is not paid within ${graceText(p.interest)} after the due date, simple ${t.lateCharge} of ${p.interest.annualRatePercent}% a year is charged from the due date until it is paid (${p.interest.source}).`
       }
     </p>
     <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
-      You can check your levy ledger at any time in the StrataVerze owner portal. For questions contact ${p.contact.name} (${p.contact.emailOrPhone}).
+      You can check your ${t.levy} ledger at any time in the StrataVerze owner portal. For questions contact ${p.contact.name} (${p.contact.emailOrPhone}).
     </p>
-    ${emailButton("View your levy ledger", p.ledgerUrl)}
+    ${emailButton(`View your ${t.levy} ledger`, p.ledgerUrl)}
     <div style="margin:20px 0 0;padding:12px 16px;background-color:#F8FAFB;border-radius:8px;">
       <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#1a1a2e;">${p.hardship.title}</p>
       <p style="margin:0 0 6px;font-size:13px;color:#1A202C;line-height:1.6;">${p.hardship.summary}</p>
@@ -74,7 +77,7 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
   `;
   return {
     to: p.to,
-    subject: plainSubject(`Levy notice ${p.noticeNumber}: $${p.amount} due ${day(p.dueDate)} (${p.schemeName})`),
+    subject: plainSubject(`${Levy} notice ${p.noticeNumber}: $${p.amount} due ${day(p.dueDate)} (${p.schemeName})`),
     html: emailLayout(content),
   };
 }

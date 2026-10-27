@@ -175,7 +175,7 @@ export async function sendIssuedNotices(input: {
           noInterest: setting.mode === "NO_INTEREST",
           interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
           hardship: needRule(setting.rules.rules, "HARDSHIP_INFORMATION"),
-          ownersCorporation: setting.rules.rules.TERMINOLOGY.ownersCorporation,
+          terms: setting.rules.rules.TERMINOLOGY,
         }),
         attachments,
       });

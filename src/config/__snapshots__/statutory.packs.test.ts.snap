@@ -451,6 +451,8 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
   "TERMINOLOGY": {
     "act": "Body Corporate and Community Management Act 1997",
     "actShort": "BCCMA",
+    "bodyCorporateName": "Body corporate for {name} community titles scheme {plan}",
+    "bodyCorporateShortName": "Body corporate for {name} community titles scheme {plan}",
     "committee": "committee",
     "developer": "original owner",
     "generalMeetings": [
@@ -459,9 +461,12 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     ],
     "governingDocument": "community management statement",
     "jurisdictionShort": "Qld",
+    "lateCharge": "penalty",
+    "levies": "contributions",
     "levy": "contribution",
     "manager": "body corporate manager",
     "ownersCorporation": "body corporate",
+    "planLabel": "Community titles scheme",
     "scheme": "community titles scheme",
     "source": "Body Corporate and Community Management Act 1997 (Qld) ss 22, 31, 33, 46; Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 81, 162, 167",
     "tribunal": "QCAT",

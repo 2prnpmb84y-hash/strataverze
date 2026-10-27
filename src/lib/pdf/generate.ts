@@ -4,7 +4,7 @@
  * FinancialDocument (once per identical file).
  */
 import { db } from "@/prisma/db";
-import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { siteUrl } from "@/lib/site-url";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
@@ -84,7 +84,7 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       noInterest: setting.mode === "NO_INTEREST",
       interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
       hardship: needRule(setting.rules.rules, "HARDSHIP_INFORMATION"),
-      ownersCorporation: setting.rules.rules.TERMINOLOGY.ownersCorporation,
+      terms: setting.rules.rules.TERMINOLOGY,
     },
   };
 }
@@ -121,7 +121,8 @@ export async function generateOwnerStatementPdf(input: { schemeId: string; lotId
     .all();
   const notices = await getIssuedLevyNoticesForLot(input.schemeId, input.lotId);
   const [payments, credits] = await Promise.all([getLevyPaymentsForNotices(notices.map((n) => n.id)), getCreditMovements(input.schemeId, input.lotId)]);
-  const s = buildStatement(notices, payments, { startDate: input.startDate, endDate: input.endDate }, credits);
+  const terms = rulesForState(scheme.state).rules.TERMINOLOGY;
+  const s = buildStatement(notices, payments, { startDate: input.startDate, endDate: input.endDate }, credits, terms);
   const lotLabel = `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${String(lot.unitNumber)})` : ""}`;
   const bytes = await renderOwnerStatementPdf({
     schemeName: String(scheme.name),
@@ -135,6 +136,7 @@ export async function generateOwnerStatementPdf(input: { schemeId: string; lotId
     totalCharges: s.totalCharges,
     totalPayments: s.totalPayments,
     closingBalance: s.closingBalance,
+    terms,
   });
   const endDay = input.endDate ?? todayIn(timeZoneOf(scheme));
   const fileName = safeName(`Owner-statement-${lotLabel}-${input.startDate ?? "start"}-to-${endDay}.pdf`);
@@ -183,6 +185,7 @@ export async function generateRemittancePdf(invoiceId: string, actorId: string):
     invoiceTotalCents: toCents(String(invoice.totalAmount)),
     payments,
     bankAccountEnding: account ? account.slice(-4) : null,
+    terms: rulesForState(scheme.state).rules.TERMINOLOGY,
   });
   const fileName = safeName(`Remittance-${invoice.supplier?.companyName ?? "supplier"}-${invoice.invoiceNumber}.pdf`);
   const stored = await storeGeneratedPdf({
@@ -203,7 +206,7 @@ export async function generateCommitteePackPdf(input: { schemeId: string; startD
   const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(input.schemeId)).first();
   if (!scheme) return null;
   const pack = await getCommitteeReportingPack(input.schemeId, input.startDate, input.endDate, input.financialYear);
-  const bytes = await renderCommitteePackPdf(pack, scheme.planNumber ? String(scheme.planNumber) : null);
+  const bytes = await renderCommitteePackPdf(pack, scheme.planNumber ? String(scheme.planNumber) : null, rulesForState(scheme.state).rules.TERMINOLOGY);
   const fileName = safeName(`Committee-report-${input.startDate}-to-${input.endDate}.pdf`);
   const stored = await storeGeneratedPdf({ schemeId: input.schemeId, documentType: "COMMITTEE_PACK", fileName, bytes, actorId: input.actorId, documentDate: input.endDate });
   return { bytes, fileName, documentId: stored.id };
@@ -218,7 +221,8 @@ async function adoptedPackRulesFallback(schemeId: string): Promise<StatutoryPack
 /** The statutory statements: the locked copy once adopted at the AGM, else recalculated from the ledger. */
 export async function generateStatutoryPackPdf(input: { schemeId: string; financialYear: number; actorId: string }): Promise<GeneratedPdf | null> {
   // Only buildings whose rule pack has the statement of key financial information.
-  if (!(await rulesForScheme(input.schemeId)).rules.FEATURES.keyFinancialInformation) return null;
+  const { rules } = await rulesForScheme(input.schemeId);
+  if (!rules.FEATURES.keyFinancialInformation) return null;
   const snapshot = await db.orm.public.StatutoryPackSnapshot
     .where((s) => and(s.schemeId.eq(input.schemeId), s.financialYear.eq(input.financialYear)))
     .first();
@@ -235,7 +239,7 @@ export async function generateStatutoryPackPdf(input: { schemeId: string; financ
   } else {
     pack = await getStatutoryStatementsPack(input.schemeId, input.financialYear);
   }
-  const bytes = await renderStatutoryPackPdf(pack);
+  const bytes = await renderStatutoryPackPdf(pack, rules.TERMINOLOGY);
   const fileName = safeName(`Financial-statements-FY${input.financialYear}${snapshot ? "-adopted" : "-draft"}.pdf`);
   const stored = await storeGeneratedPdf({
     schemeId: input.schemeId,
