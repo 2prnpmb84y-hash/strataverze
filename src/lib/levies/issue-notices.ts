@@ -27,6 +27,7 @@
  */
 import { db } from "@/prisma/db";
 import { noticeLeadMark } from "@/lib/jurisdiction/wording";
+import { fundTypeWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
@@ -68,12 +69,14 @@ export async function postLevyRaisedJournal(args: {
   // A scheme whose chart of accounts is not seeded: nothing to post to, as before.
   if (!receivableAccount || !incomeAccount) return true;
 
+  // The fund as the building's pack names it: "Capital Works fund" (NSW), "Sinking fund" (Queensland).
+  const fundWords = fundTypeWords(ledgerFundDefinition((await rulesForScheme(args.schemeId)).rules, fundType === "CAPITAL_WORKS" ? "CAPITAL_WORKS" : "ADMINISTRATIVE"));
   const entryNumber = await getNextEntryNumber(args.schemeId);
   const entry = await createJournalEntry({
     schemeId: args.schemeId,
     entryNumber,
     transactionDate: args.date,
-    description: `Levies raised — ${args.noticeCount} notice(s) due ${args.date.split("-").reverse().join("/")}, ${fundType === "CAPITAL_WORKS" ? "Capital Works" : "Administrative"} fund`,
+    description: `Levies raised — ${args.noticeCount} notice(s) due ${args.date.split("-").reverse().join("/")}, ${fundWords} fund`,
     entryType: "AUTO",
     sourceType: "LEVY_RAISED",
     sourceId: args.scheduleId,

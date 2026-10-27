@@ -86,7 +86,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.9 (27 Oct 2026): FEATURES added (which NSW workflows the pack switches on); no rule value changed.
     // 2026.10.10 (27 Oct 2026): TERMINOLOGY gains levy, levies, lateCharge, planLabel, bodyCorporateName and
     // bodyCorporateShortName (wording only); no rule value changed.
-    version: "2026.10.10",
+    // 2026.10.11 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only); no rule value changed.
+    version: "2026.10.11",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not
@@ -128,7 +129,9 @@ export const PENDING_RULE_PACKS = {
     // not a rule of law, so the sign-off stands.
     // 2026.10.4 (27 Oct 2026): TERMINOLOGY gains levies, lateCharge, planLabel, bodyCorporateName and
     // bodyCorporateShortName (wording only, as decided in the sign-off), so the sign-off stands.
-    version: "2026.10.4",
+    // 2026.10.5 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only, the names already
+    // in the pack), so the sign-off stands.
+    version: "2026.10.5",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

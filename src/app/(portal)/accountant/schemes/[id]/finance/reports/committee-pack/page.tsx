@@ -6,6 +6,7 @@ import { getCommitteeReportingPack } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { CommitteePackClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/committee-pack/committee-pack-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { addDays, financialYearStart } from "@/lib/levies/notice-plan";
 
 export default async function CommitteePackPage({
@@ -61,6 +62,7 @@ export default async function CommitteePackPage({
         startDate={startDate}
         endDate={endDate}
         pack={pack}
+        catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE}
         basePath={`/accountant/schemes/${id}/finance/reports/committee-pack`}
       />
     </div>

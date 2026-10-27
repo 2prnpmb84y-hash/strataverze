@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { FundBalanceProjections } from "@/lib/queries/reports";
+import { fundLabel, fundNameWords, ledgerFundDefinition, type FundCatalogue } from "@/lib/jurisdiction/funds";
+import { capitalise } from "@/lib/jurisdiction/wording";
 
 const yearOptions = [
   { value: "3", label: "3 years" },
@@ -20,12 +22,12 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function fundTypeLabel(type: string): string {
+/** The fund's type as the building's pack names it ("Capital Works Fund", "Sinking Fund"). */
+function fundTypeLabel(catalogue: FundCatalogue, type: string): string {
   switch (type) {
     case "ADMINISTRATIVE":
-      return "Administrative Fund";
     case "CAPITAL_WORKS":
-      return "Capital Works Fund";
+      return fundLabel(catalogue, type) ?? type;
     case "SPECIAL":
       return "Special Fund";
     default:
@@ -50,10 +52,14 @@ interface Props {
   schemeId: string;
   yearsAhead: number;
   data: FundBalanceProjections;
+  /** The building's FUND_CATALOGUE, which names its funds. */
+  catalogue: FundCatalogue;
+  /** Whether the building's pack has the capital works fund plan (FEATURES.capitalWorksFundPlan). */
+  capitalWorksPlan: boolean;
   basePath?: string;
 }
 
-export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: Props) {
+export function FundProjectionsClient({ schemeId, yearsAhead, data, catalogue, capitalWorksPlan, basePath }: Props) {
   const router = useRouter();
   const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
@@ -118,7 +124,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
           <Card key={fund.fundId}>
             <CardHeader
               title={fund.fundName}
-              description={fund.basisNote ? `${fundTypeLabel(fund.fundType)}. ${fund.basisNote}` : fundTypeLabel(fund.fundType)}
+              description={fund.basisNote ? `${fundTypeLabel(catalogue, fund.fundType)}. ${fund.basisNote}` : fundTypeLabel(catalogue, fund.fundType)}
             />
 
             {/* Summary strip */}
@@ -314,9 +320,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, basePath }: 
             Inflation and fee increases are not factored in.
           </li>
           <li>
-            Capital works funds may accumulate over multiple years to fund
-            planned major works. Review the capital works plan alongside these
-            projections.
+            {`${capitalise(fundNameWords(ledgerFundDefinition(catalogue, "CAPITAL_WORKS")))} funds may accumulate over multiple years to fund planned major works.${capitalWorksPlan ? " Review the capital works plan alongside these projections." : ""}`}
           </li>
           <li>
             These projections are indicative only and should be reviewed with the

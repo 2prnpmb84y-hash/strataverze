@@ -39,7 +39,7 @@ describe("issue timing", () => {
 const today = vi.hoisted(() => ({ value: "2026-05-01" }));
 const content = vi.hoisted(() => ({ missing: [] as { code: string; message: string }[] }));
 const sent = vi.hoisted(() => ({ notices: [] as Array<{ noticeNumber: string; dueDate: string }> }));
-const journals = vi.hoisted(() => ({ posted: [] as Array<{ date: string; total: number }>, fail: false }));
+const journals = vi.hoisted(() => ({ posted: [] as Array<{ date: string; total: number }>, descriptions: [] as string[], fail: false }));
 
 vi.mock("@/lib/auth/mfa-enforcement", () => ({
   requireRecentMfa: vi.fn(async () => {}),
@@ -87,9 +87,10 @@ vi.mock("@/lib/queries/journal-entries", async () => {
   return {
     ...actual,
     getNextEntryNumber: async () => "JE-1",
-    createJournalEntry: async (e: { transactionDate: string; lines: Array<{ debit?: number }> }) => {
+    createJournalEntry: async (e: { transactionDate: string; description: string; lines: Array<{ debit?: number }> }) => {
       if (journals.fail) throw new Error("duplicate entry number");
       journals.posted.push({ date: e.transactionDate, total: e.lines.reduce((s, l) => s + (l.debit ?? 0), 0) });
+      journals.descriptions.push(e.description);
       return { id: "je" };
     },
     postJournalEntry: async () => {},
@@ -125,6 +126,7 @@ function seed() {
   content.missing = [];
   sent.notices = [];
   journals.posted = [];
+  journals.descriptions = [];
   journals.fail = false;
 }
 
@@ -167,6 +169,8 @@ describe("generating a budget levy schedule", () => {
     expect(sent.notices.map((n) => n.dueDate)).toEqual(["2026-07-10", "2026-07-10"]);
     // Only what went out is posted, dated its due date (not the notice date).
     expect(journals.posted).toEqual([{ date: "2026-07-10", total: 10000 }]);
+    // The fund named from the building's pack, as NSW journals have always read.
+    expect(journals.descriptions).toEqual(["Levies raised — 2 notice(s) due 10/07/2026, Administrative fund"]);
   });
 
   it("does not plan instalments the previous manager raised before the takeover", async () => {

@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { approvedContractors, getPreferredContractors, getWorksSettings } from "@/lib/works/settings";
 import { committeeMembers } from "@/lib/works/review";
@@ -16,11 +17,12 @@ export default async function AdviserWorksSettingsPage({ params }: { params: Pro
   const { id } = await params;
   const access = await requirePageAccess(id, "works.preferred");
   if (!access) return null;
-  const [settings, members, preferred, contractors] = await Promise.all([
+  const [settings, members, preferred, contractors, { rules }] = await Promise.all([
     getWorksSettings(id),
     committeeMembers(id),
     getPreferredContractors(id),
     approvedContractors(),
+    rulesForScheme(id),
   ]);
 
   return (
@@ -28,7 +30,7 @@ export default async function AdviserWorksSettingsPage({ params }: { params: Pro
       <PageHeader title="Works settings" description="Set by the committee in the owner portal." backHref={`/adviser/schemes/${id}/works`} backLabel="Works" />
       <Card>
         <CardHeader title="Decisions" description="Only the committee can change these." />
-        <WorksSettingsForm schemeId={id} current={settings} committeeSize={members.length} readOnly />
+        <WorksSettingsForm schemeId={id} current={settings} committeeSize={members.length} readOnly catalogue={rules.FUND_CATALOGUE} />
       </Card>
       <Card>
         <CardHeader title="Preferred contractors" description="For urgent works, the building's chosen contractor for each trade." />

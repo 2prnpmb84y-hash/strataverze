@@ -15,6 +15,8 @@ import { connection } from "next/server";
 import { FundsCard } from "../_sections/funds-card";
 import { LeviesCard } from "../_sections/levies-card";
 import { requirePageAccess } from "@/lib/auth/require-access";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -43,6 +45,7 @@ export default async function FinanceDashboardPage({
     journalEntries,
     overdueLevies,
     overdueInvoices,
+    { rules },
   ] = await Promise.all([
     getFundsWithBalances(id),
     getBankAccountsForScheme(id),
@@ -52,7 +55,12 @@ export default async function FinanceDashboardPage({
     getJournalEntriesForScheme(id, undefined, 10),
     getOverdueLevyNotices(id, 5000),
     getOverdueInvoices(id),
+    rulesForScheme(id),
   ]);
+  // The building's funds as its pack names them.
+  const catalogue = rules.FUND_CATALOGUE;
+  const adminWords = ledgerFundDefinition(catalogue, "ADMINISTRATIVE");
+  const capitalWords = ledgerFundDefinition(catalogue, "CAPITAL_WORKS");
 
   const adminFund = funds.find((f) => f.fundType === "ADMINISTRATIVE");
   const capitalFund = funds.find((f) => f.fundType === "CAPITAL_WORKS");
@@ -77,12 +85,12 @@ export default async function FinanceDashboardPage({
       {/* Fund balances */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Admin Fund"
+          label={`${adminWords.shortLabel} Fund`}
           value={formatCurrency(adminFund?.balance ?? 0)}
           accent="bg-blue-500"
         />
         <StatCard
-          label="Capital Works Fund"
+          label={capitalWords.label}
           value={formatCurrency(capitalFund?.balance ?? 0)}
           accent="bg-emerald-500"
         />
@@ -99,7 +107,7 @@ export default async function FinanceDashboardPage({
       </div>
 
       {/* Funds (moved here from the scheme main page so Financials covers them) */}
-      <FundsCard id={id} funds={funds} className="" />
+      <FundsCard id={id} funds={funds} catalogue={catalogue} className="" />
 
       {/* Levies (nested under Financials) */}
       <LeviesCard id={id} schedules={levySchedules} className="" today={await schemeToday(id)} />

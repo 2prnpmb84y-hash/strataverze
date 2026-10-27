@@ -705,19 +705,23 @@ exports[`NSW funds and entitlement schedules (phase 2 foundation) > are the fund
   "FUND_CATALOGUE": [
     {
       "key": "ADMINISTRATIVE",
+      "label": "Administrative Fund",
       "ledgerFund": "ADMINISTRATIVE",
       "name": "administrative fund",
       "purpose": "Day-to-day running costs of the owners corporation.",
       "required": true,
+      "shortLabel": "Admin",
       "source": "Strata Schemes Management Act 2015 (NSW) s 73, as given in the approved s 184 certificate form",
       "status": "GUIDANCE",
     },
     {
       "key": "CAPITAL_WORKS",
+      "label": "Capital Works Fund",
       "ledgerFund": "CAPITAL_WORKS",
       "name": "capital works fund",
       "purpose": "Major and long-term works on common property, following the 10-year capital works fund plan.",
       "required": true,
+      "shortLabel": "Capital Works",
       "source": "Strata Schemes Management Act 2015 (NSW) ss 74 (as given in the approved s 184 certificate form), 80",
       "status": "GUIDANCE",
     },

@@ -727,6 +727,8 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
   {
     key: "ADMINISTRATIVE",
     name: "administrative fund",
+    label: "Administrative Fund",
+    shortLabel: "Admin",
     ledgerFund: "ADMINISTRATIVE",
     purpose: "Day-to-day running costs of the owners corporation.",
     required: true,
@@ -736,6 +738,8 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
   {
     key: "CAPITAL_WORKS",
     name: "capital works fund",
+    label: "Capital Works Fund",
+    shortLabel: "Capital Works",
     ledgerFund: "CAPITAL_WORKS",
     purpose: "Major and long-term works on common property, following the 10-year capital works fund plan.",
     required: true,

@@ -23,6 +23,17 @@ export interface FundDefinition {
   key: string;
   /** As named in the jurisdiction's law, lower case: "capital works fund". */
   name: string;
+  /**
+   * The name in title case, as fund lists, forms and reports head it, and as
+   * a new building's fund is named: "Capital Works Fund". Ends in " Fund".
+   */
+  label: string;
+  /**
+   * The short form account names, report columns and summary cards use:
+   * "Admin" ("Levies Receivable - Admin"), "Capital Works" ("Capital Works
+   * Expenditure").
+   */
+  shortLabel: string;
   ledgerFund: "ADMINISTRATIVE" | "CAPITAL_WORKS";
   purpose: string;
   required: boolean;

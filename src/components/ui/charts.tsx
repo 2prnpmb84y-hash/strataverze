@@ -42,9 +42,12 @@ export type FundLinePoint = {
 
 export function FundLineChart({
   data,
+  fundNames,
   height = 240,
 }: {
   data: FundLinePoint[];
+  /** The series names, from the building's FUND_CATALOGUE (for example its shortLabel for each fund). */
+  fundNames: { capitalWorks: string; adminFund: string };
   height?: number;
 }) {
   return (
@@ -62,7 +65,7 @@ export function FundLineChart({
         <Line
           type="monotone"
           dataKey="capitalWorks"
-          name="Capital Works"
+          name={fundNames.capitalWorks}
           stroke="#C9A7E8"
           strokeWidth={2}
           dot={false}
@@ -71,7 +74,7 @@ export function FundLineChart({
         <Line
           type="monotone"
           dataKey="adminFund"
-          name="Admin Fund"
+          name={fundNames.adminFund}
           stroke="var(--color-mint)"
           strokeWidth={2}
           dot={false}

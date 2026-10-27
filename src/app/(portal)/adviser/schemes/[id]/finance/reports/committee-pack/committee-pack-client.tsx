@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { drillDownHref } from "@/lib/finance/drill-down";
+import { fundShortLabel, type FundCatalogue } from "@/lib/jurisdiction/funds";
 
 import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -103,12 +104,12 @@ function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-function fundTypeLabel(fundType: string): string {
+/** The fund's type in short, as the building's pack names it ("Admin", "Capital Works"). */
+function fundTypeLabel(catalogue: FundCatalogue, fundType: string): string {
   switch (fundType) {
     case "ADMINISTRATIVE":
-      return "Admin";
     case "CAPITAL_WORKS":
-      return "Capital Works";
+      return fundShortLabel(catalogue, fundType) ?? fundType;
     default:
       return fundType;
   }
@@ -145,6 +146,7 @@ export function CommitteePackClient({
   startDate,
   endDate,
   pack,
+  catalogue,
   basePath,
 }: {
   schemeId: string;
@@ -153,6 +155,8 @@ export function CommitteePackClient({
   startDate: string;
   endDate: string;
   pack: CommitteeReportingPack;
+  /** The building's FUND_CATALOGUE, which names its funds. */
+  catalogue: FundCatalogue;
   basePath?: string;
 }) {
   const router = useRouter();
@@ -309,7 +313,7 @@ export function CommitteePackClient({
                           {fund.fundName}
                         </td>
                         <td className="py-2.5 pr-4 text-ink-muted">
-                          {fundTypeLabel(fund.fundType)}
+                          {fundTypeLabel(catalogue, fund.fundType)}
                         </td>
                         <td className="py-2.5 pr-4 text-right tabular-nums text-ink">
                           {formatCurrency(fund.openingBalance)}

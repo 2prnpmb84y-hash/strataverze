@@ -5,6 +5,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { fundLabel, fundTypeWords, ledgerFundDefinition, type FundCatalogue } from "@/lib/jurisdiction/funds";
 
 interface FundSummaryData {
   fundId: string;
@@ -28,12 +29,12 @@ function formatCurrency(value: number): string {
   return `$${value.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function fundTypeLabel(fundType: string): string {
+/** The fund's type as the building's pack names it ("Capital Works Fund", "Sinking Fund"); other types as stored. */
+function fundTypeLabel(catalogue: FundCatalogue, fundType: string): string {
   switch (fundType) {
     case "ADMINISTRATIVE":
-      return "Administrative Fund";
     case "CAPITAL_WORKS":
-      return "Capital Works Fund";
+      return fundLabel(catalogue, fundType) ?? fundType;
     default:
       return fundType;
   }
@@ -44,12 +45,15 @@ export function FundSummaryClient({
   startDate,
   endDate,
   summaries,
+  catalogue,
   basePath,
 }: {
   schemeId: string;
   startDate: string;
   endDate: string;
   summaries: FundSummaryData[];
+  /** The building's FUND_CATALOGUE, which names its funds. */
+  catalogue: FundCatalogue;
   basePath?: string;
 }) {
   const router = useRouter();
@@ -99,7 +103,7 @@ export function FundSummaryClient({
       {summaries.length === 0 && (
         <EmptyState
           title="No funds configured"
-          description="This scheme does not have any funds set up yet. Create Administrative and Capital Works funds from the Finance section."
+          description={`This scheme does not have any funds set up yet. Create ${fundTypeWords(ledgerFundDefinition(catalogue, "ADMINISTRATIVE"))} and ${fundTypeWords(ledgerFundDefinition(catalogue, "CAPITAL_WORKS"))} funds from the Finance section.`}
         />
       )}
 
@@ -129,7 +133,7 @@ export function FundSummaryClient({
             <Card key={fund.fundId}>
               <CardHeader
                 title={fund.fundName}
-                description={fundTypeLabel(fund.fundType)}
+                description={fundTypeLabel(catalogue, fund.fundType)}
               />
 
               <div className="px-6 pb-6">

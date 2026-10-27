@@ -61,6 +61,8 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
   {
     key: "ADMINISTRATIVE",
     name: "administrative fund",
+    label: "Administrative Fund",
+    shortLabel: "Admin",
     ledgerFund: "ADMINISTRATIVE",
     purpose: "Everything not paid from the sinking fund, for example insurance and recurrent costs.",
     required: true,
@@ -70,6 +72,9 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
   {
     key: "SINKING",
     name: "sinking fund",
+    label: "Sinking Fund",
+    // "Sinking" alone does not read as a fund ("Sinking Expenditure"), so the short form keeps "Fund".
+    shortLabel: "Sinking Fund",
     // Kept in the ledger's capital works fund type, shown as the sinking fund.
     ledgerFund: "CAPITAL_WORKS",
     purpose: "Capital or non-recurrent spending, including periodic renewal or replacement of major capital items.",
