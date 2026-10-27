@@ -1,8 +1,10 @@
 /**
  * The data a building's rule pack asks it to hold (QLD stage 2, step 10,
  * 27 Oct 2026): the setting the pack's REGULATION_MODULE selects, held in
- * `schemes.regulation_module`, and each lot's entitlement in every schedule
- * the pack lists (ENTITLEMENT_SCHEDULES). The schedule marked `onLot` is held
+ * `schemes.regulation_module`, the plan format the pack's PLAN_FORMAT selects,
+ * held in `schemes.plan_format` (QLD go-live gap, 27 Oct 2026), and each lot's
+ * entitlement in every schedule the pack lists (ENTITLEMENT_SCHEDULES). The
+ * schedule marked `onLot` is held
  * in `lots.entitlement`; Queensland's interest schedule is held in
  * `lots.interest_schedule_entitlement`.
  *
@@ -14,10 +16,19 @@
 import type { StatutoryRules } from "@/config/statutory";
 
 export type EntitlementSchedule = StatutoryRules["ENTITLEMENT_SCHEDULES"][number];
-export type EntitlementUse = NonNullable<EntitlementSchedule["decides"]>[number];
+type DecidedUse = NonNullable<EntitlementSchedule["decides"]>[number];
+export type EntitlementUse = Extract<DecidedUse, string>;
+export type ConditionalUse = Exclude<DecidedUse, string>;
 export type RegulationModuleSelector = NonNullable<StatutoryRules["REGULATION_MODULE"]>;
+type BuildingSelector = NonNullable<StatutoryRules["PLAN_FORMAT"]>;
 
-type ScheduleRules = Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES">;
+/** The pack's schedules, and its plan format selector where a use depends on the building's plan format. */
+type ScheduleRules = Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "PLAN_FORMAT">>;
+
+/** The building settings a conditional use depends on (QLD go-live gap, 27 Oct 2026). */
+export interface BuildingSettings {
+  planFormat?: string | null;
+}
 
 /** The lot field each separately held schedule is kept in. A schedule not listed is not held yet. */
 const SEPARATE_FIELDS: Readonly<Record<string, SeparateEntitlementField>> = {
@@ -51,17 +62,29 @@ export class MissingEntitlementError extends Error {
   }
 }
 
+const isConditional = (d: DecidedUse): d is ConditionalUse => typeof d !== "string";
+
 /**
  * The schedule the pack says decides `use`. A pack with a single schedule and
  * no `decides` list (NSW) uses that schedule for everything. Otherwise exactly
- * one schedule must list the use, or EntitlementRuleError is thrown.
+ * one schedule must list the use, or EntitlementRuleError is thrown. A use
+ * listed with plan formats (Queensland's buildings insurance premium) is
+ * decided by that schedule only for a building recorded with one of them: a
+ * building with no plan format recorded, or another one, is refused.
  */
-export function scheduleFor(rules: ScheduleRules, use: EntitlementUse): EntitlementSchedule {
+export function scheduleFor(rules: ScheduleRules, use: EntitlementUse, building: BuildingSettings = {}): EntitlementSchedule {
   const schedules = rules.ENTITLEMENT_SCHEDULES;
   if (schedules.length === 1 && !schedules[0].decides) return schedules[0];
-  const listed = schedules.filter((s) => s.decides?.includes(use));
-  if (listed.length !== 1) throw new EntitlementRuleError(`The building's rule pack does not say which lot entitlement decides ${use}.`);
-  return listed[0];
+  const format = (building.planFormat ?? "").trim();
+  const decides = (d: DecidedUse) => d === use || (isConditional(d) && d.use === use && !!format && d.planFormats.includes(format));
+  const listed = schedules.filter((s) => s.decides?.some(decides));
+  if (listed.length === 1) return listed[0];
+  const conditional = !listed.length && schedules.some((s) => s.decides?.some((d) => isConditional(d) && d.use === use));
+  if (conditional) {
+    const problem = planFormatProblem(rules, format);
+    if (problem) throw new EntitlementRuleError(problem);
+  }
+  throw new EntitlementRuleError(`The building's rule pack does not say which lot entitlement decides ${use}.`);
 }
 
 /** The lot field a schedule is held in, or null when StrataVerze does not hold it yet. */
@@ -82,9 +105,9 @@ export function entitlementFor(lot: LotEntitlements, schedule: Pick<EntitlementS
   return Number(value);
 }
 
-/** A lot's entitlement for one use, from the schedule its pack says decides it. */
-export function lotEntitlementFor(rules: ScheduleRules, lot: LotEntitlements, use: EntitlementUse): number {
-  return entitlementFor(lot, scheduleFor(rules, use));
+/** A lot's entitlement for one use, from the schedule its pack says decides it for the building. */
+export function lotEntitlementFor(rules: ScheduleRules, lot: LotEntitlements, use: EntitlementUse, building: BuildingSettings = {}): number {
+  return entitlementFor(lot, scheduleFor(rules, use, building));
 }
 
 /** The schedule held on each lot's `entitlement`. */
@@ -143,9 +166,8 @@ export function entitlementInputProblem(label: string, text: unknown, required: 
   return null;
 }
 
-/** The module selector, as the building settings show it: plain data a server page can pass to the browser. */
-export function regulationModuleChoices(rules: Pick<StatutoryRules, "REGULATION_MODULE">) {
-  const selector = rules.REGULATION_MODULE;
+/** A selector as the building settings show it: plain data a server page can pass to the browser. */
+function selectorChoices(selector: BuildingSelector | undefined) {
   if (!selector) return null;
   return {
     label: selector.label,
@@ -153,7 +175,55 @@ export function regulationModuleChoices(rules: Pick<StatutoryRules, "REGULATION_
     options: selector.options.map((o) => ({ value: o.value, label: o.label, supported: o.supported, note: o.note ?? null })),
   };
 }
+
+/** The module selector, as the building settings show it: plain data a server page can pass to the browser. */
+export function regulationModuleChoices(rules: Pick<StatutoryRules, "REGULATION_MODULE">) {
+  return selectorChoices(rules.REGULATION_MODULE);
+}
 export type RegulationModuleChoices = NonNullable<ReturnType<typeof regulationModuleChoices>>;
+
+/** The plan format selector, as the building settings show it, or null when the pack has none (NSW). */
+export function planFormatChoices(rules: Partial<Pick<StatutoryRules, "PLAN_FORMAT">>) {
+  return selectorChoices(rules.PLAN_FORMAT);
+}
+export type PlanFormatChoices = NonNullable<ReturnType<typeof planFormatChoices>>;
+
+/**
+ * Why a plan format cannot be saved for a building, or null when it can. Any
+ * of the selector's options may be recorded, since the plan format is a fact
+ * about the building: one StrataVerze does not support yet is refused where
+ * it matters (scheduleFor, the contribution split).
+ */
+export function planFormatChoiceProblem(rules: Partial<Pick<StatutoryRules, "PLAN_FORMAT">>, value: string): string | null {
+  const selector = rules.PLAN_FORMAT;
+  if (!selector) return "This building has no such setting.";
+  const name = selector.label.toLowerCase();
+  if (!value) return `Choose the ${name}.`;
+  if (!selector.options.some((o) => o.value === value)) return `Choose a valid ${name}.`;
+  return null;
+}
+
+/**
+ * Why a building's stored plan format does not let StrataVerze apply the
+ * rules that depend on it, or null. Null too for a pack with no plan format
+ * selector (NSW).
+ */
+export function planFormatProblem(rules: Partial<Pick<StatutoryRules, "PLAN_FORMAT">>, stored: string | null | undefined): string | null {
+  const selector = rules.PLAN_FORMAT;
+  if (!selector) return null;
+  const name = selector.label.toLowerCase();
+  const value = (stored ?? "").trim();
+  if (!value) return `No ${name} is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.`;
+  const option = selector.options.find((o) => o.value === value);
+  if (!option) return `The building's ${name} is not one StrataVerze knows. Choose it again in the building settings.`;
+  if (!option.supported) return `This building is recorded as a ${option.label.toLowerCase()}.${option.note ? ` ${option.note}` : ""}`;
+  return null;
+}
+
+/** The label of a building's stored plan format, or null when none or unknown. */
+export function planFormatLabel(rules: Partial<Pick<StatutoryRules, "PLAN_FORMAT">>, stored: string | null | undefined): string | null {
+  return rules.PLAN_FORMAT?.options.find((o) => o.value === (stored ?? "").trim())?.label ?? null;
+}
 
 const supportedList = (selector: RegulationModuleSelector) => {
   const labels = selector.options.filter((o) => o.supported).map((o) => o.label);
@@ -222,17 +292,20 @@ const lotList = (numbers: string[]) => {
 
 /**
  * What a building is missing that its pack asks it to hold, for the adviser:
- * the module, and the lots without the second schedule's entitlement. Empty
- * for an NSW building.
+ * the module, the plan format (or one StrataVerze does not support yet), and
+ * the lots without the second schedule's entitlement. Empty for an NSW
+ * building.
  */
 export function buildingDataProblems(
-  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES">,
-  scheme: { regulationModule?: string | null },
+  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "PLAN_FORMAT">>,
+  scheme: { regulationModule?: string | null; planFormat?: string | null },
   lots: readonly LotEntitlements[],
 ): string[] {
   const problems: string[] = [];
   const moduleProblem = regulationModuleProblem(rules, scheme.regulationModule);
   if (moduleProblem) problems.push(moduleProblem);
+  const formatProblem = planFormatProblem(rules, scheme.planFormat);
+  if (formatProblem) problems.push(formatProblem);
   const separate = separateEntitlement(rules);
   if (separate && !separate.field) problems.push(`StrataVerze does not hold each lot's ${separate.name} yet.`);
   else if (separate) {

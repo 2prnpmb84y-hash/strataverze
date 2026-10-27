@@ -1347,6 +1347,19 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 164",
     "status": "CONFIRMED",
   },
+  "CONTRIBUTION_INSURANCE": {
+    "insuranceLineRequired": {
+      "status": "STRATAVERZE",
+      "value": true,
+    },
+    "paidFrom": "ADMINISTRATIVE",
+    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 160(2), 162(5), 197(4), 201(1)",
+    "status": "CONFIRMED",
+    "uses": [
+      "INSURANCE_COMMON_PROPERTY",
+      "INSURANCE_BUILDINGS",
+    ],
+  },
   "CONTRIBUTION_NOTICE_RULES": {
     "contents": [
       "total amount levied",
@@ -1537,6 +1550,11 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "decidedOn": "2026-10-27",
       "decision": "Show owners "penalty", never "interest", for late payment.",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-27",
+      "decision": "Support building and volumetric format plans only: record each building's plan format, share insurance (both premiums) by the interest schedule, and refuse to raise contributions that include insurance for a standard format plan until it is supported.",
+    },
   ],
   "DISPUTES": {
     "appealWithinWeeks": 6,
@@ -1585,6 +1603,13 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "decides": [
         "COMMON_PROPERTY_SHARE",
         "INSURANCE_COMMON_PROPERTY",
+        {
+          "planFormats": [
+            "BUILDING",
+            "VOLUMETRIC",
+          ],
+          "use": "INSURANCE_BUILDINGS",
+        },
         "TERMINATION_INTEREST",
         "VALUE_BASED_RATES",
       ],
@@ -1729,12 +1754,40 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "where": "src/lib/auth/building-lock.ts LOCKED_LOT_FIELDS; src/app/(portal)/adviser/schemes/[id]/lots/actions.ts",
     },
     {
-      "point": "The share of the buildings insurance premium is not given a schedule. SM s 201(1) shares it by the interest schedule for building and volumetric format lots and by reinstatement cost for standard format lots, with adjustments allowed (s 201(2)). StrataVerze does not hold each lot's plan format, so it refuses to work the share out rather than assume the interest schedule.",
-      "where": "ENTITLEMENT_SCHEDULES INTEREST decides; src/lib/jurisdiction/building-data.ts scheduleFor",
+      "point": "The share of the buildings insurance premium is decided by the interest schedule for a building recorded as a building or volumetric format plan, and by no schedule for a standard format plan or a building with no plan format recorded (SM s 201(1)). The plan format is recorded once for the whole building, so a scheme whose lots are on more than one kind of plan is not catered for.",
+      "where": "PLAN_FORMAT; ENTITLEMENT_SCHEDULES INTEREST decides; src/lib/jurisdiction/building-data.ts scheduleFor",
     },
     {
-      "point": "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft, but nothing is refused: contributions and meetings run on the contribution schedule, which every lot holds.",
-      "where": "src/lib/jurisdiction/building-data.ts",
+      "point": "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft. Meetings still run on the contribution schedule, which every lot holds. A contribution that includes insurance is refused until every lot has an interest schedule lot entitlement and a building or volumetric format plan is recorded.",
+      "where": "src/lib/jurisdiction/building-data.ts; src/lib/levies/contribution-shares.ts",
+    },
+    {
+      "point": "The adjustments SM s 201(2) allows to the shares of the buildings insurance premium are not offered. Each lot's share of the insurance part is in proportion to its interest schedule lot entitlement, with no adjustment.",
+      "where": "CONTRIBUTION_INSURANCE; src/lib/levies/contribution-shares.ts",
+    },
+    {
+      "point": "Insurance means the whole of every line of the fund's adopted budget whose account is an insurance account (account 5-1100, Insurance, in the chart StrataVerze sets up). That whole amount is shared by the interest schedule, and the rest of the contribution, after any other income the adviser allowed for, by the contribution schedule. Insurance booked to another account is shared with the rest. Whether other insurance (for example office bearers or workers cover) is part of insurance under SM s 162(5) is not confirmed.",
+      "where": "CONTRIBUTION_INSURANCE; src/lib/levies/contribution-insurance.ts",
+    },
+    {
+      "point": "An ordinary contribution to the administrative fund is refused when its adopted budget has no insurance line. This is a StrataVerze choice, not a rule of law: SM s 160(2) has the budget estimate insurance, and a budget without it is taken as a mistake. A sinking fund contribution has no insurance part, and one whose budget has an insurance line is refused, as insurance is paid from the administrative fund (SM s 169(2)).",
+      "where": "CONTRIBUTION_INSURANCE.insuranceLineRequired, paidFrom; src/lib/levies/contribution-shares.ts",
+    },
+    {
+      "point": "A special contribution (SM s 162(2)) is shared by the contribution schedule only, even when it pays for insurance, since it has no budget lines to show an insurance part.",
+      "where": "src/lib/levies/contribution-insurance.ts",
+    },
+    {
+      "point": "The voluntary insurance scheme a basic scheme of standard format lots may adopt (SM s 204) is not offered. A standard format plan can be recorded, but contributions that include insurance are refused for it.",
+      "where": "PLAN_FORMAT STANDARD",
+    },
+    {
+      "point": "A contribution that includes insurance is refused outright for a standard format plan. That is stricter than the law: SM s 197(4) would still share the common property and assets premium by the interest schedule, and only the buildings premium goes by reinstatement cost (s 201(1)). StrataVerze refuses because the budget holds insurance as one amount, so the two premiums cannot be told apart.",
+      "where": "PLAN_FORMAT STANDARD; CONTRIBUTION_INSURANCE.uses",
+    },
+    {
+      "point": "The plan format is a building setting the adviser (or StrataVerze) saves, like the regulation module, not part of the locked building record. A change applies to contributions raised after it, never to notices already created.",
+      "where": "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts savePlanFormatAction",
     },
     {
       "point": "A payment goes to the penalty first (SM s 166(5)), so an owner who pays only the contribution after a month mark still owes the part of the contribution the penalty took. That part keeps attracting penalty each month until it is paid, even when it is a few dollars. StrataVerze charges it as StrataVerze reads SM ss 165 and 166(5), and does not waive it. Whether that reading is right, whether to tell the owner when it happens, and whether to suggest a waiver for special reasons (s 166(6)), are for review.",
@@ -2084,6 +2137,31 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "LEVY",
     "RECOVERY_COSTS",
   ],
+  "PLAN_FORMAT": {
+    "help": "The kind of plan of subdivision the scheme's lots are on, as registered for the scheme.",
+    "key": "planFormat",
+    "label": "Plan format",
+    "options": [
+      {
+        "label": "Building format plan",
+        "supported": true,
+        "value": "BUILDING",
+      },
+      {
+        "label": "Volumetric format plan",
+        "supported": true,
+        "value": "VOLUMETRIC",
+      },
+      {
+        "label": "Standard format plan",
+        "note": "Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+        "supported": false,
+        "value": "STANDARD",
+      },
+    ],
+    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 198, 199, 201; Body Corporate and Community Management Act 1997 (Qld) s 46B(2)(b)",
+    "status": "CONFIRMED",
+  },
   "PROXIES": {
     "cannotBeExercisedBy": [
       "the original owner",

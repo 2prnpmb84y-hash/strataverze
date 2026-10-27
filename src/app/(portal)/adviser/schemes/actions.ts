@@ -33,7 +33,7 @@ import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
 import { AUSTRALIAN_STATES, schemeLocationProblems } from "@/config/jurisdictions";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
-import { regulationModuleChoiceProblem } from "@/lib/jurisdiction/building-data";
+import { planFormatChoiceProblem, regulationModuleChoiceProblem } from "@/lib/jurisdiction/building-data";
 
 /** The Add Property steps a server-side problem can send the wizard back to. */
 export type OnboardingStep = "details" | "address" | "lots" | "balances" | "lotBalances";
@@ -370,6 +370,49 @@ export async function saveRegulationModuleAction(
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     logError("saveRegulationModuleAction error:", err);
+    return { error: "Failed to save the setting. Please try again." };
+  }
+}
+
+export type PlanFormatState = { error?: string; success?: boolean };
+
+/**
+ * Saves the building's plan format (QLD go-live gap, insurance in
+ * contributions), for a building whose rule pack has a PLAN_FORMAT selector.
+ * The adviser (or StrataVerze) saves it, as for the regulation module. Any
+ * listed format can be recorded, since it is a fact about the building: a
+ * contribution that includes insurance is refused for one StrataVerze does
+ * not support yet (src/lib/levies/contribution-shares.ts).
+ */
+export async function savePlanFormatAction(
+  schemeId: string,
+  _prev: PlanFormatState,
+  formData: FormData,
+): Promise<PlanFormatState> {
+  try {
+    const { profile } = await requireRolesOrAdmin(schemeId, ["ADVISER"]);
+    const current = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+    if (!current) return { error: "Scheme not found." };
+    const { rules } = rulesForState(current.state);
+    const value = String(formData.get("planFormat") ?? "").trim();
+    const problem = planFormatChoiceProblem(rules, value);
+    if (problem) return { error: problem };
+
+    await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).update({ planFormat: value });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "PLAN_FORMAT_CHANGED",
+      entityType: "Scheme",
+      entityId: schemeId,
+      metadata: { from: current.planFormat ?? null, to: value },
+    });
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    logError("savePlanFormatAction error:", err);
     return { error: "Failed to save the setting. Please try again." };
   }
 }

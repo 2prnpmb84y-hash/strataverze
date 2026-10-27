@@ -36,6 +36,14 @@ describe("updateScheme and the regulation module (QLD stage 2, step 10)", () => 
     expect(scheme()).toMatchObject({ state: "NSW", regulationModule: null, timeZone: "Australia/Sydney" });
   });
 
+  it("clears a Queensland building's plan format with it (QLD go-live gap, insurance in contributions)", async () => {
+    sharedFake.reset({ Scheme: [{ id: "s", state: "QLD", postcode: "4000", timeZone: "Australia/Brisbane", regulationModule: "STANDARD", planFormat: "BUILDING" }] });
+    await updateScheme("s", { state: "QLD", postcode: "4000", name: "Kept" });
+    expect(scheme().planFormat).toBe("BUILDING");
+    await updateScheme("s", { state: "NSW", postcode: "2000" });
+    expect(scheme()).toMatchObject({ state: "NSW", regulationModule: null, planFormat: null });
+  });
+
   it("leaves an NSW building's update as it was: no module is written", async () => {
     sharedFake.reset({ Scheme: [{ id: "s", name: "Old", state: "NSW", postcode: "2000", timeZone: "Australia/Sydney" }] });
     await updateScheme("s", { name: "New", state: "NSW", postcode: "2880" });

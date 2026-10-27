@@ -83,8 +83,8 @@ export type FundRequiredWhen = "ALWAYS" | "DESIGNATED_ONLY" | { readonly bySchem
  *   common property and assets;
  * - INSURANCE_BUILDINGS: the lot's share of the premium for insuring the
  *   buildings (in Queensland by the interest schedule for building and
- *   volumetric format lots only, so no Queensland schedule decides it until
- *   each lot's plan format is held);
+ *   volumetric format plans only, a ConditionalEntitlementUse on the
+ *   building's plan format; no schedule decides it for a standard format plan);
  * - TERMINATION_INTEREST: the lot's interest on termination of the scheme (in
  *   Queensland only on termination by resolution without dissent or court
  *   order);
@@ -124,7 +124,47 @@ export interface EntitlementScheduleDefinition {
    * schedule may leave it out: that schedule decides everything. Where a
    * pack has two, each use is listed under exactly one of them.
    */
-  decides?: readonly EntitlementUse[];
+  decides?: readonly (EntitlementUse | ConditionalEntitlementUse)[];
+  source: string;
+  status: RuleStatus;
+}
+
+/**
+ * A use a schedule decides only for a building whose plan format (the pack's
+ * PLAN_FORMAT selector, held in `schemes.plan_format`) is one of
+ * `planFormats` (QLD go-live gap, 27 Oct 2026). For any other building, or one
+ * with no plan format recorded, the schedule does not decide it.
+ */
+export interface ConditionalEntitlementUse {
+  use: EntitlementUse;
+  planFormats: readonly string[];
+}
+
+/**
+ * The part of a contribution that pays for insurance, shared between the
+ * lots by its own schedule rather than with the rest of the contribution
+ * (Queensland, SM s 162(5); QLD go-live gap, 27 Oct 2026). A pack without it
+ * shares the whole levy by the schedule that decides CONTRIBUTIONS.
+ */
+export interface ContributionInsuranceRules {
+  /**
+   * The fund insurance is paid from. An insurance line in any other fund's
+   * budget is refused, never shared as insurance.
+   */
+  paidFrom: "ADMINISTRATIVE" | "CAPITAL_WORKS";
+  /**
+   * Whether an ordinary contribution to `paidFrom` is refused when its adopted
+   * budget has no insurance line, with the status of that choice (Queensland:
+   * a StrataVerze choice, FOR_REVIEW). An insurance line in another fund's
+   * budget is always refused.
+   */
+  insuranceLineRequired: { value: boolean; status: RuleStatus };
+  /**
+   * The uses whose schedule shares the insurance part. Each must be decided
+   * by the same schedule for the building, since the budget holds insurance
+   * as one amount.
+   */
+  uses: readonly EntitlementUse[];
   source: string;
   status: RuleStatus;
 }

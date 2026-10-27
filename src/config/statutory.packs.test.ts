@@ -87,6 +87,24 @@ describe("Queensland pack (pending)", () => {
     expect(qld.REGULATION_MODULE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["STANDARD"]);
   });
 
+  it("supports building and volumetric format plans only, sharing insurance by the interest schedule (decided 27 Oct 2026)", () => {
+    expect(qld.PLAN_FORMAT.options.map((o) => o.value)).toEqual(["BUILDING", "VOLUMETRIC", "STANDARD"]);
+    expect(qld.PLAN_FORMAT.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["BUILDING", "VOLUMETRIC"]);
+    expect(qld.CONTRIBUTION_INSURANCE.paidFrom).toBe("ADMINISTRATIVE");
+    expect(qld.CONTRIBUTION_INSURANCE.uses).toEqual(["INSURANCE_COMMON_PROPERTY", "INSURANCE_BUILDINGS"]);
+    expect(qld.DECISIONS.some((d) => d.decision.startsWith("Support building and volumetric format plans only"))).toBe(true);
+    // The three points Matthew Wrigley asked to review with the decision.
+    for (const where of ["CONTRIBUTION_INSURANCE; src/lib/levies/contribution-shares.ts", "CONTRIBUTION_INSURANCE; src/lib/levies/contribution-insurance.ts", "PLAN_FORMAT STANDARD"]) {
+      expect(qld.FOR_REVIEW.some((f) => f.where === where), where).toBe(true);
+    }
+  });
+
+  it("leaves NSW with no plan format and no separate insurance share", () => {
+    const nsw = RULE_PACKS.NSW.rules as StatutoryRules;
+    expect(nsw.PLAN_FORMAT).toBeUndefined();
+    expect(nsw.CONTRIBUTION_INSURANCE).toBeUndefined();
+  });
+
   it("keeps the sinking fund in the ledger's capital works fund", () => {
     expect(qld.FUND_CATALOGUE.find((f) => f.key === "SINKING")?.ledgerFund).toBe("CAPITAL_WORKS");
     expect(qld.FUND_RULES.transfersBetweenFundsAllowed).toBe(false);

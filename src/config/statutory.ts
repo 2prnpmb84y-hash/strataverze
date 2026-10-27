@@ -26,6 +26,7 @@ import * as WA from "./statutory/wa";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
   CertificateRules,
+  ContributionInsuranceRules,
   DebtRecoveryRules,
   DocumentRetentionRules,
   InspectionRules,
@@ -62,6 +63,19 @@ export interface SharedRules {
    * without it has none, and no setting shows.
    */
   REGULATION_MODULE?: SchemeSelector;
+  /**
+   * The kind of plan a building's lots are on, where a pack's rules depend on
+   * it (Queensland's building, volumetric and standard format plans; QLD
+   * go-live gap, 27 Oct 2026). Held in `schemes.plan_format`. An option that
+   * is not supported may still be recorded: what depends on it is refused.
+   */
+  PLAN_FORMAT?: SchemeSelector;
+  /**
+   * The insurance part of a contribution, shared by its own schedule
+   * (Queensland, SM s 162(5)). A pack without it shares the whole levy by the
+   * schedule that decides CONTRIBUTIONS, as NSW always has.
+   */
+  CONTRIBUTION_INSURANCE?: ContributionInsuranceRules;
   /** The order a payment is applied to the levy, the late charge and recovery costs (stage 2, step 6). */
   PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[];
   FEATURES: PackFeatures;
@@ -271,7 +285,19 @@ export const PENDING_RULE_PACKS = {
     // override, the lot count and the meeting's date for debts, abstentions and votes cast, and the debtor test
     // reading contribution notices only. The legal values are unchanged, so the status stays REVIEWED.
     // The GO-LIVE GAP note on MEETING_RULES says what is applied and what remains.
-    version: "2026.10.13",
+    // 2026.10.14 (27 Oct 2026): insurance in contributions (go-live gap), as Matthew Wrigley decided on 27 Oct 2026
+    // (DECISIONS): building and volumetric format plans only. PLAN_FORMAT added (the building setting, held in
+    // schemes.plan_format: building, volumetric or standard format plan, SM ss 198, 199, 201; Act s 46B(2)(b)).
+    // ENTITLEMENT_SCHEDULES: the interest schedule now decides INSURANCE_BUILDINGS for building and volumetric format
+    // plans only (SM s 201(1)); no schedule decides it for a standard format plan. CONTRIBUTION_INSURANCE added: the
+    // insurance part of an administrative fund contribution is shared by the interest schedule and the rest by the
+    // contribution schedule (SM ss 160(2), 162(5), 197(4), 201(1)). FOR_REVIEW gains the s 201(2) adjustments not
+    // offered, what counts as insurance in the budget, the voluntary insurance scheme (s 204) not offered, the refusal
+    // without an insurance line (a StrataVerze choice, CONTRIBUTION_INSURANCE.insuranceLineRequired), special
+    // contributions, the plan format setting and refusing a standard format plan outright (stricter than s 197(4));
+    // the buildings premium and missing data points are updated. An insurance line in the sinking fund budget is refused. The legal values already signed off are unchanged and the new ones are from the same
+    // provisions, so the status stays REVIEWED. The GO-LIVE GAP note on ENTITLEMENT_SCHEDULES says what is applied.
+    version: "2026.10.14",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

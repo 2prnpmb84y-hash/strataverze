@@ -1,7 +1,8 @@
 /**
  * The data a building's pack asks it to hold (QLD stage 2, step 10): the
- * regulation module and each lot's entitlement in every schedule. NSW has
- * one schedule and no module, so nothing changes for it.
+ * regulation module, the plan format (QLD go-live gap, insurance in
+ * contributions) and each lot's entitlement in every schedule. NSW has one
+ * schedule, no module and no plan format, so nothing changes for it.
  */
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
@@ -16,6 +17,10 @@ import {
   MissingEntitlementError,
   onLotEntitlementWords,
   parseEntitlement,
+  planFormatChoiceProblem,
+  planFormatChoices,
+  planFormatLabel,
+  planFormatProblem,
   regulationModuleChoiceProblem,
   regulationModuleChoices,
   regulationModuleLabel,
@@ -60,15 +65,35 @@ describe("which schedule decides each use", () => {
     }
   });
 
-  it("is no Queensland schedule for the buildings insurance share, which depends on each lot's plan format (SM s 201(1), (2))", () => {
-    expect(QLD.ENTITLEMENT_SCHEDULES.some((s) => s.decides?.includes("INSURANCE_BUILDINGS"))).toBe(false);
-    expect(() => scheduleFor(QLD, "INSURANCE_BUILDINGS")).toThrow(EntitlementRuleError);
-    expect(() => lotEntitlementFor(QLD, { entitlement: 50, interestScheduleEntitlement: 45 }, "INSURANCE_BUILDINGS")).toThrow(EntitlementRuleError);
+  it("is Queensland's interest schedule for the buildings insurance share of a building or volumetric format plan (SM s 201(1))", () => {
+    for (const planFormat of ["BUILDING", "VOLUMETRIC"]) {
+      expect(scheduleFor(QLD, "INSURANCE_BUILDINGS", { planFormat }).key).toBe("INTEREST");
+      expect(lotEntitlementFor(QLD, { entitlement: 50, interestScheduleEntitlement: 45 }, "INSURANCE_BUILDINGS", { planFormat })).toBe(45);
+    }
   });
 
-  it("lists every other use under exactly one Queensland schedule", () => {
+  it("is no Queensland schedule for the buildings insurance share of a standard format plan, or with no plan format recorded", () => {
+    expect(() => scheduleFor(QLD, "INSURANCE_BUILDINGS", { planFormat: "STANDARD" })).toThrow(
+      "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot",
+    );
+    expect(() => scheduleFor(QLD, "INSURANCE_BUILDINGS")).toThrow("No plan format is recorded for this building.");
+    expect(() => scheduleFor(QLD, "INSURANCE_BUILDINGS", { planFormat: " " })).toThrow(EntitlementRuleError);
+    expect(() => scheduleFor(QLD, "INSURANCE_BUILDINGS", { planFormat: "LAYERED" })).toThrow("not one StrataVerze knows");
+    expect(() => lotEntitlementFor(QLD, { entitlement: 50, interestScheduleEntitlement: 45 }, "INSURANCE_BUILDINGS", { planFormat: "STANDARD" })).toThrow(EntitlementRuleError);
+    // The plan format changes nothing else: the other uses are decided as before.
+    for (const use of ALL_USES.filter((u) => u !== "INSURANCE_BUILDINGS")) {
+      expect(scheduleFor(QLD, use, { planFormat: "STANDARD" }).key).toBe(scheduleFor(QLD, use).key);
+    }
+  });
+
+  it("lists every use under exactly one Queensland schedule, the buildings insurance share for building and volumetric format plans only", () => {
     const listed = QLD.ENTITLEMENT_SCHEDULES.flatMap((s) => s.decides ?? []);
-    expect([...listed].sort()).toEqual(ALL_USES.filter((u) => u !== "INSURANCE_BUILDINGS").sort());
+    expect(listed.map((d) => (typeof d === "string" ? d : d.use)).sort()).toEqual([...ALL_USES].sort());
+    expect(listed.filter((d) => typeof d !== "string")).toEqual([{ use: "INSURANCE_BUILDINGS", planFormats: ["BUILDING", "VOLUMETRIC"] }]);
+  });
+
+  it("is NSW's one schedule whatever plan format is passed", () => {
+    for (const planFormat of [null, "BUILDING", "STANDARD"]) expect(scheduleFor(NSW, "INSURANCE_BUILDINGS", { planFormat }).key).toBe("UNIT_ENTITLEMENT");
   });
 
   it("refuses a pack with two schedules that does not say which decides a use", () => {
@@ -166,6 +191,39 @@ describe("the regulation module", () => {
   });
 });
 
+describe("the plan format", () => {
+  it("has no setting for NSW", () => {
+    expect(planFormatChoices(NSW)).toBeNull();
+    expect(planFormatProblem(NSW, null)).toBeNull();
+    expect(planFormatChoiceProblem(NSW, "BUILDING")).toBe("This building has no such setting.");
+  });
+
+  it("offers Queensland's three plan formats from the pack, building and volumetric supported", () => {
+    const c = planFormatChoices(QLD)!;
+    expect(c.label).toBe("Plan format");
+    expect(c.help).toBe(QLD.PLAN_FORMAT!.help);
+    expect(c.options.map((o) => o.value)).toEqual(["BUILDING", "VOLUMETRIC", "STANDARD"]);
+    expect(c.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["BUILDING", "VOLUMETRIC"]);
+  });
+
+  it("records any listed plan format, the standard format too, since it is a fact about the building", () => {
+    for (const v of ["BUILDING", "VOLUMETRIC", "STANDARD"]) expect(planFormatChoiceProblem(QLD, v)).toBeNull();
+    expect(planFormatChoiceProblem(QLD, "")).toBe("Choose the plan format.");
+    expect(planFormatChoiceProblem(QLD, "LAYERED")).toBe("Choose a valid plan format.");
+  });
+
+  it("flags a Queensland building with no plan format, or a standard format plan", () => {
+    expect(planFormatProblem(QLD, "BUILDING")).toBeNull();
+    expect(planFormatProblem(QLD, "VOLUMETRIC")).toBeNull();
+    expect(planFormatProblem(QLD, null)).toBe("No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.");
+    expect(planFormatProblem(QLD, "STANDARD")).toBe(
+      "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+    );
+    expect(planFormatLabel(QLD, "VOLUMETRIC")).toBe("Volumetric format plan");
+    expect(planFormatLabel(QLD, null)).toBeNull();
+  });
+});
+
 describe("what a building is missing", () => {
   const lots = [
     { lotNumber: "1", entitlement: 10, interestScheduleEntitlement: 12 },
@@ -177,22 +235,24 @@ describe("what a building is missing", () => {
     expect(buildingDataProblems(NSW, { regulationModule: null }, lots)).toEqual([]);
   });
 
-  it("is the module and the lots without an interest schedule entitlement, for a Queensland building", () => {
+  it("is the module, the plan format and the lots without an interest schedule entitlement, for a Queensland building", () => {
     const problems = buildingDataProblems(QLD, { regulationModule: null }, lots);
     expect(problems).toEqual([
       "No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.",
+      "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.",
       "2 lots have no interest schedule lot entitlement recorded (lots 2 and 3). StrataVerze can enter them from the building's records.",
     ]);
-    expect(buildingDataProblems(QLD, { regulationModule: "STANDARD" }, lots.slice(0, 2))).toEqual([
+    expect(buildingDataProblems(QLD, { regulationModule: "STANDARD", planFormat: "BUILDING" }, lots.slice(0, 2))).toEqual([
       "Lot 2 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.",
     ]);
-    expect(buildingDataProblems(QLD, { regulationModule: "STANDARD" }, lots.slice(0, 1))).toEqual([]);
+    expect(buildingDataProblems(QLD, { regulationModule: "STANDARD", planFormat: "VOLUMETRIC" }, lots.slice(0, 1))).toEqual([]);
+    expect(buildingDataProblems(QLD, { regulationModule: "STANDARD", planFormat: "STANDARD" }, lots.slice(0, 1))).toEqual([planFormatProblem(QLD, "STANDARD")]);
     expect(lotEntitlementProblem(QLD, lots[1])).toBe("This lot has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.");
   });
 
   it("lists at most ten lots by number", () => {
     const many = Array.from({ length: 12 }, (_, i) => ({ lotNumber: String(i + 1), entitlement: 1, interestScheduleEntitlement: null }));
-    expect(buildingDataProblems(QLD, { regulationModule: "STANDARD" }, many)[0]).toBe(
+    expect(buildingDataProblems(QLD, { regulationModule: "STANDARD", planFormat: "BUILDING" }, many)[0]).toBe(
       "12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building's records.",
     );
   });
@@ -205,6 +265,12 @@ describe("what a building is missing", () => {
       entitlementInputProblem("Interest Schedule Lot Entitlement", "x", true)!,
       QLD.REGULATION_MODULE!.help,
       ...QLD.ENTITLEMENT_SCHEDULES.map((s) => s.help ?? ""),
+      planFormatProblem(QLD, null)!,
+      planFormatProblem(QLD, "STANDARD")!,
+      planFormatProblem(QLD, "LAYERED")!,
+      planFormatChoiceProblem(QLD, "LAYERED")!,
+      QLD.PLAN_FORMAT!.help,
+      ...QLD.PLAN_FORMAT!.options.flatMap((o) => [o.label, o.note ?? ""]),
     ];
     for (const t of texts) expect(t).not.toMatch(NO_DASH_OR_SEMICOLON);
   });

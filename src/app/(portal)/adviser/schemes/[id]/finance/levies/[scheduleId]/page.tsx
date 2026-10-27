@@ -7,6 +7,7 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getLevyScheduleById } from "@/lib/queries/levy-schedules";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
+import { contributionInsurance } from "@/lib/levies/contribution-insurance";
 import {
   FREQUENCY_LABELS,
   INSTALMENTS_PER_YEAR,
@@ -132,10 +133,15 @@ export default async function LevyScheduleDetailPage({
   const fyStart = financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
   const lots = status === "APPROVED" && notices.length === 0 ? await loadPlanLots(id) : [];
   const totalCents = toCents(String(schedule.budgetAmount));
-  const planIssues =
+  const checked =
     status === "APPROVED" && notices.length === 0
       ? checkPlan({ lots, totalEntitlement: Number(schedule.totalEntitlement), totalCents })
       : [];
+  // Where the building's pack shares insurance by its own schedule (Queensland),
+  // the same split the generate action uses, or why it cannot be made. Never for NSW.
+  const shares = status === "APPROVED" && notices.length === 0 && checked.length === 0 ? await contributionInsurance(id, schedule, lots) : null;
+  const split = shares?.split ?? null;
+  const planIssues = shares?.problem ? [...checked, { kind: "INSURANCE_SHARES", message: shares.problem }] : checked;
   const preview =
     status === "APPROVED" && notices.length === 0 && planIssues.length === 0
       ? planNotices({
@@ -145,14 +151,16 @@ export default async function LevyScheduleDetailPage({
           periodStart: isSpecial ? toIsoDay(schedule.approvedAt ?? schedule.dueDate) : fyStart,
           // Paid in advance: each instalment falls due on the first day of its period.
           firstDueDate: isSpecial ? toIsoDay(schedule.dueDate) : fyStart,
+          ...(split ? { shares: split.shares } : {}),
         })
       : [];
-  const previewByLot = lots.map((lot) => {
+  const previewByLot = lots.map((lot, i) => {
     const own = preview.filter((n) => n.lotId === lot.lotId);
     return {
       lot,
       instalment: own[0]?.amountCents ?? 0,
       total: own.reduce((s, n) => s + n.amountCents, 0),
+      insurance: split ? split.shares[i].insuranceCents : null,
     };
   });
 
@@ -221,6 +229,11 @@ export default async function LevyScheduleDetailPage({
                 ))}
               </div>
             )}
+            {split && planIssues.length === 0 && (
+              <p className="text-sm text-ink-muted">
+                The insurance in the budget, {formatCurrency(fromCents(split.insuranceCents))}, is shared by each lot&apos;s {split.insuranceSchedule.name}. The rest is shared by each lot&apos;s {split.contributionSchedule.name}.
+              </p>
+            )}
             {previewByLot.length > 0 && planIssues.length === 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -230,16 +243,18 @@ export default async function LevyScheduleDetailPage({
                       <th scope="col" className="py-2 font-medium text-right">Unit entitlement</th>
                       <th scope="col" className="py-2 font-medium">Owner on platform</th>
                       {!isSpecial && <th scope="col" className="py-2 font-medium text-right">First instalment</th>}
+                      {split && <th scope="col" className="py-2 font-medium text-right">Insurance</th>}
                       <th scope="col" className="py-2 font-medium text-right">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
-                    {previewByLot.map(({ lot, instalment, total }) => (
+                    {previewByLot.map(({ lot, instalment, total, insurance }) => (
                       <tr key={lot.lotId}>
                         <td className="py-2 text-ink">Lot {lot.lotNumber}</td>
                         <td className="py-2 text-right tabular-nums">{lot.entitlement}</td>
                         <td className="py-2 text-ink-muted">{lot.ownerId ? "Yes" : "No"}</td>
                         {!isSpecial && <td className="py-2 text-right tabular-nums">{formatCurrency(fromCents(instalment))}</td>}
+                        {insurance !== null && <td className="py-2 text-right tabular-nums">{formatCurrency(fromCents(insurance))}</td>}
                         <td className="py-2 text-right tabular-nums">{formatCurrency(fromCents(total))}</td>
                       </tr>
                     ))}

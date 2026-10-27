@@ -43,6 +43,12 @@ export interface LevyNoticeDocument {
   hardship: HardshipInformation | null;
   /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
   terms: DocumentTerms;
+  /**
+   * The part of the amount that pays for insurance, where the contribution was
+   * split (Queensland), with the sentence naming how each part is shared.
+   * Absent for every other notice, which then reads as it always has.
+   */
+  insurance?: { cents: number; basis: string | null } | null;
 }
 
 export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
@@ -59,9 +65,11 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
         ["Fund", d.fundName],
         ...(d.periodStart && d.periodEnd ? ([["Period", `${longDate(d.periodStart)} to ${longDate(d.periodEnd)}`]] as [string, string][]) : []),
         ["Amount payable", aud(d.amountCents)],
+        ...(d.insurance ? ([["Includes insurance", aud(d.insurance.cents)]] as [string, string][]) : []),
         ["Due date", longDate(d.dueDate)],
       ],
     },
+    ...(d.insurance?.basis ? ([{ kind: "text", text: d.insurance.basis }] as PdfBlock[]) : []),
     { kind: "heading", text: "How to pay", level: 2 },
     {
       kind: "keyValues",

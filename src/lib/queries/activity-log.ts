@@ -187,7 +187,9 @@ export type ActivityAction =
   | "INTEREST_SETTING_CHANGED"
   | "LEVY_NOTICES_EMAILED"
   // The building's regulation module (Queensland, stage 2, step 10). Advisers only: not in any owner feed.
-  | "REGULATION_MODULE_CHANGED";
+  | "REGULATION_MODULE_CHANGED"
+  // The building's plan format (Queensland, insurance in contributions). Advisers only: not in any owner feed.
+  | "PLAN_FORMAT_CHANGED";
 
 export type ActivityEntityType =
   | "MigrationBatch"

@@ -29,6 +29,7 @@ import {
 import { storeGeneratedPdf } from "./store";
 import { noticeLateCharge } from "@/lib/jurisdiction/wording";
 import { needRule } from "@/config/statutory";
+import { insuranceBasis } from "@/lib/levies/contribution-shares";
 
 const APP_URL = siteUrl();
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
@@ -86,6 +87,10 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       ...noticeLateCharge(setting.rules.rules.LATE_CHARGE, setting),
       hardship: setting.rules.rules.NOTICE_RULES.hardship?.information ?? null,
       terms: setting.rules.rules.TERMINOLOGY,
+      // The insurance part of a split contribution (Queensland); never set on any other notice.
+      ...(n.insuranceAmount != null
+        ? { insurance: { cents: toCents(String(n.insuranceAmount)), basis: insuranceBasis(setting.rules.rules) } }
+        : {}),
     },
   };
 }
