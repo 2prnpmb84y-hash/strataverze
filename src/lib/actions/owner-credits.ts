@@ -1,4 +1,5 @@
 "use server";
+import { JournalBusyError } from "@/lib/queries/journal-numbering";
 import { logError } from "@/lib/log";
 
 import { headers } from "next/headers";
@@ -22,7 +23,7 @@ const creditsPath = (schemeId: string) => `/adviser/schemes/${schemeId}/finance/
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function failure(err: unknown, fallback: string): CreditActionState {
-  if (err instanceof AuthorisationError || err instanceof PaymentControlError) return { error: err.message };
+  if (err instanceof AuthorisationError || err instanceof PaymentControlError || err instanceof JournalBusyError) return { error: err.message };
   logError(fallback, err);
   return { error: fallback };
 }

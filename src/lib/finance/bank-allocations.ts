@@ -9,7 +9,8 @@ import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec
 import { fromCents, toCents } from "@/lib/billing/money";
 import { captureTransactionFee } from "@/lib/billing/capture";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
-import { createJournalEntry, getNextEntryNumber, postJournalEntry } from "@/lib/queries/journal-entries";
+import { validatePeriodForPosting } from "@/lib/queries/journal-entries";
+import { addNumberedJournal, numberedTransaction } from "@/lib/queries/journal-numbering";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
   allocationProblem,
@@ -18,7 +19,7 @@ import {
   unallocatedCents,
   type AllocationRequest,
 } from "./reconciliation";
-import { LevyReceiptError, receiptLevyPayment, receiptLevyPayments, suspenseAccount } from "./levy-receipts";
+import { LevyReceiptError, prepareLevyReceipt, suspenseAccount, type PreparedLevyReceipt } from "./levy-receipts";
 
 export class ReconciliationError extends Error {}
 
@@ -29,26 +30,28 @@ const cents = (v: unknown) => toCents(String(v ?? 0));
 
 // ─── Reading ────────────────────────────────────────────────────────────────
 
-async function loadTransaction(schemeId: string, transactionId: string) {
-  const txn = await db.orm.public.BankTransaction.where((t) => t.id.eq(transactionId)).first();
+type Orm = typeof db.orm;
+
+async function loadTransaction(schemeId: string, transactionId: string, orm: Orm = db.orm) {
+  const txn = await orm.public.BankTransaction.where((t) => t.id.eq(transactionId)).first();
   if (!txn || txn.schemeId !== schemeId) throw new ReconciliationError("Bank transaction not found.");
   return txn;
 }
 
 /** Allocations per transaction (cents allocated). */
-export async function allocatedByTransaction(transactionIds: string[]): Promise<Map<string, number>> {
+export async function allocatedByTransaction(transactionIds: string[], orm: Orm = db.orm): Promise<Map<string, number>> {
   const map = new Map<string, number>();
   if (transactionIds.length === 0) return map;
-  const rows = await db.orm.public.BankTransactionAllocation.where((a) => a.bankTransactionId.in(transactionIds)).limit(20000).all();
+  const rows = await orm.public.BankTransactionAllocation.where((a) => a.bankTransactionId.in(transactionIds)).limit(20000).all();
   for (const r of rows) map.set(r.bankTransactionId, (map.get(r.bankTransactionId) ?? 0) + cents(r.amount));
   return map;
 }
 
 /** Allocations per journal entry (cents allocated). */
-export async function allocatedByEntry(entryIds: string[]): Promise<Map<string, number>> {
+export async function allocatedByEntry(entryIds: string[], orm: Orm = db.orm): Promise<Map<string, number>> {
   const map = new Map<string, number>();
   if (entryIds.length === 0) return map;
-  const rows = await db.orm.public.BankTransactionAllocation.where((a) => a.journalEntryId.in(entryIds)).limit(20000).all();
+  const rows = await orm.public.BankTransactionAllocation.where((a) => a.journalEntryId.in(entryIds)).limit(20000).all();
   for (const r of rows) map.set(r.journalEntryId, (map.get(r.journalEntryId) ?? 0) + cents(r.amount));
   return map;
 }
@@ -122,22 +125,29 @@ export async function syncTransaction(orm: typeof db.orm, transactionId: string,
   });
 }
 
-/** Allocate a bank transaction to one or more posted journal entries. */
-export async function allocateBankTransaction(input: {
+interface AllocationInput {
   schemeId: string;
   transactionId: string;
   requests: AllocationRequest[];
   actorId: string;
-}) {
-  const txn = await loadTransaction(input.schemeId, input.transactionId);
-  const already = (await allocatedByTransaction([txn.id])).get(txn.id) ?? 0;
+}
+
+/**
+ * Allocate a bank transaction to posted journal entries, reading and writing
+ * through `orm` (a transaction's), so a caller can allocate a journal it has
+ * just written in the same transaction. The activity is logged by the caller
+ * once it has committed (logAllocation).
+ */
+async function allocateIn(orm: Orm, input: AllocationInput) {
+  const txn = await loadTransaction(input.schemeId, input.transactionId, orm);
+  const already = (await allocatedByTransaction([txn.id], orm)).get(txn.id) ?? 0;
   const entryIds = input.requests.map((r) => r.journalEntryId);
-  const entries = await db.orm.public.JournalEntry
+  const entries = await orm.public.JournalEntry
     .where((je) => and(je.schemeId.eq(input.schemeId), je.status.eq("POSTED"), je.id.in(entryIds.length ? entryIds : ["00000000-0000-0000-0000-000000000000"])))
     .include("lines", (l) => l.include("accountCode"))
     .limit(500)
     .all();
-  const entryAllocated = await allocatedByEntry(entries.map((e) => e.id));
+  const entryAllocated = await allocatedByEntry(entries.map((e) => e.id), orm);
   const problem = allocationProblem({
     transactionCents: cents(txn.amount),
     status: txn.reconciliationStatus,
@@ -153,34 +163,44 @@ export async function allocateBankTransaction(input: {
   });
   if (problem) throw new ReconciliationError(problem);
 
-  await db.transaction(async (tx) => {
-    for (const r of input.requests) {
-      const existing = await tx.orm.public.BankTransactionAllocation
-        .where((a) => and(a.bankTransactionId.eq(txn.id), a.journalEntryId.eq(r.journalEntryId)))
-        .first();
-      if (existing) {
-        await tx.orm.public.BankTransactionAllocation.where((a) => a.id.eq(existing.id)).update({ amount: num(cents(existing.amount) + r.amountCents) });
-      } else {
-        await tx.orm.public.BankTransactionAllocation.create({
-          schemeId: input.schemeId,
-          bankTransactionId: txn.id,
-          journalEntryId: r.journalEntryId,
-          amount: num(r.amountCents),
-          createdBy: input.actorId,
-        });
-      }
+  for (const r of input.requests) {
+    const existing = await orm.public.BankTransactionAllocation
+      .where((a) => and(a.bankTransactionId.eq(txn.id), a.journalEntryId.eq(r.journalEntryId)))
+      .first();
+    if (existing) {
+      await orm.public.BankTransactionAllocation.where((a) => a.id.eq(existing.id)).update({ amount: num(cents(existing.amount) + r.amountCents) });
+    } else {
+      await orm.public.BankTransactionAllocation.create({
+        schemeId: input.schemeId,
+        bankTransactionId: txn.id,
+        journalEntryId: r.journalEntryId,
+        amount: num(r.amountCents),
+        createdBy: input.actorId,
+      });
     }
-    await syncTransaction(tx.orm, txn.id, input.actorId);
-  });
+  }
+  await syncTransaction(orm, txn.id, input.actorId);
+}
 
+async function logAllocation(input: AllocationInput) {
   await logActivity({
     schemeId: input.schemeId,
     actorId: input.actorId,
     action: "BANK_TRANSACTION_MATCHED",
     entityType: "BankTransaction",
-    entityId: txn.id,
+    entityId: input.transactionId,
     metadata: { allocations: input.requests.map((r) => ({ journalEntryId: r.journalEntryId, amount: fromCents(r.amountCents) })) },
   });
+}
+
+/**
+ * Allocate a bank transaction to one or more posted journal entries. Under
+ * the building's numbering lock, so it waits for an auto-match or a receipt
+ * on the same transaction, and checks what is left on it as it then stands.
+ */
+export async function allocateBankTransaction(input: AllocationInput) {
+  await numberedTransaction(input.schemeId, async (tx) => allocateIn(tx.orm, input));
+  await logAllocation(input);
 }
 
 /** Remove every allocation of a transaction. Not allowed while it has an open suspense item. */
@@ -249,8 +269,26 @@ export async function receiptDepositToNotices(input: {
     }
   }
 
-  // One fee for the deposit (deduplicated by source, so it is never charged twice).
-  await db.transaction(async (tx) => {
+  // Everything the receipt needs from outside its transaction, found first.
+  const receipt = await prepareLevyReceipt({
+    schemeId: input.schemeId,
+    receipts: input.receipts,
+    paymentDate: isoDay(txn.transactionDate),
+    actorId: input.actorId,
+    reference: String(txn.reference ?? txn.description).slice(0, 100),
+    confirmOverpayment: input.confirmOverpayment,
+    captureFee: false,
+  });
+  const allocation = (journalEntryId: string): AllocationInput => ({ schemeId: input.schemeId, transactionId: txn.id, requests: [{ journalEntryId, amountCents: total }], actorId: input.actorId });
+
+  // One transaction for the deposit: the building's numbering lock, the
+  // notices in id order, the fee, the payments and the receipt journal, and
+  // the deposit allocated to it. All of it is written or none.
+  const result = await numberedTransaction(input.schemeId, async (tx) => {
+    for (const id of input.receipts.map((r) => r.levyNoticeId).sort()) {
+      await tx.orm.public.LevyNotice.where((n) => n.id.eq(id)).forNoKeyUpdate().first();
+    }
+    // One fee for the deposit (deduplicated by source, so it is never charged twice).
     await captureTransactionFee(tx.orm, {
       schemeId: input.schemeId,
       movement: "LEVY_RECEIPT",
@@ -261,24 +299,18 @@ export async function receiptDepositToNotices(input: {
       confirmedCents: input.feeConfirmedCents,
       date: isoDay(txn.transactionDate),
     });
+    // One receipt journal for the whole deposit, with a line for each notice (TC-004).
+    const out = await receipt.run(tx);
+    if (out.journalEntryId) await allocateIn(tx.orm, allocation(out.journalEntryId));
+    return out;
   });
-
-  // One receipt journal for the whole deposit, with a line for each notice (TC-004).
-  const result = await receiptLevyPayments({
-    schemeId: input.schemeId,
-    receipts: input.receipts,
-    paymentDate: isoDay(txn.transactionDate),
-    actorId: input.actorId,
-    reference: String(txn.reference ?? txn.description).slice(0, 100),
-    confirmOverpayment: input.confirmOverpayment,
-    captureFee: false,
-  });
+  await receipt.log(result);
   if (!result.journalEntryId) {
     throw new ReconciliationError(
       "The notices were receipted but no journal could be posted. Check the chart of accounts has the bank, levies receivable and levies paid in advance accounts.",
     );
   }
-  await allocateBankTransaction({ schemeId: input.schemeId, transactionId: txn.id, requests: [{ journalEntryId: result.journalEntryId, amountCents: total }], actorId: input.actorId });
+  await logAllocation(allocation(result.journalEntryId));
 }
 
 // ─── Suspense ───────────────────────────────────────────────────────────────
@@ -301,44 +333,54 @@ export async function postToSuspense(input: { schemeId: string; transactionId: s
   const date = isoDay(txn.transactionDate);
   const description = `Suspense — ${String(txn.description).slice(0, 200)}`;
 
-  const entryNumber = await getNextEntryNumber(input.schemeId);
-  const entry = await createJournalEntry({
-    schemeId: input.schemeId,
-    entryNumber,
-    transactionDate: date,
-    description,
-    entryType: "AUTO",
-    sourceType: "SUSPENSE",
-    sourceId: txn.id,
-    createdBy: input.actorId,
-    lines:
-      signed > 0
-        ? [
-            { accountCodeId: bank.id, fundId, debit: fromCents(left), description: "Bank receipt not yet identified" },
-            { accountCodeId: suspense.id, fundId, credit: fromCents(left), description },
-          ]
-        : [
-            { accountCodeId: suspense.id, fundId, debit: fromCents(left), description },
-            { accountCodeId: bank.id, fundId, credit: fromCents(left), description: "Bank payment not yet identified" },
-          ],
-  });
-  await postJournalEntry(entry.id, input.actorId);
+  // Refused before anything is written if the period is closed or locked.
+  await validatePeriodForPosting(input.schemeId, date, "AUTO");
+  const allocation = (journalEntryId: string): AllocationInput => ({ schemeId: input.schemeId, transactionId: txn.id, requests: [{ journalEntryId, amountCents: left }], actorId: input.actorId });
 
-  await db.orm.public.SuspenseItem.create({
-    schemeId: input.schemeId,
-    bankTransactionId: txn.id,
-    journalEntryId: entry.id,
-    amount: num(signed),
-    transactionDate: ts(date),
-    description: input.note?.trim() ? `${String(txn.description)} (${input.note.trim()})` : String(txn.description),
-    status: "OPEN",
-    clearedJournalEntryId: null,
-    clearedNote: null,
-    clearedBy: null,
-    clearedAt: null,
-    createdBy: input.actorId,
+  // The suspense journal, the item and the allocation together, numbered under the building's lock.
+  const entry = await numberedTransaction(input.schemeId, async (tx) => {
+    const { entry } = await addNumberedJournal(
+      tx,
+      {
+        schemeId: input.schemeId,
+        transactionDate: date,
+        description,
+        entryType: "AUTO",
+        sourceType: "SUSPENSE",
+        sourceId: txn.id,
+        createdBy: input.actorId,
+        lines:
+          signed > 0
+            ? [
+                { accountCodeId: bank.id, fundId, debit: fromCents(left), description: "Bank receipt not yet identified" },
+                { accountCodeId: suspense.id, fundId, credit: fromCents(left), description },
+              ]
+            : [
+                { accountCodeId: suspense.id, fundId, debit: fromCents(left), description },
+                { accountCodeId: bank.id, fundId, credit: fromCents(left), description: "Bank payment not yet identified" },
+              ],
+      },
+      input.actorId,
+    );
+
+    await tx.orm.public.SuspenseItem.create({
+      schemeId: input.schemeId,
+      bankTransactionId: txn.id,
+      journalEntryId: entry.id,
+      amount: num(signed),
+      transactionDate: ts(date),
+      description: input.note?.trim() ? `${String(txn.description)} (${input.note.trim()})` : String(txn.description),
+      status: "OPEN",
+      clearedJournalEntryId: null,
+      clearedNote: null,
+      clearedBy: null,
+      clearedAt: null,
+      createdBy: input.actorId,
+    });
+    await allocateIn(tx.orm, allocation(entry.id));
+    return entry;
   });
-  await allocateBankTransaction({ schemeId: input.schemeId, transactionId: txn.id, requests: [{ journalEntryId: entry.id, amountCents: left }], actorId: input.actorId });
+  await logAllocation(allocation(entry.id));
   await logActivity({
     schemeId: input.schemeId,
     actorId: input.actorId,
@@ -393,14 +435,28 @@ export async function clearSuspenseItem(input: {
   const suspense = await suspenseAccount(input.schemeId);
   if (!suspense?.fundId) throw new ReconciliationError("The suspense account is missing from the chart of accounts.");
 
+  const cleared = (clearedJournalEntryId: string) => ({
+    status: "CLEARED",
+    clearedJournalEntryId,
+    clearedNote: input.note,
+    clearedBy: input.actorId,
+    clearedAt: ts(new Date().toISOString()),
+  });
+  /** The item read again under the building's lock: a clear at the same moment has been written, or waits for this one. */
+  const stillOpen = async (orm: Orm) => {
+    const current = await orm.public.SuspenseItem.where((s) => s.id.eq(item.id)).first();
+    if (!current || current.status !== "OPEN") throw new ReconciliationError("This suspense item is already cleared.");
+  };
+
   let clearedJournalEntryId: string;
   if (input.target.kind === "LEVY_NOTICE") {
     if (amount <= 0) throw new ReconciliationError("Only money received can be cleared to a levy notice.");
+    const asReconciliation = (err: unknown) => (err instanceof LevyReceiptError ? new ReconciliationError(err.message) : err);
+    let receipt: PreparedLevyReceipt;
     try {
-      const result = await receiptLevyPayment({
+      receipt = await prepareLevyReceipt({
         schemeId: input.schemeId,
-        levyNoticeId: input.target.levyNoticeId,
-        amountCents: amount,
+        receipts: [{ levyNoticeId: input.target.levyNoticeId, amountCents: amount }],
         paymentDate: date,
         actorId: input.actorId,
         reference: "Cleared from suspense",
@@ -409,12 +465,21 @@ export async function clearSuspenseItem(input: {
         captureFee: false,
         debitFrom: "SUSPENSE",
       });
-      if (!result.journalEntryId) throw new ReconciliationError("The levy payment was recorded but no journal could be posted.");
-      clearedJournalEntryId = result.journalEntryId;
     } catch (err) {
-      if (err instanceof LevyReceiptError) throw new ReconciliationError(err.message);
-      throw err;
+      throw asReconciliation(err);
     }
+    // The payment, its journal and the item cleared, together, under the building's lock.
+    const result = await numberedTransaction(input.schemeId, async (tx) => {
+      await stillOpen(tx.orm);
+      const out = await receipt.run(tx).catch((err: unknown) => {
+        throw asReconciliation(err);
+      });
+      if (out.journalEntryId) await tx.orm.public.SuspenseItem.where((s) => s.id.eq(item.id)).update(cleared(out.journalEntryId));
+      return out;
+    });
+    await receipt.log(result);
+    if (!result.journalEntryId) throw new ReconciliationError("The levy payment was recorded but no journal could be posted.");
+    clearedJournalEntryId = result.journalEntryId;
   } else {
     const accountCodeId = input.target.accountCodeId;
     const account = await db.orm.public.AccountCode.where((a) => a.id.eq(accountCodeId)).first();
@@ -437,40 +502,41 @@ export async function clearSuspenseItem(input: {
             { accountCodeId: bank.id, fundId: outOf, credit: abs, description: "Moved to the fund it belongs to" },
           ]
         : [];
-    const entryNumber = await getNextEntryNumber(input.schemeId);
-    const entry = await createJournalEntry({
-      schemeId: input.schemeId,
-      entryNumber,
-      transactionDate: date,
-      description: `Suspense cleared — ${item.description.slice(0, 200)}`,
-      entryType: "AUTO",
-      sourceType: "SUSPENSE",
-      sourceId: item.id,
-      createdBy: input.actorId,
-      lines:
-        amount > 0
-          ? [
-              { accountCodeId: suspense.id, fundId: suspense.fundId, debit: abs, description: "Suspense cleared" },
-              { accountCodeId: account.id, fundId, credit: abs, description: input.note ?? "Identified receipt" },
-              ...moveCash(fundId, suspense.fundId),
-            ]
-          : [
-              { accountCodeId: account.id, fundId, debit: abs, description: input.note ?? "Identified payment" },
-              { accountCodeId: suspense.id, fundId: suspense.fundId, credit: abs, description: "Suspense cleared" },
-              ...moveCash(suspense.fundId, fundId),
-            ],
+    // Refused before anything is written if the period is closed or locked.
+    await validatePeriodForPosting(input.schemeId, date, "AUTO");
+    // The journal and the item cleared, together, numbered under the building's lock.
+    clearedJournalEntryId = await numberedTransaction(input.schemeId, async (tx) => {
+      await stillOpen(tx.orm);
+      const { entry } = await addNumberedJournal(
+        tx,
+        {
+          schemeId: input.schemeId,
+          transactionDate: date,
+          description: `Suspense cleared — ${item.description.slice(0, 200)}`,
+          entryType: "AUTO",
+          sourceType: "SUSPENSE",
+          sourceId: item.id,
+          createdBy: input.actorId,
+          lines:
+            amount > 0
+              ? [
+                  { accountCodeId: suspense.id, fundId: suspense.fundId!, debit: abs, description: "Suspense cleared" },
+                  { accountCodeId: account.id, fundId, credit: abs, description: input.note ?? "Identified receipt" },
+                  ...moveCash(fundId, suspense.fundId!),
+                ]
+              : [
+                  { accountCodeId: account.id, fundId, debit: abs, description: input.note ?? "Identified payment" },
+                  { accountCodeId: suspense.id, fundId: suspense.fundId!, credit: abs, description: "Suspense cleared" },
+                  ...moveCash(suspense.fundId!, fundId),
+                ],
+        },
+        input.actorId,
+      );
+      await tx.orm.public.SuspenseItem.where((s) => s.id.eq(item.id)).update(cleared(entry.id));
+      return entry.id;
     });
-    await postJournalEntry(entry.id, input.actorId);
-    clearedJournalEntryId = entry.id;
   }
 
-  await db.orm.public.SuspenseItem.where((s) => s.id.eq(item.id)).update({
-    status: "CLEARED",
-    clearedJournalEntryId,
-    clearedNote: input.note,
-    clearedBy: input.actorId,
-    clearedAt: ts(new Date().toISOString()),
-  });
   await logActivity({
     schemeId: input.schemeId,
     actorId: input.actorId,

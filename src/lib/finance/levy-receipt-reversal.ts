@@ -10,15 +10,14 @@ import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { toCents, fromCents } from "@/lib/billing/money";
-import { createJournalEntry, getNextEntryNumber, postJournalEntry, validatePeriodForPosting } from "@/lib/queries/journal-entries";
+import { getNextEntryNumber, validatePeriodForPosting } from "@/lib/queries/journal-entries";
+import { addNumberedJournal, numberedTransaction } from "@/lib/queries/journal-numbering";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
 import { logActivity } from "@/lib/queries/activity-log";
 import { creditBalanceCents, recordCreditMovement } from "./owner-credits";
 import { allocateBankTransaction, syncTransaction } from "./bank-allocations";
 import { receiptLevyPayments } from "./levy-receipts";
 import { noticeAfterReversal, reallocationProblem, REVERSAL_LABELS, reversalProblem, type ReversalReason } from "./levy-reversal";
-import { lateChargeFirstRules } from "./interest-setting";
-import { lockJournalNumbering } from "@/lib/queries/interest";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const varchar = <N extends number>(v: string) => v as unknown as Varchar<N>;
@@ -95,41 +94,43 @@ export async function reverseLevyReceipt(input: {
   if (!ISO.test(date)) throw new ReceiptReversalError("The reversal date is not a date.");
   if (date < isoDay(r.entry.transactionDate)) throw new ReceiptReversalError("The reversal cannot be dated before the receipt.");
   await validatePeriodForPosting(input.schemeId, date, "REVERSAL");
+  // The dishonour fee: its accounts found, and its period checked, before anything is written.
+  let feeAccounts: { bankId: string; accountId: string; fundId: string } | null = null;
   if (input.fee) {
     if (!(input.fee.amountCents > 0)) throw new ReceiptReversalError("Enter the dishonour fee, or leave it out.");
     const account = await db.orm.public.AccountCode.where((a) => and(a.id.eq(input.fee!.accountCodeId), a.schemeId.eq(input.schemeId))).first();
     if (!account || account.accountType !== "EXPENSE") throw new ReceiptReversalError("Choose an expense account for the dishonour fee.");
+    const bank = await getSystemAccountBySubType(input.schemeId, "BANK", "ADMINISTRATIVE");
+    if (bank) {
+      feeAccounts = { bankId: bank.id, accountId: account.id, fundId: account.fundId ?? bank.fundId! };
+      await validatePeriodForPosting(input.schemeId, date, "BANK_FEE");
+    }
   }
 
-  // Late charge first (Queensland): the reversal locks its notices (below). NSW goes on exactly as before.
-  const chargeFirst = await lateChargeFirstRules(input.schemeId);
-  const entryNumber = chargeFirst ? null : await getNextEntryNumber(input.schemeId);
   const now = new Date().toISOString();
   const label = REVERSAL_LABELS[input.reason];
   const note = input.note?.trim().slice(0, 500) || null;
   const removeFromBank = input.reason !== "DISHONOURED";
   const txnIds = r.bankTransactions.map((t) => t.id);
 
-  const reversalEntryId = await db.transaction(async (tx) => {
-    // Late charge first: lock the building's journal numbering, then each
-    // notice in id order (as receipting does, so they cannot deadlock), and
-    // check under the locks that the receipt is still not reversed. Each
-    // notice is then read and put back as it stands under its lock, so a
-    // receipt committed in between is kept.
-    let number = entryNumber;
-    if (chargeFirst) {
-      await lockJournalNumbering(tx, input.schemeId);
-      for (const id of [...new Set(r.payments.map((p) => p.levyNoticeId))].sort()) {
-        await tx.orm.public.LevyNotice.where((x) => x.id.eq(id)).forNoKeyUpdate().first();
-      }
-      const current = await tx.orm.public.LevyPayment.where((p) => p.id.in(r.payments.map((x) => x.id))).limit(500).all();
-      if (current.some((p) => p.reversedAt)) throw new ReceiptReversalError("This receipt has already been reversed.");
-      number = await getNextEntryNumber(input.schemeId, tx.orm);
+  // One transaction for every building: the reversal, each payment and notice
+  // put back, any credit taken back out, the bank allocation, and the
+  // dishonour fee. It locks the building's journal numbering, then each notice
+  // in id order (as receipting does, so they cannot deadlock), and checks
+  // under the locks that the receipt is still not reversed. Each notice is
+  // then read and put back as it stands under its lock, so a receipt
+  // committed in between is kept.
+  const { reversalEntryId, feeEntryId } = await numberedTransaction(input.schemeId, async (tx) => {
+    for (const id of [...new Set(r.payments.map((p) => p.levyNoticeId))].sort()) {
+      await tx.orm.public.LevyNotice.where((x) => x.id.eq(id)).forNoKeyUpdate().first();
     }
+    const current = await tx.orm.public.LevyPayment.where((p) => p.id.in(r.payments.map((x) => x.id))).limit(500).all();
+    if (current.some((p) => p.reversedAt)) throw new ReceiptReversalError("This receipt has already been reversed.");
+    const number = await getNextEntryNumber(input.schemeId, tx.orm);
     // 1. The reversal journal, mirroring the receipt.
     const reversal = await tx.orm.public.JournalEntry.create({
       schemeId: input.schemeId,
-      entryNumber: varchar<20>(number!),
+      entryNumber: varchar<20>(number),
       transactionDate: ts(date),
       description: varchar<500>(`Receipt ${String(r.entry.entryNumber)} reversed: ${label}${note ? ` (${note})` : ""}`.slice(0, 500)),
       entryType: "REVERSAL",
@@ -199,34 +200,31 @@ export async function reverseLevyReceipt(input: {
       await tx.orm.public.BankTransactionAllocation.where((a) => a.journalEntryId.eq(r.entry.id)).deleteAndCount();
       for (const id of txnIds) await syncTransaction(tx.orm, id, input.actorId);
     }
-    return reversal.id;
-  });
 
-  // 5. The dishonour fee, as its own expense entry.
-  let feeEntryId: string | null = null;
-  if (input.fee) {
-    const bank = await getSystemAccountBySubType(input.schemeId, "BANK", "ADMINISTRATIVE");
-    const account = await db.orm.public.AccountCode.where((a) => a.id.eq(input.fee!.accountCodeId)).first();
-    if (bank && account) {
-      const fundId = account.fundId ?? bank.fundId!;
-      const feeEntry = await createJournalEntry({
-        schemeId: input.schemeId,
-        entryNumber: await getNextEntryNumber(input.schemeId),
-        transactionDate: date,
-        description: `Dishonour fee on receipt ${String(r.entry.entryNumber)}`,
-        entryType: "BANK_FEE",
-        sourceType: "MANUAL",
-        sourceId: r.entry.id,
-        createdBy: input.actorId,
-        lines: [
-          { accountCodeId: account.id, fundId, debit: fromCents(input.fee.amountCents), description: "Bank dishonour fee" },
-          { accountCodeId: bank.id, fundId, credit: fromCents(input.fee.amountCents), description: "Bank dishonour fee" },
-        ],
-      });
-      await postJournalEntry(feeEntry.id, input.actorId);
-      feeEntryId = feeEntry.id;
+    // 5. The dishonour fee, as its own expense entry, numbered after the reversal in the same transaction.
+    let feeEntryId: string | null = null;
+    if (input.fee && feeAccounts) {
+      const { entry } = await addNumberedJournal(
+        tx,
+        {
+          schemeId: input.schemeId,
+          transactionDate: date,
+          description: `Dishonour fee on receipt ${String(r.entry.entryNumber)}`,
+          entryType: "BANK_FEE",
+          sourceType: "MANUAL",
+          sourceId: r.entry.id,
+          createdBy: input.actorId,
+          lines: [
+            { accountCodeId: feeAccounts.accountId, fundId: feeAccounts.fundId, debit: fromCents(input.fee.amountCents), description: "Bank dishonour fee" },
+            { accountCodeId: feeAccounts.bankId, fundId: feeAccounts.fundId, credit: fromCents(input.fee.amountCents), description: "Bank dishonour fee" },
+          ],
+        },
+        input.actorId,
+      );
+      feeEntryId = entry.id;
     }
-  }
+    return { reversalEntryId: reversal.id, feeEntryId };
+  });
 
   await logActivity({
     schemeId: input.schemeId,

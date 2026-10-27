@@ -48,13 +48,12 @@ import {
 
 // ── Journal entries ───────────────────────────────────────────
 import {
-  createJournalEntry,
   postJournalEntry,
   reverseJournalEntry,
-  getNextEntryNumber,
   getJournalEntryById,
   validatePeriodForPosting,
 } from "@/lib/queries/journal-entries";
+import { addNumberedJournal, JournalBusyError, numberedTransaction } from "@/lib/queries/journal-numbering";
 
 // ── Bank transactions ─────────────────────────────────────────
 import {
@@ -124,7 +123,7 @@ import {
 import {
   createFinancialSupplier,
   createSupplierInvoice,
-  recordInvoicePayment,
+  recordInvoicePaymentIn,
   cancelInvoice,
   getSupplierInvoiceById,
 } from "@/lib/queries/supplier-invoices";
@@ -209,6 +208,8 @@ function unexpectedError(err: unknown, fallback: string, keepMessages: readonly 
   if (err instanceof FundIntegrityError) return err.message;
   // A building in a state whose rules have not been added (multi-jurisdiction plan).
   if (err instanceof UnsupportedJurisdictionError) return err.message;
+  // Another writer held the building's journal numbering for too long.
+  if (err instanceof JournalBusyError) return err.message;
   const message = err instanceof Error ? err.message : "";
   if (message && keepMessages.some((re) => re.test(message))) return message;
   logError(fallback, err);
@@ -238,6 +239,8 @@ const INTEREST_RULE_MESSAGES: readonly RegExp[] = [
   /^Required system accounts .* not found\./,
   /^The [\w ]+ has resolved that contributions bear no \w+/,
   /^No \w+ applies until the [\w ]+ records the resolution that sets its rate/,
+  // Two charges on one notice at the same moment (the notice is read again under its lock).
+  /^\w+ was charged on notice \S+ at the same time\./,
 ];
 
 /** The ids a record refers to, de-duplicated; anything that is not a string is refused. */
@@ -648,19 +651,23 @@ export async function createJournalEntryAction(
       gstAmount: l.gstAmount,
     }));
 
-    const entryNumber = await getNextEntryNumber(schemeId);
-
-    const entry = await createJournalEntry({
-      schemeId,
-      entryNumber,
-      transactionDate: data.transactionDate,
-      description: data.description.trim(),
-      entryType,
-      // A manual journal is always recorded as manual, whatever the browser says.
-      sourceType: "MANUAL",
-      createdBy: profile.id,
-      lines,
-    });
+    // A draft, numbered and written in one transaction under the building's lock.
+    const { entry, entryNumber } = await numberedTransaction(schemeId, (tx) =>
+      addNumberedJournal(
+        tx,
+        {
+          schemeId,
+          transactionDate: data.transactionDate,
+          description: data.description.trim(),
+          entryType,
+          // A manual journal is always recorded as manual, whatever the browser says.
+          sourceType: "MANUAL",
+          createdBy: profile.id,
+          lines,
+        },
+        null,
+      ),
+    );
 
     await logActivity({
       schemeId,
@@ -740,10 +747,9 @@ export async function reverseJournalEntryAction(
 
     // The reversal is dated today in the building's time zone (see reverseJournalEntry).
     await validatePeriodForPosting(schemeId, await schemeToday(schemeId), "REVERSAL");
-    const entryNumber = await getNextEntryNumber(schemeId);
 
+    // Numbered in its own transaction, under the building's lock.
     const reversal = await reverseJournalEntry(originalEntryId, {
-      entryNumber,
       createdBy: profile.id,
       description,
     });
@@ -1833,25 +1839,27 @@ export async function recordInvoicePaymentAction(
       });
     }
 
-    await recordInvoicePayment(invoiceId, amount, { paymentDate, actorId: profile.id, feeConfirmedCents });
+    // The accounts for the journal (DR Accounts Payable, CR Bank), found
+    // before the transaction, and its period checked before anything is written.
+    const payableAccount = await getSystemAccountBySubType(
+      schemeId,
+      "ACCOUNTS_PAYABLE",
+    );
+    const bankAccount = await getSystemAccountBySubType(
+      schemeId,
+      "BANK",
+      "ADMINISTRATIVE",
+    );
+    if (payableAccount && bankAccount) await validatePeriodForPosting(schemeId, paymentDate, "AUTO");
 
-    // ── Auto journal entry: DR Accounts Payable, CR Bank ──
-    if (invoice) {
-      const payableAccount = await getSystemAccountBySubType(
-        schemeId,
-        "ACCOUNTS_PAYABLE",
-      );
-      const bankAccount = await getSystemAccountBySubType(
-        schemeId,
-        "BANK",
-        "ADMINISTRATIVE",
-      );
+    // The payment and its journal together, numbered under the building's lock.
+    await numberedTransaction(schemeId, async (tx) => {
+      await recordInvoicePaymentIn(tx, invoiceId, amount, { paymentDate, actorId: profile.id, feeConfirmedCents });
 
+      // ── Auto journal entry: DR Accounts Payable, CR Bank ──
       if (payableAccount && bankAccount) {
-        const entryNumber = await getNextEntryNumber(schemeId);
-        const entry = await createJournalEntry({
+        await addNumberedJournal(tx, {
           schemeId,
-          entryNumber,
           transactionDate: paymentDate,
           description: `Invoice payment — ${String(invoice.invoiceNumber)} (${invoice.supplier?.companyName ?? "supplier"})`,
           entryType: "AUTO",
@@ -1873,10 +1881,9 @@ export async function recordInvoicePaymentAction(
               description: "Bank payment — supplier invoice",
             },
           ],
-        });
-        await postJournalEntry(entry.id, profile.id);
+        }, profile.id);
       }
-    }
+    });
 
     await logActivity({
       schemeId,
@@ -2514,22 +2521,24 @@ export async function createAdjustmentEntryAction(
       description: l.description,
     }));
 
-    const entryNumber = await getNextEntryNumber(schemeId);
-
-    const entry = await createJournalEntry({
-      schemeId,
-      entryNumber,
-      transactionDate: data.transactionDate,
-      description: data.description.trim(),
-      entryType: "ADJUSTMENT",
-      sourceType: "ADJUSTMENT",
-      createdBy: profile.id,
-      lines,
-    });
-
-    // Post immediately — period validation in postJournalEntry allows
-    // ADJUSTMENT entries in CLOSED periods
-    await postJournalEntry(entry.id, profile.id);
+    // Numbered, written and posted at once, in one transaction under the
+    // building's lock. Period validation in postJournalEntry allows
+    // ADJUSTMENT entries in CLOSED periods.
+    const { entry, entryNumber } = await numberedTransaction(schemeId, (tx) =>
+      addNumberedJournal(
+        tx,
+        {
+          schemeId,
+          transactionDate: data.transactionDate,
+          description: data.description.trim(),
+          entryType: "ADJUSTMENT",
+          sourceType: "ADJUSTMENT",
+          createdBy: profile.id,
+          lines,
+        },
+        profile.id,
+      ),
+    );
 
     await logActivity({
       schemeId,

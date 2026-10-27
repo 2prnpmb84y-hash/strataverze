@@ -17,7 +17,8 @@
  * and another transaction locking the same row waits, as in Postgres. The read
  * returns the rows as they are once the lock is held. A plain update or delete
  * of a row another transaction holds waits too. Every lock taken is recorded
- * in `locks`. A wait longer than 2 seconds throws (a deadlock in the code).
+ * in `locks` (locking again rows the transaction already holds is not a new
+ * lock). A wait longer than 2 seconds throws (a deadlock in the code).
  *
  * A transaction that throws is rolled back: its creates, updates and deletes
  * are undone. Writes are visible to other callers before commit (no
@@ -25,6 +26,11 @@
  * (`setUniqueKeys`), and a duplicate throws with code 23505. Includes are
  * ignored, except a has-many relation a test sets (`setRelations`), which
  * `include(name)` fills from the child table.
+ *
+ * A transaction's `raw` and `execute` record each raw statement in
+ * `statements`; `SET LOCAL lock_timeout` makes that transaction's lock waits
+ * fail after that long with SQLSTATE 55P03, as in Postgres
+ * (`setLockTimeoutMs` shortens it for a test).
  *
  * A call through the global `db.orm` from inside a transaction that holds a
  * row lock is recorded in `globalCallsUnderLock` (the table it touched). In
@@ -96,13 +102,21 @@ interface TxState {
   owned: Set<Row>;
   releases: Array<() => void>;
   undo: Array<() => void>;
+  /** Set by `SET LOCAL lock_timeout`: how long a lock wait may take before it fails with 55P03. */
+  lockTimeoutMs?: number;
 }
 
-/** Wait for a promise, but throw if it takes more than 2 seconds (a deadlock). */
-async function waitFor(p: Promise<void>, what: string) {
+/**
+ * Wait for a promise, but throw if it takes more than 2 seconds (a deadlock),
+ * or more than the transaction's lock_timeout, as Postgres does (55P03).
+ */
+async function waitFor(p: Promise<void>, what: string, lockTimeoutMs?: number) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`fake-orm: waited 2 seconds for a row lock on ${what} (a deadlock?)`)), 2000);
+    timer =
+      lockTimeoutMs !== undefined
+        ? setTimeout(() => reject(Object.assign(new Error("canceling statement due to lock timeout"), { sqlState: "55P03" })), lockTimeoutMs)
+        : setTimeout(() => reject(new Error(`fake-orm: waited 2 seconds for a row lock on ${what} (a deadlock?)`)), 2000);
   });
   try {
     await Promise.race([p, timeout]);
@@ -119,6 +133,13 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
   const globalCallsUnderLock: string[] = [];
   /** Every row lock taken: the table, the locked row ids and whether it was inside a transaction. */
   const locks: Array<{ table: string; ids: unknown[]; inTransaction: boolean }> = [];
+  /** Raw statements run in transactions (`tx.execute(tx.raw.sql\`...\`...build())`), in order. */
+  const statements: string[] = [];
+  /** A test's lock_timeout in milliseconds, used in place of what `SET LOCAL lock_timeout` asks for. */
+  let lockTimeoutOverrideMs: number | undefined;
+  const setLockTimeoutMs = (ms: number | undefined) => {
+    lockTimeoutOverrideMs = ms;
+  };
   /** Rows held by a transaction, with the promise that settles when it ends. */
   const held = new Map<Row, Promise<void>>();
   /** Unique keys a test has set, by table: each a list of fields. */
@@ -132,6 +153,8 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
     for (const name of Object.keys(tables)) delete tables[name];
     for (const [name, list] of Object.entries(rows)) tables[name] = list.map((r) => ({ ...r }));
     locks.length = 0;
+    statements.length = 0;
+    lockTimeoutOverrideMs = undefined;
     globalCallsUnderLock.length = 0;
     held.clear();
     for (const k of Object.keys(uniqueKeys)) delete uniqueKeys[k];
@@ -164,8 +187,10 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
     const acquire = async () => {
       if (!lock) return;
       const rows = matching();
+      // Locking again rows the transaction already holds takes no new lock (as in Postgres), so it is not recorded.
+      if (tx && rows.length > 0 && rows.every((row) => tx.owned.has(row))) return;
       for (const row of rows) {
-        while (held.has(row) && !tx?.owned.has(row)) await waitFor(held.get(row)!, name);
+        while (held.has(row) && !tx?.owned.has(row)) await waitFor(held.get(row)!, name, tx?.lockTimeoutMs);
         if (tx && !tx.owned.has(row)) {
           let release!: () => void;
           held.set(row, new Promise<void>((resolve) => (release = resolve)));
@@ -180,7 +205,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
     };
     /** A plain write waits for rows another transaction holds. */
     const waitForRows = async (rows: Row[]) => {
-      for (const row of rows) while (held.has(row) && !tx?.owned.has(row)) await waitFor(held.get(row)!, name);
+      for (const row of rows) while (held.has(row) && !tx?.owned.has(row)) await waitFor(held.get(row)!, name, tx?.lockTimeoutMs);
     };
     /** Remember a row's values before a write, to undo it on rollback. */
     const remember = (row: Row) => {
@@ -271,12 +296,27 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
     }),
   });
   const orm = ormFor();
+  /** The raw lane inside a transaction: the statement is recorded, and SET LOCAL lock_timeout applied to it. */
+  const rawFor = (state: TxState) => ({
+    raw: {
+      sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({
+        affectedCount: () => ({ build: () => ({ lane: "raw", sql: String.raw({ raw: strings }, ...values) }) }),
+      }),
+    },
+    execute: async (plan: { sql?: string }) => {
+      const sql = String(plan.sql ?? "");
+      statements.push(sql);
+      const timeout = sql.match(/SET LOCAL lock_timeout = '(\d+)(ms|s)'/);
+      if (timeout) state.lockTimeoutMs = lockTimeoutOverrideMs ?? Number(timeout[1]) * (timeout[2] === "s" ? 1000 : 1);
+      return { affectedRows: 0 };
+    },
+  });
   const db = {
     orm,
-    transaction: async <T>(fn: (tx: { orm: typeof orm }) => Promise<T>) => {
+    transaction: async <T>(fn: (tx: { orm: typeof orm } & Partial<ReturnType<typeof rawFor>>) => Promise<T>) => {
       const state: TxState = { owned: new Set(), releases: [], undo: [] };
       try {
-        return await currentTx.run(state, () => fn({ orm: ormFor(state) }));
+        return await currentTx.run(state, () => fn({ orm: ormFor(state), ...rawFor(state) }));
       } catch (err) {
         // Roll back: undo the transaction's writes, newest first.
         for (const undo of state.undo.reverse()) undo();
@@ -286,7 +326,7 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
       }
     },
   };
-  return { db, tables, table, reset, locks, setUniqueKeys, setRelations, globalCallsUnderLock };
+  return { db, tables, table, reset, locks, setUniqueKeys, setRelations, globalCallsUnderLock, statements, setLockTimeoutMs };
 }
 
 /**

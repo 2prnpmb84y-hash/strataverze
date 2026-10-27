@@ -14,7 +14,8 @@ import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/tar
 import { fromCents, toCents } from "@/lib/billing/money";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
 import { ensureLeviesInAdvanceAccount } from "@/lib/queries/seed-chart-of-accounts";
-import { createJournalEntry, createPostedJournalEntryIn, getNextEntryNumber, postJournalEntry, validatePeriodForPosting } from "@/lib/queries/journal-entries";
+import { createPostedJournalEntryIn, getNextEntryNumber, validatePeriodForPosting } from "@/lib/queries/journal-entries";
+import { addNumberedJournal, numberedTransaction, type Tx } from "@/lib/queries/journal-numbering";
 import { logActivity } from "@/lib/queries/activity-log";
 import { getApprovalMembers, getAuthorisations, getPaymentSettings, hashIp } from "@/lib/queries/payment-controls";
 import {
@@ -31,7 +32,7 @@ import { capitalise } from "@/lib/jurisdiction/wording";
 import { todayIn } from "@/lib/jurisdiction/time-zone";
 import { lateChargePart } from "./statutory-interest";
 import { getSchemeInterestSetting, lateChargeFirstRules } from "./interest-setting";
-import { chargeLockedNotice, lateChargeAccounts, lockJournalNumbering, lockLateCharge, logLateChargeCharged } from "@/lib/queries/interest";
+import { chargeLockedNotice, lateChargeAccounts, lockLateCharge, logLateChargeCharged } from "@/lib/queries/interest";
 import { PaymentControlError, type ApprovalOutcome } from "./invoice-approval";
 
 type Orm = typeof db.orm;
@@ -120,8 +121,12 @@ async function fundTypeOf(fundId: string) {
   return (fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
 }
 
-/** Post a two-line journal and link it to the credit movement. Skips quietly if the accounts are missing. */
-async function postCreditJournal(args: {
+/**
+ * Post a two-line journal and link it to the credit movement, in the
+ * caller's transaction (which holds the building's numbering lock), numbered
+ * under the lock. The caller skips it when the accounts are missing.
+ */
+async function postCreditJournal(tx: Tx, args: {
   schemeId: string;
   fundId: string;
   lotId: string;
@@ -135,25 +140,26 @@ async function postCreditJournal(args: {
   amountCents: number;
   creditTxId?: string;
 }) {
-  const entryNumber = await getNextEntryNumber(args.schemeId);
   const amount = fromCents(args.amountCents);
-  const entry = await createJournalEntry({
-    schemeId: args.schemeId,
-    entryNumber,
-    transactionDate: args.date,
-    description: args.description,
-    entryType: "AUTO",
-    sourceType: args.sourceType,
-    sourceId: args.sourceId,
-    createdBy: args.actorId,
-    lines: [
-      { accountCodeId: args.debitAccountId, fundId: args.fundId, debit: amount, description: args.description, lotId: args.lotId },
-      { accountCodeId: args.creditAccountId, fundId: args.fundId, credit: amount, description: args.description, lotId: args.lotId },
-    ],
-  });
-  await postJournalEntry(entry.id, args.actorId);
+  const { entry } = await addNumberedJournal(
+    tx,
+    {
+      schemeId: args.schemeId,
+      transactionDate: args.date,
+      description: args.description,
+      entryType: "AUTO",
+      sourceType: args.sourceType,
+      sourceId: args.sourceId,
+      createdBy: args.actorId,
+      lines: [
+        { accountCodeId: args.debitAccountId, fundId: args.fundId, debit: amount, description: args.description, lotId: args.lotId },
+        { accountCodeId: args.creditAccountId, fundId: args.fundId, credit: amount, description: args.description, lotId: args.lotId },
+      ],
+    },
+    args.actorId,
+  );
   if (args.creditTxId) {
-    await db.orm.public.OwnerCreditTransaction.where((t) => t.id.eq(args.creditTxId!)).update({ journalEntryId: entry.id });
+    await tx.orm.public.OwnerCreditTransaction.where((t) => t.id.eq(args.creditTxId!)).update({ journalEntryId: entry.id });
   }
   return entry.id;
 }
@@ -179,6 +185,7 @@ export async function applyOwnerCredit(input: { schemeId: string; lotIds?: strin
   const chargeFirst = await lateChargeFirstRules(input.schemeId);
   if (chargeFirst) return applyOwnerCreditLateChargeFirst(input, date, chargeFirst);
   const balances = await db.orm.public.OwnerCreditBalance.where((b) => b.schemeId.eq(input.schemeId)).limit(5000).all();
+  let periodChecked = false;
   const pending = await pendingRefundsByKey(input.schemeId);
   let appliedTotal = 0;
 
@@ -200,18 +207,33 @@ export async function applyOwnerCredit(input: { schemeId: string; lotIds?: strin
 
     const advanceId = await leviesInAdvanceAccountId(b.schemeId, b.fundId);
     const receivable = await getSystemAccountBySubType(b.schemeId, "ACCOUNTS_RECEIVABLE", await fundTypeOf(b.fundId));
+    // The credit journals are dated `date`: refused before anything is written if its period is closed or locked.
+    if (advanceId && receivable && !periodChecked) {
+      await validatePeriodForPosting(input.schemeId, date, "AUTO");
+      periodChecked = true;
+    }
 
     for (const step of plan) {
       const notice = notices.find((n) => n.id === step.noticeId)!;
-      const creditTx = await db.transaction(async (tx) => {
-        const owed = toCents(String(notice.amountDue)) + toCents(String(notice.interestCharged ?? 0));
-        const newPaid = toCents(String(notice.amountPaid)) + step.amountCents;
+      // The payment, the notice, the credit used and the credit journal together,
+      // under the building's numbering lock and then the notice's lock.
+      const applied = await numberedTransaction(b.schemeId, async (tx) => {
+        // The notice as it stands under its lock: a receipt at the same moment is kept, and the credit never pays more than it owes.
+        const current = await tx.orm.public.LevyNotice.where((n) => n.id.eq(notice.id)).forNoKeyUpdate().first();
+        if (!current || !["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(String(current.status))) return null;
+        // The credit still available, read under the lock with the refunds already requested (as the Queensland path does).
+        await tx.orm.public.OwnerCreditBalance.where((x) => and(x.schemeId.eq(key.schemeId), x.lotId.eq(key.lotId), x.fundId.eq(key.fundId))).forNoKeyUpdate().first();
+        const left = availableCredit(await creditBalanceCents(tx.orm, key), await pendingRefundCents(tx.orm, key));
+        const owed = toCents(String(current.amountDue)) + toCents(String(current.interestCharged ?? 0));
+        const take = Math.min(step.amountCents, left, Math.max(0, owed - toCents(String(current.amountPaid))));
+        if (take <= 0) return null;
+        const newPaid = toCents(String(current.amountPaid)) + take;
         const newBalance = Math.max(0, owed - newPaid);
         const receipt = await tx.orm.public.LevyPayment.create({
           schemeId: b.schemeId,
           levyNoticeId: notice.id,
           lotId: b.lotId,
-          amount: num(step.amountCents),
+          amount: num(take),
           paymentDate: ts(date),
           reference: "Owner credit applied",
           recordedBy: input.actorId,
@@ -222,41 +244,43 @@ export async function applyOwnerCredit(input: { schemeId: string; lotIds?: strin
           status: newBalance <= 0 ? "PAID" : "PARTIALLY_PAID",
           ...(newBalance <= 0 ? { paidInFullAt: ts(new Date().toISOString()) } : {}),
         });
-        return recordCreditMovement(tx.orm, {
+        const creditTx = await recordCreditMovement(tx.orm, {
           ...key,
           ownerId: notice.ownerId ?? b.ownerId ?? null,
           type: "APPLIED",
-          amountCents: step.amountCents,
+          amountCents: take,
           levyNoticeId: notice.id,
           levyPaymentId: receipt.id,
           createdBy: input.actorId,
           effectiveDate: date,
         });
+        if (advanceId && receivable) {
+          await postCreditJournal(tx, {
+            schemeId: b.schemeId,
+            fundId: b.fundId,
+            lotId: b.lotId,
+            date,
+            description: `Owner credit applied to notice ${String(notice.noticeNumber)}`,
+            sourceType: "OWNER_CREDIT",
+            sourceId: creditTx.id,
+            actorId: input.actorId,
+            ...creditJournalAccounts("APPLIED", { bankId: "", receivableId: receivable.id, advanceId }),
+            amountCents: take,
+            creditTxId: creditTx.id,
+          });
+        }
+        return take;
       });
-      if (advanceId && receivable) {
-        await postCreditJournal({
-          schemeId: b.schemeId,
-          fundId: b.fundId,
-          lotId: b.lotId,
-          date,
-          description: `Owner credit applied to notice ${String(notice.noticeNumber)}`,
-          sourceType: "OWNER_CREDIT",
-          sourceId: creditTx.id,
-          actorId: input.actorId,
-          ...creditJournalAccounts("APPLIED", { bankId: "", receivableId: receivable.id, advanceId }),
-          amountCents: step.amountCents,
-          creditTxId: creditTx.id,
-        });
-      }
+      if (applied == null) continue;
       await logActivity({
         schemeId: b.schemeId,
         actorId: input.actorId,
         action: "OWNER_CREDIT_APPLIED",
         entityType: "LevyNotice",
         entityId: notice.id,
-        metadata: { amount: fromCents(step.amountCents), lotId: b.lotId },
+        metadata: { amount: fromCents(applied), lotId: b.lotId },
       });
-      appliedTotal += step.amountCents;
+      appliedTotal += applied;
     }
   }
   return appliedTotal;
@@ -309,8 +333,7 @@ async function applyOwnerCreditLateChargeFirst(
     const chargeAccounts = (await lateChargeAccounts(b.schemeId, [fundType])).get(fundType);
 
     for (const candidate of notices) {
-      const done = await db.transaction(async (tx) => {
-        await lockJournalNumbering(tx, b.schemeId);
+      const done = await numberedTransaction(b.schemeId, async (tx) => {
         const l = await lockLateCharge(tx, { schemeId: b.schemeId, noticeId: candidate.id, asAt: date, setting });
         if (!l || !["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(String(l.notice.status))) return { stop: false as const, applied: null };
         // The credit still available, read under the lock (another application or a refund may have used some).
@@ -437,13 +460,15 @@ export async function postOverpaymentJournal(args: {
   const advanceId = await leviesInAdvanceAccountId(args.schemeId, args.fundId);
   const bank = await getSystemAccountBySubType(args.schemeId, "BANK", "ADMINISTRATIVE");
   if (!advanceId || !bank) return null;
-  return postCreditJournal({
-    ...args,
-    description: `Overpayment held as owner credit (notice ${args.noticeNumber})`,
-    sourceType: "OWNER_CREDIT",
-    sourceId: args.creditTxId,
-    ...creditJournalAccounts("HELD", { bankId: bank.id, receivableId: "", advanceId }),
-  });
+  return numberedTransaction(args.schemeId, (tx) =>
+    postCreditJournal(tx, {
+      ...args,
+      description: `Overpayment held as owner credit (notice ${args.noticeNumber})`,
+      sourceType: "OWNER_CREDIT",
+      sourceId: args.creditTxId,
+      ...creditJournalAccounts("HELD", { bankId: bank.id, receivableId: "", advanceId }),
+    }),
+  );
 }
 
 // ─── Reading credit ─────────────────────────────────────────────────────────
@@ -677,7 +702,16 @@ export async function recordOwnerCreditRefundPaid(input: { schemeId: string; ref
 
   const amountCents = toCents(String(refund.amount));
   const key = { schemeId: refund.schemeId, lotId: refund.lotId, fundId: refund.fundId };
-  const creditTx = await db.transaction(async (tx) => {
+  // The accounts, found before the transaction, and the period, checked before anything is written.
+  const advanceId = await leviesInAdvanceAccountId(refund.schemeId, refund.fundId);
+  const bank = await getSystemAccountBySubType(refund.schemeId, "BANK", "ADMINISTRATIVE");
+  if (advanceId && bank) await validatePeriodForPosting(refund.schemeId, input.paidOn, "AUTO");
+  // The credit used, the refund marked paid and its journal, together, numbered under the building's lock.
+  await numberedTransaction(refund.schemeId, async (tx) => {
+    // Read again under the lock: a second click at the same moment has paid it already, or waits for this one.
+    const current = await tx.orm.public.OwnerCreditRefund.where((r) => r.id.eq(refund.id)).forNoKeyUpdate().first();
+    if (current?.status === "PAID") throw new PaymentControlError("This refund has already been paid.");
+    if (current?.status !== "APPROVED") throw new PaymentControlError("This refund is not approved for payment.");
     const movement = await recordCreditMovement(tx.orm, {
       ...key,
       ownerId: refund.ownerId ?? null,
@@ -692,25 +726,21 @@ export async function recordOwnerCreditRefundPaid(input: { schemeId: string; ref
       paidAt: ts(new Date().toISOString()),
       paidBy: input.actorId,
     });
-    return movement;
+    if (advanceId && bank) {
+      const journalId = await postCreditJournal(tx, {
+        ...key,
+        date: input.paidOn,
+        description: `Owner credit refunded to ${refund.payeeName}`,
+        sourceType: "OWNER_CREDIT",
+        sourceId: refund.id,
+        actorId: input.actorId,
+        ...creditJournalAccounts("REFUNDED", { bankId: bank.id, receivableId: "", advanceId }),
+        amountCents,
+        creditTxId: movement.id,
+      });
+      await tx.orm.public.OwnerCreditRefund.where((r) => r.id.eq(refund.id)).update({ journalEntryId: journalId });
+    }
   });
-
-  const advanceId = await leviesInAdvanceAccountId(refund.schemeId, refund.fundId);
-  const bank = await getSystemAccountBySubType(refund.schemeId, "BANK", "ADMINISTRATIVE");
-  if (advanceId && bank) {
-    const journalId = await postCreditJournal({
-      ...key,
-      date: input.paidOn,
-      description: `Owner credit refunded to ${refund.payeeName}`,
-      sourceType: "OWNER_CREDIT",
-      sourceId: refund.id,
-      actorId: input.actorId,
-      ...creditJournalAccounts("REFUNDED", { bankId: bank.id, receivableId: "", advanceId }),
-      amountCents,
-      creditTxId: creditTx.id,
-    });
-    await db.orm.public.OwnerCreditRefund.where((r) => r.id.eq(refund.id)).update({ journalEntryId: journalId });
-  }
   await logActivity({
     schemeId: refund.schemeId,
     actorId: input.actorId,
