@@ -31,6 +31,9 @@ import {
 } from "@/lib/onboarding/property-onboarding";
 import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
 import { AUSTRALIAN_STATES, schemeLocationProblems } from "@/config/jurisdictions";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { regulationModuleChoiceProblem } from "@/lib/jurisdiction/building-data";
 
 /** The Add Property steps a server-side problem can send the wizard back to. */
 export type OnboardingStep = "details" | "address" | "lots" | "balances" | "lotBalances";
@@ -327,6 +330,47 @@ export async function updateSchemeAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to update scheme. Please try again." };
+  }
+}
+
+export type RegulationModuleState = { error?: string; success?: boolean };
+
+/**
+ * Saves the building's regulation module (QLD stage 2, step 10), for a
+ * building whose rule pack has a REGULATION_MODULE selector. The adviser (or
+ * StrataVerze) saves it, as for the building's other settings. Only a module
+ * StrataVerze applies can be saved.
+ */
+export async function saveRegulationModuleAction(
+  schemeId: string,
+  _prev: RegulationModuleState,
+  formData: FormData,
+): Promise<RegulationModuleState> {
+  try {
+    const { profile } = await requireRolesOrAdmin(schemeId, ["ADVISER"]);
+    const current = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+    if (!current) return { error: "Scheme not found." };
+    const { rules } = rulesForState(current.state);
+    const value = String(formData.get("regulationModule") ?? "").trim();
+    const problem = regulationModuleChoiceProblem(rules, value);
+    if (problem) return { error: problem };
+
+    await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).update({ regulationModule: value });
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "REGULATION_MODULE_CHANGED",
+      entityType: "Scheme",
+      entityId: schemeId,
+      metadata: { from: current.regulationModule ?? null, to: value },
+    });
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    logError("saveRegulationModuleAction error:", err);
+    return { error: "Failed to save the setting. Please try again." };
   }
 }
 

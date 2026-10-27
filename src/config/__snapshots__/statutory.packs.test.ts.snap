@@ -1563,7 +1563,14 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
   },
   "ENTITLEMENT_SCHEDULES": [
     {
+      "decides": [
+        "CONTRIBUTIONS",
+        "POLL_VOTE",
+        "SPECIAL_RESOLUTION",
+      ],
+      "help": "From the contribution schedule in the community management statement. A whole number, not 0.",
       "key": "CONTRIBUTION",
+      "label": "Contribution Schedule Lot Entitlement",
       "name": "contribution schedule lot entitlement",
       "onLot": true,
       "source": "Body Corporate and Community Management Act 1997 (Qld) ss 46, 47(2), 106(3), 110(3); Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 162(5)",
@@ -1575,7 +1582,15 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       ],
     },
     {
+      "decides": [
+        "COMMON_PROPERTY_SHARE",
+        "INSURANCE_COMMON_PROPERTY",
+        "TERMINATION_INTEREST",
+        "VALUE_BASED_RATES",
+      ],
+      "help": "From the interest schedule in the community management statement. A whole number, not 0.",
       "key": "INTEREST",
+      "label": "Interest Schedule Lot Entitlement",
       "name": "interest schedule lot entitlement",
       "onLot": false,
       "source": "Body Corporate and Community Management Act 1997 (Qld) s 47(3); Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 197(4), 201(1)",
@@ -1684,6 +1699,22 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     {
       "point": "Works approvals compare the quoted total (including any GST) with the major spending limit, worked out from the building's recorded number of lots.",
       "where": "WORKS_QUOTES; src/lib/works/quote-rule.ts",
+    },
+    {
+      "point": "The regulation module is a building setting the adviser (or StrataVerze) saves, like the building's name, not part of the locked building record. Only the Standard Module can be saved. The other modules are listed but cannot be chosen.",
+      "where": "REGULATION_MODULE; src/app/(portal)/adviser/schemes/actions.ts saveRegulationModuleAction",
+    },
+    {
+      "point": "Each lot's interest schedule lot entitlement is part of the locked building record, as unit entitlement is: once the lot exists only StrataVerze enters or changes it. It is required when a lot is created or imported, and an existing lot may be saved without it (the lot stays flagged).",
+      "where": "src/lib/auth/building-lock.ts LOCKED_LOT_FIELDS; src/app/(portal)/adviser/schemes/[id]/lots/actions.ts",
+    },
+    {
+      "point": "The share of the buildings insurance premium is not given a schedule. SM s 201(1) shares it by the interest schedule for building and volumetric format lots and by reinstatement cost for standard format lots, with adjustments allowed (s 201(2)). StrataVerze does not hold each lot's plan format, so it refuses to work the share out rather than assume the interest schedule.",
+      "where": "ENTITLEMENT_SCHEDULES INTEREST decides; src/lib/jurisdiction/building-data.ts scheduleFor",
+    },
+    {
+      "point": "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft, but nothing is refused: contributions and meetings run on the contribution schedule, which every lot holds.",
+      "where": "src/lib/jurisdiction/building-data.ts",
     },
   ],
   "FUND_CATALOGUE": [

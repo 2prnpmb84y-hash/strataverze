@@ -8,6 +8,14 @@
  * src/lib/queries/data-migration.ts). This table is the only place that links
  * the two: the browser builds its columns and rows from it, and the server
  * actions translate every row with it before checking or importing anything.
+ *
+ * A field marked `separateEntitlement` is a second lot entitlement that only
+ * some rule packs hold (Queensland's interest schedule, stage 2, step 10). It
+ * is not required here: the building's pack decides. The page shows it, under
+ * the pack's label and as a required column, only for a building whose pack
+ * holds it (importFieldsFor), and the server translates it for every building
+ * but checks and writes it only where the pack holds it (validateLots and
+ * importLots).
  */
 
 export type ImportDataType = "lots" | "chart_of_accounts" | "opening_balances";
@@ -23,6 +31,11 @@ export interface ImportField {
   readonly required: boolean;
   /** Short headers some systems export, matched only in full (StrataMax style). */
   readonly aliases?: readonly string[];
+  /**
+   * A second lot entitlement held only where the building's rule pack lists
+   * that schedule (see separateEntitlement in src/lib/jurisdiction/building-data.ts).
+   */
+  readonly separateEntitlement?: true;
 }
 
 export const IMPORT_FIELDS = {
@@ -32,6 +45,15 @@ export const IMPORT_FIELDS = {
     { key: "entitlement", field: "entitlement", label: "Entitlement", required: true },
     { key: "floor_area", field: "floorArea", label: "Floor Area", required: false, aliases: ["Area"] },
     { key: "lot_type", field: "lotType", label: "Lot Type", required: false },
+    // Queensland's interest schedule (stage 2, step 10). Required for a
+    // building whose pack holds it, under the pack's label (importFieldsFor).
+    {
+      key: "interest_schedule_entitlement",
+      field: "interestScheduleEntitlement",
+      label: "Interest Schedule Lot Entitlement",
+      required: false,
+      separateEntitlement: true,
+    },
   ],
   chart_of_accounts: [
     { key: "account_code", field: "code", label: "Account Code", required: true, aliases: ["AccCode"] },
@@ -66,6 +88,24 @@ export function isImportDataType(value: string): value is ImportDataType {
   return (IMPORT_DATA_TYPES as readonly string[]).includes(value);
 }
 
+/** The second lot entitlement a building's lots hold, as the server page passes it (its field and the pack's label), or null. */
+export type BuildingSeparateEntitlement = { field: string; label: string } | null;
+
+/**
+ * The columns the page shows for one building. A `separateEntitlement` field
+ * appears only when the building's pack holds that schedule in that field,
+ * under the pack's label and required, since every lot needs it; otherwise
+ * it is left out (NSW). The other fields come as the table has them.
+ */
+export function importFieldsFor(dataType: ImportDataType, separate: BuildingSeparateEntitlement = null): readonly ImportField[] {
+  const out: ImportField[] = [];
+  for (const f of IMPORT_FIELDS[dataType] as readonly ImportField[]) {
+    if (!f.separateEntitlement) out.push(f);
+    else if (separate && separate.field === f.field) out.push({ ...f, label: separate.label, required: true });
+  }
+  return out;
+}
+
 /**
  * One row's data, from the keys the browser sends to the field names the
  * server reads. A key that is not in the table is dropped.
@@ -81,7 +121,7 @@ export function toServerData(dataType: ImportDataType, data: Record<string, unkn
 
 /** An error for each required field that is empty, in the words the preview shows. */
 export function missingRequired(dataType: ImportDataType, serverData: Record<string, string>): string[] {
-  return (IMPORT_FIELDS[dataType] as readonly ImportField[])
+  return importFieldsFor(dataType)
     .filter((f) => f.required && !(serverData[f.field] ?? "").trim())
     .map((f) => `${f.label} is required`);
 }
@@ -94,10 +134,15 @@ const compact = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, "");
  * punctuation. Exact matches come first: the field's own words, its label or
  * one of its short aliases. Then a header that holds every word of the key,
  * the shortest first, so "Account Type" wins over "Account Sub Type". Each
- * column feeds at most one field.
+ * column feeds at most one field. Pass the building's second lot entitlement
+ * (importFieldsFor) to match its column too.
  */
-export function autoDetectMapping(dataType: ImportDataType, headers: string[]): Record<string, string> {
-  const fields = IMPORT_FIELDS[dataType] as readonly ImportField[];
+export function autoDetectMapping(
+  dataType: ImportDataType,
+  headers: string[],
+  separate: BuildingSeparateEntitlement = null,
+): Record<string, string> {
+  const fields = importFieldsFor(dataType, separate);
   const mapping: Record<string, string> = {};
   const used = new Set<number>();
   const take = (field: ImportField, index: number) => {
@@ -156,14 +201,18 @@ export function parseCsvContent(content: string): { headers: string[]; rows: str
 /**
  * The rows the browser sends, built from the CSV and the column mapping
  * (browser key to CSV header), with the required field check already run.
+ * Pass the building's second lot entitlement (importFieldsFor) to send its
+ * column too: the server checks it against the building's pack, for the
+ * preview and the import alike.
  */
 export function buildImportRows(
   dataType: ImportDataType,
   headers: string[],
   csvRows: string[][],
   columnMapping: Record<string, string>,
+  separate: BuildingSeparateEntitlement = null,
 ): ImportRow[] {
-  const fields = IMPORT_FIELDS[dataType] as readonly ImportField[];
+  const fields = importFieldsFor(dataType, separate);
   return csvRows.map((csvRow, idx) => {
     const data: Record<string, string> = {};
     for (const field of fields) {

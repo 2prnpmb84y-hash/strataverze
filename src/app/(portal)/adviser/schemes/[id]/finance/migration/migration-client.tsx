@@ -6,10 +6,11 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { processMigrationAction, validateMigrationAction } from "./actions";
 import {
-  IMPORT_FIELDS,
   autoDetectMapping,
   buildImportRows,
+  importFieldsFor,
   parseCsvContent,
+  type BuildingSeparateEntitlement,
   type ImportDataType,
 } from "@/lib/finance/migration-import-fields";
 
@@ -35,6 +36,12 @@ interface MigrationRow {
 interface MigrationClientProps {
   schemeId: string;
   schemeName: string;
+  /**
+   * The second lot entitlement the building's lots hold (Queensland's interest
+   * schedule, stage 2, step 10), from the server page: a required column of a
+   * lots file. Null for NSW.
+   */
+  separateEntitlement?: BuildingSeparateEntitlement;
 }
 
 // ── Constants ────────────────────────────────────────────────────
@@ -100,9 +107,15 @@ interface TargetField {
   required: boolean;
 }
 
-// The columns, and the keys each row is sent under, come from the shared
-// table the server also translates with (migration-import-fields).
-const TARGET_FIELDS: Record<DataType, readonly TargetField[]> = IMPORT_FIELDS;
+/**
+ * The fields a file of `dataType` maps, with the building's second lot
+ * entitlement for lots where it holds one (stage 2, step 10). The columns, and
+ * the keys each row is sent under, come from the shared table the server also
+ * translates with (migration-import-fields).
+ */
+function targetFieldsFor(dataType: DataType, separate: BuildingSeparateEntitlement): readonly TargetField[] {
+  return importFieldsFor(dataType, separate);
+}
 
 const STEP_LABELS: { step: MigrationStep; label: string }[] = [
   { step: "source", label: "Source" },
@@ -115,7 +128,7 @@ const STEP_LABELS: { step: MigrationStep; label: string }[] = [
 
 // ── Component ────────────────────────────────────────────────────
 
-export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) {
+export function MigrationClient({ schemeId, schemeName, separateEntitlement = null }: MigrationClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -212,7 +225,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
 
         // Auto-detect column mappings
         if (dataType) {
-          const detected = autoDetectMapping(dataType, headers);
+          const detected = autoDetectMapping(dataType, headers, separateEntitlement);
           setColumnMapping(detected);
         }
 
@@ -220,7 +233,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
       };
       reader.readAsText(file);
     },
-    [dataType],
+    [dataType, separateEntitlement],
   );
 
   function handleFileDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -245,7 +258,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
     setError(undefined);
 
     // Check required mappings
-    const fields = TARGET_FIELDS[dataType];
+    const fields = targetFieldsFor(dataType, separateEntitlement);
     const missingRequired = fields.filter(
       (f) => f.required && !columnMapping[f.key],
     );
@@ -268,6 +281,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
       csvHeaders,
       csvRows,
       columnMapping,
+      separateEntitlement,
     );
 
     setMigrationRows(rows);
@@ -602,7 +616,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 Column Mapping
               </p>
               <div className="space-y-3">
-                {TARGET_FIELDS[dataType].map((field) => (
+                {targetFieldsFor(dataType, separateEntitlement).map((field) => (
                   <div
                     key={field.key}
                     className="flex items-center gap-4"
@@ -749,7 +763,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                     <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase">
                       Row
                     </th>
-                    {TARGET_FIELDS[dataType].map((field) => (
+                    {targetFieldsFor(dataType, separateEntitlement).map((field) => (
                       <th
                         key={field.key}
                         className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase"
@@ -781,7 +795,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                         <td className="px-3 py-2 text-ink-muted tabular-nums">
                           {row.rowNumber}
                         </td>
-                        {TARGET_FIELDS[dataType].map((field) => (
+                        {targetFieldsFor(dataType, separateEntitlement).map((field) => (
                           <td
                             key={field.key}
                             className="px-3 py-2 text-ink"

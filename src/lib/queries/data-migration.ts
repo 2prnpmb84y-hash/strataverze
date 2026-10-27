@@ -5,6 +5,8 @@ import type {
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
 import { logActivity } from "@/lib/queries/activity-log";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { entitlementInputProblem, parseEntitlement, separateEntitlement } from "@/lib/jurisdiction/building-data";
 import {
   missingRequired,
   toServerData,
@@ -588,6 +590,10 @@ export async function validateLots(
     existingLots.map((l) => String(l.lotNumber).trim()),
   );
 
+  // A second lot entitlement the building's lots hold (Queensland's interest
+  // schedule, stage 2, step 10): required on every row, a positive whole number.
+  const separate = separateEntitlement((await rulesForScheme(schemeId)).rules);
+
   // Track lot numbers within the import for duplicate detection
   const seenLotNumbers = new Map<string, number>();
 
@@ -631,6 +637,13 @@ export async function validateLots(
       } else if (num > MAX_ENTITLEMENT) {
         errors.push(`Entitlement is too large, the most allowed is ${MAX_ENTITLEMENT}`);
       }
+    }
+
+    if (separate && !separate.field) {
+      errors.push(`StrataVerze does not hold each lot's ${separate.name} yet, so lots cannot be imported for this building.`);
+    } else if (separate?.field) {
+      const problem = entitlementInputProblem(separate.label, row.data[separate.field], true);
+      if (problem) errors.push(problem);
     }
 
     // Validate floor area if provided
@@ -838,6 +851,10 @@ export async function validateOpeningBalances(
  * accepts. Each row is translated from the browser's keys to the field names
  * above (see migration-import-fields), and the browser's own error lists are
  * ignored: the required field check and the field rules run again here.
+ * A lot's second entitlement (Queensland's interest schedule, stage 2, step
+ * 10) is translated for every building, then required and checked, or
+ * ignored, by validateLots from the building's pack, so the preview and the
+ * import agree on it too.
  */
 export async function checkImportRows(
   schemeId: string,
@@ -889,12 +906,16 @@ export async function importLots(
 ): Promise<{ created: number; errors: string[] }> {
   const validRows = rows.filter((r) => r.errors.length === 0);
   let created = 0;
+  // The second lot entitlement, where the building's lots hold one (validated by validateLots).
+  const separateField = separateEntitlement((await rulesForScheme(schemeId)).rules)?.field ?? null;
 
   // All or nothing: a row that fails aborts the transaction (see MigrationImportError).
   await db.transaction(async (tx) => {
     for (const row of validRows) {
       try {
         const entitlement = Number(row.data.entitlement);
+        const second = separateField ? parseEntitlement(row.data[separateField]) : null;
+        if (second && (!second.ok || second.value == null)) throw new Error("The second lot entitlement is missing or not a whole number of at least 1.");
         // A floor area that is not a number is skipped, as the preview says.
         const area = row.data.floorArea?.trim() ? Number(row.data.floorArea) : NaN;
         const floorArea = Number.isFinite(area) ? area : null;
@@ -906,6 +927,7 @@ export async function importLots(
             ? row.data.unitNumber.trim()
             : null,
           entitlement,
+          ...(separateField && second?.ok ? { [separateField]: second.value } : {}),
           floorArea,
           lotType: row.data.lotType
             ? row.data.lotType.trim().toUpperCase()

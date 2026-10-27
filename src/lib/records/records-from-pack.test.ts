@@ -17,6 +17,7 @@ const QLD = PENDING_RULE_PACKS.QLD.rules;
 const pack = vi.hoisted(() => ({ rules: null as unknown, today: "2026-10-27" }));
 const rows = vi.hoisted(() => ({
   lot: { id: "lot-1", schemeId: "s1", lotNumber: "7" } as Record<string, unknown> | null,
+  scheme: { id: "s1", name: "Seaview", state: "QLD", timeZone: "Australia/Brisbane" } as Record<string, unknown>,
   cert: null as Record<string, unknown> | null,
   issued: [] as Record<string, unknown>[],
   inspection: null as Record<string, unknown> | null,
@@ -29,7 +30,7 @@ vi.mock("@/prisma/db", () => {
   const table = (name: string) => {
     const chain: Record<string, unknown> = {};
     const first = async () =>
-      name === "Lot" ? rows.lot : name === "SaleCertificate" ? rows.cert : name === "RecordsInspection" ? rows.inspection : name === "Scheme" ? { id: "s1", name: "Seaview", state: "QLD", timeZone: "Australia/Brisbane" } : null;
+      name === "Lot" ? rows.lot : name === "SaleCertificate" ? rows.cert : name === "RecordsInspection" ? rows.inspection : name === "Scheme" ? rows.scheme : null;
     const all = async () => (name === "SaleCertificate" ? rows.issued : name === "LevyNotice" ? rows.notices : name === "InsurancePolicy" ? rows.policies : name === "Fund" ? [{ id: "f-admin", fundType: "ADMINISTRATIVE" }, { id: "f-sink", fundType: "CAPITAL_WORKS" }] : []);
     Object.assign(chain, {
       where: () => chain,
@@ -70,6 +71,7 @@ beforeEach(() => {
   pack.rules = QLD;
   pack.today = "2026-10-27";
   rows.lot = { id: "lot-1", schemeId: "s1", lotNumber: "7" };
+  rows.scheme = { id: "s1", name: "Seaview", state: "QLD", timeZone: "Australia/Brisbane" };
   rows.cert = null;
   rows.issued = [];
   rows.inspection = null;
@@ -261,6 +263,29 @@ describe("a Queensland certificate (store)", () => {
     expect(byNo["4"]).toContain("No contribution notices for this fund");
     expect(byNo["6"]).toContain("Unpaid contributions overdue at 2026-10-27: $450.00.");
     expect(byNo["6"]).toContain("Penalty charged and unpaid: $11.25.");
+    for (const i of items) {
+      expect(i.text, i.no).not.toMatch(NSW_WORDS);
+      expect(i.text, i.no).not.toMatch(NO_DASH_OR_SEMICOLON);
+    }
+  });
+
+  it("is drafted with the building's regulation module and both of the lot's entitlements (stage 2, step 10)", async () => {
+    rows.scheme = { ...rows.scheme, regulationModule: "STANDARD" };
+    rows.lot = { id: "lot-1", schemeId: "s1", lotNumber: "7", entitlement: 50, interestScheduleEntitlement: 45 };
+    const byNo = Object.fromEntries((await draftCertificateItems("s1", "lot-1", new Date("2026-10-27T02:00:00Z"))).map((i) => [i.no, i.text]));
+    expect(byNo["2"]).toBe("Scheme name: Seaview. Regulation module: Standard Module.");
+    expect(byNo["5"]).toBe(
+      "Contribution schedule lot entitlement: 50\nInterest schedule lot entitlement: 45\nFrom StrataVerze's records. Check them before the certificate is issued.",
+    );
+  });
+
+  it("says plainly when the module or an entitlement is not recorded, and never fills one from the other", async () => {
+    rows.lot = { id: "lot-1", schemeId: "s1", lotNumber: "7", entitlement: 50, interestScheduleEntitlement: null };
+    const items = await draftCertificateItems("s1", "lot-1", new Date("2026-10-27T02:00:00Z"));
+    const byNo = Object.fromEntries(items.map((i) => [i.no, i.text]));
+    expect(byNo["2"]).toBe("Scheme name: Seaview. Regulation module: not recorded for this building in StrataVerze. Check and complete.");
+    expect(byNo["5"]).toContain("Contribution schedule lot entitlement: 50\n");
+    expect(byNo["5"]).toContain("Interest schedule lot entitlement: not recorded for this lot in StrataVerze. Check and complete.");
     for (const i of items) {
       expect(i.text, i.no).not.toMatch(NSW_WORDS);
       expect(i.text, i.no).not.toMatch(NO_DASH_OR_SEMICOLON);

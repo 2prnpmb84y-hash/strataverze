@@ -185,7 +185,9 @@ export type ActivityAction =
   | "STATUTORY_PACK_ADOPTED"
   | "AUDIT_EXPORT_DOWNLOADED"
   | "INTEREST_SETTING_CHANGED"
-  | "LEVY_NOTICES_EMAILED";
+  | "LEVY_NOTICES_EMAILED"
+  // The building's regulation module (Queensland, stage 2, step 10). Advisers only: not in any owner feed.
+  | "REGULATION_MODULE_CHANGED";
 
 export type ActivityEntityType =
   | "MigrationBatch"

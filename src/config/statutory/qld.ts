@@ -123,24 +123,44 @@ export const FUND_RULES = {
  * Two schedules of lot entitlements, both in the community management
  * statement; each entitlement a whole number, not 0 (Act s 46(2) to (6)).
  * The contribution schedule is held on each lot (levies are worked out from
- * it); the interest schedule is held separately.
+ * it); the interest schedule is held separately, in
+ * lots.interest_schedule_entitlement (stage 2, step 10).
+ *
+ * `decides` (stage 2, step 10, 27 Oct 2026) lists the same uses as `usedFor`,
+ * for code: the contribution schedule for contributions (Act s 47(2)(a);
+ * SM s 162(5)), a poll on an ordinary resolution (Act ss 47(2)(b), 110(3)) and
+ * the entitlement test in a special resolution (Act s 106(3)(c)); the interest
+ * schedule for the share of common property, interest on termination by
+ * resolution without dissent or court order, and value-based charges, rates
+ * and taxes (Act s 47(3)(a) to (c)), and the insurance premium for common
+ * property and assets (SM s 197(4)).
+ * The buildings premium (INSURANCE_BUILDINGS) is in neither list on purpose:
+ * SM s 201(1) shares it by the interest schedule only for building and
+ * volumetric format lots, standard format lots share it by the cost of
+ * reinstating the buildings on the lot, and s 201(2) allows adjustments. The
+ * plan format is not held, so `scheduleFor` refuses it (GO-LIVE GAP below).
  */
 export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
   {
     key: "CONTRIBUTION",
     name: "contribution schedule lot entitlement",
+    label: "Contribution Schedule Lot Entitlement",
+    help: "From the contribution schedule in the community management statement. A whole number, not 0.",
     onLot: true,
     usedFor: [
       "each lot's share of contributions, except insurance and other amounts worked out another way",
       "the value of a lot's vote on a poll for an ordinary resolution",
       "the contribution test in a special resolution (lots against may hold no more than 25% of the total)",
     ],
+    decides: ["CONTRIBUTIONS", "POLL_VOTE", "SPECIAL_RESOLUTION"],
     source: `${ACT} ss 46, 47(2), 106(3), 110(3); ${SM} s 162(5)`,
     status: "CONFIRMED",
   },
   {
     key: "INTEREST",
     name: "interest schedule lot entitlement",
+    label: "Interest Schedule Lot Entitlement",
+    help: "From the interest schedule in the community management statement. A whole number, not 0.",
     onLot: false,
     usedFor: [
       "each lot's share of common property",
@@ -148,10 +168,52 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
       "each lot's interest on termination by resolution without dissent or court order",
       "value-based local government and State charges, rates and taxes",
     ],
+    decides: ["COMMON_PROPERTY_SHARE", "INSURANCE_COMMON_PROPERTY", "TERMINATION_INTEREST", "VALUE_BASED_RATES"],
     source: `${ACT} s 47(3); ${SM} ss 197(4), 201(1)`,
     status: "CONFIRMED",
   },
 ];
+
+/*
+ * GO-LIVE GAP (stage 2, step 10, 27 Oct 2026): what holds and uses the
+ * building's module and the interest schedule.
+ * - Held: schemes.regulation_module (adviser building settings, Standard
+ *   Module only) and lots.interest_schedule_entitlement (lot edit, lot create
+ *   and the CSV lot import). A Queensland building with no module, an
+ *   unsupported module or a lot without the entitlement is flagged to the
+ *   adviser on the building and lot pages (src/lib/jurisdiction/building-data.ts).
+ *   No page offers lot create yet (createLotAction is ready). The CSV lot
+ *   import sends the interest schedule column under the browser key
+ *   interest_schedule_entitlement, which the shared mapping table
+ *   (src/lib/finance/migration-import-fields.ts) translates to
+ *   interestScheduleEntitlement, like every other column; the preview and the
+ *   import both check it with this pack (data-migration.ts checkImportRows,
+ *   validateLots and importLots).
+ * - Read: the body corporate certificate draft fills the module and both lot
+ *   entitlements (SM s 233AA(1)). Contributions, polls, the special resolution
+ *   test and the penalty keep using lots.entitlement, the contribution
+ *   schedule.
+ * - Not applied yet: the insurance part of contributions is apportioned by
+ *   the contribution schedule with everything else. SM s 162(5) excepts
+ *   insurance: the common property and assets premium goes by the interest
+ *   schedule (s 197(4)), and the buildings premium by the interest schedule
+ *   for building and volumetric format lots and by reinstatement cost for
+ *   standard format lots (s 201(1)), with adjustments allowed (s 201(2)). The
+ *   levy engine has no separate insurance apportionment and each lot's plan
+ *   format (building, volumetric or standard) is not held. Until it is,
+ *   INSURANCE_BUILDINGS is decided by no schedule and scheduleFor refuses it.
+ *   This must be designed before Queensland contributions are raised. No feature apportions common
+ *   property, termination or rates, so nothing else reads the interest
+ *   schedule yet (entitlementFor and scheduleFor are ready for them).
+ * - The onboarding wizard asks for neither the module nor the interest
+ *   schedule, and still names NSW funds and "unit entitlement". A Queensland
+ *   building created by it is flagged until the module is chosen in its
+ *   settings and each lot's interest schedule entitlement is entered
+ *   (StrataVerze only, as for unit entitlement). The strata roll table, the
+ *   lots card, the building form's total, the owner lot pages and the meeting
+ *   screens still say unit entitlement; the interest schedule has no total on
+ *   the building.
+ */
 
 /**
  * Contribution (levy) notices (SM s 163): at least 30 days before payment is
@@ -1195,6 +1257,26 @@ export const FOR_REVIEW = [
     point:
       "Works approvals compare the quoted total (including any GST) with the major spending limit, worked out from the building's recorded number of lots.",
     where: "WORKS_QUOTES; src/lib/works/quote-rule.ts",
+  },
+  {
+    point:
+      "The regulation module is a building setting the adviser (or StrataVerze) saves, like the building's name, not part of the locked building record. Only the Standard Module can be saved. The other modules are listed but cannot be chosen.",
+    where: "REGULATION_MODULE; src/app/(portal)/adviser/schemes/actions.ts saveRegulationModuleAction",
+  },
+  {
+    point:
+      "Each lot's interest schedule lot entitlement is part of the locked building record, as unit entitlement is: once the lot exists only StrataVerze enters or changes it. It is required when a lot is created or imported, and an existing lot may be saved without it (the lot stays flagged).",
+    where: "src/lib/auth/building-lock.ts LOCKED_LOT_FIELDS; src/app/(portal)/adviser/schemes/[id]/lots/actions.ts",
+  },
+  {
+    point:
+      "The share of the buildings insurance premium is not given a schedule. SM s 201(1) shares it by the interest schedule for building and volumetric format lots and by reinstatement cost for standard format lots, with adjustments allowed (s 201(2)). StrataVerze does not hold each lot's plan format, so it refuses to work the share out rather than assume the interest schedule.",
+    where: "ENTITLEMENT_SCHEDULES INTEREST decides; src/lib/jurisdiction/building-data.ts scheduleFor",
+  },
+  {
+    point:
+      "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft, but nothing is refused: contributions and meetings run on the contribution schedule, which every lot holds.",
+    where: "src/lib/jurisdiction/building-data.ts",
   },
 ] as const;
 

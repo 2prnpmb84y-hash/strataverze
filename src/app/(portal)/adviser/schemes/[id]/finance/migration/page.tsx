@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { MigrationClient } from "./migration-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { separateEntitlement } from "@/lib/jurisdiction/building-data";
 
 export default async function MigrationPage({
   params,
@@ -17,6 +19,8 @@ export default async function MigrationPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  // A second lot entitlement the building's lots hold (Queensland's interest schedule, stage 2, step 10).
+  const separate = separateEntitlement(rulesForState(scheme.state).rules);
 
   return (
     <div className="space-y-6">
@@ -28,7 +32,11 @@ export default async function MigrationPage({
         action={<Button href={`/adviser/schemes/${id}/finance/migration/cutover`}>Cutover</Button>}
       />
 
-      <MigrationClient schemeId={id} schemeName={scheme.name} />
+      <MigrationClient
+        schemeId={id}
+        schemeName={scheme.name}
+        separateEntitlement={separate?.field ? { field: separate.field, label: separate.label } : null}
+      />
     </div>
   );
 }

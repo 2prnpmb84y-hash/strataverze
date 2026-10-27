@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'57d7ae020da1dad786ab2235972b15cfdb91ca39f7264577eec58972c5bb8a3e'>;
+  StorageHashBase<'6f7b0a00095e39235f5410b4d9176c52d3f595bd1db8d8c388a59d65facc7798'>;
 export type ExecutionHash =
   ExecutionHashBase<'7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9'>;
 export type ProfileHash =
@@ -1683,6 +1683,7 @@ export namespace Models {
     entitlement: FieldOutputTypes['public']['Lot']['entitlement'];
     floorArea: FieldOutputTypes['public']['Lot']['floorArea'];
     id: FieldOutputTypes['public']['Lot']['id'];
+    interestScheduleEntitlement: FieldOutputTypes['public']['Lot']['interestScheduleEntitlement'];
     lotNumber: FieldOutputTypes['public']['Lot']['lotNumber'];
     lotType: FieldOutputTypes['public']['Lot']['lotType'];
     schemeId: FieldOutputTypes['public']['Lot']['schemeId'];
@@ -2630,6 +2631,7 @@ export namespace Models {
     planNumber: FieldOutputTypes['public']['Scheme']['planNumber'];
     postcode: FieldOutputTypes['public']['Scheme']['postcode'];
     preMeetingEvotingAdopted: FieldOutputTypes['public']['Scheme']['preMeetingEvotingAdopted'];
+    regulationModule: FieldOutputTypes['public']['Scheme']['regulationModule'];
     state: FieldOutputTypes['public']['Scheme']['state'];
     suburb: FieldOutputTypes['public']['Scheme']['suburb'];
     timeZone: FieldOutputTypes['public']['Scheme']['timeZone'];
@@ -12969,6 +12971,12 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly interest_schedule_entitlement: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly lot_number: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
@@ -17946,6 +17954,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', false>;
                   };
+                  readonly many: false;
+                };
+                readonly regulation_module: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly state: {
@@ -34914,6 +34928,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly interestScheduleEntitlement: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly lotNumber: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -35160,6 +35178,9 @@ type ContractBase = Omit<
                 readonly entitlement: { readonly column: 'entitlement' };
                 readonly floorArea: { readonly column: 'floor_area' };
                 readonly id: { readonly column: 'id' };
+                readonly interestScheduleEntitlement: {
+                  readonly column: 'interest_schedule_entitlement';
+                };
                 readonly lotNumber: { readonly column: 'lot_number' };
                 readonly lotType: { readonly column: 'lot_type' };
                 readonly schemeId: { readonly column: 'scheme_id' };
@@ -40330,6 +40351,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly regulationModule: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly state: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -41031,6 +41056,7 @@ type ContractBase = Omit<
                 readonly preMeetingEvotingAdopted: {
                   readonly column: 'pre_meeting_evoting_adopted';
                 };
+                readonly regulationModule: { readonly column: 'regulation_module' };
                 readonly state: { readonly column: 'state' };
                 readonly suburb: { readonly column: 'suburb' };
                 readonly timeZone: { readonly column: 'time_zone' };

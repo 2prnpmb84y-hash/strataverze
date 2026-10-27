@@ -24,6 +24,21 @@ vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).shar
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(), getAuditTrailForExport: vi.fn(), formatAuditTrailCsv: vi.fn() }));
+// A building on Queensland's pack (pending, so given to no real building yet) for the interest schedule (stage 2, step 10).
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
+  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const forState = (state: string | null | undefined) =>
+    state === "QLD-SHAPED" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state);
+  return {
+    ...actual,
+    rulesForState: forState,
+    rulesForScheme: async (schemeId: string) => {
+      const { sharedFake } = await import("@/test/fake-orm");
+      return forState(sharedFake.table("Scheme").find((s) => s.id === schemeId)?.state as string);
+    },
+  };
+});
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { AuthorisationError } = await import("@/lib/auth/require-membership");
@@ -31,19 +46,22 @@ const { processMigrationAction, validateMigrationAction } = await import("./acti
 const { logActivity } = await import("@/lib/queries/activity-log");
 // The page's own CSV reader, header match and row builder (migration-client.tsx imports these).
 const { autoDetectMapping, buildImportRows, parseCsvContent } = await import("@/lib/finance/migration-import-fields");
+const { separateEntitlement } = await import("@/lib/jurisdiction/building-data");
+const { rulesForState } = await import("@/lib/jurisdiction/scheme-rules");
 
 const SCHEME = "11111111-0000-0000-0000-000000000001";
 const OTHER = "22222222-0000-0000-0000-000000000002";
+const QLD = "33333333-0000-0000-0000-000000000003";
 
 type BrowserRow = { rowNumber: number; data: Record<string, string>; errors: string[]; warnings: string[] };
 const row = (rowNumber: number, data: Record<string, string>): BrowserRow => ({ rowNumber, data, errors: [], warnings: [] });
 
 /** What the browser does: preview first, then import the rows the preview returned. */
-async function previewThenImport(dataType: string, rows: BrowserRow[]) {
-  const preview = await validateMigrationAction(SCHEME, dataType, rows);
+async function previewThenImport(dataType: string, rows: BrowserRow[], schemeId = SCHEME) {
+  const preview = await validateMigrationAction(schemeId, dataType, rows);
   expect(preview.error).toBeUndefined();
   const previewRows = preview.data!.rows as BrowserRow[];
-  const imported = await processMigrationAction(SCHEME, "stratamax", dataType, previewRows);
+  const imported = await processMigrationAction(schemeId, "stratamax", dataType, previewRows);
   return { preview, previewRows, imported };
 }
 
@@ -54,7 +72,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   membership.mockResolvedValue({ profile: { id: "adviser" }, membership: { role: "ADVISER", profileId: "adviser" }, roles: ["ADVISER"] });
   sharedFake.reset({
-    Scheme: [{ id: SCHEME }, { id: OTHER }],
+    // The lot checks read each building's rule pack (stage 2, step 10), so each building has its state.
+    Scheme: [{ id: SCHEME, state: "NSW" }, { id: OTHER, state: "NSW" }, { id: QLD, state: "QLD-SHAPED" }],
     Lot: [
       { id: "lot-existing", schemeId: SCHEME, lotNumber: "9" },
       { id: "lot-other", schemeId: OTHER, lotNumber: "1" },
@@ -213,6 +232,79 @@ describe("a CSV file taken through the browser's own steps", () => {
     const { imported } = await previewThenImport("chart_of_accounts", rows);
     expect(imported).toEqual({ success: true, data: { created: 1, total: 1, skipped: 0 } });
     expect(accounts().find((a) => a.code === "4000")).toMatchObject({ name: "Levy income", accountType: "INCOME", fundId: "fund-admin" });
+  });
+});
+
+describe("a Queensland lots file with the interest schedule lot entitlement (stage 2, step 10)", () => {
+  // What the migration page's server page passes the browser for this building.
+  const separate = separateEntitlement(rulesForState("QLD-SHAPED").rules);
+  const building = { field: separate!.field!, label: separate!.label };
+  const qldLots = () => sharedFake.table("Lot").filter((l) => l.schemeId === QLD);
+  const fromCsv = (csv: string, forBuilding: typeof building | null = building) => {
+    const { headers, rows } = parseCsvContent(csv);
+    return buildImportRows("lots", headers, rows, autoDetectMapping("lots", headers, forBuilding), forBuilding);
+  };
+  const CSV =
+    "Lot Number,Unit Number,Contribution Schedule Lot Entitlement,Interest Schedule Lot Entitlement,Lot Type\n" +
+    "1,101,10,12,Residential\n" +
+    "2,102,10,,Residential\n" +
+    "3,103,10,2.5,Residential\n" +
+    "4,104,15,0,Residential\n" +
+    "5,105,15,20,Commercial\n";
+
+  it("sends the column under its browser key, and the preview and the import agree on it", async () => {
+    const rows = fromCsv(CSV);
+    expect(rows[0].data).toEqual({ lot_number: "1", unit_number: "101", entitlement: "10", lot_type: "Residential", interest_schedule_entitlement: "12" });
+    const { preview, previewRows, imported } = await previewThenImport("lots", rows, QLD);
+    expect(preview.data).toMatchObject({ totalRows: 5, validCount: 2, errorCount: 3 });
+    expect(previewRows.map((r) => r.errors)).toEqual([
+      [],
+      ["Enter the interest schedule lot entitlement."],
+      ["Interest Schedule Lot Entitlement must be a whole number of at least 1."],
+      ["Interest Schedule Lot Entitlement must be a whole number of at least 1."],
+      [],
+    ]);
+    // The preview hands back the browser's keys, and the import skips exactly the rows it flagged.
+    expect(previewRows[0].data.interest_schedule_entitlement).toBe("12");
+    expect(imported).toEqual({ success: true, data: { created: 2, total: 5, skipped: 3 } });
+    expect(qldLots()).toEqual([
+      expect.objectContaining({ lotNumber: "1", entitlement: 10, interestScheduleEntitlement: 12, lotType: "RESIDENTIAL" }),
+      expect.objectContaining({ lotNumber: "5", entitlement: 15, interestScheduleEntitlement: 20, lotType: "COMMERCIAL" }),
+    ]);
+  });
+
+  it("refuses every row of a Queensland file sent without the column, even if the browser says they are clean", async () => {
+    const rows = fromCsv("Lot Number,Entitlement\n1,10\n", null);
+    const preview = await validateMigrationAction(QLD, "lots", rows);
+    expect((preview.data!.rows as BrowserRow[])[0].errors).toEqual(["Enter the interest schedule lot entitlement."]);
+    expect(await processMigrationAction(QLD, "stratamax", "lots", rows)).toEqual({ error: "No valid rows to import." });
+    expect(qldLots()).toHaveLength(0);
+  });
+
+  it("does not read the server's camelCase name from the browser", async () => {
+    const tampered = [row(2, { lot_number: "1", entitlement: "10", interestScheduleEntitlement: "12" })];
+    expect(await processMigrationAction(QLD, "stratamax", "lots", tampered)).toEqual({ error: "No valid rows to import." });
+  });
+
+  it("refuses a lots file for a building with no rule pack, in plain words, and saves nothing", async () => {
+    sharedFake.table("Scheme").push({ id: "44444444-0000-0000-0000-000000000004", state: "ZZ" });
+    const rows = [row(2, { lot_number: "1", entitlement: "10" })];
+    const preview = await validateMigrationAction("44444444-0000-0000-0000-000000000004", "lots", rows);
+    expect(preview.error).toMatch(/^StrataVerze has no strata rules for ZZ yet/);
+    const imported = await processMigrationAction("44444444-0000-0000-0000-000000000004", "stratamax", "lots", rows);
+    expect(imported.error).toMatch(/^StrataVerze has no strata rules for ZZ yet/);
+    expect(sharedFake.table("Lot").filter((l) => l.schemeId === "44444444-0000-0000-0000-000000000004")).toHaveLength(0);
+  });
+
+  it("ignores the column for an NSW building, and never writes it", async () => {
+    const rows = fromCsv("Lot Number,Entitlement,Interest Schedule Lot Entitlement\n7,10,12\n", null);
+    expect(rows[0].data).not.toHaveProperty("interest_schedule_entitlement");
+    // Even when a browser sends it anyway.
+    const sent = [row(2, { lot_number: "7", entitlement: "10", interest_schedule_entitlement: "oops" })];
+    const { previewRows, imported } = await previewThenImport("lots", sent);
+    expect(previewRows[0].errors).toEqual([]);
+    expect(imported).toMatchObject({ success: true, data: { created: 1 } });
+    expect("interestScheduleEntitlement" in lots().find((l) => l.lotNumber === "7")!).toBe(false);
   });
 });
 

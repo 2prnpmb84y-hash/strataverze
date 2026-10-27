@@ -10,12 +10,14 @@ import {
   updateLotAction,
   type LotFormState,
 } from "./actions";
+import type { SeparateEntitlement } from "@/lib/jurisdiction/building-data";
 
 
 type LotDefaults = {
   lotNumber?: string;
   unitNumber?: string | null;
   entitlement?: number;
+  interestScheduleEntitlement?: number | null;
   floorArea?: number | null;
   lotType?: string;
 };
@@ -26,6 +28,8 @@ export function LotForm({
   lotId,
   defaults,
   lockStructure = false,
+  entitlementWords,
+  separate = null,
 }: {
   mode: "create" | "edit";
   schemeId: string;
@@ -33,6 +37,17 @@ export function LotForm({
   defaults?: LotDefaults;
   /** Lot number and unit entitlement are locked (24 Oct): StrataVerze only. */
   lockStructure?: boolean;
+  /**
+   * The pack's label and help for each lot's entitlement, from the server page
+   * (stage 2, step 10). Null keeps the words this form has always shown.
+   */
+  entitlementWords?: { label: string | null; help: string | null };
+  /**
+   * The second schedule the building's lots hold (Queensland's interest
+   * schedule), from the server page, or null (NSW). Locked like the unit
+   * entitlement, and required for a new lot.
+   */
+  separate?: SeparateEntitlement | null;
 }) {
   const action =
     mode === "create"
@@ -74,16 +89,30 @@ export function LotForm({
           />
 
           <FormField
-            label="Unit Entitlement"
+            label={entitlementWords?.label ?? "Unit Entitlement"}
             name="entitlement"
             readOnly={lockStructure}
             type="number"
             required
             defaultValue={defaults?.entitlement}
             placeholder="e.g. 50"
-            helpText="Lot entitlement within the scheme"
+            helpText={entitlementWords?.help ?? "Lot entitlement within the scheme"}
             error={state.fieldErrors?.entitlement}
           />
+
+          {separate?.field && (
+            <FormField
+              label={separate.label}
+              name={separate.field}
+              readOnly={lockStructure}
+              type="number"
+              required={mode === "create"}
+              defaultValue={defaults?.interestScheduleEntitlement ?? ""}
+              placeholder="e.g. 50"
+              helpText={separate.help ?? undefined}
+              error={state.fieldErrors?.[separate.field]}
+            />
+          )}
 
           <FormField
             label="Floor Area (m²)"

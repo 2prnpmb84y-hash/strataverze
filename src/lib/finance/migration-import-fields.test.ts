@@ -12,13 +12,22 @@ vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn() }));
 
 const { MIGRATION_TEMPLATES } = await import("@/lib/queries/data-migration");
 const { FIELDS } = await import("./migration-templates");
-const { IMPORT_FIELDS, IMPORT_DATA_TYPES, autoDetectMapping, buildImportRows, isImportDataType, missingRequired, parseCsvContent, toServerData } = await import(
-  "./migration-import-fields"
-);
+const { IMPORT_FIELDS, IMPORT_DATA_TYPES, autoDetectMapping, buildImportRows, importFieldsFor, isImportDataType, missingRequired, parseCsvContent, toServerData } =
+  await import("./migration-import-fields");
+const { RULE_PACKS, PENDING_RULE_PACKS } = await import("@/config/statutory");
+const { separateEntitlement } = await import("@/lib/jurisdiction/building-data");
+type ImportField = import("./migration-import-fields").ImportField;
 
-const pairs = (dt: keyof typeof IMPORT_FIELDS) => Object.fromEntries(IMPORT_FIELDS[dt].map((f) => [f.key, f.field]));
-const serverFields = (dt: keyof typeof IMPORT_FIELDS) => IMPORT_FIELDS[dt].map((f) => f.field as string).sort();
-const required = (dt: keyof typeof IMPORT_FIELDS) => IMPORT_FIELDS[dt].filter((f) => f.required).map((f) => f.field as string).sort();
+const fieldsOf = (dt: keyof typeof IMPORT_FIELDS) => IMPORT_FIELDS[dt] as readonly ImportField[];
+const pairs = (dt: keyof typeof IMPORT_FIELDS) => Object.fromEntries(fieldsOf(dt).map((f) => [f.key, f.field]));
+const allServerFields = (dt: keyof typeof IMPORT_FIELDS) => fieldsOf(dt).map((f) => f.field).sort();
+// The fields every building's file carries: a second lot entitlement only some packs hold is checked on its own below.
+const serverFields = (dt: keyof typeof IMPORT_FIELDS) => fieldsOf(dt).filter((f) => !f.separateEntitlement).map((f) => f.field).sort();
+const required = (dt: keyof typeof IMPORT_FIELDS) => fieldsOf(dt).filter((f) => f.required).map((f) => f.field).sort();
+
+// Queensland's pack (pending) and its interest schedule, as the migration page's server page passes it.
+const QLD_SEPARATE = separateEntitlement(PENDING_RULE_PACKS.QLD.rules);
+const qldSeparate = { field: QLD_SEPARATE!.field!, label: QLD_SEPARATE!.label };
 
 describe("the browser key to server field table", () => {
   it("maps each browser key the page sends to the field the server reads", () => {
@@ -28,6 +37,7 @@ describe("the browser key to server field table", () => {
       entitlement: "entitlement",
       floor_area: "floorArea",
       lot_type: "lotType",
+      interest_schedule_entitlement: "interestScheduleEntitlement",
     });
     expect(pairs("chart_of_accounts")).toEqual({
       account_code: "code",
@@ -67,8 +77,37 @@ describe("the browser key to server field table", () => {
     for (const dt of IMPORT_DATA_TYPES) {
       const keys = IMPORT_FIELDS[dt].map((f) => f.key);
       expect(new Set(keys).size).toBe(keys.length);
-      expect(new Set(serverFields(dt)).size).toBe(keys.length);
+      expect(new Set(allServerFields(dt)).size).toBe(keys.length);
     }
+  });
+
+  it("holds every second lot entitlement a rule pack keeps on its lots, never required in the table", () => {
+    const packs = [...Object.values(RULE_PACKS), ...Object.values(PENDING_RULE_PACKS)];
+    const held = packs.map((p) => separateEntitlement(p.rules as Parameters<typeof separateEntitlement>[0])?.field).filter((f): f is NonNullable<typeof f> => !!f);
+    expect(held).toContain("interestScheduleEntitlement");
+    const separate = fieldsOf("lots").filter((f) => f.separateEntitlement);
+    expect(separate.map((f) => f.field).sort()).toEqual([...new Set(held)].sort());
+    for (const f of separate) {
+      expect(f.required).toBe(false);
+      // A snake_case browser key, like every other column.
+      expect(f.key).toMatch(/^[a-z]+(_[a-z]+)*$/);
+    }
+    // Only lots carry one.
+    for (const dt of ["chart_of_accounts", "opening_balances"] as const) expect(fieldsOf(dt).some((f) => f.separateEntitlement)).toBe(false);
+  });
+
+  it("shows the interest schedule column only for a building whose pack holds it, required and under the pack's label", () => {
+    expect(importFieldsFor("lots").map((f) => f.field)).not.toContain("interestScheduleEntitlement");
+    // NSW lots hold one entitlement, so its server page passes null.
+    expect(separateEntitlement(RULE_PACKS.NSW.rules)).toBeNull();
+    expect(importFieldsFor("lots", null)).toEqual(importFieldsFor("lots"));
+    const qld = importFieldsFor("lots", qldSeparate).find((f) => f.field === "interestScheduleEntitlement");
+    expect(qld).toMatchObject({ key: "interest_schedule_entitlement", label: "Interest Schedule Lot Entitlement", required: true });
+    expect(qld!.label).toBe(QLD_SEPARATE!.label);
+    // A schedule held in another field never borrows this column.
+    expect(importFieldsFor("lots", { field: "somethingElse", label: "X" })).toEqual(importFieldsFor("lots"));
+    // The table's own required list is unchanged: the pack decides.
+    expect(missingRequired("lots", { lotNumber: "1", entitlement: "5" })).toEqual([]);
   });
 
   it("is the only list of columns: the page keeps no key list of its own", () => {
@@ -98,6 +137,22 @@ describe("rows built the browser's way", () => {
       warnings: [],
     });
     expect(toServerData("lots", row.data)).toEqual({ lotNumber: "1", unitNumber: "101", entitlement: "25", floorArea: "80", lotType: "Residential" });
+  });
+
+  it("matches and sends a Queensland lot's interest schedule column under its browser key", () => {
+    const headers = ["Lot Number", "Contribution Schedule Lot Entitlement", "Interest Schedule Lot Entitlement"];
+    const mapping = autoDetectMapping("lots", headers, qldSeparate);
+    expect(mapping).toEqual({
+      lot_number: "Lot Number",
+      entitlement: "Contribution Schedule Lot Entitlement",
+      interest_schedule_entitlement: "Interest Schedule Lot Entitlement",
+    });
+    const [row] = buildImportRows("lots", headers, [["1", "10", "12"]], mapping, qldSeparate);
+    expect(row.data).toEqual({ lot_number: "1", entitlement: "10", interest_schedule_entitlement: "12" });
+    expect(toServerData("lots", row.data)).toEqual({ lotNumber: "1", entitlement: "10", interestScheduleEntitlement: "12" });
+    // An NSW building does not map or send the column.
+    expect(autoDetectMapping("lots", headers).interest_schedule_entitlement).toBeUndefined();
+    expect(buildImportRows("lots", headers, [["1", "10", "12"]], mapping)[0].data).not.toHaveProperty("interest_schedule_entitlement");
   });
 
   it("prefers an exact header, so Account Sub Type placed first cannot take Account Type", () => {

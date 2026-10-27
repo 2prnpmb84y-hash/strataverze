@@ -25,6 +25,7 @@ import {
 } from "@/lib/finance/migration-batches";
 import { CUTOVER_DATA_TYPES, type CutoverDataType } from "@/lib/finance/migration-cutover";
 import { FundIntegrityError } from "@/lib/finance/fund-integrity";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
 
 type ActionState = {
   error?: string;
@@ -102,6 +103,8 @@ export async function processMigrationAction(
     if (err instanceof AuthorisationError) {
       return { error: err.message };
     }
+    // The lot checks read the building's rule pack (stage 2, step 10): a building with none fails closed, in plain words.
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     if (err instanceof MigrationImportError) {
       // Nothing was saved: the transaction rolled back. The database message stays in the log.
       logError(`Migration import error on row ${err.rowNumber}:`, err.cause);
@@ -156,6 +159,7 @@ export async function validateMigrationAction(
     if (err instanceof AuthorisationError) {
       return { error: err.message };
     }
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     logError("Migration validation error:", err);
     return {
       // Database and library messages stay in the server log (S7, SEC-025).

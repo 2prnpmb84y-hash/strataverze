@@ -24,3 +24,21 @@ describe("updateScheme and the time zone", () => {
     expect(row().timeZone).toBe("Australia/Sydney");
   });
 });
+
+describe("updateScheme and the regulation module (QLD stage 2, step 10)", () => {
+  const scheme = () => sharedFake.table("Scheme")[0] as Record<string, unknown>;
+
+  it("clears a Queensland building's module when its state changes, so the database's Queensland-only check holds", async () => {
+    sharedFake.reset({ Scheme: [{ id: "s", state: "QLD", postcode: "4000", timeZone: "Australia/Brisbane", regulationModule: "STANDARD" }] });
+    await updateScheme("s", { state: "QLD", postcode: "4000", name: "Kept" });
+    expect(scheme().regulationModule).toBe("STANDARD");
+    await updateScheme("s", { state: "NSW", postcode: "2000" });
+    expect(scheme()).toMatchObject({ state: "NSW", regulationModule: null, timeZone: "Australia/Sydney" });
+  });
+
+  it("leaves an NSW building's update as it was: no module is written", async () => {
+    sharedFake.reset({ Scheme: [{ id: "s", name: "Old", state: "NSW", postcode: "2000", timeZone: "Australia/Sydney" }] });
+    await updateScheme("s", { name: "New", state: "NSW", postcode: "2880" });
+    expect(scheme()).toEqual({ id: "s", name: "New", state: "NSW", postcode: "2880", timeZone: "Australia/Broken_Hill" });
+  });
+});

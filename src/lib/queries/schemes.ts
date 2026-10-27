@@ -231,16 +231,27 @@ export async function updateScheme(
   // Howe Island). Only a real change resets it, so a time zone StrataVerze set
   // by hand survives other edits.
   let timeZone: string | null = null;
+  // A regulation module belongs to its state's rule pack (QLD stage 2,
+  // step 10): a building moved to another state no longer has one, and the
+  // database holds a module for Queensland only. An NSW building has none, so
+  // nothing changes for it.
+  let clearModule = false;
   if (data.state !== undefined || data.postcode !== undefined) {
     const current = await db.orm.public.Scheme.where({ id: schemeId }).first();
     const norm = (v: unknown) => String(v ?? "").trim().toUpperCase();
-    const changed = (data.state !== undefined && norm(data.state) !== norm(current?.state)) || (data.postcode !== undefined && norm(data.postcode) !== norm(current?.postcode));
+    const stateChanged = data.state !== undefined && norm(data.state) !== norm(current?.state);
+    const changed = stateChanged || (data.postcode !== undefined && norm(data.postcode) !== norm(current?.postcode));
     if (changed) {
       timeZone = defaultTimeZone(data.state ?? current?.state, data.postcode ?? current?.postcode);
       if (!timeZone) throw new Error(`No time zone is known for ${data.state ?? current?.state ?? "this state"}.`);
     }
+    clearModule = stateChanged && current?.regulationModule != null;
   }
-  return db.orm.public.Scheme.where({ id: schemeId }).update({ ...data, ...(timeZone ? { timeZone: timeZone as unknown as Varchar<64> } : {}) });
+  return db.orm.public.Scheme.where({ id: schemeId }).update({
+    ...data,
+    ...(timeZone ? { timeZone: timeZone as unknown as Varchar<64> } : {}),
+    ...(clearModule ? { regulationModule: null } : {}),
+  });
 }
 
 /**
