@@ -236,6 +236,7 @@ model Scheme {
   paymentPlanRequests         PaymentPlanRequest[]
   committeeTraining           CommitteeTraining[]
   annualReports               AnnualReport[]
+  proceedingsDeadlineReminders ProceedingsDeadlineReminder[]
   saleCertificates            SaleCertificate[]
   recordsInspections          RecordsInspection[]
 
@@ -290,6 +291,7 @@ model Lot {
   debtCollection     LotDebtCollection?
   debtRecoveryCases  DebtRecoveryCase[]
   debtRecoveryPaymentPlans PaymentPlan[]
+  proceedingsDeadlineReminders ProceedingsDeadlineReminder[]
   paymentPlanRequests PaymentPlanRequest[]
   proxies            LotProxy[]
   powersOfAttorney   LotPowerOfAttorney[]
@@ -4405,6 +4407,28 @@ model AnnualReport {
 
   @@unique([schemeId, agmOn])
   @@map("annual_reports")
+}
+
+/// The daily reminder for the deadline to start proceedings for a long
+/// outstanding debt (the Queensland 2 year rule, SM s 166(2); QLD go-live gap,
+/// 27 Oct 2026). One row per lot and oldest unpaid due date: the last stage
+/// emailed, claimed before it is sent so a retried run sends it once.
+model ProceedingsDeadlineReminder {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId    String   @map("scheme_id") @db.Uuid
+  lotId       String   @map("lot_id") @db.Uuid
+  oldestDueOn DateTime @db.Date @map("oldest_due_on") // the date for payment of the lot's oldest unpaid contribution
+  deadlineOn  DateTime @db.Date @map("deadline_on") // the last day to start proceedings, as StrataVerze reads the rule
+  lastStage   String   @map("last_stage") // FLAGGED, DAYS_30, DAYS_14, DAYS_7, PASSED
+  lastSentOn  DateTime @db.Date @map("last_sent_on") // the building's day the stage was sent
+  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  scheme      Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  lot         Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([lotId, oldestDueOn])
+  @@map("proceedings_deadline_reminders")
 }
 
 /// A section 184 strata information certificate for a lot: drafted from the

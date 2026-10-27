@@ -16,7 +16,8 @@ import { logError } from "@/lib/log";
  *
  * The same daily run closes works marketplace deadlines (works stage 3) and
  * tells the committee, and sends statutory deadline reminders (payment plan
- * replies, committee training, Strata Hub reports); a failure there never stops the levy notices.
+ * replies, committee training, Strata Hub reports, the deadline to start proceedings for a long
+ * outstanding debt); a failure there never stops the levy notices.
  */
 export const maxDuration = 300;
 
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
   }
   const { recovered, issued, resent } = await runLevyNoticeDay(now);
   // After the levy notices, so reminders never hold them up.
-  let compliance: { paymentPlanReminders: number; trainingReminders: number; annualReportReminders: number } | { error: string };
+  let compliance: { paymentPlanReminders: number; trainingReminders: number; annualReportReminders: number; proceedingsReminders: number } | { error: string };
   try {
     compliance = await runComplianceDay(now);
   } catch (err) {

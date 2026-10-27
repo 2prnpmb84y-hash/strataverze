@@ -45,6 +45,9 @@ type Predicate = (row: Row) => boolean;
 
 const value = (row: Row, field: string) => (row[field] === undefined ? null : row[field]);
 
+const likePattern = (p: string, flags: string) =>
+  new RegExp(`^${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*").replace(/_/g, ".")}$`, `s${flags}`);
+
 const fieldProxy = new Proxy(
   {},
   {
@@ -60,6 +63,9 @@ const fieldProxy = new Proxy(
       lte: (v: unknown) => (row: Row) => String(value(row, field)) <= String(v),
       gt: (v: unknown) => (row: Row) => String(value(row, field)) > String(v),
       lt: (v: unknown) => (row: Row) => String(value(row, field)) < String(v),
+      // SQL patterns: % is any run of characters, _ any one; ilike ignores letter case.
+      like: (p: string) => (row: Row) => likePattern(p, "").test(String(value(row, field) ?? "")),
+      ilike: (p: string) => (row: Row) => likePattern(p, "i").test(String(value(row, field) ?? "")),
       asc: () => null,
       desc: () => null,
     }),

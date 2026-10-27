@@ -482,6 +482,17 @@ export const DEBT_RECOVERY = {
   recoveryCostsRecoverable: true,
   /** A debt outstanding for 2 years: proceedings must start within 2 months after the 2-year period (SM s 166(2)). */
   mustStartProceedings: { overdueYears: 2, withinMonths: 2, citation: "Standard Module s 166(2)" },
+  /**
+   * The daily reminder's subject and heading (27 Oct 2026): StrataVerze
+   * wording, not the law. They call the deadline StrataVerze's date, as it is
+   * StrataVerze's reading of s 166(2) (FOR_REVIEW).
+   */
+  proceedingsReminder: {
+    subject: "StrataVerze date to start proceedings for lot {lot}: {date}, {scheme}",
+    subjectPassed: "Passed: StrataVerze date to start proceedings for lot {lot} was {date}, {scheme}",
+    heading: "StrataVerze date to start proceedings for lot {lot}",
+    headingPassed: "The StrataVerze date to start proceedings for lot {lot} has passed",
+  },
   /** The committee may decide to recover a liquidated debt (SM s 52(1)(e)(i)). */
   committeeMayDecide: true,
   /** A debt claim is a QCAT minor civil dispute up to $25,000, or a claim in a court (Act s 229A(1), (2); QCAT Act sch 3). */
@@ -499,11 +510,23 @@ export const DEBT_RECOVERY = {
 
 /*
  * GO-LIVE GAP (stage 2, step 8, 27 Oct 2026): the 2 year rule (SM s 166(2))
- * is shown as a warning on the adviser debt recovery page only
- * (src/lib/debt-recovery/proceedings-deadline.ts). No daily reminder is sent:
- * each daily reminder is claimed in a column of its own row so a retried run
- * sends it once, and there is no such column for this. TODO before go-live:
- * add a daily reminder with a claim column (a database change).
+ * is shown as a warning on the adviser debt recovery page
+ * (src/lib/debt-recovery/proceedings-deadline.ts) and, from 27 Oct 2026, sent
+ * as a daily reminder to the building's advisers and committee, never to an
+ * owner of the lot (src/lib/debt-recovery/proceedings-reminder.ts and
+ * proceedings-reminder-run.ts), with the subject and heading in
+ * DEBT_RECOVERY.proceedingsReminder. A lot is emailed once at each stage:
+ * when it is first flagged, at 30, 14 and 7 days before the deadline, and
+ * once after it has passed, on the building's day. Each stage is claimed in
+ * proceedings_deadline_reminders (one row per lot and oldest unpaid due
+ * date), so a retried run sends it once, and given back when no email went
+ * out, so the next run tries again. A deadline that passed more than 30 days
+ * before a run gets no email, so the first run at go-live sends no burst
+ * about deadlines long gone: those lots show on the adviser page only. The
+ * reminder runs only for a live pack with the rule, so it starts when this
+ * pack is switched on.
+ * TODO before go-live: apply migration 20261119 (the table), and confirm the
+ * reminder points, wording and the gaps in FOR_REVIEW.
  * The debt recovery screens take the step labels, the late charge heading
  * (TERMINOLOGY.lateCharge) and the levy words from the pack, and hide the
  * payment plan panel without FEATURES.statutoryPaymentPlans. Still NSW words,
@@ -1394,8 +1417,28 @@ export const FOR_REVIEW = [
   },
   {
     point:
-      "The 2 year warning: a lot is flagged once its oldest unpaid contribution has been outstanding for 2 years from its date for payment and no proceedings are recorded (no case with the proceedings step completed or a court file number), with the deadline shown as that date plus 2 years and 2 months. It is a warning on the adviser debt recovery page only, with no daily reminder yet.",
+      "The 2 year warning: a lot is flagged once its oldest unpaid contribution has been outstanding for 2 years from its date for payment and no proceedings are recorded (no case with the proceedings step completed or a court file number), with the deadline shown as that date plus 2 years and 2 months. It is a warning on the adviser debt recovery page and a daily reminder.",
     where: "src/lib/debt-recovery/proceedings-deadline.ts, adviser debt recovery page",
+  },
+  {
+    point:
+      "The 2 year reminder: the advisers and the committee are emailed when a lot is first flagged, at 30, 14 and 7 days before the deadline, and once after it has passed, until proceedings are recorded. A missed day sends one email for the latest point only, and a stage with no email sent is tried again the next day. The subject and heading call the deadline the StrataVerze date (DEBT_RECOVERY.proceedingsReminder), and the email says it is StrataVerze's reading of the rule.",
+    where: "src/lib/debt-recovery/proceedings-reminder.ts, proceedings-reminder-run.ts, DEBT_RECOVERY.proceedingsReminder",
+  },
+  {
+    point:
+      "The 2 year reminder is not sent for a deadline that passed more than 30 days before the run, so a building's first run at go-live sends no burst about deadlines long gone. Those lots are shown on the adviser debt recovery page only, and get no email.",
+    where: "src/lib/debt-recovery/proceedings-reminder.ts PASSED_REMINDER_WITHIN_DAYS",
+  },
+  {
+    point:
+      "The 2 year reminder leaves out the lot's owners as the case actions do: an OWNER membership of the lot, active or ended in the last 30 days. Not covered: an owner of several lots whose membership names another lot (a membership holds one lot), a company owner's directors or officers, and an attorney under a power of attorney for the owner. Any of them on the committee is sent the reminder.",
+    where: "src/lib/debt-recovery/lot-owners.ts lotOwnerIds, proceedings-reminder-run.ts",
+  },
+  {
+    point:
+      "Proceedings count only on an open case. A case closed after judgment (for example CLOSED_SETTLED while enforcement is outside StrataVerze) with the contribution still unpaid counts as no proceedings, so the lot is flagged and reminded again. Left as it is for review.",
+    where: "src/lib/debt-recovery/proceedings-deadline.ts lotDebtsFrom",
   },
   {
     point:

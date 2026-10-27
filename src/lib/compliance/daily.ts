@@ -12,8 +12,13 @@
  *   date; when it passes, the member and the advisers are told.
  * - Strata Hub annual report: the advisers and the committee are reminded
  *   before it is due after each AGM, and after, until it is recorded.
+ * - The deadline to start proceedings for a long outstanding debt (the
+ *   Queensland 2 year rule): the advisers and the committee are reminded when
+ *   a lot is flagged, before the deadline and once after, until proceedings
+ *   are recorded (src/lib/debt-recovery/proceedings-reminder-run.ts).
  *
- * Each kind runs only for buildings whose rule pack has the workflow (FEATURES).
+ * Each kind runs only for buildings whose rule pack has the workflow (FEATURES)
+ * or, for the proceedings deadline, the rule (DEBT_RECOVERY.mustStartProceedings).
  */
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
@@ -28,6 +33,7 @@ import { claimTrainingReminder, committeeTrainingRows } from "@/lib/governance/c
 import { notifyTrainingDue, notifyTrainingOverdue } from "@/lib/governance/training-notify";
 import { annualReportOverview, claimReportReminder } from "./annual-report-store";
 import { notifyAnnualReportDue } from "./report-notify";
+import { runProceedingsDeadlineReminders } from "@/lib/debt-recovery/proceedings-reminder-run";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -63,7 +69,9 @@ export async function runComplianceDay(now: Date = new Date()) {
   }
   const trainingReminders = await committeeTrainingReminders(now);
   const annualReportReminders = await annualReportReminders_(now);
-  return { paymentPlanReminders, trainingReminders, annualReportReminders };
+  // Catches its own failures, so it never stops the others.
+  const proceedingsReminders = await runProceedingsDeadlineReminders(now);
+  return { paymentPlanReminders, trainingReminders, annualReportReminders, proceedingsReminders };
 }
 
 async function annualReportReminders_(now: Date) {

@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e1592f45c745aad1541f55319f2b2eceba1c6652138e2d57fa17d99993bc647e'>;
+  StorageHashBase<'f744c7f59e261f84b916a43c5f4dc98b8ce489fac27ae60ae574a2b8dae69eac'>;
 export type ExecutionHash =
-  ExecutionHashBase<'7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9'>;
+  ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -1706,6 +1706,7 @@ export namespace Models {
     memberships: public_SchemeMembership[];
     paymentPlanRequests: public_PaymentPlanRequest[];
     powersOfAttorney: public_LotPowerOfAttorney[];
+    proceedingsDeadlineReminders: public_ProceedingsDeadlineReminder[];
     propertyManager: public_PropertyManager | null;
     proxies: public_LotProxy[];
     recordsInspections: public_RecordsInspection[];
@@ -1725,6 +1726,7 @@ export namespace Models {
       | 'memberships'
       | 'paymentPlanRequests'
       | 'powersOfAttorney'
+      | 'proceedingsDeadlineReminders'
       | 'propertyManager'
       | 'proxies'
       | 'recordsInspections'
@@ -2326,6 +2328,20 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['PriorYearActual']['updatedAt'];
     readonly [RelationKeys]?: never;
   };
+  export type public_ProceedingsDeadlineReminder = {
+    createdAt: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['createdAt'];
+    deadlineOn: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['deadlineOn'];
+    id: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['id'];
+    lastSentOn: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['lastSentOn'];
+    lastStage: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['lastStage'];
+    lotId: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['lotId'];
+    oldestDueOn: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['oldestDueOn'];
+    schemeId: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['schemeId'];
+    updatedAt: FieldOutputTypes['public']['ProceedingsDeadlineReminder']['updatedAt'];
+    lot: public_Lot;
+    scheme: public_Scheme;
+    readonly [RelationKeys]?: 'lot' | 'scheme';
+  };
   export type public_Profile = {
     authId: FieldOutputTypes['public']['Profile']['authId'];
     avatarUrl: FieldOutputTypes['public']['Profile']['avatarUrl'];
@@ -2675,6 +2691,7 @@ export namespace Models {
     motions: public_Motion[];
     organisation: public_Organisation | null;
     paymentPlanRequests: public_PaymentPlanRequest[];
+    proceedingsDeadlineReminders: public_ProceedingsDeadlineReminder[];
     quoteRequests: public_QuoteRequest[];
     recordsInspections: public_RecordsInspection[];
     saleCertificates: public_SaleCertificate[];
@@ -2733,6 +2750,7 @@ export namespace Models {
       | 'motions'
       | 'organisation'
       | 'paymentPlanRequests'
+      | 'proceedingsDeadlineReminders'
       | 'quoteRequests'
       | 'recordsInspections'
       | 'saleCertificates'
@@ -4259,6 +4277,7 @@ export declare const models: {
     PlatformInvoice: Models.public_PlatformInvoice;
     PlatformPriceBook: Models.public_PlatformPriceBook;
     PriorYearActual: Models.public_PriorYearActual;
+    ProceedingsDeadlineReminder: Models.public_ProceedingsDeadlineReminder;
     Profile: Models.public_Profile;
     PropertyManager: Models.public_PropertyManager;
     Quote: Models.public_Quote;
@@ -16250,6 +16269,104 @@ type ContractBase = Omit<
               ];
               foreignKeys: readonly [];
             };
+            readonly proceedings_deadline_reminders: {
+              columns: {
+                readonly created_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly many: false;
+                };
+                readonly deadline_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly last_sent_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly last_stage: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly lot_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly oldest_due_on: {
+                  readonly dataType: 'pg/date';
+                  readonly codecId: 'pg/date-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly scheme_id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updated_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'proceedings_deadline_reminders_lot_id_oldest_due_on_key';
+                  readonly columns: readonly ['lot_id', 'oldest_due_on'];
+                  readonly unique: true;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'proceedings_deadline_reminders';
+                    readonly columns: readonly ['scheme_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'schemes';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'proceedings_deadline_reminders';
+                    readonly columns: readonly ['lot_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'lots';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly profiles: {
               columns: {
                 readonly auth_id: {
@@ -27211,6 +27328,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PriorYearActual';
     };
+    readonly proceedings_deadline_reminders: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ProceedingsDeadlineReminder';
+    };
     readonly profiles: { readonly namespace: 'public' & NamespaceId; readonly model: 'Profile' };
     readonly property_managers: {
       readonly namespace: 'public' & NamespaceId;
@@ -35145,6 +35266,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['lotId'];
                 };
               };
+              readonly proceedingsDeadlineReminders: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ProceedingsDeadlineReminder';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['lotId'];
+                };
+              };
               readonly propertyManager: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -38698,6 +38830,90 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly ProceedingsDeadlineReminder: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly deadlineOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly lastSentOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly lastStage: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly lotId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly oldestDueOn: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/date-string@1' };
+              };
+              readonly schemeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly lot: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Lot' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['lotId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly scheme: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Scheme';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['schemeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'proceedings_deadline_reminders';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'created_at' };
+                readonly deadlineOn: { readonly column: 'deadline_on' };
+                readonly id: { readonly column: 'id' };
+                readonly lastSentOn: { readonly column: 'last_sent_on' };
+                readonly lastStage: { readonly column: 'last_stage' };
+                readonly lotId: { readonly column: 'lot_id' };
+                readonly oldestDueOn: { readonly column: 'oldest_due_on' };
+                readonly schemeId: { readonly column: 'scheme_id' };
+                readonly updatedAt: { readonly column: 'updated_at' };
+              };
+            };
+          };
           readonly Profile: {
             readonly fields: {
               readonly authId: {
@@ -40799,6 +41015,17 @@ type ContractBase = Omit<
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'PaymentPlanRequest';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['schemeId'];
+                };
+              };
+              readonly proceedingsDeadlineReminders: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ProceedingsDeadlineReminder';
                 };
                 readonly cardinality: '1:N';
                 readonly on: {
@@ -50501,6 +50728,15 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'platform_price_book';
+            readonly field: 'updated_at';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestamptzStringNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'proceedings_deadline_reminders';
             readonly field: 'updated_at';
             readonly namespace: 'public';
           };

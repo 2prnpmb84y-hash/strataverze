@@ -7,7 +7,7 @@
  * UnsupportedJurisdictionError rather than run on the NSW rules.
  */
 import { db } from "@/prisma/db";
-import { rulePackForScheme, rulePackLabel, type RulePack, type StatutoryRules } from "@/config/statutory";
+import { RULE_PACKS, rulePackForScheme, rulePackLabel, type RulePack, type StatutoryRules } from "@/config/statutory";
 
 export interface SchemeRules {
   pack: RulePack;
@@ -27,6 +27,16 @@ export class SchemeNotFoundError extends Error {
 export function rulesForState(state: string | null | undefined): SchemeRules {
   const pack = rulePackForScheme(state);
   return { pack, rules: pack.rules, label: rulePackLabel(pack) };
+}
+
+/**
+ * Every pack buildings can have (RULE_PACKS, never a pending one), as
+ * `rulesForState` gives it. Pure. A daily run uses it to read only the
+ * buildings whose pack has a rule, so a state whose pack lacks it is never
+ * queried.
+ */
+export function liveSchemeRules(): SchemeRules[] {
+  return Object.values(RULE_PACKS).map((pack) => ({ pack, rules: pack.rules, label: rulePackLabel(pack) }));
 }
 
 /**

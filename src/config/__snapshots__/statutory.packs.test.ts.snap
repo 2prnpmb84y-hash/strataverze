@@ -1384,6 +1384,12 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "overdueYears": 2,
       "withinMonths": 2,
     },
+    "proceedingsReminder": {
+      "heading": "StrataVerze date to start proceedings for lot {lot}",
+      "headingPassed": "The StrataVerze date to start proceedings for lot {lot} has passed",
+      "subject": "StrataVerze date to start proceedings for lot {lot}: {date}, {scheme}",
+      "subjectPassed": "Passed: StrataVerze date to start proceedings for lot {lot} was {date}, {scheme}",
+    },
     "recoveryCostsRecoverable": true,
     "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 52, 166; Body Corporate and Community Management Act 1997 (Qld) s 229A; Queensland Civil and Administrative Tribunal Act 2009 (Qld) sch 3",
     "status": "CONFIRMED",
@@ -1702,8 +1708,24 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "where": "DEBT_RECOVERY_STEPS, DEBT_RECOVERY_STEP_LABELS, DEBT_RECOVERY_GUIDANCE",
     },
     {
-      "point": "The 2 year warning: a lot is flagged once its oldest unpaid contribution has been outstanding for 2 years from its date for payment and no proceedings are recorded (no case with the proceedings step completed or a court file number), with the deadline shown as that date plus 2 years and 2 months. It is a warning on the adviser debt recovery page only, with no daily reminder yet.",
+      "point": "The 2 year warning: a lot is flagged once its oldest unpaid contribution has been outstanding for 2 years from its date for payment and no proceedings are recorded (no case with the proceedings step completed or a court file number), with the deadline shown as that date plus 2 years and 2 months. It is a warning on the adviser debt recovery page and a daily reminder.",
       "where": "src/lib/debt-recovery/proceedings-deadline.ts, adviser debt recovery page",
+    },
+    {
+      "point": "The 2 year reminder: the advisers and the committee are emailed when a lot is first flagged, at 30, 14 and 7 days before the deadline, and once after it has passed, until proceedings are recorded. A missed day sends one email for the latest point only, and a stage with no email sent is tried again the next day. The subject and heading call the deadline the StrataVerze date (DEBT_RECOVERY.proceedingsReminder), and the email says it is StrataVerze's reading of the rule.",
+      "where": "src/lib/debt-recovery/proceedings-reminder.ts, proceedings-reminder-run.ts, DEBT_RECOVERY.proceedingsReminder",
+    },
+    {
+      "point": "The 2 year reminder is not sent for a deadline that passed more than 30 days before the run, so a building's first run at go-live sends no burst about deadlines long gone. Those lots are shown on the adviser debt recovery page only, and get no email.",
+      "where": "src/lib/debt-recovery/proceedings-reminder.ts PASSED_REMINDER_WITHIN_DAYS",
+    },
+    {
+      "point": "The 2 year reminder leaves out the lot's owners as the case actions do: an OWNER membership of the lot, active or ended in the last 30 days. Not covered: an owner of several lots whose membership names another lot (a membership holds one lot), a company owner's directors or officers, and an attorney under a power of attorney for the owner. Any of them on the committee is sent the reminder.",
+      "where": "src/lib/debt-recovery/lot-owners.ts lotOwnerIds, proceedings-reminder-run.ts",
+    },
+    {
+      "point": "Proceedings count only on an open case. A case closed after judgment (for example CLOSED_SETTLED while enforcement is outside StrataVerze) with the contribution still unpaid counts as no proceedings, so the lot is flagged and reminded again. Left as it is for review.",
+      "where": "src/lib/debt-recovery/proceedings-deadline.ts lotDebtsFrom",
     },
     {
       "point": "No StrataVerze fee is marked never recoverable from the owner for Queensland: a recovery step fee follows the price book, and owners are told it may be recoverable if reasonably incurred (SM s 166(1)(c)). Whether a StrataVerze fee is such a cost is not confirmed.",

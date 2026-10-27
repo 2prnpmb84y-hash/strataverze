@@ -297,7 +297,15 @@ export const PENDING_RULE_PACKS = {
     // contributions, the plan format setting and refusing a standard format plan outright (stricter than s 197(4));
     // the buildings premium and missing data points are updated. An insurance line in the sinking fund budget is refused. The legal values already signed off are unchanged and the new ones are from the same
     // provisions, so the status stays REVIEWED. The GO-LIVE GAP note on ENTITLEMENT_SCHEDULES says what is applied.
-    version: "2026.10.14",
+    // 2026.10.15 (27 Oct 2026): the 2 year rule's daily reminder (go-live gap). DEBT_RECOVERY.proceedingsReminder added:
+    // the reminder's subject and heading, StrataVerze wording that calls the deadline the StrataVerze date. FOR_REVIEW:
+    // the 2 year warning point now says it is also a daily reminder, and new points give who is emailed and when (first
+    // flagged, 30, 14 and 7 days before the deadline, once after), no email for a deadline passed more than 30 days
+    // before the run (no burst at go-live), the owners left out and those not covered (several lots, company owners,
+    // attorneys), and a case closed after judgment not counting as proceedings. The GO-LIVE GAP note on DEBT_RECOVERY
+    // says what is applied and that migration 20261119 must be applied before go-live. No rule of law changed, so the
+    // status stays REVIEWED.
+    version: "2026.10.15",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",
