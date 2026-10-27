@@ -28,13 +28,13 @@ import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revokeAllSessions } from "@/lib/auth/session-register";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
+import { LOT_TYPES } from "@/lib/lots/lot-types";
 
 export type LotFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
 };
 
-const LOT_TYPES = ["RESIDENTIAL", "COMMERCIAL", "PARKING", "STORAGE", "COMMON"];
 
 function validateLotForm(formData: FormData) {
   const errors: Record<string, string> = {};
