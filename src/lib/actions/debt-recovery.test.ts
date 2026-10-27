@@ -30,6 +30,7 @@ const queries = {
   getOverdueLevyNoticesForLot: vi.fn(),
   createDebtRecoveryDocument: vi.fn(),
   getInstalmentsForPlan: vi.fn(),
+  updateDebtRecoveryStep: vi.fn(),
 };
 vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, getDebtRecoverySteps: vi.fn(async () => []) }));
 const schemeRules = vi.fn();
@@ -45,6 +46,8 @@ const ownerMembershipFirst = vi.fn();
 const lotOwnersAll = vi.fn();
 const stepFirst = vi.fn();
 const lotPlansAll = vi.fn(async () => [] as Array<{ status: string }>);
+const planFirst = vi.fn(async () => null as null | { id: string; caseId: string | null });
+const planUpdate = vi.fn();
 vi.mock("@/prisma/db", () => ({
   db: {
     orm: {
@@ -55,7 +58,7 @@ vi.mock("@/prisma/db", () => ({
           where: () => ({ first: ownerMembershipFirst, limit: () => ({ all: lotOwnersAll }) }),
         },
         DebtRecoveryStep: { where: () => ({ first: stepFirst }) },
-        PaymentPlan: { where: () => ({ limit: () => ({ all: lotPlansAll }), first: vi.fn(async () => null) }) },
+        PaymentPlan: { where: () => ({ limit: () => ({ all: lotPlansAll }), first: planFirst, update: planUpdate }) },
       },
     },
     transaction: vi.fn(),
@@ -66,9 +69,11 @@ const recordPlanInstalmentPayment = vi.fn(async () => ({ completed: false }));
 vi.mock("@/lib/debt-recovery/payment-plan-requests", () => ({ recordPlanInstalmentPayment: (...a: unknown[]) => recordPlanInstalmentPayment(...(a as [])) }));
 vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: vi.fn(async () => "2026-10-26") }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-vi.mock("@/lib/billing/capture", () => ({ captureUsageFee: vi.fn() }));
+const captureUsageFee = vi.fn();
+vi.mock("@/lib/billing/capture", () => ({ captureUsageFee: (...a: unknown[]) => captureUsageFee(...a) }));
 vi.mock("@/lib/billing/disclosure", () => ({ confirmedCentsFrom: vi.fn(), feeErrorMessage: () => null }));
-vi.mock("@/lib/billing/hook-codes", () => ({ recoveryFeeVariant: () => null }));
+const feeVariant = vi.fn((_stepType: string) => null as string | null);
+vi.mock("@/lib/billing/hook-codes", () => ({ recoveryFeeVariant: (t: string) => feeVariant(t) }));
 
 const actions = await import("./debt-recovery");
 const { AuthorisationError } = await import("@/lib/auth/require-membership");
@@ -257,6 +262,103 @@ describe("initiateDebtRecoveryAction for a pack without the recovery steps", () 
     expect(r.error).toBe("This is not available for this building.");
     expect(queries.generateCaseNumber).not.toHaveBeenCalled();
     expect(queries.createDebtRecoveryCase).not.toHaveBeenCalled();
+  });
+});
+
+describe("initiateDebtRecoveryAction for a Queensland building (stage 2, step 8)", () => {
+  it("starts at PAYMENT_PLAN for an active plan only where the pack has the payment plan workflow", async () => {
+    const { PENDING_RULE_PACKS, RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const ready = () => {
+      membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
+      lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
+      ownerMembershipFirst.mockResolvedValue({ id: "m" });
+      queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ balanceOutstanding: 100, interestCharged: 0 }]);
+      queries.generateCaseNumber.mockResolvedValue("DR-1");
+      queries.createDebtRecoveryCase.mockResolvedValue({ id: "new-case" });
+      planFirst.mockResolvedValue({ id: "plan-1", caseId: null });
+    };
+    ready();
+    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" });
+    expect(await actions.initiateDebtRecoveryAction(SCHEME_A, "lot-1", "debtor", "ADVISER")).toEqual({ success: true, id: "new-case" });
+    expect(planFirst).not.toHaveBeenCalled();
+    expect(queries.updateDebtRecoveryCase).not.toHaveBeenCalled();
+
+    vi.clearAllMocks();
+    ready();
+    schemeRules.mockResolvedValueOnce({ rules: RULE_PACKS.NSW.rules, label: "AU-NSW test" });
+    expect(await actions.initiateDebtRecoveryAction(SCHEME_A, "lot-1", "debtor", "ADVISER")).toEqual({ success: true, id: "new-case" });
+    expect(planUpdate).toHaveBeenCalledWith({ caseId: "new-case" });
+    expect(queries.updateDebtRecoveryCase).toHaveBeenCalledWith("new-case", { status: "PAYMENT_PLAN" });
+    planFirst.mockResolvedValue(null);
+  });
+
+  it("copies the Queensland pack's steps onto the case, without the rule status", async () => {
+    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const qld = PENDING_RULE_PACKS.QLD.rules;
+    membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
+    lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
+    ownerMembershipFirst.mockResolvedValue({ id: "m" });
+    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ balanceOutstanding: 100, interestCharged: 0 }]);
+    queries.generateCaseNumber.mockResolvedValue("DR-1");
+    queries.createDebtRecoveryCase.mockResolvedValue({ id: "new-case" });
+    schemeRules.mockResolvedValueOnce({ rules: qld, label: "AU-QLD test" });
+
+    const r = await actions.initiateDebtRecoveryAction(SCHEME_A, "lot-1", "debtor", "ADVISER");
+    expect(r).toEqual({ success: true, id: "new-case" });
+    const created = queries.createDebtRecoveryStep.mock.calls.map(([step]) => step as Record<string, unknown>);
+    expect(created.map((s) => s.stepType)).toEqual(qld.DEBT_RECOVERY_STEPS.map((s) => s.stepType));
+    expect(created.find((s) => s.stepType === "HARDSHIP_REVIEW")?.legalBasis).toContain("166(6)");
+    for (const step of created) {
+      expect(step.caseId).toBe("new-case");
+      expect("status" in step).toBe(false);
+    }
+  });
+});
+
+describe("completeDebtRecoveryStepAction for a Queensland building (stage 2, step 8)", () => {
+  it("completes a step: there is no statutory payment plan to pause it", async () => {
+    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
+    stepFirst.mockResolvedValue({ id: "step-4", caseId: "case-1", stepType: "FINAL_NOTICE", stepOrder: 4, status: "PENDING" });
+    lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
+    const r = await actions.completeDebtRecoveryStepAction("step-4", "case-1", SCHEME_A, new FormData());
+    expect(r).toEqual({ success: true });
+  });
+
+  it("captures the step fee with the building's state, so its pack decides what the owner can be charged", async () => {
+    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const { db } = await import("@/prisma/db");
+    vi.mocked(db.transaction).mockImplementationOnce((async (fn: (tx: { orm: unknown }) => Promise<unknown>) => fn({ orm: {} })) as never);
+    feeVariant.mockReturnValueOnce("FINAL_NOTICE");
+    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
+    stepFirst.mockResolvedValue({ id: "step-4", caseId: "case-1", stepType: "FINAL_NOTICE", stepOrder: 4, status: "PENDING" });
+    const r = await actions.completeDebtRecoveryStepAction("step-4", "case-1", SCHEME_A, new FormData());
+    expect(r).toEqual({ success: true });
+    expect(captureUsageFee).toHaveBeenCalledWith({}, expect.objectContaining({ code: "RECOVERY_STEP", variant: "FINAL_NOTICE", state: "QLD", payerProfileId: "debtor" }));
+  });
+});
+
+describe("updateDebtRecoveryCaseAction referral while a payment plan is followed", () => {
+  const referral = () => {
+    const f = new FormData();
+    f.set("status", "REFERRED_LEGAL");
+    return f;
+  };
+
+  it("refuses the referral for an NSW building (payment plan workflow on)", async () => {
+    lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
+    const r = await actions.updateDebtRecoveryCaseAction("case-1", SCHEME_A, referral());
+    expect(r.error).toMatch(/cannot be referred for legal recovery/);
+    expect(queries.updateDebtRecoveryCase).not.toHaveBeenCalled();
+  });
+
+  it("allows it for a pack without the payment plan workflow", async () => {
+    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
+    lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
+    const r = await actions.updateDebtRecoveryCaseAction("case-1", SCHEME_A, referral());
+    expect(r).toEqual({ success: true });
+    expect(queries.updateDebtRecoveryCase).toHaveBeenCalledWith("case-1", expect.objectContaining({ status: "REFERRED_LEGAL" }));
   });
 });
 

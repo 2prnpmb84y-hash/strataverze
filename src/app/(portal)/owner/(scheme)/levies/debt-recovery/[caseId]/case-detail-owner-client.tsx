@@ -117,19 +117,6 @@ const STATUS_LABEL: Record<string, string> = {
   CLOSED_SETTLED: "Settled",
 };
 
-const STEP_LABEL: Record<string, string> = {
-  LEDGER_VERIFICATION: "Ledger Verification",
-  INITIAL_CONTACT: "Initial Contact",
-  REMINDER_NOTICE: "Reminder Notice",
-  FINAL_NOTICE: "Final Notice",
-  HARDSHIP_REVIEW: "Hardship Review",
-  COMMITTEE_REVIEW: "Committee Review",
-  LEGAL_REFERRAL: "Legal Referral",
-  PROCEEDINGS: "Proceedings",
-  ENFORCEMENT: "Enforcement",
-  CLOSED: "Closed",
-};
-
 const ACTIVITY_ICONS: Record<string, string> = {
   CASE_OPENED: "📂",
   STATUS_CHANGED: "🔄",
@@ -163,9 +150,15 @@ export function CaseDetailOwnerClient({
   isCommittee,
   recoveryFees = {},
   recoveryLaw,
+  stepLabels,
+  lateChargeLabel,
 }: {
+  /** The building's late charge heading: "Interest" (NSW), "Penalty" (Queensland). */
+  lateChargeLabel: string;
   /** "NSW Strata Schemes Management Act 2015": the building's law the steps follow. */
   recoveryLaw: string;
+  /** The building's name for each recovery step type (`rules.DEBT_RECOVERY_STEP_LABELS`). */
+  stepLabels: Readonly<Record<string, string>>;
   debtCase: DebtRecoveryCase;
   isCommittee: boolean;
   /** StrataVerze recovery fees by price variant, shown before a step is completed. */
@@ -285,7 +278,7 @@ export function CaseDetailOwnerClient({
             </div>
             <div>
               <p className="text-xs text-ink-muted uppercase tracking-wide">
-                Interest
+                {lateChargeLabel}
               </p>
               <p className="text-sm font-semibold tabular-nums text-ink">
                 {formatCurrency(debtCase.interestOwed)}
@@ -423,7 +416,7 @@ export function CaseDetailOwnerClient({
                           }`}
                         >
                           {step.stepOrder}.{" "}
-                          {STEP_LABEL[step.stepType] ?? step.stepType}
+                          {stepLabels[step.stepType] ?? step.stepType}
                         </p>
                         <p className="text-xs text-ink-muted mt-0.5">
                           {step.actionRequired}

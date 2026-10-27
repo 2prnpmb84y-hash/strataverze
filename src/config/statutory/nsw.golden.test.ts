@@ -96,7 +96,7 @@ describe("NSW statutory constants", () => {
     // DEBT_RECOVERY_STEPS (moved into the pack unchanged in phase 1b) by the
     // debt recovery test at the end.
     const constants = Object.entries(statutory.statutoryRulesFor("NSW"))
-      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", ...WORDING, ...WORKFLOWS, ...FOUNDATION].includes(k))
+      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", "DEBT_RECOVERY_STEP_LABELS", "NEVER_RECOVERABLE_FEE_VARIANTS", ...WORDING, ...WORKFLOWS, ...FOUNDATION].includes(k))
       .map(([k]) => k)
       .sort();
     expect(constants).toEqual([...names].sort());
@@ -378,5 +378,15 @@ describe("NSW finance reporting", () => {
 describe("NSW debt recovery", () => {
   it("default recovery steps are unchanged", () => {
     expect(DEFAULT_RECOVERY_STEPS).toMatchSnapshot();
+  });
+
+  // Stage 2, step 8 (27 Oct 2026): the labels the four debt recovery screens held, now pack data.
+  it("step labels are the ones the screens showed", () => {
+    expect(NSW.DEBT_RECOVERY_STEP_LABELS).toMatchSnapshot();
+  });
+
+  // Stage 2, step 8: the fee never passed to an owner, moved from the fee engine unchanged.
+  it("fees never passed to an owner are the fee engine's list", () => {
+    expect(NSW.NEVER_RECOVERABLE_FEE_VARIANTS).toMatchSnapshot();
   });
 });

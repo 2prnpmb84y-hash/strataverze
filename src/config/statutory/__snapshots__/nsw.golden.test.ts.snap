@@ -94,6 +94,30 @@ exports[`NSW debt recovery > default recovery steps are unchanged 1`] = `
 ]
 `;
 
+exports[`NSW debt recovery > fees never passed to an owner are the fee engine's list 1`] = `
+[
+  {
+    "code": "RECOVERY_STEP",
+    "variant": "PAYMENT_PLAN",
+  },
+]
+`;
+
+exports[`NSW debt recovery > step labels are the ones the screens showed 1`] = `
+{
+  "CLOSED": "Closed",
+  "COMMITTEE_REVIEW": "Committee Review",
+  "ENFORCEMENT": "Enforcement",
+  "FINAL_NOTICE": "Final Notice",
+  "HARDSHIP_REVIEW": "Hardship Review",
+  "INITIAL_CONTACT": "Initial Contact",
+  "LEDGER_VERIFICATION": "Ledger Verification",
+  "LEGAL_REFERRAL": "Legal Referral",
+  "PROCEEDINGS": "Proceedings",
+  "REMINDER_NOTICE": "Reminder Notice",
+}
+`;
+
 exports[`NSW finance reporting > audit test is unchanged 1`] = `
 [
   {

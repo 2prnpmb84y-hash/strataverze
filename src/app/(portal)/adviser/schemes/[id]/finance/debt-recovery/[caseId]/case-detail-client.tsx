@@ -110,18 +110,6 @@ const STATUS_MAP: Record<string, { label: string; variant: ChipStatus }> = {
   CLOSED_SETTLED: { label: "Settled", variant: "success" },
 };
 
-const STEP_LABELS: Record<string, string> = {
-  LEDGER_VERIFICATION: "Ledger Verification",
-  INITIAL_CONTACT: "Initial Contact",
-  REMINDER_NOTICE: "Reminder Notice",
-  FINAL_NOTICE: "Final Notice",
-  HARDSHIP_REVIEW: "Hardship Review",
-  COMMITTEE_REVIEW: "Committee Review",
-  LEGAL_REFERRAL: "Legal Referral",
-  PROCEEDINGS: "Proceedings",
-  ENFORCEMENT: "Enforcement",
-  CLOSED: "Closed",
-};
 
 
 function currency(value: number): string {
@@ -164,9 +152,18 @@ export function CaseDetailClient({
   activities,
   recoveryFees = {},
   stepGuidance,
+  stepLabels,
+  lateChargeLabel,
+  paymentPlans,
 }: {
+  /** The building's late charge heading: "Interest" (NSW), "Penalty" (Queensland). */
+  lateChargeLabel: string;
+  /** Whether the building's pack has the payment plan workflow (FEATURES.statutoryPaymentPlans). */
+  paymentPlans: boolean;
   /** The building's guidance for each recovery step (`rules.DEBT_RECOVERY_GUIDANCE`). */
   stepGuidance: Readonly<Record<string, string>>;
+  /** The building's name for each recovery step type (`rules.DEBT_RECOVERY_STEP_LABELS`). */
+  stepLabels: Readonly<Record<string, string>>;
   schemeId: string;
   lotNumber: string;
   unitNumber: string | null;
@@ -253,7 +250,7 @@ export function CaseDetailClient({
           </p>
         </div>
         <div className="rounded-xl bg-white border border-gray-100 p-3">
-          <p className="text-xs text-gray-500">Interest</p>
+          <p className="text-xs text-gray-500">{lateChargeLabel}</p>
           <p className="text-base font-semibold text-gray-900 tabular-nums">
             {currency(debtCase.interestOwed)}
           </p>
@@ -305,11 +302,11 @@ export function CaseDetailClient({
                       ? "bg-turquoise"
                       : "bg-gray-200"
                 } ${isViewing ? "ring-2 ring-offset-1 ring-turquoise" : ""}`}
-                title={STEP_LABELS[step.stepType] ?? step.stepType}
+                title={stepLabels[step.stepType] ?? step.stepType}
               >
                 {/* Tooltip on hover */}
                 <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-                  {STEP_LABELS[step.stepType] ?? step.stepType}
+                  {stepLabels[step.stepType] ?? step.stepType}
                 </span>
               </button>
             );
@@ -332,7 +329,7 @@ export function CaseDetailClient({
                   : "text-gray-400 hover:text-gray-600"
               }`}
             >
-              {STEP_LABELS[step.stepType] ?? step.stepType}
+              {stepLabels[step.stepType] ?? step.stepType}
             </button>
           ))}
         </div>
@@ -358,6 +355,7 @@ export function CaseDetailClient({
               clearMessages={clearMessages}
               router={router}
               guidance={stepGuidance[activeStep.stepType]}
+              stepLabels={stepLabels}
               fee={recoveryFees[recoveryFeeVariant(activeStep.stepType) ?? ""] ?? null}
             />
           )}
@@ -477,6 +475,7 @@ export function CaseDetailClient({
               <p className="text-sm font-medium text-gray-900 mb-3">
                 Quick Actions
               </p>
+              {paymentPlans && (
               <button
                 onClick={() =>
                   setSidePanel(
@@ -509,6 +508,7 @@ export function CaseDetailClient({
                   </span>
                 )}
               </button>
+              )}
               <button
                 onClick={() =>
                   setSidePanel(
@@ -606,7 +606,7 @@ export function CaseDetailClient({
           </Card>
 
           {/* Expanded Side Panel Content */}
-          {sidePanel === "payment" && (
+          {paymentPlans && sidePanel === "payment" && (
             <PaymentPlanPanel schemeId={schemeId} paymentPlan={paymentPlan} instalments={instalments} />
           )}
 
@@ -664,9 +664,12 @@ function WizardStepContent({
   router,
   fee = null,
   guidance,
+  stepLabels,
 }: {
   /** The building's guidance for this step. */
   guidance?: string;
+  /** The building's name for each recovery step type. */
+  stepLabels: Readonly<Record<string, string>>;
   step: Step;
   stepIndex: number;
   totalSteps: number;
@@ -712,7 +715,7 @@ function WizardStepContent({
         setError(result.error);
       } else {
         setSuccess(
-          `${STEP_LABELS[step.stepType] ?? step.stepType} completed successfully`,
+          `${stepLabels[step.stepType] ?? step.stepType} completed successfully`,
         );
         setOutcome("");
         setEvidenceNotes("");
@@ -763,7 +766,7 @@ function WizardStepContent({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                {STEP_LABELS[step.stepType] ?? step.stepType}
+                {stepLabels[step.stepType] ?? step.stepType}
               </h3>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span
@@ -926,7 +929,7 @@ function WizardStepContent({
               >
                 {isPending
                   ? "Saving..."
-                  : `Complete ${STEP_LABELS[step.stepType] ?? "Step"}`}
+                  : `Complete ${stepLabels[step.stepType] ?? "Step"}`}
               </Button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { debtorMayView } from "@/lib/owner/debt-case-view";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee, getSchemesForOwner } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { needRule } from "@/config/statutory";
 import {
   getDebtRecoveryCasesForOwner,
   getDebtRecoveryCasesForSchemes,
@@ -53,6 +54,10 @@ export default async function OwnerDebtRecoveryPage() {
   const caseSchemeIds = [...new Set(visible.map((c) => c.schemeId))];
   const caseSchemes = caseSchemeIds.length ? await db.orm.public.Scheme.where((s) => s.id.in(caseSchemeIds)).limit(caseSchemeIds.length).all() : [];
   const withSteps = new Set(caseSchemes.filter((s) => rulesForState(s.state).rules.FEATURES.debtRecoverySteps).map((s) => s.id));
+  // Each building's step names, from its rule pack.
+  const stepLabels = Object.fromEntries(
+    caseSchemes.filter((s) => withSteps.has(s.id)).map((s) => [s.id, needRule(rulesForState(s.state).rules, "DEBT_RECOVERY_STEP_LABELS")]),
+  );
   const cases = visible.filter((c) => withSteps.has(c.schemeId));
 
   // Build lot/scheme lookup from the user's schemes
@@ -116,6 +121,7 @@ export default async function OwnerDebtRecoveryPage() {
       <DebtRecoveryOwnerClient
         cases={serialisedCases}
         isCommittee={isCommittee}
+        stepLabels={stepLabels}
       />
     </div>
   );

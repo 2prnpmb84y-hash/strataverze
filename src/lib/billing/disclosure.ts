@@ -54,16 +54,73 @@ export const VARIANT_EXPLANATIONS: Record<string, string> = {
   "RECOVERY_STEP:PAYMENT_PLAN": "StrataVerze charges a flat fee for setting up a payment plan. It is charged to the owners corporation and cannot be passed to the owner.",
 };
 
-export function toFeeView(quote: FeeQuote): FeeView {
+/**
+ * The building's words for a fee disclosure (stage 2, step 8, 27 Oct 2026):
+ * its name for the owners corporation and, where its pack says it
+ * differently, how a recovery fee can be passed to the owner
+ * (RECOVERY_COSTS_RECOVERABLE). `recoverable` null keeps the NSW text above,
+ * unchanged.
+ */
+export interface FeeWording {
+  ownersCorporation: string;
+  recoverable: string | null;
+}
+
+const NSW_WORDING: FeeWording = { ownersCorporation: "owners corporation", recoverable: null };
+
+/** A building's fee wording from its rule pack (pass `rules`). */
+export function feeWordingFor(rules: { TERMINOLOGY: { ownersCorporation: string }; RECOVERY_COSTS_RECOVERABLE?: string }): FeeWording {
+  return { ownersCorporation: rules.TERMINOLOGY.ownersCorporation, recoverable: rules.RECOVERY_COSTS_RECOVERABLE ?? null };
+}
+
+/** The NSW sentences that say a fee is recoverable, replaced where a pack words it differently. */
+const NSW_RECOVERY_SENTENCE = "The owners corporation may recover it from the owner in arrears.";
+const NSW_RECOVERABLE_PAYER = "and recoverable from the owner in arrears (SSMA s 86)";
+
+/** How a variant explanation starts when the fee can be passed to the owner (its NSW text says it cannot). */
+const RECOVERABLE_VARIANT_LEADS: Record<string, string> = {
+  "RECOVERY_STEP:PAYMENT_PLAN": "StrataVerze charges a flat fee for setting up a payment plan.",
+};
+
+const DEFAULT_EXPLANATION = "A StrataVerze charge for this action.";
+const DEFAULT_PAYER = "Charged to the owners corporation";
+
+const isNsw = (w: FeeWording) => w.recoverable == null && w.ownersCorporation === NSW_WORDING.ownersCorporation;
+const named = (text: string, w: FeeWording) => text.split(NSW_WORDING.ownersCorporation).join(w.ownersCorporation);
+
+function explanationFor(quote: FeeQuote, w: FeeWording): string {
+  const key = `${quote.code}:${quote.variant ?? ""}`;
+  if (isNsw(w)) return VARIANT_EXPLANATIONS[key] ?? EXPLANATIONS[quote.code] ?? DEFAULT_EXPLANATION;
+  const recoverable = w.recoverable ? `It ${w.recoverable}.` : null;
+  // A variant whose text says it cannot be passed to the owner, where this building's pack lets it be.
+  if (VARIANT_EXPLANATIONS[key] && quote.recoverableFromOwner && RECOVERABLE_VARIANT_LEADS[key]) {
+    return named(`${RECOVERABLE_VARIANT_LEADS[key]} ${recoverable ?? NSW_RECOVERY_SENTENCE}`, w);
+  }
+  const text = VARIANT_EXPLANATIONS[key] ?? EXPLANATIONS[quote.code] ?? DEFAULT_EXPLANATION;
+  return named(recoverable ? text.split(NSW_RECOVERY_SENTENCE).join(recoverable) : text, w);
+}
+
+function payerLabelFor(quote: FeeQuote, w: FeeWording): string {
+  const text = PAYER_LABELS[quote.payerType] ?? DEFAULT_PAYER;
+  if (isNsw(w)) return text;
+  return named(w.recoverable ? text.split(NSW_RECOVERABLE_PAYER).join(`and ${w.recoverable}`) : text, w);
+}
+
+/**
+ * What the disclosure box shows for a quote. Pass the building's `wording`
+ * (feeWordingFor) where the building is at hand. Without it the NSW words
+ * are used.
+ */
+export function toFeeView(quote: FeeQuote, wording: FeeWording = NSW_WORDING): FeeView {
   return {
     code: quote.code,
     variant: quote.variant,
     description: quote.description,
-    explanation: VARIANT_EXPLANATIONS[`${quote.code}:${quote.variant ?? ""}`] ?? EXPLANATIONS[quote.code] ?? "A StrataVerze charge for this action.",
+    explanation: explanationFor(quote, wording),
     exGstCents: quote.exGstCents,
     gstCents: quote.gstCents,
     totalCents: quote.totalCents,
-    payerLabel: PAYER_LABELS[quote.payerType] ?? "Charged to the owners corporation",
+    payerLabel: payerLabelFor(quote, wording),
     recoverableFromOwner: quote.recoverableFromOwner,
   };
 }

@@ -12,7 +12,7 @@
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
-import type { EntitlementScheduleDefinition, FundDefinition, LateChargeRules, NoticeRules, PackFeatures } from "./types";
+import type { DebtRecoveryStepRule, EntitlementScheduleDefinition, FeeVariant, FundDefinition, LateChargeRules, NoticeRules, PackFeatures } from "./types";
 
 /**
  * Interest on unpaid contributions.
@@ -294,16 +294,8 @@ export const MEETING_RULES: MeetingRuleSet = {
  * The previous 14 and 21 day periods and the $500 NCAT and Local Court split
  * had no source and are removed.
  */
-export interface DebtRecoveryStepRule {
-  stepType: string;
-  stepOrder: number;
-  actionRequired: string;
-  legalBasis?: string;
-  responsibleParty: string;
-  approvalRequired: boolean;
-  triggerCondition: string;
-  noticeType?: string;
-}
+/** The step shape is shared by every pack (./types, stage 2, step 8). NSW steps have no `status`. */
+export type { DebtRecoveryStepRule } from "./types";
 
 export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
   {
@@ -403,6 +395,33 @@ export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
     triggerCondition: "Debt paid, settled or written off",
   },
 ];
+
+/**
+ * The name the screens show for each recovery step type (stage 2, step 8,
+ * 27 Oct 2026): exactly the labels the adviser and owner debt recovery
+ * screens held before.
+ */
+export const DEBT_RECOVERY_STEP_LABELS: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION: "Ledger Verification",
+  INITIAL_CONTACT: "Initial Contact",
+  REMINDER_NOTICE: "Reminder Notice",
+  FINAL_NOTICE: "Final Notice",
+  HARDSHIP_REVIEW: "Hardship Review",
+  COMMITTEE_REVIEW: "Committee Review",
+  LEGAL_REFERRAL: "Legal Referral",
+  PROCEEDINGS: "Proceedings",
+  ENFORCEMENT: "Enforcement",
+  CLOSED: "Closed",
+};
+
+/**
+ * StrataVerze fees never passed to an owner, whatever the price book says:
+ * no fee can be charged for a payment plan request (NSW Government guide to
+ * strata law changes, from 27 Oct 2025). StrataVerze charges the owners
+ * corporation only (decided 26 Oct 2026). Moved here from the fee engine
+ * unchanged (stage 2, step 8, 27 Oct 2026).
+ */
+export const NEVER_RECOVERABLE_FEE_VARIANTS: readonly FeeVariant[] = [{ code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" }];
 
 /**
  * The words the law uses, for text the platform shows or sends for a

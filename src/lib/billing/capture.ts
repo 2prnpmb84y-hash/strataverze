@@ -7,6 +7,7 @@
  * PLATFORM_TXN_FEE_MODE=FLAT selects the flat pilot transaction fee.
  */
 import { db } from "@/prisma/db";
+import { rulePackFor } from "@/config/statutory";
 import { platformToday } from "@/lib/jurisdiction/time-zone";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { toCents, fromCents } from "./money";
@@ -19,7 +20,7 @@ import {
   type UsageFeeCode,
   feeIdempotencyKey,
 } from "./fee-engine";
-import { resolveDisclosure, toFeeView, type FeeView } from "./disclosure";
+import { resolveDisclosure, toFeeView, type FeeView, type FeeWording } from "./disclosure";
 import { platformFeeProvider } from "./fee-provider";
 import { strataVerzeGstRegistered } from "./strataverze-supplier";
 import {
@@ -209,9 +210,24 @@ export async function quoteTransactionFee(
   });
 }
 
-/** The usage fee for an action, or null when it is switched off or capture is off. */
+/**
+ * The fees never passed to an owner of a building in `state`: its pack's
+ * NEVER_RECOVERABLE_FEE_VARIANTS (none when the pack has no list). With no
+ * state, or a state with no active pack, the fee engine's default (the NSW
+ * list) applies.
+ */
+export function neverRecoverableFor(state: string | null | undefined) {
+  if (state == null) return undefined;
+  const pack = rulePackFor(state);
+  return pack ? (pack.rules.NEVER_RECOVERABLE_FEE_VARIANTS ?? []) : undefined;
+}
+
+/**
+ * The usage fee for an action, or null when it is switched off or capture is
+ * off. `state` is the building's, for which fees can be passed to its owners.
+ */
 export async function quoteUsageFee(
-  input: { code: UsageFeeCode; variant?: string | null; bandValue?: number; quantity?: number; date?: string },
+  input: { code: UsageFeeCode; variant?: string | null; bandValue?: number; quantity?: number; date?: string; state?: string | null },
   orm: Orm = db.orm,
 ) {
   if (!billingCaptureEnabled()) return null;
@@ -220,6 +236,7 @@ export async function quoteUsageFee(
     variant: input.variant,
     bandValue: input.bandValue,
     quantity: input.quantity,
+    neverRecoverableFromOwner: neverRecoverableFor(input.state),
     priceBook: await loadPriceBook(orm),
     date: input.date ?? today(),
   });
@@ -228,9 +245,10 @@ export async function quoteUsageFee(
 /** Disclosure view of a usage fee for a page to pass to its form. */
 export async function previewUsageFee(
   input: Parameters<typeof quoteUsageFee>[0],
+  wording?: FeeWording,
 ): Promise<FeeView | null> {
   const quote = await quoteUsageFee(input);
-  return quote ? toFeeView(quote) : null;
+  return quote ? toFeeView(quote, wording) : null;
 }
 
 /**
@@ -271,7 +289,7 @@ export async function captureTransactionFee(
 /** Record a usage fee (no-op when the fee is switched off in the price book). */
 export async function captureUsageFee(
   orm: Orm,
-  input: CaptureCommon & { code: UsageFeeCode; variant?: string | null; bandValue?: number; quantity?: number },
+  input: CaptureCommon & { code: UsageFeeCode; variant?: string | null; bandValue?: number; quantity?: number; state?: string | null },
 ) {
   const quote = await quoteUsageFee(input, orm);
   if (!quote) return null;
@@ -290,9 +308,12 @@ export async function reverseCapturedFee(
 }
 
 
-/** Disclosure views for every debt recovery fee, keyed by price variant. */
-export async function previewRecoveryFees(): Promise<Record<string, FeeView | null>> {
+/**
+ * Disclosure views for every debt recovery fee, keyed by price variant. Pass
+ * the building (its state and fee wording) where it is at hand.
+ */
+export async function previewRecoveryFees(building?: { state: string; wording: FeeWording }): Promise<Record<string, FeeView | null>> {
   const variants = ["REMINDER", "FINAL_NOTICE", "REFERRAL", "PAYMENT_PLAN"];
-  const views = await Promise.all(variants.map((variant) => previewUsageFee({ code: "RECOVERY_STEP", variant })));
+  const views = await Promise.all(variants.map((variant) => previewUsageFee({ code: "RECOVERY_STEP", variant, state: building?.state }, building?.wording)));
   return Object.fromEntries(variants.map((v, i) => [v, views[i]]));
 }
