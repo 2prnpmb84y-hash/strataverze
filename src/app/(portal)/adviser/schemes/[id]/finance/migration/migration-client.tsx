@@ -5,11 +5,18 @@ import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { processMigrationAction, validateMigrationAction } from "./actions";
+import {
+  IMPORT_FIELDS,
+  autoDetectMapping,
+  buildImportRows,
+  parseCsvContent,
+  type ImportDataType,
+} from "@/lib/finance/migration-import-fields";
 
 // ── Types ────────────────────────────────────────────────────────
 
 type SourceSystem = "strata_master" | "stratamax" | "myob" | "xero";
-type DataType = "lots" | "chart_of_accounts" | "opening_balances";
+type DataType = ImportDataType;
 type MigrationStep =
   | "source"
   | "data_type"
@@ -93,29 +100,9 @@ interface TargetField {
   required: boolean;
 }
 
-const TARGET_FIELDS: Record<DataType, TargetField[]> = {
-  lots: [
-    { key: "lot_number", label: "Lot Number", required: true },
-    { key: "unit_number", label: "Unit Number", required: false },
-    { key: "entitlement", label: "Entitlement", required: true },
-    { key: "floor_area", label: "Floor Area", required: false },
-    { key: "lot_type", label: "Lot Type", required: false },
-  ],
-  chart_of_accounts: [
-    { key: "account_code", label: "Account Code", required: true },
-    { key: "account_name", label: "Account Name", required: true },
-    { key: "account_type", label: "Account Type", required: true },
-    { key: "sub_type", label: "Sub Type", required: false },
-    { key: "fund_name", label: "Fund Name", required: false },
-  ],
-  opening_balances: [
-    { key: "account_code", label: "Account Code", required: true },
-    { key: "debit", label: "Debit", required: false },
-    { key: "credit", label: "Credit", required: false },
-    { key: "fund_name", label: "Fund Name", required: false },
-    { key: "description", label: "Description", required: false },
-  ],
-};
+// The columns, and the keys each row is sent under, come from the shared
+// table the server also translates with (migration-import-fields).
+const TARGET_FIELDS: Record<DataType, readonly TargetField[]> = IMPORT_FIELDS;
 
 const STEP_LABELS: { step: MigrationStep; label: string }[] = [
   { step: "source", label: "Source" },
@@ -125,70 +112,6 @@ const STEP_LABELS: { step: MigrationStep; label: string }[] = [
   { step: "preview", label: "Preview" },
   { step: "result", label: "Result" },
 ];
-
-// ── CSV helpers ──────────────────────────────────────────────────
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === "," && !inQuotes) {
-      result.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  result.push(current.trim());
-  return result;
-}
-
-function parseCsvContent(content: string): {
-  headers: string[];
-  rows: string[][];
-} {
-  const lines = content
-    .split(/\r?\n/)
-    .filter((line) => line.trim().length > 0);
-
-  if (lines.length < 2) {
-    return { headers: [], rows: [] };
-  }
-
-  const headers = parseCSVLine(lines[0]);
-  const rows = lines.slice(1).map(parseCSVLine);
-  return { headers, rows };
-}
-
-function autoDetectMapping(
-  headers: string[],
-  fields: TargetField[],
-): Record<string, string> {
-  const mapping: Record<string, string> = {};
-
-  for (const field of fields) {
-    const fieldWords = field.key.split("_");
-    const match = headers.find((h) => {
-      const lower = h.toLowerCase().replace(/[^a-z0-9]/g, " ").trim();
-      return fieldWords.every((word) => lower.includes(word));
-    });
-    if (match) {
-      mapping[field.key] = match;
-    }
-  }
-
-  return mapping;
-}
 
 // ── Component ────────────────────────────────────────────────────
 
@@ -289,10 +212,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
 
         // Auto-detect column mappings
         if (dataType) {
-          const detected = autoDetectMapping(
-            headers,
-            TARGET_FIELDS[dataType],
-          );
+          const detected = autoDetectMapping(dataType, headers);
           setColumnMapping(detected);
         }
 
@@ -342,35 +262,13 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
       return;
     }
 
-    // Build rows from CSV using the mapping
-    const rows: MigrationRow[] = csvRows.map((csvRow, idx) => {
-      const data: Record<string, string> = {};
-
-      for (const field of fields) {
-        const sourceHeader = columnMapping[field.key];
-        if (sourceHeader) {
-          const colIndex = csvHeaders.indexOf(sourceHeader);
-          data[field.key] = colIndex >= 0 ? (csvRow[colIndex] ?? "") : "";
-        }
-      }
-
-      // Client-side validation
-      const errors: string[] = [];
-      const warnings: string[] = [];
-
-      for (const field of fields) {
-        if (field.required && !data[field.key]?.trim()) {
-          errors.push(`${field.label} is required`);
-        }
-      }
-
-      return {
-        rowNumber: idx + 2, // +2 for 1-indexed + header row
-        data,
-        errors,
-        warnings,
-      };
-    });
+    // Build rows from CSV using the mapping, with the required field check
+    const rows: MigrationRow[] = buildImportRows(
+      dataType,
+      csvHeaders,
+      csvRows,
+      columnMapping,
+    );
 
     setMigrationRows(rows);
 

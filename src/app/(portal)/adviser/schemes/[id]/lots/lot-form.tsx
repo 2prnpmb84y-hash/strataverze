@@ -4,19 +4,13 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { Card } from "@/components/ui/card";
+import { LOT_TYPE_OPTIONS } from "@/lib/lots/lot-types";
 import {
   createLotAction,
   updateLotAction,
   type LotFormState,
 } from "./actions";
 
-const LOT_TYPES = [
-  { value: "RESIDENTIAL", label: "Residential" },
-  { value: "COMMERCIAL", label: "Commercial" },
-  { value: "PARKING", label: "Parking" },
-  { value: "STORAGE", label: "Storage" },
-  { value: "COMMON", label: "Common Property" },
-];
 
 type LotDefaults = {
   lotNumber?: string;
@@ -106,7 +100,7 @@ export function LotForm({
             label="Lot Type"
             name="lotType"
             defaultValue={defaults?.lotType ?? "RESIDENTIAL"}
-            options={LOT_TYPES}
+            options={[...LOT_TYPE_OPTIONS]}
             error={state.fieldErrors?.lotType}
           />
         </div>
