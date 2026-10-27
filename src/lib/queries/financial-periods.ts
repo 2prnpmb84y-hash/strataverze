@@ -18,8 +18,10 @@ function toVarchar<N extends number>(value: string): Varchar<N> {
 export async function getFinancialPeriodsForScheme(
   schemeId: string,
   limit = 50,
+  /** A transaction's `tx.orm`, to read inside it. */
+  orm: typeof db.orm = db.orm,
 ) {
-  return db.orm.public.FinancialPeriod
+  return orm.public.FinancialPeriod
     .where((fp) => fp.schemeId.eq(schemeId))
     .orderBy((fp) => fp.startDate.desc())
     .limit(limit)

@@ -28,7 +28,7 @@ import {
   type TermsInput,
 } from "./payment-plans";
 import { needRule } from "@/config/statutory";
-import { allocatePayment, type PaymentAllocationOrder } from "@/lib/finance/statutory-interest";
+import { allocatePayment, lateChargeFirst, type PaymentAllocationOrder } from "@/lib/finance/statutory-interest";
 
 export class PaymentPlanError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -92,9 +92,17 @@ async function openCaseFor(schemeId: string, lotId: string) {
  * interest, with each notice's payments applied in the building's order
  * (`rules.PAYMENT_ALLOCATION_ORDER`): NSW applies them to the levy first, then
  * interest. Without an order, levy first.
+ *
+ * Where the order applies payments to the late charge first (Queensland's
+ * penalty, SM s 166(5)), how much of each notice's payments went to the late
+ * charge is the part recorded on each live receipt when it was received
+ * (`noticeLateChargePaid`), the one figure receipting and the penalty engine
+ * also use. The amounts are the notice's posted ones: a penalty the engine has
+ * worked out since the last charge is not included until it is charged.
  */
 export async function lotArrears(schemeId: string, lotId: string, today: string, order?: PaymentAllocationOrder) {
   const notices = await db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.lotId.eq(lotId), n.status.neq("DRAFT"), n.status.neq("WRITTEN_OFF"))).limit(2000).all();
+  if (lateChargeFirst(order)) return lotArrearsLateChargeFirst(notices.filter((n) => day(n.dueDate) < today));
   let leviesCents = 0;
   let interestCents = 0;
   for (const n of notices) {
@@ -106,6 +114,30 @@ export async function lotArrears(schemeId: string, lotId: string, today: string,
     const applied = allocatePayment(paid - Math.min(0, due), { levyCents: Math.max(0, due), interestCents: interest, recoveryCostsCents: 0 }, order);
     leviesCents += Math.max(0, due - applied.levyCents);
     interestCents += Math.max(0, interest - applied.interestCents);
+  }
+  return { leviesCents, interestCents };
+}
+
+/** lotArrears for a building that applies payments to the late charge first. */
+async function lotArrearsLateChargeFirst(
+  notices: Array<{ id: string; amountDue: unknown; amountPaid?: unknown; interestCharged?: unknown }>,
+) {
+  if (notices.length === 0) return { leviesCents: 0, interestCents: 0 };
+  const { noticeLateChargePaid } = await import("@/lib/finance/interest-setting");
+  const { livePayments } = await import("@/lib/finance/levy-reversal");
+  const ids = notices.map((n) => n.id);
+  const payments = livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all());
+  let leviesCents = 0;
+  let interestCents = 0;
+  for (const n of notices) {
+    const due = toCents(String(n.amountDue));
+    const paid = toCents(String(n.amountPaid ?? 0));
+    const interest = toCents(String(n.interestCharged ?? 0));
+    const chargePaid = noticeLateChargePaid(n, payments);
+    // A notice with a negative levy (a credit) adds it to what is paid, as before.
+    const levyPaid = paid - Math.min(0, due) - chargePaid;
+    leviesCents += Math.max(0, Math.max(0, due) - levyPaid);
+    interestCents += Math.max(0, interest - chargePaid);
   }
   return { leviesCents, interestCents };
 }

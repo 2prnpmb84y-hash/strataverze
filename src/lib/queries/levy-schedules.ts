@@ -3,6 +3,7 @@ import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { captureTransactionFee } from "@/lib/billing/capture";
 import { toCents } from "@/lib/billing/money";
 import { splitLevyPayment } from "@/lib/finance/owner-credit";
+import { lateChargePart } from "@/lib/finance/statutory-interest";
 import { recordCreditMovement } from "@/lib/finance/owner-credits";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
@@ -367,21 +368,43 @@ export async function issueLevyNotice(
  * and updates the notice's running totals in one transaction.
  * The notice takes up to what it owes (levy plus any interest charged). Any
  * excess is held as the owner's credit for the lot in that fund, never lost.
+ *
+ * `lateChargeFirst` (a building whose order applies payments to the late
+ * charge first, Queensland's penalty): the payment goes to the late charge
+ * still owing first, then the levy (lateChargePart), the part is recorded on
+ * the payment (levy_payments.late_charge_amount) and `lateChargeCents` says
+ * how much it was. The caller locks the notice and charges the late charge to
+ * the payment date first, in the same transaction (receiptLevyPayments, with
+ * recordLevyPaymentIn). The balance and status are worked out on the notice
+ * total either way.
  */
-export async function recordLevyPayment(
-  noticeId: string,
-  paymentAmount: number,
-  details: {
-    paymentDate: string;
-    reference?: string | null;
-    recordedBy?: string | null;
-    /** The StrataVerze fee (incl. GST, cents) the user confirmed, if any. */
-    feeConfirmedCents?: number | null;
-    /** False when the fee is captured once for a bank deposit split across notices. */
-    captureFee?: boolean;
-  },
-): Promise<{ appliedCents: number; excessCents: number; creditTxId: string | null; receiptId: string | null }> {
-  return db.transaction(async (tx) => {
+export async function recordLevyPayment(noticeId: string, paymentAmount: number, details: LevyPaymentDetails): Promise<RecordedLevyPayment> {
+  return db.transaction(async (tx) => recordLevyPaymentIn(tx, noticeId, paymentAmount, details));
+}
+
+export interface LevyPaymentDetails {
+  paymentDate: string;
+  reference?: string | null;
+  recordedBy?: string | null;
+  /** The StrataVerze fee (incl. GST, cents) the user confirmed, if any. */
+  feeConfirmedCents?: number | null;
+  /** False when the fee is captured once for a bank deposit split across notices. */
+  captureFee?: boolean;
+  /** Apply the payment to the late charge first, within these figures (lateChargePosition). */
+  lateChargeFirst?: { chargePaidCents: number; accruedByDateCents: number; chargePaidByDateCents: number };
+}
+
+export interface RecordedLevyPayment {
+  appliedCents: number;
+  excessCents: number;
+  creditTxId: string | null;
+  receiptId: string | null;
+  lateChargeCents?: number;
+}
+
+/** recordLevyPayment inside the caller's transaction (`tx`), for a caller that holds the notice's lock. */
+export async function recordLevyPaymentIn(tx: { orm: typeof db.orm }, noticeId: string, paymentAmount: number, details: LevyPaymentDetails): Promise<RecordedLevyPayment> {
+  {
     const notice = await tx.orm.public.LevyNotice.where({ id: noticeId })
       .include("levySchedule")
       .first();
@@ -391,6 +414,9 @@ export async function recordLevyPayment(
     const owedCents = toCents(String(notice.amountDue)) + toCents(String(notice.interestCharged ?? 0));
     const paidCents = toCents(String(notice.amountPaid));
     const { appliedCents, excessCents } = splitLevyPayment(paymentCents, owedCents - paidCents);
+    // Late charge first: the part of the payment that goes to the late charge.
+    const lc = details.lateChargeFirst;
+    const lateChargeCents = lc ? lateChargePart(appliedCents, { chargedCents: toCents(String(notice.interestCharged ?? 0)), ...lc }) : 0;
 
     let receiptId: string | null = null;
     if (appliedCents > 0) {
@@ -399,6 +425,7 @@ export async function recordLevyPayment(
         levyNoticeId: noticeId,
         lotId: notice.lotId,
         amount: toNumeric(appliedCents / 100),
+        ...(lc ? { lateChargeAmount: toNumeric(lateChargeCents / 100) } : {}),
         paymentDate: toTimestamp(details.paymentDate),
         reference: details.reference ?? null,
         recordedBy: details.recordedBy ?? null,
@@ -446,8 +473,9 @@ export async function recordLevyPayment(
       date: details.paymentDate,
     });
 
-    return { appliedCents, excessCents, creditTxId, receiptId };
-  });
+    if (!lc) return { appliedCents, excessCents, creditTxId, receiptId };
+    return { appliedCents, excessCents, creditTxId, receiptId, lateChargeCents };
+  }
 }
 
 /** Payments received against the given notices, oldest first. */

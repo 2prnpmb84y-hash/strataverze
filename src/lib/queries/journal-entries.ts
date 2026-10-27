@@ -67,8 +67,10 @@ interface JournalEntryFilters {
 export async function findPeriodForDate(
   schemeId: string,
   transactionDate: string,
+  /** A transaction's `tx.orm`, to read inside it. */
+  orm: typeof db.orm = db.orm,
 ) {
-  const periods = await getFinancialPeriodsForScheme(schemeId);
+  const periods = await getFinancialPeriodsForScheme(schemeId, 50, orm);
   const txDate = transactionDate.slice(0, 10);
 
   return (
@@ -96,8 +98,10 @@ export async function validatePeriodForPosting(
   schemeId: string,
   transactionDate: string,
   entryType: string,
+  /** A transaction's `tx.orm`, to read inside it. */
+  orm: typeof db.orm = db.orm,
 ) {
-  const period = await findPeriodForDate(schemeId, transactionDate);
+  const period = await findPeriodForDate(schemeId, transactionDate, orm);
 
   // No matching period — allow (periods may not be set up yet or date is in a gap)
   if (!period) return;
@@ -287,6 +291,54 @@ export async function createJournalEntry(data: CreateJournalEntryInput) {
 }
 
 /**
+ * Create a journal entry already posted, inside the caller's transaction
+ * (`orm` is its `tx.orm`), so it commits or rolls back with the rest of the
+ * caller's writes. The same checks as createJournalEntry and
+ * postJournalEntry: balanced, at least one line, each fund on its own, and
+ * the period open for the entry's type, all read through `orm`, so nothing
+ * waits for a second pool connection while the caller holds locks. Used where
+ * a late charge is charged with its notice locked (src/lib/queries/interest.ts).
+ */
+export async function createPostedJournalEntryIn(orm: typeof db.orm, data: CreateJournalEntryInput, postedBy: string) {
+  const totalDebits = Math.round(data.lines.reduce((sum, line) => sum + (line.debit ?? 0), 0) * 100) / 100;
+  const totalCredits = Math.round(data.lines.reduce((sum, line) => sum + (line.credit ?? 0), 0) * 100) / 100;
+  if (totalDebits !== totalCredits) {
+    throw new Error(`Journal entry is not balanced: debits (${totalDebits}) do not equal credits (${totalCredits})`);
+  }
+  if (data.lines.length === 0) throw new Error("Journal entry must have at least one line");
+  await assertFundIntegrity(orm, data.schemeId, data.lines);
+  await validatePeriodForPosting(data.schemeId, data.transactionDate.slice(0, 10), data.entryType, orm);
+  const entry = await orm.public.JournalEntry.create({
+    schemeId: data.schemeId,
+    entryNumber: toVarchar<20>(data.entryNumber),
+    transactionDate: toTimestamp(data.transactionDate),
+    description: toVarchar<500>(data.description),
+    entryType: data.entryType,
+    sourceType: data.sourceType,
+    sourceId: data.sourceId ?? null,
+    rulePack: data.rulePack ? toVarchar<40>(data.rulePack) : null,
+    status: "POSTED",
+    postedAt: toTimestamp(new Date().toISOString()),
+    postedBy,
+    createdBy: data.createdBy,
+  });
+  for (const line of data.lines) {
+    await orm.public.JournalLine.create({
+      journalEntryId: entry.id,
+      accountCodeId: line.accountCodeId,
+      fundId: line.fundId,
+      debit: line.debit != null ? toNumeric(line.debit) : null,
+      credit: line.credit != null ? toNumeric(line.credit) : null,
+      description: line.description ? toVarchar<500>(line.description) : null,
+      lotId: line.lotId ?? null,
+      supplierId: line.supplierId ?? null,
+      gstAmount: line.gstAmount != null ? toNumeric(line.gstAmount) : null,
+    });
+  }
+  return entry;
+}
+
+/**
  * Post a journal entry (transition from DRAFT to POSTED).
  *
  * Validates the transaction date against financial periods:
@@ -470,9 +522,10 @@ export async function getUnmatchedJournalEntries(
   return entries.filter((e) => !matchedEntryIds.has(e.id));
 }
 
-export async function getNextEntryNumber(schemeId: string): Promise<string> {
+/** The next entry number. Pass a transaction's `tx.orm` to count entries it has written and not yet committed. */
+export async function getNextEntryNumber(schemeId: string, orm: typeof db.orm = db.orm): Promise<string> {
   try {
-    const entries = await db.orm.public.JournalEntry
+    const entries = await orm.public.JournalEntry
       .where((je) => je.schemeId.eq(schemeId))
       .orderBy((je) => je.entryNumber.desc())
       .limit(1)
