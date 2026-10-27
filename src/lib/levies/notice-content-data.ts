@@ -51,8 +51,13 @@ export async function checkPlannedNotices(input: {
 }): Promise<MissingItem[]> {
   const { scheme, fund, issuer, account } = await noticeContext(input.schemeId, input.fundId, input.issuerId);
   if (!scheme) throw new SchemeNotFoundError();
-  // The building's own levy notice rules (throws for a state with no rule pack).
-  const rule = needRule(rulesForState(scheme.state).rules, "LEVY_NOTICE_RULES");
+  // The building's own notice rules (throws for a state with no rule pack).
+  const { rules } = rulesForState(scheme.state);
+  const rule = rules.NOTICE_RULES;
+  // The notice's late charge sentence still reads the NSW interest rule (stage 2,
+  // step 6 replaces it). A pack without it cannot issue notices yet, so stop
+  // here, before any notice is issued, rather than when it is emailed.
+  needRule(rules, "STATUTORY_INTEREST");
   const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
   const rollNames = await rollOwnerNames(input.notices.map((n) => n.lotId));
   const seen = new Map<string, MissingItem>();
@@ -76,9 +81,10 @@ export async function checkPlannedNotices(input: {
         name: issuer ? `${issuer.firstName ?? ""} ${issuer.lastName ?? ""}`.trim() || null : null,
         emailOrPhone: issuer?.email ?? null,
       },
-      // The notice email always carries these (see levyNoticeEmail).
+      // The notice email always carries these (see levyNoticeEmail), and the
+      // hardship statement whenever the pack has one.
       includesInterestWarning: true,
-      includesHardshipStatement: true,
+      includesHardshipStatement: rule.hardship != null,
       includesLedgerAccess: true,
     }, rule);
     for (const item of items) {
@@ -174,7 +180,7 @@ export async function sendIssuedNotices(input: {
           ledgerUrl: `${APP_URL}/owner/levies`,
           noInterest: setting.mode === "NO_INTEREST",
           interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
-          hardship: needRule(setting.rules.rules, "HARDSHIP_INFORMATION"),
+          hardship: setting.rules.rules.NOTICE_RULES.hardship?.information ?? null,
           terms: setting.rules.rules.TERMINOLOGY,
         }),
         attachments,

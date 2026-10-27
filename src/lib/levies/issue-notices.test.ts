@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { issueDateFor as issueDateWith, issueTiming as issueTimingWith } from "./issue-timing";
-import { statutoryRulesFor, type NswRules } from "@/config/statutory";
+import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
 
 /** Midday in Sydney on a day (the daily job works out each building's day from the moment it runs). */
 const midday = (day: string) => new Date(`${day}T02:00:00Z`);
 
-const LEVY = (statutoryRulesFor("NSW") as NswRules).LEVY_NOTICE_RULES;
+const LEVY = statutoryRulesFor("NSW").NOTICE_RULES;
 const issueDateFor = (due: string) => issueDateWith(due, LEVY);
 const issueTiming = (due: string, today: string) => issueTimingWith(due, today, LEVY);
 
@@ -77,6 +77,18 @@ vi.mock("@/lib/levies/notice-content-data", () => ({
     return i.notices.length;
   },
 }));
+// A test may give the building other notice rules (a Queensland-shaped pack); the rest of the pack is the real one.
+const noticeRules = vi.hoisted(() => ({ override: null as null | import("@/config/statutory").StatutoryRules["NOTICE_RULES"] }));
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
+  const withOverride = (r: Awaited<ReturnType<typeof actual.rulesForScheme>>) =>
+    noticeRules.override ? { ...r, rules: { ...r.rules, NOTICE_RULES: noticeRules.override } } : r;
+  return {
+    ...actual,
+    rulesForScheme: async (...a: Parameters<typeof actual.rulesForScheme>) => withOverride(await actual.rulesForScheme(...a)),
+    rulesForState: (...a: Parameters<typeof actual.rulesForState>) => withOverride(actual.rulesForState(...a)),
+  };
+});
 vi.mock("@/lib/finance/owner-credits", () => ({ applyOwnerCredit: async () => 0, recordCreditMovement: async () => ({ id: "credit-1" }) }));
 vi.mock("@/lib/queries/account-codes", async () => {
   const actual = await vi.importActual<typeof import("@/lib/queries/account-codes")>("@/lib/queries/account-codes");
@@ -123,6 +135,7 @@ function seed() {
     LevyNotice: [],
   });
   owners.l1 = "o1";
+  noticeRules.override = null;
   content.missing = [];
   sent.notices = [];
   journals.posted = [];
@@ -347,5 +360,32 @@ describe("the daily job", () => {
     expect(r).toMatchObject({ success: true, data: { planned: 6 } });
     const ls2 = notices().filter((n) => n.levyScheduleId === "ls2");
     expect([...new Set(ls2.map((n) => n.dueDate))]).toEqual(["2026-10-01", "2027-01-01", "2027-04-01"]);
+  });
+});
+
+describe("the urgent special levy option (stage 2, step 5)", () => {
+  const special = () => {
+    sharedFake.table("LevySchedule").push({
+      id: "sp1", schemeId: "s1", fundId: "admin", financialYear: 2026, budgetAmount: "10000.00", frequency: "ONE_OFF", levyType: "SPECIAL",
+      title: "Roof", totalLots: 2, totalEntitlement: "100", status: "APPROVED", approvedBy: "adviser", approvedAt: "2026-05-01", dueDate: "2026-05-20",
+    });
+    const fd = new FormData();
+    fd.set("urgentSpecialLevy", "on");
+    return issueScheduleNoticesAction("s1", "sp1", {}, fd);
+  };
+
+  it("is accepted for an NSW building", async () => {
+    today.value = "2026-05-01";
+    const r = await special();
+    expect(r.error).toBeUndefined();
+    expect(r.success).toBe(true);
+  });
+
+  it("is refused, with nothing issued, when the pack has no shorter urgent notice", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = PENDING_RULE_PACKS.QLD.rules.NOTICE_RULES;
+    const r = await special();
+    expect(r).toEqual({ error: "A shorter notice for an urgent special levy is not available for this building. Issue the notice without the urgent option." });
+    expect(notices().filter((n) => n.levyScheduleId === "sp1")).toEqual([]);
   });
 });

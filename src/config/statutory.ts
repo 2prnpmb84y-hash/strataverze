@@ -20,7 +20,7 @@
  */
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
-import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures, SharedTerminology } from "./statutory/types";
+import type { EntitlementScheduleDefinition, FundDefinition, NoticeRules, PackFeatures, SharedTerminology } from "./statutory/types";
 
 export * from "./statutory/nsw";
 
@@ -37,6 +37,8 @@ export interface SharedRules {
   ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[];
   PAYMENT_ALLOCATION_ORDER: readonly ("LEVY" | "INTEREST" | "RECOVERY_COSTS")[];
   FEATURES: PackFeatures;
+  /** The levy (NSW) or contribution (Queensland) notice rules (stage 2, step 5). */
+  NOTICE_RULES: NoticeRules;
 }
 
 /**
@@ -87,7 +89,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.10 (27 Oct 2026): TERMINOLOGY gains levy, levies, lateCharge, planLabel, bodyCorporateName and
     // bodyCorporateShortName (wording only); no rule value changed.
     // 2026.10.11 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only); no rule value changed.
-    version: "2026.10.11",
+    // 2026.10.12 (27 Oct 2026): NOTICE_RULES added (the notice rules in the shared shape, from LEVY_NOTICE_RULES and HARDSHIP_INFORMATION); no rule value changed.
+    version: "2026.10.12",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not
@@ -131,7 +134,10 @@ export const PENDING_RULE_PACKS = {
     // bodyCorporateShortName (wording only, as decided in the sign-off), so the sign-off stands.
     // 2026.10.5 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only, the names already
     // in the pack), so the sign-off stands.
-    version: "2026.10.5",
+    // 2026.10.6 (27 Oct 2026): NOTICE_RULES added (the contribution notice rules in the shared shape, from
+    // CONTRIBUTION_NOTICE_RULES). The 35-day lead is a StrataVerze choice, not a rule of law; the legal
+    // values are those already signed off, so the sign-off stands.
+    version: "2026.10.6",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

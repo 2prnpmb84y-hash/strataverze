@@ -30,7 +30,6 @@ import {
 } from "./schedule-actions";
 import { connection } from "next/server";
 import { transactionFeeTable } from "@/lib/billing/capture";
-import { needRule } from "@/config/statutory";
 
 function formatCurrency(value: number | string | null): string {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(
@@ -126,7 +125,7 @@ export default async function LevyScheduleDetailPage({
   // Planned notices past their 5-week mark wait for the Adviser to confirm.
   const today = await schemeToday(id);
   const { rules } = rulesForState(scheme.state);
-  const levyRule = needRule(rules, "LEVY_NOTICE_RULES");
+  const levyRule = rules.NOTICE_RULES;
   const overdueCount = status === "ACTIVE" ? plannedNotices.filter((n) => issueTiming(toIsoDay(n.dueDate), today, levyRule).kind !== "planned").length : 0;
 
   // Preview of the notices this schedule will raise (before issue).

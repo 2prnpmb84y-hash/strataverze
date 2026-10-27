@@ -3,7 +3,7 @@
  * plan, phase 1d). Text the platform shows or sends for a building does not
  * name an Act, a section, a tribunal or a rule's period itself: it takes them
  * from `rules.TERMINOLOGY`, `rules.CITATIONS`, the rule values (via
- * src/lib/jurisdiction/wording.ts) or `rules.HARDSHIP_INFORMATION`. Comments
+ * src/lib/jurisdiction/wording.ts) or `rules.NOTICE_RULES.hardship`. Comments
  * may still cite the law. This test fails if such wording appears in code text
  * outside the places listed below.
  */

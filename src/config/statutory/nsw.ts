@@ -12,7 +12,7 @@
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
-import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures } from "./types";
+import type { EntitlementScheduleDefinition, FundDefinition, NoticeRules, PackFeatures } from "./types";
 
 /**
  * Interest on unpaid contributions.
@@ -444,6 +444,37 @@ export const HARDSHIP_INFORMATION = {
   helplineWeb: "ndh.org.au",
   moreInformationUrl: "https://www.nsw.gov.au/strata-levies-help",
 } as const;
+
+/**
+ * The levy notice rules in the shape every pack shares (stage 2, step 5,
+ * 27 Oct 2026), from LEVY_NOTICE_RULES and HARDSHIP_INFORMATION, unchanged.
+ * `contents` are the NSW Government's recommended contents that the levy
+ * notice check enforces (src/lib/finance/levy-notice-content.ts), worded as
+ * the check words them; the hardship statement and the notice period are
+ * held in `hardship` and the day counts.
+ */
+export const NOTICE_RULES: NoticeRules = {
+  minimumNoticeDays: LEVY_NOTICE_RULES.minimumNoticeDays,
+  issueDaysBeforeDue: LEVY_NOTICE_RULES.issueDaysBeforeDue,
+  urgentNoticeDays: LEVY_NOTICE_RULES.urgentSpecialLevyNoticeDays,
+  hardship: { requiredFrom: LEVY_NOTICE_RULES.hardshipStatementRequiredFrom, information: HARDSHIP_INFORMATION },
+  contents: [
+    "the strata plan number",
+    "the scheme name",
+    "the lot number",
+    "the owner's name",
+    "the date of the notice",
+    "the due date",
+    "the fund the levy is for (administrative or capital works)",
+    "the amount payable",
+    "how to pay: the scheme's bank account name, BSB and account number",
+    "a payment reference for the owner to quote",
+    "who to contact with questions (name and email or phone)",
+    "a warning that interest is charged on overdue amounts",
+    "how the owner can check their levy ledger",
+  ],
+  source: LEVY_NOTICE_RULES.source,
+};
 
 /**
  * Guidance shown for each debt recovery step. Redrafted from sources with

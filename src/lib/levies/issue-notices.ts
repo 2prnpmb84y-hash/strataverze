@@ -40,8 +40,9 @@ import { checkPlannedNotices, sendIssuedNotices } from "./notice-content-data";
 import { loadPlanLots } from "./load-plan-lots";
 import { addDays, toCents, toIsoDay } from "./notice-plan";
 import { issueDateFor, issueTiming, lateMessage } from "./issue-timing";
-import { RULE_PACKS, UnsupportedJurisdictionError, needRule } from "@/config/statutory";
+import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { needRule } from "@/config/statutory";
 import { platformToday, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { schemeTimeZone, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
@@ -132,7 +133,9 @@ export async function issueNoticeBatch(input: {
   if (input.notices.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
   const owners = await currentOwners(input.schemeId);
   // The building's rule pack, recorded on each notice it issues.
-  const { label: rulePack } = await rulesForScheme(input.schemeId);
+  const { label: rulePack, rules: packRules } = await rulesForScheme(input.schemeId);
+  // Notices state the late charge from the NSW interest rule until stage 2 step 6, so a pack without it issues nothing (checked here too, so no caller can skip it).
+  needRule(packRules, "STATUTORY_INTEREST");
   // One stamp for this run's claims, so a failure puts back only what this run claimed.
   const claimedAt = new Date().toISOString();
   const claimed: BatchNotice[] = [];
@@ -320,8 +323,8 @@ async function draftNoticesDue(scheduleIds: string[], horizon: string) {
 export async function issueDueNotices(now: Date = new Date()): Promise<DueRunResult[]> {
   const schedules = await db.orm.public.LevySchedule.where((s) => s.status.eq("ACTIVE")).limit(5000).all();
   if (!schedules.length) return [];
-  // Read far enough ahead for every rule pack (a pack without levy notice rules adds nothing); each building's own rule decides below.
-  const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => p.rules.LEVY_NOTICE_RULES?.issueDaysBeforeDue ?? 0));
+  // Read far enough ahead for every rule pack; each building's own rule decides below.
+  const lookAhead = Math.max(...Object.values(RULE_PACKS).map((p) => p.rules.NOTICE_RULES.issueDaysBeforeDue));
   // A day of margin, since a building's today can be ahead of StrataVerze's.
   const horizon = addDays(platformToday(now), lookAhead + 1);
   const due = await draftNoticesDue(schedules.map((s) => s.id), horizon);
@@ -336,8 +339,11 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
     const mine = due.filter((n) => n.levyScheduleId === schedule.id);
     if (!mine.length) continue;
     try {
-      // The building's own levy notice rules (throws for a state with no rule pack), and its today.
-      const rule = needRule(rulesForState(stateOf.get(schedule.schemeId)).rules, "LEVY_NOTICE_RULES");
+      // The building's own notice rules (throws for a state with no rule pack), and its today.
+      const scheduleRules = rulesForState(stateOf.get(schedule.schemeId)).rules;
+      // A pack without the late charge rule issues nothing, before anything is written (stage 2 step 6 replaces this).
+      needRule(scheduleRules, "STATUTORY_INTEREST");
+      const rule = scheduleRules.NOTICE_RULES;
       const today = todayIn(timeZoneOf(schemeOf.get(schedule.schemeId)), now);
       // Not yet in the building's issue window: next run.
       const inWindow = mine.filter((n) => issueDateFor(toIsoDay(n.dueDate), rule) <= today);
@@ -414,7 +420,7 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
  * (today) and its due date (moved to 30 days away when fewer are left).
  */
 export async function overdueDrafts(schemeId: string, scheduleId: string, today: string) {
-  const rule = needRule((await rulesForScheme(schemeId)).rules, "LEVY_NOTICE_RULES");
+  const rule = (await rulesForScheme(schemeId)).rules.NOTICE_RULES;
   const drafts = await db.orm.public.LevyNotice
     .where((n) => and(n.schemeId.eq(schemeId), n.levyScheduleId.eq(scheduleId), n.status.eq("DRAFT")))
     .limit(5000)

@@ -59,7 +59,7 @@ export default async function OwnerPaymentPlanPage() {
       {lots.map((lot) => {
         const pack = rulesForState(lot.scheme.state).rules;
         const pp = needRule(pack, "PAYMENT_PLANS");
-        const hardship = needRule(pack, "HARDSHIP_INFORMATION");
+        const hardship = pack.NOTICE_RULES.hardship?.information ?? null;
         const oc = pack.TERMINOLOGY.ownersCorporation;
         const today = todayIn(timeZoneOf(lot.scheme));
         // Only requests and plans from this owner's own ownership (not the previous owner's).
@@ -162,9 +162,11 @@ export default async function OwnerPaymentPlanPage() {
                   owner
                   ownersCorporation={oc}
                 />
-                <p className="mt-3 text-xs text-ink-muted">
-                  Free financial counselling: {hardship.helplineName}, {hardship.helplinePhone}, {hardship.helplineWeb}. More information: {pp.helpUrl}
-                </p>
+                {hardship && (
+                  <p className="mt-3 text-xs text-ink-muted">
+                    Free financial counselling: {hardship.helplineName}, {hardship.helplinePhone}, {hardship.helplineWeb}. More information: {pp.helpUrl}
+                  </p>
+                )}
               </Card>
             )}
           </div>

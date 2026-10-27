@@ -726,6 +726,38 @@ exports[`NSW funds and entitlement schedules (phase 2 foundation) > are the fund
       "status": "GUIDANCE",
     },
   ],
+  "NOTICE_RULES": {
+    "contents": [
+      "the strata plan number",
+      "the scheme name",
+      "the lot number",
+      "the owner's name",
+      "the date of the notice",
+      "the due date",
+      "the fund the levy is for (administrative or capital works)",
+      "the amount payable",
+      "how to pay: the scheme's bank account name, BSB and account number",
+      "a payment reference for the owner to quote",
+      "who to contact with questions (name and email or phone)",
+      "a warning that interest is charged on overdue amounts",
+      "how the owner can check their levy ledger",
+    ],
+    "hardship": {
+      "information": {
+        "helplineName": "National Debt Helpline",
+        "helplinePhone": "1800 007 007",
+        "helplineWeb": "ndh.org.au",
+        "moreInformationUrl": "https://www.nsw.gov.au/strata-levies-help",
+        "summary": "If you are having trouble paying your levies, contact the owners corporation as soon as possible. You can ask for a payment plan, and the owners corporation must consider your request. Free, confidential financial counselling is available from the National Debt Helpline.",
+        "title": "Financial Hardship Information Statement",
+      },
+      "requiredFrom": "2025-10-27",
+    },
+    "issueDaysBeforeDue": 35,
+    "minimumNoticeDays": 30,
+    "source": "NSW Government, Strata levies and Strata levy notices guidance (2025)",
+    "urgentNoticeDays": 14,
+  },
 }
 `;
 

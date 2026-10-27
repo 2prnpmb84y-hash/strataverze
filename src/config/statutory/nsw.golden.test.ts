@@ -52,8 +52,11 @@ const WORDING = ["TERMINOLOGY", "CITATIONS", "HARDSHIP_INFORMATION", "DEBT_RECOV
  * multi-jurisdiction review), each with its own golden output below.
  */
 const WORKFLOWS = ["PAYMENT_PLANS", "COMMITTEE_TRAINING", "ANNUAL_REPORTING", "RECORD_RETENTION", "SALE_CERTIFICATE", "RECORDS_INSPECTION"] as const;
-/** The funds and entitlement schedules as data (phase 2 foundation, 27 Oct 2026), and the workflows the pack switches on (stage 2). */
-const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES", "FEATURES"] as const;
+/**
+ * The funds and entitlement schedules as data (phase 2 foundation, 27 Oct 2026), the workflows the pack switches on
+ * (stage 2), and the notice rules in the shared shape (stage 2, step 5).
+ */
+const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES", "FEATURES", "NOTICE_RULES"] as const;
 
 describe("NSW statutory workflows (Oct 2026)", () => {
   it("are the rules recorded", () => {
@@ -209,16 +212,16 @@ describe("NSW levies", () => {
       },
     };
     expect(HARDSHIP_INFORMATION).toMatchSnapshot();
-    expect(Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, validateLevyNoticeContent(v, NSW.LEVY_NOTICE_RULES)]))).toMatchSnapshot();
+    expect(Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, validateLevyNoticeContent(v, NSW.NOTICE_RULES)]))).toMatchSnapshot();
   });
 
   it("issue timing is unchanged", () => {
     const due = "2026-12-01";
     const out = ["2026-10-01", "2026-10-27", "2026-10-28", "2026-11-01", "2026-11-20"].map((today) => {
-      const t = issueTiming(due, today, NSW.LEVY_NOTICE_RULES);
-      return { today, timing: t, message: lateMessage(t, "Q3 levy", NSW.LEVY_NOTICE_RULES) };
+      const t = issueTiming(due, today, NSW.NOTICE_RULES);
+      return { today, timing: t, message: lateMessage(t, "Q3 levy", NSW.NOTICE_RULES) };
     });
-    expect({ issueDate: issueDateFor(due, NSW.LEVY_NOTICE_RULES), out }).toMatchSnapshot();
+    expect({ issueDate: issueDateFor(due, NSW.NOTICE_RULES), out }).toMatchSnapshot();
   });
 
   it("interest is unchanged", () => {

@@ -39,8 +39,8 @@ export interface LevyNoticeDocument {
   noInterest: boolean;
   /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
   interest: InterestRule;
-  /** The building's hardship statement (`rules.HARDSHIP_INFORMATION`). */
-  hardship: HardshipInformation;
+  /** The building's hardship statement (`rules.NOTICE_RULES.hardship.information`), or null where the pack requires none. */
+  hardship: HardshipInformation | null;
   /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
   terms: DocumentTerms;
 }
@@ -81,15 +81,19 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
       kind: "text",
       text: `You can check your ${t.levy} ledger at any time in the StrataVerze owner portal (${d.ledgerUrl}). For questions contact ${d.contact.name} (${d.contact.emailOrPhone}).`,
     },
-    {
-      kind: "box",
-      title: d.hardship.title,
-      lines: [
-        d.hardship.summary,
-        `${d.hardship.helplineName}: ${d.hardship.helplinePhone} or ${d.hardship.helplineWeb}.`,
-        `More information, including translations: ${d.hardship.moreInformationUrl}`,
-      ],
-    },
+    ...(d.hardship
+      ? ([
+          {
+            kind: "box",
+            title: d.hardship.title,
+            lines: [
+              d.hardship.summary,
+              `${d.hardship.helplineName}: ${d.hardship.helplinePhone} or ${d.hardship.helplineWeb}.`,
+              `More information, including translations: ${d.hardship.moreInformationUrl}`,
+            ],
+          },
+        ] as PdfBlock[])
+      : []),
   ];
 }
 

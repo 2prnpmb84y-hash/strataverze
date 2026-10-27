@@ -29,7 +29,7 @@
  * document. Each rule below has a `status` (see RuleStatus in ./types).
  */
 
-import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures, RuleStatus, SchemeSelector } from "./types";
+import type { EntitlementScheduleDefinition, FundDefinition, NoticeRules, PackFeatures, RuleStatus, SchemeSelector } from "./types";
 
 const ACT = "Body Corporate and Community Management Act 1997 (Qld)";
 const SM = "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld)";
@@ -152,6 +152,24 @@ export const CONTRIBUTION_NOTICE_RULES = {
   source: `${SM} s 163`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/**
+ * The contribution notice rules in the shape every pack shares (stage 2,
+ * step 5, 27 Oct 2026), from CONTRIBUTION_NOTICE_RULES.
+ */
+export const NOTICE_RULES: NoticeRules = {
+  minimumNoticeDays: CONTRIBUTION_NOTICE_RULES.minimumNoticeDays,
+  // A StrataVerze choice, not the SM's: each notice goes out 35 days before it
+  // falls due, as for NSW buildings. The SM requires at least 30 (s 163).
+  issueDaysBeforeDue: 35,
+  // No shorter notice for an urgent contribution was found in the SM, so the
+  // urgent option is not offered.
+  urgentNoticeDays: null,
+  // No hardship statement is required (CONFIRMED absent, see above).
+  hardship: null,
+  contents: CONTRIBUTION_NOTICE_RULES.contents,
+  source: CONTRIBUTION_NOTICE_RULES.source,
+};
 
 /** How contributions are fixed (SM ss 160 to 162). */
 export const CONTRIBUTIONS = {
