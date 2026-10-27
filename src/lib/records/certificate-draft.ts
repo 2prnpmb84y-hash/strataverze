@@ -16,6 +16,7 @@ import { toCents } from "@/lib/billing/money";
 import { addMonths } from "@/lib/levies/notice-plan";
 import { lotArrears } from "@/lib/debt-recovery/payment-plan-requests";
 import { needRule, type StatutoryRules } from "@/config/statutory";
+import { entitlementFor, regulationModuleLabel } from "@/lib/jurisdiction/building-data";
 
 export interface CertificateItem {
   no: string;
@@ -173,11 +174,19 @@ const policyLine = (tz: string, p: { policyType: unknown; insurer: unknown; poli
  * adviser's to complete. Owners and buyers read it, so it says "contribution"
  * and "penalty" from the pack's words.
  */
-async function draftBodyCorporateCertificate(input: { schemeId: string; lotId: string; scheme: { name: unknown }; today: string; tz: string; pack: StatutoryRules }): Promise<CertificateItem[]> {
+async function draftBodyCorporateCertificate(input: {
+  schemeId: string;
+  lotId: string;
+  scheme: { name: unknown; regulationModule?: string | null };
+  today: string;
+  tz: string;
+  pack: StatutoryRules;
+}): Promise<CertificateItem[]> {
   const { schemeId, lotId, today, tz, pack } = input;
   const terms = pack.TERMINOLOGY;
   const yearAgo = addMonths(today, -12);
-  const [funds, notices, schedules, arrears, policies] = await Promise.all([
+  const [lot, funds, notices, schedules, arrears, policies] = await Promise.all([
+    db.orm.public.Lot.where((l) => and(l.id.eq(lotId), l.schemeId.eq(schemeId))).first(),
     db.orm.public.Fund.where((f) => f.schemeId.eq(schemeId)).limit(50).all(),
     db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.lotId.eq(lotId), n.status.neq("DRAFT"), n.status.neq("WRITTEN_OFF"))).orderBy((n) => n.dueDate.asc()).limit(2000).all(),
     db.orm.public.LevySchedule.where((x) => x.schemeId.eq(schemeId)).limit(500).all(),
@@ -195,9 +204,26 @@ async function draftBodyCorporateCertificate(input: { schemeId: string; lotId: s
     `Any discount for paying on time and any ${terms.lateCharge} for late payment, as resolved by the ${terms.ownersCorporation}: check and complete.`,
   ].join("\n");
 
+  // The module and both lot entitlements (stage 2, step 10), from the
+  // building's records. Missing ones are said plainly, never filled in.
+  const selector = pack.REGULATION_MODULE;
+  const moduleName = regulationModuleLabel(pack, input.scheme.regulationModule);
+  const moduleLine = selector
+    ? `${selector.label}: ${moduleName ? `${moduleName}.` : "not recorded for this building in StrataVerze. Check and complete."}`
+    : "Regulation module: check and complete.";
+  const entitlementLines = pack.ENTITLEMENT_SCHEDULES.map((schedule) => {
+    const name = `${schedule.name[0].toUpperCase()}${schedule.name.slice(1)}`;
+    try {
+      return `${name}: ${entitlementFor({ lotNumber: lot?.lotNumber ?? null, entitlement: lot?.entitlement ?? null, interestScheduleEntitlement: lot?.interestScheduleEntitlement ?? null }, schedule)}`;
+    } catch {
+      return `${name}: not recorded for this lot in StrataVerze. Check and complete.`;
+    }
+  });
+
   const text: Record<string, string> = {
-    "2": `Scheme name: ${String(input.scheme.name ?? "")}. Regulation module: check and complete.`,
+    "2": `Scheme name: ${String(input.scheme.name ?? "")}. ${moduleLine}`,
     "4": contributions,
+    "5": [...entitlementLines, "From StrataVerze's records. Check them before the certificate is issued."].join("\n"),
     "6": [
       `Unpaid ${terms.levies} overdue at ${today}: ${aud(arrears.leviesCents)}.`,
       `${terms.lateCharge[0].toUpperCase()}${terms.lateCharge.slice(1)} charged and unpaid: ${aud(arrears.interestCents)}.`,

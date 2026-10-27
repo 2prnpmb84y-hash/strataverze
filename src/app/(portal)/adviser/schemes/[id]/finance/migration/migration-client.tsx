@@ -28,6 +28,12 @@ interface MigrationRow {
 interface MigrationClientProps {
   schemeId: string;
   schemeName: string;
+  /**
+   * The second lot entitlement the building's lots hold (Queensland's interest
+   * schedule, stage 2, step 10), from the server page: a required column of a
+   * lots file. Null for NSW.
+   */
+  separateEntitlement?: { field: string; label: string } | null;
 }
 
 // ── Constants ────────────────────────────────────────────────────
@@ -117,6 +123,12 @@ const TARGET_FIELDS: Record<DataType, TargetField[]> = {
   ],
 };
 
+/** The fields a file of `dataType` maps, with the building's second lot entitlement for lots where it holds one. */
+function targetFieldsFor(dataType: DataType, separate: { field: string; label: string } | null): TargetField[] {
+  if (dataType !== "lots" || !separate) return TARGET_FIELDS[dataType];
+  return [...TARGET_FIELDS.lots, { key: separate.field, label: separate.label, required: true }];
+}
+
 const STEP_LABELS: { step: MigrationStep; label: string }[] = [
   { step: "source", label: "Source" },
   { step: "data_type", label: "Data Type" },
@@ -192,7 +204,7 @@ function autoDetectMapping(
 
 // ── Component ────────────────────────────────────────────────────
 
-export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) {
+export function MigrationClient({ schemeId, schemeName, separateEntitlement = null }: MigrationClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -291,7 +303,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
         if (dataType) {
           const detected = autoDetectMapping(
             headers,
-            TARGET_FIELDS[dataType],
+            targetFieldsFor(dataType, separateEntitlement),
           );
           setColumnMapping(detected);
         }
@@ -300,7 +312,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
       };
       reader.readAsText(file);
     },
-    [dataType],
+    [dataType, separateEntitlement],
   );
 
   function handleFileDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -325,7 +337,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
     setError(undefined);
 
     // Check required mappings
-    const fields = TARGET_FIELDS[dataType];
+    const fields = targetFieldsFor(dataType, separateEntitlement);
     const missingRequired = fields.filter(
       (f) => f.required && !columnMapping[f.key],
     );
@@ -704,7 +716,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                 Column Mapping
               </p>
               <div className="space-y-3">
-                {TARGET_FIELDS[dataType].map((field) => (
+                {targetFieldsFor(dataType, separateEntitlement).map((field) => (
                   <div
                     key={field.key}
                     className="flex items-center gap-4"
@@ -851,7 +863,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                     <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase">
                       Row
                     </th>
-                    {TARGET_FIELDS[dataType].map((field) => (
+                    {targetFieldsFor(dataType, separateEntitlement).map((field) => (
                       <th
                         key={field.key}
                         className="px-3 py-2 text-left text-xs font-medium text-ink-muted uppercase"
@@ -883,7 +895,7 @@ export function MigrationClient({ schemeId, schemeName }: MigrationClientProps) 
                         <td className="px-3 py-2 text-ink-muted tabular-nums">
                           {row.rowNumber}
                         </td>
-                        {TARGET_FIELDS[dataType].map((field) => (
+                        {targetFieldsFor(dataType, separateEntitlement).map((field) => (
                           <td
                             key={field.key}
                             className="px-3 py-2 text-ink"

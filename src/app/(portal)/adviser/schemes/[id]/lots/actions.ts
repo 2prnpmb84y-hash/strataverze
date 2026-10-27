@@ -28,6 +28,10 @@ import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { revokeAllSessions } from "@/lib/auth/session-register";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
+import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
+import { entitlementInputProblem, onLotEntitlementWords, parseEntitlement, separateEntitlement, type SeparateEntitlement } from "@/lib/jurisdiction/building-data";
+import type { StatutoryRules } from "@/config/statutory";
 
 export type LotFormState = {
   error?: string;
@@ -65,6 +69,39 @@ function validateLotForm(formData: FormData) {
   };
 }
 
+/** The form field for the second schedule's entitlement (Queensland's interest schedule, stage 2, step 10). */
+const SEPARATE_FIELD = "interestScheduleEntitlement";
+
+/**
+ * The second schedule's entitlement from the lot form, for a pack whose lots
+ * hold one: a positive whole number, required for a new lot. An existing lot
+ * may be saved without it (it stays flagged). Fails closed for a schedule
+ * StrataVerze does not hold.
+ */
+function readSeparateEntitlement(
+  formData: FormData,
+  separate: SeparateEntitlement,
+  required: boolean,
+): { error: string } | { value: number | null } {
+  if (!separate.field) return { error: `StrataVerze does not hold each lot's ${separate.name} yet, so this lot cannot be saved here.` };
+  const text = formData.get(SEPARATE_FIELD);
+  const problem = entitlementInputProblem(separate.label, text, required);
+  if (problem) return { error: problem };
+  const parsed = parseEntitlement(text);
+  return { value: parsed.ok ? parsed.value : null };
+}
+
+/**
+ * The whole-number check for each lot's entitlement where the pack names it
+ * (Queensland's contribution schedule lot entitlement: a whole number, not 0,
+ * Act s 46), so 12.5 is refused, not sent to the integer column. A pack that
+ * does not name it (NSW) keeps validateLotForm's check and words alone.
+ */
+function namedEntitlementProblem(rules: Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES">, formData: FormData): string | null {
+  const { label } = onLotEntitlementWords(rules);
+  return label ? entitlementInputProblem(label, formData.get("entitlement"), true) : null;
+}
+
 export async function createLotAction(
   schemeId: string,
   _prev: LotFormState,
@@ -77,9 +114,19 @@ export async function createLotAction(
     if (!scheme) throw new AuthorisationError("Scheme not found.");
 
     const { errors, isValid, data } = validateLotForm(formData);
-    if (!isValid) return { fieldErrors: errors };
+    const rules = rulesForState(scheme.state).rules;
+    const named = errors.entitlement ? null : namedEntitlementProblem(rules, formData);
+    if (named) errors.entitlement = named;
+    // A pack whose lots hold a second schedule (Queensland's interest schedule): required for a new lot.
+    const separate = separateEntitlement(rules);
+    const second = separate ? readSeparateEntitlement(formData, separate, true) : null;
+    if (second && "error" in second) {
+      if (!separate?.field) return { error: second.error };
+      errors[SEPARATE_FIELD] = second.error;
+    }
+    if (Object.keys(errors).length || !isValid) return { fieldErrors: errors };
 
-    const lot = await createLot({ ...data, schemeId });
+    const lot = await createLot({ ...data, ...(second && "value" in second ? { interestScheduleEntitlement: second.value } : {}), schemeId });
 
     await logActivity({
       schemeId,
@@ -94,6 +141,7 @@ export async function createLotAction(
     redirect(`/adviser/schemes/${schemeId}/lots`);
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     if (
       err &&
       typeof err === "object" &&
@@ -118,12 +166,30 @@ export async function updateLotAction(
 
     const { errors, isValid, data } = validateLotForm(formData);
     if (!isValid) return { fieldErrors: errors };
+    // Only an entitlement that is not a whole number needs the pack: NSW
+    // accepts it as before, Queensland refuses it (namedEntitlementProblem).
+    if (!parseEntitlement(formData.get("entitlement")).ok) {
+      const named = namedEntitlementProblem((await rulesForScheme(schemeId)).rules, formData);
+      if (named) return { fieldErrors: { entitlement: named } };
+    }
 
     const lot = await getLotInScheme(schemeId, lotId);
     assertInScheme(lot, schemeId, "Lot");
 
+    // The second schedule's entitlement, only when the form sends it (a pack
+    // whose lots hold one, stage 2, step 10). An NSW lot form never does.
+    let update: typeof data & { interestScheduleEntitlement?: number | null } = data;
+    if (formData.has(SEPARATE_FIELD)) {
+      const separate = separateEntitlement((await rulesForScheme(schemeId)).rules);
+      if (!separate) return { error: "This building's lots hold one lot entitlement only." };
+      const second = readSeparateEntitlement(formData, separate, false);
+      if ("error" in second) return { fieldErrors: { [SEPARATE_FIELD]: second.error } };
+      update = { ...data, interestScheduleEntitlement: second.value };
+    }
+
     // The lot number and unit entitlement are locked: StrataVerze only (24 Oct).
-    const locked = changedLockedFields(LOCKED_LOT_FIELDS, lot as Record<string, unknown>, data);
+    // So is a Queensland lot's interest schedule lot entitlement (stage 2, step 10).
+    const locked = changedLockedFields(LOCKED_LOT_FIELDS, lot as Record<string, unknown>, update);
     if (locked.length && !isAdmin) {
       await recordSecurityEvent({
         action: "access.denied",
@@ -137,7 +203,7 @@ export async function updateLotAction(
       return { error: LOCKED_MESSAGE };
     }
 
-    await updateLot(schemeId, lotId, data);
+    await updateLot(schemeId, lotId, update);
     await recordSecurityEvent({
       action: "lot.updated",
       outcome: "allowed",
@@ -151,6 +217,7 @@ export async function updateLotAction(
     return {};
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     return { error: "Failed to update lot. Please try again." };
   }
 }

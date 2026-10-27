@@ -38,6 +38,7 @@ import type {
   NoticeRules,
   PackFeatures,
   PaymentAllocationPart,
+  SchemeSelector,
   SharedTerminology,
 } from "./statutory/types";
 
@@ -54,6 +55,13 @@ export interface SharedRules {
   TERMINOLOGY: SharedTerminology;
   FUND_CATALOGUE: readonly FundDefinition[];
   ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[];
+  /**
+   * The setting chosen for each building that decides which of the
+   * jurisdiction's rules apply, where there is one (Queensland's regulation
+   * module, stage 2, step 10). Held in `schemes.regulation_module`. A pack
+   * without it has none, and no setting shows.
+   */
+  REGULATION_MODULE?: SchemeSelector;
   /** The order a payment is applied to the levy, the late charge and recovery costs (stage 2, step 6). */
   PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[];
   FEATURES: PackFeatures;
@@ -238,7 +246,17 @@ export const PENDING_RULE_PACKS = {
     // StrataVerze choices are in FOR_REVIEW.
     // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied yet
     // (the priority certificate, public holidays, the audit, the resolved spending limits).
-    version: "2026.10.10",
+    // 2026.10.11 (27 Oct 2026): the building data (stage 2, step 10). ENTITLEMENT_SCHEDULES gains a label and help
+    // for each schedule (wording only) and `decides`, the uses of `usedFor` as keys for code, from the provisions
+    // already signed off (Act s 47(2), (3), ss 106(3), 110(3); SM ss 162(5), 197(4)). The buildings insurance share
+    // (SM s 201(1), (2): interest schedule for building and volumetric format lots only, reinstatement cost for standard
+    // format lots) is given no schedule until each lot's plan format is held. REGULATION_MODULE
+    // becomes a shared rule (the building setting) with its values unchanged. FOR_REVIEW gains four StrataVerze
+    // choices (who saves the module, the interest schedule entitlement in the locked record, the buildings insurance
+    // share not worked out, flagging missing data).
+    // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied
+    // yet (the insurance part of contributions by the interest schedule, the onboarding wizard, the NSW labels).
+    version: "2026.10.11",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

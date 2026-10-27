@@ -73,6 +73,35 @@ export type SizeClassRequirement = "ALWAYS" | "UNLESS_BY_LAWS_EXEMPT" | "OPTIONA
 export type FundRequiredWhen = "ALWAYS" | "DESIGNATED_ONLY" | { readonly bySchemeSize: Readonly<Record<string, SizeClassRequirement>> };
 
 /**
+ * What a lot's entitlement decides, so code can take the right schedule
+ * (stage 2, step 10, 27 Oct 2026):
+ * - CONTRIBUTIONS: the lot's share of levies or contributions;
+ * - POLL_VOTE: the value of the lot's vote on a poll;
+ * - SPECIAL_RESOLUTION: the entitlement test in a special resolution;
+ * - COMMON_PROPERTY_SHARE: the lot's share of the common property;
+ * - INSURANCE_COMMON_PROPERTY: the lot's share of the premium for insuring
+ *   common property and assets;
+ * - INSURANCE_BUILDINGS: the lot's share of the premium for insuring the
+ *   buildings (in Queensland by the interest schedule for building and
+ *   volumetric format lots only, so no Queensland schedule decides it until
+ *   each lot's plan format is held);
+ * - TERMINATION_INTEREST: the lot's interest on termination of the scheme (in
+ *   Queensland only on termination by resolution without dissent or court
+ *   order);
+ * - VALUE_BASED_RATES: value-based local government and State charges, rates
+ *   and taxes.
+ */
+export type EntitlementUse =
+  | "CONTRIBUTIONS"
+  | "POLL_VOTE"
+  | "SPECIAL_RESOLUTION"
+  | "COMMON_PROPERTY_SHARE"
+  | "INSURANCE_COMMON_PROPERTY"
+  | "INSURANCE_BUILDINGS"
+  | "TERMINATION_INTEREST"
+  | "VALUE_BASED_RATES";
+
+/**
  * A schedule of lot entitlements. `onLot` marks the schedule held in each
  * lot's `entitlement` (the one levies are worked out from); any other
  * schedule is held separately for each lot.
@@ -80,9 +109,22 @@ export type FundRequiredWhen = "ALWAYS" | "DESIGNATED_ONLY" | { readonly bySchem
 export interface EntitlementScheduleDefinition {
   key: string;
   name: string;
+  /**
+   * The name in title case, as forms and lot pages head it (stage 2,
+   * step 10). Absent: the screens keep the words they already show.
+   */
+  label?: string;
+  /** The help shown under the field where it is entered (stage 2, step 10). */
+  help?: string;
   onLot: boolean;
   /** What the schedule decides, in plain words. */
   usedFor: readonly string[];
+  /**
+   * What the schedule decides, for code (stage 2, step 10). A pack with one
+   * schedule may leave it out: that schedule decides everything. Where a
+   * pack has two, each use is listed under exactly one of them.
+   */
+  decides?: readonly EntitlementUse[];
   source: string;
   status: RuleStatus;
 }

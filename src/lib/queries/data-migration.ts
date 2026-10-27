@@ -5,6 +5,8 @@ import type {
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
 import { logActivity } from "@/lib/queries/activity-log";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { entitlementInputProblem, parseEntitlement, separateEntitlement } from "@/lib/jurisdiction/building-data";
 
 // ─── Prisma 8 Branded-Type Helpers ────────────────────────────
 
@@ -532,6 +534,10 @@ export async function validateLots(
     existingLots.map((l) => String(l.lotNumber).trim()),
   );
 
+  // A second lot entitlement the building's lots hold (Queensland's interest
+  // schedule, stage 2, step 10): required on every row, a positive whole number.
+  const separate = separateEntitlement((await rulesForScheme(schemeId)).rules);
+
   // Track lot numbers within the import for duplicate detection
   const seenLotNumbers = new Map<string, number>();
 
@@ -571,6 +577,13 @@ export async function validateLots(
       } else if (num <= 0) {
         errors.push(`Entitlement must be positive, got ${num}`);
       }
+    }
+
+    if (separate && !separate.field) {
+      errors.push(`StrataVerze does not hold each lot's ${separate.name} yet, so lots cannot be imported for this building.`);
+    } else if (separate?.field) {
+      const problem = entitlementInputProblem(separate.label, row.data[separate.field], true);
+      if (problem) errors.push(problem);
     }
 
     // Validate floor area if provided
@@ -759,11 +772,15 @@ export async function importLots(
   const validRows = rows.filter((r) => r.errors.length === 0);
   const importErrors: string[] = [];
   let created = 0;
+  // The second lot entitlement, where the building's lots hold one (validated by validateLots).
+  const separateField = separateEntitlement((await rulesForScheme(schemeId)).rules)?.field ?? null;
 
   await db.transaction(async (tx) => {
     for (const row of validRows) {
       try {
         const entitlement = Number(row.data.entitlement);
+        const second = separateField ? parseEntitlement(row.data[separateField]) : null;
+        if (second && (!second.ok || second.value == null)) throw new Error("The second lot entitlement is missing or not a whole number of at least 1.");
         const floorArea = row.data.floorArea
           ? Number(row.data.floorArea)
           : null;
@@ -775,6 +792,7 @@ export async function importLots(
             ? row.data.unitNumber.trim()
             : null,
           entitlement,
+          ...(separateField && second?.ok ? { [separateField]: second.value } : {}),
           floorArea,
           lotType: row.data.lotType
             ? row.data.lotType.trim().toUpperCase()

@@ -12376,6 +12376,13 @@
                   "kind": "scalar"
                 }
               },
+              "interestScheduleEntitlement": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "lotNumber": {
                 "nullable": false,
                 "type": {
@@ -12725,6 +12732,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "interestScheduleEntitlement": {
+                  "column": "interest_schedule_entitlement"
                 },
                 "lotNumber": {
                   "column": "lot_number"
@@ -20954,6 +20964,13 @@
                   "kind": "scalar"
                 }
               },
+              "regulationModule": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "state": {
                 "nullable": false,
                 "type": {
@@ -21944,6 +21961,9 @@
                 },
                 "preMeetingEvotingAdopted": {
                   "column": "pre_meeting_evoting_adopted"
+                },
+                "regulationModule": {
+                  "column": "regulation_module"
                 },
                 "state": {
                   "column": "state"
@@ -45220,6 +45240,11 @@
                   },
                   "nullable": false
                 },
+                "interest_schedule_entitlement": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "lot_number": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -50511,6 +50536,11 @@
                     "value": false
                   },
                   "nullable": false
+                },
+                "regulation_module": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 },
                 "state": {
                   "codecId": "pg/text@1",
@@ -60781,7 +60811,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "57d7ae020da1dad786ab2235972b15cfdb91ca39f7264577eec58972c5bb8a3e"
+    "storageHash": "6f7b0a00095e39235f5410b4d9176c52d3f595bd1db8d8c388a59d65facc7798"
   },
   "execution": {
     "executionHash": "7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9",

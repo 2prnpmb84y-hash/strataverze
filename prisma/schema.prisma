@@ -168,6 +168,10 @@ model Scheme {
   interestResolutionRecordedAt DateTime?  @db.Timestamptz @map("interest_resolution_recorded_at")
   /// Apply an owner's credit (overpayment) to their next levy notice automatically.
   autoApplyOwnerCredit Boolean            @default(true) @map("auto_apply_owner_credit")
+  /// The regulation module, for a pack with a REGULATION_MODULE selector (Queensland: STANDARD, ACCOMMODATION,
+  /// COMMERCIAL, SMALL_SCHEMES, SPECIFIED_TWO_LOT; BCCMA s 21). Null for every other building. A Queensland
+  /// building with none is flagged to the adviser (src/lib/jurisdiction/building-data.ts).
+  regulationModule    String?             @map("regulation_module")
   defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
   organisationId      String?             @map("organisation_id") @db.Uuid
   createdAt           DateTime            @default(now()) @db.Timestamptz @map("created_at")
@@ -256,7 +260,9 @@ model Lot {
   schemeId           String              @map("scheme_id") @db.Uuid
   lotNumber          String              @map("lot_number")
   unitNumber         String?             @map("unit_number")
-  entitlement        Int
+  entitlement        Int                 // the schedule the pack holds on each lot (NSW unit entitlement, Queensland contribution schedule)
+  /// The Queensland interest schedule lot entitlement (BCCMA s 46), the pack's second schedule; positive when set, null for NSW.
+  interestScheduleEntitlement Int?       @map("interest_schedule_entitlement")
   floorArea          Float?              @map("floor_area")
   lotType            String              @default("RESIDENTIAL") @map("lot_type")
 

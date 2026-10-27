@@ -33,6 +33,8 @@ import { connection } from "next/server";
 import { loadLotLevyView } from "@/lib/levies/lot-levy-view";
 import { LevyNoticesView } from "@/components/levies/levy-notices-view";
 import { StatementView } from "@/components/levies/statement-view";
+import { lotEntitlementProblem, onLotEntitlementWords, separateEntitlement } from "@/lib/jurisdiction/building-data";
+import { BuildingDataNotice } from "../../_sections/building-data-notice";
 import {
   FileText,
   Award,
@@ -88,6 +90,11 @@ export default async function LotDetailPage({
   // The certificate the building's pack has (stage 2, step 9), named as the pack names its button.
   const packRules = rulesForState(scheme.state).rules;
   const certificateButton = packRules.FEATURES.strataInformationCertificate || packRules.FEATURES.bodyCorporateCertificate ? packRules.CERTIFICATE?.buttonLabel : undefined;
+  // The lot's entitlements as the pack names them, and a second schedule's
+  // (Queensland's interest schedule) if the pack has one (stage 2, step 10).
+  const entitlementWords = onLotEntitlementWords(packRules);
+  const separate = separateEntitlement(packRules);
+  const lotDataProblem = lotEntitlementProblem(packRules, lot);
 
   return (
     <div className="max-w-5xl">
@@ -119,6 +126,8 @@ export default async function LotDetailPage({
           today={await schemeToday(id)}
         />
       </div>
+
+      <BuildingDataNotice problems={lotDataProblem ? [lotDataProblem] : []} />
 
       <LotDetailTabs>
         {{
@@ -175,9 +184,15 @@ export default async function LotDetailPage({
                       value={lot.accessoryUnit ?? "—"}
                     />
                     <DetailRow
-                      label="Unit Entitlement"
+                      label={entitlementWords.label ?? "Unit Entitlement"}
                       value={String(lot.entitlement)}
                     />
+                    {separate && (
+                      <DetailRow
+                        label={separate.label}
+                        value={lot.interestScheduleEntitlement != null ? String(lot.interestScheduleEntitlement) : "Not recorded"}
+                      />
+                    )}
                     <DetailRow
                       label="UOF"
                       value={lot.uof ?? "—"}
@@ -434,10 +449,13 @@ export default async function LotDetailPage({
                   schemeId={id}
                   lotId={lotId}
                   lockStructure={!profile?.isPlatformAdmin}
+                  entitlementWords={entitlementWords}
+                  separate={separate}
                   defaults={{
                     lotNumber: lot.lotNumber,
                     unitNumber: lot.unitNumber,
                     entitlement: lot.entitlement,
+                    interestScheduleEntitlement: lot.interestScheduleEntitlement,
                     floorArea: lot.floorArea,
                     lotType: lot.lotType,
                   }}

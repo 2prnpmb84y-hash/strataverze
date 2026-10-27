@@ -31,6 +31,9 @@ import { ComplianceCard } from "./_sections/compliance-card";
 import { BylawsCard } from "./_sections/bylaws-card";
 import { InsuranceCard } from "./_sections/insurance-card";
 import { ContactsCard } from "./_sections/contacts-card";
+import { BuildingDataNotice } from "./_sections/building-data-notice";
+import { RegulationModuleForm } from "./regulation-module-form";
+import { buildingDataProblems, regulationModuleChoices } from "@/lib/jurisdiction/building-data";
 import { connection } from "next/server";
 
 /**
@@ -93,6 +96,12 @@ export default async function SchemeDetailPage({
   // The wizard created the building but could not save its photo (25 Oct).
   const photoNotSaved = photo === "not-saved";
   const nextStep = typeof next === "string" && next.startsWith(`/adviser/schemes/${id}/`) && !next.includes("//") ? next : null;
+  // The building's rule pack. Queensland (stage 2, step 10): the regulation
+  // module setting, and what the building is missing that the pack asks for.
+  // Neither shows for NSW.
+  const packRules = rulesForState(scheme.state).rules;
+  const moduleChoices = regulationModuleChoices(packRules);
+  const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots);
 
   return (
     <div>
@@ -109,8 +118,9 @@ export default async function SchemeDetailPage({
           )}
         </div>
       )}
+      <BuildingDataNotice problems={dataProblems} />
       <AnnouncementsCard id={id} announcements={announcements} />
-      <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE} />
+      <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={packRules.FUND_CATALOGUE} />
       <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} />
       <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} />
       <MeetingsCard id={id} meetings={meetings} />
@@ -139,6 +149,8 @@ export default async function SchemeDetailPage({
         />
         <ActivityTimeline activities={activities} />
       </Card>
+
+      {moduleChoices && <RegulationModuleForm schemeId={scheme.id} choices={moduleChoices} current={scheme.regulationModule ?? null} />}
 
       {/* Edit form */}
       <div className="mb-6">
