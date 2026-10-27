@@ -3,6 +3,7 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { withLedgerBalances } from "@/lib/finance/fund-position";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import { needRule } from "@/config/statutory";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -63,7 +64,7 @@ export async function createFund(data: {
     name: data.name,
     fundType: data.fundType,
     balance: toNumeric(data.balance ?? 0),
-    accountingBasis: rules.defaultAccountingBasis(data.fundType),
+    accountingBasis: needRule(rules, "defaultAccountingBasis")(data.fundType),
   });
 }
 

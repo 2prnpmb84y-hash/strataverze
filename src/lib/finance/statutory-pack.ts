@@ -16,7 +16,7 @@ import { toCents } from "@/lib/billing/money";
 import { financialYearStart, addDays } from "@/lib/levies/notice-plan";
 import { toBasisEntries } from "@/lib/queries/reports";
 import { logActivity } from "@/lib/queries/activity-log";
-import type { StatutoryRules } from "@/config/statutory";
+import { needRule, type NswRules } from "@/config/statutory";
 import { levyIncomeAccountPicker, recognisedIncomeExpense, incomeExpenseTotals, type AccountingBasis, type RecognisedLine } from "./accounting-basis";
 import { auditLotCount, auditRequired, keyFinancialInformation, leviesRaisedForYear, unpaidAt, type KeyFinancialInformation } from "./key-financial-information";
 import { currentBudgetLines } from "./budgets";
@@ -79,10 +79,10 @@ export interface StatutoryPack {
   /** The building's rule pack the statements were prepared under, and the parts of it they show. */
   rules: {
     rulePack: string;
-    keyFinancialInformation: StatutoryRules["KEY_FINANCIAL_INFORMATION"];
+    keyFinancialInformation: NswRules["KEY_FINANCIAL_INFORMATION"];
     /** Packs adopted before 2026.10.3 stored the threshold without the lot types, label, timing and standard. */
-    auditThreshold: Omit<StatutoryRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard"> &
-      Partial<Pick<StatutoryRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard">>;
+    auditThreshold: Omit<NswRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard"> &
+      Partial<Pick<NswRules["AUDIT_THRESHOLD"], "excludedLotTypes" | "excludedLotsLabel" | "timing" | "standard">>;
   };
   adopted: { meetingId: string; adoptedAt: string; snapshotId: string } | null;
 }
@@ -120,7 +120,10 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
   ]);
   // The building's rule pack (from the interest setting, which reads the building).
   const { rules, label: rulePack } = interest.rules;
-  const { AUDIT_THRESHOLD, CAPITAL_WORKS_PLAN, KEY_FINANCIAL_INFORMATION, STATUTORY_INTEREST } = rules;
+  const AUDIT_THRESHOLD = needRule(rules, "AUDIT_THRESHOLD");
+  const CAPITAL_WORKS_PLAN = needRule(rules, "CAPITAL_WORKS_PLAN");
+  const KEY_FINANCIAL_INFORMATION = needRule(rules, "KEY_FINANCIAL_INFORMATION");
+  const STATUTORY_INTEREST = needRule(rules, "STATUTORY_INTEREST");
   const payments = notices.length
     ? livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(notices.map((n) => n.id))).limit(100000).all(), end)
     : [];
@@ -256,7 +259,7 @@ export async function getStatutoryStatementsPack(schemeId: string, financialYear
         `${f.fundName} is reported on ${f.basis === "CASH" ? "a cash basis: levy contributions when received and expenses when paid" : "an accrual basis: levies when raised and expenses when invoices are approved"}.`,
     ),
     interest.mode === "NO_INTEREST"
-      ? `The ${rules.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${rules.CITATIONS.noInterestResolution}).`
+      ? `The ${rules.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${needRule(rules, "CITATIONS").noInterestResolution}).`
       : `Interest on unpaid contributions is charged at ${STATUTORY_INTEREST.annualRatePercent}% a year simple interest when unpaid ${graceText(STATUTORY_INTEREST)} after the due date (${STATUTORY_INTEREST.source}).`,
     plan
       ? `Capital works fund plan "${plan.title}" was adopted${plan.adoptedAt ? ` on ${isoDay(plan.adoptedAt)}` : ""} and is due for review by ${isoDay(plan.reviewDueAt)} (${CAPITAL_WORKS_PLAN.source}).`

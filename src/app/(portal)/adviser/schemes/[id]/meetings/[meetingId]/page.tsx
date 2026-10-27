@@ -33,6 +33,7 @@ import { canEditDetails, canTransition, isBeforeNotice, meetingStatusLabel } fro
 import { connection } from "next/server";
 import { hasFeeEvent, previewUsageFee } from "@/lib/billing/capture";
 import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
+import { needRule } from "@/config/statutory";
 
 export default async function MeetingDetailPage({
   params,
@@ -276,7 +277,7 @@ export default async function MeetingDetailPage({
         ballot={ballotView}
         fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" })}
         timeZone={meetingTz}
-        adoptionCitation={rulesForState(scheme.state).rules.CITATIONS.evotingAdoption}
+        adoptionCitation={needRule(rulesForState(scheme.state).rules, "CITATIONS").evotingAdoption}
       />
 
       {/* Conduct */}

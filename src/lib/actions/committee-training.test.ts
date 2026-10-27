@@ -8,6 +8,12 @@ vi.mock("@/lib/auth/require-membership", async () => {
   return { ...actual, requireSchemeMembership: (...a: unknown[]) => membership(...a) };
 });
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// The building's rule pack has the workflow unless a test says otherwise.
+const hasFeature = vi.fn(async (_schemeId: string, _feature: string) => true);
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
+  return { ...actual, schemeHasFeature: (...a: [string, string]) => hasFeature(...a) };
+});
 vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: vi.fn(async () => "2026-10-26"), schemeTimeZone: vi.fn(async () => "Australia/Sydney") }));
 const store = { saveCommitteeTraining: vi.fn(), recordOwnCompletion: vi.fn() };
 vi.mock("@/lib/governance/committee-training-store", async () => {
@@ -40,5 +46,22 @@ describe("committee training actions", () => {
     expect(r.success).toBeDefined();
     expect(membership).toHaveBeenCalledWith(SCHEME, ["COMMITTEE"]);
     expect(store.recordOwnCompletion).toHaveBeenCalledWith(expect.objectContaining({ schemeId: SCHEME, profileId: "member-1", completedOn: "2026-10-20", defaultAppointedOn: "2026-10-05" }));
+  });
+});
+
+describe("committee training actions for a building whose pack has no committee training", () => {
+  it("refuse, writing nothing", async () => {
+    hasFeature.mockResolvedValue(false);
+    try {
+      membership.mockResolvedValue({ profile: { id: "adviser-1" }, membership: {}, roles: ["ADVISER"] });
+      expect((await actions.saveCommitteeTrainingAction(SCHEME, "member-1", {}, form({ appointedOn: "2026-10-01" }))).error).toBe("This is not available for this building.");
+      membership.mockResolvedValue({ profile: { id: "member-1" }, membership: { startDate: "2026-10-01" }, roles: ["COMMITTEE"] });
+      expect((await actions.recordMyTrainingAction(SCHEME, {}, form({ completedOn: "2026-10-20" }))).error).toBe("This is not available for this building.");
+      for (const c of hasFeature.mock.calls) expect(c).toEqual([SCHEME, "committeeTraining"]);
+      expect(store.saveCommitteeTraining).not.toHaveBeenCalled();
+      expect(store.recordOwnCompletion).not.toHaveBeenCalled();
+    } finally {
+      hasFeature.mockResolvedValue(true);
+    }
   });
 });

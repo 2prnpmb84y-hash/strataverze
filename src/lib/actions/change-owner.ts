@@ -20,6 +20,7 @@ import { consumeUpload, uploadErrorMessage, verifyUpload } from "@/lib/storage/u
 import { applyChangeOwner, checkChangeOwner } from "@/lib/owner/change-owner";
 import { captureLibraryDocument, captureQuietly } from "@/lib/vault/sources";
 import { getTrialVault } from "@/lib/vault/capture";
+import { needRule } from "@/config/statutory";
 
 export type ChangeOwnerState = { error?: string; fieldErrors?: Record<string, string>; done?: string };
 
@@ -55,7 +56,7 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
     }
 
     // Looked up before the change is saved, so nothing after the write can fail on it.
-    const seatCitation = (await rulesForScheme(schemeId)).rules.CITATIONS.committeeSeatEndsOnSale;
+    const seatCitation = needRule((await rulesForScheme(schemeId)).rules, "CITATIONS").committeeSeatEndsOnSale;
     const result = await applyChangeOwner(schemeId, lotId, input);
     const lotNumber = lot!.lotNumber;
 

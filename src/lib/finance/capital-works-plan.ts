@@ -4,10 +4,10 @@
  * 5 years. The horizon and review period come from the building's rule pack
  * (`rules.CAPITAL_WORKS_PLAN`); nothing here assumes a jurisdiction.
  */
-import type { StatutoryRules } from "@/config/statutory";
+import type { NswRules } from "@/config/statutory";
 
 /** The capital works plan rule of a building's rule pack (`rules.CAPITAL_WORKS_PLAN`). */
-export type CapitalWorksRule = StatutoryRules["CAPITAL_WORKS_PLAN"];
+export type CapitalWorksRule = NswRules["CAPITAL_WORKS_PLAN"];
 
 export interface PlanItem {
   plannedYear: number;

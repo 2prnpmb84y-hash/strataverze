@@ -9,7 +9,7 @@
  */
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
-import { rulePackFor, UnsupportedJurisdictionError } from "@/config/statutory";
+import { rulePackFor, UnsupportedJurisdictionError, needRule } from "@/config/statutory";
 import {
   snapshotRuleSet,
   type MeetingRuleSet,
@@ -61,7 +61,7 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
 export async function getActiveRuleSet(state: string): Promise<MeetingRuleSet> {
   const pack = rulePackFor(state);
   if (!pack) throw new UnsupportedJurisdictionError((state ?? "").trim().toUpperCase());
-  const seed = pack.rules.MEETING_RULES;
+  const seed = needRule(pack.rules, "MEETING_RULES");
 
   const row = await db.orm.public.MeetingRuleSet
     .where((r) => and(r.state.eq(pack.state), r.isActive.eq(true)))

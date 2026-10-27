@@ -32,9 +32,11 @@ const queries = {
   getInstalmentsForPlan: vi.fn(),
 };
 vi.mock("@/lib/queries/debt-recovery", () => ({ ...queries, getDebtRecoverySteps: vi.fn(async () => []) }));
+const schemeRules = vi.fn();
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
-  const { PAYMENT_PLANS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
-  return { rulesForScheme: vi.fn(async () => ({ rules: { DEBT_RECOVERY_STEPS: [], PAYMENT_PLANS }, label: "AU-NSW test" })) };
+  const { PAYMENT_PLANS, FEATURES, TERMINOLOGY } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+  schemeRules.mockImplementation(async () => ({ rules: { DEBT_RECOVERY_STEPS: [], PAYMENT_PLANS, FEATURES, TERMINOLOGY }, label: "AU-NSW test" }));
+  return { rulesForScheme: (...a: unknown[]) => schemeRules(...a) };
 });
 
 const instalmentFirst = vi.fn();
@@ -222,6 +224,39 @@ describe("initiateDebtRecoveryAction", () => {
     expect(queries.createDebtRecoveryCase).toHaveBeenCalledWith(
       expect.objectContaining({ initiatedRole: "COMMITTEE", schemeId: SCHEME_A }),
     );
+  });
+});
+
+describe("initiateDebtRecoveryAction for a pack without the recovery steps", () => {
+  const ready = () => {
+    membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
+    lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
+    ownerMembershipFirst.mockResolvedValue({ id: "m" });
+    queries.getOverdueLevyNoticesForLot.mockResolvedValue([{ balanceOutstanding: 100, interestCharged: 0 }]);
+    queries.generateCaseNumber.mockResolvedValue("DR-1");
+    queries.createDebtRecoveryCase.mockResolvedValue({ id: "new-case" });
+  };
+  const sharedOnly = (debtRecoverySteps: boolean) => ({
+    rules: { TERMINOLOGY: { jurisdictionShort: "Qld" }, FEATURES: { debtRecoverySteps } },
+    label: "AU-QLD test",
+  });
+
+  it("resolves the steps before creating the case, so no case is left behind", async () => {
+    ready();
+    schemeRules.mockResolvedValueOnce(sharedOnly(true));
+    const r = await actions.initiateDebtRecoveryAction(SCHEME_A, "lot-1", "debtor", "ADVISER");
+    expect(r.error).toBe("Failed to initiate debt recovery case");
+    expect(queries.createDebtRecoveryCase).not.toHaveBeenCalled();
+    expect(queries.createDebtRecoveryStep).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the pack does not switch the steps on, writing nothing", async () => {
+    ready();
+    schemeRules.mockResolvedValueOnce(sharedOnly(false));
+    const r = await actions.initiateDebtRecoveryAction(SCHEME_A, "lot-1", "debtor", "ADVISER");
+    expect(r.error).toBe("This is not available for this building.");
+    expect(queries.generateCaseNumber).not.toHaveBeenCalled();
+    expect(queries.createDebtRecoveryCase).not.toHaveBeenCalled();
   });
 });
 

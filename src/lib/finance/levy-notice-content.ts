@@ -5,13 +5,13 @@
  * recommended contents for levy notices, which this platform treats as
  * required so every notice is complete. Sources in src/config/statutory.ts.
  */
-import type { StatutoryRules } from "@/config/statutory";
+import type { NswRules } from "@/config/statutory";
 
 /** The levy notice rules of a building's rule pack (`rules.LEVY_NOTICE_RULES`). */
-export type LevyNoticeRule = StatutoryRules["LEVY_NOTICE_RULES"];
+export type LevyNoticeRule = NswRules["LEVY_NOTICE_RULES"];
 
 /** The hardship information of a building's rule pack (`rules.HARDSHIP_INFORMATION`). */
-export type HardshipInformation = StatutoryRules["HARDSHIP_INFORMATION"];
+export type HardshipInformation = NswRules["HARDSHIP_INFORMATION"];
 
 export interface LevyNoticeContentInput {
   scheme: { name: string | null; planNumber: string | null };

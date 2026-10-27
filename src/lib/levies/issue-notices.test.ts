@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { issueDateFor as issueDateWith, issueTiming as issueTimingWith } from "./issue-timing";
-import { statutoryRulesFor } from "@/config/statutory";
+import { statutoryRulesFor, type NswRules } from "@/config/statutory";
 
 /** Midday in Sydney on a day (the daily job works out each building's day from the moment it runs). */
 const midday = (day: string) => new Date(`${day}T02:00:00Z`);
 
-const LEVY = statutoryRulesFor("NSW").LEVY_NOTICE_RULES;
+const LEVY = (statutoryRulesFor("NSW") as NswRules).LEVY_NOTICE_RULES;
 const issueDateFor = (due: string) => issueDateWith(due, LEVY);
 const issueTiming = (due: string, today: string) => issueTimingWith(due, today, LEVY);
 

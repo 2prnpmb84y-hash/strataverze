@@ -4,6 +4,7 @@ import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { db } from "@/prisma/db";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { canReadSchemeFinance } from "@/lib/finance/finance-access";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 
 /** The locked statutory statements pack adopted at an AGM, exactly as stored. */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ snapshotId: string }> }) {
@@ -24,6 +25,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     });
     return new NextResponse("Not found", { status: 404, headers: NO_STORE });
   }
+  if (!(await rulesForScheme(snapshot.schemeId)).rules.FEATURES.keyFinancialInformation) return new NextResponse("Not found", { status: 404, headers: NO_STORE });
   await recordSecurityEventLater({
     action: "export.statutory_snapshot",
     outcome: "allowed",

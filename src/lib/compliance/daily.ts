@@ -12,9 +12,12 @@
  *   date; when it passes, the member and the advisers are told.
  * - Strata Hub annual report: the advisers and the committee are reminded
  *   before it is due after each AGM, and after, until it is recorded.
+ *
+ * Each kind runs only for buildings whose rule pack has the workflow (FEATURES).
  */
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { schemeTimeZones } from "@/lib/jurisdiction/scheme-time";
 import { todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
@@ -34,7 +37,9 @@ export async function runComplianceDay(now: Date = new Date()) {
     // Requests not yet decided, and decided ones with no reply date recorded.
     const open = await db.orm.public.PaymentPlanRequest.where((r) => r.repliedOn.isNull()).orderBy((r) => r.createdAt.asc()).limit(5000).all();
     const waiting = open.filter((r) => r.status === "RECEIVED" || r.status === "APPROVED" || r.status === "REFUSED");
-    const zones = await schemeTimeZones([...new Set(waiting.map((r) => r.schemeId))]);
+    const ids = [...new Set(waiting.map((r) => r.schemeId))];
+    const zones = await schemeTimeZones(ids);
+    const states = new Map((ids.length ? await db.orm.public.Scheme.where((s) => s.id.in(ids)).limit(ids.length).all() : []).map((s) => [s.id, s.state]));
     for (const r of waiting) {
       const tz = zones.get(r.schemeId);
       if (!tz) continue;
@@ -42,6 +47,8 @@ export async function runComplianceDay(now: Date = new Date()) {
       const kind = reminderDue(daysToReply(day(r.replyDueOn), today));
       if (!kind) continue;
       try {
+        // Only buildings whose pack has the payment plan workflow.
+        if (!rulesForState(states.get(r.schemeId)).rules.FEATURES.statutoryPaymentPlans) continue;
         // Claim today's reminder, so a repeated run (a retried cron) sends none.
         const claimed = await db.orm.public.PaymentPlanRequest.where((x) => and(x.id.eq(r.id), or(x.lastReminderOn.isNull(), x.lastReminderOn.lt(today)))).updateAndCount({ lastReminderOn: today });
         if (claimed !== 1) continue;

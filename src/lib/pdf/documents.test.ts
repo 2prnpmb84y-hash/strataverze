@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { statutoryRulesFor } from "@/config/statutory";
+import { statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { extractText, getDocumentProxy } from "unpdf";
 import { renderLevyNoticePdf, renderOwnerStatementPdf, renderRemittancePdf, renderStatutoryPackPdf } from "./documents";
@@ -28,8 +28,8 @@ const notice = {
   contact: { name: "Sam Adviser", emailOrPhone: "sam@example.com" },
   ledgerUrl: "https://strataverze.vercel.app/owner/levies",
   noInterest: false,
-  interest: statutoryRulesFor("NSW").STATUTORY_INTEREST,
-  hardship: statutoryRulesFor("NSW").HARDSHIP_INFORMATION,
+  interest: (statutoryRulesFor("NSW") as NswRules).STATUTORY_INTEREST,
+  hardship: (statutoryRulesFor("NSW") as NswRules).HARDSHIP_INFORMATION,
   ownersCorporation: "owners corporation",
 };
 
@@ -127,7 +127,7 @@ describe("PDF documents", () => {
       funds: [fund, { ...fund, fundId: "c", fundName: "Capital Works Fund", basis: "ACCRUAL" }],
       notes: ["An audit is not required by size."],
       audit: { required: false, byLots: false, byBudget: false, annualBudgetCents: 1 },
-      rules: { rulePack: "AU-NSW test", keyFinancialInformation: statutoryRulesFor("NSW").KEY_FINANCIAL_INFORMATION, auditThreshold: statutoryRulesFor("NSW").AUDIT_THRESHOLD },
+      rules: { rulePack: "AU-NSW test", keyFinancialInformation: (statutoryRulesFor("NSW") as NswRules).KEY_FINANCIAL_INFORMATION, auditThreshold: (statutoryRulesFor("NSW") as NswRules).AUDIT_THRESHOLD },
       adopted: null,
     };
     const { text, pages } = await textOf(await renderStatutoryPackPdf(pack));

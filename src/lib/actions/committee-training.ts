@@ -5,6 +5,7 @@
  */
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
+import { schemeHasFeature } from "@/lib/jurisdiction/scheme-rules";
 import { schemeToday, schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { storedDayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
@@ -12,6 +13,9 @@ import { TrainingError, recordOwnCompletion, saveCommitteeTraining } from "@/lib
 
 export type TrainingFormState = { error?: string; fieldErrors?: Record<string, string>; success?: string; values?: Record<string, string> };
 const echo = (f: FormData) => Object.fromEntries([...f.entries()].filter(([, v]) => typeof v === "string")) as Record<string, string>;
+
+/** A building whose rule pack does not have committee training. */
+const NOT_AVAILABLE = "This is not available for this building.";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
@@ -25,6 +29,7 @@ function failure(err: unknown): TrainingFormState {
 export async function saveCommitteeTrainingAction(schemeId: string, profileId: string, _prev: TrainingFormState, formData: FormData): Promise<TrainingFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!(await schemeHasFeature(schemeId, "committeeTraining"))) return { error: NOT_AVAILABLE, values: echo(formData) };
     await saveCommitteeTraining({
       schemeId,
       profileId,
@@ -45,6 +50,7 @@ export async function saveCommitteeTrainingAction(schemeId: string, profileId: s
 export async function recordMyTrainingAction(schemeId: string, _prev: TrainingFormState, formData: FormData): Promise<TrainingFormState> {
   try {
     const { profile, membership } = await requireSchemeMembership(schemeId, ["COMMITTEE"]);
+    if (!(await schemeHasFeature(schemeId, "committeeTraining"))) return { error: NOT_AVAILABLE, values: echo(formData) };
     const [today, tz] = await Promise.all([schemeToday(schemeId), schemeTimeZone(schemeId)]);
     await recordOwnCompletion({
       schemeId,

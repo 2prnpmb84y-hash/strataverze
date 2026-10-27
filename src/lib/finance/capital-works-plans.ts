@@ -20,6 +20,7 @@ import {
   type ContributionMethod,
 } from "./capital-works-plan";
 import { generalMeetingResolutionProblem } from "./resolutions";
+import { needRule } from "@/config/statutory";
 
 export class CapitalWorksPlanError extends Error {}
 
@@ -45,9 +46,9 @@ async function loadPlan(schemeId: string, planId: string) {
 const itemsOf = (plan: { items?: { plannedYear: number; estimatedCost: unknown }[] }) =>
   (plan.items ?? []).map((i) => ({ plannedYear: i.plannedYear, estimatedCostCents: toCents(String(i.estimatedCost)) }));
 
-/** The building's capital works plan rule (throws for a state with no rule pack). */
+/** The building's capital works plan rule (throws for a state with no rule pack, or a pack without the plan). */
 async function capitalWorksRule(schemeId: string) {
-  return (await rulesForScheme(schemeId)).rules.CAPITAL_WORKS_PLAN;
+  return needRule((await rulesForScheme(schemeId)).rules, "CAPITAL_WORKS_PLAN");
 }
 
 /** Work out and store the yearly contribution the plan needs. */

@@ -5,6 +5,7 @@ import { defaultTimeZone } from "@/lib/jurisdiction/time-zone";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
+import { needRule } from "@/config/statutory";
 
 /**
  * Fetch all schemes managed by a given adviser (by profile ID).
@@ -128,6 +129,7 @@ export async function createScheme(
 ) {
   // The building's rule pack. A state with no pack is refused before anything is created.
   const { rules } = rulesForState(data.state);
+  const defaultAccountingBasis = needRule(rules, "defaultAccountingBasis");
   // The building's time zone, from its state and postcode.
   const timeZone = defaultTimeZone(data.state, data.postcode);
   if (!timeZone) throw new Error(`No time zone is known for ${data.state}.`);
@@ -167,13 +169,13 @@ export async function createScheme(
       schemeId: scheme.id,
       name: "Administrative Fund",
       fundType: "ADMINISTRATIVE",
-      accountingBasis: rules.defaultAccountingBasis("ADMINISTRATIVE"),
+      accountingBasis: defaultAccountingBasis("ADMINISTRATIVE"),
     });
     await tx.orm.public.Fund.create({
       schemeId: scheme.id,
       name: "Capital Works Fund",
       fundType: "CAPITAL_WORKS",
-      accountingBasis: rules.defaultAccountingBasis("CAPITAL_WORKS"),
+      accountingBasis: defaultAccountingBasis("CAPITAL_WORKS"),
     });
 
     // The lots, in batches, with the owner's name as on the strata roll.

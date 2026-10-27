@@ -32,7 +32,7 @@ import {
   getDebtRecoverySteps,
 } from "@/lib/queries/debt-recovery";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { UnsupportedJurisdictionError } from "@/config/statutory";
+import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
 import { stepPausedByPlan } from "@/lib/debt-recovery/payment-plans";
 
 type ActionResult = { error?: string; success?: boolean; id?: string };
@@ -126,6 +126,9 @@ export async function initiateDebtRecoveryAction(
 
     // The building's rule pack sets the recovery steps (throws for a state with no pack).
     const { rules, label: rulePack } = await rulesForScheme(schemeId);
+    if (!rules.FEATURES.debtRecoverySteps) return { error: "This is not available for this building." };
+    // Resolved before anything is written, so a pack without steps leaves no case behind.
+    const steps = needRule(rules, "DEBT_RECOVERY_STEPS");
     const caseNumber = await generateCaseNumber(schemeId);
 
     const newCase = await createDebtRecoveryCase({
@@ -142,7 +145,7 @@ export async function initiateDebtRecoveryAction(
     });
 
     // The recovery steps of the building's rule pack
-    for (const step of rules.DEBT_RECOVERY_STEPS) {
+    for (const step of steps) {
       await createDebtRecoveryStep({
         caseId: newCase.id,
         ...step,
@@ -219,7 +222,7 @@ export async function updateDebtRecoveryCaseAction(
     if (status === "REFERRED_LEGAL" && caseRow.status !== "REFERRED_LEGAL") {
       const followed = await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all();
       const { rules } = await rulesForScheme(schemeId);
-      if (stepPausedByPlan("LEGAL_REFERRAL", followed, rules.PAYMENT_PLANS)) {
+      if (stepPausedByPlan("LEGAL_REFERRAL", followed, needRule(rules, "PAYMENT_PLANS"))) {
         return { error: "A payment plan is being followed for this lot, so the case cannot be referred for legal recovery. Mark the plan as not followed first." };
       }
     }
@@ -285,7 +288,7 @@ export async function completeDebtRecoveryStepAction(
       rulesForScheme(schemeId),
       db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all(),
     ]);
-    if (stepPausedByPlan(step.stepType, lotPlans, rules.PAYMENT_PLANS)) {
+    if (stepPausedByPlan(step.stepType, lotPlans, needRule(rules, "PAYMENT_PLANS"))) {
       return { error: "A payment plan is being followed for this lot, so this step waits. Mark the plan as not followed if instalments are missed." };
     }
 

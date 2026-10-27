@@ -25,6 +25,7 @@ import { consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { signDownloads } from "@/lib/storage/server-storage";
 import { schemeStoragePathProblem } from "@/lib/queries/document-url";
 import { requestPhotos } from "./requests";
+import { needRule } from "@/config/statutory";
 
 const ts = (v: string | Date) => (typeof v === "string" ? v : v.toISOString()) as unknown as TimestampString<3>;
 const vc = <N extends number>(v: string) => v as unknown as Varchar<N>;
@@ -462,7 +463,9 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
   const allAnswered = activeInvites.length > 0 && activeInvites.every((i) => quotes.some((q) => q.contractorBusinessId === i.contractorBusinessId && (q.status === "SUBMITTED" || q.status === "ACCEPTED")));
   const liveOrder = rfq.requestId ? await db.orm.public.WorksWorkOrder.where((o) => and(o.requestId.eq(rfq.requestId!), o.status.notIn(["DECLINED", "CANCELLED"]))).first() : null;
   const acceptedQuote = quotes.find((q) => q.status === "ACCEPTED") ?? null;
-  const { WORKS_SPENDING_RULES: spending, CITATIONS: citations } = (await rulesForScheme(schemeId)).rules;
+  const { rules } = await rulesForScheme(schemeId);
+  const spending = needRule(rules, "WORKS_SPENDING_RULES");
+  const citations = needRule(rules, "CITATIONS");
   const ready = (rfq.status === "QUOTING" || rfq.status === "CLOSED") && (quoteDeadlinePassed || allAnswered || rfq.status === "CLOSED");
   // Quotes stay sealed until they can be compared, so no price can leak to
   // a contractor still able to change theirs.
@@ -620,7 +623,9 @@ export async function quoteApprovalProblem(quotationId: string, now = new Date()
   // then declined the work order; a withdrawn quote does not.
   const obtained = await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.in(["SUBMITTED", "ACCEPTED", "DECLINED"]))).limit(100).all();
   // The building's spending rules (throws for a state with no rule pack).
-  const { WORKS_SPENDING_RULES: spending, CITATIONS: citations } = (await rulesForScheme(rfq.schemeId)).rules;
+  const { rules } = await rulesForScheme(rfq.schemeId);
+  const spending = needRule(rules, "WORKS_SPENDING_RULES");
+  const citations = needRule(rules, "CITATIONS");
   if (Number(quote.totalAmount) > spending.twoQuoteThreshold && obtained.length < spending.minimumQuotes) {
     return { problem: `Over $${spending.twoQuoteThreshold.toLocaleString("en-AU")}, at least ${spending.minimumQuotes} quotes are needed before one is approved (${citations.worksTwoQuotes}). Invite more contractors, or extend the deadline.`, ...base };
   }

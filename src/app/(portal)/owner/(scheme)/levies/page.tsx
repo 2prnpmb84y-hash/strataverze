@@ -1,6 +1,7 @@
 import { getVerifiedSelectedSchemeId } from "@/lib/owner/selected-scheme";
 import { todayIn } from "@/lib/jurisdiction/time-zone";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
@@ -65,12 +66,16 @@ export default async function OwnerLeviesPage() {
         items={displayItems}
         actions={
           <>
-            <Button variant="secondary" href="/owner/levies/payment-plan">
-              Payment Plan
-            </Button>
-            <Button variant="secondary" href="/owner/levies/debt-recovery">
-              Debt Recovery
-            </Button>
+            {schemes.some((s) => rulesForState(s.state).rules.FEATURES.statutoryPaymentPlans) && (
+              <Button variant="secondary" href="/owner/levies/payment-plan">
+                Payment Plan
+              </Button>
+            )}
+            {schemes.some((s) => rulesForState(s.state).rules.FEATURES.debtRecoverySteps) && (
+              <Button variant="secondary" href="/owner/levies/debt-recovery">
+                Debt Recovery
+              </Button>
+            )}
             <Button variant="secondary" href="/owner/levies/statement">
               View Statement
             </Button>

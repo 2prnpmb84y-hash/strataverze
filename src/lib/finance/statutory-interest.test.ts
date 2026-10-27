@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { addMonths, allocatePayment, interestSettingProblem, statutoryInterest } from "./statutory-interest";
-import { statutoryRulesFor } from "@/config/statutory";
+import { statutoryRulesFor, type NswRules } from "@/config/statutory";
 
-const NSW = statutoryRulesFor("NSW");
+const NSW = statutoryRulesFor("NSW") as NswRules;
 
 
 const notice = { levyCents: 100000, dueDate: "2026-07-01", payments: [] as { date: string; amountCents: number }[] };

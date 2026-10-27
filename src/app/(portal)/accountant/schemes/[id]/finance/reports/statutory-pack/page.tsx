@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access";
 import { financialYearRange, getStatutoryStatementsPack } from "@/lib/finance/statutory-pack";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatutoryPackView } from "@/components/finance/statutory-pack-view";
 
@@ -19,6 +20,7 @@ export default async function AccountantStatutoryPackPage({ params, searchParams
   const today = await schemeToday(id);
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  if (!rulesForState(scheme.state).rules.FEATURES.keyFinancialInformation) notFound();
   let defaultYear = Number(today.slice(0, 4));
   while (financialYearRange(defaultYear, String(scheme.financialYearEnd ?? "06-30")).end >= today) defaultYear--;
   const financialYear = year && /^\d{4}$/.test(year) ? Number(year) : defaultYear;

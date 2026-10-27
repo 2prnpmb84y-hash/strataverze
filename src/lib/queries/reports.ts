@@ -13,6 +13,7 @@ import { NOT_ARREARS_STATUSES, arrearsCents, toArrearsNotice } from "@/lib/finan
 import { getBudgetVsActual } from "./budget";
 import { migratedInvoiceEntries } from "@/lib/finance/migrated-invoices";
 import { priorYearActualLines } from "@/lib/finance/prior-year-actuals";
+import { needRule } from "@/config/statutory";
 
 /** Cast an ISO string to the Prisma 8 TimestampString branded type. */
 function toTimestamp(value: string): TimestampString<3> {
@@ -1577,7 +1578,7 @@ export async function getFundBalanceProjections(
   // The adopted capital works fund plan, if any, drives the capital works projection.
   const adoptedPlan = await getAdoptedPlan(schemeId);
   // The plan's horizon comes from the building's rule pack.
-  const planHorizonYears = adoptedPlan ? rulesForState(scheme?.state).rules.CAPITAL_WORKS_PLAN.horizonYears : 0;
+  const planHorizonYears = adoptedPlan ? needRule(rulesForState(scheme?.state).rules, "CAPITAL_WORKS_PLAN").horizonYears : 0;
 
   // Get account codes for budget lines
   const budgetAccountCodeIds = [

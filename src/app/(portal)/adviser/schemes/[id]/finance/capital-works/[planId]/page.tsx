@@ -10,6 +10,7 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { AddItemForm, AdoptPlanForm, GenerateLevyForm, PlanSettingsForm, RemoveItemButton, ReviewPlanButton } from "../plan-forms";
+import { needRule } from "@/config/statutory";
 
 export default async function CapitalWorksPlanPage({ params }: { params: Promise<{ id: string; planId: string }> }) {
   await connection();
@@ -23,7 +24,9 @@ export default async function CapitalWorksPlanPage({ params }: { params: Promise
   if (!plan) notFound();
   const meetings = plan.status === "DRAFT" ? await resolutionMeetings(id) : [];
   const items = [...(plan.items ?? [])].sort((a, b) => a.plannedYear - b.plannedYear || a.description.localeCompare(b.description));
-  const rule = rulesForState(scheme.state).rules.CAPITAL_WORKS_PLAN;
+  const { rules } = rulesForState(scheme.state);
+  if (!rules.FEATURES.capitalWorksFundPlan) notFound();
+  const rule = needRule(rules, "CAPITAL_WORKS_PLAN");
   const years = Array.from({ length: rule.horizonYears }, (_, k) => plan.periodStartYear + k);
   const contribution = toCents(String(plan.annualContribution ?? 0));
   const projection = projectPlan({

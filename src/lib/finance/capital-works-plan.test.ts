@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { planAdoptionProblem, projectPlan, requiredAnnualContribution, reviewDueDate, spendByYear } from "./capital-works-plan";
-import { statutoryRulesFor } from "@/config/statutory";
+import { statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { budgetAdoptionProblem, budgetEditProblem, currentBudgets, levyScheduleActivationProblem } from "./budget-status";
 
-const { horizonYears: years, reviewEveryYears } = statutoryRulesFor("NSW").CAPITAL_WORKS_PLAN;
+const { horizonYears: years, reviewEveryYears } = (statutoryRulesFor("NSW") as NswRules).CAPITAL_WORKS_PLAN;
 
 const items = [
   { plannedYear: 2027, estimatedCostCents: 5_000_000 }, // year 2 of the plan

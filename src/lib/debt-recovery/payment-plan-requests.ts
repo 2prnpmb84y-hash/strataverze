@@ -27,6 +27,7 @@ import {
   type RequestInput,
   type TermsInput,
 } from "./payment-plans";
+import { needRule } from "@/config/statutory";
 
 export class PaymentPlanError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -43,6 +44,8 @@ function isUniqueViolation(err: unknown): boolean {
 
 /** Days after an ownership ends during which the former owner still counts as an owner of the lot. */
 const OWNER_CONFLICT_DAYS = 30;
+/** A building whose rule pack does not have the payment plan workflow. */
+const NOT_AVAILABLE = "This is not available for this building.";
 
 /**
  * Profiles holding an OWNER membership on the lot, active or ended in the
@@ -116,8 +119,10 @@ export async function recordPaymentPlanRequest(input: {
     schemeToday(input.schemeId),
     db.orm.public.Lot.where((l) => l.id.eq(input.lotId)).first(),
   ]);
+  if (!rules.FEATURES.statutoryPaymentPlans) throw new PaymentPlanError(NOT_AVAILABLE);
+  const plans = needRule(rules, "PAYMENT_PLANS");
   if (!lot || lot.schemeId !== input.schemeId) throw new PaymentPlanError("Lot not found.");
-  const problems = requestProblems(input.form, rules.PAYMENT_PLANS, today);
+  const problems = requestProblems(input.form, plans, today);
   if (Object.keys(problems).length) throw new PaymentPlanError("Check the request.", problems);
 
   const [open, active] = await Promise.all([
@@ -142,7 +147,7 @@ export async function recordPaymentPlanRequest(input: {
     proposedMonths: f.proposedMonths,
     interestWaiverRequested: f.interestWaiverRequested,
     receivedOn: f.receivedOn,
-    replyDueOn: replyDueOn(f.receivedOn, rules.PAYMENT_PLANS),
+    replyDueOn: replyDueOn(f.receivedOn, plans),
     source: input.source,
     submittedBy: input.submittedBy,
     status: "RECEIVED",
@@ -156,11 +161,11 @@ export async function recordPaymentPlanRequest(input: {
     await logDebtRecoveryActivity({
       caseId: caseRow.id,
       activityType: "PAYMENT_PLAN_REQUESTED",
-      description: `Payment plan requested on the standard form (received ${f.receivedOn}). Written reply due by ${replyDueOn(f.receivedOn, rules.PAYMENT_PLANS)}.`,
+      description: `Payment plan requested on the standard form (received ${f.receivedOn}). Written reply due by ${replyDueOn(f.receivedOn, plans)}.`,
       performedBy: input.submittedBy,
     });
   }
-  return { id: String((created as { id: string }).id), replyDueOn: replyDueOn(f.receivedOn, rules.PAYMENT_PLANS), caseId: caseRow?.id ?? null };
+  return { id: String((created as { id: string }).id), replyDueOn: replyDueOn(f.receivedOn, plans), caseId: caseRow?.id ?? null };
 }
 
 export interface ApprovedTerms extends TermsInput {
@@ -189,6 +194,8 @@ export async function recordPaymentPlanDecision(input: {
     schemeToday(input.schemeId),
     db.orm.public.PaymentPlanRequest.where((r) => r.id.eq(input.requestId)).first(),
   ]);
+  // Before any write, whatever the decision: only buildings whose pack has the payment plan workflow.
+  if (!rules.FEATURES.statutoryPaymentPlans) throw new PaymentPlanError(NOT_AVAILABLE);
   if (!request || request.schemeId !== input.schemeId) throw new PaymentPlanError("Request not found.");
   if (request.status !== "RECEIVED") throw new PaymentPlanError("This request has already been decided or withdrawn.");
 
@@ -197,7 +204,7 @@ export async function recordPaymentPlanDecision(input: {
   if (decision.decision === "APPROVED") {
     if (!input.terms) problems.terms = "Enter the agreed terms.";
     else {
-      Object.assign(problems, termsProblems(input.terms, rules.PAYMENT_PLANS));
+      Object.assign(problems, termsProblems(input.terms, needRule(rules, "PAYMENT_PLANS")));
       if (input.terms.agreedOn < decision.meetingOn) problems.agreedOn = "The plan cannot be agreed before the meeting that approved it.";
       if (input.terms.agreedOn > today) problems.agreedOn = "The date agreed cannot be in the future.";
       // The statement must add up: overdue levies plus interest (unless waived), plus current levies if covered.
@@ -428,16 +435,17 @@ export async function decisionDefaults(schemeId: string, lotId: string, actorId:
   ]);
   const { leviesCents, interestCents } = await lotArrears(schemeId, lotId, today);
   const rules = setting.rules.rules;
-  const i = rules.STATUTORY_INTEREST;
+  const i = needRule(rules, "STATUTORY_INTEREST");
+  const citations = needRule(rules, "CITATIONS");
   const interestMethod =
     setting.mode === "NO_INTEREST"
-      ? `No interest is charged: the ${rules.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${rules.CITATIONS.noInterestResolution}).`
-      : `Simple interest at ${i.annualRatePercent}% a year on each levy not paid ${graceText(i)} after its due date, from the due date (${rules.CITATIONS.interest}).`;
+      ? `No interest is charged: the ${rules.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${citations.noInterestResolution}).`
+      : `Simple interest at ${i.annualRatePercent}% a year on each levy not paid ${graceText(i)} after its due date, from the due date (${citations.interest}).`;
   const account = accounts.find((a) => a.isOperating) ?? accounts[0] ?? null;
   const reference = `Lot ${String(lot?.lotNumber ?? "")}`.trim();
   const paymentMethods = account
     ? `Bank transfer to ${String(account.accountName ?? "")}, BSB ${String(account.bsb ?? "")}, account ${String(account.accountNumber ?? "")}, reference "${reference}".`
     : "";
   const contactDetails = actor ? [`${actor.firstName ?? ""} ${actor.lastName ?? ""}`.trim(), actor.email ?? "", actor.phone ?? ""].filter(Boolean).join(", ") : "";
-  return { today, leviesCents, interestCents, interestMethod, paymentMethods, contactDetails, rules: rules.PAYMENT_PLANS };
+  return { today, leviesCents, interestCents, interestMethod, paymentMethods, contactDetails, rules: needRule(rules, "PAYMENT_PLANS") };
 }

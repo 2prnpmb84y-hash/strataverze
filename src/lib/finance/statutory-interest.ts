@@ -8,10 +8,10 @@
  * contribution bears no interest removes it (SSMA 2015 s 85(3)); it cannot
  * raise or lower the rate.
  */
-import type { StatutoryRules } from "@/config/statutory";
+import type { NswRules } from "@/config/statutory";
 
 /** The interest rule of a building's rule pack (`rules.STATUTORY_INTEREST`). */
-export type InterestRule = Pick<StatutoryRules["STATUTORY_INTEREST"], "annualRatePercent" | "graceMonths" | "source">;
+export type InterestRule = Pick<NswRules["STATUTORY_INTEREST"], "annualRatePercent" | "graceMonths" | "source">;
 
 export interface InterestInput {
   /** The levy amount on the notice, in cents (excluding interest). */

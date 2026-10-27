@@ -29,7 +29,7 @@
  * document. Each rule below has a `status` (see RuleStatus in ./types).
  */
 
-import type { EntitlementScheduleDefinition, FundDefinition, RuleStatus, SchemeSelector } from "./types";
+import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures, RuleStatus, SchemeSelector } from "./types";
 
 const ACT = "Body Corporate and Community Management Act 1997 (Qld)";
 const SM = "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld)";
@@ -547,3 +547,19 @@ export const DECISIONS = [
   { decision: "Show owners \"penalty\", never \"interest\", for late payment.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
 ] as const;
 
+/**
+ * None of the NSW workflows applies in Queensland: there is no statutory
+ * payment plan, committee training, Strata Hub report, capital works fund
+ * plan or key financial information form; the certificate, inspections and
+ * debt recovery are Queensland's own (stage 2, steps 8 and 9).
+ */
+export const FEATURES: PackFeatures = {
+  statutoryPaymentPlans: false,
+  committeeTraining: false,
+  strataHubAnnualReport: false,
+  capitalWorksFundPlan: false,
+  keyFinancialInformation: false,
+  strataInformationCertificate: false,
+  recordsInspections: false,
+  debtRecoverySteps: false,
+};

@@ -4,7 +4,18 @@
  * never given to a building.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, RULE_PACKS, rulePackFor, statutoryRulesFor, UnsupportedJurisdictionError } from "./statutory";
+import {
+  needRule,
+  PENDING_RULE_PACKS,
+  RULE_PACKS,
+  RuleNotInPackError,
+  rulePackFor,
+  STATUTORY_INTEREST,
+  statutoryRulesFor,
+  UnsupportedJurisdictionError,
+  type NswRules,
+  type StatutoryRules,
+} from "./statutory";
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
 import type { EntitlementScheduleDefinition, FundDefinition, RuleStatus } from "./statutory/types";
 
@@ -55,7 +66,7 @@ describe.each(packs)("%s funds and entitlement schedules", (_code, rules) => {
 
 describe("NSW funds", () => {
   it("are the fund types the ledger and accounting basis already use", () => {
-    const nsw = RULE_PACKS.NSW.rules;
+    const nsw = RULE_PACKS.NSW.rules as NswRules;
     expect(nsw.FUND_CATALOGUE.map((f) => f.key).sort()).toEqual(Object.keys(nsw.DEFAULT_ACCOUNTING_BASIS).sort());
     for (const f of nsw.FUND_CATALOGUE) expect(f.key).toBe(f.ledgerFund);
   });
@@ -88,5 +99,55 @@ describe("Queensland pack (pending)", () => {
 
   it("is the rules recorded for review", () => {
     expect(qld).toMatchSnapshot();
+  });
+});
+
+describe("needRule (stage 2)", () => {
+  it("gives the NSW rule", () => {
+    expect(needRule(RULE_PACKS.NSW.rules, "STATUTORY_INTEREST")).toBe(STATUTORY_INTEREST);
+  });
+
+  it("refuses a pack without the rule, naming its jurisdiction", () => {
+    const qld = PENDING_RULE_PACKS.QLD.rules;
+    // A pack with only the shared rules.
+    const sharedOnly: StatutoryRules = {
+      TERMINOLOGY: qld.TERMINOLOGY,
+      FUND_CATALOGUE: qld.FUND_CATALOGUE,
+      ENTITLEMENT_SCHEDULES: qld.ENTITLEMENT_SCHEDULES,
+      PAYMENT_ALLOCATION_ORDER: qld.PAYMENT_ALLOCATION_ORDER,
+      FEATURES: qld.FEATURES,
+    };
+    expect(() => needRule(sharedOnly, "STATUTORY_INTEREST")).toThrow(RuleNotInPackError);
+    let error: unknown;
+    try {
+      needRule(sharedOnly, "PAYMENT_PLANS");
+    } catch (err) {
+      error = err;
+    }
+    expect(error).toBeInstanceOf(RuleNotInPackError);
+    expect((error as RuleNotInPackError).rule).toBe("PAYMENT_PLANS");
+    expect((error as RuleNotInPackError).jurisdiction).toBe("Qld");
+    expect((error as RuleNotInPackError).message).toContain("Qld");
+  });
+});
+
+describe("pack features (stage 2)", () => {
+  it("switches every NSW workflow on for NSW", () => {
+    const features = RULE_PACKS.NSW.rules.FEATURES;
+    expect(Object.keys(features).length).toBeGreaterThan(0);
+    expect(Object.values(features).every((on) => on === true)).toBe(true);
+  });
+
+  it("switches every NSW workflow off for Queensland", () => {
+    const features = PENDING_RULE_PACKS.QLD.rules.FEATURES;
+    expect(Object.keys(features).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(features).every((on) => on === false)).toBe(true);
+  });
+});
+
+describe("needRule with a rule set to null", () => {
+  it("treats it as missing", () => {
+    const rules = { ...RULE_PACKS.NSW.rules, STATUTORY_INTEREST: null } as unknown as StatutoryRules;
+    expect(() => needRule(rules, "STATUTORY_INTEREST")).toThrow(RuleNotInPackError);
   });
 });

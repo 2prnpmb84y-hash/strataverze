@@ -3,6 +3,7 @@ import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { financialYearRange, getStatutoryStatementsPack } from "@/lib/finance/statutory-pack";
 import { resolutionMeetings } from "@/lib/finance/resolutions";
 import { formatAud } from "@/lib/billing/money";
@@ -20,6 +21,7 @@ export default async function StatutoryPackPage({ params, searchParams }: { para
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
+  if (!rulesForState(scheme.state).rules.FEATURES.keyFinancialInformation) notFound();
 
   const today = await schemeToday(id);
   // Default: the last financial year that has ended.

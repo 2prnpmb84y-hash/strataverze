@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { PageHeader } from "@/components/ui/page-header";
 import { FinanceTabs } from "./finance-tabs";
 
@@ -26,7 +27,7 @@ export default async function FinanceLayout({
   return (
     <div>
       <PageHeader title="Financial Management" />
-      <FinanceTabs schemeId={id} />
+      <FinanceTabs schemeId={id} capitalWorksPlan={rulesForState(scheme.state).rules.FEATURES.capitalWorksFundPlan} />
       {children}
     </div>
   );

@@ -5,6 +5,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { canReadLotDocuments, canReadSchemeFinance } from "@/lib/finance/finance-access";
 import { ownerMaySeeRequest } from "@/lib/debt-recovery/payment-plan-requests";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { storedDayIn } from "@/lib/jurisdiction/time-zone";
 import { db } from "@/prisma/db";
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!allowed) {
     return forbidden({ schemeId, actorId: profile.id, entityType: "Lot", entityId: row.lotId, what: "Payment plan reply PDF" });
   }
+  if (!(await rulesForScheme(schemeId)).rules.FEATURES.statutoryPaymentPlans) return notFound();
   const pdf = await generatePaymentPlanReplyPdf(schemeId, requestId);
   if (!pdf) return notFound();
   await recordSecurityEventLater({

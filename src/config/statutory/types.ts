@@ -63,3 +63,46 @@ export interface SchemeSelector {
   source: string;
   status: RuleStatus;
 }
+
+/**
+ * The words every pack gives for the things the platform names. A pack may
+ * add more (Queensland adds "contribution", "community titles scheme").
+ */
+export interface SharedTerminology {
+  /** The body that owns the common property: "owners corporation", "body corporate". */
+  ownersCorporation: string;
+  /** The elected committee: "strata committee", "committee". */
+  committee: string;
+  /** The governing Act, in full. */
+  act: string;
+  /** The governing Act, short form used in citations. */
+  actShort: string;
+  /** The jurisdiction, as it follows the Act's name: "NSW", "Qld". */
+  jurisdictionShort: string;
+  /** The tribunal that hears levy claims. */
+  tribunal: string;
+}
+
+/**
+ * The jurisdiction's own workflows a pack switches on (stage 2, 27 Oct 2026).
+ * Pages, links and daily reminders for a workflow show only for buildings
+ * whose pack has it.
+ */
+export interface PackFeatures {
+  /** The NSW payment plan workflow (Form 1 request, 28-day reply). */
+  statutoryPaymentPlans: boolean;
+  /** NSW committee training tracking and reminders. */
+  committeeTraining: boolean;
+  /** The NSW Strata Hub annual report and reminders. */
+  strataHubAnnualReport: boolean;
+  /** The NSW 10-year capital works fund plan. */
+  capitalWorksFundPlan: boolean;
+  /** The NSW statement of key financial information (approved form). */
+  keyFinancialInformation: boolean;
+  /** The NSW s 184 strata information certificate. */
+  strataInformationCertificate: boolean;
+  /** NSW s 182 records inspections (3 and 10 day deadlines, hourly fees). */
+  recordsInspections: boolean;
+  /** The NSW debt recovery step sequence. */
+  debtRecoverySteps: boolean;
+}

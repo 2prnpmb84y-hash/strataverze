@@ -25,7 +25,8 @@ const tabs = [
   { key: "platform-fees", label: "StrataVerze Fees", href: "/platform-fees" },
 ] as const;
 
-export function FinanceTabs({ schemeId }: { schemeId: string }) {
+/** `capitalWorksPlan`: the building's rule pack has the capital works fund plan, so its tab shows. */
+export function FinanceTabs({ schemeId, capitalWorksPlan }: { schemeId: string; capitalWorksPlan: boolean }) {
   const pathname = usePathname();
   const basePath = `/adviser/schemes/${schemeId}/finance`;
 
@@ -38,7 +39,7 @@ export function FinanceTabs({ schemeId }: { schemeId: string }) {
 
   return (
     <div className="flex gap-1 mb-6 border-b border-line overflow-x-auto">
-      {tabs.map((tab) => (
+      {tabs.filter((tab) => tab.key !== "capital-works" || capitalWorksPlan).map((tab) => (
         <Link
           key={tab.key}
           href={`${basePath}${tab.href}`}

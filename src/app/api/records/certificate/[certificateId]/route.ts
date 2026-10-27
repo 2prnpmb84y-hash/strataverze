@@ -10,6 +10,7 @@ import { formatLotLabel } from "@/lib/format";
 import { renderCertificatePdf } from "@/lib/pdf/certificate";
 import type { CertificateItem } from "@/lib/records/certificate-draft";
 import { notFound, pdfResponse, signIn, UUID } from "@/lib/pdf/response";
+import { needRule } from "@/config/statutory";
 
 /** A section 184 certificate as a PDF (?schemeId=), for the scheme's advisers. */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ certificateId: string }> }) {
@@ -28,7 +29,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     db.orm.public.Lot.where((l) => l.id.eq(cert.lotId)).first(),
     schemeToday(schemeId),
   ]);
-  const c = rules.SALE_CERTIFICATE;
+  if (!rules.FEATURES.strataInformationCertificate) return notFound();
+  const c = needRule(rules, "SALE_CERTIFICATE");
   const types = c.requesterTypes as Readonly<Record<string, string>>;
   const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
   const bytes = await renderCertificatePdf({

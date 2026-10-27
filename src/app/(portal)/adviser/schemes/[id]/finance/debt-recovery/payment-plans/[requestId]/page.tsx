@@ -20,6 +20,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { PaymentPlanDecisionForm, SmallActionForm } from "@/components/debt-recovery/payment-plan-forms";
 import { WithdrawRequestButton } from "./withdraw-button";
+import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 const aud = (v: unknown) => formatAud(toCents(String(v ?? 0)));
@@ -46,12 +47,13 @@ export default async function PaymentPlanRequestPage({ params }: { params: Promi
   const detail = await paymentPlanRequestDetail(id, requestId);
   if (!detail) notFound();
   const { request: r, plan, instalments, lotNumber } = detail;
-  const [{ rules }, defaults, fee] = await Promise.all([
-    rulesForScheme(id),
+  const { rules } = await rulesForScheme(id);
+  if (!rules.FEATURES.statutoryPaymentPlans) notFound();
+  const pp = needRule(rules, "PAYMENT_PLANS");
+  const [defaults, fee] = await Promise.all([
     decisionDefaults(id, r.lotId, profile.id),
     previewUsageFee({ code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" }),
   ]);
-  const pp = rules.PAYMENT_PLANS;
   const due = day(r.replyDueOn);
   const left = daysToReply(due, defaults.today);
   const decided = r.status === "APPROVED" || r.status === "REFUSED";

@@ -7,6 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
 import { logError } from "@/lib/log";
+import { schemeHasFeature } from "@/lib/jurisdiction/scheme-rules";
 import {
   RecordsError,
   cancelCertificateDraft,
@@ -23,6 +24,9 @@ import {
 } from "@/lib/records/records-store";
 
 export type RecordsFormState = { error?: string; fieldErrors?: Record<string, string>; success?: string; id?: string; values?: Record<string, string> };
+
+/** A building whose rule pack does not have the workflow. */
+const NOT_AVAILABLE = "This is not available for this building.";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const echo = (f: FormData) => Object.fromEntries([...f.entries()].filter(([, v]) => typeof v === "string")) as Record<string, string>;
@@ -52,6 +56,7 @@ const certPaths = (schemeId: string, lotId: string) => revalidatePath(`/adviser/
 export async function createCertificateAction(schemeId: string, lotId: string, _prev: RecordsFormState, formData: FormData): Promise<RecordsFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!(await schemeHasFeature(schemeId, "strataInformationCertificate"))) return { error: NOT_AVAILABLE };
     const r = await createCertificate({ schemeId, lotId, requester: requester(formData), actorId: profile.id });
     certPaths(schemeId, lotId);
     return { success: "Draft started from StrataVerze's records. Check and complete every item.", id: r.id };
@@ -130,6 +135,7 @@ const inspPath = (schemeId: string) => revalidatePath(`/adviser/schemes/${scheme
 export async function createInspectionAction(schemeId: string, _prev: RecordsFormState, formData: FormData): Promise<RecordsFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!(await schemeHasFeature(schemeId, "recordsInspections"))) return { error: NOT_AVAILABLE };
     await createInspection({
       schemeId,
       lotId: text(formData, "lotId"),

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getInvitationsForScheme } from "@/lib/queries/invitations";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -157,9 +158,11 @@ export default async function SchemeMembersPage({
               <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wide">
                 Committee
               </h3>
-              <a href={`/adviser/schemes/${id}/members/training`} className="text-xs text-turquoise underline">
-                Committee training
-              </a>
+              {rulesForState(scheme.state).rules.FEATURES.committeeTraining && (
+                <a href={`/adviser/schemes/${id}/members/training`} className="text-xs text-turquoise underline">
+                  Committee training
+                </a>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               {committeeMembers.map((m) => {

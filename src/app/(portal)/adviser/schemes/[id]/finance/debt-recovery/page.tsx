@@ -36,6 +36,8 @@ export default async function DebtRecoveryPage({
     (m) => m.profileId === profile.id && m.role === "ADVISER",
   );
   if (!isAdviser) notFound();
+  const { rules } = await rulesForScheme(id);
+  if (!rules.FEATURES.debtRecoverySteps) notFound();
 
   const [cases, stats] = await Promise.all([
     getDebtRecoveryCasesForScheme(id),
@@ -66,7 +68,7 @@ export default async function DebtRecoveryPage({
   });
 
   // The building's terms ("NSW", "Strata Schemes Management Act 2015").
-  const terms = (await rulesForScheme(id)).rules.TERMINOLOGY;
+  const terms = rules.TERMINOLOGY;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -76,11 +78,13 @@ export default async function DebtRecoveryPage({
         backLabel="Financials"
       />
 
-      <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" href={`/adviser/schemes/${id}/finance/debt-recovery/payment-plans`}>
-          Payment plans
-        </Button>
-      </div>
+      {rules.FEATURES.statutoryPaymentPlans && (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" href={`/adviser/schemes/${id}/finance/debt-recovery/payment-plans`}>
+            Payment plans
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Cases" value={stats.totalCases} />

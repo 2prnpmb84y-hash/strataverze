@@ -36,6 +36,8 @@ export default async function OwnerCaseDetailPage({
     .all();
   const viewer = caseViewerFor(debtCase, profile.id, memberships);
   if (!viewer) notFound();
+  const { rules } = await rulesForScheme(debtCase.schemeId);
+  if (!rules.FEATURES.debtRecoverySteps) notFound();
   const isCommittee = viewer === "committee";
 
   // Fetch instalments if there is a payment plan
@@ -128,7 +130,7 @@ export default async function OwnerCaseDetailPage({
   };
   const serialised = isCommittee ? full : debtorCaseView(full);
 
-  const terms = (await rulesForScheme(debtCase.schemeId)).rules.TERMINOLOGY;
+  const terms = rules.TERMINOLOGY;
   return (
     <div className="space-y-6">
       <PageHeader

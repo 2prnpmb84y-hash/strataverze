@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { PaymentPlanRequestForm } from "@/components/debt-recovery/payment-plan-forms";
+import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -41,7 +42,8 @@ export default async function PaymentPlansPage({ params }: { params: Promise<{ i
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
 
   const [{ rules }, today, overview] = await Promise.all([rulesForScheme(id), schemeToday(id), paymentPlanOverview(id)]);
-  const pp = rules.PAYMENT_PLANS;
+  if (!rules.FEATURES.statutoryPaymentPlans) notFound();
+  const pp = needRule(rules, "PAYMENT_PLANS");
   const lots = [...overview.lotNumber.entries()]
     .sort((a, b) => a[1].localeCompare(b[1], "en-AU", { numeric: true }))
     .map(([lotId, n]) => ({ id: lotId, label: formatLotLabel(n) }));
