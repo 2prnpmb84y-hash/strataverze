@@ -5,12 +5,17 @@
  * a debit to the bank (or suspense) for each fund, and a credit to levies
  * receivable for each notice, with the lot on the line. Any part above what a
  * notice owes is credited to levies paid in advance as the owner's credit.
+ * Where the building applies payments to the late charge first (Queensland's
+ * penalty), the receivable credit is in two lines, the late charge part and
+ * the levy part, in the building's words. Both are the same account and fund.
  *
  * Reversing a receipt (wrong lot TC-003, dishonoured TC-008, or entered in
  * error) reverses the journal and also puts each notice back: the payment is
  * marked reversed, the notice's amount paid and balance are restored, and
  * any credit the receipt created is taken back out.
  */
+
+import { capitalise } from "@/lib/jurisdiction/wording";
 
 export type ReversalReason = "WRONG_LOT" | "DISHONOURED" | "ENTERED_IN_ERROR";
 
@@ -29,6 +34,14 @@ export interface ReceiptPart {
   appliedCents: number;
   /** Above what the notice owes, held as the owner's credit. */
   excessCents: number;
+  /** Late charge first (Queensland): the part of `appliedCents` applied to the late charge. */
+  lateChargeCents?: number;
+}
+
+/** The building's words for the receivable lines, where payments go to the late charge first (`rules.TERMINOLOGY`). */
+export interface ReceiptTerms {
+  levies: string;
+  lateCharge: string;
 }
 
 export interface ReceiptLine {
@@ -54,6 +67,8 @@ export function receiptJournalLines(
      * balances on its own (financials review B1, 26 Oct 2026).
      */
     holding?: { fundId: string; bankAccountId: string };
+    /** Late charge first: the building's words for the two receivable lines. */
+    terms?: ReceiptTerms;
   },
   debitDescription: string,
 ): ReceiptLine[] {
@@ -75,7 +90,17 @@ export function receiptJournalLines(
     if (p.appliedCents > 0) {
       const receivable = accounts.receivableByFund[p.fundId];
       if (!receivable) throw new Error("No levies receivable account for the notice's fund.");
-      lines.push({ accountCodeId: receivable, fundId: p.fundId, creditCents: p.appliedCents, description: `Levies receivable reduced, notice ${p.noticeNumber}`, lotId: p.lotId });
+      const t = accounts.terms;
+      // Late charge first: the late charge part, then the levy part.
+      const charge = t ? Math.min(p.appliedCents, Math.max(0, p.lateChargeCents ?? 0)) : 0;
+      if (t && charge > 0) {
+        lines.push({ accountCodeId: receivable, fundId: p.fundId, creditCents: charge, description: `${capitalise(t.lateCharge)} receivable reduced, notice ${p.noticeNumber}`, lotId: p.lotId });
+      }
+      const levy = p.appliedCents - charge;
+      if (levy > 0) {
+        const description = t ? `${capitalise(t.levies)} receivable reduced, notice ${p.noticeNumber}` : `Levies receivable reduced, notice ${p.noticeNumber}`;
+        lines.push({ accountCodeId: receivable, fundId: p.fundId, creditCents: levy, description, lotId: p.lotId });
+      }
     }
     if (p.excessCents > 0) {
       const advance = accounts.advanceByFund[p.fundId];

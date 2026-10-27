@@ -14,7 +14,7 @@ import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/tar
 import { fromCents, toCents } from "@/lib/billing/money";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
 import { ensureLeviesInAdvanceAccount } from "@/lib/queries/seed-chart-of-accounts";
-import { createJournalEntry, getNextEntryNumber, postJournalEntry } from "@/lib/queries/journal-entries";
+import { createJournalEntry, createPostedJournalEntryIn, getNextEntryNumber, postJournalEntry, validatePeriodForPosting } from "@/lib/queries/journal-entries";
 import { logActivity } from "@/lib/queries/activity-log";
 import { getApprovalMembers, getAuthorisations, getPaymentSettings, hashIp } from "@/lib/queries/payment-controls";
 import {
@@ -26,6 +26,12 @@ import {
   type InvoiceForControls,
 } from "./payment-controls";
 import { availableCredit, creditJournalAccounts, planCreditApplication, refundProblem } from "./owner-credit";
+import type { StatutoryRules } from "@/config/statutory";
+import { capitalise } from "@/lib/jurisdiction/wording";
+import { todayIn } from "@/lib/jurisdiction/time-zone";
+import { lateChargePart } from "./statutory-interest";
+import { getSchemeInterestSetting, lateChargeFirstRules } from "./interest-setting";
+import { chargeLockedNotice, lateChargeAccounts, lockJournalNumbering, lockLateCharge, logLateChargeCharged } from "@/lib/queries/interest";
 import { PaymentControlError, type ApprovalOutcome } from "./invoice-approval";
 
 type Orm = typeof db.orm;
@@ -163,9 +169,15 @@ export async function leviesInAdvanceAccountId(schemeId: string, fundId: string)
  * Apply each lot's available credit to its open notices in the same fund,
  * earliest due first. Used after notices are issued (when the scheme has
  * auto-apply on) and from the owner credits page. Returns the total applied.
+ *
+ * Where the building applies payments to the late charge first (Queensland's
+ * penalty, SM s 166(5)), see applyOwnerCreditLateChargeFirst.
  */
 export async function applyOwnerCredit(input: { schemeId: string; lotIds?: string[]; actorId: string; date?: string }) {
   const date = input.date ?? (await schemeToday(input.schemeId));
+  // Late charge first (Queensland) only; null for NSW, which goes on exactly as before.
+  const chargeFirst = await lateChargeFirstRules(input.schemeId);
+  if (chargeFirst) return applyOwnerCreditLateChargeFirst(input, date, chargeFirst);
   const balances = await db.orm.public.OwnerCreditBalance.where((b) => b.schemeId.eq(input.schemeId)).limit(5000).all();
   const pending = await pendingRefundsByKey(input.schemeId);
   let appliedTotal = 0;
@@ -248,6 +260,167 @@ export async function applyOwnerCredit(input: { schemeId: string; lotIds?: strin
     }
   }
   return appliedTotal;
+}
+
+/**
+ * applyOwnerCredit for a building that applies payments to the late charge
+ * first: credit is applied like a payment on `date`, one notice at a time,
+ * earliest due first, each in one transaction that locks the building's
+ * journal numbering and then the notice (lockJournalNumbering,
+ * lockLateCharge). Under the locks the late charge to `date` is worked out
+ * again and charged (its journal dated `date`), the credit goes to the late
+ * charge still owing and then the levy, the part is recorded on the payment,
+ * and the credit journal (late charge and levy lines) is posted, all or none.
+ * A date after the building's today, or in a closed or locked period, is
+ * refused before anything is written.
+ */
+async function applyOwnerCreditLateChargeFirst(
+  input: { schemeId: string; lotIds?: string[]; actorId: string },
+  date: string,
+  pack: { rules: StatutoryRules; label: string },
+) {
+  const setting = await getSchemeInterestSetting(input.schemeId);
+  const today = todayIn(setting.timeZone);
+  if (date > today) throw new Error(`Credit cannot be applied on ${date}, which is after today (${today}).`);
+  // Both journals are dated `date`: refuse before anything is written if its period is closed or locked.
+  await validatePeriodForPosting(input.schemeId, date, "INTEREST");
+  await validatePeriodForPosting(input.schemeId, date, "AUTO");
+  const t = pack.rules.TERMINOLOGY;
+  const balances = await db.orm.public.OwnerCreditBalance.where((b) => b.schemeId.eq(input.schemeId)).limit(5000).all();
+  const pending = await pendingRefundsByKey(input.schemeId);
+  let appliedTotal = 0;
+
+  for (const b of balances) {
+    if (input.lotIds && !input.lotIds.includes(b.lotId)) continue;
+    const key = { schemeId: b.schemeId, lotId: b.lotId, fundId: b.fundId };
+    // A first look only: the credit is read again under the lock before any is applied.
+    if (availableCredit(toCents(String(b.balance)), pending.get(`${b.lotId}:${b.fundId}`) ?? 0) <= 0) continue;
+    const notices = (
+      await db.orm.public.LevyNotice
+        .where((n) => and(n.schemeId.eq(b.schemeId), n.lotId.eq(b.lotId), n.fundId.eq(b.fundId), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"])))
+        .limit(500)
+        .all()
+    ).sort((x, y) => isoDay(x.dueDate).localeCompare(isoDay(y.dueDate)) || x.id.localeCompare(y.id));
+    if (notices.length === 0) continue;
+    // Everything the transaction needs from outside it, found first, so it makes no second connection while it holds the locks.
+    const fundType = await fundTypeOf(b.fundId);
+    const advanceId = await leviesInAdvanceAccountId(b.schemeId, b.fundId);
+    const receivable = await getSystemAccountBySubType(b.schemeId, "ACCOUNTS_RECEIVABLE", fundType);
+    const chargeAccounts = (await lateChargeAccounts(b.schemeId, [fundType])).get(fundType);
+
+    for (const candidate of notices) {
+      const done = await db.transaction(async (tx) => {
+        await lockJournalNumbering(tx, b.schemeId);
+        const l = await lockLateCharge(tx, { schemeId: b.schemeId, noticeId: candidate.id, asAt: date, setting });
+        if (!l || !["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(String(l.notice.status))) return { stop: false as const, applied: null };
+        // The credit still available, read under the lock (another application or a refund may have used some).
+        await tx.orm.public.OwnerCreditBalance.where((x) => and(x.schemeId.eq(key.schemeId), x.lotId.eq(key.lotId), x.fundId.eq(key.fundId))).forNoKeyUpdate().first();
+        const left = availableCredit(await creditBalanceCents(tx.orm, key), await pendingRefundCents(tx.orm, key));
+        if (left <= 0) return { stop: true as const, applied: null };
+        const { notice, position } = l;
+        const chargedCents = toCents(String(notice.interestCharged ?? 0)) + position.additionalCents;
+        const owed = toCents(String(notice.amountDue)) + chargedCents;
+        const paid = toCents(String(notice.amountPaid));
+        const take = Math.min(left, Math.max(0, owed - paid));
+        if (take <= 0) return { stop: false as const, applied: null };
+        const charge =
+          position.additionalCents > 0
+            ? await chargeLockedNotice(tx, {
+                schemeId: b.schemeId,
+                notice,
+                amountCents: position.additionalCents,
+                date,
+                actorId: input.actorId,
+                rulePack: pack.label,
+                terms: t,
+                accounts: chargeAccounts,
+              })
+            : null;
+        const chargeCents = lateChargePart(take, { chargedCents, chargePaidCents: position.chargePaidCents, accruedByDateCents: position.accruedByDateCents, chargePaidByDateCents: position.chargePaidByDateCents });
+        const newPaid = paid + take;
+        const newBalance = Math.max(0, owed - newPaid);
+        const receipt = await tx.orm.public.LevyPayment.create({
+          schemeId: b.schemeId,
+          levyNoticeId: notice.id,
+          lotId: b.lotId,
+          amount: num(take),
+          lateChargeAmount: num(chargeCents),
+          paymentDate: ts(date),
+          reference: "Owner credit applied",
+          recordedBy: input.actorId,
+        });
+        await tx.orm.public.LevyNotice.where((n) => n.id.eq(notice.id)).update({
+          amountPaid: num(newPaid),
+          balanceOutstanding: num(newBalance),
+          status: newBalance <= 0 ? "PAID" : "PARTIALLY_PAID",
+          ...(newBalance <= 0 ? { paidInFullAt: ts(new Date().toISOString()) } : {}),
+        });
+        const creditTx = await recordCreditMovement(tx.orm, {
+          ...key,
+          ownerId: notice.ownerId ?? b.ownerId ?? null,
+          type: "APPLIED",
+          amountCents: take,
+          levyNoticeId: notice.id,
+          levyPaymentId: receipt.id,
+          createdBy: input.actorId,
+          effectiveDate: date,
+        });
+        // The credit journal (DR levies paid in advance, CR receivable in two parts), in the same transaction.
+        if (advanceId && receivable) {
+          const number = String(notice.noticeNumber);
+          const description = `Owner credit applied to notice ${number}`;
+          const accounts = creditJournalAccounts("APPLIED", { bankId: "", receivableId: receivable.id, advanceId });
+          const credits = [
+            { amountCents: chargeCents, description: `${capitalise(t.lateCharge)} receivable reduced by owner credit, notice ${number}` },
+            { amountCents: take - chargeCents, description: `${capitalise(t.levies)} receivable reduced by owner credit, notice ${number}` },
+          ].filter((c) => c.amountCents > 0);
+          const entry = await createPostedJournalEntryIn(
+            tx.orm,
+            {
+              schemeId: b.schemeId,
+              entryNumber: await getNextEntryNumber(b.schemeId, tx.orm),
+              transactionDate: date,
+              description,
+              entryType: "AUTO",
+              sourceType: "OWNER_CREDIT",
+              sourceId: creditTx.id,
+              createdBy: input.actorId,
+              lines: [
+                { accountCodeId: accounts.debitAccountId, fundId: b.fundId, debit: fromCents(take), description, lotId: b.lotId },
+                ...credits.map((c) => ({ accountCodeId: accounts.creditAccountId, fundId: b.fundId, credit: fromCents(c.amountCents), description: c.description, lotId: b.lotId })),
+              ],
+            },
+            input.actorId,
+          );
+          await tx.orm.public.OwnerCreditTransaction.where((x) => x.id.eq(creditTx.id)).update({ journalEntryId: entry.id });
+        }
+        return { stop: false as const, applied: { notice, take, chargeCents, charge, creditTx } };
+      });
+      if (done.stop) break;
+      if (!done.applied) continue;
+      const applied = done.applied;
+      if (applied.charge) await logLateChargeCharged(b.schemeId, input.actorId, pack.label, applied.charge);
+      await logActivity({
+        schemeId: b.schemeId,
+        actorId: input.actorId,
+        action: "OWNER_CREDIT_APPLIED",
+        entityType: "LevyNotice",
+        entityId: applied.notice.id,
+        metadata: { amount: fromCents(applied.take), lotId: b.lotId, lateChargePaid: fromCents(applied.chargeCents) },
+      });
+      appliedTotal += applied.take;
+    }
+  }
+  return appliedTotal;
+}
+
+/** Refunds already requested for a lot's credit in a fund, read through `orm` (a transaction's, under its lock). */
+async function pendingRefundCents(orm: Orm, key: CreditKey): Promise<number> {
+  const rows = await orm.public.OwnerCreditRefund
+    .where((r) => and(r.schemeId.eq(key.schemeId), r.lotId.eq(key.lotId), r.fundId.eq(key.fundId), r.status.in(OPEN_REFUND)))
+    .limit(2000)
+    .all();
+  return rows.reduce((sum, r) => sum + toCents(String(r.amount)), 0);
 }
 
 /** Journal for the excess of a levy payment held as credit: DR bank, CR levies paid in advance. */

@@ -7,14 +7,16 @@ import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec
 import { getSystemAccountBySubType } from "./account-codes";
 import {
   createJournalEntry,
+  createPostedJournalEntryIn,
   postJournalEntry,
   getNextEntryNumber,
 } from "./journal-entries";
 import { logActivity } from "./activity-log";
-import { fromCents } from "@/lib/billing/money";
+import { fromCents, toCents } from "@/lib/billing/money";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { getSchemeInterestSetting, statutoryInterestForScheme } from "@/lib/finance/interest-setting";
-import { effectiveLateChargeMode, lateChargeApplies } from "@/lib/finance/statutory-interest";
+import { getSchemeInterestSetting, lateChargePosition, statutoryInterestForScheme, type SchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { effectiveLateChargeMode, lateChargeApplies, lateChargeFirst } from "@/lib/finance/statutory-interest";
+import { livePayments } from "@/lib/finance/levy-reversal";
 import { capitalise } from "@/lib/jurisdiction/wording";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
@@ -136,6 +138,11 @@ export async function chargeInterest(data: {
   const t = rules.TERMINOLOGY;
   const LateCharge = capitalise(t.lateCharge);
 
+  // Late charge first (Queensland): worked out and charged with the notice locked, like a payment.
+  if (lateChargeFirst(rules.PAYMENT_ALLOCATION_ORDER)) {
+    return chargeInterestLocked({ ...data, rulePack, terms: t, fundType: String(notice.fund?.fundType ?? "ADMINISTRATIVE") });
+  }
+
   // Never charge more than the statutory interest owed to date.
   const owed = data.alreadyVerified
     ? { additionalCents: Math.round(interestAmount * 100) }
@@ -241,6 +248,193 @@ export async function chargeInterest(data: {
   };
 }
 
+type Tx = { orm: typeof db.orm };
+type LockedNotice = NonNullable<Awaited<ReturnType<typeof lockedNoticeRead>>>;
+const lockedNoticeRead = (tx: Tx, noticeId: string) => tx.orm.public.LevyNotice.where((n) => n.id.eq(noticeId)).forNoKeyUpdate().first();
+const cents = (v: unknown) => toCents(String(v ?? 0));
+const money = (c: number) => toNumeric(fromCents(c));
+
+/**
+ * Lock the building's row (FOR NO KEY UPDATE) in the caller's transaction,
+ * so journal entry numbers (the next after the highest, unique per building)
+ * are given out one transaction at a time. Every late charge first
+ * transaction that writes a journal takes it first, before any notice lock,
+ * so two of them always lock in the same order. FOR NO KEY UPDATE does not
+ * block rows that only refer to the building (their foreign key check takes
+ * a key share lock), only another writer locking the building row.
+ */
+export async function lockJournalNumbering(tx: Tx, schemeId: string) {
+  await tx.orm.public.Scheme.where((s) => s.id.eq(schemeId)).forNoKeyUpdate().first();
+}
+
+/**
+ * Lock a levy notice in the caller's transaction (FOR NO KEY UPDATE, held
+ * until the transaction ends) and work out, under the lock, where it stands
+ * for a payment or a charge dated `asAt`, late charge first (Queensland, SM
+ * s 166(5)). Two receipts, a receipt and a charge run, or two runs on the
+ * same notice queue on the lock, so the second sees what the first charged
+ * and paid and cannot charge the same month again. Nothing is written.
+ * Null when the notice is not the building's.
+ */
+export async function lockLateCharge(tx: Tx, input: { schemeId: string; noticeId: string; asAt: string; setting: SchemeInterestSetting }) {
+  const notice = await lockedNoticeRead(tx, input.noticeId);
+  if (!notice || notice.schemeId !== input.schemeId) return null;
+  const payments = livePayments(await tx.orm.public.LevyPayment.where((p) => p.levyNoticeId.eq(input.noticeId)).limit(5000).all());
+  const position = lateChargePosition(notice, payments, input.setting.rules.rules.LATE_CHARGE, input.setting, input.asAt);
+  return { notice, payments, position };
+}
+
+export interface LateChargeCharged {
+  noticeId: string;
+  interestAmount: number;
+  totalInterestCharged: number;
+  newBalance: number;
+  journalEntryId: string;
+  entryNumber: string;
+}
+
+/**
+ * Charge a late charge on a notice locked by lockLateCharge, in the same
+ * transaction: the notice's late charge and balance, and the journal (DR
+ * receivable, CR late charge income, in the notice's fund), posted with it
+ * and dated `date` (the payment date, or the run's day), whose period must be
+ * open. The caller holds lockJournalNumbering, and logs the activity once the
+ * transaction has committed (logLateChargeCharged).
+ */
+export async function chargeLockedNotice(
+  tx: Tx,
+  input: {
+    schemeId: string;
+    notice: LockedNotice;
+    amountCents: number;
+    date: string;
+    actorId: string;
+    rulePack: string;
+    terms: { lateCharge: string; levy: string };
+    /** The notice fund's accounts, found before the transaction (lateChargeAccounts). */
+    accounts: LateChargeAccounts | null | undefined;
+  },
+): Promise<LateChargeCharged> {
+  const { notice, amountCents } = input;
+  const receivableAccount = input.accounts ? { id: input.accounts.receivableId } : null;
+  const interestIncomeAccount = input.accounts ? { id: input.accounts.incomeId } : null;
+  if (!receivableAccount || !interestIncomeAccount) {
+    throw new Error("Required system accounts (Accounts Receivable and Interest Income) not found. Please seed the chart of accounts first.");
+  }
+  const totalCents = cents(notice.interestCharged) + amountCents;
+  const balanceCents = cents(notice.balanceOutstanding) + amountCents;
+  await tx.orm.public.LevyNotice.where((n) => n.id.eq(notice.id)).update({ interestCharged: money(totalCents), balanceOutstanding: money(balanceCents) });
+  const LateCharge = capitalise(input.terms.lateCharge);
+  const amount = fromCents(amountCents);
+  const entryNumber = await getNextEntryNumber(input.schemeId, tx.orm);
+  const entry = await createPostedJournalEntryIn(
+    tx.orm,
+    {
+      schemeId: input.schemeId,
+      entryNumber,
+      transactionDate: input.date,
+      description: `${LateCharge} charged on overdue ${input.terms.levy}, notice ${String(notice.noticeNumber)}`,
+      entryType: "INTEREST",
+      sourceType: "INTEREST",
+      sourceId: notice.id,
+      rulePack: input.rulePack,
+      createdBy: input.actorId,
+      lines: [
+        { accountCodeId: receivableAccount.id, fundId: notice.fundId, debit: amount, description: `${LateCharge} receivable, notice ${String(notice.noticeNumber)}`, lotId: notice.lotId },
+        { accountCodeId: interestIncomeAccount.id, fundId: notice.fundId, credit: amount, description: `${LateCharge} income on overdue ${input.terms.levy}` },
+      ],
+    },
+    input.actorId,
+  );
+  return { noticeId: notice.id, interestAmount: amount, totalInterestCharged: fromCents(totalCents), newBalance: fromCents(balanceCents), journalEntryId: entry.id, entryNumber };
+}
+
+/** The accounts a late charge posts to in one fund: the receivable and the late charge income. */
+export interface LateChargeAccounts {
+  receivableId: string;
+  incomeId: string;
+}
+
+/**
+ * The late charge accounts for each fund type given, found before a locked
+ * transaction opens, so it makes no second connection while it holds the
+ * locks. A fund type whose accounts are missing is left out (charging then
+ * refuses, as chargeInterest does).
+ */
+export async function lateChargeAccounts(schemeId: string, fundTypes: Iterable<string>): Promise<Map<string, LateChargeAccounts>> {
+  const out = new Map<string, LateChargeAccounts>();
+  for (const fundType of new Set(fundTypes)) {
+    const t = (fundType || "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
+    const [receivable, income] = await Promise.all([
+      getSystemAccountBySubType(schemeId, "ACCOUNTS_RECEIVABLE", t),
+      getSystemAccountBySubType(schemeId, "INTEREST_INCOME", t),
+    ]);
+    if (receivable && income) out.set(t, { receivableId: receivable.id, incomeId: income.id });
+  }
+  return out;
+}
+
+/** The activity for a late charge charged under a lock, once its transaction has committed. */
+export async function logLateChargeCharged(schemeId: string, actorId: string, rulePack: string, c: LateChargeCharged) {
+  await logActivity({
+    schemeId,
+    actorId,
+    action: "INTEREST_CHARGED",
+    entityType: "LevyNotice",
+    entityId: c.noticeId,
+    metadata: {
+      interestAmount: c.interestAmount,
+      totalInterestCharged: c.totalInterestCharged,
+      newBalance: c.newBalance,
+      journalEntryId: c.journalEntryId,
+      entryNumber: c.entryNumber,
+      rulePack,
+    },
+  });
+}
+
+/**
+ * chargeInterest for a building that applies payments to the late charge
+ * first: the amount owed is worked out again with the notice locked, so a
+ * receipt or another run at the same time cannot make it charge twice. From
+ * the run (`alreadyVerified`), it charges what is owed under the lock, which
+ * may be less than the run worked out, or nothing (interestAmount 0, no
+ * journal). Otherwise it refuses more than is owed.
+ */
+async function chargeInterestLocked(data: {
+  schemeId: string;
+  noticeId: string;
+  interestAmount: number;
+  actorId: string;
+  alreadyVerified?: boolean;
+  rulePack: string;
+  terms: { lateCharge: string; levy: string };
+  fundType: string;
+}) {
+  const setting = await getSchemeInterestSetting(data.schemeId);
+  const asAt = todayIn(setting.timeZone);
+  const accounts = (await lateChargeAccounts(data.schemeId, [data.fundType])).get(data.fundType);
+  const wanted = Math.round(data.interestAmount * 100);
+  const charged = await db.transaction(async (tx) => {
+    await lockJournalNumbering(tx, data.schemeId);
+    const locked = await lockLateCharge(tx, { schemeId: data.schemeId, noticeId: data.noticeId, asAt, setting });
+    if (!locked) throw new Error("Levy notice not found.");
+    const owed = locked.position.additionalCents;
+    if (!data.alreadyVerified && wanted > owed) {
+      throw new Error(`No more than $${fromCents(owed).toFixed(2)} of ${data.terms.lateCharge} is owed on this notice to date.`);
+    }
+    const amountCents = Math.min(wanted, owed);
+    if (amountCents <= 0) return null;
+    return chargeLockedNotice(tx, { schemeId: data.schemeId, notice: locked.notice, amountCents, date: asAt, actorId: data.actorId, rulePack: data.rulePack, terms: data.terms, accounts });
+  });
+  if (!charged) {
+    const n = await db.orm.public.LevyNotice.where((x) => x.id.eq(data.noticeId)).first();
+    return { noticeId: data.noticeId, interestAmount: 0, totalInterestCharged: Number(n?.interestCharged ?? 0), newBalance: Number(n?.balanceOutstanding ?? 0), journalEntryId: null as string | null };
+  }
+  await logLateChargeCharged(data.schemeId, data.actorId, data.rulePack, charged);
+  return { noticeId: charged.noticeId, interestAmount: charged.interestAmount, totalInterestCharged: charged.totalInterestCharged, newBalance: charged.newBalance, journalEntryId: charged.journalEntryId as string | null };
+}
+
 /**
  * Charge interest on all overdue levy notices for a scheme in one batch.
  * Only charges notices that have additional interest owed (calculatedInterest > previouslyCharged).
@@ -283,8 +477,11 @@ export async function chargeInterestBatch(data: {
       actorId,
       alreadyVerified: true,
     });
+    // Late charge first: a receipt at the same moment may have charged it already (worked out again under the notice's lock).
+    if (chargeResult.interestAmount <= 0) continue;
     results.push(chargeResult);
-    totalInterest += notice.additionalInterest;
+    // What was charged, which under the lock may be less than the run worked out.
+    totalInterest += chargeResult.interestAmount;
   }
 
   return {

@@ -308,17 +308,71 @@ export const LATE_PAYMENT_PENALTY = {
  */
 export const PAYMENT_ALLOCATION_ORDER = ["INTEREST", "LEVY", "RECOVERY_COSTS"] as const;
 /*
- * GO-LIVE GAP (stage 2, step 6, 27 Oct 2026): this order is applied only by
- * the penalty engine (monthlyPenalty, which works the penalty out with
- * payments applied to it first) and by lotArrears (src/lib/debt-recovery,
- * which splits a notice's amount paid between posted interestCharged and the
- * levy). Receipting (levy-receipts.ts, levy-schedules.ts recordLevyPayment),
- * notice balances and status, owner credits (owner-credits.ts), reversals
- * (levy-reversal.ts) and the receivable journals still treat a payment as
- * against the notice total, levy first, and lotArrears works from the posted
- * penalty while the engine works from the calculated one. Receipting and
- * notice balances must apply this order before Queensland is switched on.
- * NSW receipting is not to change.
+ * APPLIED (go-live gap closed 27 Oct 2026, stage 2, step 6 follow-up): this
+ * order is applied wherever a payment meets a notice, for any pack that puts
+ * INTEREST before LEVY (lateChargeFirst, src/lib/finance/statutory-interest.ts):
+ * - Sources of truth. The penalty charged comes from the engine
+ *   (monthlyPenalty). The penalty paid is the part recorded on each payment
+ *   not reversed (levy_payments.late_charge_amount, migration 20261117, the
+ *   same amount as its receipt journal line), plus anything paid with no
+ *   receipt (the old system's, at takeover). Receipting, owner credit,
+ *   lotArrears (noticeLateChargePaid) and the engine, which applies each
+ *   payment as recorded, all use these two figures.
+ * - Receipting (levy-receipts.ts, and so bank deposits, suspense clearing and
+ *   reallocation) and owner credit applied (owner-credits.ts) are each one
+ *   transaction, all written or none. It locks the building's row first
+ *   (lockJournalNumbering, so journal entry numbers are given out one at a
+ *   time), then each notice in id order (FOR NO KEY UPDATE, lockLateCharge in
+ *   src/lib/queries/interest.ts). Under the locks the engine's penalty to the
+ *   payment date is worked out again and charged, with its journal dated the
+ *   payment date. The payment then goes to the penalty and the rest to the
+ *   contribution (lateChargePart), and the receipt or credit journal is posted
+ *   in the same transaction. Its penalty part is never more than the penalty
+ *   charged and unpaid, nor more than had accrued by its date less what
+ *   payments by that date paid. A payment or credit dated after the building's
+ *   today, or in a closed or locked period, is refused before anything is
+ *   written. A charge or penalty run (chargeInterest) takes the same locks, so
+ *   a receipt and a run cannot charge the same month twice. A reversal
+ *   (levy-receipt-reversal.ts) takes them too, checks under them that the
+ *   receipt is not already reversed, and puts each notice back as it stands
+ *   under its lock. Applying credit reads the credit left under the lock.
+ *   Accounts and settings are found before a locked transaction opens, and
+ *   inside it every read goes through the transaction, so it never waits for
+ *   a second pool connection while holding the locks. NSW takes no lock and
+ *   is unchanged.
+ * - Notice balances and status stay on the notice total, which holds the
+ *   penalty to the payment date. Paying only the contribution after a month
+ *   mark leaves the notice part paid, and that part keeps attracting penalty
+ *   (FOR_REVIEW).
+ * - Receivable journals: the credit of a receipt or of applied credit is in
+ *   two lines, penalty and contribution, in the same receivable account and
+ *   fund (penalty income is recognised when the penalty is charged). A
+ *   reversal mirrors the lines and puts the notice back. The engine stops
+ *   counting the reversed payment, so the penalty it held off is charged at
+ *   the next run or payment.
+ * NSW receipting is unchanged (src/lib/finance/receipting.nsw.golden.test.ts,
+ * receipting-bank.nsw.golden.test.ts).
+ *
+ * GO-LIVE GAP (what remains, 27 Oct 2026):
+ * - Migration 20261117 (levy_payments.late_charge_amount) must be applied
+ *   before this code is deployed, for NSW too, as the ORM reads every column.
+ * - On a cash basis, reports count the penalty part of a receipt as
+ *   contribution income (accounting-basis.ts recognitions, as NSW counts
+ *   interest received).
+ * - The other journal writers (levies raised, suspense, the dishonour fee of
+ *   a reversal, invoices, refunds) still number their entries without the
+ *   building lock, as for NSW, so one of them at the same moment as a
+ *   Queensland receipt can take the same number. The unique key then refuses
+ *   one of them, and a refused Queensland receipt writes nothing. To be fixed
+ *   in the next PR, which serialises numbering for every writer, NSW included.
+ * - A penalty charged is never taken back. A payment entered after a run with
+ *   an earlier date pays only the penalty accrued by its date, but the months
+ *   the run charged after it stay charged. Changing the resolved rate makes the
+ *   engine work the notice out again at the new rate.
+ * - A reversed payment's penalty part is not moved to later payments, which
+ *   keep the parts recorded when they were received.
+ * - The order is applied within a notice. Which notice a payment goes to is
+ *   the adviser's choice, and credit goes earliest due first (FOR_REVIEW).
  */
 
 /**
@@ -1332,6 +1386,21 @@ export const FOR_REVIEW = [
     point:
       "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft, but nothing is refused: contributions and meetings run on the contribution schedule, which every lot holds.",
     where: "src/lib/jurisdiction/building-data.ts",
+  },
+  {
+    point:
+      "A payment goes to the penalty first (SM s 166(5)), so an owner who pays only the contribution after a month mark still owes the part of the contribution the penalty took. That part keeps attracting penalty each month until it is paid, even when it is a few dollars. StrataVerze charges it as StrataVerze reads SM ss 165 and 166(5), and does not waive it. Whether that reading is right, whether to tell the owner when it happens, and whether to suggest a waiver for special reasons (s 166(6)), are for review.",
+    where: "PAYMENT_ALLOCATION_ORDER",
+  },
+  {
+    point:
+      "When a payment or owner credit is applied, the penalty to the payment date is charged first, with its own journal dated the day it is recorded. A payment dated on a month mark is paid within that month. A payment dated after the building's today is refused, and one entered late with an earlier date pays only the penalty accrued by that date.",
+    where: "PAYMENT_ALLOCATION_ORDER; src/lib/finance/levy-receipts.ts, owner-credits.ts applyOwnerCredit",
+  },
+  {
+    point:
+      "The order is applied within each notice. Which notice a payment goes to is the adviser's choice, and owner credit goes to the earliest due notice first. Whether SM s 166(5) needs every penalty on the lot paid before any contribution is not confirmed.",
+    where: "PAYMENT_ALLOCATION_ORDER; src/lib/finance/owner-credit.ts planCreditApplication",
   },
 ] as const;
 

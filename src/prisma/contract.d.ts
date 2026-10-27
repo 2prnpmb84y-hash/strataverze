@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'6f7b0a00095e39235f5410b4d9176c52d3f595bd1db8d8c388a59d65facc7798'>;
+  StorageHashBase<'e1919a3f0f65ed8c2019dfc776d70cee9371648477790189d44ae377db0fd1e7'>;
 export type ExecutionHash =
   ExecutionHashBase<'7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9'>;
 export type ProfileHash =
@@ -1636,6 +1636,7 @@ export namespace Models {
     createdAt: FieldOutputTypes['public']['LevyPayment']['createdAt'];
     id: FieldOutputTypes['public']['LevyPayment']['id'];
     journalEntryId: FieldOutputTypes['public']['LevyPayment']['journalEntryId'];
+    lateChargeAmount: FieldOutputTypes['public']['LevyPayment']['lateChargeAmount'];
     levyNoticeId: FieldOutputTypes['public']['LevyPayment']['levyNoticeId'];
     lotId: FieldOutputTypes['public']['LevyPayment']['lotId'];
     paymentDate: FieldOutputTypes['public']['LevyPayment']['paymentDate'];
@@ -11938,6 +11939,17 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly late_charge_amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/numeric@1', '0.00'>;
+                  };
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly levy_notice_id: {
@@ -34656,6 +34668,14 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly lateChargeAmount: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
               readonly levyNoticeId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -34726,6 +34746,7 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly id: { readonly column: 'id' };
                 readonly journalEntryId: { readonly column: 'journal_entry_id' };
+                readonly lateChargeAmount: { readonly column: 'late_charge_amount' };
                 readonly levyNoticeId: { readonly column: 'levy_notice_id' };
                 readonly lotId: { readonly column: 'lot_id' };
                 readonly paymentDate: { readonly column: 'payment_date' };

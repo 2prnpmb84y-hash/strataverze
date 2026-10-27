@@ -256,6 +256,13 @@ export const PENDING_RULE_PACKS = {
     // share not worked out, flagging missing data).
     // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied
     // yet (the insurance part of contributions by the interest schedule, the onboarding wizard, the NSW labels).
+    // 2026.10.12 (27 Oct 2026): PAYMENT_ALLOCATION_ORDER (penalty first, SM s 166(5)) is now applied by receipting, notice
+    // balances and status, owner credit applied, reversals and the receivable journals, each as one transaction with the
+    // building's journal numbering and each notice locked while its penalty is charged and a payment applied. The engine is the source of the penalty charged, and the part recorded on
+    // each payment (levy_payments.late_charge_amount, migration 20261117) the source of the penalty paid (see the note in
+    // qld.ts). FOR_REVIEW gains three StrataVerze choices (the part of the contribution left unpaid when only the contribution
+    // is paid, as StrataVerze reads SM ss 165 and 166(5); charging the penalty to the payment date first, with future dates
+    // refused; the order within a notice). The legal values are unchanged, so the status stays REVIEWED.
     // 2026.10.13 (27 Oct 2026): resolution tallies at conduct. MEETING_RULES gains pollCategories (ORDINARY, from
     // RESOLUTIONS.pollAvailable: Act ss 109, 110(3)) and proxiesBarredOn (MAJORITY: Act s 107, SM s 130(3), as in
     // PROXIES.notFor), both from values already signed off. Conduct now counts the votes at a Queensland general
@@ -263,8 +270,7 @@ export const PENDING_RULE_PACKS = {
     // cannot be recorded as resolved until written votes are recorded. FOR_REVIEW gains the count deciding with no
     // override, the lot count and the meeting's date for debts, abstentions and votes cast, and the debtor test
     // reading contribution notices only. The legal values are unchanged, so the status stays REVIEWED.
-    // The GO-LIVE GAP note on MEETING_RULES says what is applied and what remains. (2026.10.12 is the receipting
-    // branch's number; the two are reconciled when merged.)
+    // The GO-LIVE GAP note on MEETING_RULES says what is applied and what remains.
     version: "2026.10.13",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",

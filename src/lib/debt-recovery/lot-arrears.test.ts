@@ -8,12 +8,21 @@ import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
 
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
+// A Queensland-shaped building (the pack is not yet active): its late charge setting is read for the penalty first order.
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
+  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const forState = (state: string | null | undefined) =>
+    state === "QLD-SHAPED" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state);
+  return { ...actual, rulesForState: forState };
+});
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { lotArrears } = await import("./payment-plan-requests");
 
 beforeEach(() => {
   sharedFake.reset({
+    Scheme: [{ id: "s", state: "QLD-SHAPED", interestMode: "RESOLVED_RATE", lateChargeMonthlyRatePercent: "2.50", timeZone: "Australia/Brisbane" }],
     LevyNotice: [
       // $500 levy and $20 interest, $100 paid.
       { id: "n1", schemeId: "s", lotId: "l", status: "PARTIALLY_PAID", dueDate: "2026-07-01", amountDue: "500.00", amountPaid: "100.00", interestCharged: "20.00" },
@@ -33,6 +42,7 @@ describe("lotArrears", () => {
   });
 
   it("applies Queensland payments to the penalty first", async () => {
+    // No receipts are recorded, so what was paid has no date and goes to the penalty charged first.
     // n1: $20 penalty then $80 of the levy. n2: $10 penalty then $295 of the levy.
     expect(await lotArrears("s", "l", "2026-10-01", PENDING_RULE_PACKS.QLD.rules.PAYMENT_ALLOCATION_ORDER)).toEqual({ leviesCents: 42_000 + 500, interestCents: 0 });
   });

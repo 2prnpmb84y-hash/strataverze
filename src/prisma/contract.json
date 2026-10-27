@@ -11914,6 +11914,17 @@
                   "kind": "scalar"
                 }
               },
+              "lateChargeAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
               "levyNoticeId": {
                 "nullable": false,
                 "type": {
@@ -12023,6 +12034,9 @@
                 },
                 "journalEntryId": {
                   "column": "journal_entry_id"
+                },
+                "lateChargeAmount": {
+                  "column": "late_charge_amount"
                 },
                 "levyNoticeId": {
                   "column": "levy_notice_id"
@@ -44160,6 +44174,19 @@
                   "dataType": "pg/uuid",
                   "nullable": true
                 },
+                "late_charge_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0.00"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
                 "levy_notice_id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
@@ -60811,7 +60838,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "6f7b0a00095e39235f5410b4d9176c52d3f595bd1db8d8c388a59d65facc7798"
+    "storageHash": "e1919a3f0f65ed8c2019dfc776d70cee9371648477790189d44ae377db0fd1e7"
   },
   "execution": {
     "executionHash": "7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9",
