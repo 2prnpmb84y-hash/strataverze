@@ -263,7 +263,15 @@ export const PENDING_RULE_PACKS = {
     // qld.ts). FOR_REVIEW gains three StrataVerze choices (the part of the contribution left unpaid when only the contribution
     // is paid, as StrataVerze reads SM ss 165 and 166(5); charging the penalty to the payment date first, with future dates
     // refused; the order within a notice). The legal values are unchanged, so the status stays REVIEWED.
-    version: "2026.10.12",
+    // 2026.10.13 (27 Oct 2026): resolution tallies at conduct. MEETING_RULES gains pollCategories (ORDINARY, from
+    // RESOLUTIONS.pollAvailable: Act ss 109, 110(3)) and proxiesBarredOn (MAJORITY: Act s 107, SM s 130(3), as in
+    // PROXIES.notFor), both from values already signed off. Conduct now counts the votes at a Queensland general
+    // meeting (not a committee meeting) and checks the chair's outcome against the count; a majority resolution
+    // cannot be recorded as resolved until written votes are recorded. FOR_REVIEW gains the count deciding with no
+    // override, the lot count and the meeting's date for debts, abstentions and votes cast, and the debtor test
+    // reading contribution notices only. The legal values are unchanged, so the status stays REVIEWED.
+    // The GO-LIVE GAP note on MEETING_RULES says what is applied and what remains.
+    version: "2026.10.13",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

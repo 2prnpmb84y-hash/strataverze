@@ -868,14 +868,40 @@ const GENERAL_MEETING_QUORUM: QuorumRule = {
  *   resolution category here.
  */
 /*
- * GO-LIVE GAP (stage 2, step 7, 27 Oct 2026): the engine cannot count a
- * Queensland special or majority resolution yet. Conduct never passes a tally
- * (conduct-actions.ts recordAgendaOutcomeAction calls resolveOutcome without
- * one), and nothing supplies totalLots, totalEntitlement or eligibleLots, so
- * the chair's recorded outcome is stored unchecked. The two tests evaluate
- * correctly once a tally with those totals is passed. The debtor voting check
- * (debtorsMayVoteOn) runs only when an owner casts a vote online, not on votes
- * the chair records at the meeting.
+ * GO-LIVE GAP (stage 2, step 7; resolution tallies, 27 Oct 2026).
+ * Applied, at general meetings only: conduct counts the votes on each agenda
+ * item (src/lib/meetings/conduct-tally.ts, run by recordAgendaOutcomeAction
+ * because the pack has the special and majority bases). The chair records
+ * each lot's vote and whether it was by proxy; formal online votes on the item
+ * are added; one vote per lot. totalLots is every lot (Act s 106(3)(b)) and
+ * must equal the building's recorded number of lots, which must be recorded;
+ * totalEntitlement is every lot's contribution schedule lot entitlement
+ * (s 106(3)(c)). A poll is offered on pollCategories and counted by the
+ * contribution schedule (s 110(3)). The debtor check (debtorsMayVoteOn) now
+ * covers the chair's votes, with debts judged on the meeting's date: a lot
+ * owing money is not counted except on a resolution without dissent or an
+ * item with no category (a committee election). A missing entitlement fails
+ * closed. An outcome the count does not give is refused and nothing is stored
+ * (no override; FOR_REVIEW).
+ * Majority resolutions are not settled at conduct. Act s 107 decides them on
+ * written votes, which are not recorded, so one cannot be recorded as
+ * resolved; it can be recorded as lost (checked against the votes entered,
+ * with eligibleLots as every lot less those owing money, SM s 102(2)) or
+ * deferred. A proxy vote on proxiesBarredOn is refused (s 107; SM s 130(3)).
+ * Remaining:
+ * - committee meetings are not counted: their members vote (SM ss 60, 68), and
+ *   the chair's outcome is stored unchecked as before;
+ * - written votes for a majority resolution;
+ * - the motions list (Motion, votes per owner) still takes the adviser's
+ *   carried or defeated unchecked;
+ * - proxy holder limits (SM s 128(4)), secret ballots and the poll bar on them
+ *   (s 109), quorum (SM s 99) and committee election counts (SM s 15);
+ * - a proxy on a committee election is not refused, because an item with no
+ *   category is not known to be one;
+ * - the debtor test reads contribution notices only (FOR_REVIEW);
+ * - two people recording the same item at once: the last save wins, as for
+ *   every agenda outcome on main;
+ * - the minutes show outcomes only.
  */
 export const MEETING_RULES: MeetingRuleSet = {
   state: "QLD",
@@ -926,6 +952,10 @@ export const MEETING_RULES: MeetingRuleSet = {
   // motions list does not record, so it is offered on the agenda only.
   motionCategories: ["ORDINARY", "SPECIAL", "WITHOUT_DISSENT"],
   debtorsMayVoteOn: ["WITHOUT_DISSENT"],
+  // A poll only on an ordinary resolution (Act ss 109, 110(3)), from RESOLUTIONS.
+  pollCategories: (["ORDINARY", "SPECIAL", "WITHOUT_DISSENT", "MAJORITY"] as const).filter((c) => RESOLUTIONS[c].pollAvailable),
+  // No proxies on a majority resolution (Act s 107; SM s 130(3), in PROXIES.notFor).
+  proxiesBarredOn: ["MAJORITY"],
   notes:
     "From the Queensland pack signed off on 27 Oct 2026 (Standard Module). How the 21 days' notice is counted is not confirmed.",
 };
@@ -1251,6 +1281,31 @@ export const FOR_REVIEW = [
   {
     point: "A majority resolution is offered on the agenda but not in the motions list, which does not record written votes without proxies.",
     where: "MEETING_RULES.motionCategories",
+  },
+  {
+    point:
+      "At conduct the count decides: where the chair's outcome differs from the count of the votes recorded, nothing is stored and the chair is told what the count gives. There is no override with a reason. A vote from a lot owing money is not counted, and the chair is told which lots, rather than the whole record being refused.",
+    where: "src/lib/meetings/conduct-tally.ts outcomeDisagreement, buildConductTally",
+  },
+  {
+    point:
+      "A special or majority resolution is not counted while the building's number of lots is not recorded or differs from the lots entered, and a lot owing money is left out of the lots entitled to vote on a majority resolution (Act s 107; SM s 102(2)). Money owed is judged on the meeting's date in the building's time zone; that this is the right day is not confirmed.",
+    where: "src/lib/meetings/conduct-tally.ts buildConductTally, conduct-actions.ts recordCountedOutcome",
+  },
+  {
+    point:
+      "Abstentions are not counted as votes cast, so two thirds of the votes cast (Act s 106(3)(a)) is two thirds of the votes for and against. The notes do not define votes cast.",
+    where: "src/lib/meetings/rules.ts TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS, conduct-tally.ts",
+  },
+  {
+    point:
+      "For voting, a lot owes money only on a contribution notice past its due date with a balance outstanding. A posted late payment penalty or recovery costs (SM ss 165, 166) owed on their own do not make the lot a debtor yet. The penalty was left out because its posting and split are changing in receipting.",
+    where: "src/lib/meetings/debtor-voting-repo.ts lotsOwingMoney",
+  },
+  {
+    point:
+      "A resolution without dissent with no votes cast counts as carried, as the engine reads Act s 105 (no vote against).",
+    where: "src/lib/meetings/rules.ts NO_AGAINST",
   },
   {
     point:

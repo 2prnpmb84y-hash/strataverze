@@ -1,0 +1,333 @@
+/**
+ * Counting the votes at conduct (pure; QLD stage 2, resolution tallies,
+ * 27 Oct 2026).
+ *
+ * Where the building's rule set has a resolution that needs the lots and
+ * entitlements of the whole scheme (Queensland's special and majority
+ * resolutions), the outcome the chair records at a general meeting is checked
+ * against a tally of the votes: the formal online votes on the item plus the
+ * votes the chair records for each lot. A committee meeting is decided by its
+ * members, not the lots, and is not counted. NSW has no such resolution, so
+ * its conduct takes the chair's outcome as before and none of this runs.
+ * A majority resolution is decided on written votes (Act s 107), which are
+ * not recorded yet, so it cannot be recorded as resolved here.
+ *
+ * - One vote per lot. A proxy's vote is the lot's vote, except on a category
+ *   the pack bars proxies on (Queensland: a majority resolution).
+ * - A lot owing money is not counted on a category outside the pack's
+ *   `debtorsMayVoteOn` (Queensland SM s 102(2)). An item with no category
+ *   (a committee election) is not a resolution and counts it.
+ * - The totals come from every lot of the building: the number of lots
+ *   (Act s 106(3)(b)), the entitlement the pack says decides the special
+ *   resolution test (s 106(3)(c)), and for a majority resolution the lots
+ *   entitled to vote (s 107), which leaves out the lots owing money.
+ * - A poll is taken only on a category the pack lists (s 109), counted by the
+ *   entitlement the pack says decides a poll vote (s 110(3)).
+ * - Anything missing fails closed: nothing is counted and the chair is told
+ *   what to fix.
+ */
+import type { StatutoryRules } from "@/config/statutory";
+import {
+  EntitlementRuleError,
+  MissingEntitlementError,
+  lotEntitlementFor,
+  scheduleFor,
+  type EntitlementUse,
+  type LotEntitlements,
+} from "@/lib/jurisdiction/building-data";
+import { debtorVoteRefusal } from "./debtor-voting";
+import { isResolutionCategory, type MeetingRuleSet, type ResolutionCategory, type ResolutionTally } from "./rules";
+import type { Outcome, OutcomeResult } from "./conduct";
+
+/** The bases that need the scheme's totals, so the votes must be counted. */
+const COUNTED_BASES: readonly string[] = ["TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS", "MORE_THAN_HALF_OF_LOTS"];
+
+/** Whether conduct counts the votes for the building: its rule set has a resolution needing the scheme's totals. */
+export function countsVotesAtConduct(ruleSet: Pick<MeetingRuleSet, "resolutionCategories">): boolean {
+  return Object.values(ruleSet.resolutionCategories).some((rule) => !!rule && COUNTED_BASES.includes(rule.basis));
+}
+
+/** A committee meeting: its members vote, not the lots (Queensland SM ss 60, 68). */
+export function isCommitteeMeeting(meetingType: string | null | undefined): boolean {
+  return String(meetingType ?? "").trim().toUpperCase() === "COMMITTEE";
+}
+
+/**
+ * Whether conduct counts the votes on this meeting: a general meeting of a
+ * building that counts them. A committee meeting is decided by its voting
+ * members, so the chair's outcome is taken as before. Any other meeting type,
+ * even one not known, is counted (it fails closed).
+ */
+export function countsVotesAtMeeting(
+  ruleSet: Pick<MeetingRuleSet, "resolutionCategories">,
+  meetingType: string | null | undefined,
+): boolean {
+  return countsVotesAtConduct(ruleSet) && !isCommitteeMeeting(meetingType);
+}
+
+export const CHAIR_VOTE_VALUES = ["FOR", "AGAINST", "ABSTAIN"] as const;
+export type ChairVoteValue = (typeof CHAIR_VOTE_VALUES)[number];
+
+/** A lot's vote as the chair records it at the meeting. */
+export interface ChairVote {
+  lotId: string;
+  vote: ChairVoteValue;
+  byProxy: boolean;
+}
+
+/**
+ * The chair's votes as sent from the browser, or null when they are not well
+ * formed. One vote per lot, so there can be no more than `lotCount` of them.
+ */
+export function parseChairVotes(input: unknown, lotCount: number): ChairVote[] | null {
+  if (input == null) return [];
+  if (!Array.isArray(input) || input.length > lotCount) return null;
+  const votes: ChairVote[] = [];
+  for (const v of input) {
+    if (!v || typeof v !== "object") return null;
+    const { lotId, vote, byProxy } = v as Record<string, unknown>;
+    if (typeof lotId !== "string" || !lotId) return null;
+    if (typeof vote !== "string" || !(CHAIR_VOTE_VALUES as readonly string[]).includes(vote)) return null;
+    if (byProxy != null && typeof byProxy !== "boolean") return null;
+    votes.push({ lotId, vote: vote as ChairVoteValue, byProxy: byProxy === true });
+  }
+  return votes;
+}
+
+/** A vote cast online (the pre-meeting ballot), as stored. */
+export interface OnlineVote {
+  lotId: string | null;
+  voteValue: string;
+  isInformal: boolean;
+}
+
+/** A lot of the building, with the entitlements it holds. */
+export interface TallyLot extends LotEntitlements {
+  id: string;
+  lotNumber: string;
+}
+
+export interface CountedVote {
+  lotId: string;
+  lotNumber: string;
+  vote: ChairVoteValue;
+  byProxy: boolean;
+  source: "ONLINE" | "CHAIR";
+}
+
+export interface ConductTally {
+  /** Null for an item with no category: not a resolution, so the chair's outcome stands. */
+  tally: ResolutionTally | null;
+  counted: CountedVote[];
+  /** Votes from lots owing money on a category they may not vote on. */
+  notCounted: CountedVote[];
+}
+
+export type ConductTallyResult = { ok: true; value: ConductTally } | { ok: false; error: string };
+
+const lotList = (numbers: readonly string[]) =>
+  numbers.length > 1 ? `lots ${numbers.slice(0, -1).join(", ")} and ${numbers[numbers.length - 1]}` : `lot ${numbers[0]}`;
+
+const orList = (names: readonly string[]) =>
+  names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}` : names[0];
+
+/** "a" or "an" before a name, by its first letter. */
+const article = (text: string) => (/^[aeiou]/i.test(text) ? `an ${text}` : `a ${text}`);
+
+/**
+ * The tally for one agenda item, from the building's lots and the votes. A
+ * category the rule set does not have, a vote for a lot outside the
+ * building, a lot with two votes, a proxy where the pack bars one, a poll the
+ * pack does not allow, a lot count that differs from the building's, or a
+ * missing entitlement the count needs: each refuses, and nothing is counted.
+ */
+export function buildConductTally(params: {
+  ruleSet: MeetingRuleSet;
+  rules: Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES">;
+  category: string | null | undefined;
+  /** Every lot of the building. */
+  lots: readonly TallyLot[];
+  /** The number of lots the building records, checked against `lots` where the count needs the totals. */
+  recordedLotCount: number | null;
+  onlineVotes: readonly OnlineVote[];
+  chairVotes: readonly ChairVote[];
+  poll: boolean;
+  /** The lots owing money on the building's today. */
+  owingLotIds: ReadonlySet<string>;
+}): ConductTallyResult {
+  const { ruleSet } = params;
+  const raw = params.category && params.category.trim() ? params.category : null;
+  if (raw && !isResolutionCategory(ruleSet, raw)) {
+    return { ok: false, error: "This item's resolution type is not one this building uses, so its votes cannot be counted." };
+  }
+  const category: ResolutionCategory | null = raw && isResolutionCategory(ruleSet, raw) ? raw : null;
+  const name = (c: ResolutionCategory) => (ruleSet.resolutionLabels[c]?.full ?? c).toLowerCase();
+
+  if (params.poll && !(category && ruleSet.pollCategories?.includes(category))) {
+    const allowed = (ruleSet.pollCategories ?? []).map(name);
+    return { ok: false, error: allowed.length ? `A poll can be taken only on ${article(orList(allowed))}.` : "A poll cannot be taken on this item." };
+  }
+
+  const lotsById = new Map(params.lots.map((l) => [l.id, l]));
+  // Whether a lot owing money is left out of the count for this item.
+  const debtorBarred = (lotId: string) => params.owingLotIds.has(lotId) && debtorVoteRefusal(ruleSet, category, true, "") != null;
+
+  const seen = new Map<string, "ONLINE" | "CHAIR">();
+  const counted: CountedVote[] = [];
+  const notCounted: CountedVote[] = [];
+  const take = (v: CountedVote) => (debtorBarred(v.lotId) ? notCounted : counted).push(v);
+
+  for (const v of params.onlineVotes) {
+    if (v.isInformal || !v.lotId) continue;
+    if (!(CHAIR_VOTE_VALUES as readonly string[]).includes(v.voteValue)) continue;
+    const lot = lotsById.get(v.lotId);
+    if (!lot) return { ok: false, error: "A vote cast online is for a lot that is not in this building, so the votes cannot be counted." };
+    if (seen.has(lot.id)) return { ok: false, error: `Lot ${lot.lotNumber} has more than one vote recorded. Each lot has one vote.` };
+    seen.set(lot.id, "ONLINE");
+    take({ lotId: lot.id, lotNumber: lot.lotNumber, vote: v.voteValue as ChairVoteValue, byProxy: false, source: "ONLINE" });
+  }
+
+  for (const v of params.chairVotes) {
+    const lot = lotsById.get(v.lotId);
+    if (!lot) return { ok: false, error: "A vote is for a lot that is not in this building." };
+    const earlier = seen.get(lot.id);
+    if (earlier === "ONLINE") return { ok: false, error: `Lot ${lot.lotNumber} has already voted online, so its vote cannot be recorded again.` };
+    if (earlier) return { ok: false, error: `Lot ${lot.lotNumber} has more than one vote recorded. Each lot has one vote.` };
+    if (v.byProxy && category && ruleSet.proxiesBarredOn?.includes(category)) {
+      return {
+        ok: false,
+        error: `Lot ${lot.lotNumber} voted by proxy, but a proxy cannot vote on ${article(name(category))}. Remove that vote, or record it without the proxy if the owner voted themselves.`,
+      };
+    }
+    seen.set(lot.id, "CHAIR");
+    take({ lotId: lot.id, lotNumber: lot.lotNumber, vote: v.vote, byProxy: v.byProxy, source: "CHAIR" });
+  }
+
+  if (!category) return { ok: true, value: { tally: null, counted, notCounted } };
+
+  const rule = ruleSet.resolutionCategories[category]!;
+  const needsTotals = COUNTED_BASES.includes(rule.basis);
+  if (needsTotals && params.recordedLotCount == null) {
+    return {
+      ok: false,
+      error: "The building's number of lots is not recorded, so this resolution cannot be counted. Record it in the building's details first.",
+    };
+  }
+  if (needsTotals && params.recordedLotCount !== params.lots.length) {
+    return {
+      ok: false,
+      error: `The building records ${params.recordedLotCount} lots but ${params.lots.length} are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.`,
+    };
+  }
+
+  const tally: ResolutionTally = { forCount: 0, againstCount: 0, abstainCount: 0, totalLots: params.lots.length };
+  for (const v of counted) {
+    if (v.vote === "FOR") tally.forCount += 1;
+    else if (v.vote === "AGAINST") tally.againstCount += 1;
+    else tally.abstainCount = (tally.abstainCount ?? 0) + 1;
+  }
+
+  try {
+    const weigh = (use: EntitlementUse) => {
+      const of = (lotId: string) => lotEntitlementFor(params.rules, lotsById.get(lotId)!, use);
+      tally.forUE = counted.filter((v) => v.vote === "FOR").reduce((sum, v) => sum + of(v.lotId), 0);
+      tally.againstUE = counted.filter((v) => v.vote === "AGAINST").reduce((sum, v) => sum + of(v.lotId), 0);
+    };
+    if (rule.basis === "TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS") {
+      // Every lot's entitlement, so a lot without one fails closed even if it did not vote.
+      tally.totalEntitlement = params.lots.reduce((sum, l) => sum + lotEntitlementFor(params.rules, l, "SPECIAL_RESOLUTION"), 0);
+      weigh("SPECIAL_RESOLUTION");
+    }
+    if (params.poll) {
+      tally.poll = true;
+      weigh("POLL_VOTE");
+    }
+  } catch (err) {
+    if (err instanceof MissingEntitlementError || err instanceof EntitlementRuleError) {
+      return { ok: false, error: `The votes cannot be counted. ${err.message}` };
+    }
+    throw err;
+  }
+
+  if (rule.basis === "MORE_THAN_HALF_OF_LOTS") {
+    tally.eligibleLots = params.lots.filter((l) => !debtorBarred(l.id)).length;
+  }
+
+  return { ok: true, value: { tally, counted, notCounted } };
+}
+
+/**
+ * Why the chair cannot record a majority resolution as resolved, or null. It
+ * is decided on written votes (Act s 107), which StrataVerze does not record
+ * yet, so the count of the votes entered at the meeting cannot carry it.
+ * Recording it as lost, or deferring it, is still allowed.
+ */
+export function writtenVotesRefusal(ruleSet: MeetingRuleSet, category: string | null | undefined, requested: Outcome): string | null {
+  if (requested !== "RESOLVED" || !isResolutionCategory(ruleSet, category)) return null;
+  if (ruleSet.resolutionCategories[category]?.basis !== "MORE_THAN_HALF_OF_LOTS") return null;
+  const name = (ruleSet.resolutionLabels[category]?.full ?? category).toLowerCase();
+  return `${article(name).replace(/^a/, "A")} is decided on each lot's written vote, which StrataVerze does not record yet. It cannot be recorded as resolved here. It can be recorded as lost, or deferred.`;
+}
+
+/**
+ * Why the chair's outcome is refused, or null when it agrees with the count
+ * (or nothing was counted). The count decides: the chair corrects the votes
+ * entered or records the outcome the count gives.
+ */
+export function outcomeDisagreement(requested: Outcome, result: OutcomeResult): string | null {
+  if (!result.evaluation || result.outcome === requested) return null;
+  const counted = result.outcome === "RESOLVED" ? "carried" : "lost";
+  const asked = requested === "RESOLVED" ? "resolved" : "lost";
+  return `The votes recorded show the motion is ${counted}, not ${asked}. ${result.evaluation.reason}. Nothing was saved. Check the votes entered, or record the outcome the count gives.`;
+}
+
+/** What the chair is told about votes not counted for money owed, or null when every vote counted. */
+export function notCountedNotice(notCounted: readonly CountedVote[], ownersCorporation: string): string | null {
+  if (notCounted.length === 0) return null;
+  const numbers = notCounted.map((v) => v.lotNumber);
+  const owe = numbers.length > 1 ? "owe" : "owes";
+  return `Not counted: ${lotList(numbers)} ${owe} the ${ownersCorporation} an overdue amount, so ${numbers.length > 1 ? "their votes" : "its vote"} on this motion cannot count.`;
+}
+
+/** What the conduct screen needs to record votes, as plain data a server page passes to the browser. */
+export interface ConductVotingView {
+  /** Every lot, in lot number order. */
+  lots: { id: string; lotNumber: string }[];
+  /** For each agenda item: whether a poll may be asked for, and whether a proxy may vote. */
+  items: Record<string, { pollAllowed: boolean; proxiesAllowed: boolean }>;
+  /** The poll choice, naming the entitlement a poll counts by. */
+  pollLabel: string;
+}
+
+/** The conduct screen's voting view, or null where the meeting's votes are not counted at conduct (NSW, or a committee meeting). */
+export function conductVotingView(
+  ruleSet: MeetingRuleSet,
+  rules: Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES">,
+  lots: readonly { id: string; lotNumber: string | number }[],
+  items: readonly { id: string; resolutionCategory: string | null }[],
+  meetingType: string | null | undefined,
+): ConductVotingView | null {
+  if (!countsVotesAtMeeting(ruleSet, meetingType)) return null;
+  let pollLabel = "Poll asked for";
+  try {
+    pollLabel = `Poll asked for, counted by ${scheduleFor(rules, "POLL_VOTE").name}`;
+  } catch (err) {
+    if (!(err instanceof EntitlementRuleError)) throw err;
+  }
+  const allowed = (list: readonly string[] | undefined, c: string | null) => !!c && !!list?.includes(c);
+  return {
+    lots: lots
+      .map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) }))
+      .sort((a, b) => a.lotNumber.localeCompare(b.lotNumber, undefined, { numeric: true })),
+    items: Object.fromEntries(
+      items.map((i) => [
+        i.id,
+        {
+          pollAllowed: allowed(ruleSet.pollCategories, i.resolutionCategory),
+          proxiesAllowed: !allowed(ruleSet.proxiesBarredOn, i.resolutionCategory),
+        },
+      ]),
+    ),
+    pollLabel,
+  };
+}

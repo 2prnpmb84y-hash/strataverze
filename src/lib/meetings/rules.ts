@@ -134,6 +134,18 @@ export interface MeetingRuleSet {
    * where no such rule is recorded (NSW): votes are then not checked.
    */
   debtorsMayVoteOn?: readonly ResolutionCategory[];
+  /**
+   * Where the pack records it: the categories a poll may be asked for on
+   * (Queensland Act s 109: an ordinary resolution only). Read where votes are
+   * counted at conduct (`countsVotesAtConduct`); NSW leaves it out.
+   */
+  pollCategories?: readonly ResolutionCategory[];
+  /**
+   * Where the pack records it: the categories a proxy cannot vote on
+   * (Queensland Act s 107 and SM s 130(3): a majority resolution). Read where
+   * votes are counted at conduct; NSW leaves it out.
+   */
+  proxiesBarredOn?: readonly ResolutionCategory[];
   notes?: string;
 }
 
