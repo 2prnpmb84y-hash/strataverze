@@ -90,3 +90,47 @@ export function interestWords(rules: StatutoryRules): InterestWords {
     ownersCorporation: rules.TERMINOLOGY.ownersCorporation,
   };
 }
+
+/** The building's words for its legal entity, plan, levies and late charges (`rules.TERMINOLOGY`). */
+export type Terms = StatutoryRules["TERMINOLOGY"];
+
+/** The plan as notices and PDFs name it: "Strata Plan 12345", or null when there is no plan number. */
+export function planLine(terms: Pick<Terms, "planLabel">, planNumber: string | null | undefined): string | null {
+  return planNumber ? `${terms.planLabel} ${planNumber}` : null;
+}
+
+/** The building, for filling a name template. */
+export interface NamedPlan {
+  name: string;
+  planNumber: string | null | undefined;
+}
+
+function fillName(template: string, scheme: NamedPlan): string {
+  return template.replace(/\{(plan|name)\}/g, (_m, key: string) => (key === "plan" ? String(scheme.planNumber ?? "") : scheme.name));
+}
+
+/** "Owners Corporation" from "owners corporation". */
+const titleCase = (text: string) => text.replace(/(^|\s)(\S)/g, (_m, space: string, letter: string) => space + letter.toUpperCase());
+
+/**
+ * The legal entity's name, from the pack's template: "The Owners - Strata Plan
+ * No. 12345", "Body corporate for Harbour View community titles scheme 12345".
+ * With no plan number the name cannot be formed, so the entity is named
+ * generically: "The " and the pack's term in title case ("The Owners
+ * Corporation", as the NSW invoice has always shown; "The Body Corporate").
+ */
+export function bodyCorporateName(terms: Pick<Terms, "bodyCorporateName" | "ownersCorporation">, scheme: NamedPlan): string {
+  if (!scheme.planNumber) return `The ${titleCase(terms.ownersCorporation)}`;
+  return fillName(terms.bodyCorporateName, scheme);
+}
+
+/**
+ * The legal entity's name as meeting notices and minutes head it ("The Owners
+ * - Strata Plan 12345" for NSW). A building always has a plan number, so the
+ * template is always filled, as the headings always were.
+ */
+export function bodyCorporateShortName(terms: Pick<Terms, "bodyCorporateShortName">, scheme: NamedPlan, opts: { upperCase?: boolean } = {}): string {
+  if (!opts.upperCase) return fillName(terms.bodyCorporateShortName, scheme);
+  // Headings are in capitals, but the plan number stays as it was entered, as the headings always had it.
+  return fillName(terms.bodyCorporateShortName.toUpperCase().replace(/\{(PLAN|NAME)\}/g, (m) => m.toLowerCase()), { ...scheme, name: scheme.name.toUpperCase() });
+}

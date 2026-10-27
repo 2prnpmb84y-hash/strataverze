@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { InsurancePolicyForm } from "../insurance-form";
@@ -31,7 +32,7 @@ export default async function NewInsurancePolicyPage({
         backHref={`/adviser/schemes/${id}/insurance`}
         backLabel="Insurance"
       />
-      <InsurancePolicyForm schemeId={id} />
+      <InsurancePolicyForm schemeId={id} terms={rulesForState(scheme.state).rules.TERMINOLOGY} />
     </div>
   );
 }

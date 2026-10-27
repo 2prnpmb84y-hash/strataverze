@@ -5,6 +5,7 @@ import { certificateBlocks, renderCertificatePdf, type CertificateDocument } fro
 const base: CertificateDocument = {
   schemeName: "Harbour View",
   planNumber: "12345",
+  planLabel: "Strata Plan",
   title: SALE_CERTIFICATE.title,
   section: SALE_CERTIFICATE.section,
   number: 3,

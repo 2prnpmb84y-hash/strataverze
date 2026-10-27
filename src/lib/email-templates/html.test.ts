@@ -51,7 +51,7 @@ describe("every email template", () => {
       contact: { name: EVIL, emailOrPhone: EVIL }, ledgerUrl: "https://evil.example/", noInterest: false,
       interest: (statutoryRulesFor("NSW") as NswRules).STATUTORY_INTEREST,
       hardship: (statutoryRulesFor("NSW") as NswRules).HARDSHIP_INFORMATION,
-      ownersCorporation: "owners corporation",
+      terms: statutoryRulesFor("NSW").TERMINOLOGY,
     }),
     possibleDuplicatePaymentEmail({ recipientEmails: [], schemeName: EVIL, lotLabel: EVIL, noticeNumber: EVIL, amount: EVIL, documentDate: EVIL, earlierUploadedAt: EVIL, reviewUrl: URL }),
     platformInvoiceEmail({ to: [], schemeName: EVIL, invoiceNumber: EVIL, monthLabel: EVIL, total: EVIL, promotional: true, needsApproval: true, detailUrl: URL }),

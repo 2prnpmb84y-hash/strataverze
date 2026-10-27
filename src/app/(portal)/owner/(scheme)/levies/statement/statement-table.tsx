@@ -9,6 +9,7 @@ import { StatementView } from "@/components/levies/statement-view";
 interface StatementLine {
   id: string;
   date: string;
+  kind: string;
   type: string;
   description: string;
   charge: number;

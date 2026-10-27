@@ -135,7 +135,7 @@ export default async function CapitalWorksPlanPage({ params }: { params: Promise
           <Card>
             <CardHeader
               title="Capital works levy"
-              description="Create a draft capital works levy schedule for a year of this plan, using the yearly contribution above. It still needs the owners corporation's approval and an adopted budget before notices can issue."
+              description={`Create a draft capital works levy schedule for a year of this plan, using the yearly contribution above. It still needs the ${rules.TERMINOLOGY.ownersCorporation}'s approval and an adopted budget before notices can issue.`}
             />
             <GenerateLevyForm schemeId={id} years={years} />
           </Card>

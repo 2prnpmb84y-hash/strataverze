@@ -25,7 +25,8 @@ import { needRule } from "@/config/statutory";
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 const aud = (v: unknown) => formatAud(toCents(String(v ?? 0)));
 const FREQ: Record<string, string> = { WEEKLY: "weekly", FORTNIGHTLY: "fortnightly", MONTHLY: "monthly" };
-const BODY: Record<string, string> = { STRATA_COMMITTEE: "strata committee meeting", OWNERS_CORPORATION: "general meeting" };
+/** Which meeting decided the request, in the building's words (`rules.TERMINOLOGY.committee`). */
+const body = (committee: string): Record<string, string> => ({ STRATA_COMMITTEE: `${committee} meeting`, OWNERS_CORPORATION: "general meeting" });
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -131,7 +132,7 @@ export default async function PaymentPlanRequestPage({ params }: { params: Promi
         <Card>
           <CardHeader
             title={r.status === "APPROVED" ? "Approved" : "Refused"}
-            description={`At the ${BODY[String(r.decisionBody)] ?? "meeting"} of ${day(r.decidedOn)}.`}
+            description={`At the ${body(rules.TERMINOLOGY.committee)[String(r.decisionBody)] ?? "meeting"} of ${day(r.decidedOn)}.`}
             action={<StatusChip status={r.status === "APPROVED" ? "Approved" : "Refused"} variant={r.status === "APPROVED" ? "success" : "danger"} />}
           />
           <dl>

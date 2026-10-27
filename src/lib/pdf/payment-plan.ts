@@ -5,11 +5,14 @@
  * they apply, with where the owner can go next.
  */
 import { renderPdf, type PdfBlock } from "./document";
-import { aud, longDate, planLine } from "./documents";
+import { aud, longDate } from "./documents";
+import { planLine } from "@/lib/jurisdiction/wording";
 
 export interface PaymentPlanReplyDocument {
   schemeName: string;
   planNumber: string | null;
+  /** The building's name for its plan (`rules.TERMINOLOGY.planLabel`). */
+  planLabel: string;
   ownersCorporation: string;
   lotNumber: string;
   ownerNames: string;
@@ -97,7 +100,7 @@ export function renderPaymentPlanReplyPdf(d: PaymentPlanReplyDocument) {
   return renderPdf({
     title: d.decision === "APPROVED" ? "Payment plan statement" : "Payment plan request reply",
     schemeName: d.schemeName,
-    schemeLine: planLine(d.planNumber),
+    schemeLine: planLine(d, d.planNumber),
     blocks: paymentPlanReplyBlocks(d),
     generatedAt: new Date(`${d.preparedOn}T00:00:00Z`),
   });

@@ -163,7 +163,7 @@ describe("NSW meetings", () => {
         scheme,
         meeting: { title: "Meeting", meetingType, startTime: "2026-04-01T08:00:00Z", format: "IN_PERSON", location: "Foyer", joinUrl: null, joinDetails: null, timezone: "Australia/Sydney" },
         items: [{ position: 1, title: "Confirmation of Minutes", resolutionText: "That the minutes be approved.", explanatoryNote: null, resolutionCategory: "ORDINARY" }],
-      });
+      }, NSW.TERMINOLOGY);
       const { generatedAt: _generatedAt, ...rest } = c;
       return rest;
     });
@@ -272,7 +272,7 @@ describe("NSW levies", () => {
       noInterest: false,
       interest: NSW.STATUTORY_INTEREST,
       hardship: NSW.HARDSHIP_INFORMATION,
-      ownersCorporation: NSW.TERMINOLOGY.ownersCorporation,
+      terms: NSW.TERMINOLOGY,
     };
     expect(levyNoticeBlocks(doc)).toMatchSnapshot();
     expect(levyNoticeBlocks({ ...doc, noInterest: true })).toMatchSnapshot();
@@ -294,7 +294,7 @@ describe("NSW levies", () => {
         noInterest: false,
         interest: NSW.STATUTORY_INTEREST,
         hardship: NSW.HARDSHIP_INFORMATION,
-        ownersCorporation: NSW.TERMINOLOGY.ownersCorporation,
+        terms: NSW.TERMINOLOGY,
       }),
     ).toMatchSnapshot();
   });

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { statutoryRulesFor, type NswRules } from "@/config/statutory";
+import { PENDING_RULE_PACKS, statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { extractText, getDocumentProxy } from "unpdf";
-import { renderLevyNoticePdf, renderOwnerStatementPdf, renderRemittancePdf, renderStatutoryPackPdf } from "./documents";
+import { levyNoticeBlocks, ownerStatementBlocks, remittanceBlocks, renderLevyNoticePdf, renderOwnerStatementPdf, renderRemittancePdf, renderStatutoryPackPdf } from "./documents";
+import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
 import { wrap } from "./document";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 
@@ -30,7 +31,7 @@ const notice = {
   noInterest: false,
   interest: (statutoryRulesFor("NSW") as NswRules).STATUTORY_INTEREST,
   hardship: (statutoryRulesFor("NSW") as NswRules).HARDSHIP_INFORMATION,
-  ownersCorporation: "owners corporation",
+  terms: statutoryRulesFor("NSW").TERMINOLOGY,
 };
 
 describe("PDF documents", () => {
@@ -65,6 +66,7 @@ describe("PDF documents", () => {
       totalCharges: 12_000,
       totalPayments: 0,
       closingBalance: 11_950,
+      terms: statutoryRulesFor("NSW").TERMINOLOGY,
     });
     const { text, pages } = await textOf(bytes);
     expect(pages).toBeGreaterThan(1);
@@ -86,6 +88,7 @@ describe("PDF documents", () => {
         invoiceTotalCents: 110_000,
         payments: [{ date: "2026-09-15", amountCents: 60_000, reference: "EFT 1" }],
         bankAccountEnding: "5678",
+        terms: statutoryRulesFor("NSW").TERMINOLOGY,
       }),
     );
     expect(text).toContain("Remittance advice");
@@ -130,7 +133,7 @@ describe("PDF documents", () => {
       rules: { rulePack: "AU-NSW test", keyFinancialInformation: (statutoryRulesFor("NSW") as NswRules).KEY_FINANCIAL_INFORMATION, auditThreshold: (statutoryRulesFor("NSW") as NswRules).AUDIT_THRESHOLD },
       adopted: null,
     };
-    const { text, pages } = await textOf(await renderStatutoryPackPdf(pack));
+    const { text, pages } = await textOf(await renderStatutoryPackPdf(pack, statutoryRulesFor("NSW").TERMINOLOGY));
     expect(pages).toBeGreaterThanOrEqual(3);
     for (const s of ["Statement of key financial information", "Capital Works Fund (accrual basis)", "Balance carried forward", "$9,500.00", "Lot 3", "An audit is not required by size."]) {
       expect(text).toContain(s);
@@ -158,5 +161,51 @@ describe("wrap", () => {
     const lines = wrap("short " + "x".repeat(200), font, 10, 100);
     expect(lines.length).toBeGreaterThan(2);
     expect(lines.every((l) => font.widthOfTextAtSize(l, 10) <= 100)).toBe(true);
+  });
+});
+
+describe("Queensland wording, from the pack's terms", () => {
+  const QLD = PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY;
+  // The interest rule and hardship statement are NSW's here: Queensland's penalty wording is its own step.
+  const qldNotice = { ...notice, terms: QLD };
+  const words = (blocks: unknown[]) => JSON.stringify(blocks.filter((b) => (b as { kind: string }).kind !== "box"));
+
+  it("names the contribution, the penalty and the body corporate on the notice", async () => {
+    const text = words(levyNoticeBlocks(qldNotice));
+    expect(text).toContain("Contribution notice LN-0042");
+    expect(text).toContain("Penalty: if this contribution is not paid within one month after the due date, simple penalty of 10% a year");
+    expect(text).toContain("check your contribution ledger");
+    expect(words(levyNoticeBlocks({ ...qldNotice, noInterest: true }))).toContain("The body corporate has resolved not to charge penalty on overdue contributions.");
+    // The ledger link is the portal's route, not wording.
+    expect(text.replace(/https?:\/\/[^ )]+/g, "")).not.toMatch(/levy|levies|interest/i);
+    const { text: pdf } = await textOf(await renderLevyNoticePdf(qldNotice));
+    expect(pdf).toContain("Community titles scheme 12345");
+    expect(pdf).not.toContain("Strata Plan");
+  });
+
+  it("names them in the notice email too", () => {
+    const email = levyNoticeEmail({
+      to: "alex@example.com", ownerName: "Alex Nguyen", schemeName: "Harbour View", planNumber: "12345", lotNumber: "7", noticeNumber: "LN-0042",
+      noticeDate: "2026-10-01", dueDate: "2026-11-05", fundName: "Administrative fund", amount: "825.09",
+      payment: notice.payment, contact: notice.contact, ledgerUrl: notice.ledgerUrl, noInterest: true,
+      interest: notice.interest, hardship: notice.hardship, terms: QLD,
+    });
+    expect(email.subject).toMatch(/^Contribution notice LN-0042:/);
+    expect(email.html).toContain("Harbour View, Community titles scheme 12345");
+    expect(email.html).toContain("The body corporate has resolved not to charge penalty on overdue contributions.");
+    expect(email.html).toContain("View your contribution ledger");
+    expect(email.html).not.toContain("Strata Plan");
+  });
+
+  it("names them on the owner statement and remittance advice", () => {
+    const statement = JSON.stringify(
+      ownerStatementBlocks({ schemeName: "Harbour View", planNumber: "12345", lotLabel: "Lot 7", ownerName: "Alex", startDate: null, endDate: null, openingBalance: 0, lines: [], totalCharges: 0, totalPayments: 0, closingBalance: -10, terms: QLD }),
+    );
+    expect(statement).toContain("Owner contribution statement");
+    expect(statement).toContain("the next contribution notice");
+    const remittance = JSON.stringify(
+      remittanceBlocks({ schemeName: "Harbour View", planNumber: "12345", supplierName: "Acme", supplierAbn: null, invoiceNumber: "INV-1", invoiceDate: "2026-09-01", description: null, invoiceTotalCents: 100, payments: [{ date: "2026-09-02", amountCents: 100, reference: null }], bankAccountEnding: null, terms: QLD }),
+    );
+    expect(remittance).toContain("Paid on behalf of the body corporate of Harbour View, Community titles scheme 12345.");
   });
 });

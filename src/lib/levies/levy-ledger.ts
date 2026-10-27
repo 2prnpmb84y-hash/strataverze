@@ -4,6 +4,7 @@
  * recorded against them.
  */
 import { toIsoDay } from "./notice-plan";
+import { capitalise, type Terms } from "@/lib/jurisdiction/wording";
 
 export interface LedgerNotice {
   id: string;
@@ -96,10 +97,15 @@ export const STATUS_STYLES: Record<string, string> = {
   WRITTEN_OFF: "bg-zinc-100 text-zinc-600",
 };
 
+/** What a statement entry is. `type` is how the building names it. */
+export type StatementEntryKind = "LEVY" | "LATE_CHARGE" | "PAYMENT" | "REFUND" | "REVERSAL";
+
 export interface StatementLine {
   id: string;
   date: string;
-  type: "Levy" | "Interest" | "Payment" | "Refund" | "Reversal";
+  kind: StatementEntryKind;
+  /** The entry as shown: "Levy", "Interest", "Payment", "Refund", "Reversal" (NSW); "Contribution", "Penalty" (Queensland). */
+  type: string;
   description: string;
   charge: number;
   payment: number;
@@ -142,10 +148,19 @@ export interface LedgerCreditMovement {
 export function buildStatement(
   notices: LedgerNotice[],
   payments: LedgerPayment[],
-  range: { startDate?: string; endDate?: string } = {},
-  credits: LedgerCreditMovement[] = [],
+  range: { startDate?: string; endDate?: string },
+  credits: LedgerCreditMovement[],
+  /** The building's words for a levy and a late charge (`rules.TERMINOLOGY`). */
+  terms: Pick<Terms, "levy" | "lateCharge">,
 ): Statement {
-  const entries: Omit<StatementLine, "balance">[] = [];
+  const TYPE: Record<StatementEntryKind, string> = {
+    LEVY: capitalise(terms.levy),
+    LATE_CHARGE: capitalise(terms.lateCharge),
+    PAYMENT: "Payment",
+    REFUND: "Refund",
+    REVERSAL: "Reversal",
+  };
+  const entries: Omit<StatementLine, "balance" | "type">[] = [];
   const appliedReceipts = new Set(credits.filter((c) => c.type === "APPLIED" && c.levyPaymentId).map((c) => c.levyPaymentId!));
   for (const n of notices) {
     if (String(n.status) === "DRAFT") continue;
@@ -153,31 +168,31 @@ export function buildStatement(
     const label = noticeLabel(n);
     const amountDue = num(n.amountDue);
     if (amountDue > 0) {
-      entries.push({ id: `${n.id}-charge`, date: due, type: "Levy", description: `${label} (${n.noticeNumber})`, charge: amountDue, payment: 0 });
+      entries.push({ id: `${n.id}-charge`, date: due, kind: "LEVY", description: `${label} (${n.noticeNumber})`, charge: amountDue, payment: 0 });
     }
     const interest = num(n.interestCharged);
     if (interest > 0) {
-      entries.push({ id: `${n.id}-interest`, date: due, type: "Interest", description: `Interest on ${n.noticeNumber}`, charge: interest, payment: 0 });
+      entries.push({ id: `${n.id}-interest`, date: due, kind: "LATE_CHARGE", description: `${TYPE.LATE_CHARGE} on ${n.noticeNumber}`, charge: interest, payment: 0 });
     }
     const own = payments.filter((p) => p.levyNoticeId === n.id);
     for (const p of own) {
       // Credit applied to this notice was already shown when it was received.
       if (appliedReceipts.has(p.id)) continue;
       const ref = p.reference ? ` (${String(p.reference)})` : "";
-      entries.push({ id: `pay-${p.id}`, date: toIsoDay(p.paymentDate), type: "Payment", description: `Payment for ${n.noticeNumber}${ref}`, charge: 0, payment: num(p.amount) });
+      entries.push({ id: `pay-${p.id}`, date: toIsoDay(p.paymentDate), kind: "PAYMENT", description: `Payment for ${n.noticeNumber}${ref}`, charge: 0, payment: num(p.amount) });
       // A reversed payment stays on the statement, followed by its reversal with the reason (TC-008).
       if (p.reversedAt || p.reversalDate) {
         const why = REVERSAL_TEXT[String(p.reversalReason ?? "")] ?? "reversed";
         const extra = p.reversalNote ? `: ${String(p.reversalNote)}` : "";
         const date = toIsoDay(p.reversalDate) || toIsoDay(p.reversedAt) || toIsoDay(p.paymentDate);
-        entries.push({ id: `rev-${p.id}`, date, type: "Reversal", description: `Payment for ${n.noticeNumber} reversed, ${why}${extra}`, charge: num(p.amount), payment: 0 });
+        entries.push({ id: `rev-${p.id}`, date, kind: "REVERSAL", description: `Payment for ${n.noticeNumber} reversed, ${why}${extra}`, charge: num(p.amount), payment: 0 });
       }
     }
     const live = own.filter((p) => !(p.reversedAt || p.reversalDate));
     const unreceipted = Math.round((num(n.amountPaid) - live.reduce((s, p) => s + num(p.amount), 0)) * 100) / 100;
     if (unreceipted > 0) {
       const date = toIsoDay(n.paidInFullAt) || toIsoDay(n.updatedAt) || due;
-      entries.push({ id: `${n.id}-paid`, date, type: "Payment", description: `Payment for ${n.noticeNumber}`, charge: 0, payment: unreceipted });
+      entries.push({ id: `${n.id}-paid`, date, kind: "PAYMENT", description: `Payment for ${n.noticeNumber}`, charge: 0, payment: unreceipted });
     }
   }
 
@@ -185,17 +200,17 @@ export function buildStatement(
     const date = toIsoDay(c.effectiveDate);
     const amount = num(c.amount);
     if (c.type === "OVERPAYMENT") {
-      entries.push({ id: `credit-${c.id}`, date, type: "Payment", description: "Payment held as credit", charge: 0, payment: amount });
+      entries.push({ id: `credit-${c.id}`, date, kind: "PAYMENT", description: "Payment held as credit", charge: 0, payment: amount });
     } else if (c.type === "ADJUSTED") {
-      entries.push({ id: `credit-${c.id}`, date, type: "Payment", description: "Credit adjustment", charge: 0, payment: amount });
+      entries.push({ id: `credit-${c.id}`, date, kind: "PAYMENT", description: "Credit adjustment", charge: 0, payment: amount });
     } else if (c.type === "REFUNDED") {
-      entries.push({ id: `credit-${c.id}`, date, type: "Refund", description: "Credit refunded", charge: amount, payment: 0 });
+      entries.push({ id: `credit-${c.id}`, date, kind: "REFUND", description: "Credit refunded", charge: amount, payment: 0 });
     } else if (c.type === "REVERSED") {
-      entries.push({ id: `credit-${c.id}`, date, type: "Reversal", description: "Credit taken back with its reversed receipt", charge: amount, payment: 0 });
+      entries.push({ id: `credit-${c.id}`, date, kind: "REVERSAL", description: "Credit taken back with its reversed receipt", charge: amount, payment: 0 });
     }
   }
-  const order = { Levy: 0, Interest: 1, Payment: 2, Refund: 3, Reversal: 4 } as const;
-  entries.sort((a, b) => a.date.localeCompare(b.date) || order[a.type] - order[b.type]);
+  const order: Record<StatementEntryKind, number> = { LEVY: 0, LATE_CHARGE: 1, PAYMENT: 2, REFUND: 3, REVERSAL: 4 };
+  entries.sort((a, b) => a.date.localeCompare(b.date) || order[a.kind] - order[b.kind]);
 
   let opening = 0;
   const lines: StatementLine[] = [];
@@ -208,7 +223,7 @@ export function buildStatement(
     if (range.endDate && e.date > range.endDate) continue;
     if (lines.length === 0) running = opening;
     running = Math.round((running + e.charge - e.payment) * 100) / 100;
-    lines.push({ ...e, balance: running });
+    lines.push({ ...e, type: TYPE[e.kind], balance: running });
   }
   const totalCharges = Math.round(lines.reduce((s, l) => s + l.charge, 0) * 100) / 100;
   const totalPayments = Math.round(lines.reduce((s, l) => s + l.payment, 0) * 100) / 100;

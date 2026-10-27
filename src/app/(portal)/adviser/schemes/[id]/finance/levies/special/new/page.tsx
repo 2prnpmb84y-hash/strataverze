@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getFundsForScheme } from "@/lib/queries/funds";
 import { PageHeader } from "@/components/ui/page-header";
@@ -29,7 +30,7 @@ export default async function NewSpecialLevyPage({
     <div className="max-w-3xl">
       <PageHeader
         title="Raise a Special Levy"
-        description="A one-off contribution resolved by the owners corporation."
+        description={`A one-off contribution resolved by the ${rulesForState(scheme.state).rules.TERMINOLOGY.ownersCorporation}.`}
         backHref={`/adviser/schemes/${id}/finance/levies`}
         backLabel="Levies"
       />

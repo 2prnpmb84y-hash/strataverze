@@ -389,6 +389,18 @@ export const TERMINOLOGY = {
   jurisdictionShort: "NSW",
   /** The tribunal that hears strata disputes and levy claims. */
   tribunal: "NCAT",
+  /** One amount owners pay, lower case. */
+  levy: "levy",
+  /** The same, plural. */
+  levies: "levies",
+  /** What is charged on an overdue levy (s 85). */
+  lateCharge: "interest",
+  /** How the plan is named before its number. */
+  planLabel: "Strata Plan",
+  /** The owners corporation's name, as the platform's invoices have always given it. */
+  bodyCorporateName: "The Owners - Strata Plan No. {plan}",
+  /** The same name as meeting notices and minutes have always headed it. */
+  bodyCorporateShortName: "The Owners - Strata Plan {plan}",
   source: "Strata Schemes Management Act 2015 (NSW); NSW Civil and Administrative Tribunal",
 } as const;
 

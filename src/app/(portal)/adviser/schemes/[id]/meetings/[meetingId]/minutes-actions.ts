@@ -20,6 +20,7 @@ import {
 } from "@/lib/queries/minutes";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { assembleMinutesContent, retentionUntil } from "@/lib/meetings/minutes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { recordMeetingEvent } from "@/lib/meetings/events";
 import { canTransition } from "@/lib/meetings/lifecycle";
 import { notifyMeetingScheduled } from "@/lib/notifications";
@@ -66,7 +67,7 @@ export async function assembleMinutesAction(
         explanatoryNote: a.explanatoryNote,
         outcome: a.outcome,
       })),
-    });
+    }, rulesForState(scheme.state).rules.TERMINOLOGY);
 
     const version = (existing[0]?.version ?? 0) + 1;
     await createMinutes({

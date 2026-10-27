@@ -1,10 +1,13 @@
 /** The section 184 information certificate as a PDF, laid out by StrataVerze from the approved form's items. */
 import { renderPdf, type PdfBlock } from "./document";
-import { longDate, planLine } from "./documents";
+import { longDate } from "./documents";
+import { planLine } from "@/lib/jurisdiction/wording";
 
 export interface CertificateDocument {
   schemeName: string;
   planNumber: string | null;
+  /** The building's name for its plan (`rules.TERMINOLOGY.planLabel`). */
+  planLabel: string;
   title: string;
   section: string;
   number: number;
@@ -57,7 +60,7 @@ export function renderCertificatePdf(d: CertificateDocument) {
   return renderPdf({
     title: `${d.title} ${d.number}${d.draft ? " (draft)" : ""}`,
     schemeName: d.schemeName,
-    schemeLine: planLine(d.planNumber),
+    schemeLine: planLine(d, d.planNumber),
     blocks: certificateBlocks(d),
     footerNote: `Certificate ${d.number}`,
     generatedAt: new Date(`${d.preparedOn}T00:00:00Z`),

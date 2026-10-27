@@ -30,6 +30,7 @@ export async function generatePaymentPlanReplyPdf(schemeId: string, requestId: s
   const bytes = await renderPaymentPlanReplyPdf({
     schemeName: String(scheme?.name ?? ""),
     planNumber: scheme?.planNumber ? String(scheme.planNumber) : null,
+    planLabel: rules.TERMINOLOGY.planLabel,
     ownersCorporation: oc,
     lotNumber: formatLotLabel(lotNumber),
     ownerNames: r.ownerNames,

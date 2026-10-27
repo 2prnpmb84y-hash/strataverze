@@ -6,6 +6,8 @@
  * is built. The retention and distribution-deadline helpers read the rule set.
  */
 import { minutesDeadline, type MeetingRuleSet, type MeetingType } from "./rules";
+import { bodyCorporateShortName } from "@/lib/jurisdiction/wording";
+import type { MeetingHeadingTerms } from "./notice";
 
 export interface MinutesAgendaItem {
   position: number;
@@ -35,21 +37,23 @@ export interface MinutesContent {
   generatedAt: string;
 }
 
-const HEADINGS: Record<string, string> = {
+const headings = (terms: MeetingHeadingTerms): Record<string, string> => ({
   AGM: "MINUTES OF ANNUAL GENERAL MEETING",
   FIRST_AGM: "MINUTES OF FIRST ANNUAL GENERAL MEETING",
   EGM: "MINUTES OF GENERAL MEETING",
   SGM: "MINUTES OF GENERAL MEETING",
-  COMMITTEE: "MINUTES OF STRATA COMMITTEE MEETING",
-};
+  COMMITTEE: `MINUTES OF ${terms.committee.toUpperCase()} MEETING`,
+});
 
-/** Assemble the structured minutes content from the meeting record. */
+/** Assemble the structured minutes content from the meeting record. The committee and owners corporation are named from `terms` (`rules.TERMINOLOGY`). */
 export function assembleMinutesContent(
   params: MinutesContentParams,
+  terms: MeetingHeadingTerms,
 ): MinutesContent {
-  const heading = HEADINGS[params.meeting.meetingType] ?? "MINUTES OF MEETING";
+  const heading = headings(terms)[params.meeting.meetingType] ?? "MINUTES OF MEETING";
+  const entity = bodyCorporateShortName(terms, params.scheme, { upperCase: true });
   return {
-    heading: `${heading} — THE OWNERS - STRATA PLAN ${params.scheme.planNumber}`,
+    heading: `${heading} — ${entity}`,
     scheme: params.scheme,
     meeting: params.meeting,
     items: params.items,

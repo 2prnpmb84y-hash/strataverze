@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getWorksContractById } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -111,7 +112,7 @@ export default async function ContractDetailPage({
         <Card>
           <CardHeader
             title="Record execution"
-            description="Record that the owners corporation has signed this contract."
+            description={`Record that the ${rulesForState(scheme.state).rules.TERMINOLOGY.ownersCorporation} has signed this contract.`}
           />
           <FeeActionButton
             fee={executionFee}

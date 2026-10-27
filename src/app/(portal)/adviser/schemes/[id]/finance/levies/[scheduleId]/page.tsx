@@ -125,7 +125,8 @@ export default async function LevyScheduleDetailPage({
   const totalPaid = notices.reduce((s, n) => s + Number(n.amountPaid ?? 0), 0);
   // Planned notices past their 5-week mark wait for the Adviser to confirm.
   const today = await schemeToday(id);
-  const levyRule = needRule(rulesForState(scheme.state).rules, "LEVY_NOTICE_RULES");
+  const { rules } = rulesForState(scheme.state);
+  const levyRule = needRule(rules, "LEVY_NOTICE_RULES");
   const overdueCount = status === "ACTIVE" ? plannedNotices.filter((n) => issueTiming(toIsoDay(n.dueDate), today, levyRule).kind !== "planned").length : 0;
 
   // Preview of the notices this schedule will raise (before issue).
@@ -199,7 +200,7 @@ export default async function LevyScheduleDetailPage({
         <Card>
           <CardHeader
             title="1. Record approval"
-            description="Contributions are set by the owners corporation at a general meeting. Record the resolution before notices are issued."
+            description={`Contributions are set by the ${rules.TERMINOLOGY.ownersCorporation} at a general meeting. Record the resolution before notices are issued.`}
           />
           <div className="px-6 pb-6">
             <ApproveScheduleForm schemeId={id} scheduleId={scheduleId} />

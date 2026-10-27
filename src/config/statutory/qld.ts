@@ -516,6 +516,19 @@ export const TERMINOLOGY = {
   /** Hears levy debt claims (Act s 229A). Other disputes go to the Commissioner first (DISPUTES). */
   tribunal: "QCAT",
   levy: "contribution",
+  levies: "contributions",
+  /** Decision of 27 Oct 2026 (DECISIONS): owners see "penalty", never "interest" (SM s 165). */
+  lateCharge: "penalty",
+  planLabel: "Community titles scheme",
+  /**
+   * "Body corporate for" and the scheme's name (Act s 33(1)), which is its
+   * identifying name in the community management statement, "community titles
+   * scheme" and its number (Act s 22). This assumes the building's `name`
+   * holds the CMS identifying name only: not confirmed against real data.
+   */
+  bodyCorporateName: "Body corporate for {name} community titles scheme {plan}",
+  /** Queensland has no short form: the full name. */
+  bodyCorporateShortName: "Body corporate for {name} community titles scheme {plan}",
   scheme: "community titles scheme",
   governingDocument: "community management statement",
   manager: "body corporate manager",

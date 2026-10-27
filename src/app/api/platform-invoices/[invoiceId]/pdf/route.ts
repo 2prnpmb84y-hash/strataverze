@@ -6,6 +6,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getPlatformInvoiceWithLines } from "@/lib/queries/platform-billing";
 import { canViewSchemeBilling } from "@/lib/billing/access";
 import { renderInvoicePdf } from "@/lib/billing/invoice-pdf";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 /**
  * The PDF of a StrataVerze invoice. Only people who may see the scheme's
@@ -47,7 +48,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     resourceId: invoiceId,
     metadata: { kind: "platform_invoice" },
   });
-  const bytes = await renderInvoicePdf(invoice);
+  const bytes = await renderInvoicePdf(invoice, rulesForState(invoice.scheme.state).rules.TERMINOLOGY);
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       "Content-Type": "application/pdf",

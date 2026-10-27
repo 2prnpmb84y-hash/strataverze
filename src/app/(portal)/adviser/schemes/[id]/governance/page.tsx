@@ -19,7 +19,7 @@ export default async function GovernanceSectionPage({
 
   const bylaws = await getBylawsForScheme(id);
   // Only the workflows the building's rule pack has.
-  const features = rulesForState(scheme.state).rules.FEATURES;
+  const { FEATURES: features, TERMINOLOGY: terms } = rulesForState(scheme.state).rules;
 
   return (
     <div>
@@ -41,7 +41,7 @@ export default async function GovernanceSectionPage({
         <Card className="mb-6">
           <CardHeader
             title="Records inspections"
-            description="Requests to inspect the owners corporation's records: times, notices and fees."
+            description={`Requests to inspect the ${terms.ownersCorporation}'s records: times, notices and fees.`}
             action={
               <Button href={`/adviser/schemes/${id}/governance/inspections`} variant="secondary">
                 Inspections
