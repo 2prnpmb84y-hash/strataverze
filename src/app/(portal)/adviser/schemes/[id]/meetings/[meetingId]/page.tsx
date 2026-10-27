@@ -29,6 +29,7 @@ import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { getMotionLibrary, getAgendaTemplate } from "@/lib/meetings/templates";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { evotingNotOfferedReason } from "@/lib/meetings/evoting";
+import { conductVotingView } from "@/lib/meetings/conduct-tally";
 import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
 import { canEditDetails, canTransition, isBeforeNotice, meetingStatusLabel } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
@@ -94,6 +95,16 @@ export default async function MeetingDetailPage({
     label: ruleSet.resolutionLabels[c]?.choice ?? ruleSet.resolutionLabels[c]?.full ?? c,
   }));
   const terms = rulesForState(scheme.state).rules.TERMINOLOGY;
+  // Where the meeting's votes are counted at conduct (a Queensland general
+  // meeting): its lots and each item's poll and proxy choices. Null for NSW
+  // and for a committee meeting.
+  const conductVoting = conductVotingView(
+    ruleSet,
+    rulesForState(scheme.state).rules,
+    scheme.lots.map((l) => ({ id: l.id, lotNumber: l.lotNumber })),
+    agendaItems.map((a) => ({ id: a.id, resolutionCategory: a.resolutionCategory })),
+    meeting.meetingType,
+  );
   const evotingNotOffered = evotingNotOfferedReason(ruleSet, terms.jurisdictionShort);
   const canLoadTemplate = normalisedType
     ? getAgendaTemplate(scheme.state, normalisedType).length > 0
@@ -319,6 +330,7 @@ export default async function MeetingDetailPage({
           title: a.title,
           outcome: a.outcome,
         }))}
+        voting={conductVoting}
       />
 
       {/* Minutes */}

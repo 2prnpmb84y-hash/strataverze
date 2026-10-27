@@ -9,9 +9,23 @@ import { getAgendaItem, updateAgendaItem } from "@/lib/queries/agenda";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import { recordMeetingEvent } from "@/lib/meetings/events";
 import { canTransition } from "@/lib/meetings/lifecycle";
-import { resolveOutcome, isOutcome } from "@/lib/meetings/conduct";
+import { resolveOutcome, isOutcome, type Outcome } from "@/lib/meetings/conduct";
+import {
+  buildConductTally,
+  countsVotesAtMeeting,
+  notCountedNotice,
+  outcomeDisagreement,
+  parseChairVotes,
+  writtenVotesRefusal,
+} from "@/lib/meetings/conduct-tally";
+import { conductVotingData } from "@/lib/meetings/conduct-tally-repo";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { dayIn } from "@/lib/jurisdiction/time-zone";
+import type { MeetingRuleSet } from "@/lib/meetings/rules";
 
-export type ConductActionState = { error?: string; ok?: boolean };
+/** `notice`: what the chair is told after a save, such as votes not counted. */
+export type ConductActionState = { error?: string; ok?: boolean; notice?: string };
 
 function revalidate(schemeId: string, meetingId: string) {
   revalidatePath(`/adviser/schemes/${schemeId}/meetings/${meetingId}`);
@@ -82,6 +96,13 @@ export async function recordAgendaOutcomeAction(
   meetingId: string,
   itemId: string,
   requestedOutcome: string,
+  /**
+   * Where the building counts votes at conduct (Queensland): each lot's vote
+   * as the chair records it ({ lotId, vote, byProxy }). Ignored elsewhere.
+   */
+  votes?: unknown,
+  /** Whether a poll was asked for on the item. Ignored where votes are not counted. */
+  poll?: unknown,
 ): Promise<ConductActionState> {
   try {
     const { profile } = await requireSchemeAccess(schemeId, "governance.manage");
@@ -99,6 +120,23 @@ export async function recordAgendaOutcomeAction(
       return { error: "Outcomes can only be recorded while the meeting is running." };
 
     const ruleSet = await getActiveRuleSet(scheme.state);
+    // Queensland general meetings: the outcome is checked against the count
+    // of the votes. A deferral needs no count, and a committee meeting is
+    // decided by its members. NSW counts nothing here and goes on as before.
+    if (requestedOutcome !== "DEFERRED" && countsVotesAtMeeting(ruleSet, meeting.meetingType)) {
+      return await recordCountedOutcome({
+        actorId: profile.id,
+        schemeId,
+        meetingId,
+        meeting,
+        item,
+        scheme,
+        ruleSet,
+        requestedOutcome,
+        votes,
+        poll,
+      });
+    }
     const result = resolveOutcome(ruleSet, {
       requestedOutcome,
       resolutionCategory: item.resolutionCategory,
@@ -120,6 +158,101 @@ export async function recordAgendaOutcomeAction(
     if (err instanceof AuthorisationError) return { error: err.message };
     return { error: "Failed to record the outcome." };
   }
+}
+
+/**
+ * Record an outcome where the building counts the votes (QLD stage 2,
+ * resolution tallies, 27 Oct 2026): the tally is built from the formal online
+ * votes and the chair's votes, with the building's totals, and passed to
+ * resolveOutcome. An outcome the count does not give is refused, and nothing
+ * is written. The votes, the tally and the result go in the meeting event.
+ */
+async function recordCountedOutcome(p: {
+  actorId: string;
+  schemeId: string;
+  meetingId: string;
+  meeting: { startTime?: unknown; scheduledAt?: unknown };
+  item: { id: string; resolutionCategory: string | null };
+  scheme: {
+    id: string;
+    state: string;
+    timeZone: string | null;
+    totalLots: number | null;
+    lots: readonly { id: string; lotNumber: string; entitlement: number | null; interestScheduleEntitlement?: number | null }[];
+  };
+  ruleSet: MeetingRuleSet;
+  requestedOutcome: Outcome;
+  votes: unknown;
+  poll: unknown;
+}): Promise<ConductActionState> {
+  // Decided on written votes, which are not recorded yet: refused before anything is read.
+  const written = writtenVotesRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
+  if (written) return { error: written };
+  // Every lot of the building, as read with it.
+  const lots = p.scheme.lots.map((l) => ({
+    id: l.id,
+    lotNumber: String(l.lotNumber),
+    entitlement: l.entitlement ?? null,
+    interestScheduleEntitlement: l.interestScheduleEntitlement ?? null,
+  }));
+  const chairVotes = parseChairVotes(p.votes, lots.length);
+  if (!chairVotes || (p.poll != null && typeof p.poll !== "boolean")) {
+    return { error: "The votes sent could not be read. Reload the page and record them again." };
+  }
+  const { rules } = rulesForState(p.scheme.state);
+  // Debts are judged on the meeting's date in the building's time zone.
+  const meetingDay = dayIn(timeZoneOf(p.scheme), String(p.meeting.startTime ?? p.meeting.scheduledAt));
+  const data = await conductVotingData({
+    ruleSet: p.ruleSet,
+    scheme: p.scheme,
+    lots,
+    meetingId: p.meetingId,
+    meetingDay,
+    itemId: p.item.id,
+    category: p.item.resolutionCategory,
+  });
+  const count = buildConductTally({
+    ruleSet: p.ruleSet,
+    rules,
+    category: p.item.resolutionCategory,
+    lots,
+    recordedLotCount: p.scheme.totalLots ?? null,
+    onlineVotes: data.onlineVotes,
+    chairVotes,
+    poll: p.poll === true,
+    owingLotIds: data.owingLotIds,
+  });
+  if (!count.ok) return { error: count.error };
+
+  const { tally, counted, notCounted } = count.value;
+  const result = resolveOutcome(p.ruleSet, {
+    requestedOutcome: p.requestedOutcome,
+    resolutionCategory: p.item.resolutionCategory,
+    tally,
+  });
+  const disagreement = outcomeDisagreement(p.requestedOutcome, result);
+  if (disagreement) return { error: disagreement };
+
+  await updateAgendaItem(p.meetingId, p.item.id, {
+    outcome: result.outcome,
+    status: result.status,
+  });
+  await recordMeetingEvent({
+    meetingId: p.meetingId,
+    actorId: p.actorId,
+    eventType: "AGENDA_OUTCOME_RECORDED",
+    payload: {
+      itemId: p.item.id,
+      outcome: result.outcome,
+      votes: counted,
+      notCounted,
+      tally,
+      evaluation: result.evaluation ?? null,
+    },
+  });
+  revalidate(p.schemeId, p.meetingId);
+  const notice = notCountedNotice(notCounted, rules.TERMINOLOGY.ownersCorporation);
+  return notice ? { ok: true, notice } : { ok: true };
 }
 
 export async function addConductNoteAction(

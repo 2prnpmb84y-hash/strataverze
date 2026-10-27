@@ -54,6 +54,8 @@ describe("stored rule set rows", () => {
     expect(rs.preMeetingEvoting).toEqual(NSW_RULE_SET.preMeetingEvoting);
     expect(rs.version).toBe("NSW-2026.1");
     expect("debtorsMayVoteOn" in rs).toBe(false);
+    expect("pollCategories" in rs).toBe(false);
+    expect("proxiesBarredOn" in rs).toBe(false);
   });
 
   it("never offer pre-meeting e-voting for a pack without it, and keep the pack's debtor rule", async () => {
@@ -62,6 +64,9 @@ describe("stored rule set rows", () => {
     expect(rs.preMeetingEvoting).toBeNull();
     expect(rs.retention).toEqual({ generalYears: null, secretBallotMonths: null });
     expect(rs.debtorsMayVoteOn).toEqual(["WITHOUT_DISSENT"]);
+    // The poll and proxy categories at conduct come from the pack too (resolution tallies).
+    expect(rs.pollCategories).toEqual(["ORDINARY"]);
+    expect(rs.proxiesBarredOn).toEqual(["MAJORITY"]);
     expect(rs.generalMeetingCategories).toEqual(QLD.generalMeetingCategories);
   });
 

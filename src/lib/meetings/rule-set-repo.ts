@@ -35,8 +35,9 @@ type RuleSetRow = {
 /**
  * A stored row as a rule set. Rows are read tolerantly: a row written before a
  * field existed takes it from the pack's seed. The labels, the category lists,
- * the committee refusal and the debtor voting rule have no column, so they
- * always come from the seed (stage 2, step 7).
+ * the committee refusal, the debtor voting rule and the poll and proxy
+ * categories have no column, so they always come from the seed (stage 2,
+ * step 7).
  */
 function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   const ruleSet: MeetingRuleSet = {
@@ -66,6 +67,9 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
     notes: row.notes ?? undefined,
   };
   if (seed.debtorsMayVoteOn) ruleSet.debtorsMayVoteOn = seed.debtorsMayVoteOn;
+  // No column either: polls and proxies at conduct (Queensland only).
+  if (seed.pollCategories) ruleSet.pollCategories = seed.pollCategories;
+  if (seed.proxiesBarredOn) ruleSet.proxiesBarredOn = seed.proxiesBarredOn;
   return ruleSet;
 }
 

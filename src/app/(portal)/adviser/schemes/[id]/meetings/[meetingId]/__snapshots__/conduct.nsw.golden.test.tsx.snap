@@ -1,0 +1,1150 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW conduct section (golden) > renders as before 1`] = `
+{
+  "DRAFT": "",
+  "IN_PROGRESS": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Conduct</h2><p class="text-sm text-ink-muted mt-0.5">Run the meeting and record the outcome of each agenda item.</p></div></div><div class="space-y-4"><div class="text-xs text-ink-muted"><span>Opened 20 Nov, 7:00 pm</span></div><ol class="space-y-2"><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">1</span>Confirm the minutes</span><div class="flex items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-100 text-green-700">Resolved</span><div class="flex gap-1"><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Resolved</button><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Motion lost</button><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Deferred</button></div></div></div></li><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">2</span>Adopt the budget</span><div class="flex items-center gap-2"><span class="text-[10px] text-ink-muted uppercase">No outcome</span><div class="flex gap-1"><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Resolved</button><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Motion lost</button><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Deferred</button></div></div></div></li><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">3</span>Repaint the foyer</span><div class="flex items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Deferred</span><div class="flex gap-1"><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Resolved</button><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Motion lost</button><button type="button" class="text-[11px] px-2 py-1 rounded-full border border-line hover:bg-paper-2 text-ink-muted">Deferred</button></div></div></div></li></ol><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="button">Finish meeting</button></div></div>",
+  "MINUTES_DRAFT": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Conduct</h2><p class="text-sm text-ink-muted mt-0.5">Run the meeting and record the outcome of each agenda item.</p></div></div><div class="space-y-4"><div class="text-xs text-ink-muted"><span>Opened 20 Nov, 7:00 pm</span><span> · Closed 20 Nov, 8:30 pm</span></div><ol class="space-y-2"><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">1</span>Confirm the minutes</span><div class="flex items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-100 text-green-700">Resolved</span></div></div></li><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">2</span>Adopt the budget</span><div class="flex items-center gap-2"><span class="text-[10px] text-ink-muted uppercase">No outcome</span></div></div></li><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">3</span>Repaint the foyer</span><div class="flex items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Deferred</span></div></div></li></ol></div></div>",
+  "NOTICE_ISSUED": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Conduct</h2><p class="text-sm text-ink-muted mt-0.5">Run the meeting and record the outcome of each agenda item.</p></div></div><div class="space-y-3"><p class="text-sm text-ink-muted">The notice has been issued. Start the meeting to record attendance, outcomes and the opening time.</p><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="button">Start meeting</button></div></div>",
+  "PUBLISHED": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Conduct</h2><p class="text-sm text-ink-muted mt-0.5">Run the meeting and record the outcome of each agenda item.</p></div></div><div class="space-y-4"><div class="text-xs text-ink-muted"><span>Opened 20 Nov, 7:00 pm</span><span> · Closed 20 Nov, 8:30 pm</span></div><ol class="space-y-2"><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">1</span>Confirm the minutes</span><div class="flex items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-100 text-green-700">Resolved</span></div></div></li><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">2</span>Adopt the budget</span><div class="flex items-center gap-2"><span class="text-[10px] text-ink-muted uppercase">No outcome</span></div></div></li><li class="rounded-[var(--radius-card)] border border-line p-3"><div class="flex items-center justify-between gap-3 flex-wrap"><span class="text-sm text-ink"><span class="font-heading font-semibold text-ink-muted mr-2">3</span>Repaint the foyer</span><div class="flex items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Deferred</span></div></div></li></ol></div></div>",
+}
+`;
+
+exports[`NSW recordAgendaOutcomeAction (golden) > refuses as before 1`] = `
+{
+  "noItem": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Agenda item not found.",
+    },
+  },
+  "noPermission": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "You do not have permission to do this.",
+    },
+  },
+  "noScheme": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Agenda item not found.",
+    },
+  },
+  "notRunning": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Outcomes can only be recorded while the meeting is running.",
+    },
+  },
+  "otherBuilding": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Agenda item not found.",
+    },
+  },
+}
+`;
+
+exports[`NSW recordAgendaOutcomeAction (golden) > stores the chair's outcome for every category and outcome 1`] = `
+{
+  "BOGUS/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "BOGUS/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "BOGUS/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "BOGUS/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "MAJORITY/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "MAJORITY/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "MAJORITY/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "MAJORITY/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "ORDINARY/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "ORDINARY/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "ORDINARY/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "ORDINARY/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "SPECIAL/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "SPECIAL/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "SPECIAL/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "SPECIAL/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "SUSTAINABILITY_INFRASTRUCTURE/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "SUSTAINABILITY_INFRASTRUCTURE/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "SUSTAINABILITY_INFRASTRUCTURE/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "SUSTAINABILITY_INFRASTRUCTURE/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "UNANIMOUS/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "UNANIMOUS/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "UNANIMOUS/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "UNANIMOUS/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "WITHOUT_DISSENT/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "WITHOUT_DISSENT/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "WITHOUT_DISSENT/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "WITHOUT_DISSENT/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "null/CARRIED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+    ],
+    "result": {
+      "error": "Invalid outcome.",
+    },
+  },
+  "null/DEFERRED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "DEFERRED",
+            "status": "DEFERRED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "DEFERRED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "null/MOTION_LOST": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "MOTION_LOST",
+            "status": "LOST",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "MOTION_LOST",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+  "null/RESOLVED": {
+    "log": [
+      {
+        "access": [
+          "s1",
+          "governance.manage",
+        ],
+      },
+      {
+        "ruleSet": "NSW",
+      },
+      {
+        "updateAgendaItem": [
+          "m1",
+          "i1",
+          {
+            "outcome": "RESOLVED",
+            "status": "CARRIED",
+          },
+        ],
+      },
+      {
+        "event": {
+          "actorId": "adviser",
+          "eventType": "AGENDA_OUTCOME_RECORDED",
+          "meetingId": "m1",
+          "payload": {
+            "itemId": "i1",
+            "outcome": "RESOLVED",
+          },
+        },
+      },
+      {
+        "revalidate": "/adviser/schemes/s1/meetings/m1",
+      },
+    ],
+    "result": {
+      "ok": true,
+    },
+  },
+}
+`;

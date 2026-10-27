@@ -1653,6 +1653,26 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "where": "MEETING_RULES.motionCategories",
     },
     {
+      "point": "At conduct the count decides: where the chair's outcome differs from the count of the votes recorded, nothing is stored and the chair is told what the count gives. There is no override with a reason. A vote from a lot owing money is not counted, and the chair is told which lots, rather than the whole record being refused.",
+      "where": "src/lib/meetings/conduct-tally.ts outcomeDisagreement, buildConductTally",
+    },
+    {
+      "point": "A special or majority resolution is not counted while the building's number of lots is not recorded or differs from the lots entered, and a lot owing money is left out of the lots entitled to vote on a majority resolution (Act s 107; SM s 102(2)). Money owed is judged on the meeting's date in the building's time zone; that this is the right day is not confirmed.",
+      "where": "src/lib/meetings/conduct-tally.ts buildConductTally, conduct-actions.ts recordCountedOutcome",
+    },
+    {
+      "point": "Abstentions are not counted as votes cast, so two thirds of the votes cast (Act s 106(3)(a)) is two thirds of the votes for and against. The notes do not define votes cast.",
+      "where": "src/lib/meetings/rules.ts TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS, conduct-tally.ts",
+    },
+    {
+      "point": "For voting, a lot owes money only on a contribution notice past its due date with a balance outstanding. A posted late payment penalty or recovery costs (SM ss 165, 166) owed on their own do not make the lot a debtor yet. The penalty was left out because its posting and split are changing in receipting.",
+      "where": "src/lib/meetings/debtor-voting-repo.ts lotsOwingMoney",
+    },
+    {
+      "point": "A resolution without dissent with no votes cast counts as carried, as the engine reads Act s 105 (no vote against).",
+      "where": "src/lib/meetings/rules.ts NO_AGAINST",
+    },
+    {
       "point": "The draft Queensland debt recovery steps, their labels and their guidance: the step types and order, the wording, who acts, and which steps are StrataVerze practice (ledger check, contact, reminder, final notice, waiver request, referral and closing).",
       "where": "DEBT_RECOVERY_STEPS, DEBT_RECOVERY_STEP_LABELS, DEBT_RECOVERY_GUIDANCE",
     },
@@ -1945,7 +1965,13 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "EGM": 21,
       "FIRST_AGM": 21,
     },
+    "pollCategories": [
+      "ORDINARY",
+    ],
     "preMeetingEvoting": null,
+    "proxiesBarredOn": [
+      "MAJORITY",
+    ],
     "quorumRules": {
       "AGM": {
         "basis": "PERCENT_VOTERS_WITH_MIN_PRESENT",
