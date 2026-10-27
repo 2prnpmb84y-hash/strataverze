@@ -1,18 +1,20 @@
 /**
- * Information certificates (s 184) and records inspections (s 182), server
- * side. A certificate is drafted from StrataVerze's records, completed by
- * the adviser, then issued: from then on its items and date are fixed and
- * its fee (from the rule pack) is recorded. Fees are collected outside
- * StrataVerze; the date paid is recorded here.
+ * Certificates (NSW s 184, the Queensland body corporate certificate) and
+ * records inspections, server side. A certificate is drafted from
+ * StrataVerze's records, completed by the adviser, then issued: from then on
+ * its items and date are fixed and its fee (from the rule pack) is recorded.
+ * Fees are collected outside StrataVerze; the date paid is recorded here.
+ * Who may ask, the fees and the deadlines come from the building's pack
+ * (`rules.CERTIFICATE`, `rules.INSPECTIONS`, stage 2, step 9).
  */
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { localToInstant } from "@/lib/jurisdiction/time-zone";
-import { FIGURE_ITEMS, draftCertificateItems, type CertificateItem } from "./certificate-draft";
-import { certificateFee, inspectionDeadlines, inspectionFee, type InspectorType } from "./fees";
-import { needRule } from "@/config/statutory";
+import { certificateDrafting, draftCertificateItems, type CertificateItem } from "./certificate-draft";
+import { accessFee, certificateFeeFor, inspectionDeadlines, inspectionFee, type CertificateRule, type InspectionRule, type InspectorType } from "./fees";
+import { needRule, type StatutoryRules } from "@/config/statutory";
 
 export class RecordsError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -23,8 +25,12 @@ export class RecordsError extends Error {
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
-const REQUESTERS = ["OWNER", "MORTGAGEE", "COVENANT_CHARGEE", "AUTHORISED_PERSON"];
-const AUTHORISERS = ["OWNER", "MORTGAGEE", "COVENANT_CHARGEE"];
+
+/** The building's certificate rules, or RecordsError when its pack has no certificate. */
+function certificateRules(rules: StatutoryRules): CertificateRule {
+  if (!rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) throw new RecordsError("This is not available for this building.");
+  return needRule(rules, "CERTIFICATE");
+}
 
 function isUniqueViolation(err: unknown): boolean {
   const text = err instanceof Error ? `${err.message} ${JSON.stringify((err as { cause?: unknown }).cause ?? "")} ${String((err as { code?: unknown }).code ?? "")}` : String(err);
@@ -41,14 +47,17 @@ export interface RequesterInput {
   authorisedByAddress: string | null;
 }
 
-function requesterProblems(r: RequesterInput, today: string) {
+/** Who may ask for the building's certificate, and the type who acts for one of the others. */
+function requesterProblems(r: RequesterInput, today: string, c: Pick<CertificateRule, "requesterTypes" | "agentType">) {
   const e: Record<string, string> = {};
+  const requesters = Object.keys(c.requesterTypes);
+  const authorisers = requesters.filter((t) => t !== c.agentType);
   if (!ISO.test(r.requestedOn) || r.requestedOn > today) e.requestedOn = "Enter the date the request was received (not in the future).";
-  if (!REQUESTERS.includes(r.requesterType)) e.requesterType = "Choose who is asking.";
+  if (!requesters.includes(r.requesterType)) e.requesterType = "Choose who is asking.";
   if (!r.requesterName.trim()) e.requesterName = "Enter their name.";
   if (!r.requesterAddress.trim()) e.requesterAddress = "Enter their address.";
-  if (r.requesterType === "AUTHORISED_PERSON") {
-    if (!r.authorisedByType || !AUTHORISERS.includes(r.authorisedByType)) e.authorisedByType = "Choose who authorised them.";
+  if (r.requesterType === c.agentType) {
+    if (!r.authorisedByType || !authorisers.includes(r.authorisedByType)) e.authorisedByType = "Choose who authorised them.";
     if (!(r.authorisedByName ?? "").trim()) e.authorisedByName = "Enter the name of the person who authorised them.";
     if (!(r.authorisedByAddress ?? "").trim()) e.authorisedByAddress = "Enter that person's address.";
   }
@@ -57,17 +66,18 @@ function requesterProblems(r: RequesterInput, today: string) {
 
 /** Start a certificate for a lot, drafted from StrataVerze's records. */
 export async function createCertificate(input: { schemeId: string; lotId: string; requester: RequesterInput; actorId: string }) {
-  const [lot, today, { label }] = await Promise.all([
+  const [lot, today, { rules, label }] = await Promise.all([
     db.orm.public.Lot.where((l) => l.id.eq(input.lotId)).first(),
     schemeToday(input.schemeId),
     rulesForScheme(input.schemeId),
   ]);
   if (!lot || lot.schemeId !== input.schemeId) throw new RecordsError("Lot not found.");
-  const e = requesterProblems(input.requester, today);
+  const c = certificateRules(rules);
+  const e = requesterProblems(input.requester, today, c);
   if (Object.keys(e).length) throw new RecordsError("Check the request details.", e);
   const items = await draftCertificateItems(input.schemeId, input.lotId);
   const r = input.requester;
-  const authorised = r.requesterType === "AUTHORISED_PERSON";
+  const authorised = r.requesterType === c.agentType;
   // The next number for the scheme; a clash with a certificate started at the same moment is tried again.
   for (let attempt = 0; attempt < 3; attempt++) {
     const last = await db.orm.public.SaleCertificate.where((c) => c.schemeId.eq(input.schemeId)).orderBy((c) => c.number.desc()).first();
@@ -105,13 +115,14 @@ async function draftOf(schemeId: string, certificateId: string) {
 
 /** Save the adviser's changes to a draft: the request details and each item's text. */
 export async function saveCertificateDraft(input: { schemeId: string; certificateId: string; requester: RequesterInput; itemTexts: Record<string, string> }) {
-  const [c, today] = await Promise.all([draftOf(input.schemeId, input.certificateId), schemeToday(input.schemeId)]);
-  const e = requesterProblems(input.requester, today);
+  const [c, today, { rules }] = await Promise.all([draftOf(input.schemeId, input.certificateId), schemeToday(input.schemeId), rulesForScheme(input.schemeId)]);
+  const certificate = certificateRules(rules);
+  const e = requesterProblems(input.requester, today, certificate);
   const items = (c.items as unknown as CertificateItem[]).map((i) => ({ ...i, text: (input.itemTexts[i.no] ?? i.text).trim() }));
   for (const i of items) if (!i.text) e[`item_${i.no}`] = "Complete this item (write “Nil” if it does not apply).";
   if (Object.keys(e).length) throw new RecordsError("Check the certificate.", e);
   const r = input.requester;
-  const authorised = r.requesterType === "AUTHORISED_PERSON";
+  const authorised = r.requesterType === certificate.agentType;
   const n = await db.orm.public.SaleCertificate.where((x) => and(x.id.eq(c.id), x.status.eq("DRAFT"))).updateAndCount({
     requestedOn: r.requestedOn,
     requesterType: r.requesterType,
@@ -131,10 +142,10 @@ export async function saveCertificateDraft(input: { schemeId: string; certificat
  * completes are kept.
  */
 export async function refreshCertificateFigures(input: { schemeId: string; certificateId: string }) {
-  const [c, today] = await Promise.all([draftOf(input.schemeId, input.certificateId), schemeToday(input.schemeId)]);
+  const [c, today, { rules }] = await Promise.all([draftOf(input.schemeId, input.certificateId), schemeToday(input.schemeId), rulesForScheme(input.schemeId)]);
   if (c.status !== "DRAFT") throw new RecordsError("Only a draft can be refreshed.");
   const fresh = await draftCertificateItems(input.schemeId, c.lotId);
-  const figures = new Set<string>(FIGURE_ITEMS);
+  const figures = new Set<string>(certificateDrafting(rules).figureItems);
   const items = (c.items as unknown as CertificateItem[]).map((i) => (figures.has(i.no) ? fresh.find((f) => f.no === i.no) ?? i : i));
   const n = await db.orm.public.SaleCertificate.where((x) => and(x.id.eq(c.id), x.status.eq("DRAFT"))).updateAndCount({ items: items as unknown as never, draftedOn: today });
   if (n !== 1) throw new RecordsError("Only a draft can be refreshed.");
@@ -149,7 +160,7 @@ export async function refreshCertificateFigures(input: { schemeId: string; certi
 export async function issueCertificate(input: { schemeId: string; certificateId: string; actorId: string; checkedAll: boolean }) {
   if (!input.checkedAll) throw new RecordsError("Confirm you have checked every item.", { checkedAll: "Confirm you have checked and completed every item." });
   const [c, today, { rules, label }] = await Promise.all([draftOf(input.schemeId, input.certificateId), schemeToday(input.schemeId), rulesForScheme(input.schemeId)]);
-  const saleCertificate = needRule(rules, "SALE_CERTIFICATE");
+  const certificate = certificateRules(rules);
   if (c.status !== "DRAFT") throw new RecordsError("This certificate has already been issued or cancelled.");
   if (day(c.draftedOn) < today) {
     throw new RecordsError(`The figures were taken from the records on ${day(c.draftedOn)}. Refresh them from the records, check them, then issue.`);
@@ -165,7 +176,10 @@ export async function issueCertificate(input: { schemeId: string; certificateId:
     if (!lot) throw new RecordsError("Lot not found.");
     await tx.orm.public.Lot.where((l) => l.id.eq(c.lotId)).update({ lotNumber: lot.lotNumber });
     const earlier = await tx.orm.public.SaleCertificate.where((x) => and(x.lotId.eq(c.lotId), x.status.eq("ISSUED"))).limit(500).all();
-    fee = certificateFee(today, earlier.map((x) => day(x.certificateDate)), saleCertificate);
+    // The dollar amounts are those for the year the written request was received (Queensland; NSW fees are fixed).
+    const due = certificateFeeFor(certificate.fee, today, earlier.map((x) => ({ issuedOn: day(x.certificateDate), requesterName: String(x.requesterName ?? "") })), String(c.requesterName ?? ""), day(c.requestedOn));
+    if (!due) throw new RecordsError(`StrataVerze does not hold the fee for a request received on ${day(c.requestedOn)} yet. Ask StrataVerze to add that financial year's fees, then issue.`);
+    fee = due;
     const n = await tx.orm.public.SaleCertificate.where((x) => and(x.id.eq(c.id), x.status.eq("DRAFT"))).updateAndCount({
       status: "ISSUED",
       certificateDate: today,
@@ -200,13 +214,22 @@ export async function recordFeePaid(input: { schemeId: string; kind: "certificat
 
 // ─── Records inspections ────────────────────────────────────────────
 
+/** The building's inspection rules, or RecordsError when its pack has no inspections. */
+function inspectionRules(rules: StatutoryRules): InspectionRule {
+  if (!rules.FEATURES.recordsInspections) throw new RecordsError("This is not available for this building.");
+  return needRule(rules, "INSPECTIONS");
+}
+
 export async function createInspection(input: { schemeId: string; lotId: string; inspectorType: string; inspectorName: string; authorisedBy: string | null; requestedOn: string; notes: string | null; actorId: string }) {
-  const [lot, today] = await Promise.all([db.orm.public.Lot.where((l) => l.id.eq(input.lotId)).first(), schemeToday(input.schemeId)]);
+  const [lot, today, { rules }] = await Promise.all([db.orm.public.Lot.where((l) => l.id.eq(input.lotId)).first(), schemeToday(input.schemeId), rulesForScheme(input.schemeId)]);
+  const r = inspectionRules(rules);
+  const hourly = r.basis === "HOURLY";
+  const agent = input.inspectorType === r.agentType;
   const e: Record<string, string> = {};
-  if (!lot || lot.schemeId !== input.schemeId) e.lotId = "Choose the lot whose owner is inspecting or authorised it.";
-  if (input.inspectorType !== "OWNER" && input.inspectorType !== "AUTHORISED_PERSON") e.inspectorType = "Choose the owner or a person they authorised.";
-  if (!input.inspectorName.trim()) e.inspectorName = "Enter the name of the person inspecting.";
-  if (input.inspectorType === "AUTHORISED_PERSON" && !(input.authorisedBy ?? "").trim()) e.authorisedBy = "Enter the owner who authorised it.";
+  if (!lot || lot.schemeId !== input.schemeId) e.lotId = hourly ? "Choose the lot whose owner is inspecting or authorised it." : "Choose the lot the request is about.";
+  if (!Object.keys(r.requesterTypes).includes(input.inspectorType)) e.inspectorType = hourly ? "Choose the owner or a person they authorised." : "Choose who is asking.";
+  if (!input.inspectorName.trim()) e.inspectorName = hourly ? "Enter the name of the person inspecting." : "Enter the name of the person asking.";
+  if (agent && !(input.authorisedBy ?? "").trim()) e.authorisedBy = hourly ? "Enter the owner who authorised it." : "Enter who they act for.";
   if (!ISO.test(input.requestedOn) || input.requestedOn > today) e.requestedOn = "Enter the date of the request (not in the future).";
   if (Object.keys(e).length) throw new RecordsError("Check the request.", e);
   await db.orm.public.RecordsInspection.create({
@@ -214,7 +237,7 @@ export async function createInspection(input: { schemeId: string; lotId: string;
     lotId: input.lotId,
     inspectorType: input.inspectorType,
     inspectorName: input.inspectorName.trim(),
-    authorisedBy: input.inspectorType === "AUTHORISED_PERSON" ? (input.authorisedBy ?? "").trim() : null,
+    authorisedBy: agent ? (input.authorisedBy ?? "").trim() : null,
     requestedOn: input.requestedOn,
     status: "REQUESTED",
     notes: input.notes?.trim() || null,
@@ -228,18 +251,22 @@ async function inspectionOf(schemeId: string, id: string) {
   return r;
 }
 
-/** Record the agreed time and place, or the one the owners corporation set by written notice. */
+/** Record the agreed time and place, or (NSW) the one the owners corporation set by written notice. */
 export async function scheduleInspection(input: { schemeId: string; id: string; when: string; place: string; setByNotice: boolean }) {
   const [r, tz, { rules }] = await Promise.all([inspectionOf(input.schemeId, input.id), schemeTimeZone(input.schemeId), rulesForScheme(input.schemeId)]);
-  const inspection = needRule(rules, "RECORDS_INSPECTION");
+  const inspection = inspectionRules(rules);
+  // Only the NSW rules let the body set the time by notice.
+  const setByNotice = inspection.basis === "HOURLY" && input.setByNotice;
   const at = localToInstant(tz, input.when);
   const e: Record<string, string> = {};
   if (!at) e.when = "Enter the date and time.";
   else {
     const on = input.when.slice(0, 10);
-    const { setBy } = inspectionDeadlines(day(r.requestedOn), inspection);
     if (on < day(r.requestedOn)) e.when = "The inspection cannot be before the request.";
-    else if (input.setByNotice && on > setBy) e.when = `A date set by notice must be within ${inspection.setWithinDays} days of the request (by ${setBy}).`;
+    else if (inspection.basis === "HOURLY" && setByNotice) {
+      const { setBy } = inspectionDeadlines(day(r.requestedOn), inspection);
+      if (on > setBy) e.when = `A date set by notice must be within ${inspection.setWithinDays} days of the request (by ${setBy}).`;
+    }
   }
   if (!input.place.trim()) e.place = "Enter the place (or how it will be given electronically).";
   if (Object.keys(e).length) throw new RecordsError("Check the time and place.", e);
@@ -247,19 +274,39 @@ export async function scheduleInspection(input: { schemeId: string; id: string; 
     status: "SCHEDULED",
     scheduledFor: at!,
     place: input.place.trim(),
-    setByNotice: input.setByNotice,
+    setByNotice,
   });
   if (n !== 1) throw new RecordsError("This inspection is already completed or cancelled.");
 }
 
-/** Record how long the inspection took; the fee follows from the rule pack. */
-export async function completeInspection(input: { schemeId: string; id: string; minutes: number }) {
+/**
+ * Record the inspection as made; the fee follows from the rule pack. NSW: how
+ * long it took (`minutes`). Queensland: whether the records were inspected
+ * and how many pages were copied, at the dollar amounts for the year the
+ * request was received.
+ */
+export async function completeInspection(input: { schemeId: string; id: string; minutes?: number; inspected?: boolean; copyPages?: number }): Promise<{ cents: number; gstIncluded: boolean }> {
   const [r, { rules }] = await Promise.all([inspectionOf(input.schemeId, input.id), rulesForScheme(input.schemeId)]);
-  if (!(Number.isInteger(input.minutes) && input.minutes > 0 && input.minutes <= 24 * 60)) throw new RecordsError("Enter how long it took.", { minutes: "Enter the minutes it took." });
-  const fee = inspectionFee(r.inspectorType as InspectorType, input.minutes, needRule(rules, "RECORDS_INSPECTION"));
-  const n = await db.orm.public.RecordsInspection.where((x) => and(x.id.eq(r.id), x.status.in(["REQUESTED", "SCHEDULED"]))).updateAndCount({ status: "COMPLETED", minutes: input.minutes, feeCents: fee });
+  const inspection = inspectionRules(rules);
+  if (inspection.basis === "HOURLY") {
+    const minutes = input.minutes ?? Number.NaN;
+    if (!(Number.isInteger(minutes) && minutes > 0 && minutes <= 24 * 60)) throw new RecordsError("Enter how long it took.", { minutes: "Enter the minutes it took." });
+    const fee = inspectionFee(r.inspectorType as InspectorType, minutes, inspection);
+    const n = await db.orm.public.RecordsInspection.where((x) => and(x.id.eq(r.id), x.status.in(["REQUESTED", "SCHEDULED"]))).updateAndCount({ status: "COMPLETED", minutes, feeCents: fee });
+    if (n !== 1) throw new RecordsError("This inspection is already completed or cancelled.");
+    return { cents: fee, gstIncluded: inspection.feesIncludeGst };
+  }
+  const copyPages = input.copyPages ?? Number.NaN;
+  const inspected = input.inspected === true;
+  if (!(Number.isInteger(copyPages) && copyPages >= 0 && copyPages <= 100_000)) throw new RecordsError("Enter the pages copied.", { copyPages: "Enter the number of pages copied (0 if none)." });
+  if (!inspected && copyPages === 0) throw new RecordsError("Record an inspection or copies.", { inspected: "Tick this, or enter the pages copied." });
+  // The dollar amounts are those for the year the written request was received.
+  const requestedOn = day(r.requestedOn);
+  const fee = accessFee(inspection, { requesterType: r.inspectorType, inspected, copyPages, feeOn: requestedOn });
+  if (fee == null) throw new RecordsError(`StrataVerze does not hold the fees for a request received on ${requestedOn} yet. Ask StrataVerze to add that financial year's fees, then record it.`);
+  const n = await db.orm.public.RecordsInspection.where((x) => and(x.id.eq(r.id), x.status.in(["REQUESTED", "SCHEDULED"]))).updateAndCount({ status: "COMPLETED", inspected, copyPages, feeCents: fee });
   if (n !== 1) throw new RecordsError("This inspection is already completed or cancelled.");
-  return fee;
+  return { cents: fee, gstIncluded: inspection.feesIncludeGst };
 }
 
 export async function cancelInspection(input: { schemeId: string; id: string }) {

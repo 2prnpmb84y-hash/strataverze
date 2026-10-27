@@ -3,6 +3,8 @@ import type { FieldSpec } from "@/components/records/records-forms";
 
 export function requesterFields(input: {
   requesterTypes: Readonly<Record<string, string>>;
+  /** The requester type who acts for one of the others (`rules.CERTIFICATE.agentType`). */
+  agentType: string;
   today: string;
   values?: Partial<Record<"requestedOn" | "requesterType" | "requesterName" | "requesterAddress" | "authorisedByType" | "authorisedByName" | "authorisedByAddress", string | null>>;
 }): FieldSpec[] {
@@ -13,7 +15,7 @@ export function requesterFields(input: {
     { name: "requesterType", label: "Who is asking", type: "select", options: types, defaultValue: v.requesterType ?? "OWNER" },
     { name: "requesterName", label: "Their name", type: "text", defaultValue: v.requesterName ?? "" },
     { name: "requesterAddress", label: "Their address", type: "text", defaultValue: v.requesterAddress ?? "" },
-    { name: "authorisedByType", label: "If authorised: who authorised them", type: "select", required: false, options: types.filter((t) => t.value !== "AUTHORISED_PERSON"), defaultValue: v.authorisedByType ?? "" },
+    { name: "authorisedByType", label: "If authorised: who authorised them", type: "select", required: false, options: types.filter((t) => t.value !== input.agentType), defaultValue: v.authorisedByType ?? "" },
     { name: "authorisedByName", label: "If authorised: that person's name", type: "text", required: false, defaultValue: v.authorisedByName ?? "" },
     { name: "authorisedByAddress", label: "If authorised: that person's address", type: "text", required: false, defaultValue: v.authorisedByAddress ?? "", wide: true },
   ];

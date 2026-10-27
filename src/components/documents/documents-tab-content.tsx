@@ -1,5 +1,5 @@
 "use client";
-import { keepUntil, type RetentionRules } from "@/lib/compliance/annual-report";
+import { keepUntil, type DocumentRetention } from "@/lib/compliance/annual-report";
 
 import { useState, useCallback, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -58,7 +58,7 @@ type Props = {
   /** Building vault trial: each document's vault label, when the vault is open. */
   vaultLabels?: Record<string, { tone: LabelTone; text: string; detail: string }>;
   /** How long the building's records are kept (its rule pack), to show "keep until" on each document. */
-  retention?: RetentionRules;
+  retention?: DocumentRetention;
   /** The building's time zone, for upload dates and the day a document was added. */
   timeZone: string;
 };
@@ -359,7 +359,7 @@ export function DocumentsTabContent({
       {/* Document list (when no doc is selected) */}
       {!selectedDoc && documents.length > 0 && retention && (
         <p className="mb-2 text-xs text-ink-muted">
-          Removing a document hides it from the library. StrataVerze keeps it as a record of the scheme. Records with a longer period (such as minor renovation approvals, 10 years) are kept longer than shown.
+          Removing a document hides it from the library. StrataVerze keeps it as a record of the scheme. {retention.note}
         </p>
       )}
       {!selectedDoc && documents.length > 0 && (
@@ -383,7 +383,7 @@ export function DocumentsTabContent({
                   {doc.fileSize ? ` · ${formatSize(doc.fileSize)}` : ""}
                   {retention && (() => {
                     const until = keepUntil(doc.category, storedDayIn(timeZone, doc.documentDate ?? doc.createdAt), retention);
-                    return until === "LIFE" ? " · kept for the life of the scheme" : ` · keep at least until ${until}`;
+                    return until === "LIFE" ? ` · ${retention.unlimited}` : ` · keep at least until ${until}`;
                   })()}
                 </p>
                 {vaultLabels?.[doc.id] && (

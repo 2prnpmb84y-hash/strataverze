@@ -1,5 +1,5 @@
 "use client";
-/** Forms for information certificates (s 184) and records inspections (s 182). */
+/** Forms for certificates and records inspections (NSW s 184 and s 182, the Queensland body corporate certificate and records access). */
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ export type FieldSpec = {
   options?: { value: string; label: string }[];
   required?: boolean;
   max?: string;
+  /** The least number allowed (number fields; 1 if not given). */
+  min?: string;
   wide?: boolean;
   help?: string;
 };
@@ -51,7 +53,7 @@ function Field({ f, v, error }: { f: FieldSpec; v: Record<string, string>; error
               ))}
             </select>
           ) : (
-            <input name={f.name} type={f.type} max={f.max} defaultValue={value} className={input} required={required} min={f.type === "number" ? 1 : undefined} />
+            <input name={f.name} type={f.type} max={f.max} defaultValue={value} className={input} required={required} min={f.type === "number" ? (f.min ?? 1) : undefined} />
           )}
         </>
       )}
@@ -90,10 +92,13 @@ export function CertificateEditor({
   action,
   requesterFields,
   items,
+  ownersCorporation,
 }: {
   action: Action;
   requesterFields: FieldSpec[];
   items: { no: string; title: string; text: string }[];
+  /** The body that issues it (`rules.TERMINOLOGY.ownersCorporation`). */
+  ownersCorporation: string;
 }) {
   const [state, formAction, pending] = useActionState<RecordsFormState, FormData>(action, {});
   const v = state.success ? {} : (state.values ?? {});
@@ -123,7 +128,7 @@ export function CertificateEditor({
       </div>
       <label className="flex items-start gap-2 text-sm text-ink">
         <input type="checkbox" name="checkedAll" className="mt-1" defaultChecked={v.checkedAll === "on"} />
-        <span>To issue: I have checked and completed every item against the owners corporation&apos;s records.</span>
+        <span>To issue: I have checked and completed every item against the {ownersCorporation}&apos;s records.</span>
       </label>
       {e.checkedAll && <p className="text-xs text-red-600">{e.checkedAll}</p>}
       <div className="flex flex-wrap justify-end gap-3">

@@ -25,7 +25,8 @@ import { consumeUpload, verifyUpload } from "@/lib/storage/uploads";
 import { signDownloads } from "@/lib/storage/server-storage";
 import { schemeStoragePathProblem } from "@/lib/queries/document-url";
 import { requestPhotos } from "./requests";
-import { needRule } from "@/config/statutory";
+import { buildingQuoteRule } from "./quote-rule-repo";
+import { quoteRuleSentence, quotesProblem } from "./quote-rule";
 
 const ts = (v: string | Date) => (typeof v === "string" ? v : v.toISOString()) as unknown as TimestampString<3>;
 const vc = <N extends number>(v: string) => v as unknown as Varchar<N>;
@@ -464,8 +465,7 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
   const liveOrder = rfq.requestId ? await db.orm.public.WorksWorkOrder.where((o) => and(o.requestId.eq(rfq.requestId!), o.status.notIn(["DECLINED", "CANCELLED"]))).first() : null;
   const acceptedQuote = quotes.find((q) => q.status === "ACCEPTED") ?? null;
   const { rules } = await rulesForScheme(schemeId);
-  const spending = needRule(rules, "WORKS_SPENDING_RULES");
-  const citations = needRule(rules, "CITATIONS");
+  const quoteRule = await buildingQuoteRule(schemeId, rules);
   const ready = (rfq.status === "QUOTING" || rfq.status === "CLOSED") && (quoteDeadlinePassed || allAnswered || rfq.status === "CLOSED");
   // Quotes stay sealed until they can be compared, so no price can leak to
   // a contractor still able to change theirs.
@@ -520,10 +520,12 @@ export async function rfqForCommittee(schemeId: string, requestId: string, now =
     /** A quote was approved but its work order never went out: send it. */
     needsOrder: rfq.status === "AWARDED" && !!acceptedQuote && !liveOrder ? acceptedQuote.id : null,
     canCancel: (RFQ_OPEN_STATUSES as readonly string[]).includes(String(rfq.status)),
-    twoQuoteThreshold: spending.twoQuoteThreshold,
-    minimumQuotes: spending.minimumQuotes,
+    twoQuoteThreshold: quoteRule.threshold,
+    minimumQuotes: quoteRule.minimumQuotes,
     /** The building's citation for the rule ("SSMA s 102"). */
-    twoQuoteCitation: citations.worksTwoQuotes,
+    twoQuoteCitation: quoteRule.citation,
+    /** The rule in a sentence, or that the building's number of lots is missing (stage 2, step 9). */
+    twoQuoteSentence: quoteRuleSentence(quoteRule),
   };
 }
 
@@ -624,11 +626,8 @@ export async function quoteApprovalProblem(quotationId: string, now = new Date()
   const obtained = await db.orm.public.WorksQuotation.where((q) => and(q.rfqId.eq(rfq.id), q.status.in(["SUBMITTED", "ACCEPTED", "DECLINED"]))).limit(100).all();
   // The building's spending rules (throws for a state with no rule pack).
   const { rules } = await rulesForScheme(rfq.schemeId);
-  const spending = needRule(rules, "WORKS_SPENDING_RULES");
-  const citations = needRule(rules, "CITATIONS");
-  if (Number(quote.totalAmount) > spending.twoQuoteThreshold && obtained.length < spending.minimumQuotes) {
-    return { problem: `Over $${spending.twoQuoteThreshold.toLocaleString("en-AU")}, at least ${spending.minimumQuotes} quotes are needed before one is approved (${citations.worksTwoQuotes}). Invite more contractors, or extend the deadline.`, ...base };
-  }
+  const problem = quotesProblem(await buildingQuoteRule(rfq.schemeId, rules), Number(quote.totalAmount), obtained.length);
+  if (problem) return { problem, ...base };
   return { problem: null, ...base };
 }
 

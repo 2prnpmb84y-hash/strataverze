@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d702bce5bb36b43c5e9d1a434db99164a021f0370dd89de1cbcb2904b5b2a7ea'>;
+  StorageHashBase<'57d7ae020da1dad786ab2235972b15cfdb91ca39f7264577eec58972c5bb8a3e'>;
 export type ExecutionHash =
   ExecutionHashBase<'7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9'>;
 export type ProfileHash =
@@ -2535,11 +2535,13 @@ export namespace Models {
   };
   export type public_RecordsInspection = {
     authorisedBy: FieldOutputTypes['public']['RecordsInspection']['authorisedBy'];
+    copyPages: FieldOutputTypes['public']['RecordsInspection']['copyPages'];
     createdAt: FieldOutputTypes['public']['RecordsInspection']['createdAt'];
     createdBy: FieldOutputTypes['public']['RecordsInspection']['createdBy'];
     feeCents: FieldOutputTypes['public']['RecordsInspection']['feeCents'];
     feePaidOn: FieldOutputTypes['public']['RecordsInspection']['feePaidOn'];
     id: FieldOutputTypes['public']['RecordsInspection']['id'];
+    inspected: FieldOutputTypes['public']['RecordsInspection']['inspected'];
     inspectorName: FieldOutputTypes['public']['RecordsInspection']['inspectorName'];
     inspectorType: FieldOutputTypes['public']['RecordsInspection']['inspectorType'];
     lotId: FieldOutputTypes['public']['RecordsInspection']['lotId'];
@@ -16700,6 +16702,12 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly copy_pages: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly created_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -16733,6 +16741,12 @@ type ContractBase = Omit<
                     readonly kind: 'function';
                     readonly expression: 'gen_random_uuid()';
                   };
+                  readonly many: false;
+                };
+                readonly inspected: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly inspector_name: {
@@ -39810,6 +39824,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly copyPages: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -39832,6 +39850,10 @@ type ContractBase = Omit<
               readonly id: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly inspected: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
               readonly inspectorName: {
                 readonly nullable: false;
@@ -39916,11 +39938,13 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly authorisedBy: { readonly column: 'authorised_by' };
+                readonly copyPages: { readonly column: 'copy_pages' };
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly createdBy: { readonly column: 'created_by' };
                 readonly feeCents: { readonly column: 'fee_cents' };
                 readonly feePaidOn: { readonly column: 'fee_paid_on' };
                 readonly id: { readonly column: 'id' };
+                readonly inspected: { readonly column: 'inspected' };
                 readonly inspectorName: { readonly column: 'inspector_name' };
                 readonly inspectorType: { readonly column: 'inspector_type' };
                 readonly lotId: { readonly column: 'lot_id' };

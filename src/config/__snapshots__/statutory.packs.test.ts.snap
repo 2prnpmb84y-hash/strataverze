@@ -1199,6 +1199,114 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "withinBusinessDays": 5,
   },
+  "CERTIFICATE": {
+    "agentType": "AGENT",
+    "buttonLabel": "Body Corporate Certificate",
+    "conclusiveNote": "A body corporate certificate is conclusive evidence against the body corporate of the matters it states, except for a reasonably apparent error (BCCMA s 205).",
+    "execution": "Given by the body corporate",
+    "executionLines": [
+      "Signature: ____________   Name: ____________",
+      "Date: ____________",
+    ],
+    "fee": {
+      "basis": "FEE_UNITS",
+      "dollars": {
+        "byYear": {
+          "2026-27": {
+            "feeCents": 8695,
+            "repeatFeeCents": 7390,
+          },
+        },
+        "yearStartsOn": "07-01",
+      },
+      "feeUnits": 76.75,
+      "repeatFeeUnits": 65.24,
+      "repeatSamePersonOnly": true,
+      "repeatWithinMonths": 3,
+      "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233, in fee units. Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)",
+    },
+    "follows": "the contents listed in Standard Module s 233AA(1)",
+    "form": "Approved form: BCCM Form 33 (form number from Queensland Government guidance)",
+    "giveWithinBusinessDays": 5,
+    "helpUrl": null,
+    "items": [
+      [
+        "1",
+        "Lot and plan type",
+      ],
+      [
+        "2",
+        "Scheme name and regulation module",
+      ],
+      [
+        "3",
+        "Body corporate manager and the person who keeps the records",
+      ],
+      [
+        "4",
+        "Contributions, discounts and penalties",
+      ],
+      [
+        "5",
+        "Lot entitlements (contribution schedule and interest schedule)",
+      ],
+      [
+        "6",
+        "Amounts owing for the lot",
+      ],
+      [
+        "7",
+        "Sinking fund balance",
+      ],
+      [
+        "8",
+        "Insurance",
+      ],
+      [
+        "9",
+        "Caretaking service contractor and letting agent",
+      ],
+      [
+        "10",
+        "Building management statement",
+      ],
+      [
+        "11",
+        "Improvements",
+      ],
+      [
+        "12",
+        "Body corporate assets",
+      ],
+      [
+        "13",
+        "Embedded electricity network",
+      ],
+      [
+        "14",
+        "Layered arrangement of community titles schemes",
+      ],
+      [
+        "15",
+        "Latest statement of accounts",
+      ],
+      [
+        "16",
+        "Other matters in the approved form",
+      ],
+    ],
+    "planRowLabel": "Community titles scheme",
+    "requesterTypes": {
+      "AGENT": "Agent",
+      "BUYER": "Buyer",
+      "DISCLOSURE_RECIPIENT": "Person given a seller's disclosure statement",
+      "MORTGAGEE": "Mortgagee",
+      "OWNER": "Owner",
+      "PROPER_INTEREST": "Person with a proper interest",
+    },
+    "section": "Body Corporate and Community Management Act 1997 (Qld) s 205(4)",
+    "title": "Body corporate certificate",
+  },
   "COMMITTEE": {
     "electedBySecretBallotByDefault": true,
     "electionIsLastBusiness": true,
@@ -1439,6 +1547,20 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "voidMotionWithinMonths": 3,
   },
+  "DOCUMENT_RETENTION": {
+    "byCategory": {
+      "BYLAW": null,
+      "COMPLIANCE": 6,
+      "FINANCIAL": 6,
+      "INSURANCE": null,
+      "MINUTES": null,
+      "OTHER": 6,
+    },
+    "generalYears": 6,
+    "note": "Records the law lets the body corporate dispose of sooner, such as reconciliation statements after 2 years, are shown with the longer period. A record still of current relevance is kept.",
+    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 231(3) to (5)",
+    "unlimited": "kept without a limit",
+  },
   "ENTITLEMENT_SCHEDULES": [
     {
       "key": "CONTRIBUTION",
@@ -1467,11 +1589,12 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     },
   ],
   "FEATURES": {
+    "bodyCorporateCertificate": true,
     "capitalWorksFundPlan": false,
     "committeeTraining": false,
     "debtRecoverySteps": true,
     "keyFinancialInformation": false,
-    "recordsInspections": false,
+    "recordsInspections": true,
     "statutoryPaymentPlans": false,
     "strataHubAnnualReport": false,
     "strataInformationCertificate": false,
@@ -1530,6 +1653,38 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "point": "The waiver request step (HARDSHIP_REVIEW) is assigned to the committee, with approval required, although whether the committee can decide a waiver (SM s 166(6)) or a general meeting resolution is needed is not confirmed.",
       "where": "DEBT_RECOVERY_STEPS HARDSHIP_REVIEW",
     },
+    {
+      "point": "The body corporate certificate headings StrataVerze drafts (from the SM s 233AA(1) contents as summarised in the research notes, ending with anything else in the approved form), their order, the wording of each draft and the execution box. BCCM Form 33 itself was not read.",
+      "where": "CERTIFICATE.items, execution, executionLines; src/lib/records/certificate-draft.ts",
+    },
+    {
+      "point": "The repeat certificate fee applies when a certificate for the same lot was issued within the previous 3 months to a requester with the same name (letter case and spaces ignored).",
+      "where": "src/lib/records/fees.ts certificateFeeFor",
+    },
+    {
+      "point": "The 5 business days for a certificate and the 7 days for access to the records are counted from the day the written request was received, as if the fee came with it. Business days skip weekends only.",
+      "where": "CERTIFICATE.giveWithinBusinessDays, INSPECTIONS.accessWithinDays",
+    },
+    {
+      "point": "For access to the records, only an owner pays the owner's fee. An agent, even an owner's agent, pays the fee for anyone else. Copies are charged per page at the year's dollar amount, and the fee is worked out when the access is recorded as given.",
+      "where": "INSPECTIONS.ownerFeeTypes; src/lib/records/fees.ts accessFee",
+    },
+    {
+      "point": "The document library shows minutes and insurance policies as kept without a limit (as decided), by-laws without a limit as a record of current relevance, and financial, compliance, other and unlisted categories as kept for at least 6 years, the longer disposal period, although some records in them (reconciliation statements, insignificant correspondence) may be disposed of after 2.",
+      "where": "DOCUMENT_RETENTION",
+    },
+    {
+      "point": "Copies are charged at the guidance's dollar amount per page (75 cents in 2026-27) times the pages. SM s 233(7) rounds a fee to the nearest 5 cents: if the fee is 0.65 fee units times the pages, rounded once on the total, a large copy job can differ by a few cents from the per page amount.",
+      "where": "src/lib/records/fees.ts accessFee",
+    },
+    {
+      "point": "The dollar amounts for a Queensland certificate or records access are those for the financial year in which the written request was received (SM s 233 ties the fee to the request), not the day it is issued or given.",
+      "where": "src/lib/records/records-store.ts issueCertificate, completeInspection",
+    },
+    {
+      "point": "Works approvals compare the quoted total (including any GST) with the major spending limit, worked out from the building's recorded number of lots.",
+      "where": "WORKS_QUOTES; src/lib/works/quote-rule.ts",
+    },
   ],
   "FUND_CATALOGUE": [
     {
@@ -1563,6 +1718,41 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 160(3), 167, 170, 171",
     "status": "CONFIRMED",
     "transfersBetweenFundsAllowed": false,
+  },
+  "INSPECTIONS": {
+    "accessWithinDays": 7,
+    "agentType": "AGENT",
+    "basis": "FEE_UNITS",
+    "dollars": {
+      "byYear": {
+        "2026-27": {
+          "copyPerPageCents": 75,
+          "otherCents": 3975,
+          "ownerCents": 2070,
+        },
+      },
+      "yearStartsOn": "07-01",
+    },
+    "feeUnits": {
+      "copyPerPage": 0.65,
+      "other": 35.1,
+      "owner": 18.25,
+    },
+    "feesIncludeGst": false,
+    "ownerFeeTypes": [
+      "OWNER",
+    ],
+    "requesterTypes": {
+      "AGENT": "Agent",
+      "BUYER": "Buyer",
+      "DISCLOSURE_RECIPIENT": "Person given a seller's disclosure statement",
+      "MORTGAGEE": "Mortgagee",
+      "OWNER": "Owner",
+      "PROPER_INTEREST": "Person with a proper interest",
+    },
+    "section": "Body Corporate and Community Management Act 1997 (Qld) s 205(2), (3)",
+    "source": "Body Corporate and Community Management Act 1997 (Qld) s 205(2), (3); Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 233(1), (7). Dollar amounts: Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)",
+    "whoMayAsk": "An owner, a mortgagee, a buyer or another interested person may ask in writing to inspect the records or to get copies.",
   },
   "INSURANCE": {
     "buildingBasis": "full replacement value",
@@ -1983,6 +2173,16 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "scheme": "community titles scheme",
     "source": "Body Corporate and Community Management Act 1997 (Qld) ss 22, 31, 33, 46; Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 81, 162, 167",
     "tribunal": "QCAT",
+  },
+  "WORKS_QUOTES": {
+    "citation": "Standard Module ss 173, 174",
+    "minimumQuotes": 2,
+    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 173, 174, sch 1 "relevant limit for major spending"",
+    "threshold": {
+      "basis": "PER_LOT_CAPPED",
+      "capDollars": 10000,
+      "perLotDollars": 1100,
+    },
   },
 }
 `;

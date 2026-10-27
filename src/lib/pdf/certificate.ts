@@ -1,4 +1,4 @@
-/** The section 184 information certificate as a PDF, laid out by StrataVerze from the approved form's items. */
+/** A certificate (NSW s 184, Queensland body corporate certificate) as a PDF, laid out by StrataVerze from the approved form's items. */
 import { renderPdf, type PdfBlock } from "./document";
 import { longDate } from "./documents";
 import { planLine } from "@/lib/jurisdiction/wording";
@@ -8,6 +8,8 @@ export interface CertificateDocument {
   planNumber: string | null;
   /** The building's name for its plan (`rules.TERMINOLOGY.planLabel`). */
   planLabel: string;
+  /** How the key values name the plan number (`rules.CERTIFICATE.planRowLabel`). */
+  planRowLabel: string;
   title: string;
   section: string;
   number: number;
@@ -19,8 +21,12 @@ export interface CertificateDocument {
   ownersCorporation: string;
   items: Array<{ no: string; title: string; text: string }>;
   execution: string;
+  /** The execution box's lines after `execution` (`rules.CERTIFICATE.executionLines`). */
+  executionLines: readonly string[];
   conclusiveNote: string;
   form: string;
+  /** What the layout follows (`rules.CERTIFICATE.follows`). */
+  follows: string;
   preparedOn: string;
 }
 
@@ -36,7 +42,7 @@ export function certificateBlocks(d: CertificateDocument): PdfBlock[] {
         ["Certificate number", String(d.number)],
         ["Date of certificate", d.certificateDate ? longDate(d.certificateDate) : "Not yet issued"],
         ["Lot", d.lotNumber],
-        ["Strata plan", d.planNumber ?? ""],
+        [d.planRowLabel, d.planNumber ?? ""],
         ["Requested by", `${d.requester.name} (${d.requester.type}), ${d.requester.address}`],
         ...(d.authorisedBy ? ([["Authorised by", `${d.authorisedBy.name} (${d.authorisedBy.type}), ${d.authorisedBy.address}`]] as [string, string][]) : []),
       ],
@@ -49,9 +55,9 @@ export function certificateBlocks(d: CertificateDocument): PdfBlock[] {
   }
   blocks.push(
     { kind: "spacer" },
-    { kind: "box", title: "Execution", lines: [d.execution, "Date affixed: ____________", "Signature: ____________   Name: ____________", "Signature: ____________   Name: ____________"] },
+    { kind: "box", title: "Execution", lines: [d.execution, ...d.executionLines] },
     { kind: "text", text: d.conclusiveNote, muted: true, size: 8 },
-    { kind: "text", text: `Laid out by StrataVerze following the items of the ${d.form}.`, muted: true, size: 8 },
+    { kind: "text", text: `Laid out by StrataVerze following ${d.follows}.`, muted: true, size: 8 },
   );
   return blocks;
 }

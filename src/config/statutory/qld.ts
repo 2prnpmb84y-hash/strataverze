@@ -30,7 +30,21 @@
  */
 
 import type { MeetingRuleSet, QuorumRule } from "@/lib/meetings/rules";
-import type { DebtRecoveryStepRule, EntitlementScheduleDefinition, FeeVariant, FundDefinition, LateChargeRules, NoticeRules, PackFeatures, RuleStatus, SchemeSelector } from "./types";
+import type {
+  CertificateRules,
+  DebtRecoveryStepRule,
+  DocumentRetentionRules,
+  EntitlementScheduleDefinition,
+  FeeVariant,
+  FundDefinition,
+  InspectionRules,
+  LateChargeRules,
+  NoticeRules,
+  PackFeatures,
+  RuleStatus,
+  SchemeSelector,
+  WorksQuoteRules,
+} from "./types";
 
 const ACT = "Body Corporate and Community Management Act 1997 (Qld)";
 const SM = "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld)";
@@ -865,6 +879,173 @@ export const BODY_CORPORATE_CERTIFICATE = {
   status: "CONFIRMED" as RuleStatus,
 } as const;
 
+/*
+ * The certificate, inspections, record keeping and works quotes in the shapes
+ * every pack shares (stage 2, step 9, 27 Oct 2026), from
+ * BODY_CORPORATE_CERTIFICATE, RECORDS_INSPECTION, FEE_UNIT_DOLLARS,
+ * RECORD_RETENTION and COMMITTEE as signed off. Fees are held in fee units,
+ * with each year's dollar amounts from FEE_UNIT_DOLLARS (decided 27 Oct 2026):
+ * add a year there and in FEE_YEARS each 1 July.
+ */
+
+/** The financial years whose dollar amounts are held, each from 1 July. */
+const FEE_YEARS = (["2026-27"] as const).map((year) => [year, FEE_UNIT_DOLLARS[year]] as const);
+
+/** Who may ask for a certificate or for access to the records: an "interested person" (Act s 205(13)). */
+const INTERESTED_PERSONS: Readonly<Record<string, string>> = {
+  OWNER: "Owner",
+  MORTGAGEE: "Mortgagee",
+  BUYER: "Buyer",
+  DISCLOSURE_RECIPIENT: "Person given a seller's disclosure statement",
+  PROPER_INTEREST: "Person with a proper interest",
+  // An agent of any of the others; who they act for is recorded with them.
+  AGENT: "Agent",
+};
+
+/**
+ * DRAFT, FOR STRATAVERZE TO REVIEW (stage 2, step 9): the headings StrataVerze
+ * drafts a body corporate certificate under. They follow the contents of
+ * SM s 233AA(1) as summarised in the research notes, which end "and more", so
+ * the last heading asks for anything else in the approved form. The approved
+ * form itself was not read.
+ */
+const CERTIFICATE_ITEMS: ReadonlyArray<readonly [string, string]> = [
+  ["1", "Lot and plan type"],
+  ["2", "Scheme name and regulation module"],
+  ["3", "Body corporate manager and the person who keeps the records"],
+  ["4", "Contributions, discounts and penalties"],
+  ["5", "Lot entitlements (contribution schedule and interest schedule)"],
+  ["6", "Amounts owing for the lot"],
+  ["7", "Sinking fund balance"],
+  ["8", "Insurance"],
+  ["9", "Caretaking service contractor and letting agent"],
+  ["10", "Building management statement"],
+  ["11", "Improvements"],
+  ["12", "Body corporate assets"],
+  ["13", "Embedded electricity network"],
+  ["14", "Layered arrangement of community titles schemes"],
+  ["15", "Latest statement of accounts"],
+  ["16", "Other matters in the approved form"],
+];
+
+/**
+ * The body corporate certificate in the shared shape: within 5 business days
+ * after the written request, the fee in fee units (76.75, or 65.24 for the
+ * same person and lot within 3 months), conclusive evidence against the body
+ * corporate except for a reasonably apparent error (Act s 205(4) to (7);
+ * SM s 233). How the approved form is signed was not read, so the execution
+ * box is StrataVerze's (FOR_REVIEW). The 24 hour priority request is not
+ * offered yet (GO-LIVE GAP below).
+ */
+export const CERTIFICATE: CertificateRules = {
+  title: "Body corporate certificate",
+  buttonLabel: "Body Corporate Certificate",
+  section: `${ACT} s 205(4)`,
+  form: `Approved form: ${BODY_CORPORATE_CERTIFICATE.form} (form number from Queensland Government guidance)`,
+  requesterTypes: INTERESTED_PERSONS,
+  agentType: "AGENT",
+  items: CERTIFICATE_ITEMS,
+  planRowLabel: "Community titles scheme",
+  execution: "Given by the body corporate",
+  executionLines: ["Signature: ____________   Name: ____________", "Date: ____________"],
+  follows: `the contents listed in ${SM_SHORT} s 233AA(1)`,
+  conclusiveNote: `A body corporate certificate is conclusive evidence against the body corporate of the matters it states, except for a reasonably apparent error (${ACT_SHORT} s 205).`,
+  helpUrl: null,
+  giveWithinBusinessDays: BODY_CORPORATE_CERTIFICATE.withinBusinessDays,
+  fee: {
+    basis: "FEE_UNITS",
+    feeUnits: BODY_CORPORATE_CERTIFICATE.feeUnits,
+    repeatFeeUnits: BODY_CORPORATE_CERTIFICATE.repeatFeeUnits,
+    repeatWithinMonths: BODY_CORPORATE_CERTIFICATE.repeatWithinMonths,
+    repeatSamePersonOnly: BODY_CORPORATE_CERTIFICATE.repeatOnlyForSamePersonAndLot,
+    dollars: {
+      yearStartsOn: "07-01",
+      byYear: Object.fromEntries(FEE_YEARS.map(([year, d]) => [year, { feeCents: d.certificateCents, repeatFeeCents: d.certificateRepeatCents }])),
+    },
+    source: `${SM} s 233, in fee units. Dollar amounts: ${FEE_UNIT_DOLLARS.source}`,
+  },
+};
+
+/**
+ * Access to the records in the shared shape (Act s 205(2), (3); SM s 233):
+ * inspection or copies within 7 days after the written request, an owner
+ * paying 18.25 fee units to inspect and anyone else 35.10, and 0.65 for each
+ * page copied, with no inspection fee for copies alone and no GST (guidance).
+ */
+export const INSPECTIONS: InspectionRules = {
+  basis: "FEE_UNITS",
+  section: `${ACT} s 205(2), (3)`,
+  whoMayAsk: "An owner, a mortgagee, a buyer or another interested person may ask in writing to inspect the records or to get copies.",
+  requesterTypes: INTERESTED_PERSONS,
+  agentType: "AGENT",
+  accessWithinDays: RECORDS_INSPECTION.withinDaysOfRequest,
+  ownerFeeTypes: ["OWNER"],
+  feeUnits: { owner: RECORDS_INSPECTION.feeUnits.OWNER, other: RECORDS_INSPECTION.feeUnits.OTHER, copyPerPage: RECORDS_INSPECTION.feeUnits.copyPerPage },
+  dollars: {
+    yearStartsOn: "07-01",
+    byYear: Object.fromEntries(FEE_YEARS.map(([year, d]) => [year, { ownerCents: d.inspectionOwnerCents, otherCents: d.inspectionOtherCents, copyPerPageCents: d.copyPerPageCents }])),
+  },
+  feesIncludeGst: FEE_UNIT_DOLLARS.gstApplies,
+  source: `${RECORDS_INSPECTION.source}. Dollar amounts: ${FEE_UNIT_DOLLARS.source}`,
+};
+
+/**
+ * Record keeping in the document library, from RECORD_RETENTION and the
+ * decision to keep minutes, the roll, registers and insurance policies
+ * without a limit (MINUTES, INSURANCE). Every other category is shown with the
+ * longer disposal period of SM s 231(3) to (5), 6 years: statements of account
+ * (FINANCIAL), orders, authority notices and written agreements (COMPLIANCE,
+ * OTHER) may be disposed of after 6 years, and some records in those
+ * categories, such as reconciliation statements and insignificant
+ * correspondence, after 2. A category not listed is shown with 6 years too.
+ * By-laws in force are a record of current relevance, which is never disposed
+ * of, so BYLAW is shown without a limit (FOR_REVIEW).
+ */
+export const DOCUMENT_RETENTION: DocumentRetentionRules = {
+  byCategory: { MINUTES: null, INSURANCE: null, BYLAW: null, FINANCIAL: 6, COMPLIANCE: 6, OTHER: 6 },
+  generalYears: 6,
+  unlimited: "kept without a limit",
+  note: `Records the law lets the body corporate dispose of sooner, such as reconciliation statements after ${Math.min(...Object.keys(RECORD_RETENTION.disposableAfterYears).map(Number))} years, are shown with the longer period. A record still of current relevance is kept.`,
+  source: RECORD_RETENTION.source,
+};
+
+/**
+ * Quotes above the major spending limit (SM ss 173, 174; sch 1): at least 2,
+ * where the limit is the lesser of $1,100 for each lot and $10,000. A limit a
+ * building sets by ordinary resolution is not held yet (GO-LIVE GAP below).
+ */
+export const WORKS_QUOTES: WorksQuoteRules = {
+  minimumQuotes: COMMITTEE.quotesAboveMajorSpending,
+  threshold: { basis: "PER_LOT_CAPPED", perLotDollars: COMMITTEE.majorSpendingPerLotCents / 100, capDollars: COMMITTEE.majorSpendingCapCents / 100 },
+  citation: `${SM_SHORT} ss 173, 174`,
+  source: `${SM} ss 173, 174, sch 1 "relevant limit for major spending"`,
+};
+
+/*
+ * GO-LIVE GAP (stage 2, step 9, 27 Oct 2026):
+ * - The 24 hour priority certificate (SM s 233, 27.35 fee units, refunded if
+ *   late) is not offered: nothing records a priority request or its refund.
+ * - The 5 business days skip weekends only. Queensland public holidays are not
+ *   held, and the days are counted from the day the request was received, as
+ *   if the fee came with it.
+ * - A fee is refused for a date whose financial year has no dollar table in
+ *   FEE_UNIT_DOLLARS. Add each year's amounts before 1 July.
+ * - The request for financial information only (Act s 205(8) to (11)) is not
+ *   offered.
+ * - The audit (AUDIT, SM s 176) is not applied: the audit test is shown only in
+ *   the NSW statutory statements, which Queensland buildings do not have
+ *   (FEATURES.keyFinancialInformation). Queensland's statements, with the audit
+ *   waiver by special resolution for a basic scheme, are still to be designed.
+ * - Works approvals apply the 2 quote rule only. A major spending limit or a
+ *   committee spending limit a building sets by ordinary resolution is not
+ *   held, the committee spending limit (SM s 172) is not checked, and a single
+ *   quote for exceptional reasons (SM ss 173, 174) is not offered.
+ * - The price book's S184_CERTIFICATE and S182_INSPECTION rows are the NSW
+ *   prescribed fees, switched off and read by no workflow. Certificate and
+ *   inspection fees come from the pack. Remove or scope those rows before any
+ *   workflow reads them.
+ */
+
 /** Disputes (Act ch 6). */
 export const DISPUTES = {
   /** Reasonable attempts at internal resolution first (Act s 238(1)(b)). */
@@ -975,6 +1156,46 @@ export const FOR_REVIEW = [
       "The waiver request step (HARDSHIP_REVIEW) is assigned to the committee, with approval required, although whether the committee can decide a waiver (SM s 166(6)) or a general meeting resolution is needed is not confirmed.",
     where: "DEBT_RECOVERY_STEPS HARDSHIP_REVIEW",
   },
+  {
+    point:
+      "The body corporate certificate headings StrataVerze drafts (from the SM s 233AA(1) contents as summarised in the research notes, ending with anything else in the approved form), their order, the wording of each draft and the execution box. BCCM Form 33 itself was not read.",
+    where: "CERTIFICATE.items, execution, executionLines; src/lib/records/certificate-draft.ts",
+  },
+  {
+    point:
+      "The repeat certificate fee applies when a certificate for the same lot was issued within the previous 3 months to a requester with the same name (letter case and spaces ignored).",
+    where: "src/lib/records/fees.ts certificateFeeFor",
+  },
+  {
+    point:
+      "The 5 business days for a certificate and the 7 days for access to the records are counted from the day the written request was received, as if the fee came with it. Business days skip weekends only.",
+    where: "CERTIFICATE.giveWithinBusinessDays, INSPECTIONS.accessWithinDays",
+  },
+  {
+    point:
+      "For access to the records, only an owner pays the owner's fee. An agent, even an owner's agent, pays the fee for anyone else. Copies are charged per page at the year's dollar amount, and the fee is worked out when the access is recorded as given.",
+    where: "INSPECTIONS.ownerFeeTypes; src/lib/records/fees.ts accessFee",
+  },
+  {
+    point:
+      "The document library shows minutes and insurance policies as kept without a limit (as decided), by-laws without a limit as a record of current relevance, and financial, compliance, other and unlisted categories as kept for at least 6 years, the longer disposal period, although some records in them (reconciliation statements, insignificant correspondence) may be disposed of after 2.",
+    where: "DOCUMENT_RETENTION",
+  },
+  {
+    point:
+      "Copies are charged at the guidance's dollar amount per page (75 cents in 2026-27) times the pages. SM s 233(7) rounds a fee to the nearest 5 cents: if the fee is 0.65 fee units times the pages, rounded once on the total, a large copy job can differ by a few cents from the per page amount.",
+    where: "src/lib/records/fees.ts accessFee",
+  },
+  {
+    point:
+      "The dollar amounts for a Queensland certificate or records access are those for the financial year in which the written request was received (SM s 233 ties the fee to the request), not the day it is issued or given.",
+    where: "src/lib/records/records-store.ts issueCertificate, completeInspection",
+  },
+  {
+    point:
+      "Works approvals compare the quoted total (including any GST) with the major spending limit, worked out from the building's recorded number of lots.",
+    where: "WORKS_QUOTES; src/lib/works/quote-rule.ts",
+  },
 ] as const;
 
 /** StrataVerze's decisions in the sign-off of 27 Oct 2026 (review document, "Decisions"). */
@@ -990,9 +1211,11 @@ export const DECISIONS = [
 /**
  * None of the other NSW workflows applies in Queensland: there is no
  * statutory payment plan, committee training, Strata Hub report, capital works
- * fund plan or key financial information form; the certificate and
- * inspections are Queensland's own (stage 2, step 9). The debt recovery steps
- * are Queensland's own draft sequence (stage 2, step 8).
+ * fund plan, key financial information form or s 184 certificate. The debt
+ * recovery steps are Queensland's own draft sequence (stage 2, step 8); the
+ * body corporate certificate and records inspections are Queensland's own
+ * (CERTIFICATE, INSPECTIONS, stage 2, step 9). Nothing is live: the pack is
+ * still pending.
  */
 export const FEATURES: PackFeatures = {
   statutoryPaymentPlans: false,
@@ -1001,8 +1224,7 @@ export const FEATURES: PackFeatures = {
   capitalWorksFundPlan: false,
   keyFinancialInformation: false,
   strataInformationCertificate: false,
-  recordsInspections: false,
-  // The Queensland step sequence (DEBT_RECOVERY_STEPS, draft, stage 2, step 8).
-  // Nothing is live: the pack is still pending.
+  recordsInspections: true,
   debtRecoverySteps: true,
+  bodyCorporateCertificate: true,
 };

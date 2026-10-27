@@ -1,8 +1,8 @@
 "use server";
 /**
- * Information certificate (s 184) and records inspection (s 182) actions.
- * Advisers only: the certificate is issued by the owners corporation through
- * its strata manager.
+ * Certificate (NSW s 184, the Queensland body corporate certificate) and
+ * records inspection actions. Advisers only: the certificate is issued by the
+ * owners corporation or body corporate through its manager.
  */
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
@@ -56,7 +56,7 @@ const certPaths = (schemeId: string, lotId: string) => revalidatePath(`/adviser/
 export async function createCertificateAction(schemeId: string, lotId: string, _prev: RecordsFormState, formData: FormData): Promise<RecordsFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
-    if (!(await schemeHasFeature(schemeId, "strataInformationCertificate"))) return { error: NOT_AVAILABLE };
+    if (!(await schemeHasFeature(schemeId, "strataInformationCertificate")) && !(await schemeHasFeature(schemeId, "bodyCorporateCertificate"))) return { error: NOT_AVAILABLE };
     const r = await createCertificate({ schemeId, lotId, requester: requester(formData), actorId: profile.id });
     certPaths(schemeId, lotId);
     return { success: "Draft started from StrataVerze's records. Check and complete every item.", id: r.id };
@@ -167,10 +167,13 @@ export async function scheduleInspectionAction(schemeId: string, id: string, _pr
 export async function completeInspectionAction(schemeId: string, id: string, _prev: RecordsFormState, formData: FormData): Promise<RecordsFormState> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
-    const v = text(formData, "minutes");
-    const fee = await completeInspection({ schemeId, id, minutes: /^\d+$/.test(v) ? Number(v) : Number.NaN });
+    const whole = (k: string) => {
+      const v = text(formData, k);
+      return /^\d+$/.test(v) ? Number(v) : Number.NaN;
+    };
+    const fee = await completeInspection({ schemeId, id, minutes: whole("minutes"), inspected: formData.get("inspected") === "on", copyPages: whole("copyPages") });
     inspPath(schemeId);
-    return { success: `Recorded. Fee due: $${(fee / 100).toFixed(2)} (including GST), collected outside StrataVerze.` };
+    return { success: `Recorded. Fee due: $${(fee.cents / 100).toFixed(2)} (${fee.gstIncluded ? "including GST" : "no GST"}), collected outside StrataVerze.` };
   } catch (err) {
     return failure(err, formData, "record the inspection");
   }
