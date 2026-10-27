@@ -9,7 +9,7 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString, Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { parseCSVContent } from "@/lib/queries/data-migration";
-import { getNextEntryNumber, validatePeriodForPosting } from "@/lib/queries/journal-entries";
+import { getNextEntryNumber, lockJournalNumbering, validatePeriodForPosting } from "@/lib/queries/journal-entries";
 import { ensureLeviesInAdvanceAccount } from "@/lib/queries/seed-chart-of-accounts";
 import { logActivity } from "@/lib/queries/activity-log";
 import { financialYearStart } from "@/lib/levies/notice-plan";
@@ -380,7 +380,6 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
   const ownerOf = (lotId: string) => ownerMemberships.find((m) => m.lotId === lotId)?.profileId ?? null;
   // Owner credits sit in levies paid in advance: make sure each fund has that account.
   for (const fundId of new Set(credits.map((c) => c.fundId))) await ensureLeviesInAdvanceAccount(input.schemeId, fundId);
-  const entryNumber = await getNextEntryNumber(input.schemeId);
   const fy = financialYearOf(date, String(scheme.financialYearEnd ?? "06-30"));
   const sourceLabel = sourceSystemLabel(batch.sourceSystem);
   const now = new Date().toISOString();
@@ -393,7 +392,18 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
   );
 
   const results = await db.transaction(async (tx) => {
-    // 1. The opening trial balance, posted.
+    // 1. The opening trial balance, posted, numbered under the building's lock (taken first).
+    // Not a numberedTransaction: the cutover holds the lock for the whole
+    // import, so it sets no lock_timeout of its own. While it runs, other
+    // journal writers in this building wait up to their 5 seconds and are
+    // then told the building is busy (JournalBusyError), which is intended.
+    await lockJournalNumbering(tx, input.schemeId);
+    // Checked again under the lock: a cutover executed at the same moment has committed, or waits for this one.
+    if (await tx.orm.public.MigrationBatch.where((b) => and(b.schemeId.eq(input.schemeId), b.status.eq("EXECUTED"))).first()) {
+      throw new CutoverError("A cutover has already been executed for this scheme.");
+    }
+    await validatePeriodForPosting(input.schemeId, date, "OPENING_BALANCE", tx.orm);
+    const entryNumber = await getNextEntryNumber(input.schemeId, tx.orm);
     const entry = await tx.orm.public.JournalEntry.create({
       schemeId: input.schemeId,
       entryNumber: varchar<20>(entryNumber),

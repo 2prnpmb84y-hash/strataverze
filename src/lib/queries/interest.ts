@@ -6,11 +6,12 @@ import { and, or } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { getSystemAccountBySubType } from "./account-codes";
 import {
-  createJournalEntry,
   createPostedJournalEntryIn,
-  postJournalEntry,
   getNextEntryNumber,
+  lockJournalNumbering,
+  validatePeriodForPosting,
 } from "./journal-entries";
+import { addNumberedJournal, numberedTransaction } from "./journal-numbering";
 import { logActivity } from "./activity-log";
 import { fromCents, toCents } from "@/lib/billing/money";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
@@ -155,8 +156,6 @@ export async function chargeInterest(data: {
 
   const currentInterest = Number(notice.interestCharged ?? 0);
   const currentBalance = Number(notice.balanceOutstanding);
-  const newInterest = currentInterest + interestAmount;
-  const newBalance = currentBalance + interestAmount;
 
   const fundType = (notice.fund?.fundType ?? "ADMINISTRATIVE") as
     | "ADMINISTRATIVE"
@@ -180,47 +179,69 @@ export async function chargeInterest(data: {
     );
   }
 
-  // Update the levy notice
-  await db.orm.public.LevyNotice
-    .where({ id: noticeId })
-    .update({
-      interestCharged: toNumeric(newInterest),
-      balanceOutstanding: toNumeric(newBalance),
-    });
-
-  // Create and post the interest journal entry
-  const entryNumber = await getNextEntryNumber(schemeId);
   // Dated today in the building's time zone (not UTC, which is the day before until 10 or 11 am in Sydney).
   const today = await schemeToday(schemeId);
+  // Refused before anything is written if today's period is closed or locked.
+  await validatePeriodForPosting(schemeId, today, "INTEREST");
 
-  const entry = await createJournalEntry({
-    schemeId,
-    entryNumber,
-    transactionDate: today,
-    description: `${LateCharge} charged on overdue ${t.levy} — notice ${String(notice.noticeNumber)}`,
-    entryType: "INTEREST",
-    sourceType: "INTEREST",
-    sourceId: noticeId,
-    rulePack,
-    createdBy: actorId,
-    lines: [
+  // The notice and the interest journal (DR Levies Receivable, CR Interest
+  // Income) together or not at all, numbered under the building's lock, then
+  // the notice (as receipting locks them).
+  const charged = await numberedTransaction(schemeId, async (tx) => {
+    const locked = await lockedNoticeRead(tx, noticeId);
+    // Charged at the same moment by another run: the batch skips it, a single charge is refused.
+    if (!locked || String(locked.interestCharged ?? 0) !== String(notice.interestCharged ?? 0)) {
+      if (data.alreadyVerified) return null;
+      throw new Error(`${LateCharge} was charged on notice ${String(notice.noticeNumber)} at the same time. Check the notice and try again.`);
+    }
+    // Worked out from the notice as it stands under the lock, so a receipt
+    // committed while this waited is kept (owed = levy + interest - paid).
+    const newInterestCents = cents(locked.interestCharged) + Math.round(interestAmount * 100);
+    const newBalanceCents = cents(locked.amountDue) + newInterestCents - cents(locked.amountPaid);
+    const newInterest = fromCents(newInterestCents);
+    const newBalance = fromCents(newBalanceCents);
+    await tx.orm.public.LevyNotice
+      .where({ id: noticeId })
+      .update({
+        interestCharged: toNumeric(newInterest),
+        balanceOutstanding: toNumeric(newBalance),
+      });
+
+    const journal = await addNumberedJournal(
+      tx,
       {
-        accountCodeId: receivableAccount.id,
-        fundId: notice.fundId,
-        debit: interestAmount,
-        description: `${LateCharge} receivable — notice ${String(notice.noticeNumber)}`,
-        lotId: notice.lotId,
+        schemeId,
+        transactionDate: today,
+        description: `${LateCharge} charged on overdue ${t.levy} — notice ${String(notice.noticeNumber)}`,
+        entryType: "INTEREST",
+        sourceType: "INTEREST",
+        sourceId: noticeId,
+        rulePack,
+        createdBy: actorId,
+        lines: [
+          {
+            accountCodeId: receivableAccount.id,
+            fundId: notice.fundId,
+            debit: interestAmount,
+            description: `${LateCharge} receivable — notice ${String(notice.noticeNumber)}`,
+            lotId: notice.lotId,
+          },
+          {
+            accountCodeId: interestIncomeAccount.id,
+            fundId: notice.fundId,
+            credit: interestAmount,
+            description: `${LateCharge} income on overdue ${t.levy}`,
+          },
+        ],
       },
-      {
-        accountCodeId: interestIncomeAccount.id,
-        fundId: notice.fundId,
-        credit: interestAmount,
-        description: `${LateCharge} income on overdue ${t.levy}`,
-      },
-    ],
+      actorId,
+    );
+    return { ...journal, newInterest, newBalance };
   });
-
-  await postJournalEntry(entry.id, actorId);
+  if (!charged) {
+    return { noticeId, interestAmount: 0, totalInterestCharged: currentInterest, newBalance: currentBalance, journalEntryId: null as string | null };
+  }
+  const { entry, entryNumber, newInterest, newBalance } = charged;
 
   // Log activity
   await logActivity({
@@ -244,7 +265,7 @@ export async function chargeInterest(data: {
     interestAmount,
     totalInterestCharged: newInterest,
     newBalance,
-    journalEntryId: entry.id,
+    journalEntryId: entry.id as string | null,
   };
 }
 
@@ -254,18 +275,8 @@ const lockedNoticeRead = (tx: Tx, noticeId: string) => tx.orm.public.LevyNotice.
 const cents = (v: unknown) => toCents(String(v ?? 0));
 const money = (c: number) => toNumeric(fromCents(c));
 
-/**
- * Lock the building's row (FOR NO KEY UPDATE) in the caller's transaction,
- * so journal entry numbers (the next after the highest, unique per building)
- * are given out one transaction at a time. Every late charge first
- * transaction that writes a journal takes it first, before any notice lock,
- * so two of them always lock in the same order. FOR NO KEY UPDATE does not
- * block rows that only refer to the building (their foreign key check takes
- * a key share lock), only another writer locking the building row.
- */
-export async function lockJournalNumbering(tx: Tx, schemeId: string) {
-  await tx.orm.public.Scheme.where((s) => s.id.eq(schemeId)).forNoKeyUpdate().first();
-}
+/** The building's journal numbering lock, taken first by every journal writer (src/lib/queries/journal-entries.ts). */
+export { lockJournalNumbering };
 
 /**
  * Lock a levy notice in the caller's transaction (FOR NO KEY UPDATE, held
@@ -415,8 +426,7 @@ async function chargeInterestLocked(data: {
   const asAt = todayIn(setting.timeZone);
   const accounts = (await lateChargeAccounts(data.schemeId, [data.fundType])).get(data.fundType);
   const wanted = Math.round(data.interestAmount * 100);
-  const charged = await db.transaction(async (tx) => {
-    await lockJournalNumbering(tx, data.schemeId);
+  const charged = await numberedTransaction(data.schemeId, async (tx) => {
     const locked = await lockLateCharge(tx, { schemeId: data.schemeId, noticeId: data.noticeId, asAt, setting });
     if (!locked) throw new Error("Levy notice not found.");
     const owed = locked.position.additionalCents;

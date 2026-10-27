@@ -290,6 +290,24 @@ export async function submitForApproval(invoiceId: string) {
 }
 
 /**
+ * Mark a supplier invoice approved, and its StrataVerze platform invoice, in
+ * the caller's transaction (`orm` is its `tx.orm`), so the approval journal
+ * is written with it. The caller moves a marketplace works invoice on once
+ * the transaction has committed (syncWorksInvoiceFromFinance).
+ */
+export async function approveInvoiceIn(orm: typeof db.orm, invoiceId: string, approvedBy: string) {
+  const updated = await orm.public.SupplierInvoice
+    .where({ id: invoiceId })
+    .update({
+      status: "APPROVED",
+      approvedBy,
+      approvedAt: toTimestamp(new Date().toISOString()),
+    });
+  await syncPlatformInvoiceStatus(invoiceId, "APPROVED", orm);
+  return updated;
+}
+
+/**
  * Approve a supplier invoice.
  */
 export async function approveInvoice(invoiceId: string, approvedBy: string) {
@@ -326,7 +344,17 @@ export async function recordInvoicePayment(
   paymentAmount: number,
   details: { paymentDate?: string; actorId?: string | null; feeConfirmedCents?: number | null } = {},
 ) {
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx) => recordInvoicePaymentIn(tx, invoiceId, paymentAmount, details));
+}
+
+/** recordInvoicePayment inside the caller's transaction, so its journal can be written with it. */
+export async function recordInvoicePaymentIn(
+  tx: { orm: typeof db.orm },
+  invoiceId: string,
+  paymentAmount: number,
+  details: { paymentDate?: string; actorId?: string | null; feeConfirmedCents?: number | null } = {},
+) {
+  {
     const invoice = await tx.orm.public.SupplierInvoice
       .where((si) => si.id.eq(invoiceId))
       .first();
@@ -370,7 +398,7 @@ export async function recordInvoicePayment(
     });
 
     return updated;
-  });
+  }
 }
 
 /**

@@ -6,6 +6,7 @@ import type {
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
 import { accountFundProblem } from "@/lib/finance/fund-integrity";
+import { numberedTransaction } from "./journal-numbering";
 
 function toNumeric(value: number | string): Numeric<12, 2> {
   return String(value) as unknown as Numeric<12, 2>;
@@ -308,12 +309,10 @@ export async function autoMatchTransactions(
       // funds: leave the transaction for a person to allocate (review B1).
       if (matches && rule.targetAccountCodeId && rule.targetFundId && (await accountFundProblem(db.orm, schemeId, rule.targetAccountCodeId, rule.targetFundId))) continue;
       if (matches && rule.targetAccountCodeId && rule.targetFundId) {
-        // Create a journal entry for the matched transaction
-        const entryNumber = await getNextMatchEntryNumber(schemeId);
         const absAmount = Math.abs(Number(txn.amount));
         const isCredit = Number(txn.amount) > 0;
 
-        // Find the bank system account code for this scheme
+        // Find the bank system account code for this scheme (before the transaction)
         const bankAccountCode = await db.orm.public.AccountCode
           .where((a) =>
             and(
@@ -328,85 +327,97 @@ export async function autoMatchTransactions(
         const bankLedgerAccountId = bankAccountCode?.id;
 
         if (bankLedgerAccountId) {
-          const journalEntry = await db.orm.public.JournalEntry.create({
-            schemeId,
-            entryNumber: toVarchar<20>(entryNumber),
-            transactionDate: txn.transactionDate,
-            description: toVarchar<500>(
-              `Auto-match: ${String(txn.description).slice(0, 400)}`,
-            ),
-            entryType: "STANDARD",
-            sourceType: "BANK_IMPORT",
-            sourceId: txn.id,
-            status: rule.autoPost ? "POSTED" : "DRAFT",
-            createdBy: profileId ?? schemeId,
+          // The journal, its lines, the allocation and the match together,
+          // numbered under the building's lock.
+          const done = await numberedTransaction(schemeId, async (tx) => {
+            const orm = tx.orm;
+            // Still unmatched under the lock: a run at the same moment has not matched it already.
+            const current = await orm.public.BankTransaction.where((t) => t.id.eq(txn.id)).first();
+            if (!current || current.reconciliationStatus !== "UNMATCHED") return false;
+            // Create a journal entry for the matched transaction
+            const entryNumber = await getNextMatchEntryNumber(schemeId, orm);
+            const journalEntry = await orm.public.JournalEntry.create({
+              schemeId,
+              entryNumber: toVarchar<20>(entryNumber),
+              transactionDate: txn.transactionDate,
+              description: toVarchar<500>(
+                `Auto-match: ${String(txn.description).slice(0, 400)}`,
+              ),
+              entryType: "STANDARD",
+              sourceType: "BANK_IMPORT",
+              sourceId: txn.id,
+              status: rule.autoPost ? "POSTED" : "DRAFT",
+              createdBy: profileId ?? schemeId,
+            });
+
+            // Create journal lines: bank account and target account
+            if (isCredit) {
+              // Money in: debit bank, credit target
+              await orm.public.JournalLine.create({
+                journalEntryId: journalEntry.id,
+                accountCodeId: bankLedgerAccountId,
+                fundId: rule.targetFundId!,
+                debit: toNumeric(absAmount),
+                credit: toNumeric(0),
+                description: null,
+              });
+              await orm.public.JournalLine.create({
+                journalEntryId: journalEntry.id,
+                accountCodeId: rule.targetAccountCodeId!,
+                fundId: rule.targetFundId!,
+                debit: toNumeric(0),
+                credit: toNumeric(absAmount),
+                description: null,
+              });
+            } else {
+              // Money out: credit bank, debit target
+              await orm.public.JournalLine.create({
+                journalEntryId: journalEntry.id,
+                accountCodeId: bankLedgerAccountId,
+                fundId: rule.targetFundId!,
+                debit: toNumeric(0),
+                credit: toNumeric(absAmount),
+                description: null,
+              });
+              await orm.public.JournalLine.create({
+                journalEntryId: journalEntry.id,
+                accountCodeId: rule.targetAccountCodeId!,
+                fundId: rule.targetFundId!,
+                debit: toNumeric(absAmount),
+                credit: toNumeric(0),
+                description: null,
+              });
+            }
+
+            // Allocate the whole transaction to the new entry, then mark it matched.
+            await orm.public.BankTransactionAllocation.create({
+              schemeId,
+              bankTransactionId: txn.id,
+              journalEntryId: journalEntry.id,
+              amount: toNumeric(absAmount),
+              createdBy: profileId ?? null,
+            });
+
+            // Update the bank transaction
+            await orm.public.BankTransaction
+              .where({ id: txn.id })
+              .update({
+                reconciliationStatus: "MATCHED",
+                matchedJournalEntryId: journalEntry.id,
+                matchedAt: toTimestamp(new Date().toISOString()),
+                matchingRuleId: rule.id,
+              });
+
+            // Update rule match count
+            await orm.public.MatchingRule
+              .where({ id: rule.id })
+              .update({
+                matchCount: rule.matchCount + 1,
+                lastMatchedAt: toTimestamp(new Date().toISOString()),
+              });
+            return true;
           });
-
-          // Create journal lines: bank account and target account
-          if (isCredit) {
-            // Money in: debit bank, credit target
-            await db.orm.public.JournalLine.create({
-              journalEntryId: journalEntry.id,
-              accountCodeId: bankLedgerAccountId,
-              fundId: rule.targetFundId!,
-              debit: toNumeric(absAmount),
-              credit: toNumeric(0),
-              description: null,
-            });
-            await db.orm.public.JournalLine.create({
-              journalEntryId: journalEntry.id,
-              accountCodeId: rule.targetAccountCodeId!,
-              fundId: rule.targetFundId!,
-              debit: toNumeric(0),
-              credit: toNumeric(absAmount),
-              description: null,
-            });
-          } else {
-            // Money out: credit bank, debit target
-            await db.orm.public.JournalLine.create({
-              journalEntryId: journalEntry.id,
-              accountCodeId: bankLedgerAccountId,
-              fundId: rule.targetFundId!,
-              debit: toNumeric(0),
-              credit: toNumeric(absAmount),
-              description: null,
-            });
-            await db.orm.public.JournalLine.create({
-              journalEntryId: journalEntry.id,
-              accountCodeId: rule.targetAccountCodeId!,
-              fundId: rule.targetFundId!,
-              debit: toNumeric(absAmount),
-              credit: toNumeric(0),
-              description: null,
-            });
-          }
-
-          // Allocate the whole transaction to the new entry, then mark it matched.
-          await db.orm.public.BankTransactionAllocation.create({
-            schemeId,
-            bankTransactionId: txn.id,
-            journalEntryId: journalEntry.id,
-            amount: toNumeric(absAmount),
-            createdBy: profileId ?? null,
-          });
-
-          // Update the bank transaction
-          await db.orm.public.BankTransaction
-            .where({ id: txn.id })
-            .update({
-              reconciliationStatus: "MATCHED",
-              matchedJournalEntryId: journalEntry.id,
-              matchedAt: toTimestamp(new Date().toISOString()),
-              matchingRuleId: rule.id,
-            });
-
-          // Update rule match count
-          await db.orm.public.MatchingRule
-            .where({ id: rule.id })
-            .update({
-              matchCount: rule.matchCount + 1,
-              lastMatchedAt: toTimestamp(new Date().toISOString()),
-            });
+          if (!done) break;
 
           results.push({
             transactionId: txn.id,
@@ -427,10 +438,11 @@ export async function autoMatchTransactions(
 }
 
 /**
- * Generate the next auto-match journal entry number.
+ * Generate the next auto-match journal entry number, read through the
+ * caller's transaction, which holds the building's numbering lock.
  */
-async function getNextMatchEntryNumber(schemeId: string): Promise<string> {
-  const existing = await db.orm.public.JournalEntry
+async function getNextMatchEntryNumber(schemeId: string, orm: typeof db.orm): Promise<string> {
+  const existing = await orm.public.JournalEntry
     .where((je) =>
       and(
         je.schemeId.eq(schemeId),
@@ -450,7 +462,7 @@ async function getNextMatchEntryNumber(schemeId: string): Promise<string> {
   }
 
   // Count-based fallback
-  const count = await db.orm.public.JournalEntry
+  const count = await orm.public.JournalEntry
     .where((je) =>
       and(
         je.schemeId.eq(schemeId),
