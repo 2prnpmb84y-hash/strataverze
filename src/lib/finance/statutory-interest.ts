@@ -41,8 +41,12 @@ export interface InterestInput {
   levyCents: number;
   /** YYYY-MM-DD. */
   dueDate: string;
-  /** Payments in date order. Each is applied to the levy before interest (NSW) or to the penalty first (Queensland). */
-  payments: { date: string; amountCents: number }[];
+  /**
+   * Payments in date order. Each is applied to the levy before interest (NSW) or to the penalty first (Queensland).
+   * `lateChargeCents` (Queensland): the part of the payment recorded as applied to the penalty when it was received,
+   * which the monthly penalty uses as it is, so the engine and the books agree.
+   */
+  payments: { date: string; amountCents: number; lateChargeCents?: number }[];
   /** YYYY-MM-DD the calculation runs to (inclusive of that day's interest up to, not including, it). */
   asAt: string;
   /** YYYY-MM-DD accrual stops (write-off), if any. A payment plan is not a reason to stop. */
@@ -158,50 +162,118 @@ export function monthlyPenalty(input: InterestInput, opts: { monthlyRatePercent:
   if (input.noInterest) return { ...base, reason: "NO_INTEREST_RESOLUTION" };
   if (input.levyCents <= 0) return { ...base, reason: "NOTHING_OWING" };
   if (input.asAt <= input.dueDate) return { ...base, reason: "NOT_YET_DUE" };
+  const run = runMonthlyPenalty(input, opts.monthlyRatePercent);
+  return { interestCents: run.penaltyCents, daysAccrued: run.daysAccrued, graceEnds, reason: run.months ? "ACCRUED" : "NOT_A_MONTH_IN_ARREARS", monthsAccrued: run.months };
+}
 
+/** Where a notice stands as `monthlyPenalty` works it out, payment by payment. */
+interface MonthlyPenaltyRun {
+  penaltyCents: number;
+  /** The penalty charged and not yet paid. */
+  penaltyOwing: number;
+  /** The contribution not yet paid. */
+  unpaid: number;
+  overpaid: number;
+  months: number;
+  daysAccrued: number;
+  /** The payments in date order, and how many of them were applied. */
+  payments: { date: string; amountCents: number; lateChargeCents?: number }[];
+  next: number;
+}
+
+/**
+ * Apply one payment: to the penalty charged so far first, then the
+ * contribution (SM s 166(5)). A negative amount is a correction. A payment
+ * with its penalty part recorded is applied as recorded.
+ */
+function applyPenaltyFirst(run: MonthlyPenaltyRun, payment: { amountCents: number; lateChargeCents?: number }) {
+  let amount = payment.amountCents;
+  if (amount < 0) {
+    const takenBack = Math.min(run.overpaid, -amount);
+    run.overpaid -= takenBack;
+    run.unpaid += -amount - takenBack;
+    return;
+  }
+  const toPenalty = payment.lateChargeCents !== undefined ? Math.min(amount, Math.max(0, payment.lateChargeCents)) : Math.min(run.penaltyOwing, amount);
+  run.penaltyOwing = Math.max(0, run.penaltyOwing - toPenalty);
+  amount -= toPenalty;
+  const toContribution = Math.min(run.unpaid, amount);
+  run.unpaid -= toContribution;
+  run.overpaid += amount - toContribution;
+}
+
+/** The month by month working of `monthlyPenalty` (see there), at a monthly rate. */
+function runMonthlyPenalty(input: InterestInput, monthlyRatePercent: number): MonthlyPenaltyRun {
   // The rate in hundredths of a percent, so the sums are whole numbers.
-  const rateHundredths = Math.max(0, Math.round(opts.monthlyRatePercent * 100));
-  const payments = [...input.payments].sort((a, b) => a.date.localeCompare(b.date));
+  const rateHundredths = Math.max(0, Math.round(monthlyRatePercent * 100));
   const stopAt = input.stopAt || null;
-
-  let unpaid = input.levyCents;
-  let penaltyOwing = 0;
-  let penaltyCents = 0;
-  // Paid above the contribution and the penalty, which a later correction takes back first.
-  let overpaid = 0;
-  let months = 0;
-  let daysAccrued = 0;
-  let next = 0;
+  const run: MonthlyPenaltyRun = {
+    penaltyCents: 0,
+    penaltyOwing: 0,
+    unpaid: input.levyCents,
+    // Paid above the contribution and the penalty, which a later correction takes back first.
+    overpaid: 0,
+    months: 0,
+    daysAccrued: 0,
+    payments: [...input.payments].sort((a, b) => a.date.localeCompare(b.date)),
+    next: 0,
+  };
   for (let k = 1; k <= MAX_MONTHS; k++) {
     const mark = addMonths(input.dueDate, k);
     // A month counts once its mark has passed, and up to and including the write-off day.
     if (mark >= input.asAt || (stopAt && mark > stopAt)) break;
     // The payments made by this mark: the penalty so far first, then the contribution.
-    for (; next < payments.length && payments[next].date <= mark; next++) {
-      let amount = payments[next].amountCents;
-      if (amount < 0) {
-        const takenBack = Math.min(overpaid, -amount);
-        overpaid -= takenBack;
-        unpaid += -amount - takenBack;
-        continue;
-      }
-      const toPenalty = Math.min(penaltyOwing, amount);
-      penaltyOwing -= toPenalty;
-      amount -= toPenalty;
-      const toContribution = Math.min(unpaid, amount);
-      unpaid -= toContribution;
-      overpaid += amount - toContribution;
-    }
+    for (; run.next < run.payments.length && run.payments[run.next].date <= mark; run.next++) applyPenaltyFirst(run, run.payments[run.next]);
     // Paid by this mark: no penalty for the month. Later marks are still looked at, as a correction can make it unpaid again.
-    if (unpaid <= 0) continue;
+    if (run.unpaid <= 0) continue;
     // unpaid x rate / 100, rounded half up to the cent.
-    const month = Math.floor((2 * unpaid * rateHundredths + 10_000) / 20_000);
-    penaltyCents += month;
-    penaltyOwing += month;
-    months += 1;
-    daysAccrued += Math.round((toUtc(mark) - toUtc(addMonths(input.dueDate, k - 1))) / DAY_MS);
+    const month = Math.floor((2 * run.unpaid * rateHundredths + 10_000) / 20_000);
+    run.penaltyCents += month;
+    run.penaltyOwing += month;
+    run.months += 1;
+    run.daysAccrued += Math.round((toUtc(mark) - toUtc(addMonths(input.dueDate, k - 1))) / DAY_MS);
   }
-  return { interestCents: penaltyCents, daysAccrued, graceEnds, reason: months ? "ACCRUED" : "NOT_A_MONTH_IN_ARREARS", monthsAccrued: months };
+  return run;
+}
+
+/**
+ * Whether a building's payment order (`rules.PAYMENT_ALLOCATION_ORDER`)
+ * applies a payment to the late charge before the levy: Queensland's penalty
+ * first (SM s 166(5)). NSW applies the levy first, and so does no order.
+ */
+export function lateChargeFirst(order: PaymentAllocationOrder | null | undefined): boolean {
+  if (!order) return false;
+  const charge = order.indexOf("INTEREST");
+  const levy = order.indexOf("LEVY");
+  return charge >= 0 && levy >= 0 && charge < levy;
+}
+
+/**
+ * The late charge paid on a notice, with payments applied to it first: the
+ * parts recorded on its receipts that are not reversed, plus any amount paid
+ * with no receipt (brought across at takeover, with the old system's late
+ * charge paid), which is taken as paid to it first. Never more than was
+ * charged or paid. All in cents. Receipting, owner credit and lotArrears all
+ * use this one figure.
+ */
+export function lateChargePaidOnNotice(n: { paidCents: number; chargedCents: number; receiptedCents: number; recordedChargeCents: number }): number {
+  const unreceipted = Math.max(0, n.paidCents - n.receiptedCents);
+  return Math.max(0, Math.min(n.chargedCents, n.paidCents, n.recordedChargeCents + unreceipted));
+}
+
+/**
+ * The part of a payment applied to a notice that goes to the late charge,
+ * when the late charge is paid first. Never more than the late charge
+ * charged and not yet paid (`chargedCents - chargePaidCents`), and never more
+ * than had accrued by the payment's date less what payments by that date paid
+ * (`accruedByDateCents - chargePaidByDateCents`), so a payment entered late
+ * with an earlier date does not pay a penalty for months after it.
+ */
+export function lateChargePart(
+  appliedCents: number,
+  n: { chargedCents: number; chargePaidCents: number; accruedByDateCents: number; chargePaidByDateCents: number },
+): number {
+  return Math.max(0, Math.min(appliedCents, n.chargedCents - n.chargePaidCents, n.accruedByDateCents - n.chargePaidByDateCents));
 }
 
 /** A building's late charge setting: its mode and, for RESOLVED_RATE, the monthly rate. */

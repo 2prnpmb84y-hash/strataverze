@@ -17,6 +17,8 @@ import { creditBalanceCents, recordCreditMovement } from "./owner-credits";
 import { allocateBankTransaction, syncTransaction } from "./bank-allocations";
 import { receiptLevyPayments } from "./levy-receipts";
 import { noticeAfterReversal, reallocationProblem, REVERSAL_LABELS, reversalProblem, type ReversalReason } from "./levy-reversal";
+import { lateChargeFirstRules } from "./interest-setting";
+import { lockJournalNumbering } from "@/lib/queries/interest";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const varchar = <N extends number>(v: string) => v as unknown as Varchar<N>;
@@ -99,7 +101,9 @@ export async function reverseLevyReceipt(input: {
     if (!account || account.accountType !== "EXPENSE") throw new ReceiptReversalError("Choose an expense account for the dishonour fee.");
   }
 
-  const entryNumber = await getNextEntryNumber(input.schemeId);
+  // Late charge first (Queensland): the reversal locks its notices (below). NSW goes on exactly as before.
+  const chargeFirst = await lateChargeFirstRules(input.schemeId);
+  const entryNumber = chargeFirst ? null : await getNextEntryNumber(input.schemeId);
   const now = new Date().toISOString();
   const label = REVERSAL_LABELS[input.reason];
   const note = input.note?.trim().slice(0, 500) || null;
@@ -107,10 +111,25 @@ export async function reverseLevyReceipt(input: {
   const txnIds = r.bankTransactions.map((t) => t.id);
 
   const reversalEntryId = await db.transaction(async (tx) => {
+    // Late charge first: lock the building's journal numbering, then each
+    // notice in id order (as receipting does, so they cannot deadlock), and
+    // check under the locks that the receipt is still not reversed. Each
+    // notice is then read and put back as it stands under its lock, so a
+    // receipt committed in between is kept.
+    let number = entryNumber;
+    if (chargeFirst) {
+      await lockJournalNumbering(tx, input.schemeId);
+      for (const id of [...new Set(r.payments.map((p) => p.levyNoticeId))].sort()) {
+        await tx.orm.public.LevyNotice.where((x) => x.id.eq(id)).forNoKeyUpdate().first();
+      }
+      const current = await tx.orm.public.LevyPayment.where((p) => p.id.in(r.payments.map((x) => x.id))).limit(500).all();
+      if (current.some((p) => p.reversedAt)) throw new ReceiptReversalError("This receipt has already been reversed.");
+      number = await getNextEntryNumber(input.schemeId, tx.orm);
+    }
     // 1. The reversal journal, mirroring the receipt.
     const reversal = await tx.orm.public.JournalEntry.create({
       schemeId: input.schemeId,
-      entryNumber: varchar<20>(entryNumber),
+      entryNumber: varchar<20>(number!),
       transactionDate: ts(date),
       description: varchar<500>(`Receipt ${String(r.entry.entryNumber)} reversed: ${label}${note ? ` (${note})` : ""}`.slice(0, 500)),
       entryType: "REVERSAL",

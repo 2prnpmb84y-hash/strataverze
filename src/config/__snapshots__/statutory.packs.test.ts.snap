@@ -1716,6 +1716,18 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "point": "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft, but nothing is refused: contributions and meetings run on the contribution schedule, which every lot holds.",
       "where": "src/lib/jurisdiction/building-data.ts",
     },
+    {
+      "point": "A payment goes to the penalty first (SM s 166(5)), so an owner who pays only the contribution after a month mark still owes the part of the contribution the penalty took. That part keeps attracting penalty each month until it is paid, even when it is a few dollars. StrataVerze charges it as StrataVerze reads SM ss 165 and 166(5), and does not waive it. Whether that reading is right, whether to tell the owner when it happens, and whether to suggest a waiver for special reasons (s 166(6)), are for review.",
+      "where": "PAYMENT_ALLOCATION_ORDER",
+    },
+    {
+      "point": "When a payment or owner credit is applied, the penalty to the payment date is charged first, with its own journal dated the day it is recorded. A payment dated on a month mark is paid within that month. A payment dated after the building's today is refused, and one entered late with an earlier date pays only the penalty accrued by that date.",
+      "where": "PAYMENT_ALLOCATION_ORDER; src/lib/finance/levy-receipts.ts, owner-credits.ts applyOwnerCredit",
+    },
+    {
+      "point": "The order is applied within each notice. Which notice a payment goes to is the adviser's choice, and owner credit goes to the earliest due notice first. Whether SM s 166(5) needs every penalty on the lot paid before any contribution is not confirmed.",
+      "where": "PAYMENT_ALLOCATION_ORDER; src/lib/finance/owner-credit.ts planCreditApplication",
+    },
   ],
   "FUND_CATALOGUE": [
     {

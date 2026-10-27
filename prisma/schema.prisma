@@ -1650,6 +1650,11 @@ model LevyPayment {
   levyNoticeId String     @map("levy_notice_id") @db.Uuid
   lotId        String     @map("lot_id") @db.Uuid
   amount       Decimal    @db.Decimal(12, 2)
+  /// The part of the payment applied to the late charge, where the building
+  /// applies payments to it first (Queensland's penalty, Standard Module
+  /// s 166(5); 20261117). Its receipt journal carries the same amount. 0 where
+  /// payments go to the levy first (NSW).
+  lateChargeAmount Decimal @default(0) @db.Decimal(12, 2) @map("late_charge_amount")
   paymentDate  DateTime   @db.Date @map("payment_date")
   reference    String?
   recordedBy   String?    @map("recorded_by") @db.Uuid
