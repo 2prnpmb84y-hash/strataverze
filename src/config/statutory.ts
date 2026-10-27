@@ -21,6 +21,7 @@
 import * as ACT from "./statutory/act";
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
+import * as VIC from "./statutory/vic";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
   EntitlementScheduleDefinition,
@@ -185,6 +186,18 @@ export const PENDING_RULE_PACKS = {
     reviewedOn: null,
     rules: ACT,
   } satisfies PendingRulePack<typeof ACT>,
+  VIC: {
+    code: "AU-VIC",
+    state: "VIC",
+    name: "Victoria",
+    // 2026.10.1 (27 Oct 2026): researched from OCA Version 024, OCR Version 002 and SA Part 5, for review. Pending
+    // changes (CLAA 2026 Part 6 Div 2, SR 53/2026, HSRA 2025 Part 4 Div 1) are held as data, not in force.
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: VIC,
+  } satisfies PendingRulePack<typeof VIC>,
 } as const;
 
 /** How a pack is recorded on a notice, charge or case, for example "AU-NSW 2026.10.1". */
