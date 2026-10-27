@@ -6,7 +6,9 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { defaultFunds } from "@/lib/jurisdiction/funds";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
-import { needRule } from "@/config/statutory";
+import { needRule, type StatutoryRules } from "@/config/statutory";
+import { planFormatChoiceProblem, regulationModuleChoiceProblem, separateEntitlement } from "@/lib/jurisdiction/building-data";
+import { MAX_ENTITLEMENT } from "@/lib/onboarding/property-onboarding";
 
 /**
  * Fetch all schemes managed by a given adviser (by profile ID).
@@ -96,6 +98,50 @@ export async function getSchemeById(schemeId: string) {
     .first({ id: schemeId });
 }
 
+/** A new building's data its rule pack does not allow: nothing is created. */
+export class SchemeDataError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SchemeDataError";
+  }
+}
+
+/**
+ * Why createScheme cannot save a building's pack data, or null (QLD
+ * onboarding go-live, 27 Oct 2026). Checked here as well as by the caller, so
+ * no caller can save a module or plan format for a building whose pack has no
+ * such selector (the schemes_regulation_module_state_check and
+ * schemes_plan_format_state_check constraints), a module StrataVerze does not
+ * apply, a plan format that is not listed, or a second lot entitlement that
+ * is not a positive whole number or that the pack does not hold.
+ */
+export function newSchemeDataProblem(
+  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "PLAN_FORMAT">>,
+  data: { regulationModule?: string | null; planFormat?: string | null },
+  lots: readonly { lotNumber: string; interestScheduleEntitlement?: number | null }[],
+): string | null {
+  if (data.regulationModule != null) {
+    if (!rules.REGULATION_MODULE) return "This building's rules have no regulation module, so none can be saved.";
+    const problem = regulationModuleChoiceProblem(rules, data.regulationModule);
+    if (problem) return problem;
+  }
+  if (data.planFormat != null) {
+    if (!rules.PLAN_FORMAT) return "This building's rules have no plan format, so none can be saved.";
+    const problem = planFormatChoiceProblem(rules, data.planFormat);
+    if (problem) return problem;
+  }
+  const separate = separateEntitlement(rules);
+  const held = separate?.field === "interestScheduleEntitlement";
+  for (const lot of lots) {
+    const value = lot.interestScheduleEntitlement;
+    if (value == null) continue;
+    if (!held) return `Lot ${lot.lotNumber} has a second lot entitlement, which this building's rules do not hold.`;
+    if (!Number.isInteger(value) || value < 1 || value > MAX_ENTITLEMENT)
+      return `Lot ${lot.lotNumber}: the ${separate!.name} must be a whole number from 1 to ${MAX_ENTITLEMENT.toLocaleString("en-AU")}.`;
+  }
+  return null;
+}
+
 /**
  * Create a new scheme and wire the creator as its adviser.
  */
@@ -119,6 +165,10 @@ export async function createScheme(
     allInclusiveFees?: boolean;
     paymentPlan?: string;
     debtCollection?: boolean;
+    /** The regulation module, where the building's pack has one (Queensland). Checked again here. */
+    regulationModule?: string;
+    /** The plan format, where the building's pack has one (Queensland). Checked again here. */
+    planFormat?: string;
   },
   adviserProfileId: string,
   /**
@@ -126,10 +176,13 @@ export async function createScheme(
    * entitlement total match the building). Each owner's name is stored as it
    * appears on the strata roll.
    */
-  lots: readonly { lotNumber: string; unitNumber: string | null; entitlement: number; ownerName: string | null }[] = [],
+  lots: readonly { lotNumber: string; unitNumber: string | null; entitlement: number; ownerName: string | null; interestScheduleEntitlement?: number | null }[] = [],
 ) {
   // The building's rule pack. A state with no pack is refused before anything is created.
   const { rules } = rulesForState(data.state);
+  // The pack's own data is checked here too, whatever the caller checked.
+  const dataProblem = newSchemeDataProblem(rules, data, lots);
+  if (dataProblem) throw new SchemeDataError(dataProblem);
   const defaultAccountingBasis = needRule(rules, "defaultAccountingBasis");
   // The building's time zone, from its state and postcode.
   const timeZone = defaultTimeZone(data.state, data.postcode);
@@ -157,6 +210,9 @@ export async function createScheme(
       debtCollection: data.debtCollection ?? false,
       // The late charge setting the pack starts a building on (NSW statutory interest, Queensland no penalty).
       interestMode: rules.LATE_CHARGE.defaultMode,
+      // Only where the pack has a module and a plan format (Queensland), checked above; an NSW building is created as before.
+      ...(data.regulationModule != null ? { regulationModule: data.regulationModule } : {}),
+      ...(data.planFormat != null ? { planFormat: data.planFormat } : {}),
     });
 
     // Link the creator as the adviser
@@ -181,7 +237,14 @@ export async function createScheme(
     for (let i = 0; i < lots.length; i += 500) {
       const batch = lots.slice(i, i + 500);
       const rows = await tx.orm.public.Lot.createAll(
-        batch.map((l) => ({ schemeId: scheme.id, lotNumber: l.lotNumber, unitNumber: l.unitNumber, entitlement: l.entitlement })),
+        batch.map((l) => ({
+          schemeId: scheme.id,
+          lotNumber: l.lotNumber,
+          unitNumber: l.unitNumber,
+          entitlement: l.entitlement,
+          // The second entitlement, where the pack has one (Queensland's interest schedule).
+          ...(l.interestScheduleEntitlement != null ? { interestScheduleEntitlement: l.interestScheduleEntitlement } : {}),
+        })),
       );
       const idByNumber = new Map(rows.map((r) => [r.lotNumber, r.id]));
       const details = batch

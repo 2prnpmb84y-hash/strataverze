@@ -11,6 +11,7 @@ import { CaseDetailClient } from "./case-detail-client";
 import { previewRecoveryFees } from "@/lib/billing/capture";
 import { feeWordingFor } from "@/lib/billing/disclosure";
 import { needRule } from "@/config/statutory";
+import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function DebtRecoveryCaseDetailPage({
   params,
@@ -75,6 +76,7 @@ export default async function DebtRecoveryCaseDetailPage({
       stepLabels={needRule(rules, "DEBT_RECOVERY_STEP_LABELS")}
       lateChargeLabel={rules.TERMINOLOGY.lateCharge.charAt(0).toUpperCase() + rules.TERMINOLOGY.lateCharge.slice(1)}
       paymentPlans={rules.FEATURES.statutoryPaymentPlans}
+      paymentPlanLabel={caseWordsFor(rules).paymentPlan}
       schemeId={id}
       lotNumber={lot ? String(lot.lotNumber) : "—"}
       unitNumber={lot?.unitNumber ?? null}

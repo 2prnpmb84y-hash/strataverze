@@ -6,6 +6,7 @@ import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
 import type { FeeView } from "@/lib/billing/disclosure";
+import type { CaseWords } from "@/lib/jurisdiction/screen-words";
 import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
 import {
   completeDebtRecoveryStepAction,
@@ -152,7 +153,10 @@ export function CaseDetailOwnerClient({
   recoveryLaw,
   stepLabels,
   lateChargeLabel,
+  caseWords,
 }: {
+  /** The building's case words (caseWordsFor): the hardship or waiver request badge, and the payment plan. */
+  caseWords: CaseWords;
   /** The building's late charge heading: "Interest" (NSW), "Penalty" (Queensland). */
   lateChargeLabel: string;
   /** "NSW Strata Schemes Management Act 2015": the building's law the steps follow. */
@@ -247,7 +251,7 @@ export function CaseDetailOwnerClient({
         <div className="px-6 pb-6 space-y-4">
           <div className="flex flex-wrap gap-2 items-center">
             <StatusChip
-              status={STATUS_LABEL[debtCase.status] ?? debtCase.status}
+              status={debtCase.status === "PAYMENT_PLAN" ? caseWords.paymentPlan : (STATUS_LABEL[debtCase.status] ?? debtCase.status)}
               variant={STATUS_VARIANT[debtCase.status] ?? "default"}
             />
             {debtCase.priority === "HIGH" && (
@@ -262,7 +266,7 @@ export function CaseDetailOwnerClient({
             )}
             {debtCase.hasHardshipRequest && (
               <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                Hardship Request
+                {caseWords.hardshipRequest}
               </span>
             )}
           </div>
@@ -474,7 +478,7 @@ export function CaseDetailOwnerClient({
       {debtCase.paymentPlan && (
         <Card>
           <CardHeader
-            title="Payment Plan"
+            title={caseWords.paymentPlan}
             description={`${debtCase.paymentPlan.numberOfInstalments} ${debtCase.paymentPlan.frequency.toLowerCase()} instalments of ${formatCurrency(debtCase.paymentPlan.instalmentAmount)}`}
           />
           <div className="px-6 pb-6 space-y-4">

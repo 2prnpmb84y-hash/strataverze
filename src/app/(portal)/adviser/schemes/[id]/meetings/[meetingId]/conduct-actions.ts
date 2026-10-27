@@ -20,6 +20,7 @@ import {
 } from "@/lib/meetings/conduct-tally";
 import { conductVotingData } from "@/lib/meetings/conduct-tally-repo";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { scheduleFor } from "@/lib/jurisdiction/building-data";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { dayIn } from "@/lib/jurisdiction/time-zone";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
@@ -229,6 +230,8 @@ async function recordCountedOutcome(p: {
     requestedOutcome: p.requestedOutcome,
     resolutionCategory: p.item.resolutionCategory,
     tally,
+    // A poll is counted by the entitlement the pack names (the chair is told it by name).
+    ...(tally?.poll ? { pollEntitlement: scheduleFor(rules, "POLL_VOTE").name } : {}),
   });
   const disagreement = outcomeDisagreement(p.requestedOutcome, result);
   if (disagreement) return { error: disagreement };

@@ -3,7 +3,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { StatusChip, type ChipStatus } from "@/components/ui/status-chip";
 import { formatAud, splitGst } from "@/lib/billing/money";
 import { groupFeeSchedule } from "@/lib/billing/fee-schedule";
-import { PAYER_LABELS } from "@/lib/billing/disclosure";
+import { PAYER_LABELS, inBuildingWords } from "@/lib/billing/disclosure";
 import type { PlatformFeesData } from "@/lib/queries/platform-billing";
 import { ReferralIncomeDisclosure } from "./referral-income-disclosure";
 
@@ -15,7 +15,6 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 const SOURCE_LABELS: Record<string, string> = {
-  LevyPayment: "Levy payment",
   SupplierInvoicePayment: "Supplier payment",
   Meeting: "Meeting",
   MeetingAdjournmentNotice: "Adjourned meeting",
@@ -50,6 +49,10 @@ export function PlatformFeesView({ data }: { data: PlatformFeesData }) {
   const price = subscription.price;
   const monthly = price.monthlyCents == null ? null : splitGst(price.monthlyCents, price.gstInclusive);
   const groups = groupFeeSchedule(schedule);
+  // The building's words, from its rule pack (an NSW building's are the words always shown).
+  const w = data.wording;
+  const sourceLabel = (type: string) =>
+    type === "LevyPayment" ? `${w.levy.charAt(0).toUpperCase()}${w.levy.slice(1)} payment` : (SOURCE_LABELS[type] ?? type);
 
   let subscriptionValue = "Quote on request";
   if (subscription.promotional) subscriptionValue = "Free (promotion)";
@@ -114,9 +117,13 @@ export function PlatformFeesView({ data }: { data: PlatformFeesData }) {
                     <tr key={e.id}>
                       <td className="py-2 pr-4 whitespace-nowrap">{day(e.occurredAt)}</td>
                       <td className="py-2 pr-4">{e.description}</td>
-                      <td className="py-2 pr-4 text-ink-muted">{SOURCE_LABELS[e.sourceType] ?? e.sourceType}</td>
+                      <td className="py-2 pr-4 text-ink-muted">{sourceLabel(e.sourceType)}</td>
                       <td className="py-2 pr-4 text-ink-muted">
-                        {e.recoverableFromOwner ? "Owners corporation, recoverable from owner" : PAYER_LABELS[e.payerType]?.replace(/^Charged to |^Paid by /, "") ?? e.payerType}
+                        {e.recoverableFromOwner
+                          ? `${w.ownersCorporation.charAt(0).toUpperCase()}${w.ownersCorporation.slice(1)}, recoverable from owner`
+                          : PAYER_LABELS[e.payerType]
+                            ? inBuildingWords(PAYER_LABELS[e.payerType], w).replace(/^Charged to |^Paid by /, "")
+                            : e.payerType}
                       </td>
                       <td className="py-2 pr-4">
                         <StatusChip status={status.label} variant={status.variant} />

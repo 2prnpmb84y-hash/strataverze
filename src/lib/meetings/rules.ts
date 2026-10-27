@@ -256,11 +256,17 @@ export function isResolutionCategory(
   return !!category && Object.prototype.hasOwnProperty.call(ruleSet.resolutionCategories, category);
 }
 
-/** Evaluate whether a resolution passes, per the rule for its category. */
+/**
+ * Evaluate whether a resolution passes, per the rule for its category.
+ * `pollEntitlement` names the entitlement a poll is counted by in the reason,
+ * as the building's pack names it ("contribution schedule lot entitlement");
+ * without it the reason says unit entitlement, as it always has.
+ */
 export function evaluateResolution(
   ruleSet: MeetingRuleSet,
   category: ResolutionCategory,
   tally: ResolutionTally,
+  pollEntitlement: string = "unit entitlement",
 ): ResolutionOutcome {
   const rule = ruleSet.resolutionCategories[category];
   if (!rule) {
@@ -276,8 +282,8 @@ export function evaluateResolution(
     case "COUNT_MAJORITY": {
       if (tally.poll && tally.forUE != null && tally.againstUE != null) {
         return tally.forUE > tally.againstUE
-          ? { passed: true, reason: "Majority by unit entitlement on a poll" }
-          : { passed: false, reason: "Not carried by unit entitlement on a poll" };
+          ? { passed: true, reason: `Majority by ${pollEntitlement} on a poll` }
+          : { passed: false, reason: `Not carried by ${pollEntitlement} on a poll` };
       }
       return tally.forCount > tally.againstCount
         ? { passed: true, reason: "Majority of votes cast" }

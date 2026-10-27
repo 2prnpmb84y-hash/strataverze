@@ -253,14 +253,18 @@ export async function previewUsageFee(
 
 /**
  * What a payment form needs to show the transaction fee as the amount is
- * typed: the transaction fee rows and the mode. Null when capture is off.
+ * typed: the transaction fee rows and the mode, and the building's words for
+ * the disclosure where given (feeWordingFor). Null when capture is off.
  */
-export async function transactionFeeTable(): Promise<{ mode: TransactionFeeMode; priceBook: PriceBookEntry[] } | null> {
+export async function transactionFeeTable(
+  wording?: FeeWording,
+): Promise<{ mode: TransactionFeeMode; priceBook: PriceBookEntry[]; wording?: FeeWording } | null> {
   if (!billingCaptureEnabled()) return null;
   const book = await loadPriceBook();
   return {
     mode: transactionFeeMode(),
     priceBook: book.filter((e) => e.code === "TXN_FEE" || e.code === "TXN_FEE_FLAT"),
+    ...(wording ? { wording } : {}),
   };
 }
 

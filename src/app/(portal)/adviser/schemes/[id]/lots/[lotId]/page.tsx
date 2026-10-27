@@ -3,6 +3,7 @@ import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
 import { getLotDetail } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
@@ -287,6 +288,7 @@ export default async function LotDetailPage({
               <DebtCollectionSection
                 schemeId={id}
                 lotId={lotId}
+                paymentPlanLabel={caseWordsFor(packRules).paymentPlan}
                 debtCollection={
                   debtCollection
                     ? {
@@ -369,7 +371,11 @@ export default async function LotDetailPage({
                   <DetailRow label="Committee member" value={lotDetailExt?.isCommitteeMember ? "Yes" : "No"} />
                 </dl>
               </Card>
-              <LevyNoticesView items={ownerView.items} emptyDescription="No levies have been issued for this lot yet." />
+              <LevyNoticesView
+                items={ownerView.items}
+                emptyDescription={`No ${packRules.TERMINOLOGY.levies} have been issued for this lot yet.`}
+                words={packRules.TERMINOLOGY}
+              />
               <StatementView
                 lotLabel={lotLabel}
                 pdfHref={`/api/finance/pdf/owner-statement?schemeId=${id}&lotId=${lotId}`}
@@ -379,6 +385,7 @@ export default async function LotDetailPage({
                 totalPayments={ownerView.statement.totalPayments}
                 closingBalance={ownerView.statement.closingBalance}
                 lines={ownerView.statement.lines}
+                levy={packRules.TERMINOLOGY.levy}
               />
             </div>
           ),

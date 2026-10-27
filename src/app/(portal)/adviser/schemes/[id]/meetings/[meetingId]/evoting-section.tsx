@@ -27,9 +27,12 @@ export function EvotingSection({
   fee = null,
   timeZone,
   adoptionCitation,
+  ownersCorporation,
 }: {
   /** The building's citation for adopting pre-meeting e-voting ("Reg cl 14"). */
   adoptionCitation: string;
+  /** The building's word for the body that adopts it ("owners corporation"), from its rule pack. */
+  ownersCorporation: string;
   schemeId: string;
   meetingId: string;
   adopted: boolean;
@@ -67,7 +70,7 @@ export function EvotingSection({
 
       {!adopted ? (
         <p className="text-sm text-ink-muted">
-          The owners corporation has not resolved to adopt pre-meeting electronic
+          The {ownersCorporation} has not resolved to adopt pre-meeting electronic
           voting, so a ballot cannot be opened. This is a configurable scheme
           setting backed by the adopting resolution ({adoptionCitation}).
         </p>

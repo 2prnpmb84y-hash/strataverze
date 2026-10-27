@@ -7,6 +7,11 @@ import { getLevyNoticesForLots } from "@/lib/queries/levies";
 import { getLevyPaymentsForNotices } from "@/lib/queries/levy-schedules";
 import { buildStatement } from "@/lib/levies/levy-ledger";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { sharedLevyWords } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
+
+/** "Levies", "Contributions", "Levies and Contributions". */
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/ And /g, " and ");
 import { getCreditMovements } from "@/lib/finance/owner-credits";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatLotLabel } from "@/lib/format";
@@ -93,16 +98,24 @@ export default async function OwnerStatementPage({
     closingBalance = statement.closingBalance;
   }
 
+  // The words of the building shown, or of all the owner's buildings before a lot is chosen.
+  const shownState = lotEntries.find((e) => e.lotId === effectiveLotId)?.schemeState;
+  const words = sharedLevyWords(
+    (shownState ? [shownState] : schemes.map((s) => s.state)).map((st) => rulesForState(st).rules),
+    rulesForState(DEFAULT_SCHEME_STATE).rules,
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="My Statement"
-        description="Your levy charges, payments and running balance."
+        description={`Your ${words.levy} charges, payments and running balance.`}
         backHref="/owner/levies"
-        backLabel="Levies"
+        backLabel={titleCase(words.levies)}
       />
 
       <OwnerStatementTable
+        levy={words.levy}
         lotOptions={lotOptions}
         selectedSchemeId={lotEntries.find((e) => e.lotId === effectiveLotId)?.schemeId ?? ""}
         selectedLotId={effectiveLotId ?? ""}

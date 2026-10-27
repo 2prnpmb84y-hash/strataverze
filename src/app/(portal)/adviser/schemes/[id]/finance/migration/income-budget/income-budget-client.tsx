@@ -101,6 +101,7 @@ export function IncomeBudgetClient({
   locks,
   cutoverHref,
   noticeLead,
+  words,
 }: {
   schemeId: string;
   ctx: IncomeBudgetContext;
@@ -109,7 +110,13 @@ export function IncomeBudgetClient({
   cutoverHref: string;
   /** How long before the due date a notice goes out, from the building's rule ("5 weeks"). */
   noticeLead: string;
+  /**
+   * The building's words, from its rule pack through the server page: a levy,
+   * levies, and how they are shared between the lots (levySharedBy).
+   */
+  words: { levy: string; levies: string; sharedBy: string };
 }) {
+  const Levies = words.levies[0].toUpperCase() + words.levies.slice(1);
   const { lastYear, budgetYear, takeoverAtYearEnd } = ctx.years;
   const [funds, setFunds] = useState<FundState[]>(() =>
     ctx.funds.map((f) => {
@@ -221,7 +228,7 @@ export function IncomeBudgetClient({
             <dd className="font-medium text-ink">{yearLabel(lastYear)}</dd>
           </div>
           <div>
-            <dt className="text-ink-muted">This year (budget and levies)</dt>
+            <dt className="text-ink-muted">This year (budget and {words.levies})</dt>
             <dd className="font-medium text-ink">{yearLabel(budgetYear)}</dd>
           </div>
         </dl>
@@ -250,7 +257,7 @@ export function IncomeBudgetClient({
         <h2 className="font-heading font-semibold text-ink">Fill from the annual financial statement</h2>
         <p className="text-sm text-ink-muted">
           Choose the previous manager&apos;s annual financial statement for {yearLabel(lastYear)} (PDF). Each fund&apos;s income and expenditure lines and
-          opening balance are read into the tables below, for you to check. Accounts are matched by name, and the levy line goes to levy income; any other
+          opening balance are read into the tables below, for you to check. Accounts are matched by name, and the {words.levy} line goes to {words.levy} income; any other
           line becomes a new account with the statement&apos;s name. Budgets you have typed are kept.
         </p>
         <div className="flex flex-wrap items-center gap-3">
@@ -377,7 +384,7 @@ export function IncomeBudgetClient({
                               onChange={(e) => setRow(fund.id, r.key, { newAccountName: e.target.value })}
                             />
                           )}
-                          {isLevy && <p className="text-xs text-ink-muted">The budget on this line is the levies to raise for the year.</p>}
+                          {isLevy && <p className="text-xs text-ink-muted">The budget on this line is the {words.levies} to raise for the year.</p>}
                         </td>
                         <td className="px-3 py-2">
                           {account ? (
@@ -475,7 +482,7 @@ export function IncomeBudgetClient({
           <label className="flex items-start gap-2">
             <input type="radio" name="adoption" checked={adoption.kind === "before_takeover"} onChange={() => setAdoption({ kind: "before_takeover", meetingDate: adoption.meetingDate })} className="mt-1" />
             <span>
-              Adopted at a general meeting held before StrataVerze took over. The budget is recorded as adopted at that meeting, and the levies as approved
+              Adopted at a general meeting held before StrataVerze took over. The budget is recorded as adopted at that meeting, and the {words.levies} as approved
               on that date.
             </span>
           </label>
@@ -487,22 +494,22 @@ export function IncomeBudgetClient({
           )}
           <label className="flex items-start gap-2">
             <input type="radio" name="adoption" checked={adoption.kind === "draft"} onChange={() => setAdoption({ kind: "draft", meetingDate: "" })} className="mt-1" />
-            <span>Not adopted yet. Keep the budget as a draft for adoption at the first general meeting held in StrataVerze; the levies wait for it.</span>
+            <span>Not adopted yet. Keep the budget as a draft for adoption at the first general meeting held in StrataVerze; the {words.levies} wait for it.</span>
           </label>
         </fieldset>
       </section>
 
       <section className="rounded-[var(--radius-card)] border border-line bg-white p-4 sm:p-5 space-y-3">
-        <h2 className="font-heading font-semibold text-ink">Levies for {yearLabel(budgetYear)}</h2>
+        <h2 className="font-heading font-semibold text-ink">{Levies} for {yearLabel(budgetYear)}</h2>
         <p className="text-sm text-ink-muted">
-          Each fund&apos;s levies are the budget on its levy income line, shared between the lots by unit entitlement when the notices are generated. The
-          notices are generated on the Levies page once the cutover has been run.
+          Each fund&apos;s {words.levies} are the budget on its {words.levy} income line, shared between the lots by {words.sharedBy} when the notices are generated. The
+          notices are generated on the {Levies} page once the cutover has been run.
         </p>
         <fieldset className="space-y-2 text-sm">
-          <legend className="text-ink">Did the previous manager raise the levies for {yearLabel(budgetYear)} before the takeover?</legend>
+          <legend className="text-ink">Did the previous manager raise the {words.levies} for {yearLabel(budgetYear)} before the takeover?</legend>
           <label className="flex items-start gap-2">
             <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "none"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "none" })} className="mt-1" />
-            <span>No, they were not raised. Make the levy schedules for the whole year.</span>
+            <span>No, they were not raised. Make the {words.levy} schedules for the whole year.</span>
           </label>
           <label className="flex items-start gap-2">
             <input type="radio" name="raised" checked={levies.raisedBeforeTakeover === "some"} onChange={() => setLevies({ ...levies, raisedBeforeTakeover: "some" })} className="mt-1" />
@@ -548,7 +555,7 @@ export function IncomeBudgetClient({
           </label>
         </div>
         <p className="text-sm text-ink-muted">
-          Levies are paid in advance, so each instalment falls due on the first day of its period:{" "}
+          {Levies} are paid in advance, so each instalment falls due on the first day of its period:{" "}
           {dueDatesFor(budgetYear.start, levies.frequency).map((d) => longDate(d)).join(", ")}. Each notice goes out {noticeLead} before it falls due.
         </p>
         <ul className="text-sm text-ink space-y-1">
@@ -571,7 +578,7 @@ export function IncomeBudgetClient({
       {state.error && <Problems items={[state.error]} />}
       {state.saved && (
         <div role="status" className="rounded-[var(--radius-card)] border border-turquoise/30 bg-mint-soft/50 px-4 py-3 text-sm text-ink">
-          Saved. Last year&apos;s figures, the budget and the levy schedules are in place.{" "}
+          Saved. Last year&apos;s figures, the budget and the {words.levy} schedules are in place.{" "}
           <Link href={cutoverHref} className="font-medium text-turquoise underline">
             Continue to the cutover
           </Link>{" "}

@@ -8,6 +8,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { loadIncomeBudget } from "@/lib/onboarding/save-income-budget";
 import { PageHeader } from "@/components/ui/page-header";
 import { IncomeBudgetClient } from "./income-budget-client";
+import { levySharedBy } from "@/lib/jurisdiction/screen-words";
 
 /** Onboarding: last year's income and expenditure, this year's budget and levies (24 Oct). */
 export default async function IncomeBudgetPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,8 @@ export default async function IncomeBudgetPage({ params }: { params: Promise<{ i
   if (!scheme) notFound();
   const data = await loadIncomeBudget(id);
   const cutoverBase = `/adviser/schemes/${id}/finance/migration/cutover`;
+  // The building's words, from its rule pack.
+  const { rules } = await rulesForScheme(id);
 
   return (
     <div className="space-y-6">
@@ -36,7 +39,9 @@ export default async function IncomeBudgetPage({ params }: { params: Promise<{ i
           .
         </div>
       ) : (
-        <IncomeBudgetClient schemeId={id} ctx={data.ctx} saved={data.saved} locks={data.locks} cutoverHref={`${cutoverBase}?batch=${data.cutover.id}`} noticeLead={noticeLeadText((await rulesForScheme(id)).rules.NOTICE_RULES)} />
+        <IncomeBudgetClient schemeId={id} ctx={data.ctx} saved={data.saved} locks={data.locks} cutoverHref={`${cutoverBase}?batch=${data.cutover.id}`} noticeLead={noticeLeadText(rules.NOTICE_RULES)}
+          words={{ levy: rules.TERMINOLOGY.levy, levies: rules.TERMINOLOGY.levies, sharedBy: levySharedBy(rules) }}
+        />
       )}
     </div>
   );

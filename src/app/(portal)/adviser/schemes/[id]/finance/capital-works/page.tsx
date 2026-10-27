@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { NewPlanForm } from "./plan-forms";
 import { needRule } from "@/config/statutory";
+import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 
 const STATUS: Record<string, string> = { DRAFT: "Draft", ADOPTED: "Adopted", SUPERSEDED: "Superseded" };
 
@@ -26,6 +27,8 @@ export default async function CapitalWorksPlansPage({ params }: { params: Promis
   const { rules } = rulesForState(scheme.state);
   if (!rules.FEATURES.capitalWorksFundPlan) notFound();
   const CAPITAL_WORKS_PLAN = needRule(rules, "CAPITAL_WORKS_PLAN");
+  // The fund the plan is for, as the building's pack names it ("Capital Works Fund").
+  const fund = ledgerFundDefinition(rules, "CAPITAL_WORKS");
   const today = await schemeToday(id);
   const fyStart = Number(today.slice(5, 7)) >= 7 ? Number(today.slice(0, 4)) : Number(today.slice(0, 4)) - 1;
   const adopted = plans.find((p) => p.status === "ADOPTED");
@@ -34,7 +37,7 @@ export default async function CapitalWorksPlansPage({ params }: { params: Promis
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Capital Works Fund Plan"
+        title={`${fund.label} Plan`}
         description={`A plan of anticipated major expenditure for at least the next ${CAPITAL_WORKS_PLAN.horizonYears} years, reviewed at least every ${CAPITAL_WORKS_PLAN.reviewEveryYears} years (${CAPITAL_WORKS_PLAN.source}).`}
       />
       {!adopted && (
@@ -75,7 +78,7 @@ export default async function CapitalWorksPlansPage({ params }: { params: Promis
           title="Prepare a new plan"
           description="From 1 April 2026 a new or reviewed plan must follow the NSW standard form. Record the items from that form here."
         />
-        <NewPlanForm schemeId={id} defaultStartYear={fyStart} today={today} />
+        <NewPlanForm schemeId={id} defaultStartYear={fyStart} today={today} fundName={fund.name} />
       </Card>
     </div>
   );

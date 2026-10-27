@@ -10,6 +10,8 @@ import { connection } from "next/server";
 import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { getStrataRollData } from "@/lib/queries/lots";
 import { StrataRollTable } from "@/app/(portal)/adviser/schemes/[id]/strata-roll-table";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function OwnerSchemePage() {
   await connection();
@@ -25,6 +27,8 @@ export default async function OwnerSchemePage() {
   // so they see the roll and each lot (25 Oct 2026).
   const committee = await getSelectedOwnerScheme(["COMMITTEE"]);
   const rollRows = committee ? await getStrataRollData(committee.schemeId) : null;
+  // The roll's words, from the selected building's rule pack.
+  const rollWords = committee && rollRows ? lotWordsFor((await rulesForScheme(committee.schemeId)).rules) : null;
 
   if (schemes.length === 0 && !committee) {
     return (
@@ -59,10 +63,10 @@ export default async function OwnerSchemePage() {
   // The scheme header and pills come from the shared owner scheme layout.
   return (
     <>
-    {committee && rollRows && (
+    {committee && rollRows && rollWords && (
       <Card className="mb-6">
         <CardHeader title="Strata roll" description="Every lot and its owner, and whether the lot is financial. Open a lot to update its owner." />
-        <StrataRollTable rows={rollRows} schemeId={committee.schemeId} lotHrefBase="/owner/scheme/lots/" showMoney={false} />
+        <StrataRollTable rows={rollRows} schemeId={committee.schemeId} lotHrefBase="/owner/scheme/lots/" showMoney={false} words={rollWords} />
       </Card>
     )}
     <div>

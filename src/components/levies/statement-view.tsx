@@ -43,7 +43,10 @@ export function StatementView({
   totalPayments,
   closingBalance,
   lines,
+  levy,
 }: {
+  /** The building's word for a levy (`rules.TERMINOLOGY.levy`). */
+  levy: string;
   lotLabel: string;
   pdfHref: string | null;
   periodLabel: string;
@@ -58,7 +61,7 @@ export function StatementView({
       {lines.length === 0 && (
         <EmptyState
           title="No transactions"
-          description="There are no levy notices or payments for this lot in the selected period."
+          description={`There are no ${levy} notices or payments for this lot in the selected period.`}
         />
       )}
 

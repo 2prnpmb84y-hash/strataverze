@@ -49,6 +49,8 @@ export function resolveOutcome(
     requestedOutcome: Outcome;
     resolutionCategory?: string | null;
     tally?: ResolutionTally | null;
+    /** The entitlement a poll is counted by, as the building's pack names it (see evaluateResolution). */
+    pollEntitlement?: string;
   },
 ): OutcomeResult {
   if (params.requestedOutcome === "DEFERRED") {
@@ -60,6 +62,7 @@ export function resolveOutcome(
       ruleSet,
       params.resolutionCategory,
       params.tally,
+      params.pollEntitlement,
     );
     const outcome: Outcome = evaluation.passed ? "RESOLVED" : "MOTION_LOST";
     return { outcome, status: statusForOutcome(outcome), evaluation };

@@ -18,6 +18,8 @@ import { FinancialCard } from "@/components/ui/financial-card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { getDashboardFinancialSummary } from "@/lib/queries/reports";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { capitalise } from "@/lib/jurisdiction/wording";
 
 const statusLabels: Record<string, string> = {
   OPEN: "Open",
@@ -43,6 +45,9 @@ export default async function OwnerDashboard() {
   if (!scheme) {
     redirect("/owner");
   }
+
+  // The building's words for its levies, from its rule pack.
+  const terms = rulesForState(scheme.state).rules.TERMINOLOGY;
 
   // Fund balances from the ledger, not the stored column (financials review B2).
   const funds = await withLedgerBalances(scheme.funds);
@@ -124,7 +129,7 @@ export default async function OwnerDashboard() {
             />
 
             <FinancialCard
-              title="Levies Receivable"
+              title={`${capitalise(terms.levies)} Receivable`}
               stats={[
                 {
                   label: `${unpaidCount} Awaiting payment`,
@@ -199,7 +204,7 @@ export default async function OwnerDashboard() {
       {!isCommittee && outstandingBalance > 0 && (
         <Card className="mt-8">
           <CardHeader
-            title="Outstanding Levies"
+            title={`Outstanding ${capitalise(terms.levies)}`}
             action={
               <Button variant="ghost" href="/owner/levies">
                 View all
@@ -220,7 +225,7 @@ export default async function OwnerDashboard() {
                   >
                     <div className="flex items-start justify-between gap-3 mb-1">
                       <p className="text-sm font-medium text-ink">
-                        {noticeLabel(notice)}
+                        {noticeLabel(notice, terms)}
                       </p>
                       <span className="text-sm font-semibold text-ink tabular-nums">
                         ${owed.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

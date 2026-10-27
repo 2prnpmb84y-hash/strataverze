@@ -9,6 +9,8 @@ import { updateDebtCollectionAction } from "./lot-workflow-actions";
 type DebtCollectionSectionProps = {
   schemeId: string;
   lotId: string;
+  /** What an agreed plan to pay is called in the building's pack ("Payment Plan", "Payment Arrangement"; caseWordsFor). */
+  paymentPlanLabel: string;
   debtCollection: {
     stage: string;
     notes: string | null;
@@ -29,6 +31,7 @@ const stageOptions = [
 export function DebtCollectionSection({
   schemeId,
   lotId,
+  paymentPlanLabel,
   debtCollection,
 }: DebtCollectionSectionProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -82,7 +85,7 @@ export function DebtCollectionSection({
             defaultChecked={debtCollection?.excludeFromCollection ?? false}
           />
           <CheckboxField
-            label="Payment Plan"
+            label={paymentPlanLabel}
             name="hasPaymentPlan"
             defaultChecked={debtCollection?.hasPaymentPlan ?? false}
           />
