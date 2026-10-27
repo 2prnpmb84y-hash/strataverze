@@ -5,7 +5,11 @@ import {
   fillPlaceholders,
   resolveAgendaTemplate,
   NSW_AGM_TEMPLATE,
+  QLD_AGM_TEMPLATE,
+  QLD_MOTION_LIBRARY,
 } from "./templates";
+import { PENDING_RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
+import { bodyCorporateName } from "@/lib/jurisdiction/wording";
 
 describe("agenda templates", () => {
   it("returns the NSW AGM mandatory items for an AGM and first AGM", () => {
@@ -65,5 +69,72 @@ describe("resolveAgendaTemplate", () => {
 
   it("returns an empty list for a committee meeting", () => {
     expect(resolveAgendaTemplate("NSW", "COMMITTEE", {})).toEqual([]);
+  });
+});
+
+describe("Queensland AGM template (draft for StrataVerze review)", () => {
+  const terms = PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY;
+  const bodyCorporate = bodyCorporateName(terms, { name: "Seaview", planNumber: "1234" });
+
+  it("is not given while Queensland has no active pack", () => {
+    expect(() => getAgendaTemplate("QLD", "AGM")).toThrow(UnsupportedJurisdictionError);
+    expect(() => getMotionLibrary("QLD", "AGM")).toThrow(UnsupportedJurisdictionError);
+  });
+
+  it("holds the AGM business the pack records, with the committee election last", () => {
+    expect(QLD_AGM_TEMPLATE.map((i) => i.title)).toEqual([
+      "Statement of Accounts",
+      "Auditor",
+      "Administrative Fund Budget",
+      "Sinking Fund Budget",
+      "Contributions",
+      "Insurance Review",
+      "Election of Committee",
+    ]);
+    const last = QLD_AGM_TEMPLATE[QLD_AGM_TEMPLATE.length - 1];
+    expect(last.resolutionCategory).toBeNull();
+    expect(last.explanatoryNote).toContain("last business");
+    expect(PENDING_RULE_PACKS.QLD.rules.COMMITTEE.electionIsLastBusiness).toBe(true);
+  });
+
+  it("has one item for each statutory motion qld.ts records, with the type it records", () => {
+    const recorded = PENDING_RULE_PACKS.QLD.rules.MEETINGS.statutoryMotions;
+    expect(recorded.status).toBe("CONFIRMED");
+    const keys = recorded.motions.map((m) => m.key);
+    expect([...new Set(QLD_AGM_TEMPLATE.flatMap((i) => (i.statutoryMotion ? [i.statutoryMotion] : [])))].sort()).toEqual([...keys].sort());
+    for (const item of QLD_AGM_TEMPLATE.filter((i) => i.statutoryMotion)) {
+      const m = recorded.motions.find((r) => r.key === item.statutoryMotion)!;
+      // Where qld.ts records the type, the item uses it. Where it records none, the draft's ordinary resolution is for review.
+      expect(item.resolutionCategory).toBe(m.resolution ?? "ORDINARY");
+    }
+    expect(PENDING_RULE_PACKS.QLD.rules.FOR_REVIEW.some((f) => f.where.includes("QLD_AGM_TEMPLATE"))).toBe(true);
+  });
+
+  it("words each motion as the body corporate resolving, filled with the pack's legal name", () => {
+    for (const item of QLD_AGM_TEMPLATE.slice(0, -1)) {
+      expect(item.resolutionText.startsWith("{{BODY_CORPORATE}} RESOLVES by ordinary resolution ")).toBe(true);
+      expect(item.resolutionCategory).toBe("ORDINARY");
+      const filled = fillPlaceholders(item.resolutionText, { bodyCorporate });
+      expect(filled.startsWith("Body corporate for Seaview community titles scheme 1234 RESOLVES")).toBe(true);
+    }
+  });
+
+  it("has the special resolution not to audit in the motion library, for a basic scheme", () => {
+    const noAudit = QLD_MOTION_LIBRARY.find((m) => m.key === "no-audit");
+    expect(noAudit?.defaultResolutionCategory).toBe("SPECIAL");
+    expect(noAudit?.resolutionText).toContain("RESOLVES by special resolution not to audit");
+    expect(noAudit?.explanatoryNote).toContain("basic scheme");
+  });
+
+  it("uses only Queensland categories and plain wording", () => {
+    const qld = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+    for (const m of QLD_MOTION_LIBRARY) expect(qld.generalMeetingCategories).toContain(m.defaultResolutionCategory);
+    const text = [...QLD_AGM_TEMPLATE, ...QLD_MOTION_LIBRARY].flatMap((i) => [i.title, i.resolutionText, i.explanatoryNote ?? ""]).join(" ");
+    expect(text).not.toMatch(/[;\u2013\u2014]| - /);
+    expect(text).not.toMatch(/owners corporation|Strata Plan|levy/i);
+  });
+
+  it("leaves the NSW wording without the body corporate token", () => {
+    expect(NSW_AGM_TEMPLATE.some((i) => i.resolutionText.includes("{{BODY_CORPORATE}}"))).toBe(false);
   });
 });

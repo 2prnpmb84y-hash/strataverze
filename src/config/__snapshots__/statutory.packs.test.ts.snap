@@ -35,6 +35,8 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
   },
   "COMMITTEE": {
     "electedBySecretBallotByDefault": true,
+    "electionIsLastBusiness": true,
+    "electionIsLastBusinessSource": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 13(1), 31(1)",
     "executivePositions": [
       "chairperson",
       "secretary",
@@ -49,7 +51,7 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "minorCommitteeExempt": true,
     "quotesAboveMajorSpending": 2,
     "requiredUnlessManagerEngaged": true,
-    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 7, 9, 13, 15, 172 to 174, sch 1; Body Corporate and Community Management Act 1997 (Qld) s 98",
+    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 7, 9, 13, 15, 31, 172 to 174, sch 1; Body Corporate and Community Management Act 1997 (Qld) s 98",
     "spendingLimitPerLotCents": 20000,
     "status": "CONFIRMED",
   },
@@ -192,6 +194,32 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "source": "Queensland Government, Fees for accessing body corporate records (updated 1 Jul 2026)",
     "status": "GUIDANCE",
   },
+  "FOR_REVIEW": [
+    {
+      "point": "A committee may decide ordinary resolutions only, and any other category is refused on a committee agenda with the words in MEETING_RULES.committeeCategoryRefusal.",
+      "where": "MEETING_RULES.committeeCategories, committeeCategoryRefusal",
+    },
+    {
+      "point": "For voting, a lot owes the body corporate money when it has an issued contribution notice past its due date and not paid in full, on the building's today.",
+      "where": "src/lib/meetings/debtor-voting-repo.ts",
+    },
+    {
+      "point": "An owner of several lots is refused a vote only if every one of their lots owes money.",
+      "where": "src/lib/meetings/debtor-voting-repo.ts",
+    },
+    {
+      "point": "The draft AGM template and motion library: their wording, and putting the accounts and insurance review motions as ordinary resolutions (no type is recorded for those two).",
+      "where": "src/lib/meetings/templates.ts QLD_AGM_TEMPLATE, QLD_MOTION_LIBRARY",
+    },
+    {
+      "point": "Pre-meeting electronic voting is not offered for Queensland buildings until it is designed.",
+      "where": "MEETING_RULES.preMeetingEvoting",
+    },
+    {
+      "point": "A majority resolution is offered on the agenda but not in the motions list, which does not record written votes without proxies.",
+      "where": "MEETING_RULES.motionCategories",
+    },
+  ],
   "FUND_CATALOGUE": [
     {
       "key": "ADMINISTRATIVE",
@@ -314,7 +342,145 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     },
     "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 22, 55, 60, 71, 81, 83, 84, 86, 87, 90, 91, 93, 94, 99, 100, 106, 111, 117, 160, 175, 176, 196; Body Corporate and Community Management Act 1997 (Qld) s 111",
     "status": "CONFIRMED",
+    "statutoryMotions": {
+      "motions": [
+        {
+          "key": "ACCOUNTS",
+          "resolution": null,
+          "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) sch 1 "statutory motion", ss 93(3), 175(6)",
+          "subject": "the statement of accounts",
+        },
+        {
+          "key": "AUDITOR",
+          "resolution": "ORDINARY",
+          "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) sch 1 "statutory motion", ss 93(3), 176(2)",
+          "subject": "the auditor (agreed by ordinary resolution)",
+        },
+        {
+          "key": "BUDGETS",
+          "resolution": "ORDINARY",
+          "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) sch 1 "statutory motion", ss 93(3), 160(1)",
+          "subject": "the administrative fund and sinking fund budgets (adopted by ordinary resolution)",
+        },
+        {
+          "key": "CONTRIBUTIONS",
+          "resolution": "ORDINARY",
+          "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) sch 1 "statutory motion", ss 93(3), 162(1)",
+          "subject": "the contributions for the financial year, the number of instalments and the due dates (fixed by ordinary resolution)",
+        },
+        {
+          "key": "INSURANCE",
+          "resolution": null,
+          "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) sch 1 "statutory motion", ss 93(3), 196",
+          "subject": "the review of insurance",
+        },
+      ],
+      "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) sch 1 "statutory motion", s 93(3)",
+      "status": "CONFIRMED",
+    },
     "votingOutsideMeeting": false,
+  },
+  "MEETING_RULES": {
+    "committeeCategories": [
+      "ORDINARY",
+    ],
+    "committeeCategoryRefusal": "Only an ordinary resolution can go on a committee meeting agenda. Put this motion on a general meeting agenda instead.",
+    "debtorsMayVoteOn": [
+      "WITHOUT_DISSENT",
+    ],
+    "effectiveFrom": "2026-10-27",
+    "generalMeetingCategories": [
+      "ORDINARY",
+      "SPECIAL",
+      "WITHOUT_DISSENT",
+      "MAJORITY",
+    ],
+    "minutesDeadlines": {
+      "AGM": 21,
+      "COMMITTEE": 21,
+      "EGM": 21,
+      "FIRST_AGM": 21,
+    },
+    "motionCategories": [
+      "ORDINARY",
+      "SPECIAL",
+      "WITHOUT_DISSENT",
+    ],
+    "notes": "From the Queensland pack signed off on 27 Oct 2026 (Standard Module). How the 21 days' notice is counted is not confirmed.",
+    "noticePeriods": {
+      "AGM": 21,
+      "COMMITTEE": 7,
+      "EGM": 21,
+      "FIRST_AGM": 21,
+    },
+    "preMeetingEvoting": null,
+    "quorumRules": {
+      "AGM": {
+        "basis": "PERCENT_VOTERS_WITH_MIN_PRESENT",
+        "minPersons": 2,
+        "minPersonsBelow": 1,
+        "minPersonsFromVoters": 3,
+        "percent": 0.25,
+      },
+      "COMMITTEE": {
+        "basis": "HALF_MEMBERS",
+      },
+      "EGM": {
+        "basis": "PERCENT_VOTERS_WITH_MIN_PRESENT",
+        "minPersons": 2,
+        "minPersonsBelow": 1,
+        "minPersonsFromVoters": 3,
+        "percent": 0.25,
+      },
+      "FIRST_AGM": {
+        "basis": "PERCENT_VOTERS_WITH_MIN_PRESENT",
+        "minPersons": 2,
+        "minPersonsBelow": 1,
+        "minPersonsFromVoters": 3,
+        "percent": 0.25,
+      },
+    },
+    "resolutionCategories": {
+      "MAJORITY": {
+        "basis": "MORE_THAN_HALF_OF_LOTS",
+      },
+      "ORDINARY": {
+        "basis": "COUNT_MAJORITY",
+      },
+      "SPECIAL": {
+        "againstMaxFractionOfEntitlement": 0.25,
+        "againstMaxFractionOfLots": 0.25,
+        "basis": "TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS",
+        "forAtLeastFractionOfVotesCast": 0.6666666666666666,
+      },
+      "WITHOUT_DISSENT": {
+        "basis": "NO_AGAINST",
+      },
+    },
+    "resolutionLabels": {
+      "MAJORITY": {
+        "full": "Majority Resolution",
+        "short": "Majority",
+      },
+      "ORDINARY": {
+        "full": "Ordinary Resolution",
+        "short": "Ordinary",
+      },
+      "SPECIAL": {
+        "full": "Special Resolution",
+        "short": "Special",
+      },
+      "WITHOUT_DISSENT": {
+        "full": "Resolution without Dissent",
+        "short": "Without dissent",
+      },
+    },
+    "retention": {
+      "generalYears": null,
+      "secretBallotMonths": null,
+    },
+    "state": "QLD",
+    "version": "QLD-2026.1",
   },
   "NOTICE_RULES": {
     "contents": [

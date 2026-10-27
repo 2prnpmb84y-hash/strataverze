@@ -70,9 +70,14 @@ export function minutesDistributionDeadline(
   return minutesDeadline(ruleSet, meetingType, meetingDate);
 }
 
-/** The retention cut-off for the meeting record (meeting date + retention years). */
-export function retentionUntil(ruleSet: MeetingRuleSet, from: Date): Date {
+/**
+ * The retention cut-off for the meeting record (meeting date + retention
+ * years), or null where the rule set keeps it without a limit (Queensland).
+ */
+export function retentionUntil(ruleSet: MeetingRuleSet, from: Date): Date | null {
+  const years = ruleSet.retention.generalYears;
+  if (years == null) return null;
   const result = new Date(from);
-  result.setUTCFullYear(result.getUTCFullYear() + ruleSet.retention.generalYears);
+  result.setUTCFullYear(result.getUTCFullYear() + years);
   return result;
 }

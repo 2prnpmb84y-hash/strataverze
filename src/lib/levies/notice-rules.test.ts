@@ -24,6 +24,7 @@ const qldShaped: StatutoryRules = {
   FEATURES: QLD.FEATURES,
   NOTICE_RULES: QLD.NOTICE_RULES,
   LATE_CHARGE: QLD.LATE_CHARGE,
+  MEETING_RULES: QLD.MEETING_RULES,
 };
 
 // For the content check against the database: the building's pack is the Queensland-shaped one.

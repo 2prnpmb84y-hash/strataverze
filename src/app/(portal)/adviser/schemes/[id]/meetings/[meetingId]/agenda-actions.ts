@@ -22,6 +22,9 @@ import {
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { recordMeetingEvent } from "@/lib/meetings/events";
 import type { MeetingType } from "@/lib/meetings/rules";
+import { getActiveRuleSet, getActiveRuleSetForScheme } from "@/lib/meetings/rule-set-repo";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { bodyCorporateName } from "@/lib/jurisdiction/wording";
 
 export type AgendaFormState = {
   error?: string;
@@ -54,7 +57,9 @@ export async function addAgendaItemAction(
         ((formData.get("resolutionCategory") as string) ?? "").trim() || null,
     };
 
-    const fieldErrors = validateAgendaItem(input, meeting.meetingType);
+    // The categories are the building's (its rule set's).
+    const ruleSet = await getActiveRuleSetForScheme(schemeId);
+    const fieldErrors = validateAgendaItem(input, meeting.meetingType, ruleSet);
     if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
 
     const position = await getNextAgendaPosition(meetingId);
@@ -97,6 +102,7 @@ export async function loadAgendaTemplateAction(
 
     const items = resolveAgendaTemplate(scheme.state, type, {
       planNumber: scheme.planNumber,
+      bodyCorporate: bodyCorporateName(rulesForState(scheme.state).rules.TERMINOLOGY, scheme),
     });
     if (items.length === 0)
       return { error: "No template is defined for this meeting type." };
@@ -148,11 +154,15 @@ export async function addMotionFromLibraryAction(
     );
     if (!entry) return { error: "Motion not found in the library." };
 
-    const resolved = resolveMotion(entry, { planNumber: scheme.planNumber });
+    const resolved = resolveMotion(entry, {
+      planNumber: scheme.planNumber,
+      bodyCorporate: bodyCorporateName(rulesForState(scheme.state).rules.TERMINOLOGY, scheme),
+    });
 
     const fieldErrors = validateAgendaItem(
       { title: resolved.title, resolutionCategory: resolved.resolutionCategory },
       meeting.meetingType,
+      await getActiveRuleSet(scheme.state),
     );
     if (Object.keys(fieldErrors).length > 0) {
       return {

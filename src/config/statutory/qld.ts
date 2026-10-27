@@ -29,6 +29,7 @@
  * document. Each rule below has a `status` (see RuleStatus in ./types).
  */
 
+import type { MeetingRuleSet, QuorumRule } from "@/lib/meetings/rules";
 import type { EntitlementScheduleDefinition, FundDefinition, LateChargeRules, NoticeRules, PackFeatures, RuleStatus, SchemeSelector } from "./types";
 
 const ACT = "Body Corporate and Community Management Act 1997 (Qld)";
@@ -287,8 +288,8 @@ export const DEBT_RECOVERY = {
 } as const;
 
 /**
- * General meetings and committee meetings. Held as data for review; the
- * meeting engine does not apply it yet (its rule set is NSW-shaped).
+ * General meetings and committee meetings, as signed off. The meeting engine
+ * applies them through MEETING_RULES (below, stage 2, step 7).
  */
 export const MEETINGS = {
   /** All body corporate meetings are general meetings: an AGM or an EGM (SM s 81). */
@@ -333,6 +334,23 @@ export const MEETINGS = {
   ownerMotionsBy: "the end of the financial year",
   /** The AGM notice includes the statutory motions, an explanatory schedule, the proposed budgets, the statement of accounts, the auditor's certificate, the insurance disclosure and latest valuation, and committee ballot papers (SM ss 87, 90, 93(3), 160(6), 175(6), 176(7), 196, 22(6)). */
   agmNoticeIncludes: ["statutory motions", "explanatory schedule", "proposed budgets", "statement of accounts", "auditor's certificate", "insurance disclosure and latest valuation", "committee ballot papers", "proxy form", "voting paper"],
+  /**
+   * The statutory motions on the AGM agenda (SM sch 1 definition of "statutory
+   * motion", s 93(3)): the accounts, the auditor, the budgets, the
+   * contributions and the insurance review. `resolution` is the type the SM
+   * states for the decision, or null where none was recorded.
+   */
+  statutoryMotions: {
+    motions: [
+      { key: "ACCOUNTS", subject: "the statement of accounts", resolution: null, source: `${SM} sch 1 "statutory motion", ss 93(3), 175(6)` },
+      { key: "AUDITOR", subject: "the auditor (agreed by ordinary resolution)", resolution: "ORDINARY", source: `${SM} sch 1 "statutory motion", ss 93(3), 176(2)` },
+      { key: "BUDGETS", subject: "the administrative fund and sinking fund budgets (adopted by ordinary resolution)", resolution: "ORDINARY", source: `${SM} sch 1 "statutory motion", ss 93(3), 160(1)` },
+      { key: "CONTRIBUTIONS", subject: "the contributions for the financial year, the number of instalments and the due dates (fixed by ordinary resolution)", resolution: "ORDINARY", source: `${SM} sch 1 "statutory motion", ss 93(3), 162(1)` },
+      { key: "INSURANCE", subject: "the review of insurance", resolution: null, source: `${SM} sch 1 "statutory motion", ss 93(3), 196` },
+    ],
+    source: `${SM} sch 1 "statutory motion", s 93(3)`,
+    status: "CONFIRMED" as RuleStatus,
+  },
   /** General meeting minutes to each owner within 21 days (SM s 117(2)). */
   generalMeetingMinutesDays: 21,
   /** Committee meetings: 7 days' written notice, or 2 days if all voting members agree; quorum half the voting members; minutes within 21 days (SM ss 55, 60, 71). */
@@ -423,6 +441,9 @@ export const COMMITTEE = {
   maxForLayeredPrincipalScheme: 12,
   /** Elected at each AGM by secret ballot unless an ordinary resolution chooses an open ballot (SM ss 13, 15). */
   electedBySecretBallotByDefault: true,
+  /** Chosen at each AGM, with the election items as the last business of the meeting (SM ss 13(1), 31(1)). */
+  electionIsLastBusiness: true,
+  electionIsLastBusinessSource: `${SM} ss 13(1), 31(1)`,
   /** Committee spending limit: $200 times the number of lots, unless an ordinary resolution sets another amount (SM s 172; sch 1). */
   spendingLimitPerLotCents: 20_000,
   /** Major spending limit: the lesser of $1,100 times the number of lots and $10,000, unless set by ordinary resolution (sch 1). */
@@ -430,7 +451,7 @@ export const COMMITTEE = {
   majorSpendingCapCents: 1_000_000,
   /** Above the major spending limit, at least 2 quotes (SM ss 173, 174). */
   quotesAboveMajorSpending: 2,
-  source: `${SM} ss 7, 9, 13, 15, 172 to 174, sch 1; ${ACT} s 98`,
+  source: `${SM} ss 7, 9, 13, 15, 31, 172 to 174, sch 1; ${ACT} s 98`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
 
@@ -480,6 +501,103 @@ export const RECORD_RETENTION = {
   source: `${SM} s 231(3) to (5)`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/** The quorum at a general meeting (SM s 99), from MEETINGS.quorum. */
+const GENERAL_MEETING_QUORUM: QuorumRule = {
+  basis: "PERCENT_VOTERS_WITH_MIN_PRESENT",
+  percent: MEETINGS.quorum.percentOfVoters / 100,
+  minPersons: MEETINGS.quorum.presentPersonallyWhenAtLeast3Voters,
+  minPersonsFromVoters: 3,
+  minPersonsBelow: MEETINGS.quorum.presentPersonallyWhenFewerThan3Voters,
+};
+
+/**
+ * The meeting rules in the shape every pack shares (stage 2, step 7,
+ * 27 Oct 2026), built from MEETINGS, RESOLUTIONS, CONTRIBUTIONS.debtorMayVote
+ * and RECORD_RETENTION as signed off. Not confirmed: how the 21 days' notice
+ * is counted and when a posted or emailed notice is taken to be given
+ * (MEETINGS.noticeCountingConfirmed), so the engine counts plain whole days as
+ * it does for NSW.
+ * - ORDINARY is a majority of the votes cast, one vote per lot, or on a poll
+ *   by contribution schedule lot entitlement (the lot entitlement the engine
+ *   already holds as unit entitlement).
+ * - SPECIAL passes only if 3 times the votes for is at least 2 times the
+ *   votes cast, the votes against are not more than 25% of the lots, and the
+ *   lots against hold not more than 25% of the contribution entitlement.
+ * - WITHOUT_DISSENT fails on any vote against.
+ * - MAJORITY needs votes for from more than 50% of the lots entitled to vote.
+ * - Quorum is held as data only (the engine does not count it yet).
+ * - Minutes and the other meeting records are kept without a limit (DECISIONS),
+ *   and no period for secret ballot papers was found.
+ * - There is no pre-meeting ballot like the NSW one: electronic voting is by
+ *   ordinary resolution under the SM, and is not offered for Queensland
+ *   buildings until it is designed.
+ * - A lot owing a body corporate debt votes only on a resolution without
+ *   dissent (SM s 102(2)). The other exception, a committee election, is not a
+ *   resolution category here.
+ */
+/*
+ * GO-LIVE GAP (stage 2, step 7, 27 Oct 2026): the engine cannot count a
+ * Queensland special or majority resolution yet. Conduct never passes a tally
+ * (conduct-actions.ts recordAgendaOutcomeAction calls resolveOutcome without
+ * one), and nothing supplies totalLots, totalEntitlement or eligibleLots, so
+ * the chair's recorded outcome is stored unchecked. The two tests evaluate
+ * correctly once a tally with those totals is passed. The debtor voting check
+ * (debtorsMayVoteOn) runs only when an owner casts a vote online, not on votes
+ * the chair records at the meeting.
+ */
+export const MEETING_RULES: MeetingRuleSet = {
+  state: "QLD",
+  version: "QLD-2026.1",
+  effectiveFrom: "2026-10-27",
+  noticePeriods: {
+    AGM: MEETINGS.generalMeetingNoticeDays,
+    EGM: MEETINGS.generalMeetingNoticeDays,
+    FIRST_AGM: MEETINGS.generalMeetingNoticeDays,
+    COMMITTEE: MEETINGS.committee.noticeDays,
+  },
+  minutesDeadlines: {
+    AGM: MEETINGS.generalMeetingMinutesDays,
+    EGM: MEETINGS.generalMeetingMinutesDays,
+    FIRST_AGM: MEETINGS.generalMeetingMinutesDays,
+    COMMITTEE: MEETINGS.committee.minutesDays,
+  },
+  quorumRules: {
+    AGM: GENERAL_MEETING_QUORUM,
+    EGM: GENERAL_MEETING_QUORUM,
+    FIRST_AGM: GENERAL_MEETING_QUORUM,
+    COMMITTEE: { basis: "HALF_MEMBERS" },
+  },
+  resolutionCategories: {
+    ORDINARY: { basis: "COUNT_MAJORITY" },
+    SPECIAL: {
+      basis: "TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS",
+      forAtLeastFractionOfVotesCast: RESOLUTIONS.SPECIAL.forAtLeastFractionOfVotesCast,
+      againstMaxFractionOfLots: RESOLUTIONS.SPECIAL.againstMaxFractionOfLots,
+      againstMaxFractionOfEntitlement: RESOLUTIONS.SPECIAL.againstMaxFractionOfContributionEntitlement,
+    },
+    WITHOUT_DISSENT: { basis: "NO_AGAINST" },
+    MAJORITY: { basis: "MORE_THAN_HALF_OF_LOTS" },
+  },
+  retention: { generalYears: null, secretBallotMonths: null },
+  preMeetingEvoting: null,
+  resolutionLabels: {
+    ORDINARY: { short: "Ordinary", full: "Ordinary Resolution" },
+    SPECIAL: { short: "Special", full: "Special Resolution" },
+    WITHOUT_DISSENT: { short: "Without dissent", full: "Resolution without Dissent" },
+    MAJORITY: { short: "Majority", full: "Majority Resolution" },
+  },
+  generalMeetingCategories: ["ORDINARY", "SPECIAL", "WITHOUT_DISSENT", "MAJORITY"],
+  committeeCategories: ["ORDINARY"],
+  committeeCategoryRefusal:
+    "Only an ordinary resolution can go on a committee meeting agenda. Put this motion on a general meeting agenda instead.",
+  // A majority resolution is in writing with no proxies (Act s 107), which the
+  // motions list does not record, so it is offered on the agenda only.
+  motionCategories: ["ORDINARY", "SPECIAL", "WITHOUT_DISSENT"],
+  debtorsMayVoteOn: ["WITHOUT_DISSENT"],
+  notes:
+    "From the Queensland pack signed off on 27 Oct 2026 (Standard Module). How the 21 days' notice is counted is not confirmed.",
+};
 
 /**
  * Fees set in fee units (SM s 233). The dollar values change each 1 July; the
@@ -604,6 +722,38 @@ export const NOT_CONFIRMED = [
   "What the Disaster Management and Other Legislation Amendment Act 2024 changed in the Standard Module (1 Jul 2024), and the content of 2024 Act No 27.",
   "Which instrument inserted SM s 233AA (the certificate contents).",
   "The assent date of the Body Corporate and Community Management and Other Legislation Amendment Act 2023.",
+] as const;
+
+/**
+ * StrataVerze design choices made after the sign-off (stage 2, step 7,
+ * 27 Oct 2026) that are not in the signed-off data, for Matthew Wrigley to
+ * confirm. Each is applied as stated until then.
+ */
+export const FOR_REVIEW = [
+  {
+    point: "A committee may decide ordinary resolutions only, and any other category is refused on a committee agenda with the words in MEETING_RULES.committeeCategoryRefusal.",
+    where: "MEETING_RULES.committeeCategories, committeeCategoryRefusal",
+  },
+  {
+    point: "For voting, a lot owes the body corporate money when it has an issued contribution notice past its due date and not paid in full, on the building's today.",
+    where: "src/lib/meetings/debtor-voting-repo.ts",
+  },
+  {
+    point: "An owner of several lots is refused a vote only if every one of their lots owes money.",
+    where: "src/lib/meetings/debtor-voting-repo.ts",
+  },
+  {
+    point: "The draft AGM template and motion library: their wording, and putting the accounts and insurance review motions as ordinary resolutions (no type is recorded for those two).",
+    where: "src/lib/meetings/templates.ts QLD_AGM_TEMPLATE, QLD_MOTION_LIBRARY",
+  },
+  {
+    point: "Pre-meeting electronic voting is not offered for Queensland buildings until it is designed.",
+    where: "MEETING_RULES.preMeetingEvoting",
+  },
+  {
+    point: "A majority resolution is offered on the agenda but not in the motions list, which does not record written votes without proxies.",
+    where: "MEETING_RULES.motionCategories",
+  },
 ] as const;
 
 /** StrataVerze's decisions in the sign-off of 27 Oct 2026 (review document, "Decisions"). */

@@ -17,28 +17,77 @@ import { dayIn } from "@/lib/jurisdiction/time-zone";
 
 export type MeetingType = "AGM" | "EGM" | "COMMITTEE" | "FIRST_AGM";
 
+/**
+ * Every resolution category any pack uses. Each pack lists the ones it has in
+ * its MEETING_RULES (NSW: ORDINARY, SPECIAL, UNANIMOUS and
+ * SUSTAINABILITY_INFRASTRUCTURE; Queensland: ORDINARY, SPECIAL,
+ * WITHOUT_DISSENT and MAJORITY). Code never lists them itself: it reads the
+ * building's rule set.
+ */
 export type ResolutionCategory =
   | "ORDINARY"
   | "SPECIAL"
   | "UNANIMOUS"
-  | "SUSTAINABILITY_INFRASTRUCTURE";
+  | "SUSTAINABILITY_INFRASTRUCTURE"
+  | "WITHOUT_DISSENT"
+  | "MAJORITY";
 
 export interface QuorumRule {
-  /** PERCENT_PRESENT_OR_UE: quorum on head count OR unit entitlement. HALF_MEMBERS: committee. */
-  basis: "PERCENT_PRESENT_OR_UE" | "HALF_MEMBERS";
+  /**
+   * PERCENT_PRESENT_OR_UE: quorum on head count OR unit entitlement (NSW).
+   * HALF_MEMBERS: committee.
+   * PERCENT_VOTERS_WITH_MIN_PRESENT: at least `percent` of the voters, with at
+   * least `minPersons` present personally where there are `minPersonsFromVoters`
+   * or more voters, else `minPersonsBelow` (Queensland, SM s 99). Held as data:
+   * quorum is not evaluated yet.
+   */
+  basis: "PERCENT_PRESENT_OR_UE" | "HALF_MEMBERS" | "PERCENT_VOTERS_WITH_MIN_PRESENT";
   percent?: number;
   minPersons?: number;
+  /** PERCENT_VOTERS_WITH_MIN_PRESENT: the number of voters from which `minPersons` applies. */
+  minPersonsFromVoters?: number;
+  /** PERCENT_VOTERS_WITH_MIN_PRESENT: the least present personally where there are fewer voters. */
+  minPersonsBelow?: number;
 }
 
 export interface ResolutionRule {
   /**
-   * COUNT_MAJORITY: majority of votes cast (poll switches to UE weighting).
+   * COUNT_MAJORITY: majority of votes cast (poll switches to UE weighting; in
+   * Queensland the lot's contribution schedule lot entitlement, held as UE).
    * UE_AGAINST_THRESHOLD: fails if against (by unit entitlement) >= threshold.
    * NO_AGAINST: fails on any against vote.
+   * TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS: passes only if the votes for are at
+   * least `forAtLeastFractionOfVotesCast` of the votes cast, the votes against
+   * are not more than `againstMaxFractionOfLots` of the lots in the scheme, and
+   * the lots against hold not more than `againstMaxFractionOfEntitlement` of
+   * the total entitlement (Queensland special resolution, Act s 106(3)).
+   * MORE_THAN_HALF_OF_LOTS: passes only if the votes for are more than half of
+   * the lots entitled to vote (Queensland majority resolution, Act s 107).
    */
-  basis: "COUNT_MAJORITY" | "UE_AGAINST_THRESHOLD" | "NO_AGAINST";
+  basis:
+    | "COUNT_MAJORITY"
+    | "UE_AGAINST_THRESHOLD"
+    | "NO_AGAINST"
+    | "TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS"
+    | "MORE_THAN_HALF_OF_LOTS";
   /** Fraction of against votes (by unit entitlement) at or above which the motion fails. */
   againstThreshold?: number;
+  /** TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS: the least share of the votes cast that must be for ("at least"). */
+  forAtLeastFractionOfVotesCast?: number;
+  /** TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS: the most votes against, as a share of the lots in the scheme. */
+  againstMaxFractionOfLots?: number;
+  /** TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS: the most entitlement held by the lots against, as a share of the total. */
+  againstMaxFractionOfEntitlement?: number;
+}
+
+/** How a resolution category is named to people. */
+export interface ResolutionLabel {
+  /** As agenda items are tagged: "Ordinary". */
+  short: string;
+  /** As a motion is described: "Ordinary Resolution". */
+  full: string;
+  /** As the choice reads on the new motion form, where it differs from `full`. */
+  choice?: string;
 }
 
 export interface MeetingRuleSet {
@@ -51,15 +100,40 @@ export interface MeetingRuleSet {
   /** Minutes distribution deadline in days after the meeting, by meeting type. */
   minutesDeadlines: Partial<Record<MeetingType, number>>;
   quorumRules: Partial<Record<MeetingType, QuorumRule>>;
-  resolutionCategories: Record<ResolutionCategory, ResolutionRule>;
-  retention: { generalYears: number; secretBallotMonths: number };
-  /** Pre-meeting electronic voting (Reg cl 14-17). */
+  /** The pack's resolution categories, each with its rule. A category not listed does not exist for the building. */
+  resolutionCategories: Partial<Record<ResolutionCategory, ResolutionRule>>;
+  /**
+   * How long meeting records are kept: whole years, or null where the law
+   * gives no limit (the record is kept). `secretBallotMonths` is null where no
+   * period for secret ballot papers was found.
+   */
+  retention: { generalYears: number | null; secretBallotMonths: number | null };
+  /**
+   * Pre-meeting electronic voting (NSW Reg cl 14-17), or null where the pack
+   * has no such ballot (Queensland): the ballot is then not offered.
+   */
   preMeetingEvoting: {
     /** Ballot access must be given at least this many days before (cl 15). */
     ballotOpenDaysBefore: number;
     /** Ballot closes this many hours before the meeting, by meeting type (cl 17). */
     ballotCloseHoursBefore: Partial<Record<MeetingType, number>>;
-  };
+  } | null;
+  /** How each category is named to people (stage 2, step 7). */
+  resolutionLabels: Partial<Record<ResolutionCategory, ResolutionLabel>>;
+  /** The categories a general meeting may carry, in the order they are offered. */
+  generalMeetingCategories: readonly ResolutionCategory[];
+  /** The categories a committee may decide. */
+  committeeCategories: readonly ResolutionCategory[];
+  /** Why a category outside `committeeCategories` is refused on a committee agenda. */
+  committeeCategoryRefusal: string;
+  /** The categories offered for a motion raised on a meeting (the motions list), in order. */
+  motionCategories: readonly ResolutionCategory[];
+  /**
+   * Where the pack records it: the only categories an owner whose lot owes
+   * the body corporate money may vote on (Queensland SM s 102(2)). Undefined
+   * where no such rule is recorded (NSW): votes are then not checked.
+   */
+  debtorsMayVoteOn?: readonly ResolutionCategory[];
   notes?: string;
 }
 
@@ -142,11 +216,32 @@ export interface ResolutionTally {
   againstUE?: number;
   /** Whether a poll was demanded (ordinary resolutions switch to UE weighting). */
   poll?: boolean;
+  /** The number of lots in the scheme (TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS). */
+  totalLots?: number;
+  /** The total entitlement of all lots in the scheme (TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS). */
+  totalEntitlement?: number;
+  /** The number of lots entitled to vote (MORE_THAN_HALF_OF_LOTS). */
+  eligibleLots?: number;
 }
+
+/**
+ * Shares are compared with a small allowance for floating point, so a share
+ * held as 2 / 3 passes at exactly two thirds (3 x for = 2 x cast).
+ */
+const EPSILON = 1e-9;
+const percent = (fraction: number) => `${Number((fraction * 100).toFixed(1))}%`;
 
 export interface ResolutionOutcome {
   passed: boolean;
   reason: string;
+}
+
+/** Whether a value is one of the building's resolution categories (one its rule set has a rule for). */
+export function isResolutionCategory(
+  ruleSet: Pick<MeetingRuleSet, "resolutionCategories">,
+  category: string | null | undefined,
+): category is ResolutionCategory {
+  return !!category && Object.prototype.hasOwnProperty.call(ruleSet.resolutionCategories, category);
 }
 
 /** Evaluate whether a resolution passes, per the rule for its category. */
@@ -202,6 +297,45 @@ export function evaluateResolution(
             passed: false,
             reason: `Against share ${(againstFraction * 100).toFixed(1)}% meets or exceeds the ${(threshold * 100).toFixed(0)}% failure threshold`,
           };
+    }
+
+    case "TWO_THIRDS_LOTS_AND_ENTITLEMENT_CAPS": {
+      const forShare = rule.forAtLeastFractionOfVotesCast;
+      const lotsShare = rule.againstMaxFractionOfLots;
+      const entitlementShare = rule.againstMaxFractionOfEntitlement;
+      if (forShare == null || lotsShare == null || entitlementShare == null) {
+        return { passed: false, reason: "The rule for this resolution is incomplete, so it cannot be counted" };
+      }
+      if (tally.totalLots == null || tally.totalEntitlement == null || tally.againstUE == null) {
+        return {
+          passed: false,
+          reason: "The number of lots, the total entitlement and the entitlement of the lots against are needed to count this resolution",
+        };
+      }
+      const cast = tally.forCount + tally.againstCount;
+      if (cast === 0) return { passed: false, reason: "No votes cast" };
+      if (tally.forCount + EPSILON < forShare * cast) {
+        return { passed: false, reason: `Votes for are less than ${percent(forShare)} of the votes cast` };
+      }
+      if (tally.againstCount > lotsShare * tally.totalLots + EPSILON) {
+        return { passed: false, reason: `Votes against are more than ${percent(lotsShare)} of the lots in the scheme` };
+      }
+      if (tally.againstUE > entitlementShare * tally.totalEntitlement + EPSILON) {
+        return { passed: false, reason: `The lots against hold more than ${percent(entitlementShare)} of the total entitlement` };
+      }
+      return {
+        passed: true,
+        reason: `Votes for are at least ${percent(forShare)} of the votes cast, and the votes and entitlement against are within the limits`,
+      };
+    }
+
+    case "MORE_THAN_HALF_OF_LOTS": {
+      if (tally.eligibleLots == null) {
+        return { passed: false, reason: "The number of lots entitled to vote is needed to count this resolution" };
+      }
+      return tally.forCount * 2 > tally.eligibleLots
+        ? { passed: true, reason: "Votes for are more than half of the lots entitled to vote" }
+        : { passed: false, reason: "Votes for are not more than half of the lots entitled to vote" };
     }
 
     default:

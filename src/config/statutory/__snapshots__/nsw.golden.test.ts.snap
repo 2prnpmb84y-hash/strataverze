@@ -1858,13 +1858,28 @@ exports[`NSW meetings > resolution results are unchanged 1`] = `
 
 exports[`NSW meetings > rule set and its stored snapshot are unchanged 1`] = `
 {
+  "committeeCategories": [
+    "ORDINARY",
+  ],
+  "committeeCategoryRefusal": "A strata committee cannot decide a matter that requires a special or unanimous resolution, or one reserved to a general meeting.",
   "effectiveFrom": "2025-01-01",
+  "generalMeetingCategories": [
+    "ORDINARY",
+    "SPECIAL",
+    "UNANIMOUS",
+    "SUSTAINABILITY_INFRASTRUCTURE",
+  ],
   "minutesDeadlines": {
     "AGM": 7,
     "COMMITTEE": 7,
     "EGM": 7,
     "FIRST_AGM": 7,
   },
+  "motionCategories": [
+    "ORDINARY",
+    "SPECIAL",
+    "UNANIMOUS",
+  ],
   "notes": "Seed rule set for NSW. Clause citations to be re-pinned to the live in-force consolidation before deadline logic is relied upon.",
   "noticePeriods": {
     "AGM": 14,
@@ -1915,6 +1930,25 @@ exports[`NSW meetings > rule set and its stored snapshot are unchanged 1`] = `
     },
     "UNANIMOUS": {
       "basis": "NO_AGAINST",
+    },
+  },
+  "resolutionLabels": {
+    "ORDINARY": {
+      "full": "Ordinary Resolution",
+      "short": "Ordinary",
+    },
+    "SPECIAL": {
+      "choice": "Special Resolution (75%)",
+      "full": "Special Resolution",
+      "short": "Special",
+    },
+    "SUSTAINABILITY_INFRASTRUCTURE": {
+      "full": "Sustainability Infrastructure Resolution",
+      "short": "Sustainability infrastructure",
+    },
+    "UNANIMOUS": {
+      "full": "Unanimous Resolution",
+      "short": "Unanimous",
     },
   },
   "retention": {
