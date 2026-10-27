@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { schemeToday, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getStrataRollData } from "@/lib/queries/lots";
 import { getLevySchedulesForScheme } from "@/lib/queries/levy-schedules";
@@ -109,7 +110,7 @@ export default async function SchemeDetailPage({
         </div>
       )}
       <AnnouncementsCard id={id} announcements={announcements} />
-      <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} />
+      <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE} />
       <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} />
       <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} />
       <MeetingsCard id={id} meetings={meetings} />

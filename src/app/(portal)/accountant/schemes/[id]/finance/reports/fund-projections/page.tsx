@@ -5,6 +5,7 @@ import { getFundBalanceProjections } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundProjectionsClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/fund-projections/fund-projections-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function AccountantFundProjectionsPage({
   params,
@@ -26,6 +27,7 @@ export default async function AccountantFundProjectionsPage({
   const validYears = [3, 5, 7, 10].includes(yearsAhead) ? yearsAhead : 5;
 
   const data = await getFundBalanceProjections(id, validYears);
+  const { rules } = rulesForState(scheme.state);
 
   return (
     <div className="space-y-6">
@@ -40,6 +42,8 @@ export default async function AccountantFundProjectionsPage({
         schemeId={id}
         yearsAhead={validYears}
         data={data}
+        catalogue={rules.FUND_CATALOGUE}
+        capitalWorksPlan={rules.FEATURES.capitalWorksFundPlan}
         basePath={`/accountant/schemes/${id}/finance/reports`}
       />
     </div>

@@ -8,28 +8,33 @@ import {
   updateFundAction,
   type FundFormState,
 } from "./actions";
+import { ledgerFundDefinition, type FundCatalogue } from "@/lib/jurisdiction/funds";
 
-const fundTypeOptions = [
-  { value: "ADMINISTRATIVE", label: "Administrative Fund" },
-  { value: "CAPITAL_WORKS", label: "Capital Works Fund" },
-  { value: "SPECIAL", label: "Special Fund" },
-];
-
+/** `catalogue`: the building's FUND_CATALOGUE, from the server page, which names its funds. */
 export function FundForm({
   schemeId,
   mode,
   fundId,
+  catalogue,
   defaults,
 }: {
   schemeId: string;
   mode: "create" | "edit";
   fundId?: string;
+  catalogue: FundCatalogue;
   defaults?: {
     name: string;
     fundType: string;
     balance: number;
   };
 }) {
+  const adminLabel = ledgerFundDefinition(catalogue, "ADMINISTRATIVE").label;
+  const fundTypeOptions = [
+    { value: "ADMINISTRATIVE", label: adminLabel },
+    { value: "CAPITAL_WORKS", label: ledgerFundDefinition(catalogue, "CAPITAL_WORKS").label },
+    { value: "SPECIAL", label: "Special Fund" },
+  ];
+
   const action =
     mode === "create"
       ? createFundAction.bind(null, schemeId)
@@ -53,7 +58,7 @@ export function FundForm({
         name="name"
         required
         defaultValue={defaults?.name}
-        placeholder="e.g. Administrative Fund"
+        placeholder={`e.g. ${adminLabel}`}
         error={state.fieldErrors?.name}
       />
 

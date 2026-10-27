@@ -1,5 +1,7 @@
 import { db } from "@/prisma/db";
 import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { ledgerFundDefinition, type FundCatalogue, type FundEntry } from "@/lib/jurisdiction/funds";
 
 /** Cast a plain string to the Prisma 8 Varchar branded type. */
 function toVarchar<N extends number>(value: string): Varchar<N> {
@@ -7,12 +9,14 @@ function toVarchar<N extends number>(value: string): Varchar<N> {
 }
 
 /**
- * Default chart of accounts for NSW strata schemes per SSMA 2015.
+ * Default chart of accounts for a new building.
  * Created automatically when a new scheme is set up.
  *
  * Each entry specifies:
  *   code        — account code (unique within scheme)
- *   name        — display name
+ *   name        — display name; a function of the account's fund from the
+ *                 building's FUND_CATALOGUE where it names the fund
+ *                 ("Levy Income — Admin", "Levy Income — Capital Works")
  *   accountType — ASSET | LIABILITY | EQUITY | INCOME | EXPENSE
  *   subType     — sub-classification for reporting
  *   fundType    — ADMINISTRATIVE | CAPITAL_WORKS (maps to the scheme's fund)
@@ -20,13 +24,13 @@ function toVarchar<N extends number>(value: string): Varchar<N> {
  */
 const DEFAULT_ACCOUNTS: Array<{
   code: string;
-  name: string;
+  name: string | ((fund: FundEntry) => string);
   accountType: string;
   subType: string;
   fundType: "ADMINISTRATIVE" | "CAPITAL_WORKS";
   gstApplicable: boolean;
 }> = [
-  // ── Administrative Fund ──────────────────────────────────────
+  // ── The fund kept in ADMINISTRATIVE ──────────────────────────
   {
     code: "1-1000",
     name: "Bank Account — Operating",
@@ -37,7 +41,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "1-1100",
-    name: "Levies Receivable — Admin",
+    name: (f) => `Levies Receivable — ${f.shortLabel}`,
     accountType: "ASSET",
     subType: "ACCOUNTS_RECEIVABLE",
     fundType: "ADMINISTRATIVE",
@@ -77,7 +81,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "2-1300",
-    name: "Levies Paid in Advance — Admin",
+    name: (f) => `Levies Paid in Advance — ${f.shortLabel}`,
     accountType: "LIABILITY",
     subType: "LEVIES_IN_ADVANCE",
     fundType: "ADMINISTRATIVE",
@@ -85,7 +89,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "3-1000",
-    name: "Retained Funds — Admin",
+    name: (f) => `Retained Funds — ${f.shortLabel}`,
     accountType: "EQUITY",
     subType: "RETAINED_FUNDS",
     fundType: "ADMINISTRATIVE",
@@ -93,7 +97,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "3-1100",
-    name: "Opening Balance — Admin",
+    name: (f) => `Opening Balance — ${f.shortLabel}`,
     accountType: "EQUITY",
     subType: "OPENING_BALANCE",
     fundType: "ADMINISTRATIVE",
@@ -101,7 +105,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "4-1000",
-    name: "Levy Income — Admin",
+    name: (f) => `Levy Income — ${f.shortLabel}`,
     accountType: "INCOME",
     subType: "LEVY_INCOME",
     fundType: "ADMINISTRATIVE",
@@ -172,10 +176,10 @@ const DEFAULT_ACCOUNTS: Array<{
     gstApplicable: true,
   },
 
-  // ── Capital Works Fund ───────────────────────────────────────
+  // ── The fund kept in CAPITAL_WORKS ───────────────────────────
   {
     code: "1-2100",
-    name: "Levies Receivable — Capital Works",
+    name: (f) => `Levies Receivable — ${f.shortLabel}`,
     accountType: "ASSET",
     subType: "ACCOUNTS_RECEIVABLE",
     fundType: "CAPITAL_WORKS",
@@ -183,7 +187,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "2-2300",
-    name: "Levies Paid in Advance — Capital Works",
+    name: (f) => `Levies Paid in Advance — ${f.shortLabel}`,
     accountType: "LIABILITY",
     subType: "LEVIES_IN_ADVANCE",
     fundType: "CAPITAL_WORKS",
@@ -191,7 +195,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "3-2000",
-    name: "Retained Funds — Capital Works",
+    name: (f) => `Retained Funds — ${f.shortLabel}`,
     accountType: "EQUITY",
     subType: "RETAINED_FUNDS",
     fundType: "CAPITAL_WORKS",
@@ -199,7 +203,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "3-2100",
-    name: "Opening Balance — Capital Works",
+    name: (f) => `Opening Balance — ${f.shortLabel}`,
     accountType: "EQUITY",
     subType: "OPENING_BALANCE",
     fundType: "CAPITAL_WORKS",
@@ -207,7 +211,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "4-2000",
-    name: "Levy Income — Capital Works",
+    name: (f) => `Levy Income — ${f.shortLabel}`,
     accountType: "INCOME",
     subType: "LEVY_INCOME",
     fundType: "CAPITAL_WORKS",
@@ -215,7 +219,7 @@ const DEFAULT_ACCOUNTS: Array<{
   },
   {
     code: "5-2000",
-    name: "Capital Works Expenditure",
+    name: (f) => `${f.shortLabel} Expenditure`,
     accountType: "EXPENSE",
     subType: "MAINTENANCE_EXPENSE",
     fundType: "CAPITAL_WORKS",
@@ -223,8 +227,16 @@ const DEFAULT_ACCOUNTS: Array<{
   },
 ];
 
+/** The default chart, with each account named from the building's funds (FUND_CATALOGUE). Pure. */
+export function defaultAccounts(catalogue: FundCatalogue) {
+  return DEFAULT_ACCOUNTS.map((a) => ({
+    ...a,
+    name: typeof a.name === "string" ? a.name : a.name(ledgerFundDefinition(catalogue, a.fundType)),
+  }));
+}
+
 /**
- * Seed the default NSW strata chart of accounts for a scheme.
+ * Seed the default chart of accounts for a scheme, named from its rule pack's funds.
  *
  * Looks up the scheme's ADMINISTRATIVE and CAPITAL_WORKS funds and creates
  * all default accounts as system accounts within a single transaction.
@@ -237,6 +249,7 @@ const DEFAULT_ACCOUNTS: Array<{
  */
 export async function seedDefaultChartOfAccounts(schemeId: string) {
   return db.transaction(async (tx) => {
+    const accounts = defaultAccounts((await rulesForScheme(schemeId, tx.orm)).rules.FUND_CATALOGUE);
     // Fetch the scheme's funds to map fundType to fundId
     const funds = await tx.orm.public.Fund
       .where((f) => f.schemeId.eq(schemeId))
@@ -270,7 +283,7 @@ export async function seedDefaultChartOfAccounts(schemeId: string) {
 
     const created = [];
 
-    for (const account of DEFAULT_ACCOUNTS) {
+    for (const account of accounts) {
       // Skip if an account with this code already exists
       if (existingCodes.has(toVarchar<10>(account.code))) {
         continue;
@@ -315,9 +328,10 @@ export async function ensureSystemAccount(schemeId: string, subType: string, fun
   const fund = await db.orm.public.Fund.where((f) => f.id.eq(fundId)).first();
   if (!fund) return null;
   const fundType = fund.fundType === "CAPITAL_WORKS" ? "CAPITAL_WORKS" : "ADMINISTRATIVE";
+  const accounts = defaultAccounts((await rulesForScheme(schemeId)).rules.FUND_CATALOGUE);
   const template =
-    DEFAULT_ACCOUNTS.find((a) => a.subType === subType && a.fundType === fundType) ??
-    DEFAULT_ACCOUNTS.find((a) => a.subType === subType);
+    accounts.find((a) => a.subType === subType && a.fundType === fundType) ??
+    accounts.find((a) => a.subType === subType);
   if (!template) return null;
   const codes = new Set(existing.map((a) => String(a.code)));
   let code = template.code;

@@ -5,6 +5,7 @@ import { getFundSummaryReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundSummaryClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/fund-summary/fund-summary-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function AccountantFundSummaryPage({
   params,
@@ -47,6 +48,7 @@ export default async function AccountantFundSummaryPage({
         startDate={startDate}
         endDate={endDate}
         summaries={summaries}
+        catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE}
         basePath={`/accountant/schemes/${id}/finance/reports`}
       />
     </div>

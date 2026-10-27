@@ -5,6 +5,7 @@ import { getFundSummaryReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundSummaryClient } from "./fund-summary-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function FundSummaryPage({
   params,
@@ -52,6 +53,7 @@ export default async function FundSummaryPage({
         startDate={startDate}
         endDate={endDate}
         summaries={summaries}
+        catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE}
       />
     </div>
   );

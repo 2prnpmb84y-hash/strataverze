@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { getSelectedOwnerScheme } from "@/lib/owner/selected-scheme";
 import { approvedContractors, getPreferredContractors, getWorksSettings } from "@/lib/works/settings";
 import { committeeMembers } from "@/lib/works/review";
@@ -25,11 +26,12 @@ export default async function WorksSettingsPage() {
     );
   }
   const { schemeId } = selected;
-  const [settings, members, preferred, contractors] = await Promise.all([
+  const [settings, members, preferred, contractors, { rules }] = await Promise.all([
     getWorksSettings(schemeId),
     committeeMembers(schemeId),
     getPreferredContractors(schemeId),
     approvedContractors(),
+    rulesForScheme(schemeId),
   ]);
 
   return (
@@ -37,7 +39,7 @@ export default async function WorksSettingsPage() {
       {header}
       <Card>
         <CardHeader title="Decisions" description="Changes are recorded in the building's activity log." />
-        <WorksSettingsForm schemeId={schemeId} current={settings} committeeSize={members.length} readOnly={false} />
+        <WorksSettingsForm schemeId={schemeId} current={settings} committeeSize={members.length} readOnly={false} catalogue={rules.FUND_CATALOGUE} />
       </Card>
       <Card>
         <CardHeader title="Preferred contractors" description="For urgent works, the building's chosen contractor for each trade." />

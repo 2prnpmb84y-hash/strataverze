@@ -3,6 +3,7 @@ import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { isUpcomingMeeting } from "@/lib/meetings/lifecycle";
 import { defaultTimeZone } from "@/lib/jurisdiction/time-zone";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { defaultFunds } from "@/lib/jurisdiction/funds";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
 import { needRule } from "@/config/statutory";
@@ -164,19 +165,15 @@ export async function createScheme(
       isActive: true,
     });
 
-    // Create default funds
-    await tx.orm.public.Fund.create({
-      schemeId: scheme.id,
-      name: "Administrative Fund",
-      fundType: "ADMINISTRATIVE",
-      accountingBasis: defaultAccountingBasis("ADMINISTRATIVE"),
-    });
-    await tx.orm.public.Fund.create({
-      schemeId: scheme.id,
-      name: "Capital Works Fund",
-      fundType: "CAPITAL_WORKS",
-      accountingBasis: defaultAccountingBasis("CAPITAL_WORKS"),
-    });
+    // The default funds: the pack's required funds, named as the pack names them.
+    for (const fund of defaultFunds(rules)) {
+      await tx.orm.public.Fund.create({
+        schemeId: scheme.id,
+        name: fund.name,
+        fundType: fund.fundType,
+        accountingBasis: defaultAccountingBasis(fund.fundType),
+      });
+    }
 
     // The lots, in batches, with the owner's name as on the strata roll.
     for (let i = 0; i < lots.length; i += 500) {
@@ -195,7 +192,7 @@ export async function createScheme(
     return scheme;
   });
 
-  // The default NSW chart of accounts, so the ledger can post from day one.
+  // The default chart of accounts, so the ledger can post from day one.
   // A failure here does not undo the scheme; the adviser can seed it from Finance.
   try {
     await seedDefaultChartOfAccounts(created.id);

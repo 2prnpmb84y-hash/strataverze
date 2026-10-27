@@ -195,19 +195,23 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
   "FUND_CATALOGUE": [
     {
       "key": "ADMINISTRATIVE",
+      "label": "Administrative Fund",
       "ledgerFund": "ADMINISTRATIVE",
       "name": "administrative fund",
       "purpose": "Everything not paid from the sinking fund, for example insurance and recurrent costs.",
       "required": true,
+      "shortLabel": "Admin",
       "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 167(1), (2), 169(2)",
       "status": "CONFIRMED",
     },
     {
       "key": "SINKING",
+      "label": "Sinking Fund",
       "ledgerFund": "CAPITAL_WORKS",
       "name": "sinking fund",
       "purpose": "Capital or non-recurrent spending, including periodic renewal or replacement of major capital items.",
       "required": true,
+      "shortLabel": "Sinking Fund",
       "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 167(1), (3), 169(1)",
       "status": "CONFIRMED",
     },

@@ -97,6 +97,7 @@ import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconcili
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { fundNameWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
 import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
@@ -322,8 +323,13 @@ const TRANSACTION_SIGNS = ["CREDIT", "DEBIT", "ANY"] as const;
 export async function seedChartOfAccountsAction(
   schemeId: string,
 ): Promise<ActionState> {
+  // Read before seeding, so the message below needs no further lookup.
+  let fundNames: string | null = null;
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    // The building's funds as its pack names them: "administrative and capital works".
+    const { rules } = await rulesForScheme(schemeId);
+    fundNames = `${fundNameWords(ledgerFundDefinition(rules, "ADMINISTRATIVE"))} and ${fundNameWords(ledgerFundDefinition(rules, "CAPITAL_WORKS"))}`;
     const created = await seedDefaultChartOfAccounts(schemeId);
 
     await logActivity({
@@ -341,7 +347,7 @@ export async function seedChartOfAccountsAction(
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
     if (err instanceof Error && /has no (ADMINISTRATIVE|CAPITAL_WORKS) fund\./.test(err.message)) {
-      return { error: "Create the administrative and capital works funds before seeding the chart of accounts." };
+      return { error: fundNames ? `Create the ${fundNames} funds before seeding the chart of accounts.` : "Create the funds before seeding the chart of accounts." };
     }
     return { error: unexpectedError(err, "Failed to seed chart of accounts.") };
   }

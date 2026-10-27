@@ -7,12 +7,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { FundForm } from "../fund-form";
 import { DeleteFundButton } from "./delete-button";
 import { connection } from "next/server";
-
-const fundTypeLabels: Record<string, string> = {
-  ADMIN: "Administrative Fund",
-  SINKING: "Capital Works Fund",
-  RESERVE: "Reserve Fund",
-};
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { fundTypeLabel, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 
 export default async function FundDetailPage({
   params,
@@ -35,6 +31,14 @@ export default async function FundDetailPage({
   const fund = await getFundWithBalance(fundId);
   if (!fund || fund.schemeId !== id) notFound();
 
+  // The fund's type as the building's pack names it; the stored legacy types as before.
+  const catalogue = rulesForState(scheme.state).rules.FUND_CATALOGUE;
+  const typeLabel = fundTypeLabel(catalogue, fund.fundType, {
+    ADMIN: ledgerFundDefinition(catalogue, "ADMINISTRATIVE").label,
+    SINKING: ledgerFundDefinition(catalogue, "CAPITAL_WORKS").label,
+    RESERVE: "Reserve Fund",
+  });
+
   const createdDate = new Date(String(fund.createdAt));
   const balance = Number(fund.balance);
 
@@ -42,7 +46,7 @@ export default async function FundDetailPage({
     <div className="max-w-3xl">
       <PageHeader
         title={fund.name}
-        description={`${fundTypeLabels[fund.fundType] ?? fund.fundType} · Created ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
+        description={`${typeLabel} · Created ${createdDate.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`}
         backHref={`/adviser/schemes/${id}/finance`}
         backLabel="Financials"
       />
@@ -54,7 +58,7 @@ export default async function FundDetailPage({
           <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
             <p className="text-sm text-ink-muted">Fund Type</p>
             <p className="text-sm font-medium text-ink">
-              {fundTypeLabels[fund.fundType] ?? fund.fundType}
+              {typeLabel}
             </p>
           </div>
           <div className="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3">
@@ -78,6 +82,7 @@ export default async function FundDetailPage({
           schemeId={id}
           mode="edit"
           fundId={fundId}
+          catalogue={catalogue}
           defaults={{
             name: fund.name,
             fundType: fund.fundType,

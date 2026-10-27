@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { APPROVAL_RULES, WORKS_TRADES, type ApprovalRule } from "@/config/works";
+import { fundNameWords, ledgerFundDefinition, type FundCatalogue } from "@/lib/jurisdiction/funds";
 import { removePreferredContractorAction, saveWorksSettingsAction, setPreferredContractorAction, type WorksFormState } from "@/lib/actions/works-marketplace";
 
 const RULE_TEXT: Record<ApprovalRule, { label: string; help: string }> = {
@@ -28,12 +29,17 @@ export function WorksSettingsForm({
   current,
   committeeSize,
   readOnly,
+  catalogue,
 }: {
   schemeId: string;
   current: { approvalRule: ApprovalRule; urgentLimit: number | null; adviserMayDecide: boolean; adviserLimit: number | null; adviserMayCodeInvoices: boolean };
   committeeSize: number;
   readOnly: boolean;
+  /** The building's FUND_CATALOGUE, which names its funds. */
+  catalogue: FundCatalogue;
 }) {
+  // "the administrative or capital works fund", as the building's pack names them.
+  const funds = `${fundNameWords(ledgerFundDefinition(catalogue, "ADMINISTRATIVE"))} or ${ledgerFundDefinition(catalogue, "CAPITAL_WORKS").name}`;
   const [delegate, setDelegate] = useState(current.adviserMayDecide);
   const [state, formAction, isPending] = useActionState<WorksFormState, FormData>(saveWorksSettingsAction.bind(null, schemeId), {});
   const money = (v: number | null) => (v == null ? "" : String(v));
@@ -88,7 +94,7 @@ export function WorksSettingsForm({
           <input type="checkbox" name="adviserMayCodeInvoices" defaultChecked={current.adviserMayCodeInvoices} className="mt-1 h-4 w-4 accent-turquoise" />
           <span className="text-sm">
             <span className="font-medium text-ink">Let the Adviser choose the fund and account for works invoices</span>
-            <span className="block text-ink-muted mt-0.5">Off by default, so a committee member chooses whether each contractor&apos;s invoice is paid from the administrative or capital works fund. Either way, the invoice then needs the building&apos;s usual payment approvals.</span>
+            <span className="block text-ink-muted mt-0.5">{`Off by default, so a committee member chooses whether each contractor's invoice is paid from the ${funds}. Either way, the invoice then needs the building's usual payment approvals.`}</span>
           </span>
         </label>
       </fieldset>

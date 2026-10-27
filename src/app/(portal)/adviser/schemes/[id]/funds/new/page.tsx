@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/queries/profiles";
 import { PageHeader } from "@/components/ui/page-header";
 import { FundForm } from "../fund-form";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function NewFundPage({
   params,
@@ -32,7 +33,7 @@ export default async function NewFundPage({
         backLabel="Financials"
       />
 
-      <FundForm schemeId={id} mode="create" />
+      <FundForm schemeId={id} mode="create" catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE} />
     </div>
   );
 }
