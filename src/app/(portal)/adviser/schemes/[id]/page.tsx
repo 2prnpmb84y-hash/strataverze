@@ -33,7 +33,8 @@ import { InsuranceCard } from "./_sections/insurance-card";
 import { ContactsCard } from "./_sections/contacts-card";
 import { BuildingDataNotice } from "./_sections/building-data-notice";
 import { RegulationModuleForm } from "./regulation-module-form";
-import { buildingDataProblems, regulationModuleChoices } from "@/lib/jurisdiction/building-data";
+import { PlanFormatForm } from "./plan-format-form";
+import { buildingDataProblems, planFormatChoices, regulationModuleChoices } from "@/lib/jurisdiction/building-data";
 import { connection } from "next/server";
 
 /**
@@ -97,10 +98,11 @@ export default async function SchemeDetailPage({
   const photoNotSaved = photo === "not-saved";
   const nextStep = typeof next === "string" && next.startsWith(`/adviser/schemes/${id}/`) && !next.includes("//") ? next : null;
   // The building's rule pack. Queensland (stage 2, step 10): the regulation
-  // module setting, and what the building is missing that the pack asks for.
-  // Neither shows for NSW.
+  // module and plan format settings, and what the building is missing that
+  // the pack asks for. None of them shows for NSW.
   const packRules = rulesForState(scheme.state).rules;
   const moduleChoices = regulationModuleChoices(packRules);
+  const formatChoices = planFormatChoices(packRules);
   const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots);
 
   return (
@@ -151,6 +153,7 @@ export default async function SchemeDetailPage({
       </Card>
 
       {moduleChoices && <RegulationModuleForm schemeId={scheme.id} choices={moduleChoices} current={scheme.regulationModule ?? null} />}
+      {formatChoices && <PlanFormatForm schemeId={scheme.id} choices={formatChoices} current={scheme.planFormat ?? null} />}
 
       {/* Edit form */}
       <div className="mb-6">

@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e1919a3f0f65ed8c2019dfc776d70cee9371648477790189d44ae377db0fd1e7'>;
+  StorageHashBase<'e1592f45c745aad1541f55319f2b2eceba1c6652138e2d57fa17d99993bc647e'>;
 export type ExecutionHash =
   ExecutionHashBase<'7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9'>;
 export type ProfileHash =
@@ -1605,6 +1605,7 @@ export namespace Models {
     emailedAt: FieldOutputTypes['public']['LevyNotice']['emailedAt'];
     fundId: FieldOutputTypes['public']['LevyNotice']['fundId'];
     id: FieldOutputTypes['public']['LevyNotice']['id'];
+    insuranceAmount: FieldOutputTypes['public']['LevyNotice']['insuranceAmount'];
     interestCharged: FieldOutputTypes['public']['LevyNotice']['interestCharged'];
     issuedAt: FieldOutputTypes['public']['LevyNotice']['issuedAt'];
     levyPostPending: FieldOutputTypes['public']['LevyNotice']['levyPostPending'];
@@ -2629,6 +2630,7 @@ export namespace Models {
     name: FieldOutputTypes['public']['Scheme']['name'];
     organisationId: FieldOutputTypes['public']['Scheme']['organisationId'];
     paymentPlan: FieldOutputTypes['public']['Scheme']['paymentPlan'];
+    planFormat: FieldOutputTypes['public']['Scheme']['planFormat'];
     planNumber: FieldOutputTypes['public']['Scheme']['planNumber'];
     postcode: FieldOutputTypes['public']['Scheme']['postcode'];
     preMeetingEvotingAdopted: FieldOutputTypes['public']['Scheme']['preMeetingEvotingAdopted'];
@@ -11706,6 +11708,13 @@ type ContractBase = Omit<
                   };
                   readonly many: false;
                 };
+                readonly insurance_amount: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                  readonly many: false;
+                };
                 readonly interest_charged: {
                   readonly dataType: 'pg/numeric';
                   readonly codecId: 'pg/numeric@1';
@@ -17941,6 +17950,12 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly payment_plan: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly plan_format: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -34447,6 +34462,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly insuranceAmount: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 12; readonly scale: 2 };
+                };
+              };
               readonly interestCharged: {
                 readonly nullable: false;
                 readonly type: {
@@ -34623,6 +34646,7 @@ type ContractBase = Omit<
                 readonly emailedAt: { readonly column: 'emailed_at' };
                 readonly fundId: { readonly column: 'fund_id' };
                 readonly id: { readonly column: 'id' };
+                readonly insuranceAmount: { readonly column: 'insurance_amount' };
                 readonly interestCharged: { readonly column: 'interest_charged' };
                 readonly issuedAt: { readonly column: 'issued_at' };
                 readonly levyPostPending: { readonly column: 'levy_post_pending' };
@@ -40360,6 +40384,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly planFormat: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly planNumber: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -41072,6 +41100,7 @@ type ContractBase = Omit<
                 readonly name: { readonly column: 'name' };
                 readonly organisationId: { readonly column: 'organisation_id' };
                 readonly paymentPlan: { readonly column: 'payment_plan' };
+                readonly planFormat: { readonly column: 'plan_format' };
                 readonly planNumber: { readonly column: 'plan_number' };
                 readonly postcode: { readonly column: 'postcode' };
                 readonly preMeetingEvotingAdopted: {

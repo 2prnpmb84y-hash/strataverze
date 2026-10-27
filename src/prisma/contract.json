@@ -11564,6 +11564,17 @@
                   "kind": "scalar"
                 }
               },
+              "insuranceAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                }
+              },
               "interestCharged": {
                 "nullable": false,
                 "type": {
@@ -11823,6 +11834,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "insuranceAmount": {
+                  "column": "insurance_amount"
                 },
                 "interestCharged": {
                   "column": "interest_charged"
@@ -20957,6 +20971,13 @@
                   "kind": "scalar"
                 }
               },
+              "planFormat": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "planNumber": {
                 "nullable": false,
                 "type": {
@@ -21966,6 +21987,9 @@
                 },
                 "paymentPlan": {
                   "column": "payment_plan"
+                },
+                "planFormat": {
+                  "column": "plan_format"
                 },
                 "planNumber": {
                   "column": "plan_number"
@@ -43896,6 +43920,15 @@
                   },
                   "nullable": false
                 },
+                "insurance_amount": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 2
+                  }
+                },
                 "interest_charged": {
                   "codecId": "pg/numeric@1",
                   "dataType": "pg/numeric",
@@ -50541,6 +50574,11 @@
                   "nullable": true
                 },
                 "payment_plan": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "plan_format": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -60838,7 +60876,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e1919a3f0f65ed8c2019dfc776d70cee9371648477790189d44ae377db0fd1e7"
+    "storageHash": "e1592f45c745aad1541f55319f2b2eceba1c6652138e2d57fa17d99993bc647e"
   },
   "execution": {
     "executionHash": "7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9",

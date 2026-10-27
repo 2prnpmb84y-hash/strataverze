@@ -300,6 +300,8 @@ export async function createLevyNoticesBatch(
     periodEnd: string;
     dueDate: string;
     amountDue: number;
+    /** The part of amountDue that pays for insurance, only for a split contribution (Queensland). */
+    insuranceAmount?: number;
   }>,
   /** Mark this schedule ACTIVE in the same transaction, so notices and schedule never disagree. */
   opts: { activateScheduleId?: string } = {},
@@ -327,6 +329,7 @@ export async function createLevyNoticesBatch(
         balanceOutstanding: toNumeric(data.amountDue),
         interestCharged: toNumeric(0),
         status: "DRAFT",
+        ...(data.insuranceAmount !== undefined ? { insuranceAmount: toNumeric(data.insuranceAmount) } : {}),
       });
       created.push(notice);
     }

@@ -1,6 +1,7 @@
 /**
  * Saving a Queensland building's data (QLD stage 2, step 10): the regulation
- * module (adviser or StrataVerze, the Standard Module only) and each lot's
+ * module (adviser or StrataVerze, the Standard Module only), the plan format
+ * (adviser or StrataVerze, any listed format; QLD go-live gap) and each lot's
  * interest schedule lot entitlement (required for a new lot, locked like the
  * unit entitlement). An NSW building has neither, and its lots save as before.
  */
@@ -63,7 +64,7 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
 });
 
 const { sharedFake } = await import("@/test/fake-orm");
-const { saveRegulationModuleAction } = await import("./actions");
+const { saveRegulationModuleAction, savePlanFormatAction } = await import("./actions");
 const { createLotAction, updateLotAction } = await import("./[id]/lots/actions");
 
 const NSW_ID = "11111111-0000-0000-0000-000000000001";
@@ -77,6 +78,7 @@ function form(fields: Record<string, string>) {
 const scheme = (id: string) => sharedFake.table("Scheme").find((s) => s.id === id)!;
 const lot = (id: string) => sharedFake.table("Lot").find((l) => l.id === id)!;
 const saveModule = (schemeId: string, value: string) => saveRegulationModuleAction(schemeId, {}, form({ regulationModule: value }));
+const saveFormat = (schemeId: string, value: string) => savePlanFormatAction(schemeId, {}, form({ planFormat: value }));
 
 /** createLotAction redirects on success. */
 async function createLot(schemeId: string, fields: Record<string, string>) {
@@ -93,8 +95,8 @@ beforeEach(() => {
   Object.assign(caller, { isPlatformAdmin: false, roles: ["ADVISER"] });
   sharedFake.reset({
     Scheme: [
-      { id: NSW_ID, state: "NSW", regulationModule: null },
-      { id: QLD_ID, state: "QLD-SHAPED", regulationModule: null },
+      { id: NSW_ID, state: "NSW", regulationModule: null, planFormat: null },
+      { id: QLD_ID, state: "QLD-SHAPED", regulationModule: null, planFormat: null },
     ],
     Lot: [
       { id: "lot-nsw", schemeId: NSW_ID, lotNumber: "1", entitlement: 10, interestScheduleEntitlement: null, lotType: "RESIDENTIAL" },
@@ -129,6 +131,42 @@ describe("saveRegulationModuleAction", () => {
     caller.isPlatformAdmin = true;
     caller.roles = [];
     expect(await saveModule(QLD_ID, "STANDARD")).toEqual({ success: true });
+  });
+});
+
+describe("savePlanFormatAction (QLD go-live gap, insurance in contributions)", () => {
+  it("saves a building or volumetric format plan for a Queensland building, and logs it for advisers only", async () => {
+    expect(await saveFormat(QLD_ID, "BUILDING")).toEqual({ success: true });
+    expect(scheme(QLD_ID).planFormat).toBe("BUILDING");
+    expect(activity.logActivity).toHaveBeenCalledWith(expect.objectContaining({ action: "PLAN_FORMAT_CHANGED", metadata: { from: null, to: "BUILDING" } }));
+    expect(await saveFormat(QLD_ID, "VOLUMETRIC")).toEqual({ success: true });
+    expect(activity.logActivity).toHaveBeenLastCalledWith(expect.objectContaining({ metadata: { from: "BUILDING", to: "VOLUMETRIC" } }));
+  });
+
+  it("records a standard format plan, a fact about the building, though its insurance contributions are refused", async () => {
+    expect(await saveFormat(QLD_ID, "STANDARD")).toEqual({ success: true });
+    expect(scheme(QLD_ID).planFormat).toBe("STANDARD");
+  });
+
+  it("refuses an unknown plan format and none", async () => {
+    expect((await saveFormat(QLD_ID, "LAYERED")).error).toBe("Choose a valid plan format.");
+    expect((await saveFormat(QLD_ID, "")).error).toBe("Choose the plan format.");
+    expect(scheme(QLD_ID).planFormat).toBeNull();
+  });
+
+  it("refuses an NSW building, which has no such setting", async () => {
+    expect((await saveFormat(NSW_ID, "BUILDING")).error).toBe("This building has no such setting.");
+    expect(scheme(NSW_ID).planFormat).toBeNull();
+  });
+
+  it("is for the adviser or StrataVerze only, never an owner or the committee", async () => {
+    caller.roles = ["OWNER", "COMMITTEE"];
+    expect((await saveFormat(QLD_ID, "BUILDING")).error).toMatch(/permission/);
+    expect(scheme(QLD_ID).planFormat).toBeNull();
+    expect(activity.logActivity).not.toHaveBeenCalled();
+    caller.isPlatformAdmin = true;
+    caller.roles = [];
+    expect(await saveFormat(QLD_ID, "BUILDING")).toEqual({ success: true });
   });
 });
 

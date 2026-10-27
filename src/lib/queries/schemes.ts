@@ -234,8 +234,10 @@ export async function updateScheme(
   // A regulation module belongs to its state's rule pack (QLD stage 2,
   // step 10): a building moved to another state no longer has one, and the
   // database holds a module for Queensland only. An NSW building has none, so
-  // nothing changes for it.
+  // nothing changes for it. The plan format (QLD go-live gap) belongs to the
+  // pack the same way and is cleared with it.
   let clearModule = false;
+  let clearPlanFormat = false;
   if (data.state !== undefined || data.postcode !== undefined) {
     const current = await db.orm.public.Scheme.where({ id: schemeId }).first();
     const norm = (v: unknown) => String(v ?? "").trim().toUpperCase();
@@ -246,11 +248,13 @@ export async function updateScheme(
       if (!timeZone) throw new Error(`No time zone is known for ${data.state ?? current?.state ?? "this state"}.`);
     }
     clearModule = stateChanged && current?.regulationModule != null;
+    clearPlanFormat = stateChanged && current?.planFormat != null;
   }
   return db.orm.public.Scheme.where({ id: schemeId }).update({
     ...data,
     ...(timeZone ? { timeZone: timeZone as unknown as Varchar<64> } : {}),
     ...(clearModule ? { regulationModule: null } : {}),
+    ...(clearPlanFormat ? { planFormat: null } : {}),
   });
 }
 

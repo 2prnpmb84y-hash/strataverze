@@ -172,6 +172,10 @@ model Scheme {
   /// COMMERCIAL, SMALL_SCHEMES, SPECIFIED_TWO_LOT; BCCMA s 21). Null for every other building. A Queensland
   /// building with none is flagged to the adviser (src/lib/jurisdiction/building-data.ts).
   regulationModule    String?             @map("regulation_module")
+  /// The plan format, for a pack with a PLAN_FORMAT selector (Queensland: BUILDING, VOLUMETRIC, STANDARD; Standard
+  /// Module ss 198, 199, 201). Null for every other building. It decides how a Queensland contribution's insurance
+  /// part is shared; a standard format plan, or none recorded, is refused (src/lib/levies/contribution-shares.ts).
+  planFormat          String?             @map("plan_format")
   defaultPaymentTerms Int?                @map("default_payment_terms") // days for supplier invoices
   organisationId      String?             @map("organisation_id") @db.Uuid
   createdAt           DateTime            @default(now()) @db.Timestamptz @map("created_at")
@@ -1625,6 +1629,9 @@ model LevyNotice {
   /// The cutover this notice was brought across in, if any.
   migrationBatchId   String?             @map("migration_batch_id") @db.Uuid
   rulePack           String?             @map("rule_pack") @db.VarChar(40) // the rule pack the notice was issued under, e.g. "AU-NSW 2026.10.1"; null before rule packs were recorded and for takeover notices
+  /// The part of amountDue that pays for insurance, where the contribution was split (Queensland, Standard Module
+  /// s 162(5)): shared by the interest schedule, the rest by the contribution schedule. Null for every other notice.
+  insuranceAmount    Decimal?            @db.Decimal(12, 2) @map("insurance_amount")
   createdAt          DateTime            @default(now()) @db.Timestamptz @map("created_at")
   updatedAt          DateTime            @updatedAt @db.Timestamptz @map("updated_at")
 

@@ -41,6 +41,21 @@ export interface PlannedNotice {
   periodEnd: string;
   dueDate: string;
   amountCents: number;
+  /**
+   * The part of `amountCents` that pays for insurance, only when the
+   * contribution is split (Queensland, see ./contribution-shares.ts). Absent
+   * for every other notice.
+   */
+  insuranceCents?: number;
+}
+
+/**
+ * One lot's share of a split contribution (./contribution-shares.ts): its
+ * total and the insurance part of it, in whole cents.
+ */
+export interface LotShare {
+  totalCents: number;
+  insuranceCents: number;
 }
 
 /** Format a UTC date as YYYY-MM-DD. */
@@ -142,6 +157,13 @@ export function checkPlan(input: {
 /**
  * Plan the notices for a schedule. `firstDueDate` is the due date of the first
  * instalment; later instalments fall due at the same interval as the periods.
+ *
+ * `shares`, when given, is each lot's share already worked out (a split
+ * contribution, in the order of `lots`, adding up to `totalCents`). Each
+ * lot's total is split into instalments as before, and its insurance part
+ * the same way, so each notice's insurance part is never more than its
+ * amount and the parts add up to the lot's insurance exactly. Without
+ * `shares` the total is shared by `entitlement`, as it always has been.
  */
 export function planNotices(input: {
   lots: PlanLot[];
@@ -149,17 +171,25 @@ export function planNotices(input: {
   frequency: LevyFrequency;
   periodStart: string;
   firstDueDate: string;
+  shares?: readonly LotShare[];
 }): PlannedNotice[] {
   const count = INSTALMENTS_PER_YEAR[input.frequency] ?? 1;
   const months = input.frequency === "ONE_OFF" ? 0 : 12 / count;
-  const lotShares = allocateCents(
-    input.totalCents,
-    input.lots.map((l) => l.entitlement),
-  );
+  const shares = input.shares;
+  if (shares && (shares.length !== input.lots.length || shares.reduce((a, x) => a + x.totalCents, 0) !== input.totalCents)) {
+    throw new Error("Each lot's share must be given, adding up to the total.");
+  }
+  const lotShares = shares
+    ? shares.map((x) => x.totalCents)
+    : allocateCents(
+        input.totalCents,
+        input.lots.map((l) => l.entitlement),
+      );
 
   const notices: PlannedNotice[] = [];
   input.lots.forEach((lot, li) => {
     const instalments = allocateCents(lotShares[li], Array(count).fill(1));
+    const insurance = shares ? allocateCents(shares[li].insuranceCents, Array(count).fill(1)) : null;
     for (let k = 0; k < count; k++) {
       const start = input.frequency === "ONE_OFF" ? input.periodStart : addMonths(input.periodStart, k * months);
       const end =
@@ -175,6 +205,7 @@ export function planNotices(input: {
         periodEnd: end,
         dueDate: addMonths(input.firstDueDate, k * months),
         amountCents: instalments[k],
+        ...(insurance ? { insuranceCents: insurance[k] } : {}),
       });
     }
   });

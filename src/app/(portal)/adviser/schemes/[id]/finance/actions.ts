@@ -108,6 +108,7 @@ import { issueTiming, lateMessage, urgentNoticeProblem, type IssueTiming } from 
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
 import { afterFinanceChange, contractorOfSupplier } from "@/lib/works/finance-link";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
+import { contributionInsurance } from "@/lib/levies/contribution-insurance";
 import {
   checkPlan,
   financialYearStart,
@@ -1161,6 +1162,11 @@ export async function issueScheduleNoticesAction(
       totalCents,
     });
     if (issues.length > 0) return { error: issues.map((i) => i.message).join(" ") };
+    // Where the building's pack shares insurance by its own schedule (Queensland,
+    // SM s 162(5)), each lot's share is split; anything missing refuses the issue.
+    // An NSW levy is never split.
+    const { split, problem: shareProblem } = await contributionInsurance(schemeId, schedule, lots);
+    if (shareProblem) return { error: shareProblem };
 
     const today = await schemeToday(schemeId);
     // Levies are paid in advance: a budget levy instalment falls due on the
@@ -1178,6 +1184,7 @@ export async function issueScheduleNoticesAction(
       frequency: (isSpecial ? "ONE_OFF" : schedule.frequency) as LevyFrequency,
       periodStart,
       firstDueDate,
+      ...(split ? { shares: split.shares } : {}),
     }).filter((n) => !raisedBefore.has(n.instalment));
     // Periods already levied by an earlier schedule for this fund and year
     // (one whose planned notices were stopped) are not levied again, and
@@ -1263,6 +1270,7 @@ export async function issueScheduleNoticesAction(
         periodEnd: n.periodEnd,
         dueDate: n.dueDate,
         amountDue: fromCents(n.amountCents),
+        ...(n.insuranceCents !== undefined ? { insuranceAmount: fromCents(n.insuranceCents) } : {}),
       })),
       { activateScheduleId: scheduleId },
     );

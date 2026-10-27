@@ -32,6 +32,7 @@
 import type { MeetingRuleSet, QuorumRule } from "@/lib/meetings/rules";
 import type {
   CertificateRules,
+  ContributionInsuranceRules,
   DebtRecoveryStepRule,
   DocumentRetentionRules,
   EntitlementScheduleDefinition,
@@ -68,6 +69,33 @@ export const REGULATION_MODULE: SchemeSelector = {
     { value: "SPECIFIED_TWO_LOT", label: "Specified Two-lot Schemes Module", supported: false, note: "Two lots; decisions by the lot owners' agreement. The Act's committee, proxy and meeting provisions do not apply (module itself not researched)." },
   ],
   source: `${ACT} s 21; ${SM} s 3(2)`,
+  status: "CONFIRMED",
+};
+
+/**
+ * The plan format of the building's lots: a building format, volumetric
+ * format or standard format plan of subdivision (SM ss 198, 199, 201; Act
+ * s 46B(2)(b)). It decides how the buildings insurance premium is shared
+ * (SM s 201(1)). StrataVerze supports building and volumetric format plans
+ * only (decided 27 Oct 2026, DECISIONS). A standard format plan can be
+ * recorded, but a contribution that includes insurance is refused for it
+ * until it is supported (QLD go-live gap, 27 Oct 2026).
+ */
+export const PLAN_FORMAT: SchemeSelector = {
+  key: "planFormat",
+  label: "Plan format",
+  help: "The kind of plan of subdivision the scheme's lots are on, as registered for the scheme.",
+  options: [
+    { value: "BUILDING", label: "Building format plan", supported: true },
+    { value: "VOLUMETRIC", label: "Volumetric format plan", supported: true },
+    {
+      value: "STANDARD",
+      label: "Standard format plan",
+      supported: false,
+      note: "Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+    },
+  ],
+  source: `${SM} ss 198, 199, 201; ${ACT} s 46B(2)(b)`,
   status: "CONFIRMED",
 };
 
@@ -134,11 +162,14 @@ export const FUND_RULES = {
  * resolution without dissent or court order, and value-based charges, rates
  * and taxes (Act s 47(3)(a) to (c)), and the insurance premium for common
  * property and assets (SM s 197(4)).
- * The buildings premium (INSURANCE_BUILDINGS) is in neither list on purpose:
- * SM s 201(1) shares it by the interest schedule only for building and
- * volumetric format lots, standard format lots share it by the cost of
- * reinstating the buildings on the lot, and s 201(2) allows adjustments. The
- * plan format is not held, so `scheduleFor` refuses it (GO-LIVE GAP below).
+ * The buildings premium (INSURANCE_BUILDINGS) is decided by the interest
+ * schedule only for a building recorded as a building or volumetric format
+ * plan (SM s 201(1); PLAN_FORMAT, QLD go-live gap, 27 Oct 2026). Standard
+ * format lots share it by the cost of reinstating the buildings on the lot,
+ * which StrataVerze does not work out, so for a standard format plan, or a
+ * building with no plan format recorded, no schedule decides it and
+ * `scheduleFor` refuses it. The adjustments s 201(2) allows are not offered
+ * (FOR_REVIEW).
  */
 export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
   {
@@ -168,7 +199,13 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
       "each lot's interest on termination by resolution without dissent or court order",
       "value-based local government and State charges, rates and taxes",
     ],
-    decides: ["COMMON_PROPERTY_SHARE", "INSURANCE_COMMON_PROPERTY", "TERMINATION_INTEREST", "VALUE_BASED_RATES"],
+    decides: [
+      "COMMON_PROPERTY_SHARE",
+      "INSURANCE_COMMON_PROPERTY",
+      { use: "INSURANCE_BUILDINGS", planFormats: ["BUILDING", "VOLUMETRIC"] },
+      "TERMINATION_INTEREST",
+      "VALUE_BASED_RATES",
+    ],
     source: `${ACT} s 47(3); ${SM} ss 197(4), 201(1)`,
     status: "CONFIRMED",
   },
@@ -190,19 +227,37 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   import both check it with this pack (data-migration.ts checkImportRows,
  *   validateLots and importLots).
  * - Read: the body corporate certificate draft fills the module and both lot
- *   entitlements (SM s 233AA(1)). Contributions, polls, the special resolution
- *   test and the penalty keep using lots.entitlement, the contribution
- *   schedule.
- * - Not applied yet: the insurance part of contributions is apportioned by
- *   the contribution schedule with everything else. SM s 162(5) excepts
- *   insurance: the common property and assets premium goes by the interest
- *   schedule (s 197(4)), and the buildings premium by the interest schedule
- *   for building and volumetric format lots and by reinstatement cost for
- *   standard format lots (s 201(1)), with adjustments allowed (s 201(2)). The
- *   levy engine has no separate insurance apportionment and each lot's plan
- *   format (building, volumetric or standard) is not held. Until it is,
- *   INSURANCE_BUILDINGS is decided by no schedule and scheduleFor refuses it.
- *   This must be designed before Queensland contributions are raised. No feature apportions common
+ *   entitlements (SM s 233AA(1)). Polls, the special resolution test and the
+ *   penalty keep using lots.entitlement, the contribution schedule.
+ *   Contributions use both schedules (see the next point).
+ * - Applied (QLD go-live gap, insurance in contributions, 27 Oct 2026): the
+ *   building's plan format is held in schemes.plan_format (PLAN_FORMAT,
+ *   adviser building settings). An ordinary contribution to the
+ *   administrative fund is split in two (CONTRIBUTION_INSURANCE, SM s 162(5)):
+ *   the insurance part, the insurance lines of the fund's adopted budget, is
+ *   shared by the interest schedule (common property and assets premium,
+ *   s 197(4), and the buildings premium for building and volumetric format
+ *   plans, s 201(1)), and the rest by the contribution schedule. Each
+ *   notice holds its insurance part (levy_notices.insurance_amount, migration
+ *   20261118) and the notice PDF states it. Refused with a plain message,
+ *   with nothing created: a standard format plan, no plan format recorded, a
+ *   lot without an interest schedule lot entitlement, an administrative fund
+ *   budget with no insurance line (a StrataVerze choice), an insurance line
+ *   in the sinking fund budget, or insurance above the contribution
+ *   (src/lib/levies/contribution-shares.ts). The notice PDF's sentence on how
+ *   the parts are shared is worked out from the stored insurance part and
+ *   the pack, not the building's plan format now. It is the current pack's
+ *   wording, as for the rest of a regenerated PDF: the pack version the
+ *   notice was issued under (levy_notices.rule_pack) is recorded but its
+ *   wording is not kept, so a later change of schedule names would show on
+ *   a regenerated PDF.
+ * - Not applied yet: the standard format share by reinstatement cost
+ *   (s 201(1)), the adjustments s 201(2) allows, and the voluntary insurance
+ *   scheme for a standard format basic scheme (s 204). A special contribution
+ *   is shared by the contribution schedule only, even if it pays for
+ *   insurance. The notice email and the owner pages show the notice total
+ *   only (the attached PDF shows the insurance part). A sinking fund
+ *   contribution has no insurance part. No feature apportions common
  *   property, termination or rates, so nothing else reads the interest
  *   schedule yet (entitlementFor and scheduleFor are ready for them).
  * - The onboarding wizard asks for neither the module nor the interest
@@ -246,6 +301,31 @@ export const NOTICE_RULES: NoticeRules = {
   hardship: null,
   contents: CONTRIBUTION_NOTICE_RULES.contents,
   source: CONTRIBUTION_NOTICE_RULES.source,
+};
+
+/**
+ * The insurance part of a contribution (QLD go-live gap, 27 Oct 2026).
+ * Contributions are proportionate to the contribution schedule, "except
+ * insurance and other items calculated on another basis" (SM s 162(5)). The
+ * administrative fund pays for insurance (ss 167, 169(2)), so an insurance
+ * line in the sinking fund budget is refused, never shared as insurance. The
+ * administrative fund budget estimates insurance (s 160(2)), and StrataVerze
+ * refuses an ordinary contribution to it when its adopted budget has no
+ * insurance line: a StrataVerze choice, not a rule of law (FOR_REVIEW). The
+ * insurance part is shared by the schedule that decides
+ * both premiums for the building: the interest schedule for the common
+ * property and assets premium (s 197(4)) and, for building and volumetric
+ * format plans, the buildings premium (s 201(1)). Both are taken together,
+ * as the budget holds insurance as one amount (decided 27 Oct 2026,
+ * DECISIONS). Which budget lines are insurance is a StrataVerze choice
+ * (FOR_REVIEW).
+ */
+export const CONTRIBUTION_INSURANCE: ContributionInsuranceRules = {
+  paidFrom: "ADMINISTRATIVE",
+  insuranceLineRequired: { value: true, status: "STRATAVERZE" },
+  uses: ["INSURANCE_COMMON_PROPERTY", "INSURANCE_BUILDINGS"],
+  source: `${SM} ss 160(2), 162(5), 197(4), 201(1)`,
+  status: "CONFIRMED",
 };
 
 /** How contributions are fixed (SM ss 160 to 162). */
@@ -1379,13 +1459,48 @@ export const FOR_REVIEW = [
   },
   {
     point:
-      "The share of the buildings insurance premium is not given a schedule. SM s 201(1) shares it by the interest schedule for building and volumetric format lots and by reinstatement cost for standard format lots, with adjustments allowed (s 201(2)). StrataVerze does not hold each lot's plan format, so it refuses to work the share out rather than assume the interest schedule.",
-    where: "ENTITLEMENT_SCHEDULES INTEREST decides; src/lib/jurisdiction/building-data.ts scheduleFor",
+      "The share of the buildings insurance premium is decided by the interest schedule for a building recorded as a building or volumetric format plan, and by no schedule for a standard format plan or a building with no plan format recorded (SM s 201(1)). The plan format is recorded once for the whole building, so a scheme whose lots are on more than one kind of plan is not catered for.",
+    where: "PLAN_FORMAT; ENTITLEMENT_SCHEDULES INTEREST decides; src/lib/jurisdiction/building-data.ts scheduleFor",
   },
   {
     point:
-      "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft, but nothing is refused: contributions and meetings run on the contribution schedule, which every lot holds.",
-    where: "src/lib/jurisdiction/building-data.ts",
+      "A Queensland building with no module recorded, or with a lot that has no interest schedule lot entitlement, is flagged to the adviser on the building and lot pages and in the certificate draft. Meetings still run on the contribution schedule, which every lot holds. A contribution that includes insurance is refused until every lot has an interest schedule lot entitlement and a building or volumetric format plan is recorded.",
+    where: "src/lib/jurisdiction/building-data.ts; src/lib/levies/contribution-shares.ts",
+  },
+  {
+    point:
+      "The adjustments SM s 201(2) allows to the shares of the buildings insurance premium are not offered. Each lot's share of the insurance part is in proportion to its interest schedule lot entitlement, with no adjustment.",
+    where: "CONTRIBUTION_INSURANCE; src/lib/levies/contribution-shares.ts",
+  },
+  {
+    point:
+      "Insurance means the whole of every line of the fund's adopted budget whose account is an insurance account (account 5-1100, Insurance, in the chart StrataVerze sets up). That whole amount is shared by the interest schedule, and the rest of the contribution, after any other income the adviser allowed for, by the contribution schedule. Insurance booked to another account is shared with the rest. Whether other insurance (for example office bearers or workers cover) is part of insurance under SM s 162(5) is not confirmed.",
+    where: "CONTRIBUTION_INSURANCE; src/lib/levies/contribution-insurance.ts",
+  },
+  {
+    point:
+      "An ordinary contribution to the administrative fund is refused when its adopted budget has no insurance line. This is a StrataVerze choice, not a rule of law: SM s 160(2) has the budget estimate insurance, and a budget without it is taken as a mistake. A sinking fund contribution has no insurance part, and one whose budget has an insurance line is refused, as insurance is paid from the administrative fund (SM s 169(2)).",
+    where: "CONTRIBUTION_INSURANCE.insuranceLineRequired, paidFrom; src/lib/levies/contribution-shares.ts",
+  },
+  {
+    point:
+      "A special contribution (SM s 162(2)) is shared by the contribution schedule only, even when it pays for insurance, since it has no budget lines to show an insurance part.",
+    where: "src/lib/levies/contribution-insurance.ts",
+  },
+  {
+    point:
+      "The voluntary insurance scheme a basic scheme of standard format lots may adopt (SM s 204) is not offered. A standard format plan can be recorded, but contributions that include insurance are refused for it.",
+    where: "PLAN_FORMAT STANDARD",
+  },
+  {
+    point:
+      "A contribution that includes insurance is refused outright for a standard format plan. That is stricter than the law: SM s 197(4) would still share the common property and assets premium by the interest schedule, and only the buildings premium goes by reinstatement cost (s 201(1)). StrataVerze refuses because the budget holds insurance as one amount, so the two premiums cannot be told apart.",
+    where: "PLAN_FORMAT STANDARD; CONTRIBUTION_INSURANCE.uses",
+  },
+  {
+    point:
+      "The plan format is a building setting the adviser (or StrataVerze) saves, like the regulation module, not part of the locked building record. A change applies to contributions raised after it, never to notices already created.",
+    where: "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts savePlanFormatAction",
   },
   {
     point:
@@ -1412,6 +1527,12 @@ export const DECISIONS = [
   { decision: "No penalty or discount applies until a building records the ordinary resolution that sets it, with the rate.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
   { decision: "Hold fees in fee units, with a dollar table updated each 1 July from Queensland Government guidance.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
   { decision: "Show owners \"penalty\", never \"interest\", for late payment.", decidedBy: "Matthew Wrigley", decidedOn: "2026-10-27" },
+  {
+    decision:
+      "Support building and volumetric format plans only: record each building's plan format, share insurance (both premiums) by the interest schedule, and refuse to raise contributions that include insurance for a standard format plan until it is supported.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-27",
+  },
 ] as const;
 
 /**
