@@ -57,15 +57,24 @@ export class FeeConfigError extends Error {}
  * fee can be charged for a payment plan request (NSW Government guide to
  * strata law changes, from 27 Oct 2025). StrataVerze charges the owners corporation only (decided
  * 26 Oct 2026).
+ *
+ * Each rule pack holds its own list (NEVER_RECOVERABLE_FEE_VARIANTS, stage 2,
+ * step 8), which capture.ts passes for the building. This is the NSW pack's
+ * list, the default for a caller without a building, kept here so the
+ * browser bundle has no pack (a test checks it equals the NSW pack's).
  */
 export const NEVER_RECOVERABLE_FROM_OWNER: ReadonlyArray<{ code: string; variant: string }> = [{ code: "RECOVERY_STEP", variant: "PAYMENT_PLAN" }];
 
-function quoteFrom(entry: PriceBookEntry, quantity = 1): FeeQuote {
+function quoteFrom(
+  entry: PriceBookEntry,
+  quantity = 1,
+  neverRecoverable: ReadonlyArray<{ code: string; variant: string }> = NEVER_RECOVERABLE_FROM_OWNER,
+): FeeQuote {
   if (entry.amountCents == null) {
     throw new FeeConfigError(`${entry.code} has no price and needs a manual quote.`);
   }
   const split = splitGst(entry.amountCents * quantity, entry.gstInclusive);
-  const ocOnly = NEVER_RECOVERABLE_FROM_OWNER.some((f) => f.code === entry.code && f.variant === (entry.variant ?? null));
+  const ocOnly = neverRecoverable.some((f) => f.code === entry.code && f.variant === (entry.variant ?? null));
   return {
     code: entry.code,
     variant: entry.variant ?? null,
@@ -139,6 +148,8 @@ export function usageFee(input: {
   variant?: string | null;
   bandValue?: number;
   quantity?: number;
+  /** The building's pack's NEVER_RECOVERABLE_FEE_VARIANTS. Without it, the NSW list applies. */
+  neverRecoverableFromOwner?: ReadonlyArray<{ code: string; variant: string }>;
 }): FeeQuote | null {
   const entry = resolvePrice(input.priceBook, {
     code: input.code,
@@ -151,7 +162,7 @@ export function usageFee(input: {
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new FeeConfigError("Quantity must be a whole number of one or more.");
   }
-  return quoteFrom(entry, quantity);
+  return quoteFrom(entry, quantity, input.neverRecoverableFromOwner);
 }
 
 /**

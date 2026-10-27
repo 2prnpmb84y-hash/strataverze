@@ -9,6 +9,7 @@ import {
 } from "@/lib/queries/debt-recovery";
 import { CaseDetailClient } from "./case-detail-client";
 import { previewRecoveryFees } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
 import { needRule } from "@/config/statutory";
 
 export default async function DebtRecoveryCaseDetailPage({
@@ -28,7 +29,7 @@ export default async function DebtRecoveryCaseDetailPage({
     (m) => m.profileId === profile.id && m.role === "ADVISER",
   );
   if (!isAdviser) notFound();
-  const { rules } = await rulesForScheme(id);
+  const { rules, pack } = await rulesForScheme(id);
   if (!rules.FEATURES.debtRecoverySteps) notFound();
 
   const debtCase = await getDebtRecoveryCaseWithDetails(caseId);
@@ -69,8 +70,11 @@ export default async function DebtRecoveryCaseDetailPage({
 
   return (
     <CaseDetailClient
-      recoveryFees={await previewRecoveryFees()}
+      recoveryFees={await previewRecoveryFees({ state: pack.state, wording: feeWordingFor(rules) })}
       stepGuidance={needRule(rules, "DEBT_RECOVERY_GUIDANCE")}
+      stepLabels={needRule(rules, "DEBT_RECOVERY_STEP_LABELS")}
+      lateChargeLabel={rules.TERMINOLOGY.lateCharge.charAt(0).toUpperCase() + rules.TERMINOLOGY.lateCharge.slice(1)}
+      paymentPlans={rules.FEATURES.statutoryPaymentPlans}
       schemeId={id}
       lotNumber={lot ? String(lot.lotNumber) : "—"}
       unitNumber={lot?.unitNumber ?? null}

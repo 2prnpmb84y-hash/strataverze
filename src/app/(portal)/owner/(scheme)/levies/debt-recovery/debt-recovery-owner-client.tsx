@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
 
 interface DebtRecoveryCase {
   id: string;
@@ -45,19 +44,6 @@ const STATUS_LABEL: Record<string, string> = {
   CLOSED_SETTLED: "Settled",
 };
 
-const STEP_LABEL: Record<string, string> = {
-  LEDGER_VERIFICATION: "Ledger Verification",
-  INITIAL_CONTACT: "Initial Contact",
-  REMINDER_NOTICE: "Reminder Notice",
-  FINAL_NOTICE: "Final Notice",
-  HARDSHIP_REVIEW: "Hardship Review",
-  COMMITTEE_REVIEW: "Committee Review",
-  LEGAL_REFERRAL: "Legal Referral",
-  PROCEEDINGS: "Proceedings",
-  ENFORCEMENT: "Enforcement",
-  CLOSED: "Closed",
-};
-
 function formatCurrency(value: number): string {
   if (value < 0) {
     return `($${Math.abs(value).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
@@ -68,9 +54,12 @@ function formatCurrency(value: number): string {
 export function DebtRecoveryOwnerClient({
   cases,
   isCommittee,
+  stepLabels,
 }: {
   cases: DebtRecoveryCase[];
   isCommittee: boolean;
+  /** Each building's name for each recovery step type, by scheme id (`rules.DEBT_RECOVERY_STEP_LABELS`). */
+  stepLabels: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }) {
   const [filter, setFilter] = useState<"all" | "active" | "closed">("all");
 
@@ -194,7 +183,7 @@ export function DebtRecoveryOwnerClient({
                     {c.currentStep && c.currentStep !== "CLOSED" && (
                       <p className="text-xs text-ink-muted mt-1">
                         Current step:{" "}
-                        {STEP_LABEL[c.currentStep] ?? c.currentStep}
+                        {stepLabels[c.schemeId]?.[c.currentStep] ?? c.currentStep}
                       </p>
                     )}
                   </div>

@@ -144,8 +144,9 @@ export async function initiateDebtRecoveryAction(
       rulePack,
     });
 
-    // The recovery steps of the building's rule pack
-    for (const step of steps) {
+    // The recovery steps of the building's rule pack. A step's `status` says
+    // how far the rule was checked: pack data, never the case step's status.
+    for (const { status: _ruleStatus, ...step } of steps) {
       await createDebtRecoveryStep({
         caseId: newCase.id,
         ...step,
@@ -154,8 +155,11 @@ export async function initiateDebtRecoveryAction(
 
     // A plan already being followed for the lot (agreed before any case) is
     // linked to the case, which starts in PAYMENT_PLAN: its recovery steps
-    // wait while the plan is followed.
-    const followed = await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(lotId), p.status.eq("ACTIVE"))).first();
+    // wait while the plan is followed. Only for a pack with the payment plan
+    // workflow (FEATURES.statutoryPaymentPlans).
+    const followed = rules.FEATURES.statutoryPaymentPlans
+      ? await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(lotId), p.status.eq("ACTIVE"))).first()
+      : null;
     if (followed) {
       if (!followed.caseId) await db.orm.public.PaymentPlan.where((p) => p.id.eq(followed.id)).update({ caseId: newCase.id });
       await updateDebtRecoveryCase(newCase.id, { status: "PAYMENT_PLAN" });
@@ -222,7 +226,8 @@ export async function updateDebtRecoveryCaseAction(
     if (status === "REFERRED_LEGAL" && caseRow.status !== "REFERRED_LEGAL") {
       const followed = await db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all();
       const { rules } = await rulesForScheme(schemeId);
-      if (stepPausedByPlan("LEGAL_REFERRAL", followed, needRule(rules, "PAYMENT_PLANS"))) {
+      // Only a pack with the payment plan workflow pauses recovery for a plan.
+      if (rules.FEATURES.statutoryPaymentPlans && stepPausedByPlan("LEGAL_REFERRAL", followed, needRule(rules, "PAYMENT_PLANS"))) {
         return { error: "A payment plan is being followed for this lot, so the case cannot be referred for legal recovery. Mark the plan as not followed first." };
       }
     }
@@ -284,11 +289,12 @@ export async function completeDebtRecoveryStepAction(
     if (step.status === "COMPLETED") return { error: "This step is already complete" };
 
     // No recovery action for levies covered by a payment plan being followed (the building's rule pack).
-    const [{ rules }, lotPlans] = await Promise.all([
+    const [{ rules, pack }, lotPlans] = await Promise.all([
       rulesForScheme(schemeId),
       db.orm.public.PaymentPlan.where((p) => and(p.lotId.eq(caseRow.lotId), p.status.eq("ACTIVE"))).limit(5).all(),
     ]);
-    if (stepPausedByPlan(step.stepType, lotPlans, needRule(rules, "PAYMENT_PLANS"))) {
+    // Only a pack with the payment plan workflow pauses recovery for a plan.
+    if (rules.FEATURES.statutoryPaymentPlans && stepPausedByPlan(step.stepType, lotPlans, needRule(rules, "PAYMENT_PLANS"))) {
       return { error: "A payment plan is being followed for this lot, so this step waits. Mark the plan as not followed if instalments are missed." };
     }
 
@@ -318,6 +324,8 @@ export async function completeDebtRecoveryStepAction(
           actorId: profile.id,
           payerProfileId: caseRow.ownerId ?? null,
           confirmedCents: confirmedCentsFrom(formData),
+          // Which fees can be passed to the owner is the building's pack's.
+          state: pack.state,
         });
       }
     });

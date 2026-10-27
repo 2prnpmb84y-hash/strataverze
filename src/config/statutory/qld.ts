@@ -30,7 +30,7 @@
  */
 
 import type { MeetingRuleSet, QuorumRule } from "@/lib/meetings/rules";
-import type { EntitlementScheduleDefinition, FundDefinition, LateChargeRules, NoticeRules, PackFeatures, RuleStatus, SchemeSelector } from "./types";
+import type { DebtRecoveryStepRule, EntitlementScheduleDefinition, FeeVariant, FundDefinition, LateChargeRules, NoticeRules, PackFeatures, RuleStatus, SchemeSelector } from "./types";
 
 const ACT = "Body Corporate and Community Management Act 1997 (Qld)";
 const SM = "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld)";
@@ -271,7 +271,7 @@ export const DEBT_RECOVERY = {
   mayStartAfterDueDate: true,
   recoveryCostsRecoverable: true,
   /** A debt outstanding for 2 years: proceedings must start within 2 months after the 2-year period (SM s 166(2)). */
-  mustStartProceedings: { overdueYears: 2, withinMonths: 2 },
+  mustStartProceedings: { overdueYears: 2, withinMonths: 2, citation: "Standard Module s 166(2)" },
   /** The committee may decide to recover a liquidated debt (SM s 52(1)(e)(i)). */
   committeeMayDecide: true,
   /** A debt claim is a QCAT minor civil dispute up to $25,000, or a claim in a court (Act s 229A(1), (2); QCAT Act sch 3). */
@@ -286,6 +286,207 @@ export const DEBT_RECOVERY = {
   source: `${SM} ss 52, 166; ${ACT} s 229A; Queensland Civil and Administrative Tribunal Act 2009 (Qld) sch 3`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/*
+ * GO-LIVE GAP (stage 2, step 8, 27 Oct 2026): the 2 year rule (SM s 166(2))
+ * is shown as a warning on the adviser debt recovery page only
+ * (src/lib/debt-recovery/proceedings-deadline.ts). No daily reminder is sent:
+ * each daily reminder is claimed in a column of its own row so a retried run
+ * sends it once, and there is no such column for this. TODO before go-live:
+ * add a daily reminder with a claim column (a database change).
+ * The debt recovery screens take the step labels, the late charge heading
+ * (TERMINOLOGY.lateCharge) and the levy words from the pack, and hide the
+ * payment plan panel without FEATURES.statutoryPaymentPlans. Still NSW words,
+ * to change before go-live:
+ * - the owner case page's "Hardship Request" badge (from the case's
+ *   hasHardshipRequest flag, case-detail-owner-client.tsx);
+ * - "Payment Plan" as a case status label and the owner case page's payment
+ *   plan card (only shown with a plan; a Queensland case never starts in
+ *   PAYMENT_PLAN, and has no statutory plan);
+ * - the owner debt recovery list page ("Manage levy debt recovery cases",
+ *   "Back to Levies"), which lists cases from several buildings, and the
+ *   owner levies section it sits in;
+ * - fee explanations other than the recovery fees, which say "levy".
+ */
+
+/** How the owner-facing step text cites the Act and the SM. */
+const ACT_SHORT = "BCCMA";
+const SM_SHORT = "Standard Module";
+
+/** The QCAT minor civil dispute limit, in dollars, for the step text ("$25,000"). */
+const TRIBUNAL_LIMIT = `$${(DEBT_RECOVERY.tribunalLimitCents / 100).toLocaleString("en-AU")}`;
+const { overdueYears: PROCEEDINGS_YEARS, withinMonths: PROCEEDINGS_MONTHS } = DEBT_RECOVERY.mustStartProceedings;
+
+/**
+ * DRAFT, FOR STRATAVERZE TO REVIEW (stage 2, step 8, 27 Oct 2026): the
+ * Queensland debt recovery steps, drafted from DEBT_RECOVERY,
+ * LATE_PAYMENT_PENALTY, PAYMENT_ALLOCATION_ORDER and the research notes
+ * (section D) only. The step types are the NSW ones where the meaning matches,
+ * so the case engine, the StrataVerze fees and the screens work unchanged.
+ * Each step has a `status`: CONFIRMED where the step is the law, STRATAVERZE
+ * where it is StrataVerze practice (its legalBasis says so), NOT_CONFIRMED
+ * where the law was not read. Owners see `actionRequired` and `legalBasis`,
+ * which say "contribution" and "penalty", never the NSW words. There is no
+ * hardship statement or statutory payment plan in Queensland: the waiver step
+ * (HARDSHIP_REVIEW, s 166(6)) is StrataVerze practice around a power the SM
+ * gives. The points not confirmed are in DEBT_RECOVERY_GUIDANCE (advisers only).
+ */
+export const DEBT_RECOVERY_STEPS: readonly DebtRecoveryStepRule[] = [
+  {
+    stepType: "LEDGER_VERIFICATION",
+    stepOrder: 1,
+    actionRequired: `Check each unpaid contribution was fixed and its contribution notice given at least ${CONTRIBUTION_NOTICE_RULES.minimumNoticeDays} days before the date for payment, and that payments were applied first to the penalty, then to the contribution, then to recovery costs`,
+    legalBasis: `StrataVerze practice. Contribution notice: ${SM_SHORT} s 163. Payment order: ${SM_SHORT} s 166(5)`,
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Case opened",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "INITIAL_CONTACT",
+    stepOrder: 2,
+    actionRequired: "Contact the owner about the unpaid contributions and the amount owing, including any penalty",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Ledger verified",
+    noticeType: "REMINDER",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "REMINDER_NOTICE",
+    stepOrder: 3,
+    actionRequired: "Send a written reminder showing the unpaid contributions, any penalty and any recovery costs separately",
+    legalBasis: `StrataVerze practice. Penalty: ${SM_SHORT} s 165`,
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "No payment after initial contact (period set by the building)",
+    noticeType: "DEMAND",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "FINAL_NOTICE",
+    stepOrder: 4,
+    actionRequired:
+      "Tell the owner in writing that the body corporate may start proceedings to recover the unpaid contributions, the penalty and recovery costs reasonably incurred",
+    legalBasis: `StrataVerze practice. Recovery as a debt: ${SM_SHORT} s 166(1)`,
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Reminder unpaid",
+    noticeType: "FINAL_DEMAND",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "HARDSHIP_REVIEW",
+    stepOrder: 5,
+    actionRequired:
+      "If the owner asks, decide whether there are special reasons to waive the penalty or recovery costs, in whole or in part. A request can arrive at any step",
+    legalBasis: `StrataVerze practice. Waiver for special reasons: ${SM_SHORT} s 166(6)`,
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Owner asks for the penalty or recovery costs to be waived",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "COMMITTEE_REVIEW",
+    stepOrder: 6,
+    actionRequired: `Decide whether to start proceedings to recover the debt. If a contribution has been unpaid for ${PROCEEDINGS_YEARS} years, proceedings must start within ${PROCEEDINGS_MONTHS} months after the end of the ${PROCEEDINGS_YEARS} years`,
+    legalBasis: `${SM_SHORT} ss 52(1)(e)(i), 166(2)`,
+    responsibleParty: "COMMITTEE",
+    approvalRequired: true,
+    triggerCondition: "Final notice unpaid",
+    status: "CONFIRMED",
+  },
+  {
+    stepType: "LEGAL_REFERRAL",
+    stepOrder: 7,
+    actionRequired: "Refer the matter to a solicitor, or prepare the claim, with the ledger, the contribution notices and the committee's decision",
+    legalBasis: `StrataVerze practice. Recovery costs reasonably incurred: ${SM_SHORT} s 166(1)(c)`,
+    responsibleParty: "ADVISER",
+    approvalRequired: true,
+    triggerCondition: "Proceedings decided by the committee",
+    status: "STRATAVERZE",
+  },
+  {
+    stepType: "PROCEEDINGS",
+    stepOrder: 8,
+    actionRequired: `Start proceedings to recover the debt: a claim in ${DEBT_RECOVERY.tribunal} as a minor civil dispute for up to ${TRIBUNAL_LIMIT}, or a claim in a court. An adjudicator cannot decide a debt dispute`,
+    legalBasis: `${ACT_SHORT} s 229A. ${DEBT_RECOVERY.tribunal} Act sch 3`,
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Legal referral accepted",
+    status: "CONFIRMED",
+  },
+  {
+    stepType: "ENFORCEMENT",
+    stepOrder: 9,
+    actionRequired: "Enforce the order or judgment",
+    responsibleParty: "SOLICITOR",
+    approvalRequired: false,
+    triggerCondition: "Order or judgment obtained and unpaid",
+    status: "NOT_CONFIRMED",
+  },
+  {
+    stepType: "CLOSED",
+    stepOrder: 10,
+    actionRequired: "Close the case and reconcile the lot ledger",
+    legalBasis: "StrataVerze practice",
+    responsibleParty: "ADVISER",
+    approvalRequired: false,
+    triggerCondition: "Debt paid, settled or written off",
+    status: "STRATAVERZE",
+  },
+];
+
+/** DRAFT, FOR STRATAVERZE TO REVIEW: the name the screens show for each step type. */
+export const DEBT_RECOVERY_STEP_LABELS: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION: "Ledger Verification",
+  INITIAL_CONTACT: "Initial Contact",
+  REMINDER_NOTICE: "Reminder Notice",
+  FINAL_NOTICE: "Final Notice",
+  HARDSHIP_REVIEW: "Waiver Request",
+  COMMITTEE_REVIEW: "Committee Review",
+  LEGAL_REFERRAL: "Legal Referral",
+  PROCEEDINGS: "Proceedings",
+  ENFORCEMENT: "Enforcement",
+  CLOSED: "Closed",
+};
+
+/**
+ * DRAFT, FOR STRATAVERZE TO REVIEW: guidance for each step, shown to advisers
+ * only, with the points not confirmed.
+ */
+export const DEBT_RECOVERY_GUIDANCE: Readonly<Record<string, string>> = {
+  LEDGER_VERIFICATION: `Check each unpaid contribution was validly fixed: by ordinary resolution of the body corporate (${SM_SHORT} s 162(1), (2)), or for an interim contribution by the committee (${SM_SHORT} s 162(3), (4)). Check its contribution notice was given at least ${CONTRIBUTION_NOTICE_RULES.minimumNoticeDays} days before the date for payment. Check payments were applied first to the penalty, then to the contribution, then to recovery costs (${SM_SHORT} s 166(5)). This check, and showing contributions, penalty and costs separately, is StrataVerze practice.`,
+  INITIAL_CONTACT:
+    "Contact the owner informally about the unpaid contributions and the amount owing. Queensland law has no statutory payment plan and no hardship statement. The owner can ask the body corporate to waive the penalty or recovery costs for special reasons. While the lot owes the body corporate money, it can vote only on a resolution without dissent or a committee election, and its owner cannot be on the committee. This contact is StrataVerze practice.",
+  REMINDER_NOTICE:
+    "Send a written reminder showing the unpaid contributions, any penalty and any recovery costs separately. Owners are shown penalty, never interest. No period for a reminder is set by law, so the building sets its own. This reminder is StrataVerze practice.",
+  FINAL_NOTICE:
+    "Tell the owner in writing that the body corporate may start proceedings to recover the unpaid contributions, the penalty and recovery costs reasonably incurred. Recovery may start once a contribution is unpaid by the date for payment. The research notes record no notice that must be given before proceedings, so this notice is StrataVerze practice.",
+  HARDSHIP_REVIEW: `If satisfied there are special reasons, the body corporate may waive the penalty or recovery costs, in whole or in part, or allow the discount for paying on time (${SM_SHORT} s 166(6)). There is no hardship statement and no statutory payment plan in Queensland. Treating a request as a step is StrataVerze practice. Not confirmed: whether the committee can decide a waiver or a general meeting resolution is needed.`,
+  COMMITTEE_REVIEW: `The committee can decide to start proceedings to recover a liquidated debt from a lot owner (${SM_SHORT} s 52(1)(e)(i)). If a contribution has been outstanding for ${PROCEEDINGS_YEARS} years, the body corporate must start proceedings within ${PROCEEDINGS_MONTHS} months after the end of the ${PROCEEDINGS_YEARS} years (${SM_SHORT} s 166(2)). The debt recovery page warns when a lot reaches this point. How the ${PROCEEDINGS_YEARS} years is counted is StrataVerze's reading: from the date for payment of the oldest unpaid contribution.`,
+  LEGAL_REFERRAL: `Refer the matter to a solicitor, or prepare the claim, with the ledger, the contribution notices and the committee's decision. The owner when the debt became payable and a later owner, including a mortgagee in possession, are jointly and severally liable (${SM_SHORT} s 166(3), (4)). Recovery costs reasonably incurred are recoverable (${SM_SHORT} s 166(1)(c)). Government guidance gives legal fees and body corporate manager arrears notice fees as examples. Not confirmed: whether any particular cost beyond that, including a StrataVerze fee, is recoverable from the owner.`,
+  PROCEEDINGS: `A claim to recover a debt of up to ${TRIBUNAL_LIMIT} is a minor civil dispute in ${DEBT_RECOVERY.tribunal}. The body corporate may instead claim in a court. An adjudicator cannot decide a debt dispute (${ACT_SHORT} s 229A). Once ${DEBT_RECOVERY.tribunal} or court proceedings start, any dispute resolution process for the debt ends. Not confirmed: the Magistrates Court limit for debts over ${TRIBUNAL_LIMIT}. Rely on the solicitor's advice.`,
+  ENFORCEMENT: "Enforce the order or judgment. Not confirmed: the enforcement options. Rely on the solicitor's advice.",
+  CLOSED: "Close the case once the debt is paid, settled or written off, and reconcile the lot ledger.",
+};
+
+/**
+ * How the fee disclosure says a recovery fee can be passed to the owner: only
+ * recovery costs reasonably incurred are recoverable (SM s 166(1)(c)), so it
+ * may be, not that it is.
+ */
+export const RECOVERY_COSTS_RECOVERABLE = `may be recoverable from the owner if reasonably incurred (${SM_SHORT} s 166(1)(c))`;
+
+/**
+ * No statutory list of fees that cannot be passed to an owner is recorded,
+ * and there is no statutory payment plan, so none is listed: a fee follows
+ * the price book. Recovery costs reasonably incurred are recoverable
+ * (SM s 166(1)(c)). Whether a StrataVerze fee is such a cost is not confirmed
+ * (FOR_REVIEW).
+ */
+export const NEVER_RECOVERABLE_FEE_VARIANTS: readonly FeeVariant[] = [];
 
 /**
  * General meetings and committee meetings, as signed off. The meeting engine
@@ -754,6 +955,26 @@ export const FOR_REVIEW = [
     point: "A majority resolution is offered on the agenda but not in the motions list, which does not record written votes without proxies.",
     where: "MEETING_RULES.motionCategories",
   },
+  {
+    point:
+      "The draft Queensland debt recovery steps, their labels and their guidance: the step types and order, the wording, who acts, and which steps are StrataVerze practice (ledger check, contact, reminder, final notice, waiver request, referral and closing).",
+    where: "DEBT_RECOVERY_STEPS, DEBT_RECOVERY_STEP_LABELS, DEBT_RECOVERY_GUIDANCE",
+  },
+  {
+    point:
+      "The 2 year warning: a lot is flagged once its oldest unpaid contribution has been outstanding for 2 years from its date for payment and no proceedings are recorded (no case with the proceedings step completed or a court file number), with the deadline shown as that date plus 2 years and 2 months. It is a warning on the adviser debt recovery page only, with no daily reminder yet.",
+    where: "src/lib/debt-recovery/proceedings-deadline.ts, adviser debt recovery page",
+  },
+  {
+    point:
+      "No StrataVerze fee is marked never recoverable from the owner for Queensland: a recovery step fee follows the price book, and owners are told it may be recoverable if reasonably incurred (SM s 166(1)(c)). Whether a StrataVerze fee is such a cost is not confirmed.",
+    where: "NEVER_RECOVERABLE_FEE_VARIANTS, RECOVERY_COSTS_RECOVERABLE",
+  },
+  {
+    point:
+      "The waiver request step (HARDSHIP_REVIEW) is assigned to the committee, with approval required, although whether the committee can decide a waiver (SM s 166(6)) or a general meeting resolution is needed is not confirmed.",
+    where: "DEBT_RECOVERY_STEPS HARDSHIP_REVIEW",
+  },
 ] as const;
 
 /** StrataVerze's decisions in the sign-off of 27 Oct 2026 (review document, "Decisions"). */
@@ -767,10 +988,11 @@ export const DECISIONS = [
 ] as const;
 
 /**
- * None of the NSW workflows applies in Queensland: there is no statutory
- * payment plan, committee training, Strata Hub report, capital works fund
- * plan or key financial information form; the certificate, inspections and
- * debt recovery are Queensland's own (stage 2, steps 8 and 9).
+ * None of the other NSW workflows applies in Queensland: there is no
+ * statutory payment plan, committee training, Strata Hub report, capital works
+ * fund plan or key financial information form; the certificate and
+ * inspections are Queensland's own (stage 2, step 9). The debt recovery steps
+ * are Queensland's own draft sequence (stage 2, step 8).
  */
 export const FEATURES: PackFeatures = {
   statutoryPaymentPlans: false,
@@ -780,5 +1002,7 @@ export const FEATURES: PackFeatures = {
   keyFinancialInformation: false,
   strataInformationCertificate: false,
   recordsInspections: false,
-  debtRecoverySteps: false,
+  // The Queensland step sequence (DEBT_RECOVERY_STEPS, draft, stage 2, step 8).
+  // Nothing is live: the pack is still pending.
+  debtRecoverySteps: true,
 };

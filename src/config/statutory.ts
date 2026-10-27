@@ -25,7 +25,10 @@ import * as VIC from "./statutory/vic";
 import * as WA from "./statutory/wa";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
+  DebtRecoveryRules,
+  DebtRecoveryStepRule,
   EntitlementScheduleDefinition,
+  FeeVariant,
   FundDefinition,
   LateChargeRules,
   NoticeRules,
@@ -56,6 +59,31 @@ export interface SharedRules {
   LATE_CHARGE: LateChargeRules;
   /** The meeting rules: notice, minutes, quorum, resolution categories and what each meeting may carry (stage 2, step 7). */
   MEETING_RULES: MeetingRuleSet;
+  /*
+   * Debt recovery (stage 2, step 8, 27 Oct 2026). Any pack may have these;
+   * a pack with FEATURES.debtRecoverySteps has the steps, their guidance and
+   * labels. Get one with `needRule`, which refuses a pack without it.
+   */
+  /** The recovery steps copied onto each new case. */
+  DEBT_RECOVERY_STEPS?: readonly DebtRecoveryStepRule[];
+  /** Adviser-only guidance for each step type. */
+  DEBT_RECOVERY_GUIDANCE?: Readonly<Record<string, string>>;
+  /** The name the screens show for each step type. */
+  DEBT_RECOVERY_STEP_LABELS?: Readonly<Record<string, string>>;
+  /** Recovery rules shared code reads (the Queensland 2 year rule). NSW has none. */
+  DEBT_RECOVERY?: DebtRecoveryRules;
+  /**
+   * How the fee disclosure says a recovery fee can be passed to the owner in
+   * arrears, after "Charged to the body corporate and": "may be recoverable
+   * from the owner if reasonably incurred (Standard Module s 166(1)(c))".
+   * Where a pack has none, the disclosure keeps its NSW wording.
+   */
+  RECOVERY_COSTS_RECOVERABLE?: string;
+  /**
+   * StrataVerze fees never passed to an owner in this jurisdiction, whatever
+   * the price book says (stage 2, step 8). A pack without the key has none.
+   */
+  NEVER_RECOVERABLE_FEE_VARIANTS?: readonly FeeVariant[];
 }
 
 /**
@@ -109,7 +137,9 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.12 (27 Oct 2026): NOTICE_RULES added (the notice rules in the shared shape, from LEVY_NOTICE_RULES and HARDSHIP_INFORMATION); no rule value changed.
     // 2026.10.13 (27 Oct 2026): LATE_CHARGE added (the interest rule in the shared shape, from STATUTORY_INTEREST); no rule value changed.
     // 2026.10.14 (27 Oct 2026): MEETING_RULES in the shared shape (resolution labels, committee and general meeting categories); no rule value changed.
-    version: "2026.10.14",
+    // 2026.10.15 (27 Oct 2026): DEBT_RECOVERY_STEP_LABELS added (the step labels the screens show) and
+    // NEVER_RECOVERABLE_FEE_VARIANTS (the fee never passed to an owner, moved from the fee engine unchanged); no rule value changed.
+    version: "2026.10.15",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not
@@ -169,7 +199,14 @@ export const PENDING_RULE_PACKS = {
     // Also: MEETINGS.statutoryMotions and COMMITTEE.electionIsLastBusiness (from the research notes, CONFIRMED,
     // backing the draft AGM template), FOR_REVIEW (StrataVerze design choices for Matthew Wrigley to confirm)
     // and a GO-LIVE GAP note (special and majority resolutions are not counted yet).
-    version: "2026.10.8",
+    // 2026.10.9 (27 Oct 2026): DEBT_RECOVERY_STEPS, DEBT_RECOVERY_STEP_LABELS and DEBT_RECOVERY_GUIDANCE added.
+    // They are draft content (DRAFT, FOR STRATAVERZE TO REVIEW) for Matthew Wrigley's review, listed in FOR_REVIEW
+    // with the 2 year warning, the waiver step given to the committee and the fees. Also RECOVERY_COSTS_RECOVERABLE
+    // (fee wording, SM s 166(1)(c)), NEVER_RECOVERABLE_FEE_VARIANTS (none), DEBT_RECOVERY.mustStartProceedings.citation
+    // and FEATURES.debtRecoverySteps on. The legal values already signed off are unchanged, so the status stays
+    // REVIEWED. A GO-LIVE GAP note lists what is still NSW worded on the screens and that the 2 year rule has no
+    // daily reminder yet.
+    version: "2026.10.9",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

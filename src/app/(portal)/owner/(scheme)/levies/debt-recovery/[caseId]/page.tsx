@@ -12,6 +12,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { connection } from "next/server";
 import { CaseDetailOwnerClient } from "./case-detail-owner-client";
 import { previewRecoveryFees } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
+import { needRule } from "@/config/statutory";
 
 export default async function OwnerCaseDetailPage({
   params,
@@ -36,7 +38,7 @@ export default async function OwnerCaseDetailPage({
     .all();
   const viewer = caseViewerFor(debtCase, profile.id, memberships);
   if (!viewer) notFound();
-  const { rules } = await rulesForScheme(debtCase.schemeId);
+  const { rules, pack } = await rulesForScheme(debtCase.schemeId);
   if (!rules.FEATURES.debtRecoverySteps) notFound();
   const isCommittee = viewer === "committee";
 
@@ -147,8 +149,10 @@ export default async function OwnerCaseDetailPage({
       <CaseDetailOwnerClient
         debtCase={serialised}
         isCommittee={isCommittee}
-        recoveryFees={isCommittee ? await previewRecoveryFees() : {}}
+        recoveryFees={isCommittee ? await previewRecoveryFees({ state: pack.state, wording: feeWordingFor(rules) }) : {}}
         recoveryLaw={`${terms.jurisdictionShort} ${terms.act}`}
+        stepLabels={needRule(rules, "DEBT_RECOVERY_STEP_LABELS")}
+        lateChargeLabel={terms.lateCharge.charAt(0).toUpperCase() + terms.lateCharge.slice(1)}
       />
     </div>
   );

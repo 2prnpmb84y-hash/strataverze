@@ -42,19 +42,6 @@ const STATUS_MAP: Record<string, { label: string; variant: ChipStatus }> = {
   CLOSED_SETTLED: { label: "Settled", variant: "success" },
 };
 
-const STEP_LABELS: Record<string, string> = {
-  LEDGER_VERIFICATION: "Ledger Verification",
-  INITIAL_CONTACT: "Initial Contact",
-  REMINDER_NOTICE: "Reminder Notice",
-  FINAL_NOTICE: "Final Notice",
-  HARDSHIP_REVIEW: "Hardship Review",
-  COMMITTEE_REVIEW: "Committee Review",
-  LEGAL_REFERRAL: "Legal Referral",
-  PROCEEDINGS: "Proceedings",
-  ENFORCEMENT: "Enforcement",
-  CLOSED: "Closed",
-};
-
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
@@ -74,10 +61,16 @@ export function DebtRecoveryListClient({
   schemeId,
   cases,
   lotsWithOwners,
+  stepLabels,
+  levies,
 }: {
+  /** The building's word for the amounts owed, plural: "levies", "contributions". */
+  levies: string;
   schemeId: string;
   cases: CaseRow[];
   lotsWithOwners: LotWithOwner[];
+  /** The building's name for each recovery step type (`rules.DEBT_RECOVERY_STEP_LABELS`). */
+  stepLabels: Readonly<Record<string, string>>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -163,7 +156,7 @@ export function DebtRecoveryListClient({
         <Card>
           <CardHeader
             title="Initiate Debt Recovery"
-            description="Select a lot with overdue levies to begin the recovery process"
+            description={`Select a lot with overdue ${levies} to begin the recovery process`}
           />
           <div className="space-y-4 p-4 pt-0">
             <div>
@@ -258,7 +251,7 @@ export function DebtRecoveryListClient({
                       </div>
                       <p className="text-sm text-gray-500">
                         Current step:{" "}
-                        {STEP_LABELS[c.currentStep] ?? c.currentStep}
+                        {stepLabels[c.currentStep] ?? c.currentStep}
                       </p>
                     </div>
                     <div className="text-right">

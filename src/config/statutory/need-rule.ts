@@ -18,9 +18,15 @@ export class RuleNotInPackError extends Error {
   }
 }
 
+/** The shared rules a pack may leave out (the debt recovery steps, for example). */
+export type OptionalSharedRule = { [K in keyof SharedRules]-?: undefined extends SharedRules[K] ? K : never }[keyof SharedRules];
+
+/** One of the shared rules a pack may leave out, or RuleNotInPackError when its pack does not have it. */
+export function needRule<K extends OptionalSharedRule>(rules: StatutoryRules, key: K): NonNullable<SharedRules[K]>;
 /** One of a building's rules in the NSW shape, or RuleNotInPackError when its pack does not have it. */
-export function needRule<K extends Exclude<keyof NswRules, keyof SharedRules>>(rules: StatutoryRules, key: K): NswRules[K] {
-  const value = (rules as Partial<NswRules>)[key];
+export function needRule<K extends Exclude<keyof NswRules, keyof SharedRules>>(rules: StatutoryRules, key: K): NswRules[K];
+export function needRule(rules: StatutoryRules, key: string): unknown {
+  const value = (rules as unknown as Record<string, unknown>)[key];
   if (value == null) throw new RuleNotInPackError(String(key), rules.TERMINOLOGY.jurisdictionShort);
-  return value as NswRules[K];
+  return value;
 }

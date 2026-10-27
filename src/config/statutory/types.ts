@@ -254,3 +254,40 @@ export interface NoticeRules {
   contents: readonly string[];
   source: string;
 }
+
+/**
+ * One step of a pack's debt recovery sequence, copied onto each new case
+ * (stage 2, step 8, 27 Oct 2026; moved here from nsw.ts unchanged). Owners
+ * see `actionRequired` and `legalBasis`. `status` says how far the step has
+ * been checked (a step that is StrataVerze practice, not law, is STRATAVERZE).
+ * It is pack data only, never copied onto a case. NSW leaves it out.
+ */
+export interface DebtRecoveryStepRule {
+  stepType: string;
+  stepOrder: number;
+  actionRequired: string;
+  legalBasis?: string;
+  responsibleParty: string;
+  approvalRequired: boolean;
+  triggerCondition: string;
+  noticeType?: string;
+  status?: RuleStatus;
+}
+
+/**
+ * A pack's rules for recovering unpaid levies or contributions that shared
+ * code reads (stage 2, step 8). `mustStartProceedings`: where the law
+ * requires proceedings for a debt outstanding `overdueYears`, they must start
+ * within `withinMonths` after (Queensland, SM s 166(2)). NSW has no such rule.
+ */
+export interface DebtRecoveryRules {
+  /** `citation` is how the warning cites the provision ("Standard Module s 166(2)"). */
+  mustStartProceedings?: { readonly overdueYears: number; readonly withinMonths: number; readonly citation: string };
+  source: string;
+}
+
+/** A StrataVerze fee (price book code and variant). */
+export interface FeeVariant {
+  code: string;
+  variant: string;
+}
