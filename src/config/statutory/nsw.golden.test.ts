@@ -52,10 +52,18 @@ const WORDING = ["TERMINOLOGY", "CITATIONS", "HARDSHIP_INFORMATION", "DEBT_RECOV
  * multi-jurisdiction review), each with its own golden output below.
  */
 const WORKFLOWS = ["PAYMENT_PLANS", "COMMITTEE_TRAINING", "ANNUAL_REPORTING", "RECORD_RETENTION", "SALE_CERTIFICATE", "RECORDS_INSPECTION"] as const;
+/** The funds and entitlement schedules as data (phase 2 foundation, 27 Oct 2026). */
+const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES"] as const;
 
 describe("NSW statutory workflows (Oct 2026)", () => {
   it("are the rules recorded", () => {
     expect(Object.fromEntries(WORKFLOWS.map((n) => [n, (NSW as Record<string, unknown>)[n]]))).toMatchSnapshot();
+  });
+});
+
+describe("NSW funds and entitlement schedules (phase 2 foundation)", () => {
+  it("are the funds and schedules the platform already uses", () => {
+    expect(Object.fromEntries(FOUNDATION.map((n) => [n, (NSW as Record<string, unknown>)[n]]))).toMatchSnapshot();
   });
 });
 
@@ -85,7 +93,7 @@ describe("NSW statutory constants", () => {
     // DEBT_RECOVERY_STEPS (moved into the pack unchanged in phase 1b) by the
     // debt recovery test at the end.
     const constants = Object.entries(statutory.statutoryRulesFor("NSW"))
-      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", ...WORDING, ...WORKFLOWS].includes(k))
+      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", ...WORDING, ...WORKFLOWS, ...FOUNDATION].includes(k))
       .map(([k]) => k)
       .sort();
     expect(constants).toEqual([...names].sort());
