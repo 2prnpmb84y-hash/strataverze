@@ -102,6 +102,102 @@ describe("Queensland pack (pending)", () => {
   });
 });
 
+describe("Australian Capital Territory pack (pending)", () => {
+  const pack = PENDING_RULE_PACKS.ACT;
+  const act = pack.rules;
+
+  it("is a draft for review, not signed off, with no decisions yet", () => {
+    expect(pack.code).toBe("AU-ACT");
+    expect(pack.state).toBe("ACT");
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(pack.reviewer).toBe("Matthew Wrigley");
+    expect(act.DECISIONS).toEqual([]);
+  });
+
+  it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
+    expect(act.ENTITLEMENT_SCHEDULES.filter((s) => s.onLot).map((s) => s.key)).toEqual(["UNIT_ENTITLEMENT"]);
+  });
+
+  it("supports units plans only, not community title", () => {
+    expect(act.SCHEME_TYPE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["UNITS_PLAN"]);
+  });
+
+  it("switches every NSW workflow off", () => {
+    expect(Object.keys(act.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(act.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("gives every shared term", () => {
+    const shared = Object.keys(RULE_PACKS.NSW.rules.TERMINOLOGY).filter((k) => k !== "source");
+    for (const k of shared) expect(act.TERMINOLOGY, k).toHaveProperty(k);
+    expect(act.TERMINOLOGY.jurisdictionShort).toBe("ACT");
+  });
+
+  it("records the 2026 Bill as not law and not in force", () => {
+    expect(act.PENDING_REFORMS).toHaveLength(1);
+    for (const reform of act.PENDING_REFORMS) {
+      expect(reform.legalStatus).toBe("NOT_LAW");
+      expect(reform.textStatus).toBe("READ_IN_BILL_TEXT");
+      expect(reform).not.toHaveProperty("status");
+      expect(reform.inForce).toBe(false);
+      expect(reform.notifiedOn).toBeNull();
+      expect(reform.appliesFrom).toBeNull();
+    }
+    // The in-force quorum is unchanged until the Bill commences.
+    expect(act.MEETINGS.quorum.fractionOfUnits).toBe(1 / 2);
+    expect(act.MEETINGS.absenteeVotesCountTowardsQuorum).toBe(false);
+  });
+
+  it("treats the UTMR s 9 amount as the threshold for acting without approval, not a costs cap", () => {
+    expect(act.DEBT_RECOVERY.otherLegalActionWithoutResolution.isCapOnRecoverableCosts).toBe(false);
+    expect(act.DEBT_RECOVERY.contributionRecoveryNeedsResolution).toBe(false);
+  });
+
+  it("holds the special resolution tests: against not more than 1/4, or less than 1/3 with 3 members", () => {
+    expect(act.RESOLUTIONS.SPECIAL.appliesAboveMembers).toBe(3);
+    expect(act.RESOLUTIONS.SPECIAL.againstNotMoreThanFractionOfVotesThatCanBeCastByPeoplePresent).toBe(1 / 4);
+    expect(act.RESOLUTIONS.SPECIAL.threeMembers.againstLessThanFraction).toBe(1 / 3);
+    expect(act.RESOLUTIONS.SPECIAL.threeMembers.againstFractionDenominatorStatus).toBe("NOT_CONFIRMED");
+    expect(act.SIZE_THRESHOLDS.threeMembersSpecialResolutionAgainstLessThanFraction).toBe(1 / 3);
+    expect(act.RESOLUTIONS.ORDINARY.appliesAboveMembers).toBe(2);
+    expect(act.RESOLUTIONS.UNANIMOUS.appliesAboveMembers).toBe(2);
+  });
+
+  it("charges 10% simple interest by default, 0 to 20% by special resolution", () => {
+    expect(act.INTEREST.defaultAnnualRatePercent).toBe(10);
+    expect(act.INTEREST.simple).toBe(true);
+    expect(act.INTEREST.minAnnualRatePercent).toBe(0);
+    expect(act.INTEREST.maxAnnualRatePercent).toBe(20);
+    expect(act.INTEREST.openingWords.interpretationStatus).toBe("NOT_CONFIRMED");
+  });
+
+  it("requires an audit above 100 units or an annual budget above $250,000", () => {
+    expect(act.AUDIT.requiredAboveUnits).toBe(100);
+    expect(act.AUDIT.requiredAboveAnnualBudgetCents).toBe(25_000_000);
+    expect(act.SIZE_THRESHOLDS.auditAboveUnits).toBe(100);
+    expect(act.SIZE_THRESHOLDS.auditAboveAnnualBudgetCents).toBe(25_000_000);
+  });
+
+  it("holds the maximum certificate and records fees from 1 July 2026", () => {
+    expect(act.SALE_CERTIFICATE.feesFrom).toBe("2026-07-01");
+    expect(act.SALE_CERTIFICATE.maxFeeCentsIncGst).toEqual({ SALE: 35_300, SALE_UPDATE: 17_500, RENTAL: 35_300 });
+    expect(act.SALE_CERTIFICATE.feeHistory.find((f) => f.effectiveFrom === "2026-07-01")?.maxFeeCentsIncGst).toEqual(act.SALE_CERTIFICATE.maxFeeCentsIncGst);
+    expect(act.RECORDS.inspection.generalRecordsFeeMaxCentsIncGst).toBe(13_400);
+    expect(act.RECORDS.inspection.generalRecordsFeeFrom).toBe("2026-07-01");
+  });
+
+  it("requires a sinking fund only from 4 units", () => {
+    expect(act.SIZE_THRESHOLDS.sinkingFundRequiredFromUnits).toBe(4);
+    expect(act.FUND_RULES.sinkingFundRequiredFromUnits).toBe(4);
+    expect(act.FUND_CATALOGUE.find((f) => f.key === "SINKING")?.required).toBe(false);
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(act).toMatchSnapshot();
+  });
+});
+
 describe("needRule (stage 2)", () => {
   it("gives the NSW rule", () => {
     expect(needRule(RULE_PACKS.NSW.rules, "STATUTORY_INTEREST")).toBe(STATUTORY_INTEREST);

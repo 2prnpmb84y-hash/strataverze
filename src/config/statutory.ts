@@ -18,6 +18,7 @@
  *
  * Plan: https://claude.ai/artifact/4mgrKi2E7VeBdSqTSgZhyc
  */
+import * as ACT from "./statutory/act";
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
@@ -209,6 +210,18 @@ export const PENDING_RULE_PACKS = {
     reviewedOn: "2026-10-27",
     rules: QLD,
   } satisfies PendingRulePack<typeof QLD>,
+  ACT: {
+    code: "AU-ACT",
+    state: "ACT",
+    name: "Australian Capital Territory",
+    // 2026.10.1 (27 Oct 2026): units plans, drafted from the research notes (UTMA R25, UTMR R6, UTA R38,
+    // DI2026-115, DI2026-22) for Matthew Wrigley to review; not signed off, no decisions yet.
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: ACT,
+  } satisfies PendingRulePack<typeof ACT>,
 } as const;
 
 /** How a pack is recorded on a notice, charge or case, for example "AU-NSW 2026.10.1". */
