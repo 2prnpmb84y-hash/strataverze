@@ -36,10 +36,41 @@ export interface FundDefinition {
   shortLabel: string;
   ledgerFund: "ADMINISTRATIVE" | "CAPITAL_WORKS";
   purpose: string;
+  /**
+   * Whether every scheme in the jurisdiction must have the fund; a new
+   * building is given each required fund. Where the law's answer depends on
+   * the scheme, this is false and `requiredWhen` says when.
+   */
   required: boolean;
+  /**
+   * When the law requires the fund, where that depends on the scheme. Absent
+   * means `required` alone answers it (NSW, Queensland).
+   */
+  requiredWhen?: FundRequiredWhen;
   source: string;
   status: RuleStatus;
 }
+
+/**
+ * Whether a scheme of one size class must have a fund (or perform a
+ * function), from its size and its by-laws:
+ * - ALWAYS: it must;
+ * - UNLESS_BY_LAWS_EXEMPT: it must, unless its by-laws exempt it;
+ * - OPTIONAL: it may, but need not;
+ * - ONLY_IF_BY_LAWS_REQUIRE: it must not, unless its by-laws require it.
+ */
+export type SizeClassRequirement = "ALWAYS" | "UNLESS_BY_LAWS_EXEMPT" | "OPTIONAL" | "ONLY_IF_BY_LAWS_REQUIRE";
+
+/**
+ * When a fund is required (WA pack, 27 Oct 2026):
+ * - "ALWAYS": every scheme must have it;
+ * - "DESIGNATED_ONLY": required only where the scheme meets the pack's
+ *   designated test (Western Australia: a designated strata company); any
+ *   other scheme may establish it;
+ * - `{ bySchemeSize }`: by size class, keyed by the values of the pack's
+ *   scheme size selector.
+ */
+export type FundRequiredWhen = "ALWAYS" | "DESIGNATED_ONLY" | { readonly bySchemeSize: Readonly<Record<string, SizeClassRequirement>> };
 
 /**
  * A schedule of lot entitlements. `onLot` marks the schedule held in each
@@ -90,7 +121,11 @@ export interface SharedTerminology {
   actShort: string;
   /** The jurisdiction, as it follows the Act's name: "NSW", "Qld". */
   jurisdictionShort: string;
-  /** The tribunal that hears levy claims. */
+  /**
+   * The strata disputes tribunal: "NCAT", "QCAT", "SAT". Whether it also
+   * hears levy claims differs by jurisdiction (in Western Australia it does
+   * not); see the pack's debt recovery rules.
+   */
   tribunal: string;
   /** One amount owners pay towards the funds, lower case: "levy", "contribution". */
   levy: string;

@@ -17,7 +17,7 @@ import {
   type StatutoryRules,
 } from "./statutory";
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
-import type { EntitlementScheduleDefinition, FundDefinition, RuleStatus } from "./statutory/types";
+import type { EntitlementScheduleDefinition, FundDefinition, FundRequiredWhen, RuleStatus } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
 const packs = [
@@ -195,6 +195,289 @@ describe("Australian Capital Territory pack (pending)", () => {
 
   it("is the rules recorded for review", () => {
     expect(act).toMatchSnapshot();
+  });
+});
+
+describe("Victorian pack (pending)", () => {
+  const pack = PENDING_RULE_PACKS.VIC;
+  const vic = pack.rules;
+  const isDate = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(d));
+
+  it("is a draft, not signed off, and never given to a building", () => {
+    expect(pack.code).toBe("AU-VIC");
+    expect(pack.state).toBe("VIC");
+    expect(pack.version).toBe("2026.10.1");
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(rulePackFor("VIC")).toBeNull();
+    expect(rulePackFor(" vic ")).toBeNull();
+    expect(() => statutoryRulesFor("VIC")).toThrow(UnsupportedJurisdictionError);
+    expect(SUPPORTED_SCHEME_STATES as readonly string[]).not.toContain("VIC");
+    expect(Object.keys(RULE_PACKS)).not.toContain("VIC");
+  });
+
+  it("is covered by the pending pack loop and the shared fund and schedule checks", () => {
+    expect(Object.values(PENDING_RULE_PACKS)).toContain(pack);
+    expect(packs.map(([code]) => code)).toContain("AU-VIC");
+  });
+
+  it("has proposed decisions only, none decided", () => {
+    expect(vic.DECISIONS.length).toBeGreaterThan(0);
+    for (const d of vic.DECISIONS) {
+      expect(d.decidedBy).toBeNull();
+      expect(d.decidedOn).toBeNull();
+    }
+  });
+
+  it("switches every NSW workflow off, with the same keys", () => {
+    expect(Object.keys(vic.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(vic.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("holds the maintenance fund in the ledger's capital works fund, and marks the administrative fund a StrataVerze choice", () => {
+    const maintenance = vic.FUND_CATALOGUE.find((f) => f.key === "MAINTENANCE");
+    const admin = vic.FUND_CATALOGUE.find((f) => f.key === "ADMINISTRATIVE");
+    expect(maintenance?.ledgerFund).toBe("CAPITAL_WORKS");
+    expect(maintenance?.status).toBe("CONFIRMED");
+    expect(maintenance?.required).toBe(false);
+    expect(admin?.ledgerFund).toBe("ADMINISTRATIVE");
+    expect(admin?.status).toBe("STRATAVERZE");
+    expect(admin?.required).toBe(false);
+    expect(vic.FOR_REVIEW.map((r) => r.key)).toEqual(expect.arrayContaining(["ADMINISTRATIVE_FUND", "MAINTENANCE_FUND_REQUIRED"]));
+  });
+
+  it("holds lot liability on each lot and lot entitlement separately", () => {
+    expect(vic.ENTITLEMENT_SCHEDULES.find((s) => s.onLot)?.key).toBe("LOT_LIABILITY");
+    expect(vic.ENTITLEMENT_SCHEDULES.find((s) => !s.onLot)?.key).toBe("LOT_ENTITLEMENT");
+  });
+
+  it("uses Victorian terms", () => {
+    const t = vic.TERMINOLOGY;
+    expect([t.ownersCorporation, t.committee, t.tribunal, t.levy, t.levies, t.lateCharge, t.planLabel]).toEqual([
+      "owners corporation",
+      "committee",
+      "VCAT",
+      "fee",
+      "fees",
+      "interest",
+      "Plan of subdivision",
+    ]);
+    expect(t.bodyCorporateNameStatus).toBe("GUIDANCE");
+  });
+
+  it("lists supported scheme options only as a StrataVerze choice under review", () => {
+    expect(vic.OWNERS_CORPORATION_TYPE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["UNLIMITED"]);
+    expect(vic.FOR_REVIEW.map((r) => r.key)).toContain("OWNERS_CORPORATION_TYPE_SUPPORTED");
+  });
+
+  it("holds every pending change switched off, with its latest start date and commencement", () => {
+    expect(vic.PENDING_CHANGES.length).toBeGreaterThan(0);
+    for (const c of vic.PENDING_CHANGES) {
+      expect(c.inForce).toBe(false);
+      expect(c.commencedOn).toBeNull();
+      expect(c.commencement.length).toBeGreaterThan(10);
+      if (c.latestStartDate !== null) expect(isDate(c.latestStartDate)).toBe(true);
+      else expect(c.legalStatus).toBe("ANNOUNCED_NO_LEGISLATION");
+    }
+    const byKey = Object.fromEntries(vic.PENDING_CHANGES.map((c) => [c.key, c]));
+    for (const k of ["CLAA_2026_PAYMENT_PLANS", "CLAA_2026_PROXY_LIMIT", "CLAA_2026_INTEREST_PAUSE", "CLAA_2026_ARREARS_CARVE_OUTS", "CLAA_2026_PRIVACY"]) {
+      expect(byKey[k].latestStartDate).toBe("2027-12-01");
+      expect(byKey[k].legalStatus).toBe("ENACTED_NOT_COMMENCED");
+    }
+    expect(byKey.SR_53_2026_MANAGER_FEES.latestStartDate).toBe("2026-11-25");
+    expect(byKey.SR_53_2026_MANAGER_FEES.fixedStartDate).toBe("2026-11-25");
+    expect(vic.PENDING_CHANGES.filter((c) => c.fixedStartDate !== null).map((c) => c.key)).toEqual(["SR_53_2026_MANAGER_FEES"]);
+    expect(byKey.SR_53_2026_MANAGER_FEES.legalStatus).toBe("MADE_NOT_COMMENCED");
+    expect(byKey.HSRA_2025_MANAGER_EDUCATION.latestStartDate).toBe("2027-06-30");
+    expect(byKey.MANAGER_LICENSING_ANNOUNCEMENT_2026.status).toBe("GUIDANCE");
+  });
+
+  it("keeps the in-force rules apart from the pending ones", () => {
+    expect(vic.FEE_RECOVERY.statutoryPaymentPlansInForce).toBe(false);
+    expect(vic.DUTIES_BY_TIER.paymentPlansPending.inForce).toBe(false);
+    // The in-force manager fees are the OCR Version 002 ones, not SR 53/2026's.
+    expect(vic.MANAGER.registrationFeeUnits).toEqual({ application: 14.26, annual: 10.01, lateLodgement: 1 });
+    // The s 212 transitional deadlines are in force, held with the manager rules.
+    expect(vic.MANAGER.educationTransitionalDeadlines).toMatchObject({ coursesBy: "2027-06-30", evidenceAndOfficerAppointmentForExistingBusinessesBy: "2027-08-01", status: "CONFIRMED" });
+    // The in-force proxy limit is s 89D as it stands, not the one-lot-owner limit.
+    expect(vic.PROXIES.limit.maxPercentOfLotOwnersWhenAboveThreshold).toBe(5);
+  });
+
+  it("gives the resolution thresholds in the Act", () => {
+    expect(vic.RESOLUTIONS.SPECIAL.fractionOfTotalVotes).toBe(0.75);
+    expect(vic.RESOLUTIONS.SPECIAL.fractionOfTotalLotEntitlementsOnBallotOrPoll).toBe(0.75);
+    expect(vic.RESOLUTIONS.SPECIAL.countsTotalForAllLots).toBe(true);
+    expect(vic.RESOLUTIONS.INTERIM_SPECIAL.route1).toEqual({ forAtLeastFractionOfTotalVotes: 0.5, againstNotMoreThanFractionOfTotalVotes: 0.25 });
+    // s 97(5): more than 25% of the total votes, not of lot entitlements (CAV differs).
+    expect(vic.RESOLUTIONS.INTERIM_SPECIAL.petitionStopsIfMoreThanFractionOfTotalVotes).toBe(0.25);
+    expect(vic.RESOLUTIONS.INTERIM_SPECIAL.petitionCounts).toBe("total votes for all the lots");
+    expect(vic.RESOLUTIONS.INTERIM_SPECIAL.becomesSpecialAfterDays).toBe(29);
+    expect(vic.MEETINGS.quorum).toEqual({ percentOfTotalLots: 50, otherwisePercentOfTotalLotEntitlement: 50 });
+    // s 78: stopped by notice of a special general meeting, not a petition (CAV differs).
+    expect(vic.MEETINGS.interimResolutions.stoppedBy).toContain("notice of a special general meeting");
+    expect(vic.SPECIAL_FEES.specialResolutionIfMoreThanTimesCurrentAnnualFees).toBe(2);
+  });
+
+  it("gives the proxy limits, current and pending", () => {
+    expect(vic.PROXIES.limit.occupiableLotsThreshold).toBe(20);
+    expect(vic.PROXIES.limit.maxLotOwnersWhenAtOrBelowThreshold).toBe(1);
+    expect(vic.PROXIES.limit.maxPercentOfLotOwnersWhenAboveThreshold).toBe(5);
+    expect(vic.PROXIES.limit.counts).toBe("occupiable lots");
+    expect(vic.PROXIES.limit.roundingStatus).toBe("NOT_CONFIRMED");
+    const pending = vic.PENDING_CHANGES.find((c) => c.key === "CLAA_2026_PROXY_LIMIT");
+    expect(pending?.rules).toMatchObject({ maxLotOwners: 1, exceptionsUnchanged: true });
+  });
+
+  it("gives the s 18 authority to sue, with delegation not confirmed", () => {
+    const s18 = vic.AUTHORITY_TO_SUE;
+    expect(s18.inForceFrom).toBe("2026-09-09");
+    expect(s18.defaultResolution).toBe("SPECIAL");
+    expect(s18.ordinaryResolutionForMoneyUpToTimesCurrentAnnualFees).toBe(2);
+    expect(s18.ordinaryResolutionForNonMonetaryOrders).toBe(true);
+    expect(s18.committeeDelegation).toMatchObject({ status: "NOT_CONFIRMED", mayBeAutomated: false });
+    expect(vic.FOR_REVIEW.find((r) => r.key === "S18_COMMITTEE_DELEGATION")?.before).toContain("debt workflow");
+  });
+
+  it("gives the tier lot counts, and the tests that count lots instead", () => {
+    expect(vic.TIERS.tiers.map((t) => [t.tier, t.occupiableLotsMin, t.occupiableLotsMax])).toEqual([
+      [1, 101, null],
+      [2, 51, 100],
+      [3, 10, 50],
+      [4, 3, 9],
+      [5, 2, 2],
+    ]);
+    expect(vic.TIERS.countingRules[0]).toMatchObject({ occupiableLotsFewerThan: 10, nonOccupiableLotsMoreThan: 50 });
+    // s 100 counts all lots, not tiers.
+    expect(vic.LOT_COUNT_TESTS.committeeRequired).toMatchObject({ lotsAtLeast: 10, counts: "all lots" });
+    expect(vic.COMMITTEE.requiredFromLots).toBe(10);
+    expect(vic.LOT_COUNT_TESTS.proxyLimit.counts).toBe("occupiable lots");
+  });
+
+  it("gives the audit and review duties by tier", () => {
+    expect(vic.DUTIES_BY_TIER.auditOrReview.auditMandatory).toEqual([1]);
+    expect(vic.DUTIES_BY_TIER.auditOrReview.reviewMandatory).toEqual([2]);
+    expect(vic.DUTIES_BY_TIER.maintenancePlan.must).toEqual([1, 2]);
+    expect(vic.DUTIES_BY_TIER.manager.mustAppoint).toEqual([1]);
+    expect(vic.DUTIES_BY_TIER.managerRevocationNotice.contractMayNotRequireMonthsOrMore).toEqual({ 1: 3, 2: 3, 3: 1, 4: 1, 5: 1 });
+    expect(vic.DUTIES_BY_TIER.insuranceValuation).toMatchObject({ everyYears: 5, must: [1, 2, 3, 4], exempt: [5] });
+  });
+
+  it("holds fees in fee units, with calculated dollars never marked official", () => {
+    expect(vic.FEES_IN_FEE_UNITS.certificate.withinBusinessDays).toEqual({ 2: 17.35, 5: 14.46, 10: 9.64 });
+    expect(vic.FEES_IN_FEE_UNITS.certificate.additionalWithinBusinessDays).toEqual({ 2: 9.54, 5: 7.95, 10: 5.3 });
+    expect(vic.FEES_IN_FEE_UNITS.recordCopy.firstRecordFeeUnits).toBe(1.15);
+    expect(vic.FEES_IN_FEE_UNITS.registerCopy.feeUnits).toBe(3.03);
+    expect(vic.FEE_UNIT_VALUES["2026-27"]).toMatchObject({ centsPerFeeUnit: 1_727, status: "GUIDANCE" });
+    expect(vic.FEE_DOLLARS_CALCULATED.official).toBe(false);
+    expect(vic.FEE_DOLLARS_CALCULATED.status).toBe("NOT_CONFIRMED");
+    // The researcher's calculated figures, as the notes give them (sections N and O).
+    expect(vic.FEE_DOLLARS_CALCULATED["2026-27"]).toEqual({
+      recordCopyFirstRecordCents: 1_986,
+      registerCopyCents: 5_233,
+      certificateWithinBusinessDaysCents: { 2: 29_963, 5: 24_972, 10: 16_648 },
+      additionalCertificateWithinBusinessDaysCents: { 2: 16_476, 5: 13_730, 10: 9_153 },
+    });
+    const sr53 = vic.PENDING_CHANGES.find((c) => c.key === "SR_53_2026_MANAGER_FEES");
+    expect(sr53?.rules).toMatchObject({ feeUnits: { application: 29.12, annual: 22.05, lateLodgement: 1.35 } });
+  });
+
+  it("marks the penalty interest rate guidance, not a default", () => {
+    expect(vic.INTEREST.penaltyInterestRate).toMatchObject({ annualPercent: 10, status: "GUIDANCE", usableAsDefaultCap: false });
+    expect(vic.FOR_REVIEW.map((r) => r.key)).toContain("PENALTY_INTEREST_RATE");
+  });
+
+  it("records the approved form rules and the unconfirmed points", () => {
+    const forms = vic.FEE_NOTICES.approvedForms;
+    expect(forms.mayBeAdded).toEqual(["reference numbers", "manager details", "web or email details"]);
+    expect(forms.formTextHeldInPack).toBe(false);
+    expect(forms.appliedFrom).toMatchObject({ date: null, status: "NOT_CONFIRMED" });
+    expect(vic.FEE_NOTICES.disputeMeetingConflict).toMatchObject({ formTextDays: 14, modelRuleDays: 28, status: "NOT_CONFIRMED" });
+    expect(vic.FEE_NOTICES.feeNotice.payWithinDaysAfterNotice).toBe(28);
+    expect(vic.MANAGER.contractMustBeInApprovedForm).toBe(true);
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(vic).toMatchSnapshot();
+  });
+});
+
+describe("Western Australia pack (pending)", () => {
+  const pack = PENDING_RULE_PACKS.WA;
+  const wa = pack.rules;
+
+  it("is a draft, not yet signed off, with no decisions", () => {
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(wa.DECISIONS).toHaveLength(0);
+    expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
+    expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
+  });
+
+  it("holds unit entitlement on each lot, the only schedule", () => {
+    expect(wa.ENTITLEMENT_SCHEDULES.filter((s) => s.onLot).map((s) => s.key)).toEqual(["UNIT_ENTITLEMENT"]);
+  });
+
+  it("keeps the reserve fund in the ledger's capital works fund, required only for a designated strata company", () => {
+    const reserve = wa.FUND_CATALOGUE.find((f) => f.key === "RESERVE");
+    expect(reserve?.ledgerFund).toBe("CAPITAL_WORKS");
+    expect(reserve?.required).toBe(false);
+  });
+
+  it("requires the reserve fund exactly when the strata company is designated, via requiredWhen", () => {
+    // What requiredWhen says for one company, as defaultFunds must read it before go-live.
+    const mustHave = (when: FundRequiredWhen | undefined, designated: boolean) => (when === "ALWAYS" ? true : when === "DESIGNATED_ONLY" ? designated : null);
+    const reserve = wa.FUND_CATALOGUE.find((f) => f.key === "RESERVE");
+    expect(reserve?.requiredWhen).toBe("DESIGNATED_ONLY");
+    expect(mustHave(reserve?.requiredWhen, true)).toBe(true);
+    expect(mustHave(reserve?.requiredWhen, false)).toBe(false);
+  });
+
+  it("gives no fund to every building, and sets the administrative fund by size class", () => {
+    expect(wa.FUND_CATALOGUE.every((f) => f.required === false)).toBe(true);
+    const admin = wa.FUND_CATALOGUE.find((f) => f.key === "ADMINISTRATIVE");
+    expect(admin?.requiredWhen).toEqual({ bySchemeSize: { TWO_LOT: "ONLY_IF_BY_LAWS_REQUIRE", THREE_TO_FIVE_LOT: "UNLESS_BY_LAWS_EXEMPT", SIX_OR_MORE_LOT: "ALWAYS" } });
+    expect(Object.keys((admin?.requiredWhen as { bySchemeSize: object }).bySchemeSize).sort()).toEqual(wa.SCHEME_SIZE.options.map((o) => o.value).sort());
+  });
+
+  it("designates a strata company at 10 or more lots or a replacement cost strictly more than $5m", () => {
+    expect(wa.DESIGNATED_STRATA_COMPANY.minLots).toBe(10);
+    expect(wa.DESIGNATED_STRATA_COMPANY.replacementCostMoreThanCents).toBe(500_000_000);
+    expect(wa.DESIGNATED_STRATA_COMPANY.replacementCostIsStrictlyMoreThan).toBe(true);
+  });
+
+  it("charges simple interest at 11% a year on unpaid contributions", () => {
+    expect(wa.INTEREST_ON_UNPAID_CONTRIBUTIONS.annualRatePercent).toBe(11);
+    expect(wa.INTEREST_ON_UNPAID_CONTRIBUTIONS.simple).toBe(true);
+  });
+
+  it("applies the 28-day voting period to unanimous, without dissent and special resolutions, not ordinary", () => {
+    expect(wa.RESOLUTIONS.votingPeriodAppliesTo).not.toContain("ORDINARY");
+    expect([...wa.RESOLUTIONS.votingPeriodAppliesTo].sort()).toEqual(["SPECIAL", "UNANIMOUS", "WITHOUT_DISSENT"]);
+  });
+
+  it("has no against test for a 3 to 5-lot special resolution", () => {
+    expect(wa.SIZE_CLASSES.THREE_TO_FIVE_LOT.specialResolutionAgainstTest).toBe(false);
+    expect(wa.SIZE_CLASSES.THREE_TO_FIVE_LOT.specialResolutionMinLotsFor).toEqual({ 3: 2, 4: 3, 5: 4 });
+  });
+
+  it("sends levy debts to a court, not SAT", () => {
+    expect(wa.DEBT_RECOVERY.forumKind).toBe("COURT");
+    expect(wa.DEBT_RECOVERY.satMayDecide).toBe(false);
+    expect(wa.DISPUTES.excludesLevyDebts).toBe(true);
+  });
+
+  it("switches every NSW workflow off", () => {
+    expect(Object.keys(wa.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(wa.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("supports strata schemes only", () => {
+    expect(wa.SCHEME_TYPE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["STRATA"]);
+    expect(wa.TENURE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["FREEHOLD"]);
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(wa).toMatchSnapshot();
   });
 });
 
