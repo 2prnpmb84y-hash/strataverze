@@ -358,7 +358,7 @@ export const LOT_COUNT_TESTS = {
  * not paid into the maintenance fund, so the ledger's two fund types keep
  * working (FOR_REVIEW, DECISIONS).
  */
-export const FUND_CATALOGUE: readonly (FundDefinition & { requiredWhen: string })[] = [
+export const FUND_CATALOGUE: readonly FundDefinition[] = [
   {
     key: "ADMINISTRATIVE",
     name: "administrative fund",
@@ -367,8 +367,8 @@ export const FUND_CATALOGUE: readonly (FundDefinition & { requiredWhen: string }
     ledgerFund: "ADMINISTRATIVE",
     purpose: "Annual fees and other money not paid into the maintenance fund: general administration, maintenance and repairs, insurance and other recurrent obligations (OCA s 23(1)).",
     // The Act requires accounts and a bank account (ss 27, 33), not this fund.
+    // Not a statutory fund: a StrataVerze ledger choice for money not paid into the maintenance fund.
     required: false,
-    requiredWhen: "Not a statutory fund. A StrataVerze ledger choice for money not paid into the maintenance fund.",
     source: `${OCA} ss 23(1), 27, 33(1) (no administrative fund provision found)`,
     status: "STRATAVERZE",
   },
@@ -380,13 +380,14 @@ export const FUND_CATALOGUE: readonly (FundDefinition & { requiredWhen: string }
     // Kept in the ledger's capital works fund type, shown as the maintenance fund.
     ledgerFund: "CAPITAL_WORKS",
     purpose: "Money to carry out the approved maintenance plan: designated annual fees, insurance proceeds for plan items, interest and other prescribed or determined amounts (OCA s 42).",
-    // Required only with an approved maintenance plan, which tiers 1 and 2 must
-    // have (s 36). The shared shape cannot hold that condition (FOR_REVIEW).
-    // GO-LIVE GAP: origin/main's FundDefinition has no `requiredWhen` yet (it
-    // arrives with the WA pack, PR #107). Before Victoria goes live this fund
-    // must be required for tier 1 and tier 2 owners corporations.
+    // Required where there is an approved maintenance plan (ss 40, 42). Tiers 1
+    // and 2 must prepare and approve a plan (s 36); other tiers may.
+    // The shared `requiredWhen` (WA pack, PR #107) is keyed by a pack's scheme
+    // size selector, and this pack holds tiers as data, not as a selector, so
+    // the condition is not expressed here (FOR_REVIEW).
+    // GO-LIVE GAP: before Victoria goes live this fund must be required for tier
+    // 1 and tier 2 owners corporations, and wherever a plan is approved.
     required: false,
-    requiredWhen: "Where there is an approved maintenance plan (ss 40, 42). Tiers 1 and 2 must prepare and approve a plan (s 36).",
     source: `${OCA} ss 33(2), 36, 40, 42 to 45`,
     status: "CONFIRMED",
   },
@@ -2074,7 +2075,7 @@ export const FOR_REVIEW = [
   },
   {
     key: "MAINTENANCE_FUND_REQUIRED",
-    point: "The maintenance fund is marked `required: false` because the shared shape cannot say \"where there is an approved maintenance plan\"; tiers 1 and 2 must have a plan (s 36).",
+    point: "The maintenance fund is marked `required: false`. The shared `requiredWhen` is keyed by a scheme size selector, and Victorian tiers are held as data, not a selector, so it cannot yet say \"tiers 1 and 2, and wherever a plan is approved\" (s 36). Decide whether to add a tier selector or another `requiredWhen` form.",
     before: "Victorian buildings are set up",
     kind: "STRATAVERZE",
   },

@@ -22,6 +22,7 @@ import * as ACT from "./statutory/act";
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
 import * as VIC from "./statutory/vic";
+import * as WA from "./statutory/wa";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
   EntitlementScheduleDefinition,
@@ -198,6 +199,17 @@ export const PENDING_RULE_PACKS = {
     reviewedOn: null,
     rules: VIC,
   } satisfies PendingRulePack<typeof VIC>,
+  WA: {
+    code: "AU-WA",
+    state: "WA",
+    name: "Western Australia",
+    // 2026.10.1 (27 Oct 2026): strata schemes, researched from the in-force STA (08-a0-00) and STGR (00-w0-00), as a draft for review.
+    version: "2026.10.1",
+    status: "DRAFT",
+    reviewer: "Matthew Wrigley",
+    reviewedOn: null,
+    rules: WA,
+  } satisfies PendingRulePack<typeof WA>,
 } as const;
 
 /** How a pack is recorded on a notice, charge or case, for example "AU-NSW 2026.10.1". */

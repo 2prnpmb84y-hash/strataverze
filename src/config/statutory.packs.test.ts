@@ -17,7 +17,7 @@ import {
   type StatutoryRules,
 } from "./statutory";
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
-import type { EntitlementScheduleDefinition, FundDefinition, RuleStatus } from "./statutory/types";
+import type { EntitlementScheduleDefinition, FundDefinition, FundRequiredWhen, RuleStatus } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
 const packs = [
@@ -398,6 +398,86 @@ describe("Victorian pack (pending)", () => {
 
   it("is the rules recorded for review", () => {
     expect(vic).toMatchSnapshot();
+  });
+});
+
+describe("Western Australia pack (pending)", () => {
+  const pack = PENDING_RULE_PACKS.WA;
+  const wa = pack.rules;
+
+  it("is a draft, not yet signed off, with no decisions", () => {
+    expect(pack.status).toBe("DRAFT");
+    expect(pack.reviewedOn).toBeNull();
+    expect(wa.DECISIONS).toHaveLength(0);
+    expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
+    expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
+  });
+
+  it("holds unit entitlement on each lot, the only schedule", () => {
+    expect(wa.ENTITLEMENT_SCHEDULES.filter((s) => s.onLot).map((s) => s.key)).toEqual(["UNIT_ENTITLEMENT"]);
+  });
+
+  it("keeps the reserve fund in the ledger's capital works fund, required only for a designated strata company", () => {
+    const reserve = wa.FUND_CATALOGUE.find((f) => f.key === "RESERVE");
+    expect(reserve?.ledgerFund).toBe("CAPITAL_WORKS");
+    expect(reserve?.required).toBe(false);
+  });
+
+  it("requires the reserve fund exactly when the strata company is designated, via requiredWhen", () => {
+    // What requiredWhen says for one company, as defaultFunds must read it before go-live.
+    const mustHave = (when: FundRequiredWhen | undefined, designated: boolean) => (when === "ALWAYS" ? true : when === "DESIGNATED_ONLY" ? designated : null);
+    const reserve = wa.FUND_CATALOGUE.find((f) => f.key === "RESERVE");
+    expect(reserve?.requiredWhen).toBe("DESIGNATED_ONLY");
+    expect(mustHave(reserve?.requiredWhen, true)).toBe(true);
+    expect(mustHave(reserve?.requiredWhen, false)).toBe(false);
+  });
+
+  it("gives no fund to every building, and sets the administrative fund by size class", () => {
+    expect(wa.FUND_CATALOGUE.every((f) => f.required === false)).toBe(true);
+    const admin = wa.FUND_CATALOGUE.find((f) => f.key === "ADMINISTRATIVE");
+    expect(admin?.requiredWhen).toEqual({ bySchemeSize: { TWO_LOT: "ONLY_IF_BY_LAWS_REQUIRE", THREE_TO_FIVE_LOT: "UNLESS_BY_LAWS_EXEMPT", SIX_OR_MORE_LOT: "ALWAYS" } });
+    expect(Object.keys((admin?.requiredWhen as { bySchemeSize: object }).bySchemeSize).sort()).toEqual(wa.SCHEME_SIZE.options.map((o) => o.value).sort());
+  });
+
+  it("designates a strata company at 10 or more lots or a replacement cost strictly more than $5m", () => {
+    expect(wa.DESIGNATED_STRATA_COMPANY.minLots).toBe(10);
+    expect(wa.DESIGNATED_STRATA_COMPANY.replacementCostMoreThanCents).toBe(500_000_000);
+    expect(wa.DESIGNATED_STRATA_COMPANY.replacementCostIsStrictlyMoreThan).toBe(true);
+  });
+
+  it("charges simple interest at 11% a year on unpaid contributions", () => {
+    expect(wa.INTEREST_ON_UNPAID_CONTRIBUTIONS.annualRatePercent).toBe(11);
+    expect(wa.INTEREST_ON_UNPAID_CONTRIBUTIONS.simple).toBe(true);
+  });
+
+  it("applies the 28-day voting period to unanimous, without dissent and special resolutions, not ordinary", () => {
+    expect(wa.RESOLUTIONS.votingPeriodAppliesTo).not.toContain("ORDINARY");
+    expect([...wa.RESOLUTIONS.votingPeriodAppliesTo].sort()).toEqual(["SPECIAL", "UNANIMOUS", "WITHOUT_DISSENT"]);
+  });
+
+  it("has no against test for a 3 to 5-lot special resolution", () => {
+    expect(wa.SIZE_CLASSES.THREE_TO_FIVE_LOT.specialResolutionAgainstTest).toBe(false);
+    expect(wa.SIZE_CLASSES.THREE_TO_FIVE_LOT.specialResolutionMinLotsFor).toEqual({ 3: 2, 4: 3, 5: 4 });
+  });
+
+  it("sends levy debts to a court, not SAT", () => {
+    expect(wa.DEBT_RECOVERY.forumKind).toBe("COURT");
+    expect(wa.DEBT_RECOVERY.satMayDecide).toBe(false);
+    expect(wa.DISPUTES.excludesLevyDebts).toBe(true);
+  });
+
+  it("switches every NSW workflow off", () => {
+    expect(Object.keys(wa.FEATURES).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
+    expect(Object.values(wa.FEATURES).every((on) => on === false)).toBe(true);
+  });
+
+  it("supports strata schemes only", () => {
+    expect(wa.SCHEME_TYPE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["STRATA"]);
+    expect(wa.TENURE.options.filter((o) => o.supported).map((o) => o.value)).toEqual(["FREEHOLD"]);
+  });
+
+  it("is the rules recorded for review", () => {
+    expect(wa).toMatchSnapshot();
   });
 });
 
