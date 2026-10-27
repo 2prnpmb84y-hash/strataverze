@@ -105,7 +105,7 @@ import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { checkPlannedNotices } from "@/lib/levies/notice-content-data";
 import { issueNoticeBatch, issueOverdueDrafts, overdueDrafts } from "@/lib/levies/issue-notices";
-import { issueTiming, lateMessage, type IssueTiming } from "@/lib/levies/issue-timing";
+import { issueTiming, lateMessage, urgentNoticeProblem, type IssueTiming } from "@/lib/levies/issue-timing";
 import { getLatestBankDetailVersion, getPaymentSettings, recordBankDetailChange } from "@/lib/queries/payment-controls";
 import { afterFinanceChange, contractorOfSupplier } from "@/lib/works/finance-link";
 import { loadPlanLots } from "@/lib/levies/load-plan-lots";
@@ -1207,7 +1207,12 @@ export async function issueScheduleNoticesAction(
 
     // When each notice goes out: 5 weeks before it falls due. A special levy
     // is resolved for one date and goes out now.
-    const levyRule = needRule((await rulesForScheme(schemeId)).rules, "LEVY_NOTICE_RULES");
+    const { rules: schemeRules } = await rulesForScheme(schemeId);
+    const levyRule = schemeRules.NOTICE_RULES;
+    // The shorter notice for an urgent special levy, only where the building's pack has one.
+    const urgentSpecialLevy = isSpecial && formData.get("urgentSpecialLevy") === "on";
+    const urgentProblem = urgentSpecialLevy ? urgentNoticeProblem(levyRule, schemeRules.TERMINOLOGY) : null;
+    if (urgentProblem) return { error: urgentProblem };
     const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today, levyRule) }));
     const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`, levyRule)!])).values()];
     if (late.length && formData.get("confirmLate") !== "on") {
@@ -1221,7 +1226,6 @@ export async function issueScheduleNoticesAction(
 
     // Every notice must carry what a NSW levy notice states, checked now for
     // all of them: those going out today, and those going out later.
-    const urgentSpecialLevy = isSpecial && formData.get("urgentSpecialLevy") === "on";
     const toContent = (list: typeof numbered) =>
       list.map((n) => ({ lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents }));
     const now = numbered.filter(goesNow);
@@ -1307,7 +1311,7 @@ export async function issueOverdueNoticesAction(
     if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be sent." };
     const today = await schemeToday(schemeId);
     const list = await overdueDrafts(schemeId, scheduleId, today);
-    const levyRule = needRule((await rulesForScheme(schemeId)).rules, "LEVY_NOTICE_RULES");
+    const levyRule = (await rulesForScheme(schemeId)).rules.NOTICE_RULES;
     if (!list.length) return { error: `No planned notice is past its ${noticeLeadMark(levyRule)}.` };
     const late = [...new Set(list.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, levyRule)!))];
     if (formData.get("confirmLate") !== "on") {

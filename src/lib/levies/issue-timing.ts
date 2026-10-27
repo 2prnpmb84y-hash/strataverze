@@ -8,7 +8,7 @@
  * than 30 days left has its due date moved to 30 days after today, the
  * statutory minimum.
  */
-import type { LevyNoticeRule } from "@/lib/finance/levy-notice-content";
+import type { NoticeRules } from "@/lib/finance/levy-notice-content";
 import { noticeLeadText } from "@/lib/jurisdiction/wording";
 import { addDays } from "./notice-plan";
 import { auDate } from "@/lib/onboarding/property-onboarding";
@@ -18,7 +18,7 @@ export function daysBetween(from: string, to: string): number {
 }
 
 /** The day a notice due on `dueDate` goes out. */
-export function issueDateFor(dueDate: string, rule: LevyNoticeRule): string {
+export function issueDateFor(dueDate: string, rule: NoticeRules): string {
   return addDays(dueDate, -rule.issueDaysBeforeDue);
 }
 
@@ -30,7 +30,7 @@ export type IssueTiming =
   /** Fewer than 30 days left: goes out today, due 30 days from today instead of `originalDueDate`. */
   | { kind: "moved"; issueOn: string; dueDate: string; originalDueDate: string };
 
-export function issueTiming(dueDate: string, today: string, rule: LevyNoticeRule): IssueTiming {
+export function issueTiming(dueDate: string, today: string, rule: NoticeRules): IssueTiming {
   const issueOn = issueDateFor(dueDate, rule);
   if (issueOn >= today) return { kind: "planned", issueOn, dueDate };
   const left = daysBetween(today, dueDate);
@@ -39,8 +39,17 @@ export function issueTiming(dueDate: string, today: string, rule: LevyNoticeRule
 }
 
 /** A plain-English line for a notice that cannot be given its full lead time (5 weeks in NSW). */
-export function lateMessage(t: IssueTiming, label: string, rule: LevyNoticeRule): string | null {
+export function lateMessage(t: IssueTiming, label: string, rule: NoticeRules): string | null {
   if (t.kind === "late") return `${label}: due ${auDate(t.dueDate)}, so it goes out today with ${t.daysNotice} days' notice instead of ${noticeLeadText(rule)}.`;
   if (t.kind === "moved") return `${label}: due ${auDate(t.originalDueDate)}, fewer than ${rule.minimumNoticeDays} days away, so it goes out today and falls due on ${auDate(t.dueDate)} (the statutory ${rule.minimumNoticeDays} days).`;
   return null;
+}
+
+/**
+ * Why an urgent special levy cannot be given the shorter notice, or null when
+ * the building's pack has one (`NOTICE_RULES.urgentNoticeDays`).
+ */
+export function urgentNoticeProblem(rule: Pick<NoticeRules, "urgentNoticeDays">, terms: { levy: string }): string | null {
+  if (rule.urgentNoticeDays != null) return null;
+  return `A shorter notice for an urgent special ${terms.levy} is not available for this building. Issue the notice without the urgent option.`;
 }

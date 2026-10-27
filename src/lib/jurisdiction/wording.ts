@@ -29,12 +29,13 @@ export interface NoticeTimingWords {
   mark: string;
   /** The statutory minimum notice, in days (30). */
   minimumDays: number;
-  /** The minimum notice for an urgent special levy, in days (14). */
-  urgentDays: number;
+  /** The minimum notice for an urgent special levy, in days (14), or null where the pack has none (the option is not offered). */
+  urgentDays: number | null;
 }
 
-export function noticeTimingWords(rule: { issueDaysBeforeDue: number; minimumNoticeDays: number; urgentSpecialLevyNoticeDays: number }): NoticeTimingWords {
-  return { lead: noticeLeadText(rule), mark: noticeLeadMark(rule), minimumDays: rule.minimumNoticeDays, urgentDays: rule.urgentSpecialLevyNoticeDays };
+/** From the building's `rules.NOTICE_RULES`. */
+export function noticeTimingWords(rule: { issueDaysBeforeDue: number; minimumNoticeDays: number; urgentNoticeDays: number | null }): NoticeTimingWords {
+  return { lead: noticeLeadText(rule), mark: noticeLeadMark(rule), minimumDays: rule.minimumNoticeDays, urgentDays: rule.urgentNoticeDays };
 }
 
 /** A small count in words ("two quotes"), as the platform writes rule counts. */

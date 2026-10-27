@@ -23,13 +23,23 @@ export interface LevyNoticeEmail {
   noInterest: boolean;
   /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
   interest: InterestRule;
-  /** The building's hardship statement (`rules.HARDSHIP_INFORMATION`). */
-  hardship: HardshipInformation;
+  /** The building's hardship statement (`rules.NOTICE_RULES.hardship.information`), or null where the pack requires none. */
+  hardship: HardshipInformation | null;
   /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
   terms: DocumentTerms;
 }
 
 const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+
+/** The hardship statement, as the notice has always shown it. */
+const hardshipBox = (h: HardshipInformation) => html`<div style="margin:20px 0 0;padding:12px 16px;background-color:#F8FAFB;border-radius:8px;">
+      <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#1a1a2e;">${h.title}</p>
+      <p style="margin:0 0 6px;font-size:13px;color:#1A202C;line-height:1.6;">${h.summary}</p>
+      <p style="margin:0;font-size:13px;color:#1A202C;line-height:1.6;">
+        ${h.helplineName}: ${h.helplinePhone} or ${h.helplineWeb}.
+        More information, including translations: ${h.moreInformationUrl}
+      </p>
+    </div>`;
 
 /** A levy notice with every item the content check requires (see validateLevyNoticeContent). */
 export function levyNoticeEmail(p: LevyNoticeEmail) {
@@ -66,14 +76,7 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
       You can check your ${t.levy} ledger at any time in the StrataVerze owner portal. For questions contact ${p.contact.name} (${p.contact.emailOrPhone}).
     </p>
     ${emailButton(`View your ${t.levy} ledger`, p.ledgerUrl)}
-    <div style="margin:20px 0 0;padding:12px 16px;background-color:#F8FAFB;border-radius:8px;">
-      <p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#1a1a2e;">${p.hardship.title}</p>
-      <p style="margin:0 0 6px;font-size:13px;color:#1A202C;line-height:1.6;">${p.hardship.summary}</p>
-      <p style="margin:0;font-size:13px;color:#1A202C;line-height:1.6;">
-        ${p.hardship.helplineName}: ${p.hardship.helplinePhone} or ${p.hardship.helplineWeb}.
-        More information, including translations: ${p.hardship.moreInformationUrl}
-      </p>
-    </div>
+    ${p.hardship ? hardshipBox(p.hardship) : ""}
   `;
   return {
     to: p.to,

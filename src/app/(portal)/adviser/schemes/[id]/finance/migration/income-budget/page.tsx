@@ -8,7 +8,6 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { loadIncomeBudget } from "@/lib/onboarding/save-income-budget";
 import { PageHeader } from "@/components/ui/page-header";
 import { IncomeBudgetClient } from "./income-budget-client";
-import { needRule } from "@/config/statutory";
 
 /** Onboarding: last year's income and expenditure, this year's budget and levies (24 Oct). */
 export default async function IncomeBudgetPage({ params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +36,7 @@ export default async function IncomeBudgetPage({ params }: { params: Promise<{ i
           .
         </div>
       ) : (
-        <IncomeBudgetClient schemeId={id} ctx={data.ctx} saved={data.saved} locks={data.locks} cutoverHref={`${cutoverBase}?batch=${data.cutover.id}`} noticeLead={noticeLeadText(needRule((await rulesForScheme(id)).rules, "LEVY_NOTICE_RULES"))} />
+        <IncomeBudgetClient schemeId={id} ctx={data.ctx} saved={data.saved} locks={data.locks} cutoverHref={`${cutoverBase}?batch=${data.cutover.id}`} noticeLead={noticeLeadText((await rulesForScheme(id)).rules.NOTICE_RULES)} />
       )}
     </div>
   );

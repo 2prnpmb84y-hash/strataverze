@@ -83,7 +83,7 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       ledgerUrl: `${APP_URL}/owner/levies`,
       noInterest: setting.mode === "NO_INTEREST",
       interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
-      hardship: needRule(setting.rules.rules, "HARDSHIP_INFORMATION"),
+      hardship: setting.rules.rules.NOTICE_RULES.hardship?.information ?? null,
       terms: setting.rules.rules.TERMINOLOGY,
     },
   };

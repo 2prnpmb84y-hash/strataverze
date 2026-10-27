@@ -136,3 +136,44 @@ export interface PackFeatures {
   /** The NSW debt recovery step sequence. */
   debtRecoverySteps: boolean;
 }
+
+/**
+ * The hardship information a notice carries, where the jurisdiction requires
+ * one (NSW: the Financial Hardship Information Statement).
+ */
+export interface HardshipInformation {
+  title: string;
+  summary: string;
+  helplineName: string;
+  helplinePhone: string;
+  helplineWeb: string;
+  moreInformationUrl: string;
+}
+
+/**
+ * The rules for the notice that asks an owner to pay a levy (NSW) or a
+ * contribution (Queensland), in one shape for every pack (stage 2, step 5,
+ * 27 Oct 2026).
+ */
+export interface NoticeRules {
+  /** The least notice the law allows between the notice and the due date, in days. */
+  minimumNoticeDays: number;
+  /**
+   * StrataVerze practice: how many days before it falls due each notice goes
+   * out. At least `minimumNoticeDays`.
+   */
+  issueDaysBeforeDue: number;
+  /**
+   * The shorter minimum notice for an urgent special levy, in days, or null
+   * where the law gives none (the urgent option is then not offered).
+   */
+  urgentNoticeDays: number | null;
+  /**
+   * The hardship statement every notice must carry from `requiredFrom`
+   * (YYYY-MM-DD), or null where none is required (the notice then has none).
+   */
+  hardship: { requiredFrom: string; information: HardshipInformation } | null;
+  /** What a notice states, in plain words. */
+  contents: readonly string[];
+  source: string;
+}

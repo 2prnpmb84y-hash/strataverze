@@ -5,13 +5,13 @@
  * recommended contents for levy notices, which this platform treats as
  * required so every notice is complete. Sources in src/config/statutory.ts.
  */
-import type { NswRules } from "@/config/statutory";
+import type { StatutoryRules } from "@/config/statutory";
 
-/** The levy notice rules of a building's rule pack (`rules.LEVY_NOTICE_RULES`). */
-export type LevyNoticeRule = NswRules["LEVY_NOTICE_RULES"];
+/** The notice rules of a building's rule pack (`rules.NOTICE_RULES`). */
+export type NoticeRules = StatutoryRules["NOTICE_RULES"];
 
-/** The hardship information of a building's rule pack (`rules.HARDSHIP_INFORMATION`). */
-export type HardshipInformation = NswRules["HARDSHIP_INFORMATION"];
+/** The hardship information a notice carries (`rules.NOTICE_RULES.hardship.information`). */
+export type HardshipInformation = NonNullable<NoticeRules["hardship"]>["information"];
 
 export interface LevyNoticeContentInput {
   scheme: { name: string | null; planNumber: string | null };
@@ -43,7 +43,7 @@ export interface MissingItem {
 const daysBetween = (a: string, b: string) =>
   Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86_400_000);
 
-export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: LevyNoticeRule): MissingItem[] {
+export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: NoticeRules): MissingItem[] {
   const missing: MissingItem[] = [];
   const need = (ok: unknown, code: string, message: string) => {
     if (!ok) missing.push({ code, message });
@@ -66,12 +66,14 @@ export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: LevyN
   need(n.contact.name?.trim() && n.contact.emailOrPhone?.trim(), "CONTACT", "Who to contact with questions (name and email or phone).");
   need(n.includesInterestWarning, "INTEREST_WARNING", "A warning that interest is charged on overdue amounts.");
   need(n.includesLedgerAccess, "LEDGER_ACCESS", "How the owner can check their levy ledger.");
-  if (n.noticeDate >= rule.hardshipStatementRequiredFrom) {
+  // A pack with no hardship statement (Queensland) does not require one.
+  if (rule.hardship && n.noticeDate >= rule.hardship.requiredFrom) {
     need(n.includesHardshipStatement, "HARDSHIP_STATEMENT", "The Financial Hardship Information Statement.");
   }
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(n.noticeDate) && /^\d{4}-\d{2}-\d{2}$/.test(n.dueDate)) {
-    const minimum = n.isUrgentSpecialLevy ? rule.urgentSpecialLevyNoticeDays : rule.minimumNoticeDays;
+    // Without a shorter urgent notice in the pack, an urgent levy needs the usual notice.
+    const minimum = n.isUrgentSpecialLevy && rule.urgentNoticeDays != null ? rule.urgentNoticeDays : rule.minimumNoticeDays;
     if (daysBetween(n.noticeDate, n.dueDate) < minimum) {
       missing.push({
         code: "NOTICE_PERIOD",

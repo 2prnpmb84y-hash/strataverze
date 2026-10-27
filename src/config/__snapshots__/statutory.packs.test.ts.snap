@@ -301,6 +301,21 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "votingOutsideMeeting": false,
   },
+  "NOTICE_RULES": {
+    "contents": [
+      "total amount levied",
+      "amount currently payable",
+      "date for payment",
+      "any discount for paying on time",
+      "any monthly penalty for late payment",
+      "any arrears",
+    ],
+    "hardship": null,
+    "issueDaysBeforeDue": 35,
+    "minimumNoticeDays": 30,
+    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 163",
+    "urgentNoticeDays": null,
+  },
   "NOT_CONFIRMED": [
     "How the 21-day general meeting notice is counted, and when a posted or emailed notice is taken to be given.",
     "The Magistrates Court limit for levy debts over $25,000.",
