@@ -5,9 +5,9 @@
  * no shorter urgent notice does not offer it.
  */
 import { describe, expect, it, vi } from "vitest";
-import { PENDING_RULE_PACKS, RuleNotInPackError, statutoryRulesFor, type NswRules, type StatutoryRules } from "@/config/statutory";
+import { PENDING_RULE_PACKS, statutoryRulesFor, type NswRules, type StatutoryRules } from "@/config/statutory";
 import { validateLevyNoticeContent, type LevyNoticeContentInput } from "@/lib/finance/levy-notice-content";
-import { noticeTimingWords } from "@/lib/jurisdiction/wording";
+import { lateChargeSentence, noticeLateCharge, noticeTimingWords } from "@/lib/jurisdiction/wording";
 import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
 import { levyNoticeBlocks } from "@/lib/pdf/documents";
 import { issueDateFor, issueTiming, urgentNoticeProblem } from "./issue-timing";
@@ -23,6 +23,7 @@ const qldShaped: StatutoryRules = {
   PAYMENT_ALLOCATION_ORDER: QLD.PAYMENT_ALLOCATION_ORDER,
   FEATURES: QLD.FEATURES,
   NOTICE_RULES: QLD.NOTICE_RULES,
+  LATE_CHARGE: QLD.LATE_CHARGE,
 };
 
 // For the content check against the database: the building's pack is the Queensland-shaped one.
@@ -130,9 +131,8 @@ describe("a notice where the pack has no hardship statement", () => {
     payment: complete.payment as { accountName: string; bsb: string; accountNumber: string; reference: string },
     contact: { name: "Sam Adviser", emailOrPhone: "sam@example.com" },
     ledgerUrl: "https://app.strataverze.com/owner/levies",
-    // Queensland's penalty sentence is step 6: here the building has resolved not to charge one.
-    noInterest: true,
-    interest: NSW.STATUTORY_INTEREST,
+    // A Queensland building with no penalty resolved.
+    ...noticeLateCharge(QLD.LATE_CHARGE, { mode: "NONE" }),
     hardship: qldShaped.NOTICE_RULES.hardship?.information ?? null,
     terms: qldShaped.TERMINOLOGY,
   };
@@ -153,23 +153,112 @@ describe("a notice where the pack has no hardship statement", () => {
   });
 });
 
-describe("checking notices for a pack without the NSW interest rule", () => {
-  it("stops before any notice is issued, rather than printing NSW interest (step 6 adds the penalty sentence)", async () => {
-    sharedFake.reset({
-      Scheme: [{ id: "q1", state: "QLD-SHAPED", name: "Harbour View", planNumber: "12345" }],
-      Fund: [{ id: "f1", schemeId: "q1", name: "Administrative fund" }],
-      Profile: [{ id: "adviser", firstName: "Sam", lastName: "Adviser", email: "sam@example.com" }],
-      SchemeBankAccount: [],
-      LotDetail: [],
-    });
-    const run = checkPlannedNotices({
+describe("checking notices for a Queensland-shaped pack (step 6: the late charge from LATE_CHARGE)", () => {
+  const check = () =>
+    checkPlannedNotices({
       schemeId: "q1",
       fundId: "f1",
       issuerId: "adviser",
       noticeDate: "2026-10-01",
       notices: [{ lotId: "l1", lotNumber: "7", ownerId: null, noticeNumber: "LN-0001", dueDate: "2026-11-05", amountCents: 100 }],
     });
-    await expect(run).rejects.toBeInstanceOf(RuleNotInPackError);
-    await expect(run).rejects.toMatchObject({ rule: "STATUTORY_INTEREST", jurisdiction: "Qld" });
+  const seed = (scheme: Record<string, unknown>) =>
+    sharedFake.reset({
+      Scheme: [{ id: "q1", state: "QLD-SHAPED", name: "Harbour View", planNumber: "12345", timeZone: "Australia/Brisbane", ...scheme }],
+      Fund: [{ id: "f1", schemeId: "q1", name: "Administrative fund" }],
+      Profile: [{ id: "adviser", firstName: "Sam", lastName: "Adviser", email: "sam@example.com" }],
+      SchemeBankAccount: [],
+      LotDetail: [],
+    });
+
+  it("no longer stops for want of the NSW interest rule, and asks for no penalty statement where none applies", async () => {
+    seed({ interestMode: "NONE" });
+    const codes = (await check()).map((m) => m.code);
+    expect(codes).not.toContain("INTEREST_WARNING");
+    // The other items are still checked (no bank account, no owner on the roll).
+    expect(codes).toEqual(expect.arrayContaining(["PAYMENT_DETAILS", "OWNER"]));
+  });
+
+  it("states a resolved penalty, so its statement is there", async () => {
+    seed({ interestMode: "RESOLVED_RATE", lateChargeMonthlyRatePercent: "2.50", interestResolutionMeetingId: "m", interestResolutionMotionId: "x" });
+    expect((await check()).map((m) => m.code)).not.toContain("INTEREST_WARNING");
+  });
+});
+
+describe("the late charge item of the content check", () => {
+  it("is required only where a late charge applies, in the pack's words", () => {
+    const without = { ...complete, includesInterestWarning: false, includesHardshipStatement: false };
+    expect(validateLevyNoticeContent({ ...without, lateChargeApplies: false }, qldShaped.NOTICE_RULES, qldShaped.TERMINOLOGY)).toEqual([]);
+    expect(validateLevyNoticeContent({ ...without, lateChargeApplies: true }, qldShaped.NOTICE_RULES, qldShaped.TERMINOLOGY)).toEqual([
+      { code: "INTEREST_WARNING", message: "A warning that penalty is charged on overdue amounts." },
+    ]);
+    // NSW, with its words or without, as before.
+    const nsw = { ...without, includesHardshipStatement: true };
+    const message = { code: "INTEREST_WARNING", message: "A warning that interest is charged on overdue amounts." };
+    expect(validateLevyNoticeContent(nsw, NSW.NOTICE_RULES)).toEqual([message]);
+    expect(validateLevyNoticeContent(nsw, NSW.NOTICE_RULES, NSW.TERMINOLOGY)).toEqual([message]);
+  });
+});
+
+describe("a Queensland notice's late charge (step 6)", () => {
+  const doc = {
+    schemeName: "Harbour View",
+    planNumber: "12345",
+    lotNumber: "7",
+    ownerNames: ["Alex Nguyen"],
+    noticeNumber: "LN-0042",
+    noticeDate: "2026-10-01",
+    dueDate: "2026-11-05",
+    periodStart: "2026-10-01",
+    periodEnd: "2026-12-31",
+    fundName: "Administrative Fund",
+    amountCents: 82_509,
+    payment: complete.payment as { accountName: string; bsb: string; accountNumber: string; reference: string },
+    contact: { name: "Sam Adviser", emailOrPhone: "sam@example.com" },
+    ledgerUrl: "https://app.strataverze.com/owner/levies",
+    hardship: null,
+    terms: qldShaped.TERMINOLOGY,
+  };
+  const withPenalty = { ...doc, ...noticeLateCharge(QLD.LATE_CHARGE, { mode: "RESOLVED_RATE", monthlyRatePercent: 2.5 }) };
+  const noPenalty = { ...doc, ...noticeLateCharge(QLD.LATE_CHARGE, { mode: "NONE", monthlyRatePercent: null }) };
+  const email = (d: typeof withPenalty) => levyNoticeEmail({ to: "alex@example.com", ownerName: "Alex Nguyen", amount: "825.09", ...d, planNumber: "12345" });
+  const SENTENCE =
+    "Penalty: if this contribution is not paid by the due date, a penalty of 2.5% a month is charged on the amount unpaid for each whole month it is in arrears after the date for payment (Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 165).";
+
+  it("states the resolved monthly penalty for each whole month in arrears", () => {
+    expect(lateChargeSentence(withPenalty, qldShaped.TERMINOLOGY)).toBe(SENTENCE);
+    expect(levyNoticeBlocks(withPenalty)).toContainEqual({ kind: "text", text: SENTENCE });
+    expect(email(withPenalty).html).toContain(SENTENCE);
+    expect(lateChargeSentence({ ...doc, ...noticeLateCharge(QLD.LATE_CHARGE, { mode: "RESOLVED_RATE", monthlyRatePercent: 1.25 }) }, qldShaped.TERMINOLOGY)).toContain("a penalty of 1.25% a month");
+  });
+
+  it("states no penalty where none applies, and no discount", () => {
+    expect(lateChargeSentence(noPenalty, qldShaped.TERMINOLOGY)).toBeNull();
+    const blocks = JSON.stringify(levyNoticeBlocks(noPenalty));
+    expect(blocks).not.toMatch(/penalty/i);
+    expect(email(noPenalty).html).not.toMatch(/penalty/i);
+    // The database default (STATUTORY) is not a Queensland setting: no penalty.
+    expect(lateChargeSentence({ ...doc, ...noticeLateCharge(QLD.LATE_CHARGE, { mode: "STATUTORY" }) }, qldShaped.TERMINOLOGY)).toBeNull();
+    for (const d of [withPenalty, noPenalty]) {
+      expect(JSON.stringify(levyNoticeBlocks(d))).not.toMatch(/discount/i);
+      expect(email(d).html).not.toMatch(/discount/i);
+    }
+  });
+
+  it("never says interest, on the PDF or in the email", () => {
+    for (const d of [withPenalty, noPenalty]) {
+      expect(JSON.stringify(levyNoticeBlocks(d))).not.toMatch(/interest/i);
+      expect(email(d).html).not.toMatch(/interest/i);
+      expect(email(d).subject).not.toMatch(/interest/i);
+    }
+  });
+
+  it("leaves the NSW notice's sentence as it always was", () => {
+    const nsw = noticeLateCharge(NSW.LATE_CHARGE, { mode: "STATUTORY" });
+    expect(nsw).toEqual({ noInterest: false, interest: { annualRatePercent: 10, graceMonths: 1, source: NSW.STATUTORY_INTEREST.source } });
+    expect(noticeLateCharge(NSW.LATE_CHARGE, { mode: "NO_INTEREST" }).noInterest).toBe(true);
+    const terms = NSW.TERMINOLOGY;
+    expect(lateChargeSentence({ noInterest: false, interest: NSW.STATUTORY_INTEREST }, terms)).toBe(lateChargeSentence(nsw, terms));
+    expect(levyNoticeBlocks({ ...doc, ...nsw, terms })).toEqual(levyNoticeBlocks({ ...doc, noInterest: false, interest: NSW.STATUTORY_INTEREST, terms }));
   });
 });

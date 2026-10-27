@@ -12,7 +12,7 @@
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
-import type { EntitlementScheduleDefinition, FundDefinition, NoticeRules, PackFeatures } from "./types";
+import type { EntitlementScheduleDefinition, FundDefinition, LateChargeRules, NoticeRules, PackFeatures } from "./types";
 
 /**
  * Interest on unpaid contributions.
@@ -72,6 +72,25 @@ export const LEVY_NOTICE_RULES = {
  * StrataVerze, 23 October 2026; section reference still to be added).
  */
 export const PAYMENT_ALLOCATION_ORDER = ["LEVY", "INTEREST", "RECOVERY_COSTS"] as const;
+
+/**
+ * The interest rule in the shape every pack shares (stage 2, step 6,
+ * 27 Oct 2026), from STATUTORY_INTEREST, unchanged: simple interest at the
+ * fixed annual rate, day by day from the due date, none if paid within the
+ * grace period (s 85(1), (2)). A building charges it (STATUTORY, the default)
+ * or, by a recorded general meeting resolution, charges none (NO_INTEREST,
+ * s 85(3)). No other rate can be set.
+ */
+export const LATE_CHARGE: LateChargeRules = {
+  method: "DAILY_SIMPLE_ANNUAL",
+  modes: ["STATUTORY", "NO_INTEREST"],
+  defaultMode: "STATUTORY",
+  resolutionRequiredFor: ["NO_INTEREST"],
+  annualRatePercent: STATUTORY_INTEREST.annualRatePercent,
+  maxMonthlyRatePercent: null,
+  graceMonths: STATUTORY_INTEREST.graceMonths,
+  source: STATUTORY_INTEREST.source,
+};
 
 /**
  * Capital works fund plan.

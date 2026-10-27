@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { InterestWords } from "@/lib/jurisdiction/wording";
+import type { LateChargeWords } from "@/lib/jurisdiction/wording";
 import { Button } from "@/components/ui/button";
 import { saveInterestSettingAction, type ActionState } from "../actions";
 
@@ -11,49 +11,72 @@ export interface ResolutionMeeting {
   motions: { id: string; label: string }[];
 }
 
-/** Statutory interest or, by a recorded general meeting resolution, no interest. */
+/**
+ * The building's late charge setting, from the modes its pack allows (given
+ * in `words.options`). NSW: statutory interest or, by a recorded general
+ * meeting resolution, no interest. Queensland: no penalty or, by a recorded
+ * general meeting resolution, a penalty at the monthly rate it set.
+ */
 export function InterestSettingForm({
   schemeId,
   mode,
+  monthlyRatePercent,
   meetingId,
   motionId,
   meetings,
   words,
 }: {
   schemeId: string;
-  mode: "STATUTORY" | "NO_INTEREST";
+  mode: string;
+  /** The recorded monthly rate (a resolved rate only). */
+  monthlyRatePercent: number | null;
   meetingId: string | null;
   motionId: string | null;
   meetings: ResolutionMeeting[];
-  /** The building's interest wording. */
-  words: InterestWords;
+  /** The building's late charge wording and the settings its pack allows. */
+  words: LateChargeWords;
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     saveInterestSettingAction.bind(null, schemeId),
     {},
   );
-  const [choice, setChoice] = useState(mode);
+  // A setting the pack does not offer starts on the pack's first one.
+  const [choice, setChoice] = useState(words.options.some((o) => o.mode === mode) ? mode : (words.options[0]?.mode ?? mode));
   const [meeting, setMeeting] = useState(meetingId ?? "");
   const motions = meetings.find((m) => m.id === meeting)?.motions ?? [];
+  const chosen = words.options.find((o) => o.mode === choice);
 
   return (
     <form action={formAction} className="space-y-4">
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-ink">Interest on overdue levies</legend>
-        <label className="flex items-start gap-2 text-sm text-ink">
-          <input type="radio" name="mode" value="STATUTORY" checked={choice === "STATUTORY"} onChange={() => setChoice("STATUTORY")} className="mt-1" />
-          <span>
-            Statutory interest: simple interest at {words.ratePercent}% a year on levies unpaid {words.grace} after the due date. This is the
-            default under the {words.fullCitation}. The rate cannot be changed.
-          </span>
-        </label>
-        <label className="flex items-start gap-2 text-sm text-ink">
-          <input type="radio" name="mode" value="NO_INTEREST" checked={choice === "NO_INTEREST"} onChange={() => setChoice("NO_INTEREST")} className="mt-1" />
-          <span>No interest, because a general meeting resolved that contributions bear no interest ({words.noInterestSection}).</span>
-        </label>
+        <legend className="text-sm font-medium text-ink">{words.legend}</legend>
+        {words.options.map((o) => (
+          <label key={o.mode} className="flex items-start gap-2 text-sm text-ink">
+            <input type="radio" name="mode" value={o.mode} checked={choice === o.mode} onChange={() => setChoice(o.mode)} className="mt-1" />
+            <span>{o.label}</span>
+          </label>
+        ))}
       </fieldset>
 
-      {choice === "NO_INTEREST" && (
+      {chosen?.needsRate && (
+        <label className="block text-sm text-ink sm:max-w-xs">
+          <span className="mb-1 block font-medium">{words.rateLabel}</span>
+          <input
+            type="number"
+            name="monthlyRatePercent"
+            inputMode="decimal"
+            min="0.01"
+            max={words.maxMonthlyRatePercent ?? undefined}
+            step="0.01"
+            required
+            defaultValue={monthlyRatePercent ?? ""}
+            className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm"
+          />
+          <span className="mt-1 block text-xs text-ink-muted">{words.rateHelp}</span>
+        </label>
+      )}
+
+      {chosen?.needsResolution && (
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm text-ink">
             <span className="mb-1 block font-medium">General meeting</span>
@@ -102,9 +125,9 @@ export function InterestSettingForm({
           {state.error}
         </p>
       )}
-      {state.success && <p className="text-sm text-green-700">Interest setting saved.</p>}
+      {state.success && <p className="text-sm text-green-700">{words.Term} setting saved.</p>}
       <Button type="submit" variant="secondary" disabled={pending}>
-        {pending ? "Saving..." : "Save interest setting"}
+        {pending ? "Saving..." : `Save ${words.term} setting`}
       </Button>
     </form>
   );

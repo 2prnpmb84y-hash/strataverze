@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'fd735100a6fa2fcd980be349481e06ca33caf1c252d840204f49d61854663de7'>;
+  StorageHashBase<'d702bce5bb36b43c5e9d1a434db99164a021f0370dd89de1cbcb2904b5b2a7ea'>;
 export type ExecutionHash =
   ExecutionHashBase<'7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9'>;
 export type ProfileHash =
@@ -2621,6 +2621,7 @@ export namespace Models {
     interestResolutionRecordedAt: FieldOutputTypes['public']['Scheme']['interestResolutionRecordedAt'];
     interestResolutionRecordedBy: FieldOutputTypes['public']['Scheme']['interestResolutionRecordedBy'];
     isActive: FieldOutputTypes['public']['Scheme']['isActive'];
+    lateChargeMonthlyRatePercent: FieldOutputTypes['public']['Scheme']['lateChargeMonthlyRatePercent'];
     name: FieldOutputTypes['public']['Scheme']['name'];
     organisationId: FieldOutputTypes['public']['Scheme']['organisationId'];
     paymentPlan: FieldOutputTypes['public']['Scheme']['paymentPlan'];
@@ -17884,6 +17885,13 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', true>;
                   };
+                  readonly many: false;
+                };
+                readonly late_charge_monthly_rate_percent: {
+                  readonly dataType: 'pg/numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
                   readonly many: false;
                 };
                 readonly name: {
@@ -40266,6 +40274,14 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly lateChargeMonthlyRatePercent: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
+                };
+              };
               readonly name: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -40980,6 +40996,9 @@ type ContractBase = Omit<
                   readonly column: 'interest_resolution_recorded_by';
                 };
                 readonly isActive: { readonly column: 'is_active' };
+                readonly lateChargeMonthlyRatePercent: {
+                  readonly column: 'late_charge_monthly_rate_percent';
+                };
                 readonly name: { readonly column: 'name' };
                 readonly organisationId: { readonly column: 'organisation_id' };
                 readonly paymentPlan: { readonly column: 'payment_plan' };

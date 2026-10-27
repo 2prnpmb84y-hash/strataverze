@@ -20881,6 +20881,17 @@
                   "kind": "scalar"
                 }
               },
+              "lateChargeMonthlyRatePercent": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
@@ -21892,6 +21903,9 @@
                 },
                 "isActive": {
                   "column": "is_active"
+                },
+                "lateChargeMonthlyRatePercent": {
+                  "column": "late_charge_monthly_rate_percent"
                 },
                 "name": {
                   "column": "name"
@@ -50425,6 +50439,15 @@
                   },
                   "nullable": false
                 },
+                "late_charge_monthly_rate_percent": {
+                  "codecId": "pg/numeric@1",
+                  "dataType": "pg/numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -60728,7 +60751,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "fd735100a6fa2fcd980be349481e06ca33caf1c252d840204f49d61854663de7"
+    "storageHash": "d702bce5bb36b43c5e9d1a434db99164a021f0370dd89de1cbcb2904b5b2a7ea"
   },
   "execution": {
     "executionHash": "7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9",

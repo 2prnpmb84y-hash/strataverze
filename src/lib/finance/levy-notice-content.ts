@@ -30,7 +30,14 @@ export interface LevyNoticeContentInput {
     reference: string | null;
   };
   contact: { name: string | null; emailOrPhone: string | null };
+  /** The notice states the late charge (NSW interest, Queensland penalty). */
   includesInterestWarning: boolean;
+  /**
+   * Whether the notice must state a late charge: false where none applies to
+   * the building (a Queensland building with no penalty resolved), whose
+   * notice states none. Unset, it must.
+   */
+  lateChargeApplies?: boolean;
   includesHardshipStatement: boolean;
   includesLedgerAccess: boolean;
 }
@@ -43,7 +50,11 @@ export interface MissingItem {
 const daysBetween = (a: string, b: string) =>
   Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86_400_000);
 
-export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: NoticeRules): MissingItem[] {
+/**
+ * `terms` are the building's words (`rules.TERMINOLOGY`); without them the
+ * late charge item is worded as it always was ("interest").
+ */
+export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: NoticeRules, terms?: Pick<StatutoryRules["TERMINOLOGY"], "lateCharge">): MissingItem[] {
   const missing: MissingItem[] = [];
   const need = (ok: unknown, code: string, message: string) => {
     if (!ok) missing.push({ code, message });
@@ -64,7 +75,10 @@ export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: Notic
   );
   need(n.payment.reference?.trim(), "PAYMENT_REFERENCE", "A payment reference for the owner to quote.");
   need(n.contact.name?.trim() && n.contact.emailOrPhone?.trim(), "CONTACT", "Who to contact with questions (name and email or phone).");
-  need(n.includesInterestWarning, "INTEREST_WARNING", "A warning that interest is charged on overdue amounts.");
+  // A late charge is stated only where one applies (Queensland: once a penalty is resolved).
+  if (n.lateChargeApplies ?? true) {
+    need(n.includesInterestWarning, "INTEREST_WARNING", `A warning that ${terms?.lateCharge ?? "interest"} is charged on overdue amounts.`);
+  }
   need(n.includesLedgerAccess, "LEDGER_ACCESS", "How the owner can check their levy ledger.");
   // A pack with no hardship statement (Queensland) does not require one.
   if (rule.hardship && n.noticeDate >= rule.hardship.requiredFrom) {

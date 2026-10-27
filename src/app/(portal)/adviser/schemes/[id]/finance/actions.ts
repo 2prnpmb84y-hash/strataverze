@@ -98,11 +98,11 @@ import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { fundNameWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
-import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
-import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
+import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { checkPlannedNotices } from "@/lib/levies/notice-content-data";
 import { issueNoticeBatch, issueOverdueDrafts, overdueDrafts } from "@/lib/levies/issue-notices";
 import { issueTiming, lateMessage, urgentNoticeProblem, type IssueTiming } from "@/lib/levies/issue-timing";
@@ -232,9 +232,11 @@ const LEDGER_RULE_MESSAGES: readonly RegExp[] = [
 const INTEREST_RULE_MESSAGES: readonly RegExp[] = [
   /^Interest amount must be greater than zero\./,
   /^Levy notice not found\./,
-  /^No more than \$[\d,.]+ of interest is owed on this notice to date\./,
+  // In the building's words: interest (NSW) or penalty (Queensland).
+  /^No more than \$[\d,.]+ of \w+ is owed on this notice to date\./,
   /^Required system accounts .* not found\./,
-  /^The owners corporation has resolved that contributions bear no interest/,
+  /^The [\w ]+ has resolved that contributions bear no \w+/,
+  /^No \w+ applies until the [\w ]+ records the resolution that sets its rate/,
 ];
 
 /** The ids a record refers to, de-duplicated; anything that is not a string is refused. */
@@ -2847,8 +2849,11 @@ export async function extractInvoiceFromPdfAction(
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Record whether the scheme charges statutory interest or, by a recorded
- * general meeting resolution, no interest. No other rate can be set.
+ * Record the scheme's late charge setting, from the modes its pack allows
+ * (`rules.LATE_CHARGE`). NSW: statutory interest or, by a recorded general
+ * meeting resolution, no interest; no other rate can be set. Queensland: no
+ * penalty or, by a recorded general meeting resolution, a penalty at the
+ * monthly rate it set (at most the pack's maximum).
  */
 export async function saveInterestSettingAction(
   schemeId: string,
@@ -2860,19 +2865,29 @@ export async function saveInterestSettingAction(
     const mode = String(formData.get("mode") ?? "");
     const meetingId = String(formData.get("meetingId") ?? "").trim() || null;
     const motionId = String(formData.get("motionId") ?? "").trim() || null;
+    const rateText = String(formData.get("monthlyRatePercent") ?? "").trim();
     const { rules } = await rulesForScheme(schemeId);
-    const problem = interestSettingProblem({ mode, resolutionMeetingId: meetingId, resolutionMotionId: motionId }, needRule(rules, "STATUTORY_INTEREST"));
+    const rule = rules.LATE_CHARGE;
+    // The monthly rate is read only for a resolved rate; it is not stored otherwise.
+    const monthlyRatePercent = mode === "RESOLVED_RATE" && rateText ? (/^\d+(\.\d+)?$/.test(rateText) ? Number(rateText) : Number.NaN) : null;
+    const problem = interestSettingProblem(
+      { mode, monthlyRatePercent, resolutionMeetingId: meetingId, resolutionMotionId: motionId },
+      rule,
+      rules.TERMINOLOGY,
+    );
     if (problem) return { error: problem };
 
-    if (mode === "NO_INTEREST") {
+    const needsResolution = (rule.resolutionRequiredFor as readonly string[]).includes(mode);
+    if (needsResolution) {
       const resolution = await generalMeetingResolutionProblem(schemeId, meetingId, motionId);
       if (resolution) return { error: resolution };
     }
 
     await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).update({
       interestMode: mode,
-      interestResolutionMeetingId: mode === "NO_INTEREST" ? meetingId : null,
-      interestResolutionMotionId: mode === "NO_INTEREST" ? motionId : null,
+      lateChargeMonthlyRatePercent: mode === "RESOLVED_RATE" && monthlyRatePercent != null ? (monthlyRatePercent.toFixed(2) as unknown as Numeric<5, 2>) : null,
+      interestResolutionMeetingId: needsResolution ? meetingId : null,
+      interestResolutionMotionId: needsResolution ? motionId : null,
       interestResolutionRecordedBy: profile.id,
       interestResolutionRecordedAt: new Date().toISOString() as unknown as TimestampString<3>,
     });
@@ -2882,7 +2897,7 @@ export async function saveInterestSettingAction(
       action: "INTEREST_SETTING_CHANGED",
       entityType: "Scheme",
       entityId: schemeId,
-      metadata: { mode, meetingId, motionId },
+      metadata: { mode, meetingId, motionId, ...(mode === "RESOLVED_RATE" ? { monthlyRatePercent } : {}) },
     });
     revalidatePath(financePath(schemeId, "/interest"));
     return { success: true };

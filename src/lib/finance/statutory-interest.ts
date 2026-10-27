@@ -1,40 +1,70 @@
 /**
- * Statutory interest on an overdue levy notice (pure).
+ * The late charge on an overdue levy notice (pure): NSW interest and the
+ * Queensland penalty, from the building's `rules.LATE_CHARGE`.
  *
- * Simple interest at the statutory rate on the unpaid levy (not on interest),
- * accrued day by day from the due date. Nothing is payable if the levy is
- * paid in full within the grace period. Accrual stops at write-off. A payment
- * plan does not stop it. Only a resolution of the owners corporation that the
- * contribution bears no interest removes it (SSMA 2015 s 85(3)); it cannot
- * raise or lower the rate.
+ * NSW (DAILY_SIMPLE_ANNUAL, `statutoryInterest`): simple interest at the
+ * statutory rate on the unpaid levy (not on interest), accrued day by day from
+ * the due date. Nothing is payable if the levy is paid in full within the
+ * grace period. Accrual stops at write-off. A payment plan does not stop it.
+ * Only a resolution of the owners corporation that the contribution bears no
+ * interest removes it (SSMA 2015 s 85(3)); it cannot raise or lower the rate.
+ *
+ * Queensland (MONTHLY_SIMPLE_WHOLE_MONTHS, `monthlyPenalty`): simple interest
+ * at the monthly rate the body corporate resolved, for each whole month the
+ * contribution is in arrears after the date for payment, with no grace
+ * period (Standard Module s 165). Payments go first to the penalty, then to
+ * the contribution (s 166(5)).
+ *
+ * `lateCharge` picks the method and the building's setting.
  */
-import type { NswRules } from "@/config/statutory";
+import type { StatutoryRules } from "@/config/statutory";
+import type { Terms } from "@/lib/jurisdiction/wording";
 
-/** The interest rule of a building's rule pack (`rules.STATUTORY_INTEREST`). */
-export type InterestRule = Pick<NswRules["STATUTORY_INTEREST"], "annualRatePercent" | "graceMonths" | "source">;
+/** An annual-rate interest rule: NSW's `rules.STATUTORY_INTEREST`, or the same values from `rules.LATE_CHARGE`. */
+export interface InterestRule {
+  annualRatePercent: number;
+  graceMonths: number;
+  source: string;
+}
+
+/** The late charge rule of a building's rule pack (`rules.LATE_CHARGE`). */
+export type LateChargeRule = StatutoryRules["LATE_CHARGE"];
+
+/** A building's late charge setting (`schemes.interest_mode`). */
+export type LateChargeMode = LateChargeRule["modes"][number];
+
+/** The order a payment is applied in (`rules.PAYMENT_ALLOCATION_ORDER`). */
+export type PaymentAllocationOrder = StatutoryRules["PAYMENT_ALLOCATION_ORDER"];
 
 export interface InterestInput {
   /** The levy amount on the notice, in cents (excluding interest). */
   levyCents: number;
   /** YYYY-MM-DD. */
   dueDate: string;
-  /** Payments in date order. Each is applied to the levy before interest. */
+  /** Payments in date order. Each is applied to the levy before interest (NSW) or to the penalty first (Queensland). */
   payments: { date: string; amountCents: number }[];
   /** YYYY-MM-DD the calculation runs to (inclusive of that day's interest up to, not including, it). */
   asAt: string;
   /** YYYY-MM-DD accrual stops (write-off), if any. A payment plan is not a reason to stop. */
   stopAt?: string | null;
-  /** A resolution that the contribution bears no interest. */
+  /** A resolution that the contribution bears no interest (or, for Queensland, no penalty applies). */
   noInterest?: boolean;
 }
 
 export interface InterestResult {
   interestCents: number;
-  /** Days on which interest accrued. */
+  /** Days on which interest accrued (for a monthly penalty, the days of the whole months charged). */
   daysAccrued: number;
-  /** YYYY-MM-DD the grace period ends (interest is payable only if unpaid after this). */
+  /** YYYY-MM-DD the grace period ends (interest is payable only if unpaid after this). The due date where there is no grace. */
   graceEnds: string;
-  reason: "ACCRUED" | "PAID_IN_GRACE" | "NOT_YET_DUE" | "IN_GRACE" | "NO_INTEREST_RESOLUTION" | "NOTHING_OWING";
+  /**
+   * NOT_A_MONTH_IN_ARREARS (a monthly penalty only): past the due date, but no
+   * whole month in arrears has passed with the contribution unpaid (none yet,
+   * or it was paid within the first month).
+   */
+  reason: "ACCRUED" | "PAID_IN_GRACE" | "NOT_YET_DUE" | "IN_GRACE" | "NO_INTEREST_RESOLUTION" | "NOTHING_OWING" | "NOT_A_MONTH_IN_ARREARS";
+  /** A monthly penalty only: the whole months charged. */
+  monthsAccrued?: number;
 }
 
 const DAY_MS = 86_400_000;
@@ -83,13 +113,161 @@ export function statutoryInterest(input: InterestInput, rule: InterestRule): Int
   return { interestCents, daysAccrued: days, graceEnds, reason: "ACCRUED" };
 }
 
+/** The most months counted on one notice (100 years), so a bad date cannot loop for ever. */
+const MAX_MONTHS = 1200;
+
 /**
- * Split a payment between the levy, interest and recovery costs, in that
- * order (2025 amendments). Returns what is applied to each and any excess.
+ * A monthly penalty on one notice (MONTHLY_SIMPLE_WHOLE_MONTHS): simple
+ * interest at `monthlyRatePercent` for each whole month the contribution is in
+ * arrears after the date for payment, with no grace period.
+ *
+ * How months are counted. The k-th month in arrears ends on the k-th month
+ * mark, `addMonths(dueDate, k)`, worked out from the due date each time (so
+ * 31 January gives 28 February, then 31 March, not 28 March), and clamped to
+ * the month end like the NSW grace period. A month is charged when, at its
+ * mark, some of the contribution is still unpaid. A payment made on or before
+ * a mark counts at that mark (paid on the mark is paid within the month).
+ * The Standard Module's example holds: due 31 March, paid in full on 27 June,
+ * the marks 30 April and 31 May are unpaid and 30 June is paid, so 2 months.
+ *
+ * When a mark counts:
+ * - against `asAt`, only once it has passed (mark before `asAt`). On the mark
+ *   day itself the owner can still pay within the month, so a run that day
+ *   charges nothing for it: due 31 March, a run on 30 April charges no month,
+ *   one on 1 May charges one. A charge posted on the mark day could otherwise
+ *   not be taken back when the owner pays that day.
+ * - against `stopAt` (write-off), up to and including the stop day: the
+ *   month ending on the write-off day was all in arrears before it, as NSW
+ *   interest counts the days before the stop day, and a charge made by a run
+ *   after the write-off cannot be overtaken by a payment. Stopping on the
+ *   as-at day changes nothing.
+ *
+ * At each mark the payments made by then are applied in date order, each
+ * first to the penalty already charged for earlier months and then to the
+ * contribution (s 166(5)); the month's penalty is then the unpaid
+ * contribution times the rate, rounded half up to the cent. The penalty is
+ * never charged on penalty. A negative amount (a correction) is added in, as
+ * NSW interest sums payments: it first takes back any amount paid above the
+ * contribution, then adds to what is unpaid of the contribution.
+ *
+ * The rate is read to 2 decimal places, as it is stored.
+ */
+export function monthlyPenalty(input: InterestInput, opts: { monthlyRatePercent: number }): InterestResult {
+  const graceEnds = input.dueDate;
+  const base = { graceEnds, daysAccrued: 0, interestCents: 0 };
+  if (input.noInterest) return { ...base, reason: "NO_INTEREST_RESOLUTION" };
+  if (input.levyCents <= 0) return { ...base, reason: "NOTHING_OWING" };
+  if (input.asAt <= input.dueDate) return { ...base, reason: "NOT_YET_DUE" };
+
+  // The rate in hundredths of a percent, so the sums are whole numbers.
+  const rateHundredths = Math.max(0, Math.round(opts.monthlyRatePercent * 100));
+  const payments = [...input.payments].sort((a, b) => a.date.localeCompare(b.date));
+  const stopAt = input.stopAt || null;
+
+  let unpaid = input.levyCents;
+  let penaltyOwing = 0;
+  let penaltyCents = 0;
+  // Paid above the contribution and the penalty, which a later correction takes back first.
+  let overpaid = 0;
+  let months = 0;
+  let daysAccrued = 0;
+  let next = 0;
+  for (let k = 1; k <= MAX_MONTHS; k++) {
+    const mark = addMonths(input.dueDate, k);
+    // A month counts once its mark has passed, and up to and including the write-off day.
+    if (mark >= input.asAt || (stopAt && mark > stopAt)) break;
+    // The payments made by this mark: the penalty so far first, then the contribution.
+    for (; next < payments.length && payments[next].date <= mark; next++) {
+      let amount = payments[next].amountCents;
+      if (amount < 0) {
+        const takenBack = Math.min(overpaid, -amount);
+        overpaid -= takenBack;
+        unpaid += -amount - takenBack;
+        continue;
+      }
+      const toPenalty = Math.min(penaltyOwing, amount);
+      penaltyOwing -= toPenalty;
+      amount -= toPenalty;
+      const toContribution = Math.min(unpaid, amount);
+      unpaid -= toContribution;
+      overpaid += amount - toContribution;
+    }
+    // Paid by this mark: no penalty for the month. Later marks are still looked at, as a correction can make it unpaid again.
+    if (unpaid <= 0) continue;
+    // unpaid x rate / 100, rounded half up to the cent.
+    const month = Math.floor((2 * unpaid * rateHundredths + 10_000) / 20_000);
+    penaltyCents += month;
+    penaltyOwing += month;
+    months += 1;
+    daysAccrued += Math.round((toUtc(mark) - toUtc(addMonths(input.dueDate, k - 1))) / DAY_MS);
+  }
+  return { interestCents: penaltyCents, daysAccrued, graceEnds, reason: months ? "ACCRUED" : "NOT_A_MONTH_IN_ARREARS", monthsAccrued: months };
+}
+
+/** A building's late charge setting: its mode and, for RESOLVED_RATE, the monthly rate. */
+export interface LateChargeSetting {
+  mode: string;
+  monthlyRatePercent?: number | null;
+}
+
+/** The mode the building's setting gives under its pack. A mode the pack does not allow is read as the pack's default. */
+export function effectiveLateChargeMode(rule: LateChargeRule, mode: string): LateChargeMode {
+  return (rule.modes as readonly string[]).includes(mode) ? (mode as LateChargeMode) : rule.defaultMode;
+}
+
+/** The annual-rate rule within a DAILY_SIMPLE_ANNUAL late charge rule. */
+function annualRule(rule: LateChargeRule): InterestRule | null {
+  return rule.method === "DAILY_SIMPLE_ANNUAL" && rule.annualRatePercent != null
+    ? { annualRatePercent: rule.annualRatePercent, graceMonths: rule.graceMonths, source: rule.source }
+    : null;
+}
+
+/**
+ * Whether the building's setting charges anything on overdue levies
+ * (STATUTORY, or RESOLVED_RATE with a rate). A resolved rate that is not
+ * above 0, or is above the pack's maximum, charges nothing (it fails closed:
+ * such a rate cannot be saved, so one found stored is not relied on).
+ */
+export function lateChargeApplies(rule: LateChargeRule, setting: LateChargeSetting): boolean {
+  const mode = effectiveLateChargeMode(rule, setting.mode);
+  if (mode === "STATUTORY") return annualRule(rule) != null;
+  if (mode === "RESOLVED_RATE") {
+    const rate = setting.monthlyRatePercent;
+    const max = rule.maxMonthlyRatePercent ?? 100;
+    return rule.method === "MONTHLY_SIMPLE_WHOLE_MONTHS" && rate != null && Number.isFinite(rate) && rate > 0 && rate <= max;
+  }
+  return false;
+}
+
+/**
+ * The late charge on one notice under the building's rule
+ * (`rules.LATE_CHARGE`) and setting: STATUTORY is `statutoryInterest`,
+ * NO_INTEREST and NONE charge nothing (reason NO_INTEREST_RESOLUTION), and
+ * RESOLVED_RATE is `monthlyPenalty` at the building's resolved rate.
+ */
+export function lateCharge(input: InterestInput, rule: LateChargeRule, setting: LateChargeSetting): InterestResult {
+  const mode = effectiveLateChargeMode(rule, setting.mode);
+  const annual = annualRule(rule);
+  const rate = setting.monthlyRatePercent ?? 0;
+  const charges = !input.noInterest && lateChargeApplies(rule, setting);
+  if (annual) return statutoryInterest({ ...input, noInterest: !charges || mode !== "STATUTORY" }, annual);
+  return monthlyPenalty({ ...input, noInterest: !charges || mode !== "RESOLVED_RATE" }, { monthlyRatePercent: rate });
+}
+
+/** The order NSW has always applied payments in: levies, then interest, then recovery costs. */
+const LEVY_FIRST: PaymentAllocationOrder = ["LEVY", "INTEREST", "RECOVERY_COSTS"];
+
+/**
+ * Split a payment between the levy, interest (the late charge) and recovery
+ * costs, in the building's order (`rules.PAYMENT_ALLOCATION_ORDER`): NSW
+ * applies levies first (2025 amendments), Queensland the penalty first
+ * (SM s 166(5)). Without an order, levies first. Returns what is applied to
+ * each and any excess.
  */
 export function allocatePayment(
   paymentCents: number,
   owing: { levyCents: number; interestCents: number; recoveryCostsCents: number },
+  order: PaymentAllocationOrder = LEVY_FIRST,
 ) {
   let left = paymentCents;
   const take = (owed: number) => {
@@ -97,34 +275,100 @@ export function allocatePayment(
     left -= t;
     return t;
   };
-  const levy = take(owing.levyCents);
-  const interest = take(owing.interestCents);
-  const recoveryCosts = take(owing.recoveryCostsCents);
-  return { levyCents: levy, interestCents: interest, recoveryCostsCents: recoveryCosts, excessCents: left };
+  const owed = { LEVY: owing.levyCents, INTEREST: owing.interestCents, RECOVERY_COSTS: owing.recoveryCostsCents };
+  const applied = { LEVY: 0, INTEREST: 0, RECOVERY_COSTS: 0 };
+  for (const part of order) applied[part] += take(owed[part] - applied[part]);
+  return { levyCents: applied.LEVY, interestCents: applied.INTEREST, recoveryCostsCents: applied.RECOVERY_COSTS, excessCents: left };
 }
 
-export type InterestSettingMode = "STATUTORY" | "NO_INTEREST";
+export type InterestSettingMode = LateChargeMode;
+
+/** The words the setting check used before packs gave them (an annual-rate rule passed on its own). */
+const ANNUAL_RULE_TERMS: Pick<Terms, "lateCharge" | "ownersCorporation"> = { lateCharge: "interest", ownersCorporation: "owners corporation" };
 
 /**
- * The interest setting a scheme may record. Only the statutory rate or no
- * interest (by recorded resolution) is allowed: the owners corporation cannot
- * set any other rate, higher or lower (s 85(1) and (3)).
+ * The late charge rule, from `rules.LATE_CHARGE` or from an annual-rate rule
+ * passed on its own (`rules.STATUTORY_INTEREST`, as NSW's tests pass it),
+ * which is read as NSW's LATE_CHARGE is built from it.
+ */
+function asLateChargeRule(rule: LateChargeRule | InterestRule): LateChargeRule {
+  if ("method" in rule) return rule;
+  return {
+    method: "DAILY_SIMPLE_ANNUAL",
+    modes: ["STATUTORY", "NO_INTEREST"],
+    defaultMode: "STATUTORY",
+    resolutionRequiredFor: ["NO_INTEREST"],
+    annualRatePercent: rule.annualRatePercent,
+    maxMonthlyRatePercent: null,
+    graceMonths: rule.graceMonths,
+    source: rule.source,
+  };
+}
+
+/** How a setting is offered in a choice ("Choose the statutory rate or no interest."). */
+function modeChoice(mode: LateChargeMode, t: Pick<Terms, "lateCharge" | "ownersCorporation">): string {
+  switch (mode) {
+    case "STATUTORY":
+      return "the statutory rate";
+    case "RESOLVED_RATE":
+      return `a ${t.lateCharge} at the rate the ${t.ownersCorporation} resolved`;
+    default:
+      return `no ${t.lateCharge}`;
+  }
+}
+
+/** What a setting does, after "Charging" ("Charging no interest needs ..."). */
+function modeCharging(mode: LateChargeMode, t: Pick<Terms, "lateCharge">): string {
+  switch (mode) {
+    case "STATUTORY":
+      return "the statutory rate";
+    case "RESOLVED_RATE":
+      return `a ${t.lateCharge}`;
+    default:
+      return `no ${t.lateCharge}`;
+  }
+}
+
+/** Whether a rate has more than 2 decimal places. */
+const moreThanTwoDecimals = (n: number) => Math.abs(n * 100 - Math.round(n * 100)) > 1e-6;
+
+/**
+ * The late charge setting a building may record, from its pack
+ * (`rules.LATE_CHARGE`): one of the pack's modes; the recorded resolution for
+ * a mode that needs one; and for RESOLVED_RATE a monthly rate above 0, at most
+ * the pack's maximum, to 2 decimal places. Where the law fixes the rate (NSW)
+ * no other rate, higher or lower, can be set (s 85(1) and (3)).
+ * `terms` are the building's words (`rules.TERMINOLOGY`).
  */
 export function interestSettingProblem(
   input: {
     mode: string;
+    /** An annual rate, where the pack fixes one: it must be that rate. */
     ratePercent?: number | null;
+    /** The resolved monthly rate (RESOLVED_RATE). */
+    monthlyRatePercent?: number | null;
     resolutionMeetingId?: string | null;
     resolutionMotionId?: string | null;
   },
-  rule: InterestRule,
+  pack: LateChargeRule | InterestRule,
+  terms: Pick<Terms, "lateCharge" | "ownersCorporation"> = ANNUAL_RULE_TERMS,
 ): string | null {
-  if (input.mode !== "STATUTORY" && input.mode !== "NO_INTEREST") return "Choose the statutory rate or no interest.";
-  if (input.ratePercent != null && input.ratePercent !== rule.annualRatePercent) {
-    return `The interest rate is fixed at ${rule.annualRatePercent}% a year by ${rule.source}. The owners corporation can only resolve to charge no interest.`;
+  const rule = asLateChargeRule(pack);
+  const t = terms;
+  if (!(rule.modes as readonly string[]).includes(input.mode)) return `Choose ${rule.modes.map((m) => modeChoice(m, t)).join(" or ")}.`;
+  const mode = input.mode as LateChargeMode;
+  if (rule.annualRatePercent != null && input.ratePercent != null && input.ratePercent !== rule.annualRatePercent) {
+    return `The ${t.lateCharge} rate is fixed at ${rule.annualRatePercent}% a year by ${rule.source}. The ${t.ownersCorporation} can only resolve to charge no ${t.lateCharge}.`;
   }
-  if (input.mode === "NO_INTEREST" && (!input.resolutionMeetingId || !input.resolutionMotionId)) {
-    return "Charging no interest needs the general meeting resolution that decided it. Choose the meeting and motion.";
+  if (mode === "RESOLVED_RATE") {
+    const rate = input.monthlyRatePercent;
+    const max = rule.maxMonthlyRatePercent ?? 100;
+    if (rate == null || !Number.isFinite(rate) || rate <= 0) return `Enter the monthly ${t.lateCharge} rate the ${t.ownersCorporation} resolved, as a percentage more than 0.`;
+    if (rate > max) return `The monthly ${t.lateCharge} rate can be at most ${max}%.`;
+    if (moreThanTwoDecimals(rate)) return `Enter the monthly ${t.lateCharge} rate with no more than 2 decimal places.`;
+  }
+  if (rule.resolutionRequiredFor.includes(mode) && (!input.resolutionMeetingId || !input.resolutionMotionId)) {
+    return `Charging ${modeCharging(mode, t)} needs the general meeting resolution that decided it. Choose the meeting and motion.`;
   }
   return null;
 }

@@ -29,7 +29,7 @@
  * document. Each rule below has a `status` (see RuleStatus in ./types).
  */
 
-import type { EntitlementScheduleDefinition, FundDefinition, NoticeRules, PackFeatures, RuleStatus, SchemeSelector } from "./types";
+import type { EntitlementScheduleDefinition, FundDefinition, LateChargeRules, NoticeRules, PackFeatures, RuleStatus, SchemeSelector } from "./types";
 
 const ACT = "Body Corporate and Community Management Act 1997 (Qld)";
 const SM = "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld)";
@@ -230,6 +230,39 @@ export const LATE_PAYMENT_PENALTY = {
  * when Queensland goes live. NSW applies levies first.
  */
 export const PAYMENT_ALLOCATION_ORDER = ["INTEREST", "LEVY", "RECOVERY_COSTS"] as const;
+/*
+ * GO-LIVE GAP (stage 2, step 6, 27 Oct 2026): this order is applied only by
+ * the penalty engine (monthlyPenalty, which works the penalty out with
+ * payments applied to it first) and by lotArrears (src/lib/debt-recovery,
+ * which splits a notice's amount paid between posted interestCharged and the
+ * levy). Receipting (levy-receipts.ts, levy-schedules.ts recordLevyPayment),
+ * notice balances and status, owner credits (owner-credits.ts), reversals
+ * (levy-reversal.ts) and the receivable journals still treat a payment as
+ * against the notice total, levy first, and lotArrears works from the posted
+ * penalty while the engine works from the calculated one. Receipting and
+ * notice balances must apply this order before Queensland is switched on.
+ * NSW receipting is not to change.
+ */
+
+/**
+ * The late payment penalty in the shape every pack shares (stage 2, step 6,
+ * 27 Oct 2026), from LATE_PAYMENT_PENALTY: simple interest at the monthly rate
+ * the body corporate resolved (at most 2.5%), for each whole month the
+ * contribution is in arrears after the date for payment, with no grace period
+ * (SM s 165). None applies until the building records the ordinary resolution
+ * that sets the rate (NONE, the default; decided 27 Oct 2026). Payments go to
+ * the penalty first (PAYMENT_ALLOCATION_ORDER, s 166(5)).
+ */
+export const LATE_CHARGE: LateChargeRules = {
+  method: "MONTHLY_SIMPLE_WHOLE_MONTHS",
+  modes: ["NONE", "RESOLVED_RATE"],
+  defaultMode: "NONE",
+  resolutionRequiredFor: ["RESOLVED_RATE"],
+  annualRatePercent: null,
+  maxMonthlyRatePercent: LATE_PAYMENT_PENALTY.maxMonthlyPercent,
+  graceMonths: 0,
+  source: `${SM} s 165`,
+};
 
 /** Recovering unpaid contributions. */
 export const DEBT_RECOVERY = {

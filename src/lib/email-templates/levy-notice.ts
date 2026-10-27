@@ -1,9 +1,8 @@
 import { emailLayout, emailButton } from "./layout";
 import { html, plainSubject, type SafeHtml } from "./html";
 import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
-import { capitalise, graceText } from "@/lib/jurisdiction/wording";
+import { capitalise, lateChargeSentence, type NoticeLateChargeRule } from "@/lib/jurisdiction/wording";
 import type { DocumentTerms } from "@/lib/pdf/documents";
-import type { InterestRule } from "@/lib/finance/statutory-interest";
 
 
 export interface LevyNoticeEmail {
@@ -20,9 +19,10 @@ export interface LevyNoticeEmail {
   payment: { accountName: string; bsb: string; accountNumber: string; reference: string };
   contact: { name: string; emailOrPhone: string };
   ledgerUrl: string;
+  /** NSW: the owners corporation resolved not to charge interest. Queensland: no penalty applies (the notice then states none). */
   noInterest: boolean;
-  /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
-  interest: InterestRule;
+  /** The building's late charge as the notice states it (see noticeLateCharge): NSW's interest rule, or Queensland's monthly penalty. */
+  interest: NoticeLateChargeRule;
   /** The building's hardship statement (`rules.NOTICE_RULES.hardship.information`), or null where the pack requires none. */
   hardship: HardshipInformation | null;
   /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
@@ -47,6 +47,14 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
     html`<tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">${label}</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">${value}</td></tr>`;
   const t = p.terms;
   const Levy = capitalise(t.levy);
+  // The late charge sentence (NSW interest, or a Queensland penalty), or none where no penalty applies.
+  const lateCharge = lateChargeSentence(p, t);
+  const lateChargeParagraph = lateCharge
+    ? html`<p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
+      ${lateCharge}
+    </p>
+    `
+    : "";
   const content = html`
     <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#1a1a2e;">${Levy} notice ${p.noticeNumber}</h1>
     <p style="margin:0 0 16px;font-size:14px;color:#64748B;">${p.schemeName}, ${t.planLabel} ${p.planNumber}</p>
@@ -65,14 +73,7 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
       ${row("Account number", p.payment.accountNumber)}
       ${row("Reference", html`<strong>${p.payment.reference}</strong>`)}
     </table>
-    <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
-      ${
-        p.noInterest
-          ? `The ${t.ownersCorporation} has resolved not to charge ${t.lateCharge} on overdue ${t.levies}.`
-          : `${capitalise(t.lateCharge)}: if this ${t.levy} is not paid within ${graceText(p.interest)} after the due date, simple ${t.lateCharge} of ${p.interest.annualRatePercent}% a year is charged from the due date until it is paid (${p.interest.source}).`
-      }
-    </p>
-    <p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
+    ${lateChargeParagraph}<p style="margin:0 0 12px;font-size:13px;color:#1A202C;line-height:1.6;">
       You can check your ${t.levy} ledger at any time in the StrataVerze owner portal. For questions contact ${p.contact.name} (${p.contact.emailOrPhone}).
     </p>
     ${emailButton(`View your ${t.levy} ledger`, p.ledgerUrl)}

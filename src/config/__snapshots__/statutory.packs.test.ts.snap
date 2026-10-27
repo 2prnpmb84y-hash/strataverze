@@ -232,6 +232,21 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "valuationEveryYears": 5,
   },
+  "LATE_CHARGE": {
+    "annualRatePercent": null,
+    "defaultMode": "NONE",
+    "graceMonths": 0,
+    "maxMonthlyRatePercent": 2.5,
+    "method": "MONTHLY_SIMPLE_WHOLE_MONTHS",
+    "modes": [
+      "NONE",
+      "RESOLVED_RATE",
+    ],
+    "resolutionRequiredFor": [
+      "RESOLVED_RATE",
+    ],
+    "source": "Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) s 165",
+  },
   "LATE_PAYMENT_PENALTY": {
     "appliesOnlyAfterResolutionRecorded": true,
     "maxMonthlyPercent": 2.5,

@@ -13,7 +13,8 @@ import { validateLevyNoticeContent, type MissingItem } from "@/lib/finance/levy-
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { rulesForState, SchemeNotFoundError } from "@/lib/jurisdiction/scheme-rules";
 import { generateLevyNoticePdf } from "@/lib/pdf/generate";
-import { needRule } from "@/config/statutory";
+import { lateChargeSentence, noticeLateCharge } from "@/lib/jurisdiction/wording";
+import { lateChargeApplies } from "@/lib/finance/statutory-interest";
 
 const APP_URL = siteUrl();
 
@@ -54,10 +55,10 @@ export async function checkPlannedNotices(input: {
   // The building's own notice rules (throws for a state with no rule pack).
   const { rules } = rulesForState(scheme.state);
   const rule = rules.NOTICE_RULES;
-  // The notice's late charge sentence still reads the NSW interest rule (stage 2,
-  // step 6 replaces it). A pack without it cannot issue notices yet, so stop
-  // here, before any notice is issued, rather than when it is emailed.
-  needRule(rules, "STATUTORY_INTEREST");
+  // The late charge the notices state, from the pack's LATE_CHARGE and the building's setting.
+  const setting = await getSchemeInterestSetting(input.schemeId);
+  const lateCharge = noticeLateCharge(rules.LATE_CHARGE, setting);
+  const statesLateCharge = lateChargeSentence(lateCharge, rules.TERMINOLOGY) != null;
   const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
   const rollNames = await rollOwnerNames(input.notices.map((n) => n.lotId));
   const seen = new Map<string, MissingItem>();
@@ -81,12 +82,13 @@ export async function checkPlannedNotices(input: {
         name: issuer ? `${issuer.firstName ?? ""} ${issuer.lastName ?? ""}`.trim() || null : null,
         emailOrPhone: issuer?.email ?? null,
       },
-      // The notice email always carries these (see levyNoticeEmail), and the
-      // hardship statement whenever the pack has one.
-      includesInterestWarning: true,
+      // The notice email always carries the ledger access (see levyNoticeEmail), the late
+      // charge whenever one is stated, and the hardship statement whenever the pack has one.
+      includesInterestWarning: statesLateCharge,
+      lateChargeApplies: lateChargeApplies(rules.LATE_CHARGE, setting),
       includesHardshipStatement: rule.hardship != null,
       includesLedgerAccess: true,
-    }, rule);
+    }, rule, rules.TERMINOLOGY);
     for (const item of items) {
       const key = item.code;
       if (item.code === "OWNER") {
@@ -178,8 +180,7 @@ export async function sendIssuedNotices(input: {
             emailOrPhone: issuer.email,
           },
           ledgerUrl: `${APP_URL}/owner/levies`,
-          noInterest: setting.mode === "NO_INTEREST",
-          interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
+          ...noticeLateCharge(setting.rules.rules.LATE_CHARGE, setting),
           hardship: setting.rules.rules.NOTICE_RULES.hardship?.information ?? null,
           terms: setting.rules.rules.TERMINOLOGY,
         }),

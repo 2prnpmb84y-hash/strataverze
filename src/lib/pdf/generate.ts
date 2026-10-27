@@ -27,6 +27,7 @@ import {
   type LevyNoticeDocument,
 } from "./documents";
 import { storeGeneratedPdf } from "./store";
+import { noticeLateCharge } from "@/lib/jurisdiction/wording";
 import { needRule } from "@/config/statutory";
 
 const APP_URL = siteUrl();
@@ -81,8 +82,8 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
         emailOrPhone: String(issuer?.email ?? ""),
       },
       ledgerUrl: `${APP_URL}/owner/levies`,
-      noInterest: setting.mode === "NO_INTEREST",
-      interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
+      // The late charge the notice states (NSW interest, Queensland penalty or none).
+      ...noticeLateCharge(setting.rules.rules.LATE_CHARGE, setting),
       hardship: setting.rules.rules.NOTICE_RULES.hardship?.information ?? null,
       terms: setting.rules.rules.TERMINOLOGY,
     },

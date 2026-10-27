@@ -57,7 +57,7 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
     db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.lotId.eq(lotId), n.status.neq("DRAFT"), n.status.neq("WRITTEN_OFF"))).orderBy((n) => n.dueDate.asc()).limit(2000).all(),
     db.orm.public.LevySchedule.where((x) => x.schemeId.eq(schemeId)).limit(500).all(),
     getSchemeInterestSetting(schemeId),
-    lotArrears(schemeId, lotId, today),
+    lotArrears(schemeId, lotId, today, pack.PAYMENT_ALLOCATION_ORDER),
     db.orm.public.Meeting.where((m) => and(m.schemeId.eq(schemeId), m.deletedAt.isNull())).limit(1000).all(),
     db.orm.public.LotDetail.where((d) => d.lotId.eq(lotId)).first(),
     db.orm.public.SchemeMembership.where((m) => and(m.schemeId.eq(schemeId), m.role.eq("COMMITTEE"), m.isActive.eq(true))).limit(50).all(),

@@ -155,6 +155,8 @@ export async function createScheme(
       allInclusiveFees: data.allInclusiveFees ?? false,
       paymentPlan: data.paymentPlan ?? null,
       debtCollection: data.debtCollection ?? false,
+      // The late charge setting the pack starts a building on (NSW statutory interest, Queensland no penalty).
+      interestMode: rules.LATE_CHARGE.defaultMode,
     });
 
     // Link the creator as the adviser

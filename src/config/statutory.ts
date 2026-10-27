@@ -20,7 +20,15 @@
  */
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
-import type { EntitlementScheduleDefinition, FundDefinition, NoticeRules, PackFeatures, SharedTerminology } from "./statutory/types";
+import type {
+  EntitlementScheduleDefinition,
+  FundDefinition,
+  LateChargeRules,
+  NoticeRules,
+  PackFeatures,
+  PaymentAllocationPart,
+  SharedTerminology,
+} from "./statutory/types";
 
 export * from "./statutory/nsw";
 
@@ -35,10 +43,13 @@ export interface SharedRules {
   TERMINOLOGY: SharedTerminology;
   FUND_CATALOGUE: readonly FundDefinition[];
   ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[];
-  PAYMENT_ALLOCATION_ORDER: readonly ("LEVY" | "INTEREST" | "RECOVERY_COSTS")[];
+  /** The order a payment is applied to the levy, the late charge and recovery costs (stage 2, step 6). */
+  PAYMENT_ALLOCATION_ORDER: readonly PaymentAllocationPart[];
   FEATURES: PackFeatures;
   /** The levy (NSW) or contribution (Queensland) notice rules (stage 2, step 5). */
   NOTICE_RULES: NoticeRules;
+  /** The late charge on overdue levies: NSW interest, Queensland penalty (stage 2, step 6). */
+  LATE_CHARGE: LateChargeRules;
 }
 
 /**
@@ -90,7 +101,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // bodyCorporateShortName (wording only); no rule value changed.
     // 2026.10.11 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only); no rule value changed.
     // 2026.10.12 (27 Oct 2026): NOTICE_RULES added (the notice rules in the shared shape, from LEVY_NOTICE_RULES and HARDSHIP_INFORMATION); no rule value changed.
-    version: "2026.10.12",
+    // 2026.10.13 (27 Oct 2026): LATE_CHARGE added (the interest rule in the shared shape, from STATUTORY_INTEREST); no rule value changed.
+    version: "2026.10.13",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not
@@ -137,7 +149,13 @@ export const PENDING_RULE_PACKS = {
     // 2026.10.6 (27 Oct 2026): NOTICE_RULES added (the contribution notice rules in the shared shape, from
     // CONTRIBUTION_NOTICE_RULES). The 35-day lead is a StrataVerze choice, not a rule of law; the legal
     // values are those already signed off, so the sign-off stands.
-    version: "2026.10.6",
+    // 2026.10.7 (27 Oct 2026): LATE_CHARGE added (the late payment penalty in the shared shape, from
+    // LATE_PAYMENT_PENALTY). PAYMENT_ALLOCATION_ORDER is now read in two places only: the penalty
+    // engine (monthlyPenalty applies payments to the penalty first) and lotArrears (payments against
+    // posted interestCharged). Receipting, notice balances and status, owner credits and the receivable
+    // journals still take a payment against the notice total, levy first (see the note in qld.ts).
+    // The legal values are those already signed off, so the sign-off stands.
+    version: "2026.10.7",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

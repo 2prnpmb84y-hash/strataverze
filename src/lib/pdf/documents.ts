@@ -5,8 +5,7 @@
  */
 import { renderPdf, type PdfBlock } from "./document";
 import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
-import { capitalise, graceText, planLine, type Terms } from "@/lib/jurisdiction/wording";
-import type { InterestRule } from "@/lib/finance/statutory-interest";
+import { capitalise, lateChargeSentence, planLine, type NoticeLateChargeRule, type Terms } from "@/lib/jurisdiction/wording";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 import type { CommitteeReportingPack } from "@/lib/queries/reports";
 
@@ -36,9 +35,10 @@ export interface LevyNoticeDocument {
   payment: { accountName: string; bsb: string; accountNumber: string; reference: string };
   contact: { name: string; emailOrPhone: string };
   ledgerUrl: string;
+  /** NSW: the owners corporation resolved not to charge interest. Queensland: no penalty applies (the notice then states none). */
   noInterest: boolean;
-  /** The building's interest rule (`rules.STATUTORY_INTEREST`). */
-  interest: InterestRule;
+  /** The building's late charge as the notice states it (see noticeLateCharge): NSW's interest rule, or Queensland's monthly penalty. */
+  interest: NoticeLateChargeRule;
   /** The building's hardship statement (`rules.NOTICE_RULES.hardship.information`), or null where the pack requires none. */
   hardship: HardshipInformation | null;
   /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
@@ -47,6 +47,7 @@ export interface LevyNoticeDocument {
 
 export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
   const t = d.terms;
+  const lateCharge = lateChargeSentence(d, t);
   return [
     { kind: "heading", text: `${capitalise(t.levy)} notice ${d.noticeNumber}` },
     { kind: "text", text: `To: ${d.ownerNames.join(", ") || "The owner"}, owner of lot ${d.lotNumber}` },
@@ -71,12 +72,8 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
         ["Reference", d.payment.reference],
       ],
     },
-    {
-      kind: "text",
-      text: d.noInterest
-        ? `The ${t.ownersCorporation} has resolved not to charge ${t.lateCharge} on overdue ${t.levies}.`
-        : `${capitalise(t.lateCharge)}: if this ${t.levy} is not paid within ${graceText(d.interest)} after the due date, simple ${t.lateCharge} of ${d.interest.annualRatePercent}% a year is charged from the due date until it is paid (${d.interest.source}).`,
-    },
+    // The late charge sentence (NSW interest, or a Queensland penalty), or none where no penalty applies.
+    ...(lateCharge ? ([{ kind: "text", text: lateCharge }] as PdfBlock[]) : []),
     {
       kind: "text",
       text: `You can check your ${t.levy} ledger at any time in the StrataVerze owner portal (${d.ledgerUrl}). For questions contact ${d.contact.name} (${d.contact.emailOrPhone}).`,
