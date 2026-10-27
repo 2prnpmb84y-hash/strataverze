@@ -236,6 +236,22 @@ export const MEETING_RULES: MeetingRuleSet = {
     ballotOpenDaysBefore: 7,
     ballotCloseHoursBefore: { AGM: 24, EGM: 24, FIRST_AGM: 24, COMMITTEE: 0 },
   },
+  // The names, lists and refusal below are the ones the meeting screens used
+  // before stage 2, step 7 (27 Oct 2026), moved here unchanged. No rule value changed.
+  resolutionLabels: {
+    ORDINARY: { short: "Ordinary", full: "Ordinary Resolution" },
+    SPECIAL: { short: "Special", full: "Special Resolution", choice: "Special Resolution (75%)" },
+    UNANIMOUS: { short: "Unanimous", full: "Unanimous Resolution" },
+    SUSTAINABILITY_INFRASTRUCTURE: { short: "Sustainability infrastructure", full: "Sustainability Infrastructure Resolution" },
+  },
+  generalMeetingCategories: ["ORDINARY", "SPECIAL", "UNANIMOUS", "SUSTAINABILITY_INFRASTRUCTURE"],
+  // A strata committee cannot decide a matter that requires a special or
+  // unanimous resolution or that is reserved to a general meeting (Act s 36(3)).
+  committeeCategories: ["ORDINARY"],
+  committeeCategoryRefusal:
+    "A strata committee cannot decide a matter that requires a special or unanimous resolution, or one reserved to a general meeting.",
+  motionCategories: ["ORDINARY", "SPECIAL", "UNANIMOUS"],
+  // No rule on owners who owe levies voting is recorded for NSW, so votes are not checked (debtorsMayVoteOn left out).
   notes:
     "Seed rule set for NSW. Clause citations to be re-pinned to the live in-force consolidation before deadline logic is relied upon.",
 };

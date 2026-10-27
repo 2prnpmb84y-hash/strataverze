@@ -118,6 +118,7 @@ describe("needRule (stage 2)", () => {
       FEATURES: qld.FEATURES,
       NOTICE_RULES: qld.NOTICE_RULES,
       LATE_CHARGE: qld.LATE_CHARGE,
+      MEETING_RULES: qld.MEETING_RULES,
     };
     expect(() => needRule(sharedOnly, "STATUTORY_INTEREST")).toThrow(RuleNotInPackError);
     let error: unknown;

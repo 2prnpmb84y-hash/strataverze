@@ -30,11 +30,14 @@ export function MotionSection({
   motions,
   meetingStatus,
   currentProfileId,
+  motionTypeLabels,
 }: {
   meetingId: string;
   motions: Motion[];
   meetingStatus: string;
   currentProfileId: string;
+  /** Each motion type's name, from the building's rule set (`resolutionLabels`). */
+  motionTypeLabels: Record<string, string>;
 }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -43,12 +46,6 @@ export function MotionSection({
     MotionFormState,
     FormData
   >(createAction, {});
-
-  const motionTypeLabels: Record<string, string> = {
-    ORDINARY: "Ordinary Resolution",
-    SPECIAL: "Special Resolution",
-    UNANIMOUS: "Unanimous Resolution",
-  };
 
   const statusStyle: Record<string, string> = {
     DRAFT: "bg-gray-100 text-gray-700",

@@ -3,12 +3,12 @@
  *
  * Maps a chair's recorded outcome (and optional vote tally) to the stored
  * agenda-item outcome and status, using the rule set to evaluate the tally per
- * resolution category.
+ * resolution category (the categories are the building's rule set's).
  */
 import {
   evaluateResolution,
+  isResolutionCategory,
   type MeetingRuleSet,
-  type ResolutionCategory,
   type ResolutionTally,
 } from "./rules";
 
@@ -55,16 +55,10 @@ export function resolveOutcome(
     return { outcome: "DEFERRED", status: statusForOutcome("DEFERRED") };
   }
 
-  if (
-    params.tally &&
-    params.resolutionCategory &&
-    (["ORDINARY", "SPECIAL", "UNANIMOUS", "SUSTAINABILITY_INFRASTRUCTURE"] as string[]).includes(
-      params.resolutionCategory,
-    )
-  ) {
+  if (params.tally && isResolutionCategory(ruleSet, params.resolutionCategory)) {
     const evaluation = evaluateResolution(
       ruleSet,
-      params.resolutionCategory as ResolutionCategory,
+      params.resolutionCategory,
       params.tally,
     );
     const outcome: Outcome = evaluation.passed ? "RESOLVED" : "MOTION_LOST";

@@ -10,6 +10,7 @@ import { getAgendaItem } from "@/lib/queries/agenda";
 import { getBallotForMeeting, castElectronicVote } from "@/lib/queries/evoting";
 import { isBallotOpen, isInformalVote } from "@/lib/meetings/evoting";
 import { isOpenForVoting } from "@/lib/meetings/lifecycle";
+import { debtorVoteProblem } from "@/lib/meetings/debtor-voting-repo";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 
@@ -107,6 +108,11 @@ export async function castVoteAction(motionId: string, voteValue: string) {
       return { error: "A vote has already been cast for your lot." };
     }
 
+    // Where the building's pack limits what a lot owing money may vote on
+    // (Queensland), refused before anything is written. NSW records no such rule.
+    const debtorProblem = await debtorVoteProblem({ schemeId: motion.schemeId, lotIds, category: motion.motionType });
+    if (debtorProblem) return { error: debtorProblem };
+
     await castVote({
       motionId,
       profileId: profile.id,
@@ -176,6 +182,15 @@ export async function castBallotVoteAction(
       .first();
     if (!lot) return { error: "You are not recorded as an owner of a lot in this scheme." };
     const unitEntitlement = lot.entitlement ?? 0;
+
+    // As for motions: refused before anything is written where the pack limits
+    // a lot owing money, and only if every one of the owner's lots owes.
+    const debtorProblem = await debtorVoteProblem({
+      schemeId: meeting.schemeId,
+      lotIds: memberships.map((m) => m.lotId as string),
+      category: item.resolutionCategory,
+    });
+    if (debtorProblem) return { error: debtorProblem };
 
     // castElectronicVote keeps one vote per lot per agenda item (it updates
     // the lot's existing vote).

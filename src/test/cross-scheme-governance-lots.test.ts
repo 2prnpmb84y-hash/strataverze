@@ -175,6 +175,9 @@ vi.mock("@/lib/notifications", () => ({
   notifyInvitation: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/meetings/rule-set-repo", () => ({ getActiveRuleSet: vi.fn(async () => ({})) }));
+// The debtor voting check (stage 2, step 7): NSW records no rule, so it finds no problem by default.
+const debtor = { debtorVoteProblem: vi.fn<(...a: unknown[]) => Promise<string | null>>(async () => null) };
+vi.mock("@/lib/meetings/debtor-voting-repo", () => debtor);
 const events = { recordMeetingEvent: vi.fn() };
 vi.mock("@/lib/meetings/events", () => events);
 vi.mock("@/lib/meetings/setup", () => ({
@@ -398,6 +401,9 @@ describe("adviser meetings and motions (H1, L3)", () => {
   });
 
   it("createMotionAction refuses a meeting from another scheme", async () => {
+    // The motion types are read from the building's state (stage 2, step 7).
+    model("Scheme");
+    terminals.Scheme.first.mockResolvedValueOnce({ id: SCHEME_A, state: "NSW" });
     const fd = new FormData();
     fd.set("title", "t");
     fd.set("description", "d");
@@ -597,6 +603,16 @@ describe("owner castBallotVoteAction (F8)", () => {
     agenda.getAgendaItem.mockResolvedValue({ id: "item-a", meetingId: MEETING_A.id });
     const r = await ownerMeetingActions.castBallotVoteAction(MEETING_A.id, "item-a", "MAYBE");
     expect(r.error).toBe("Invalid vote value.");
+    expect(evoting.castElectronicVote).not.toHaveBeenCalled();
+  });
+
+  it("checks every one of the owner's lots for money owed, and writes nothing when refused", async () => {
+    terminals.SchemeMembership.all.mockResolvedValue([ownerMembership, { ...ownerMembership, id: "m2", lotId: "lot-a2" }]);
+    agenda.getAgendaItem.mockResolvedValue({ id: "item-a", meetingId: MEETING_A.id, resolutionCategory: "ORDINARY" });
+    debtor.debtorVoteProblem.mockResolvedValueOnce("Your lot has an overdue amount owing.");
+    const r = await ownerMeetingActions.castBallotVoteAction(MEETING_A.id, "item-a", "FOR");
+    expect(r.error).toBe("Your lot has an overdue amount owing.");
+    expect(debtor.debtorVoteProblem).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotIds: [LOT_A.id, "lot-a2"], category: "ORDINARY" });
     expect(evoting.castElectronicVote).not.toHaveBeenCalled();
   });
 

@@ -13,18 +13,14 @@ import {
   type AgendaFormState,
 } from "./agenda-actions";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ORDINARY: "Ordinary",
-  SPECIAL: "Special",
-  UNANIMOUS: "Unanimous",
-  SUSTAINABILITY_INFRASTRUCTURE: "Sustainability infrastructure",
-};
-
+/** Badge colours by category (presentation only: the categories and their names come from the building's rule set). */
 const CATEGORY_STYLE: Record<string, string> = {
   ORDINARY: "bg-turquoise/10 text-turquoise-700",
   SPECIAL: "bg-amber-100 text-amber-800",
   UNANIMOUS: "bg-purple-100 text-purple-700",
+  WITHOUT_DISSENT: "bg-purple-100 text-purple-700",
   SUSTAINABILITY_INFRASTRUCTURE: "bg-green-100 text-green-700",
+  MAJORITY: "bg-blue-100 text-blue-700",
 };
 
 export interface AgendaItemView {
@@ -48,6 +44,7 @@ export function AgendaSection({
   items,
   motionLibrary,
   allowedCategories,
+  categoryLabels,
   canLoadTemplate,
   editable,
   terms,
@@ -57,6 +54,8 @@ export function AgendaSection({
   items: AgendaItemView[];
   motionLibrary: MotionLibraryView[];
   allowedCategories: string[];
+  /** Each category's name, from the building's rule set (`resolutionLabels`). */
+  categoryLabels: Record<string, string>;
   canLoadTemplate: boolean;
   editable: boolean;
   /** The building's words for its owners corporation (`rules.TERMINOLOGY`), for the example resolution. */
@@ -120,7 +119,7 @@ export function AgendaSection({
                         <span
                           className={`text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ${CATEGORY_STYLE[item.resolutionCategory] ?? "bg-gray-100 text-gray-600"}`}
                         >
-                          {CATEGORY_LABELS[item.resolutionCategory] ??
+                          {categoryLabels[item.resolutionCategory] ??
                             item.resolutionCategory}
                         </span>
                       )}
@@ -221,7 +220,7 @@ export function AgendaSection({
               name="resolutionCategory"
               options={allowedCategories.map((c) => ({
                 value: c,
-                label: CATEGORY_LABELS[c] ?? c,
+                label: categoryLabels[c] ?? c,
               }))}
               error={state.fieldErrors?.resolutionCategory}
             />

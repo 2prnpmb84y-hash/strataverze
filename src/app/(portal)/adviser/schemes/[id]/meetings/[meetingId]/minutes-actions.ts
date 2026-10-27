@@ -155,8 +155,8 @@ export async function publishMinutesAction(
 
     await updateMinutes(meetingId, latest.id, {
       distributedAt: new Date().toISOString(),
-      // The day in the building's time zone.
-      retentionUntil: dayIn(timeZoneOf(scheme), retention),
+      // The day in the building's time zone, or none where the record is kept without a limit.
+      retentionUntil: retention ? dayIn(timeZoneOf(scheme), retention) : null,
     });
     await updateMeeting(schemeId, meetingId, { status: "PUBLISHED" });
     await recordMeetingEvent({

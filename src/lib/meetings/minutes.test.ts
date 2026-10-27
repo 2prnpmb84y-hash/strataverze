@@ -81,6 +81,14 @@ describe("retentionUntil", () => {
   it("is the general retention period (7 years) after the meeting", () => {
     const from = new Date("2026-03-01T00:00:00Z");
     const until = retentionUntil(NSW_RULE_SET, from);
-    expect(until.getUTCFullYear()).toBe(2033);
+    expect(until?.getUTCFullYear()).toBe(2033);
+  });
+});
+
+describe("retentionUntil without a limit (Queensland)", () => {
+  it("gives no retention date where the rule set keeps the record without a limit", () => {
+    const qld = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+    expect(qld.retention.generalYears).toBeNull();
+    expect(retentionUntil(qld, new Date("2026-03-01T00:00:00Z"))).toBeNull();
   });
 });

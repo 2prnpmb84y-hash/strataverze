@@ -4,34 +4,35 @@ import {
   canAddCategoryToMeetingType,
   validateAgendaItem,
 } from "./agenda";
+import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
 
 describe("resolution categories by meeting type", () => {
   it("restricts a committee meeting to ordinary resolutions", () => {
-    expect(allowedCategoriesForMeetingType("COMMITTEE")).toEqual(["ORDINARY"]);
+    expect(allowedCategoriesForMeetingType(NSW_RULE_SET, "COMMITTEE")).toEqual(["ORDINARY"]);
   });
 
   it("allows all categories at an AGM", () => {
-    const cats = allowedCategoriesForMeetingType("AGM");
+    const cats = allowedCategoriesForMeetingType(NSW_RULE_SET, "AGM");
     expect(cats).toContain("SPECIAL");
     expect(cats).toContain("UNANIMOUS");
   });
 
   it("blocks a special resolution on a committee agenda", () => {
-    expect(canAddCategoryToMeetingType("COMMITTEE", "SPECIAL")).toBe(false);
+    expect(canAddCategoryToMeetingType(NSW_RULE_SET, "COMMITTEE", "SPECIAL")).toBe(false);
   });
 
   it("allows a special resolution at an AGM", () => {
-    expect(canAddCategoryToMeetingType("AGM", "SPECIAL")).toBe(true);
+    expect(canAddCategoryToMeetingType(NSW_RULE_SET, "AGM", "SPECIAL")).toBe(true);
   });
 
   it("treats a legacy SGM like an EGM", () => {
-    expect(canAddCategoryToMeetingType("SGM", "SPECIAL")).toBe(true);
+    expect(canAddCategoryToMeetingType(NSW_RULE_SET, "SGM", "SPECIAL")).toBe(true);
   });
 });
 
 describe("validateAgendaItem", () => {
   it("requires a title", () => {
-    const errors = validateAgendaItem({ title: "" }, "AGM");
+    const errors = validateAgendaItem({ title: "" }, "AGM", NSW_RULE_SET);
     expect(errors.title).toBeDefined();
   });
 
@@ -39,6 +40,7 @@ describe("validateAgendaItem", () => {
     const errors = validateAgendaItem(
       { title: "Approve special levy", resolutionCategory: "SPECIAL" },
       "COMMITTEE",
+      NSW_RULE_SET,
     );
     expect(errors.resolutionCategory).toBeDefined();
   });
@@ -47,6 +49,7 @@ describe("validateAgendaItem", () => {
     const errors = validateAgendaItem(
       { title: "Amend by-law 3", resolutionCategory: "SPECIAL" },
       "AGM",
+      NSW_RULE_SET,
     );
     expect(errors).toEqual({});
   });

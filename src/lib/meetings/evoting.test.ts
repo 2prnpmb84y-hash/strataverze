@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { MEETING_RULES as NSW_RULE_SET } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS } from "@/config/statutory";
 import {
   computeBallotWindow,
+  EvotingNotOfferedError,
+  evotingNotOfferedReason,
   isBallotOpen,
   isInformalVote,
   tallyElectronicVotes,
@@ -79,5 +81,23 @@ describe("validateCanOpenBallot", () => {
     expect(
       validateCanOpenBallot({ adopted: true, meetingStatus: "IN_PROGRESS" }),
     ).toBeTruthy();
+  });
+});
+
+describe("pre-meeting e-voting not in the rule set (Queensland)", () => {
+  const QLD = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+
+  it("is offered for NSW", () => {
+    expect(evotingNotOfferedReason(NSW_RULE_SET, "NSW")).toBeNull();
+  });
+
+  it("is refused with a plain message", () => {
+    const reason = evotingNotOfferedReason(QLD, "Qld");
+    expect(reason).toBe("Pre-meeting electronic voting is not offered for buildings in Qld yet.");
+    expect(reason).not.toMatch(/[;\u2013\u2014]/);
+  });
+
+  it("has no ballot window", () => {
+    expect(() => computeBallotWindow(QLD, "AGM", meetingStart)).toThrow(EvotingNotOfferedError);
   });
 });

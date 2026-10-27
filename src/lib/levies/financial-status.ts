@@ -23,7 +23,9 @@ export interface FinancialStatus {
   oldestOverdue: string | null;
 }
 
-const COUNTED = new Set(["ISSUED", "PARTIALLY_PAID", "OVERDUE"]);
+/** The notice statuses that can make a lot unfinancial (an issued amount not yet paid in full). */
+export const UNFINANCIAL_NOTICE_STATUSES = ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] as const;
+const COUNTED = new Set<string>(UNFINANCIAL_NOTICE_STATUSES);
 const cents = (v: unknown) => Math.round(Number(v ?? 0) * 100);
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
 

@@ -20,6 +20,7 @@
  */
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
+import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
   EntitlementScheduleDefinition,
   FundDefinition,
@@ -50,6 +51,8 @@ export interface SharedRules {
   NOTICE_RULES: NoticeRules;
   /** The late charge on overdue levies: NSW interest, Queensland penalty (stage 2, step 6). */
   LATE_CHARGE: LateChargeRules;
+  /** The meeting rules: notice, minutes, quorum, resolution categories and what each meeting may carry (stage 2, step 7). */
+  MEETING_RULES: MeetingRuleSet;
 }
 
 /**
@@ -102,7 +105,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.11 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only); no rule value changed.
     // 2026.10.12 (27 Oct 2026): NOTICE_RULES added (the notice rules in the shared shape, from LEVY_NOTICE_RULES and HARDSHIP_INFORMATION); no rule value changed.
     // 2026.10.13 (27 Oct 2026): LATE_CHARGE added (the interest rule in the shared shape, from STATUTORY_INTEREST); no rule value changed.
-    version: "2026.10.13",
+    // 2026.10.14 (27 Oct 2026): MEETING_RULES in the shared shape (resolution labels, committee and general meeting categories); no rule value changed.
+    version: "2026.10.14",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not
@@ -155,7 +159,14 @@ export const PENDING_RULE_PACKS = {
     // posted interestCharged). Receipting, notice balances and status, owner credits and the receivable
     // journals still take a payment against the notice total, levy first (see the note in qld.ts).
     // The legal values are those already signed off, so the sign-off stands.
-    version: "2026.10.7",
+    // 2026.10.8 (27 Oct 2026): MEETING_RULES added (the meeting rules in the shared shape, from MEETINGS,
+    // RESOLUTIONS, CONTRIBUTIONS.debtorMayVote and RECORD_RETENTION). Pre-meeting e-voting is not offered
+    // (none like the NSW ballot), the labels and the committee refusal are wording, and the legal values
+    // are those already signed off, so the sign-off stands. How the 21 days is counted stays not confirmed.
+    // Also: MEETINGS.statutoryMotions and COMMITTEE.electionIsLastBusiness (from the research notes, CONFIRMED,
+    // backing the draft AGM template), FOR_REVIEW (StrataVerze design choices for Matthew Wrigley to confirm)
+    // and a GO-LIVE GAP note (special and majority resolutions are not counted yet).
+    version: "2026.10.8",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

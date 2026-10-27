@@ -9,7 +9,7 @@
  */
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
-import { rulePackFor, UnsupportedJurisdictionError, needRule } from "@/config/statutory";
+import { rulePackFor, UnsupportedJurisdictionError } from "@/config/statutory";
 import {
   snapshotRuleSet,
   type MeetingRuleSet,
@@ -32,25 +32,41 @@ type RuleSetRow = {
   notes: string | null;
 };
 
+/**
+ * A stored row as a rule set. Rows are read tolerantly: a row written before a
+ * field existed takes it from the pack's seed. The labels, the category lists,
+ * the committee refusal and the debtor voting rule have no column, so they
+ * always come from the seed (stage 2, step 7).
+ */
 function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
-  return {
+  const ruleSet: MeetingRuleSet = {
     state: row.state,
     version: row.version,
     effectiveFrom: String(row.effectiveFrom).slice(0, 10),
     noticePeriods: row.noticePeriods as Partial<Record<MeetingType, number>>,
     minutesDeadlines: row.minutesDeadlines as Partial<Record<MeetingType, number>>,
     quorumRules: row.quorumRules as Partial<Record<MeetingType, QuorumRule>>,
-    resolutionCategories: row.resolutionCategories as Record<
+    resolutionCategories: row.resolutionCategories as Partial<Record<
       ResolutionCategory,
       ResolutionRule
-    >,
-    retention: row.retention as MeetingRuleSet["retention"],
-    // Fall back to the seed config when an older rule-set row lacks it.
+    >>,
+    retention: (row.retention as MeetingRuleSet["retention"] | null) ?? seed.retention,
+    // Fall back to the seed config when an older rule-set row lacks it. A pack
+    // without pre-meeting e-voting (seed null) never offers it, whatever a row holds.
     preMeetingEvoting:
-      (row.preMeetingEvoting as MeetingRuleSet["preMeetingEvoting"]) ??
-      seed.preMeetingEvoting,
+      seed.preMeetingEvoting == null
+        ? null
+        : ((row.preMeetingEvoting as MeetingRuleSet["preMeetingEvoting"]) ??
+          seed.preMeetingEvoting),
+    resolutionLabels: seed.resolutionLabels,
+    generalMeetingCategories: seed.generalMeetingCategories,
+    committeeCategories: seed.committeeCategories,
+    committeeCategoryRefusal: seed.committeeCategoryRefusal,
+    motionCategories: seed.motionCategories,
     notes: row.notes ?? undefined,
   };
+  if (seed.debtorsMayVoteOn) ruleSet.debtorsMayVoteOn = seed.debtorsMayVoteOn;
+  return ruleSet;
 }
 
 /**
@@ -61,7 +77,7 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
 export async function getActiveRuleSet(state: string): Promise<MeetingRuleSet> {
   const pack = rulePackFor(state);
   if (!pack) throw new UnsupportedJurisdictionError((state ?? "").trim().toUpperCase());
-  const seed = needRule(pack.rules, "MEETING_RULES");
+  const seed = pack.rules.MEETING_RULES;
 
   const row = await db.orm.public.MeetingRuleSet
     .where((r) => and(r.state.eq(pack.state), r.isActive.eq(true)))
@@ -70,6 +86,13 @@ export async function getActiveRuleSet(state: string): Promise<MeetingRuleSet> {
 
   if (!row) return seed;
   return rowToRuleSet(row as unknown as RuleSetRow, seed);
+}
+
+/** The active rule set for a building, by its id. Throws as `getActiveRuleSet` does, or when there is no such building. */
+export async function getActiveRuleSetForScheme(schemeId: string): Promise<MeetingRuleSet> {
+  const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+  if (!scheme) throw new Error("Building not found.");
+  return getActiveRuleSet(scheme.state);
 }
 
 /**

@@ -28,6 +28,7 @@ import {
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { getMotionLibrary, getAgendaTemplate } from "@/lib/meetings/templates";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
+import { evotingNotOfferedReason } from "@/lib/meetings/evoting";
 import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
 import { canEditDetails, canTransition, isBeforeNotice, meetingStatusLabel } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
@@ -76,9 +77,24 @@ export default async function MeetingDetailPage({
     title: m.title,
     defaultResolutionCategory: m.defaultResolutionCategory,
   }));
+  // The building's meeting rules: its resolution categories, labels and deadlines.
+  const ruleSet = await getActiveRuleSet(scheme.state);
   const allowedCategories = allowedCategoriesForMeetingType(
+    ruleSet,
     meeting.meetingType,
   );
+  const categoryLabels = Object.fromEntries(
+    Object.entries(ruleSet.resolutionLabels).map(([c, l]) => [c, l.short]),
+  );
+  const motionTypeLabels = Object.fromEntries(
+    ruleSet.motionCategories.map((c) => [c, ruleSet.resolutionLabels[c]?.full ?? c]),
+  );
+  const motionTypeOptions = ruleSet.motionCategories.map((c) => ({
+    value: c,
+    label: ruleSet.resolutionLabels[c]?.choice ?? ruleSet.resolutionLabels[c]?.full ?? c,
+  }));
+  const terms = rulesForState(scheme.state).rules.TERMINOLOGY;
+  const evotingNotOffered = evotingNotOfferedReason(ruleSet, terms.jurisdictionShort);
   const canLoadTemplate = normalisedType
     ? getAgendaTemplate(scheme.state, normalisedType).length > 0
     : false;
@@ -86,7 +102,6 @@ export default async function MeetingDetailPage({
 
   // Notice context
   const notices = await getNoticesForMeeting(meetingId);
-  const ruleSet = await getActiveRuleSet(scheme.state);
   const startIso = String(meeting.startTime ?? meeting.scheduledAt);
   const noticePeriod =
     normalisedType != null
@@ -168,6 +183,7 @@ export default async function MeetingDetailPage({
       }
     : null;
   const canOpenBallot =
+    !evotingNotOffered &&
     scheme.preMeetingEvotingAdopted &&
     agendaItems.length > 0 &&
     (meeting.status === "NOTICE_ISSUED" || meeting.status === "DRAFT") &&
@@ -251,9 +267,10 @@ export default async function MeetingDetailPage({
         }))}
         motionLibrary={motionLibrary}
         allowedCategories={allowedCategories}
+        categoryLabels={categoryLabels}
         canLoadTemplate={canLoadTemplate}
         editable={agendaEditable}
-        terms={rulesForState(scheme.state).rules.TERMINOLOGY}
+        terms={terms}
       />
 
       {/* Notice */}
@@ -269,17 +286,24 @@ export default async function MeetingDetailPage({
         timeZone={meetingTz}
       />
 
-      {/* Pre-meeting electronic voting */}
-      <EvotingSection
-        schemeId={id}
-        meetingId={meetingId}
-        adopted={scheme.preMeetingEvotingAdopted}
-        canOpen={canOpenBallot}
-        ballot={ballotView}
-        fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" })}
-        timeZone={meetingTz}
-        adoptionCitation={needRule(rulesForState(scheme.state).rules, "CITATIONS").evotingAdoption}
-      />
+      {/* Pre-meeting electronic voting, where the building's rule set has it */}
+      {evotingNotOffered ? (
+        <Card className="mb-6">
+          <CardHeader title="Pre-meeting electronic voting" />
+          <p className="text-sm text-ink-muted">{evotingNotOffered}</p>
+        </Card>
+      ) : (
+        <EvotingSection
+          schemeId={id}
+          meetingId={meetingId}
+          adopted={scheme.preMeetingEvotingAdopted}
+          canOpen={canOpenBallot}
+          ballot={ballotView}
+          fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" })}
+          timeZone={meetingTz}
+          adoptionCitation={needRule(rulesForState(scheme.state).rules, "CITATIONS").evotingAdoption}
+        />
+      )}
 
       {/* Conduct */}
       <ConductSection
@@ -314,6 +338,8 @@ export default async function MeetingDetailPage({
         motions={meeting.motions}
         meetingStatus={meeting.status}
         currentProfileId={profile.id}
+        motionTypeLabels={motionTypeLabels}
+        motionTypeOptions={motionTypeOptions}
       />
 
       {/* Edit form: before notice, or while adjourned (a new time and place before the notice is issued again) */}

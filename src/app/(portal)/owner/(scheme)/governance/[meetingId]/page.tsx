@@ -8,6 +8,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { MotionSection } from "./motion-section";
 import { connection } from "next/server";
 import { meetingStatusLabel } from "@/lib/meetings/lifecycle";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function OwnerMeetingDetailPage({
   params,
@@ -24,8 +25,14 @@ export default async function OwnerMeetingDetailPage({
   const meeting = await getMeetingById(meetingId);
   if (!meeting) notFound();
 
-  const hasAccess = schemes.some((s) => s.id === meeting.schemeId);
-  if (!hasAccess) notFound();
+  const scheme = schemes.find((s) => s.id === meeting.schemeId);
+  if (!scheme) notFound();
+
+  // Motion type names from the building's rule set.
+  const meetingRules = rulesForState(scheme.state).rules.MEETING_RULES;
+  const motionTypeLabels = Object.fromEntries(
+    meetingRules.motionCategories.map((c) => [c, meetingRules.resolutionLabels[c]?.full ?? c]),
+  );
 
   const scheduledDate = new Date(String(meeting.scheduledAt));
   // Shown in the meeting's own time zone (stored times are instants).
@@ -98,6 +105,7 @@ export default async function OwnerMeetingDetailPage({
         motions={meeting.motions}
         meetingStatus={meeting.status}
         currentProfileId={profile.id}
+        motionTypeLabels={motionTypeLabels}
       />
     </div>
   );

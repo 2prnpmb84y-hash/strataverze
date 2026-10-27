@@ -15,10 +15,12 @@ import {
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
 import {
   computeBallotWindow,
+  evotingNotOfferedReason,
   tallyElectronicVotes,
   validateCanOpenBallot,
 } from "@/lib/meetings/evoting";
-import { evaluateResolution, type MeetingType } from "@/lib/meetings/rules";
+import { evaluateResolution, type MeetingType, type ResolutionCategory } from "@/lib/meetings/rules";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { resolveOutcome } from "@/lib/meetings/conduct";
 import { normaliseMeetingType } from "@/lib/meetings/setup";
 import { recordMeetingEvent } from "@/lib/meetings/events";
@@ -49,6 +51,15 @@ export async function openBallotAction(
       return { error: "Meeting not found." };
     if (existing) return { error: "A ballot already exists for this meeting." };
 
+    // Refused before any write where the building's rule set has no
+    // pre-meeting e-voting (Queensland).
+    const ruleSet = await getActiveRuleSet(scheme.state);
+    const notOffered = evotingNotOfferedReason(
+      ruleSet,
+      rulesForState(scheme.state).rules.TERMINOLOGY.jurisdictionShort,
+    );
+    if (notOffered) return { error: notOffered };
+
     const blocked = validateCanOpenBallot({
       adopted: scheme.preMeetingEvotingAdopted,
       meetingStatus: meeting.status,
@@ -57,7 +68,6 @@ export async function openBallotAction(
 
     const type = normaliseMeetingType(meeting.meetingType) as MeetingType | null;
     if (!type) return { error: "Unsupported meeting type." };
-    const ruleSet = await getActiveRuleSet(scheme.state);
     const start = new Date(String(meeting.startTime ?? meeting.scheduledAt));
     const window = computeBallotWindow(ruleSet, type, start);
 
@@ -134,13 +144,10 @@ export async function closeBallotAction(
 
       const tally = tallyElectronicVotes(itemVotes);
       if (item.resolutionCategory) {
+        // An item's category the rule set does not have is evaluated as lost.
         const evaluation = evaluateResolution(
           ruleSet,
-          item.resolutionCategory as
-            | "ORDINARY"
-            | "SPECIAL"
-            | "UNANIMOUS"
-            | "SUSTAINABILITY_INFRASTRUCTURE",
+          item.resolutionCategory as ResolutionCategory,
           tally,
         );
         const outcome = resolveOutcome(ruleSet, {

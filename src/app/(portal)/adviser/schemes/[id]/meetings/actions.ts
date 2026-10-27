@@ -30,6 +30,7 @@ import {
 } from "@/lib/queries/schemes";
 import { notifyMeetingScheduled } from "@/lib/notifications";
 import { getActiveRuleSet } from "@/lib/meetings/rule-set-repo";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import {
   validateMeetingSetup,
   createMeetingWithRuleSnapshot,
@@ -50,7 +51,6 @@ export type MeetingFormState = {
 };
 
 const MEETING_TYPES = ["AGM", "EGM", "SGM", "COMMITTEE", "FIRST_AGM"];
-const MOTION_TYPES = ["ORDINARY", "SPECIAL", "UNANIMOUS"];
 
 function validateMeetingForm(formData: FormData, timeZone: string) {
   const errors: Record<string, string> = {};
@@ -347,11 +347,16 @@ export async function createMotionAction(
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
     const motionType = formData.get("motionType") as string;
+    // The motion types are the building's (its rule set's motion categories).
+    const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+    const motionTypes: readonly string[] = scheme
+      ? rulesForState(scheme.state).rules.MEETING_RULES.motionCategories
+      : [];
 
     const errors: Record<string, string> = {};
     if (!title) errors.title = "Title is required.";
     if (!description) errors.description = "Description is required.";
-    if (!motionType || !MOTION_TYPES.includes(motionType))
+    if (!motionType || !motionTypes.includes(motionType))
       errors.motionType = "Select a valid motion type.";
 
     if (Object.keys(errors).length > 0) return { fieldErrors: errors };

@@ -5,7 +5,9 @@
  * close 24 hours before for an owners-corporation meeting or immediately before
  * for a committee meeting), detects informal votes, and tallies cast votes by
  * unit entitlement for evaluation against the resolution category. Pre-meeting
- * e-voting is gated by the body's adopting resolution (Reg cl 14).
+ * e-voting is gated by the body's adopting resolution (Reg cl 14), and is
+ * offered only where the building's rule set has it (`preMeetingEvoting` is
+ * null for Queensland: stage 2, step 7).
  */
 import type { MeetingRuleSet, MeetingType, ResolutionTally } from "./rules";
 
@@ -26,18 +28,45 @@ export interface BallotWindow {
   closesAt: Date;
 }
 
-/** The ballot open/close window for a meeting. */
+/**
+ * Why pre-meeting e-voting is not offered for the building, or null when it
+ * is. `jurisdiction` names the building's state ("Qld").
+ */
+export function evotingNotOfferedReason(
+  ruleSet: Pick<MeetingRuleSet, "preMeetingEvoting">,
+  jurisdiction: string,
+): string | null {
+  return ruleSet.preMeetingEvoting == null
+    ? `Pre-meeting electronic voting is not offered for buildings in ${jurisdiction} yet.`
+    : null;
+}
+
+/** Pre-meeting e-voting is not in the building's rule set. */
+export class EvotingNotOfferedError extends Error {
+  constructor() {
+    super("Pre-meeting electronic voting is not offered for this building.");
+    this.name = "EvotingNotOfferedError";
+  }
+}
+
+/**
+ * The ballot open/close window for a meeting. Throws EvotingNotOfferedError
+ * when the rule set has no pre-meeting e-voting (check
+ * `evotingNotOfferedReason` first).
+ */
 export function computeBallotWindow(
   ruleSet: MeetingRuleSet,
   meetingType: MeetingType,
   meetingStart: Date,
 ): BallotWindow {
+  const evoting = ruleSet.preMeetingEvoting;
+  if (!evoting) throw new EvotingNotOfferedError();
   const opensAt = new Date(meetingStart);
   opensAt.setUTCDate(
-    opensAt.getUTCDate() - ruleSet.preMeetingEvoting.ballotOpenDaysBefore,
+    opensAt.getUTCDate() - evoting.ballotOpenDaysBefore,
   );
   const closeHours =
-    ruleSet.preMeetingEvoting.ballotCloseHoursBefore[meetingType] ?? 24;
+    evoting.ballotCloseHoursBefore[meetingType] ?? 24;
   const closesAt = new Date(meetingStart);
   closesAt.setUTCHours(closesAt.getUTCHours() - closeHours);
   return { opensAt, closesAt };
