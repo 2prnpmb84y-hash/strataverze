@@ -57,6 +57,8 @@ const WORKFLOWS = ["PAYMENT_PLANS", "COMMITTEE_TRAINING", "ANNUAL_REPORTING", "R
  * (stage 2), the notice rules in the shared shape (stage 2, step 5) and the late charge in the shared shape (step 6).
  */
 const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES", "FEATURES", "NOTICE_RULES", "LATE_CHARGE"] as const;
+/** The certificate, inspections, record keeping and works quotes in the shared shapes (stage 2, step 9). */
+const SHARED_STEP_9 = ["CERTIFICATE", "INSPECTIONS", "DOCUMENT_RETENTION", "WORKS_QUOTES"] as const;
 
 describe("NSW statutory workflows (Oct 2026)", () => {
   it("are the rules recorded", () => {
@@ -67,6 +69,29 @@ describe("NSW statutory workflows (Oct 2026)", () => {
 describe("NSW funds and entitlement schedules (phase 2 foundation)", () => {
   it("are the funds and schedules the platform already uses", () => {
     expect(Object.fromEntries(FOUNDATION.map((n) => [n, (NSW as Record<string, unknown>)[n]]))).toMatchSnapshot();
+  });
+});
+
+// Stage 2, step 9 (27 Oct 2026): the shared shapes hold the NSW values the screens read before, unchanged.
+describe("NSW certificate, inspections, record keeping and works quotes (stage 2, step 9)", () => {
+  it("are the rules recorded", () => {
+    expect(Object.fromEntries(SHARED_STEP_9.map((n) => [n, (NSW as Record<string, unknown>)[n]]))).toMatchSnapshot();
+  });
+
+  it("hold the values of the NSW rules they come from", () => {
+    const c = NSW.CERTIFICATE;
+    const s = NSW.SALE_CERTIFICATE;
+    expect([c.title, c.section, c.form, c.requesterTypes, c.items, c.execution, c.conclusiveNote, c.helpUrl]).toEqual([s.title, s.section, s.form, s.requesterTypes, s.items, s.execution, s.conclusiveNote, s.helpUrl]);
+    expect(c.fee).toEqual({ basis: "CENTS", feeCents: s.feeCents, repeatFeeCents: s.repeatFeeCents, repeatWithinMonths: s.repeatWithinMonths, repeatSamePersonOnly: false, source: s.feeSource });
+    expect(c.giveWithinBusinessDays).toBeNull();
+    const i = NSW.INSPECTIONS;
+    if (i.basis !== "HOURLY") throw new Error("NSW inspections are by the hour");
+    const r = NSW.RECORDS_INSPECTION;
+    expect([i.section, i.agreeWithinDays, i.setWithinDays, i.fees, i.feesIncludeGst, i.paidInto, i.partHalfHour]).toEqual([r.section, r.agreeWithinDays, r.setWithinDays, r.fees, r.feesIncludeGst, r.paidInto, r.partHalfHour]);
+    expect(Object.keys(i.requesterTypes)).toEqual(["OWNER", "AUTHORISED_PERSON"]);
+    expect(NSW.DOCUMENT_RETENTION.byCategory).toBe(NSW.RECORD_RETENTION.byCategory);
+    expect(NSW.DOCUMENT_RETENTION.generalYears).toBe(NSW.RECORD_RETENTION.generalYears);
+    expect(NSW.WORKS_QUOTES).toMatchObject({ minimumQuotes: NSW.WORKS_SPENDING_RULES.minimumQuotes, threshold: { basis: "FIXED", dollars: NSW.WORKS_SPENDING_RULES.twoQuoteThreshold }, citation: NSW.CITATIONS.worksTwoQuotes });
   });
 });
 
@@ -96,7 +121,7 @@ describe("NSW statutory constants", () => {
     // DEBT_RECOVERY_STEPS (moved into the pack unchanged in phase 1b) by the
     // debt recovery test at the end.
     const constants = Object.entries(statutory.statutoryRulesFor("NSW"))
-      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", "DEBT_RECOVERY_STEP_LABELS", "NEVER_RECOVERABLE_FEE_VARIANTS", ...WORDING, ...WORKFLOWS, ...FOUNDATION].includes(k))
+      .filter(([k, v]) => typeof v !== "function" && !["MEETING_RULES", "DEBT_RECOVERY_STEPS", "DEBT_RECOVERY_STEP_LABELS", "NEVER_RECOVERABLE_FEE_VARIANTS", ...WORDING, ...WORKFLOWS, ...FOUNDATION, ...SHARED_STEP_9].includes(k))
       .map(([k]) => k)
       .sort();
     expect(constants).toEqual([...names].sort());

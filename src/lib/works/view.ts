@@ -12,7 +12,7 @@ import { committeeMembers, decisionsFor, mayWithdraw } from "./review";
 import { decodeSummary } from "./marketplace";
 import { requestPhotos } from "./requests";
 import { ROUTE_OUTCOMES, isRouteOutcome, requestStatusLabel, tally, votesSentence } from "./decision-rules";
-import { needRule } from "@/config/statutory";
+import { buildingQuoteRule } from "./quote-rule-repo";
 
 export interface DecisionVoteView {
   voterName: string;
@@ -146,12 +146,12 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
         : null,
   };
 
-  const spending = needRule((await rulesForScheme(schemeId)).rules, "WORKS_SPENDING_RULES");
+  const quoteRule = await buildingQuoteRule(schemeId, (await rulesForScheme(schemeId)).rules);
   return {
     /** The building's time zone, for showing dates and times. */
     timeZone: tz,
     /** The building's two-quote rule. */
-    twoQuotes: { threshold: spending.twoQuoteThreshold, minimumQuotes: spending.minimumQuotes },
+    twoQuotes: { threshold: quoteRule.threshold, minimumQuotes: quoteRule.minimumQuotes, lotsMissing: quoteRule.lotsMissing },
     request: {
       id: request.id,
       requestNumber: String(request.requestNumber),

@@ -35,7 +35,16 @@ export function annualReportStatus(
 
 export interface RetentionRules {
   byCategory: Readonly<Record<string, number | null>>;
-  generalYears: number;
+  /** Years for a category not listed, or null for no limit. */
+  generalYears: number | null;
+}
+
+/** What the document library shows from the building's pack (`rules.DOCUMENT_RETENTION`, stage 2, step 9). */
+export interface DocumentRetention extends RetentionRules {
+  /** Shown for a record with no limit. */
+  unlimited: string;
+  /** Shown under the list. */
+  note: string;
 }
 
 /**

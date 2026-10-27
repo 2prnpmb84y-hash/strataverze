@@ -14,10 +14,13 @@ import { Button } from "@/components/ui/button";
 import { proposeWorksRouteAction, voteWorksDecisionAction, withdrawWorksDecisionAction, type WorksFormState } from "@/lib/actions/works-marketplace";
 import type { DecisionView, RequestViewer } from "@/lib/works/view";
 
+/** The building's two-quote rule; `lotsMissing` when its threshold needs a number of lots the building has not recorded. */
+type TwoQuotes = { threshold: number; minimumQuotes: number; lotsMissing?: boolean };
+
 /** The choices, with the building's two-quote rule in the Get quotes help. */
-const outcomeChoices = (q: { threshold: number; minimumQuotes: number }) => [
+const outcomeChoices = (q: TwoQuotes) => [
   { value: "URGENT", label: "Urgent: order the work now", help: "Within the building's urgent spending limit, any one committee member can decide this. The work order goes straight to the preferred contractor for the trade." },
-  { value: "QUOTES", label: "Get quotes", help: `The request goes to approved contractors in the trade who work in this area. The committee invites some to quote and approves one by vote. Over $${q.threshold.toLocaleString("en-AU")}, ${countWord(q.minimumQuotes)} quotes are needed.` },
+  { value: "QUOTES", label: "Get quotes", help: `The request goes to approved contractors in the trade who work in this area. The committee invites some to quote and approves one by vote. ${q.lotsMissing ? `The building's number of lots is not recorded, so ${countWord(q.minimumQuotes)} quotes are needed.` : `Over $${q.threshold.toLocaleString("en-AU")}, ${countWord(q.minimumQuotes)} quotes are needed.`}` },
   { value: "RETURN", label: "Return to the owner for more detail", help: "The owner is told what to add, and can send it again." },
   { value: "DECLINE", label: "Decline", help: "The request is closed and the owner is told why." },
 ];
@@ -28,7 +31,7 @@ function Message({ state }: { state: WorksFormState }) {
   return null;
 }
 
-function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLimit, requestTitle, requestDescription, twoQuotes }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean; urgentLimit: number | null; requestTitle: string; requestDescription: string; twoQuotes: { threshold: number; minimumQuotes: number } }) {
+function ProposeForm({ schemeId, requestId, ruleSentence, byDelegation, urgentLimit, requestTitle, requestDescription, twoQuotes }: { schemeId: string; requestId: string; ruleSentence: string; byDelegation: boolean; urgentLimit: number | null; requestTitle: string; requestDescription: string; twoQuotes: TwoQuotes }) {
   const router = useRouter();
   const [outcome, setOutcome] = useState<string>("");
   const [state, formAction, isPending] = useActionState<WorksFormState, FormData>(async (prev, fd) => {
@@ -207,7 +210,7 @@ export function DecisionPanel({
   /** The building's urgent spending limit, for the urgent amount hint. */
   urgentLimit?: number | null;
   /** The building's two-quote rule (`rules.WORKS_SPENDING_RULES`). */
-  twoQuotes: { threshold: number; minimumQuotes: number };
+  twoQuotes: TwoQuotes;
   can: RequestViewer;
   decisions: DecisionView[];
   openDecisionId: string | null;

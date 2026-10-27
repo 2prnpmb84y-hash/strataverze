@@ -20101,6 +20101,13 @@
                   "kind": "scalar"
                 }
               },
+              "copyPages": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -20133,6 +20140,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "inspected": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -20260,6 +20274,9 @@
                 "authorisedBy": {
                   "column": "authorised_by"
                 },
+                "copyPages": {
+                  "column": "copy_pages"
+                },
                 "createdAt": {
                   "column": "created_at"
                 },
@@ -20274,6 +20291,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "inspected": {
+                  "column": "inspected"
                 },
                 "inspectorName": {
                   "column": "inspector_name"
@@ -49178,6 +49198,11 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "copy_pages": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "dataType": "pg/timestamptz",
@@ -49210,6 +49235,11 @@
                     "kind": "function"
                   },
                   "nullable": false
+                },
+                "inspected": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": true
                 },
                 "inspector_name": {
                   "codecId": "pg/text@1",
@@ -60751,7 +60781,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d702bce5bb36b43c5e9d1a434db99164a021f0370dd89de1cbcb2904b5b2a7ea"
+    "storageHash": "57d7ae020da1dad786ab2235972b15cfdb91ca39f7264577eec58972c5bb8a3e"
   },
   "execution": {
     "executionHash": "7a48b4927062aee305444228d1616c164be6fb658c5ab83813070236fd2ec8f9",

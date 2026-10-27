@@ -237,11 +237,13 @@ describe("pack features (stage 2)", () => {
     expect(Object.values(features).every((on) => on === true)).toBe(true);
   });
 
-  it("switches every NSW workflow off for Queensland, except its own debt recovery steps", () => {
+  it("switches every NSW workflow off for Queensland, except its own debt recovery steps, inspections and certificate", () => {
     const features = PENDING_RULE_PACKS.QLD.rules.FEATURES;
-    expect(Object.keys(features).sort()).toEqual(Object.keys(RULE_PACKS.NSW.rules.FEATURES).sort());
-    // Stage 2, step 8: the Queensland step sequence (draft) exists. The pack is still pending, so nothing is live.
-    expect(Object.entries(features).filter(([, on]) => on).map(([k]) => k)).toEqual(["debtRecoverySteps"]);
+    // Stage 2, step 9: Queensland's own certificate has a flag of its own, which the NSW pack leaves out.
+    expect(Object.keys(features).sort()).toEqual([...Object.keys(RULE_PACKS.NSW.rules.FEATURES), "bodyCorporateCertificate"].sort());
+    // Stage 2, step 8: the Queensland step sequence (draft) exists. Step 9: records inspections under the pack's
+    // INSPECTIONS and the body corporate certificate. The pack is still pending, so nothing is live.
+    expect(Object.entries(features).filter(([, on]) => on).map(([k]) => k).sort()).toEqual(["bodyCorporateCertificate", "debtRecoverySteps", "recordsInspections"]);
     expect(PENDING_RULE_PACKS.QLD.rules.DEBT_RECOVERY_STEPS.length).toBeGreaterThan(0);
   });
 });

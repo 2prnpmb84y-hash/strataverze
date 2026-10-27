@@ -8,6 +8,7 @@ import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { createCertificateAction } from "@/lib/actions/records";
 import { requesterFields } from "@/lib/records/requester-fields";
+import { certificateFeeText } from "@/lib/records/certificate-text";
 import { formatLotLabel } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
-/** The Info Certificate button on a lot: the lot's information certificates (s 184), and a new one. */
+/** The certificate button on a lot: the lot's certificates (NSW s 184, Queensland body corporate certificate), and a new one. */
 export default async function LotCertificatesPage({ params }: { params: Promise<{ id: string; lotId: string }> }) {
   await connection();
   const { id, lotId } = await params;
@@ -33,8 +34,8 @@ export default async function LotCertificatesPage({ params }: { params: Promise<
     schemeToday(id),
     db.orm.public.SaleCertificate.where((c) => c.lotId.eq(lotId)).orderBy((c) => c.number.desc()).limit(200).all(),
   ]);
-  if (!rules.FEATURES.strataInformationCertificate) notFound();
-  const c = needRule(rules, "SALE_CERTIFICATE");
+  if (!rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) notFound();
+  const c = needRule(rules, "CERTIFICATE");
   const base = `/adviser/schemes/${id}/lots/${lotId}/certificates`;
   return (
     <div className="space-y-6 max-w-4xl">
@@ -81,9 +82,9 @@ export default async function LotCertificatesPage({ params }: { params: Promise<
       <Card>
         <CardHeader
           title="New certificate"
-          description={`StrataVerze drafts each item from its records; you check and complete every item before issuing. Fee: $${(c.feeCents / 100).toFixed(2)}, or $${(c.repeatFeeCents / 100).toFixed(2)} for a further certificate for the lot within ${c.repeatWithinMonths} months (${c.feeSource}). It is recorded on issue and collected outside StrataVerze.`}
+          description={`StrataVerze drafts each item from its records; you check and complete every item before issuing. ${certificateFeeText(c, today)} It is recorded on issue and collected outside StrataVerze.`}
         />
-        <RecordsForm action={createCertificateAction.bind(null, id, lotId)} fields={requesterFields({ requesterTypes: c.requesterTypes, today })} submitLabel="Start draft" doneHrefPrefix={`${base}/`} />
+        <RecordsForm action={createCertificateAction.bind(null, id, lotId)} fields={requesterFields({ requesterTypes: c.requesterTypes, agentType: c.agentType, today })} submitLabel="Start draft" doneHrefPrefix={`${base}/`} />
       </Card>
     </div>
   );

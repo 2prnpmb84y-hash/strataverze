@@ -4398,10 +4398,10 @@ model SaleCertificate {
   number             Int       // per scheme, from 1
   status             String    @default("DRAFT") // DRAFT, ISSUED, CANCELLED
   requestedOn        DateTime  @db.Date @map("requested_on")
-  requesterType      String    @map("requester_type") // OWNER, MORTGAGEE, COVENANT_CHARGEE, AUTHORISED_PERSON
+  requesterType      String    @map("requester_type") // the pack's requester types: NSW OWNER, MORTGAGEE, COVENANT_CHARGEE, AUTHORISED_PERSON; Queensland also BUYER, DISCLOSURE_RECIPIENT, PROPER_INTEREST, AGENT
   requesterName      String    @map("requester_name")
   requesterAddress   String    @map("requester_address")
-  authorisedByType   String?   @map("authorised_by_type") // for an authorised person: OWNER, MORTGAGEE, COVENANT_CHARGEE
+  authorisedByType   String?   @map("authorised_by_type") // for an authorised person or agent: any requester type but that one
   authorisedByName   String?   @map("authorised_by_name")
   authorisedByAddress String?  @map("authorised_by_address")
   /// The items, in the order of the approved form: [{ no, title, text }].
@@ -4425,12 +4425,12 @@ model SaleCertificate {
   @@map("sale_certificates")
 }
 
-/// A request to inspect the owners corporation's records (s 182).
+/// A request to inspect the records or get copies (NSW s 182, Queensland Act s 205).
 model RecordsInspection {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId         String    @map("scheme_id") @db.Uuid
   lotId            String    @map("lot_id") @db.Uuid // the owner's lot (an authorised person acts for its owner)
-  inspectorType    String    @map("inspector_type") // OWNER, AUTHORISED_PERSON
+  inspectorType    String    @map("inspector_type") // the pack's requester types: NSW OWNER, AUTHORISED_PERSON; Queensland OWNER, MORTGAGEE, BUYER, DISCLOSURE_RECIPIENT, PROPER_INTEREST, AGENT
   inspectorName    String    @map("inspector_name")
   authorisedBy     String?   @map("authorised_by") // the owner who authorised it, for an authorised person
   requestedOn      DateTime  @db.Date @map("requested_on")
@@ -4438,7 +4438,9 @@ model RecordsInspection {
   scheduledFor     DateTime? @db.Timestamptz @map("scheduled_for")
   setByNotice      Boolean   @default(false) @map("set_by_notice") // the time was set by the owners corporation's written notice
   place            String?
-  minutes          Int?      // how long it took
+  minutes          Int?      // how long it took (NSW)
+  inspected        Boolean?  // whether the records were inspected (Queensland; copies alone carry no inspection fee)
+  copyPages        Int?      @map("copy_pages") // pages copied (Queensland)
   feeCents         Int?      @map("fee_cents")
   feePaidOn        DateTime? @db.Date @map("fee_paid_on")
   notes            String?

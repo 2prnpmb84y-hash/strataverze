@@ -23,7 +23,11 @@ import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
+  CertificateRules,
   DebtRecoveryRules,
+  DocumentRetentionRules,
+  InspectionRules,
+  WorksQuoteRules,
   DebtRecoveryStepRule,
   EntitlementScheduleDefinition,
   FeeVariant,
@@ -82,6 +86,19 @@ export interface SharedRules {
    * the price book says (stage 2, step 8). A pack without the key has none.
    */
   NEVER_RECOVERABLE_FEE_VARIANTS?: readonly FeeVariant[];
+  /*
+   * Certificates, inspections, record keeping and works quotes (stage 2,
+   * step 9, 27 Oct 2026), in one shape for every pack. Get one with
+   * `needRule`; a pack without it does not have the workflow.
+   */
+  /** The certificate on a sale (FEATURES.strataInformationCertificate or bodyCorporateCertificate). */
+  CERTIFICATE?: CertificateRules;
+  /** Records inspections (FEATURES.recordsInspections). */
+  INSPECTIONS?: InspectionRules;
+  /** How long the document library shows each record must be kept. */
+  DOCUMENT_RETENTION?: DocumentRetentionRules;
+  /** When works need more than one quote. */
+  WORKS_QUOTES?: WorksQuoteRules;
 }
 
 /**
@@ -137,7 +154,11 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // 2026.10.14 (27 Oct 2026): MEETING_RULES in the shared shape (resolution labels, committee and general meeting categories); no rule value changed.
     // 2026.10.15 (27 Oct 2026): DEBT_RECOVERY_STEP_LABELS added (the step labels the screens show) and
     // NEVER_RECOVERABLE_FEE_VARIANTS (the fee never passed to an owner, moved from the fee engine unchanged); no rule value changed.
-    version: "2026.10.15",
+    // 2026.10.16 (27 Oct 2026): CERTIFICATE, INSPECTIONS, DOCUMENT_RETENTION and WORKS_QUOTES added (the s 184 certificate,
+    // s 182 inspections, record keeping and the two-quote rule in the shared shapes, from SALE_CERTIFICATE,
+    // RECORDS_INSPECTION, RECORD_RETENTION, WORKS_SPENDING_RULES and CITATIONS, with the words the screens and the PDF
+    // already used, including the layout sentence "following the items of the approved form"); no rule value changed.
+    version: "2026.10.16",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not
@@ -204,7 +225,18 @@ export const PENDING_RULE_PACKS = {
     // and FEATURES.debtRecoverySteps on. The legal values already signed off are unchanged, so the status stays
     // REVIEWED. A GO-LIVE GAP note lists what is still NSW worded on the screens and that the 2 year rule has no
     // daily reminder yet.
-    version: "2026.10.9",
+    // 2026.10.10 (27 Oct 2026): CERTIFICATE (the body corporate certificate: 5 business days, fees in fee units with each
+    // year's dollar table from FEE_UNIT_DOLLARS, the interested persons of Act s 205(13)), INSPECTIONS (access within 7 days,
+    // owner and other fees and copies per page in fee units, the fee year from the written request), DOCUMENT_RETENTION
+    // (as decided: minutes and insurance policies without a limit, by-laws in force without a limit as of current relevance,
+    // every other category at least the 6 year disposal period of SM s 231) and WORKS_QUOTES (2 quotes above the major
+    // spending limit) added from the values already signed off, with FEATURES.recordsInspections and the new
+    // FEATURES.bodyCorporateCertificate on. The certificate follows the contents listed in SM s 233AA(1) (the approved
+    // form was not read). The certificate headings are draft content (DRAFT, FOR STRATAVERZE TO REVIEW), and the new
+    // StrataVerze choices are in FOR_REVIEW.
+    // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied yet
+    // (the priority certificate, public holidays, the audit, the resolved spending limits).
+    version: "2026.10.10",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

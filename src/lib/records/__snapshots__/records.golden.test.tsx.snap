@@ -1,0 +1,380 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW certificate (stage 2, step 9) > PDF blocks are unchanged 1`] = `
+[
+  {
+    "kind": "heading",
+    "text": "Strata information certificate (Strata Schemes Management Act 2015 (NSW) s 184)",
+  },
+  {
+    "kind": "keyValues",
+    "rows": [
+      [
+        "Certificate number",
+        "3",
+      ],
+      [
+        "Date of certificate",
+        "26 October 2026",
+      ],
+      [
+        "Lot",
+        "Lot 7",
+      ],
+      [
+        "Strata plan",
+        "12345",
+      ],
+      [
+        "Requested by",
+        "Jo Agent (Person authorised by the owner, mortgagee or covenant chargee), 1 Example St",
+      ],
+      [
+        "Authorised by",
+        "Jo Citizen (Owner), 7/1 Example St",
+      ],
+    ],
+  },
+  {
+    "kind": "text",
+    "text": "The owners corporation certifies the following for the lot.",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "1. Strata renewal committee",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 1",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "2. Exclusive supply network (s 184(8))",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 2",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "3. Administrative fund contributions (s 73)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 3",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "4. Capital works fund contributions (s 74)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 4",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "5. Amounts for additional amenities or services (s 117)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 5",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "6. Special contributions to the administrative or capital works fund (s 81(4))",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 6",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "7. Money unpaid under a by-law conferring a right or privilege",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 7",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "8. Proposals for funding matters in the 10-year capital works fund plan",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 8",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "9. Contributions towards legal proceedings (s 90)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 9",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "10. Amount recoverable for work carried out by the owners corporation (s 120)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 10",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "11. Interest on contributions (s 85)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 11",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "12. Unpaid contributions and penalties",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 12",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "12A. Outstanding orders and compliance action",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 12A",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "13. General and strata committee meetings held in the 12 months before the date of this certificate",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 13",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "14. Meetings notified but not yet held",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 14",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "15. Strata roll for the lot",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 15",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "16. Strata managing agent (s 49) and building manager (s 67)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 16",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "17. Strata committee",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 17",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "18. By-laws made in the previous six months not yet lodged with the Registrar-General (s 141)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 18",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "19. Insurance policies",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 19",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "20. Community association administrative fund contributions (community schemes only)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 20",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "21. Community association sinking fund contributions (community schemes only)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 21",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "22. Building management committee contributions (members only)",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 22",
+  },
+  {
+    "kind": "heading",
+    "level": 2,
+    "text": "23. Amounts payable to any other person or body not connected to maintenance or insurance of common property",
+  },
+  {
+    "kind": "text",
+    "text": "Text for 23",
+  },
+  {
+    "kind": "spacer",
+  },
+  {
+    "kind": "box",
+    "lines": [
+      "Common seal of the owners corporation, affixed in the presence of the persons authorised by s 273",
+      "Date affixed: ____________",
+      "Signature: ____________   Name: ____________",
+      "Signature: ____________   Name: ____________",
+    ],
+    "title": "Execution",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "A strata information certificate is conclusive evidence, as at its date, of the matters it certifies, for a purchaser or lessee for valuable consideration (s 185).",
+  },
+  {
+    "kind": "text",
+    "muted": true,
+    "size": 8,
+    "text": "Laid out by StrataVerze following the items of the Approved form: Section 184 certificate – strata schemes (NSW Fair Trading, version March 2026).",
+  },
+]
+`;
+
+exports[`NSW certificate (stage 2, step 9) > request fields and editor are unchanged 1`] = `
+[
+  {
+    "defaultValue": "2026-10-20",
+    "label": "Date the request was received",
+    "max": "2026-10-27",
+    "name": "requestedOn",
+    "type": "date",
+  },
+  {
+    "defaultValue": "AUTHORISED_PERSON",
+    "label": "Who is asking",
+    "name": "requesterType",
+    "options": [
+      {
+        "label": "Owner",
+        "value": "OWNER",
+      },
+      {
+        "label": "Mortgagee",
+        "value": "MORTGAGEE",
+      },
+      {
+        "label": "Covenant chargee",
+        "value": "COVENANT_CHARGEE",
+      },
+      {
+        "label": "Person authorised by the owner, mortgagee or covenant chargee",
+        "value": "AUTHORISED_PERSON",
+      },
+    ],
+    "type": "select",
+  },
+  {
+    "defaultValue": "Jo Agent",
+    "label": "Their name",
+    "name": "requesterName",
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "Their address",
+    "name": "requesterAddress",
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "If authorised: who authorised them",
+    "name": "authorisedByType",
+    "options": [
+      {
+        "label": "Owner",
+        "value": "OWNER",
+      },
+      {
+        "label": "Mortgagee",
+        "value": "MORTGAGEE",
+      },
+      {
+        "label": "Covenant chargee",
+        "value": "COVENANT_CHARGEE",
+      },
+    ],
+    "required": false,
+    "type": "select",
+  },
+  {
+    "defaultValue": "",
+    "label": "If authorised: that person's name",
+    "name": "authorisedByName",
+    "required": false,
+    "type": "text",
+  },
+  {
+    "defaultValue": "",
+    "label": "If authorised: that person's address",
+    "name": "authorisedByAddress",
+    "required": false,
+    "type": "text",
+    "wide": true,
+  },
+]
+`;
+
+exports[`NSW certificate (stage 2, step 9) > request fields and editor are unchanged 2`] = `"<form class="space-y-4" action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm "><span class="block mb-1 font-medium text-ink">Date the request was received</span><input type="date" max="2026-10-27" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requestedOn" value="2026-10-20"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Who is asking</span><select name="requesterType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required=""><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="COVENANT_CHARGEE">Covenant chargee</option><option value="AUTHORISED_PERSON" selected="">Person authorised by the owner, mortgagee or covenant chargee</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterName" value="Jo Agent"/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">Their address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" required="" name="requesterAddress" value=""/></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: who authorised them</span><select name="authorisedByType" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise"><option value="" selected="">None</option><option value="OWNER">Owner</option><option value="MORTGAGEE">Mortgagee</option><option value="COVENANT_CHARGEE">Covenant chargee</option></select></label><label class="text-sm "><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s name</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByName" value=""/></label><label class="text-sm sm:col-span-2"><span class="block mb-1 font-medium text-ink">If authorised: that person&#x27;s address</span><input type="text" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise" name="authorisedByAddress" value=""/></label></div><div class="space-y-3"><label class="block text-sm"><span class="block mb-1 font-medium text-ink">1. Strata renewal committee<span class="ml-2 text-xs font-normal text-amber-700">To complete</span></span><textarea name="item_1" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Check and complete.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">2. Exclusive supply network (s 184(8))<span class="ml-2 text-xs font-normal text-amber-700">To complete</span></span><textarea name="item_2" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Check and complete.</textarea></label><label class="block text-sm"><span class="block mb-1 font-medium text-ink">3. Administrative fund contributions (s 73)<span class="ml-2 text-xs font-normal text-amber-700">To complete</span></span><textarea name="item_3" rows="2" class="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-turquoise">Check and complete.</textarea></label></div><label class="flex items-start gap-2 text-sm text-ink"><input type="checkbox" class="mt-1" name="checkedAll"/><span>To issue: I have checked and completed every item against the owners corporation&#x27;s records.</span></label><div class="flex flex-wrap justify-end gap-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="submit" value="save" name="intent">Save draft</button><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit" value="issue" name="intent">Save and issue</button></div></form><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`NSW document library (stage 2, step 9) > record keeping periods are unchanged 1`] = `"Removing a document hides it from the library. StrataVerze keeps it as a record of the scheme. Records with a longer period (such as minor renovation approvals, 10 years) are kept longer than shown."`;
+
+exports[`NSW document library (stage 2, step 9) > record keeping periods are unchanged 2`] = `
+[
+  " · keep at least until 2033-10-26",
+  " · kept for the life of the scheme",
+  " · keep at least until 2033-10-26",
+]
+`;

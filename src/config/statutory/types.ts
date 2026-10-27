@@ -131,10 +131,136 @@ export interface PackFeatures {
   keyFinancialInformation: boolean;
   /** The NSW s 184 strata information certificate. */
   strataInformationCertificate: boolean;
-  /** NSW s 182 records inspections (3 and 10 day deadlines, hourly fees). */
+  /**
+   * Records inspections, under the pack's INSPECTIONS rules: NSW s 182 (3 and
+   * 10 day deadlines, hourly fees), Queensland Act s 205 (within 7 days, fees
+   * in fee units).
+   */
   recordsInspections: boolean;
   /** The NSW debt recovery step sequence. */
   debtRecoverySteps: boolean;
+  /**
+   * The Queensland body corporate certificate (stage 2, step 9). A pack
+   * without the key does not have it, so the NSW pack's FEATURES stay as
+   * recorded.
+   */
+  bodyCorporateCertificate?: boolean;
+}
+
+/**
+ * A fee table that changes each financial year: dollar amounts by year,
+ * keyed "2026-27", for the year starting on `yearStartsOn` (MM-DD).
+ */
+export interface FeeYearTable<T> {
+  yearStartsOn: string;
+  byYear: Readonly<Record<string, T>>;
+}
+
+/**
+ * The certificate a buyer or other interested person can ask for, in one
+ * shape for every pack (stage 2, step 9, 27 Oct 2026): NSW the s 184 strata
+ * information certificate, Queensland the body corporate certificate.
+ * `items` are the headings StrataVerze drafts, in order. `agentType` is the
+ * requester type who acts for one of the others; that person is recorded too.
+ */
+export interface CertificateRules {
+  title: string;
+  /** How the lot page's button names it. */
+  buttonLabel: string;
+  section: string;
+  form: string;
+  requesterTypes: Readonly<Record<string, string>>;
+  agentType: string;
+  items: ReadonlyArray<readonly [string, string]>;
+  /** How the PDF labels the plan or scheme number. */
+  planRowLabel: string;
+  execution: string;
+  /** The lines in the PDF's execution box after `execution`. */
+  executionLines: readonly string[];
+  /** What StrataVerze's layout follows, after "following": "the items of the Approved form: ...". */
+  follows: string;
+  conclusiveNote: string;
+  helpUrl: string | null;
+  /** Business days after the written request to give it, or null where the law sets none. */
+  giveWithinBusinessDays: number | null;
+  fee:
+    | { basis: "CENTS"; feeCents: number; repeatFeeCents: number; repeatWithinMonths: number; repeatSamePersonOnly: false; source: string }
+    | {
+        basis: "FEE_UNITS";
+        feeUnits: number;
+        repeatFeeUnits: number;
+        repeatWithinMonths: number;
+        /** The repeat fee is for the same person asking about the same lot. */
+        repeatSamePersonOnly: true;
+        dollars: FeeYearTable<{ feeCents: number; repeatFeeCents: number }>;
+        source: string;
+      };
+}
+
+/**
+ * Inspecting a body's records, in one shape for every pack (stage 2,
+ * step 9): who may ask (`requesterTypes`, with `agentType` acting for
+ * another), the deadline, and the fees. NSW (`basis` HOURLY): a time agreed
+ * within some days, or set by notice within more, and fees by the hour.
+ * Queensland (`basis` FEE_UNITS): access within some days of the request, a
+ * fee for an owner or anyone else to inspect, and a fee for each page copied.
+ */
+export type InspectionRules =
+  | {
+      basis: "HOURLY";
+      section: string;
+      whoMayAsk: string;
+      requesterTypes: Readonly<Record<string, string>>;
+      agentType: string;
+      agreeWithinDays: number;
+      setWithinDays: number;
+      fees: Readonly<Record<string, { firstHourCents: number; extraHalfHourCents: number }>>;
+      feesIncludeGst: boolean;
+      paidInto: string;
+      partHalfHour: string;
+      source: string;
+    }
+  | {
+      basis: "FEE_UNITS";
+      section: string;
+      whoMayAsk: string;
+      requesterTypes: Readonly<Record<string, string>>;
+      agentType: string;
+      accessWithinDays: number;
+      /** The requester types charged the owner's fee; every other type pays the other fee. */
+      ownerFeeTypes: readonly string[];
+      feeUnits: { owner: number; other: number; copyPerPage: number };
+      dollars: FeeYearTable<{ ownerCents: number; otherCents: number; copyPerPageCents: number }>;
+      feesIncludeGst: boolean;
+      source: string;
+    };
+
+/**
+ * How long the document library shows each record must be kept (stage 2,
+ * step 9): years by library category, `generalYears` for a category not
+ * listed, and null for no limit (`unlimited` says how).
+ */
+export interface DocumentRetentionRules {
+  byCategory: Readonly<Record<string, number | null>>;
+  generalYears: number | null;
+  /** Shown for a record with no limit: "kept for the life of the scheme". */
+  unlimited: string;
+  /** Shown under the list: records the categories do not capture. */
+  note: string;
+  source: string;
+}
+
+/**
+ * When works need more than one quote (stage 2, step 9): over a fixed amount
+ * (NSW), or over the lesser of an amount for each lot and a cap (Queensland's
+ * major spending limit). Dollars, compared with the quoted total.
+ */
+export interface WorksQuoteRules {
+  minimumQuotes: number;
+  threshold: { basis: "FIXED"; dollars: number } | { basis: "PER_LOT_CAPPED"; perLotDollars: number; capDollars: number };
+  /** How the screens cite the rule: "SSMA s 102". */
+  citation: string;
+  source: string;
 }
 
 /**

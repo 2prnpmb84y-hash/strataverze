@@ -1,8 +1,9 @@
 /**
- * The first draft of a section 184 certificate's items, from StrataVerze's
- * records (server side). Each item is text the adviser checks and completes
- * before the certificate is issued: an item StrataVerze holds nothing for
- * says so, and is never presented as nil.
+ * The first draft of a certificate's items, from StrataVerze's records
+ * (server side): the NSW section 184 certificate, or the Queensland body
+ * corporate certificate (stage 2, step 9). Each item is text the adviser
+ * checks and completes before the certificate is issued: an item StrataVerze
+ * holds nothing for says so, and is never presented as nil.
  */
 import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
@@ -14,7 +15,7 @@ import { graceText } from "@/lib/jurisdiction/wording";
 import { toCents } from "@/lib/billing/money";
 import { addMonths } from "@/lib/levies/notice-plan";
 import { lotArrears } from "@/lib/debt-recovery/payment-plan-requests";
-import { needRule } from "@/config/statutory";
+import { needRule, type StatutoryRules } from "@/config/statutory";
 
 export interface CertificateItem {
   no: string;
@@ -28,11 +29,19 @@ const NOT_HELD = "StrataVerze holds no record of this. Check and complete.";
 const HELD_MEETING = ["IN_PROGRESS", "MINUTES_DRAFT", "PUBLISHED", "ADJOURNED"];
 /** Items worked out from StrataVerze's records (refreshed from them before issue); the rest are the adviser's. */
 export const FIGURE_ITEMS = ["3", "4", "6", "11", "12", "13", "14", "18", "19"] as const;
+/** The same for the Queensland body corporate certificate (stage 2, step 9). */
+export const BODY_CORPORATE_FIGURE_ITEMS = ["4", "6", "8"] as const;
+
+/** Which items a building's certificate refreshes from the records, and how the refresh button asks. */
+export function certificateDrafting(rules: Pick<StatutoryRules, "FEATURES">): { figureItems: readonly string[]; refreshPrompt: string } {
+  if (rules.FEATURES.bodyCorporateCertificate) return { figureItems: BODY_CORPORATE_FIGURE_ITEMS, refreshPrompt: "Replace items 4, 6 and 8 with today's figures? Your other items are kept." };
+  return { figureItems: FIGURE_ITEMS, refreshPrompt: "Replace items 3, 4, 6, 11 to 14, 18 and 19 with today's figures? Your other items are kept." };
+}
 const MEETING_LABEL: Record<string, string> = { AGM: "Annual general meeting", FIRST_AGM: "First annual general meeting", EGM: "General meeting", COMMITTEE: "Strata committee meeting" };
 
-/** The lot's levy notices for one kind of fund, as instalment lines with what is unpaid. */
-function contributionText(notices: Array<{ dueDate: unknown; amountDue: unknown; amountPaid: unknown; periodStart: unknown; periodEnd: unknown }>, today: string) {
-  if (!notices.length) return "No levy notices for this fund are recorded in StrataVerze for the lot. Check and complete.";
+/** The lot's levy (or contribution) notices for one kind of fund, as instalment lines with what is unpaid. */
+function contributionText(notices: Array<{ dueDate: unknown; amountDue: unknown; amountPaid: unknown; periodStart: unknown; periodEnd: unknown }>, today: string, levy: string) {
+  if (!notices.length) return `No ${levy} notices for this fund are recorded in StrataVerze for the lot. Check and complete.`;
   const lines = notices.map((n) => {
     const due = toCents(String(n.amountDue));
     const paid = toCents(String(n.amountPaid ?? 0));
@@ -49,6 +58,7 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
   const tz = timeZoneOf(scheme);
   const today = todayIn(tz, now);
   const pack = rulesForState(scheme.state).rules;
+  if (pack.FEATURES.bodyCorporateCertificate) return draftBodyCorporateCertificate({ schemeId, lotId, scheme, today, tz, pack });
   const yearAgo = addMonths(today, -12);
   const sixMonthsAgo = addMonths(today, -6);
 
@@ -103,10 +113,10 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
   const text: Record<string, string> = {
     "1": "No strata renewal committee is recorded in StrataVerze. Check and complete.",
     "2": `Whether there is an exclusive supply network, and which services (electricity, gas, hot water, chilled water, internet, other): ${NOT_HELD}`,
-    "3": contributionText(ordinary("ADMIN"), today),
-    "4": contributionText(ordinary("CAPITAL"), today),
+    "3": contributionText(ordinary("ADMIN"), today, pack.TERMINOLOGY.levy),
+    "4": contributionText(ordinary("CAPITAL"), today, pack.TERMINOLOGY.levy),
     "5": NOT_HELD,
-    "6": specials.length ? contributionText(specials, today) + "\nPurpose of each special contribution: check and complete." : `No special levies are recorded in StrataVerze for the lot. ${NOT_HELD}`,
+    "6": specials.length ? contributionText(specials, today, pack.TERMINOLOGY.levy) + "\nPurpose of each special contribution: check and complete." : `No special levies are recorded in StrataVerze for the lot. ${NOT_HELD}`,
     "7": NOT_HELD,
     "8": NOT_HELD,
     "9": NOT_HELD,
@@ -150,4 +160,50 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
     "23": NOT_HELD,
   };
   return needRule(pack, "SALE_CERTIFICATE").items.map(([no, title]) => ({ no, title, text: text[no] ?? NOT_HELD }));
+}
+
+/** An insurance policy as a certificate line. */
+const policyLine = (tz: string, p: { policyType: unknown; insurer: unknown; policyNumber: unknown; coverageAmount: unknown; endDate: unknown; premium: unknown; broker: unknown }) =>
+  `${String(p.policyType).replace(/_/g, " ").toLowerCase()}: ${p.insurer}, policy ${p.policyNumber}, sum insured ${aud(toCents(String(p.coverageAmount)))}, due ${storedDayIn(tz, p.endDate)}, premium ${aud(toCents(String(p.premium)))}${p.broker ? `, broker ${p.broker}` : ""}.`;
+
+/**
+ * The first draft of a Queensland body corporate certificate (stage 2,
+ * step 9): the contributions, the amounts owing and the insurance from
+ * StrataVerze's records (BODY_CORPORATE_FIGURE_ITEMS); every other item is the
+ * adviser's to complete. Owners and buyers read it, so it says "contribution"
+ * and "penalty" from the pack's words.
+ */
+async function draftBodyCorporateCertificate(input: { schemeId: string; lotId: string; scheme: { name: unknown }; today: string; tz: string; pack: StatutoryRules }): Promise<CertificateItem[]> {
+  const { schemeId, lotId, today, tz, pack } = input;
+  const terms = pack.TERMINOLOGY;
+  const yearAgo = addMonths(today, -12);
+  const [funds, notices, schedules, arrears, policies] = await Promise.all([
+    db.orm.public.Fund.where((f) => f.schemeId.eq(schemeId)).limit(50).all(),
+    db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.lotId.eq(lotId), n.status.neq("DRAFT"), n.status.neq("WRITTEN_OFF"))).orderBy((n) => n.dueDate.asc()).limit(2000).all(),
+    db.orm.public.LevySchedule.where((x) => x.schemeId.eq(schemeId)).limit(500).all(),
+    lotArrears(schemeId, lotId, today, pack.PAYMENT_ALLOCATION_ORDER),
+    db.orm.public.InsurancePolicy.where((p) => and(p.schemeId.eq(schemeId), p.status.eq("ACTIVE"), p.deletedAt.isNull())).limit(50).all(),
+  ]);
+  const fundType = new Map(funds.map((f) => [f.id, String(f.fundType).toUpperCase()]));
+  const special = new Set(schedules.filter((x) => String(x.levyType) === "SPECIAL").map((x) => x.id));
+  const relevant = notices.filter((n) => day(n.dueDate) >= yearAgo || toCents(String(n.amountPaid ?? 0)) < toCents(String(n.amountDue)));
+  const forFund = (ledgerFund: string) => relevant.filter((n) => !special.has(n.levyScheduleId) && (fundType.get(n.fundId) ?? "").includes(ledgerFund === "ADMINISTRATIVE" ? "ADMIN" : "CAPITAL"));
+  const specials = relevant.filter((n) => special.has(n.levyScheduleId));
+  const contributions = [
+    ...pack.FUND_CATALOGUE.flatMap((f) => [`${f.label}:`, contributionText(forFund(f.ledgerFund), today, terms.levy)]),
+    ...(specials.length ? [`Special ${terms.levies}:`, contributionText(specials, today, terms.levy)] : []),
+    `Any discount for paying on time and any ${terms.lateCharge} for late payment, as resolved by the ${terms.ownersCorporation}: check and complete.`,
+  ].join("\n");
+
+  const text: Record<string, string> = {
+    "2": `Scheme name: ${String(input.scheme.name ?? "")}. Regulation module: check and complete.`,
+    "4": contributions,
+    "6": [
+      `Unpaid ${terms.levies} overdue at ${today}: ${aud(arrears.leviesCents)}.`,
+      `${terms.lateCharge[0].toUpperCase()}${terms.lateCharge.slice(1)} charged and unpaid: ${aud(arrears.interestCents)}.`,
+      `Any ${terms.lateCharge} since it was last charged, recovery costs and other amounts owing: check and complete.`,
+    ].join("\n"),
+    "8": policies.length ? [...policies.map((p) => policyLine(tz, p)), "Anything else the form asks about the insurance: check and complete."].join("\n") : `No active insurance policies are recorded in StrataVerze. ${NOT_HELD}`,
+  };
+  return needRule(pack, "CERTIFICATE").items.map(([no, title]) => ({ no, title, text: text[no] ?? NOT_HELD }));
 }
