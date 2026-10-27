@@ -1,5 +1,6 @@
 "use server";
 
+import { JournalBusyError } from "@/lib/queries/journal-numbering";
 import { revalidatePath } from "next/cache";
 import { requireSchemeMembership, AuthorisationError } from "@/lib/auth/require-membership";
 import { FeeConfirmationError } from "@/lib/billing/disclosure";
@@ -19,7 +20,7 @@ export type ReconciliationActionResult = { error?: string; success?: boolean };
 const path = (schemeId: string) => `/adviser/schemes/${schemeId}/finance/reconciliation`;
 
 function failure(err: unknown, fallback: string): ReconciliationActionResult {
-  if (err instanceof AuthorisationError || err instanceof ReconciliationError || err instanceof FeeConfirmationError) {
+  if (err instanceof AuthorisationError || err instanceof ReconciliationError || err instanceof FeeConfirmationError || err instanceof JournalBusyError) {
     return { error: err.message };
   }
   // Database and library messages stay in the server log (S7, SEC-025).

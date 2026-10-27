@@ -469,11 +469,17 @@ describe("Queensland receipting at the same moment", () => {
     expect(parts()).toEqual([[50_000, 2_500]]);
   });
 
-  it("an NSW receipt takes no lock", async () => {
+  // Since 27 Oct 2026 an NSW receipt is one transaction too, numbered under the
+  // building's lock (journal numbering fix): it takes the same locks in the same
+  // order, but no late charge part.
+  it("an NSW receipt takes the building's numbering lock, then its notice", async () => {
     setup({ state: "NSW", mode: "STATUTORY", rate: null });
     vi.setSystemTime(new Date("2026-03-05T02:00:00.000Z"));
     await pay(50_000, "2026-03-05");
-    expect(sharedFake.locks).toEqual([]);
+    expect(sharedFake.locks).toEqual([
+      { table: "Scheme", ids: [Q], inTransaction: true },
+      { table: "LevyNotice", ids: ["n1"], inTransaction: true },
+    ]);
     expect(sharedFake.table("LevyPayment")[0]).not.toHaveProperty("lateChargeAmount");
   });
 });

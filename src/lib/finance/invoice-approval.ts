@@ -9,9 +9,12 @@ import { db } from "@/prisma/db";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
-import { approveInvoice, getSupplierInvoiceById } from "@/lib/queries/supplier-invoices";
+import { approveInvoiceIn, getSupplierInvoiceById } from "@/lib/queries/supplier-invoices";
+import { validatePeriodForPosting } from "@/lib/queries/journal-entries";
+import { syncWorksInvoiceFromFinance } from "@/lib/works/finance-link";
+import { logError } from "@/lib/log";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
-import { createJournalEntry, getNextEntryNumber, postJournalEntry } from "@/lib/queries/journal-entries";
+import { addNumberedJournal, numberedTransaction, type Tx } from "@/lib/queries/journal-numbering";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
   getApprovalMembers,
@@ -118,7 +121,13 @@ export async function authoriseSupplierInvoice(input: {
   const required = exception ? 1 : approversRequired(settings.policy, forControls.amountCents);
   const complete = approvalComplete(settings.policy, forControls.amountCents, approvals, exception != null);
 
-  await db.transaction(async (tx) => {
+  // The last approval: the approval journal is worked out, and its period
+  // checked, before anything is written, so a refusal leaves the invoice as it was.
+  const approval = complete ? await prepareInvoiceApproval(input.schemeId, loaded.invoice, input.actorId) : null;
+
+  // The approval, and with the last one the invoice approved and its journal,
+  // together. The last one is numbered under the building's lock.
+  const write = async (tx: Tx) => {
     await tx.orm.public.PaymentAuthorisation.create({
       schemeId: input.schemeId,
       supplierInvoiceId: input.invoiceId,
@@ -134,7 +143,10 @@ export async function authoriseSupplierInvoice(input: {
     if (!complete && forControls.status === "DRAFT") {
       await tx.orm.public.SupplierInvoice.where((i) => i.id.eq(input.invoiceId)).update({ status: "AWAITING_APPROVAL" });
     }
-  });
+    if (approval) await approval.write(tx);
+  };
+  if (approval) await numberedTransaction(input.schemeId, write);
+  else await db.transaction(write);
 
   await logActivity({
     schemeId: input.schemeId,
@@ -155,23 +167,31 @@ export async function authoriseSupplierInvoice(input: {
     });
   }
 
-  if (complete) await finaliseSupplierInvoiceApproval(input.schemeId, input.invoiceId, input.actorId);
+  if (approval) await approval.after();
   return { complete, approvals, required, exception };
 }
 
-/** Mark the invoice APPROVED and post DR expense (and GST paid), CR accounts payable. */
-async function finaliseSupplierInvoiceApproval(schemeId: string, invoiceId: string, actorId: string) {
-  await approveInvoice(invoiceId, actorId);
-
-  const invoice = await getSupplierInvoiceById(invoiceId);
-  if (invoice && Number(invoice.totalAmount) > 0) {
+/**
+ * The last approval of a supplier invoice: mark it APPROVED and post DR
+ * expense (and GST paid), CR accounts payable. The accounts are found and the
+ * period checked here, before anything is written; `write` runs in the
+ * approval's transaction (which holds the building's numbering lock), and
+ * `after` runs once it has committed.
+ */
+async function prepareInvoiceApproval(
+  schemeId: string,
+  invoice: NonNullable<Awaited<ReturnType<typeof getSupplierInvoiceById>>>,
+  actorId: string,
+) {
+  const invoiceId = invoice.id;
+  let journal: Parameters<typeof addNumberedJournal>[1] | null = null;
+  if (Number(invoice.totalAmount) > 0) {
     const totalAmount = Number(invoice.totalAmount);
     const gstAmount = Number(invoice.gstAmount ?? 0);
     const netAmount = totalAmount - gstAmount;
     const payableAccount = await getSystemAccountBySubType(schemeId, "ACCOUNTS_PAYABLE");
 
     if (payableAccount && invoice.accountCodeId) {
-      const entryNumber = await getNextEntryNumber(schemeId);
       const today = await schemeToday(schemeId);
       const lines: Array<{
         accountCodeId: string;
@@ -210,9 +230,10 @@ async function finaliseSupplierInvoiceApproval(schemeId: string, invoiceId: stri
         description: `Accounts payable — invoice ${String(invoice.invoiceNumber)}`,
         supplierId: invoice.supplierId,
       });
-      const entry = await createJournalEntry({
+      // Refused before anything is written if today's period is closed or locked.
+      await validatePeriodForPosting(schemeId, today, "AUTO");
+      journal = {
         schemeId,
-        entryNumber,
         transactionDate: today,
         description: `Invoice approved — ${String(invoice.invoiceNumber)} (${invoice.supplier?.companyName ?? "supplier"})`,
         entryType: "AUTO",
@@ -220,19 +241,35 @@ async function finaliseSupplierInvoiceApproval(schemeId: string, invoiceId: stri
         sourceId: invoiceId,
         createdBy: actorId,
         lines,
-      });
-      await postJournalEntry(entry.id, actorId);
+      };
     }
   }
 
-  await logActivity({
-    schemeId,
-    actorId,
-    action: "SUPPLIER_INVOICE_APPROVED",
-    entityType: "SupplierInvoice",
-    entityId: invoiceId,
-    metadata: {},
-  });
+  return {
+    async write(tx: Tx) {
+      await approveInvoiceIn(tx.orm, invoiceId, actorId);
+      // Numbered, written and posted in the approval's transaction, under the building's lock.
+      if (journal) await addNumberedJournal(tx, journal, actorId);
+    },
+    async after() {
+      try {
+        // A marketplace contractor's invoice moves its works invoice on. A
+        // failure here never undoes the approval: the works invoice catches
+        // up when it is next shown (reconcileWorksInvoice).
+        await syncWorksInvoiceFromFinance(invoiceId, "APPROVED");
+      } catch (err) {
+        logError("[works] works invoice not moved on after approval:", err);
+      }
+      await logActivity({
+        schemeId,
+        actorId,
+        action: "SUPPLIER_INVOICE_APPROVED",
+        entityType: "SupplierInvoice",
+        entityId: invoiceId,
+        metadata: {},
+      });
+    },
+  };
 }
 
 /** Invoices in a scheme waiting for approval, for the approvals list. */

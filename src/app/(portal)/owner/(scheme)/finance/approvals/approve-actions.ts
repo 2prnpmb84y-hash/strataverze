@@ -1,4 +1,5 @@
 "use server";
+import { JournalBusyError } from "@/lib/queries/journal-numbering";
 import { logError } from "@/lib/log";
 
 import { headers } from "next/headers";
@@ -21,7 +22,7 @@ export async function ownerApproveSupplierInvoiceAction(schemeId: string, invoic
     revalidatePath("/owner/works", "layout");
     return { success: true as const };
   } catch (err) {
-    if (err instanceof AuthorisationError || err instanceof PaymentControlError) return { error: err.message };
+    if (err instanceof AuthorisationError || err instanceof PaymentControlError || err instanceof JournalBusyError) return { error: err.message };
     logError("ownerApproveSupplierInvoiceAction error:", err);
     return { error: "Failed to approve the invoice." };
   }

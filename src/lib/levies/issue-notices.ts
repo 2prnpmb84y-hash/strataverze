@@ -31,7 +31,7 @@ import { fundTypeWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { getSystemAccountBySubType } from "@/lib/queries/account-codes";
-import { createJournalEntry, getNextEntryNumber, postJournalEntry } from "@/lib/queries/journal-entries";
+import { addNumberedJournal, numberedTransaction } from "@/lib/queries/journal-numbering";
 import { issueLevyNotice } from "@/lib/queries/levy-schedules";
 import { logActivity } from "@/lib/queries/activity-log";
 import { applyOwnerCredit } from "@/lib/finance/owner-credits";
@@ -50,7 +50,13 @@ const PAGE = 1000;
 /** How long a failed notice email is retried. */
 const EMAIL_RETRY_DAYS = 3;
 
-/** DR Levies Receivable, CR Levy Income for levies raised against a fund. */
+/**
+ * DR Levies Receivable, CR Levy Income for levies raised against a fund. The
+ * entry is numbered, written and posted in one transaction under the
+ * building's numbering lock, with the notices' pending marks cleared in it
+ * (`noticeIds`, locked in id order after the building). If it cannot be
+ * posted (for example a closed period) nothing is kept.
+ */
 export async function postLevyRaisedJournal(args: {
   schemeId: string;
   fundId: string;
@@ -60,42 +66,50 @@ export async function postLevyRaisedJournal(args: {
   profileId: string;
   /** The date the levy is raised (YYYY-MM-DD): its due date. */
   date: string;
+  /** The notices the levy is raised for, whose pending mark is cleared with the journal. */
+  noticeIds?: string[];
 }): Promise<boolean> {
-  if (args.totalAmount <= 0) return true;
+  const clearPending = async (orm: typeof db.orm) => {
+    for (const id of [...(args.noticeIds ?? [])].sort()) {
+      await orm.public.LevyNotice.where((x) => and(x.id.eq(id), x.levyPostPending.eq(true))).updateAndCount({ levyPostPending: false });
+    }
+  };
+  if (args.totalAmount <= 0) {
+    await clearPending(db.orm);
+    return true;
+  }
   const fund = await db.orm.public.Fund.where((f) => f.id.eq(args.fundId)).first();
   const fundType = (fund?.fundType ?? "ADMINISTRATIVE") as "ADMINISTRATIVE" | "CAPITAL_WORKS";
   const receivableAccount = await getSystemAccountBySubType(args.schemeId, "ACCOUNTS_RECEIVABLE", fundType);
   const incomeAccount = await getSystemAccountBySubType(args.schemeId, "LEVY_INCOME", fundType);
   // A scheme whose chart of accounts is not seeded: nothing to post to, as before.
-  if (!receivableAccount || !incomeAccount) return true;
+  if (!receivableAccount || !incomeAccount) {
+    await clearPending(db.orm);
+    return true;
+  }
 
   // The fund as the building's pack names it: "Capital Works fund" (NSW), "Sinking fund" (Queensland).
   const fundWords = fundTypeWords(ledgerFundDefinition((await rulesForScheme(args.schemeId)).rules, fundType === "CAPITAL_WORKS" ? "CAPITAL_WORKS" : "ADMINISTRATIVE"));
-  const entryNumber = await getNextEntryNumber(args.schemeId);
-  const entry = await createJournalEntry({
-    schemeId: args.schemeId,
-    entryNumber,
-    transactionDate: args.date,
-    description: `Levies raised — ${args.noticeCount} notice(s) due ${args.date.split("-").reverse().join("/")}, ${fundWords} fund`,
-    entryType: "AUTO",
-    sourceType: "LEVY_RAISED",
-    sourceId: args.scheduleId,
-    createdBy: args.profileId,
-    lines: [
-      { accountCodeId: receivableAccount.id, fundId: args.fundId, debit: args.totalAmount, description: "Levies receivable raised" },
-      { accountCodeId: incomeAccount.id, fundId: args.fundId, credit: args.totalAmount, description: "Levy income recognised" },
-    ],
+  await numberedTransaction(args.schemeId, async (tx) => {
+    await addNumberedJournal(
+      tx,
+      {
+        schemeId: args.schemeId,
+        transactionDate: args.date,
+        description: `Levies raised — ${args.noticeCount} notice(s) due ${args.date.split("-").reverse().join("/")}, ${fundWords} fund`,
+        entryType: "AUTO",
+        sourceType: "LEVY_RAISED",
+        sourceId: args.scheduleId,
+        createdBy: args.profileId,
+        lines: [
+          { accountCodeId: receivableAccount.id, fundId: args.fundId, debit: args.totalAmount, description: "Levies receivable raised" },
+          { accountCodeId: incomeAccount.id, fundId: args.fundId, credit: args.totalAmount, description: "Levy income recognised" },
+        ],
+      },
+      args.profileId,
+    );
+    await clearPending(tx.orm);
   });
-  try {
-    await postJournalEntry(entry.id, args.profileId);
-  } catch (err) {
-    // Not posted (for example a closed period): remove the draft, so a retry does not leave another.
-    await db.transaction(async (tx) => {
-      await tx.orm.public.JournalLine.where((l) => l.journalEntryId.eq(entry.id)).deleteAndCount();
-      await tx.orm.public.JournalEntry.where((e) => and(e.id.eq(entry.id), e.status.eq("DRAFT"))).delete();
-    }).catch((cleanup) => logError("[levy-notices] could not remove an unposted levy journal:", cleanup));
-    throw err;
-  }
   return true;
 }
 
@@ -214,13 +228,13 @@ async function postLevies(schemeId: string, fundId: string, scheduleId: string, 
         noticeCount: list.length,
         profileId: actorId,
         date: dueDate,
+        noticeIds: list.map((n) => n.id),
       });
     } catch (err) {
       postLevies.lastError = err;
       logError(`[levy-notices] the levy due ${dueDate} for schedule ${scheduleId} could not be posted:`, err);
       break;
     }
-    for (const n of list) await db.orm.public.LevyNotice.where((x) => and(x.id.eq(n.id), x.levyPostPending.eq(true))).updateAndCount({ levyPostPending: false });
     posted.push(...list);
   }
   return posted;

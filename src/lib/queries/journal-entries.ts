@@ -37,7 +37,7 @@ interface JournalLineInput {
   gstAmount?: number;
 }
 
-interface CreateJournalEntryInput {
+export interface CreateJournalEntryInput {
   schemeId: string;
   entryNumber: string;
   transactionDate: string;
@@ -229,8 +229,14 @@ export async function getJournalEntryById(entryId: string) {
 /**
  * Create a journal entry with lines in a single transaction.
  * Validates that total debits equal total credits before persisting.
+ *
+ * `orm`: a transaction's `tx.orm`. The entry and its lines are then written
+ * in the caller's transaction (no transaction of their own), and the checks
+ * read through it, so nothing waits for a second pool connection while the
+ * caller holds locks. A caller that numbers the entry holds the building's
+ * numbering lock (src/lib/queries/journal-numbering.ts).
  */
-export async function createJournalEntry(data: CreateJournalEntryInput) {
+export async function createJournalEntry(data: CreateJournalEntryInput, orm?: typeof db.orm) {
   // Validate debit/credit balance
   const totalDebits = data.lines.reduce(
     (sum, line) => sum + (line.debit ?? 0),
@@ -256,9 +262,9 @@ export async function createJournalEntry(data: CreateJournalEntryInput) {
 
   // Each fund balances on its own, and each account is used for its own fund
   // (financials review B1, 26 Oct 2026).
-  await assertFundIntegrity(db.orm, data.schemeId, data.lines);
+  await assertFundIntegrity(orm ?? db.orm, data.schemeId, data.lines);
 
-  return db.transaction(async (tx) => {
+  const write = async (tx: { orm: typeof db.orm }) => {
     const entry = await tx.orm.public.JournalEntry.create({
       schemeId: data.schemeId,
       entryNumber: toVarchar<20>(data.entryNumber),
@@ -287,7 +293,8 @@ export async function createJournalEntry(data: CreateJournalEntryInput) {
     }
 
     return entry;
-  });
+  };
+  return orm ? write({ orm }) : db.transaction(write);
 }
 
 /**
@@ -354,9 +361,11 @@ export async function postJournalEntry(
   entryId: string,
   postedBy: string,
   skipPeriodCheck = false,
+  /** A transaction's `tx.orm`, to read and post inside it. */
+  orm: typeof db.orm = db.orm,
 ) {
   // Fetch the entry to get its transaction date and scheme
-  const entry = await db.orm.public.JournalEntry
+  const entry = await orm.public.JournalEntry
     .where((je) => je.id.eq(entryId))
     .first();
 
@@ -369,8 +378,8 @@ export async function postJournalEntry(
   }
 
   // Checked again at posting, for drafts saved before the check existed.
-  const lines = await db.orm.public.JournalLine.where((l) => l.journalEntryId.eq(entryId)).limit(10000).all();
-  await assertFundIntegrity(db.orm, entry.schemeId, lines.map((l) => ({ accountCodeId: l.accountCodeId, fundId: l.fundId, debit: l.debit, credit: l.credit })));
+  const lines = await orm.public.JournalLine.where((l) => l.journalEntryId.eq(entryId)).limit(10000).all();
+  await assertFundIntegrity(orm, entry.schemeId, lines.map((l) => ({ accountCodeId: l.accountCodeId, fundId: l.fundId, debit: l.debit, credit: l.credit })));
 
   // Validate against financial period unless explicitly skipped
   if (!skipPeriodCheck) {
@@ -378,10 +387,11 @@ export async function postJournalEntry(
       entry.schemeId,
       String(entry.transactionDate).slice(0, 10),
       entry.entryType,
+      orm,
     );
   }
 
-  return db.orm.public.JournalEntry
+  return orm.public.JournalEntry
     .where({ id: entryId })
     .update({
       status: "POSTED",
@@ -393,11 +403,13 @@ export async function postJournalEntry(
 /**
  * Reverse a posted journal entry. Creates a new reversal entry with
  * mirror lines (debits and credits swapped) and marks the original
- * as REVERSED.
+ * as REVERSED. The reversal is numbered in the same transaction, under the
+ * building's numbering lock (lockJournalNumbering), and its period is checked
+ * there before anything is written.
  */
 export async function reverseJournalEntry(
   originalEntryId: string,
-  data: { entryNumber: string; createdBy: string; description?: string },
+  data: { createdBy: string; description?: string },
 ) {
   const original = await db.orm.public.JournalEntry
     .where((je) => je.id.eq(originalEntryId))
@@ -415,11 +427,19 @@ export async function reverseJournalEntry(
   // Dated today in the building's time zone.
   const today = await schemeToday(original.schemeId);
 
-  return db.transaction(async (tx) => {
+  const reversal = db.transaction(async (tx) => {
+    await setJournalLockTimeout(tx);
+    await lockJournalNumbering(tx, original.schemeId);
+    await validatePeriodForPosting(original.schemeId, today, "REVERSAL", tx.orm);
+    // Still posted under the lock: a reversal at the same moment has not reversed it already.
+    const current = await tx.orm.public.JournalEntry.where((je) => je.id.eq(originalEntryId)).first();
+    if (!current || current.status !== "POSTED") throw new Error("Only posted journal entries can be reversed");
+    const entryNumber = await getNextEntryNumber(original.schemeId, tx.orm);
+
     // Create the reversal entry
     const reversalEntry = await tx.orm.public.JournalEntry.create({
       schemeId: original.schemeId,
-      entryNumber: toVarchar<20>(data.entryNumber),
+      entryNumber: toVarchar<20>(entryNumber),
       transactionDate: toTimestamp(today),
       description: toVarchar<500>(
         data.description ?? `Reversal of ${original.entryNumber}`,
@@ -457,6 +477,9 @@ export async function reverseJournalEntry(
       .update({ status: "REVERSED" });
 
     return reversalEntry;
+  });
+  return reversal.catch((err: unknown) => {
+    throw isLockTimeout(err) ? new JournalBusyError({ cause: err }) : err;
   });
 }
 
@@ -520,6 +543,48 @@ export async function getUnmatchedJournalEntries(
   }
 
   return entries.filter((e) => !matchedEntryIds.has(e.id));
+}
+
+/**
+ * Lock the building's row (FOR NO KEY UPDATE) in the caller's transaction,
+ * so journal entry numbers (the next after the highest, unique per building,
+ * journal_entries_scheme_id_entry_number_key) are given out one transaction
+ * at a time. Every transaction that numbers a journal takes it first, before
+ * any notice or other row lock, so two writers always lock in the same order.
+ * Taking it again in the same transaction is a no-op. FOR NO KEY UPDATE does
+ * not block rows that only refer to the building (their foreign key check
+ * takes a key share lock), only another writer locking the building row.
+ * Shared with the late charge first paths (src/lib/queries/interest.ts).
+ */
+export async function lockJournalNumbering(tx: { orm: typeof db.orm }, schemeId: string) {
+  await tx.orm.public.Scheme.where((s) => s.id.eq(schemeId)).forNoKeyUpdate().first();
+}
+
+/** A numbered transaction gave up waiting for a lock (SQLSTATE 55P03, lock_not_available). */
+export class JournalBusyError extends Error {
+  constructor(options?: { cause?: unknown }) {
+    super("Another change to this building's accounts is being saved. Wait a moment and try again.", options);
+    this.name = "JournalBusyError";
+  }
+}
+
+/** Whether an error, or one it was caused by, is Postgres giving up waiting for a lock. */
+export function isLockTimeout(err: unknown): boolean {
+  for (let e: unknown = err, depth = 0; e && typeof e === "object" && depth < 5; e = (e as { cause?: unknown }).cause, depth++) {
+    const x = e as { sqlState?: unknown; code?: unknown };
+    if (x.sqlState === "55P03" || x.code === "55P03") return true;
+  }
+  return false;
+}
+
+/**
+ * Wait at most 5 seconds for any row lock in this transaction (SET LOCAL, so
+ * it ends with the transaction), rather than holding a pool connection while
+ * it queues. Run first in every numbered transaction
+ * (src/lib/queries/journal-numbering.ts).
+ */
+export async function setJournalLockTimeout(tx: Pick<Parameters<Parameters<typeof db.transaction>[0]>[0], "raw" | "execute">) {
+  await tx.execute(tx.raw.sql`SET LOCAL lock_timeout = '5s'`.affectedCount().build());
 }
 
 /** The next entry number. Pass a transaction's `tx.orm` to count entries it has written and not yet committed. */
