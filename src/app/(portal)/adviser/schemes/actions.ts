@@ -13,6 +13,7 @@ import {
   createScheme,
   updateScheme,
   deleteScheme,
+  SchemeDataError,
 } from "@/lib/queries/schemes";
 import { logActivity } from "@/lib/queries/activity-log";
 import {
@@ -30,10 +31,11 @@ import {
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
 import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
-import { AUSTRALIAN_STATES, schemeLocationProblems } from "@/config/jurisdictions";
+import { AUSTRALIAN_STATES, SCHEME_STATE_OPTIONS, schemeLocationProblems } from "@/config/jurisdictions";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { planFormatChoiceProblem, regulationModuleChoiceProblem } from "@/lib/jurisdiction/building-data";
+import { onboardingWordsFor, type OnboardingWords } from "@/lib/onboarding/onboarding-words";
 
 /** The Add Property steps a server-side problem can send the wizard back to. */
 export type OnboardingStep = "details" | "address" | "lots" | "balances" | "lotBalances";
@@ -62,7 +64,21 @@ function newBuildingToday(state: string | null | undefined, postcode: string | n
   return todayIn(defaultTimeZone(state, postcode) ?? PLATFORM_TIME_ZONE);
 }
 
-function validateSchemeForm(formData: FormData) {
+/**
+ * The onboarding words for a new building's state, from its rule pack, or
+ * null when the state has no pack (it is refused for that anyway).
+ */
+function onboardingWordsForState(state: string | null | undefined): { words: OnboardingWords; rules: ReturnType<typeof rulesForState>["rules"] } | null {
+  try {
+    const { rules } = rulesForState(state);
+    return { words: onboardingWordsFor((state ?? "").trim().toUpperCase(), rules), rules };
+  } catch (err) {
+    if (err instanceof UnsupportedJurisdictionError) return null;
+    throw err;
+  }
+}
+
+function validateSchemeForm(formData: FormData, words?: Pick<OnboardingWords, "entitlement"> | null) {
   const errors: Record<string, string> = {};
 
   const name = formData.get("name") as string | null;
@@ -85,7 +101,7 @@ function validateSchemeForm(formData: FormData) {
   if (!totalLots || !Number.isInteger(Number(totalLots)) || Number(totalLots) < 1)
     errors.totalLots = "Must have at least 1 lot (a whole number).";
   if (!totalEntitlement || !Number.isInteger(Number(totalEntitlement)) || Number(totalEntitlement) < 1)
-    errors.totalEntitlement = "Total unit entitlement must be a whole number of at least 1.";
+    errors.totalEntitlement = `Total ${words?.entitlement ?? "unit entitlement"} must be a whole number of at least 1.`;
 
   // The end of the building's current financial year, as a full date. The
   // day and month are stored and roll forward each year (24 Oct).
@@ -120,7 +136,13 @@ function validateSchemeForm(formData: FormData) {
   };
 }
 
-const DETAIL_FIELDS = ["name", "planNumber", "totalLots", "totalEntitlement"];
+/**
+ * The fields on the Property Details step, so a server problem with one sends
+ * the wizard back there (the rest are on Address & Settings). The state is
+ * asked there first where more than one state can be chosen, as the wizard
+ * does (its words come from SCHEME_STATE_OPTIONS through the page).
+ */
+const DETAIL_FIELDS = ["name", "planNumber", "totalLots", "totalEntitlement", ...(SCHEME_STATE_OPTIONS.length > 1 ? ["state"] : [])];
 
 /** A JSON array posted by the wizard, or null if it is missing, too large or not an array. */
 function readJsonArray(formData: FormData, name: string, maxLength: number): unknown[] | null {
@@ -162,9 +184,27 @@ export async function createSchemeAction(
   _prev: SchemeFormState,
   formData: FormData,
 ): Promise<SchemeFormState> {
-  const { errors: formErrors, isValid: formValid, data, yearEnd } = validateSchemeForm(formData);
+  // The building's words and rules, from the rule pack for the state entered
+  // (QLD go-live, 27 Oct 2026). Null for a state with no pack, refused below.
+  const pack = onboardingWordsForState(formData.get("state") as string | null);
+  const words = pack?.words;
+  const { errors: formErrors, isValid: formValid, data, yearEnd } = validateSchemeForm(formData, words);
   // Only buildings in a supported jurisdiction, with a postcode there.
-  const errors = { ...schemeLocationProblems(data), ...formErrors };
+  const errors: Record<string, string> = { ...schemeLocationProblems(data), ...formErrors };
+  // The regulation module, where the pack has one: only a module StrataVerze applies.
+  let regulationModule: string | undefined;
+  if (pack?.rules.REGULATION_MODULE) {
+    regulationModule = String(formData.get("regulationModule") ?? "").trim();
+    const problem = regulationModuleChoiceProblem(pack.rules, regulationModule);
+    if (problem) errors.regulationModule = problem;
+  }
+  // The plan format, where the pack has one: any listed format, as in the building settings.
+  let planFormat: string | undefined;
+  if (pack?.rules.PLAN_FORMAT) {
+    planFormat = String(formData.get("planFormat") ?? "").trim();
+    const problem = planFormatChoiceProblem(pack.rules, planFormat);
+    if (problem) errors.planFormat = problem;
+  }
   const isValid = formValid && Object.keys(errors).length === 0;
   if (!isValid) {
     const onDetails = Object.keys(errors).some((k) => DETAIL_FIELDS.includes(k));
@@ -177,9 +217,12 @@ export async function createSchemeAction(
   if (!lotRows) return { step: "lots", stepErrors: ["Enter the building's lots."] };
   const lotsInput: OnboardingLot[] = lotRows.map((r) => {
     const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
-    return { lotNumber: str(o.lotNumber), unitNumber: str(o.unitNumber), entitlement: str(o.entitlement), ownerName: str(o.ownerName) };
+    const lot: OnboardingLot = { lotNumber: str(o.lotNumber), unitNumber: str(o.unitNumber), entitlement: str(o.entitlement), ownerName: str(o.ownerName) };
+    // The second entitlement is read only where the building's pack has one.
+    if (words?.separate) lot.interestScheduleEntitlement = str(o.interestScheduleEntitlement);
+    return lot;
   });
-  const lots = checkLots(lotsInput, data.totalLots, data.totalEntitlement);
+  const lots = checkLots(lotsInput, data.totalLots, data.totalEntitlement, words);
   if (!lots.ok) {
     const rowProblems = Object.entries(lots.rowErrors).map(([i, p]) => `Row ${Number(i) + 1}: ${p.join(" ")}`);
     return { step: "lots", stepErrors: [...lots.errors, ...rowProblems].slice(0, 20) };
@@ -193,7 +236,7 @@ export async function createSchemeAction(
     admin: fundSheet(balancesRaw.admin),
     capitalWorks: fundSheet(balancesRaw.capitalWorks),
   };
-  const balances = checkOpeningBalances(balancesInput, yearEnd, newBuildingToday(data.state, data.postcode));
+  const balances = checkOpeningBalances(balancesInput, yearEnd, newBuildingToday(data.state, data.postcode), words);
   if (!balances.ok) return { step: "balances", stepErrors: [...Object.values(balances.fieldErrors), ...balances.errors] };
 
   const lotBalanceRows = readJsonArray(formData, "lotBalancesJson", 2_000_000);
@@ -209,7 +252,7 @@ export async function createSchemeAction(
       unallocated: str(o.unallocated),
     };
   });
-  const lotBalances = checkLotBalances(lotBalancesInput, lots.lots, balances);
+  const lotBalances = checkLotBalances(lotBalancesInput, lots.lots, balances, words);
   if (!lotBalances.ok) {
     const rowProblems = Object.entries(lotBalances.rowErrors).map(([i, p]) => `Lot ${lotBalancesInput[Number(i)]?.lotNumber ?? ""}: ${p.join(" ")}`);
     return { step: "lotBalances", stepErrors: [...lotBalances.errors, ...rowProblems].slice(0, 20) };
@@ -227,7 +270,11 @@ export async function createSchemeAction(
       return { fieldErrors: { planNumber: message }, step: "details", stepErrors: [message] };
     }
 
-    const scheme = await createScheme(data, profile.id, lots.lots);
+    const scheme = await createScheme(
+      { ...data, ...(regulationModule != null ? { regulationModule } : {}), ...(planFormat != null ? { planFormat } : {}) },
+      profile.id,
+      lots.lots,
+    );
     await recordSecurityEvent({
       action: "scheme.created",
       outcome: "allowed",
@@ -259,6 +306,8 @@ export async function createSchemeAction(
     }
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
+    // createScheme's own check of the pack's data (the checks above make the same).
+    if (err instanceof SchemeDataError) return { error: err.message };
     // redirect() throws a NEXT_REDIRECT error — rethrow it
     if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
     // Also check for the Next.js redirect digest
@@ -285,7 +334,7 @@ export async function updateSchemeAction(
   _prev: SchemeFormState,
   formData: FormData,
 ): Promise<SchemeFormState> {
-  const { errors, isValid, data } = validateSchemeForm(formData);
+  const { errors, isValid, data } = validateSchemeForm(formData, onboardingWordsForState(formData.get("state") as string | null)?.words);
   if (!isValid) return { fieldErrors: errors };
 
   try {

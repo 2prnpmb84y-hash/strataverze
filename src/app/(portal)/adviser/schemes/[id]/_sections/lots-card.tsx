@@ -3,6 +3,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FinancialStatusChip } from "@/components/lots/financial-status";
 import type { getStrataRollData } from "@/lib/queries/lots";
+import type { LotWords } from "@/lib/jurisdiction/screen-words";
 
 const SHOWN = 30;
 
@@ -14,7 +15,10 @@ export function LotsCard({
   id,
   rows,
   totalLots,
+  words,
 }: {
+  /** The building's words (lotWordsFor): the entitlement's heading. */
+  words: Pick<LotWords, "entitlement">;
   id: string;
   rows: Awaited<ReturnType<typeof getStrataRollData>>;
   totalLots: number;
@@ -35,7 +39,7 @@ export function LotsCard({
               <tr className="bg-muted/50 text-left">
                 <th scope="col" className="px-3 py-2.5 font-medium text-ink-muted whitespace-nowrap">Lot</th>
                 <th scope="col" className="px-3 py-2.5 font-medium text-ink-muted whitespace-nowrap">Unit No.</th>
-                <th scope="col" className="px-3 py-2.5 font-medium text-ink-muted whitespace-nowrap text-right">Unit Entitlement</th>
+                <th scope="col" className="px-3 py-2.5 font-medium text-ink-muted whitespace-nowrap text-right">{words.entitlement}</th>
                 <th scope="col" className="px-3 py-2.5 font-medium text-ink-muted whitespace-nowrap">Owner</th>
                 <th scope="col" className="px-3 py-2.5 font-medium text-ink-muted whitespace-nowrap">Status</th>
               </tr>

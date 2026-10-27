@@ -12,6 +12,11 @@ import { LevyNoticesView } from "@/components/levies/levy-notices-view";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatLotLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { sharedLevyWords } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
+
+/** "Levies", "Contributions", "Levies and Contributions". */
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/ And /g, " and ");
 import { connection } from "next/server";
 
 export default async function OwnerLeviesPage() {
@@ -49,21 +54,27 @@ export default async function OwnerLeviesPage() {
   );
   // Today in each building's own time zone.
   const todayBy = new Map(schemes.map((s) => [s.id, todayIn(timeZoneOf(s))]));
+  // Each building's words, from its rule pack, and the words the page uses for them all.
+  const rulesBy = new Map(schemes.map((s) => [s.id, rulesForState(s.state).rules]));
+  const words = sharedLevyWords([...rulesBy.values()], rulesForState(DEFAULT_SCHEME_STATE).rules);
   const displayItems = levyItems(
     notices,
     (schemeId) => todayBy.get(schemeId) ?? todayIn(timeZoneOf(schemes[0])),
     new Map(lotEntries.map((e) => [e.lotId, { label: lotLabels.get(e.lotId) ?? "", schemeId: e.schemeId }])),
+    (schemeId) => rulesBy.get(schemeId)?.TERMINOLOGY ?? words,
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My Levies"
+        title={`My ${titleCase(words.levies)}`}
         description="Levies and contributions due for your lots."
       />
 
       <LevyNoticesView
         items={displayItems}
+        words={words}
+        lateChargeByScheme={Object.fromEntries([...rulesBy].map(([schemeId, rules]) => [schemeId, rules.TERMINOLOGY.lateCharge]))}
         actions={
           <>
             {schemes.some((s) => rulesForState(s.state).rules.FEATURES.statutoryPaymentPlans) && (

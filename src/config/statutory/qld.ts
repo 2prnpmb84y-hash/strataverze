@@ -260,14 +260,105 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   contribution has no insurance part. No feature apportions common
  *   property, termination or rates, so nothing else reads the interest
  *   schedule yet (entitlementFor and scheduleFor are ready for them).
- * - The onboarding wizard asks for neither the module nor the interest
- *   schedule, and still names NSW funds and "unit entitlement". A Queensland
- *   building created by it is flagged until the module is chosen in its
- *   settings and each lot's interest schedule entitlement is entered
- *   (StrataVerze only, as for unit entitlement). The strata roll table, the
- *   lots card, the building form's total, the owner lot pages and the meeting
- *   screens still say unit entitlement; the interest schedule has no total on
- *   the building.
+ * - Onboarding (done, 27 Oct 2026, QLD wording and onboarding go-live): the
+ *   Add Property wizard takes its words from the pack of the state chosen
+ *   (src/lib/onboarding/onboarding-words.ts). Where more than one state can
+ *   be chosen the state is asked first. For a pack with REGULATION_MODULE it
+ *   asks for the module (only supported options can be chosen; the server
+ *   checks with regulationModuleChoiceProblem) and saves it to
+ *   schemes.regulation_module. It asks for each lot's interest schedule lot
+ *   entitlement beside the contribution schedule one, with the labels and
+ *   help in ENTITLEMENT_SCHEDULES, and saves it to
+ *   lots.interest_schedule_entitlement. For a pack with PLAN_FORMAT it asks
+ *   for the plan format (any listed format, as in the building settings,
+ *   with the note on one StrataVerze does not support yet; the server checks
+ *   with planFormatChoiceProblem) and saves it to schemes.plan_format, so a
+ *   new building can raise contributions that include insurance. Funds,
+ *   contributions, the penalty, the plan number and the body corporate's
+ *   legal name are the pack's. The interest schedule has no total on the
+ *   building, so the lots are checked one by one and their sum is shown
+ *   only. createScheme checks the pack's data again itself
+ *   (newSchemeDataProblem, src/lib/queries/schemes.ts): a module or plan
+ *   format only for a pack with that selector and only one its choice check
+ *   passes, and an interest schedule lot entitlement only for a pack that
+ *   holds it and only as a whole number from 1 to MAX_ENTITLEMENT. So no
+ *   caller can break schemes_regulation_module_state_check,
+ *   schemes_plan_format_state_check or
+ *   lots_interest_schedule_entitlement_check. A server problem with the
+ *   state goes back to Property Details where the state is asked there
+ *   (actions.ts DETAIL_FIELDS).
+ * - Still to do for onboarding: createScheme needs the pack's
+ *   defaultAccountingBasis, which this pack does not have, so a Queensland
+ *   building cannot be created until it is decided and added (the tests lend
+ *   it the NSW one). The strata roll reader reads NSW rolls (unit
+ *   entitlement, NSW postcodes) and finds no interest schedule
+ *   (src/lib/parse-strata-roll.ts). The draft cutover's own error messages
+ *   name the capital works fund (src/lib/onboarding/stage-opening-cutover.ts,
+ *   logged only), and the income statement reader's issue says "capital
+ *   works fund" (src/lib/onboarding/read-income-statement.ts). The income and
+ *   budget checks say "the cutover's outstanding levy notices"
+ *   (src/lib/onboarding/income-budget.ts checkIncomeBudget). The wizard's
+ *   "Payment Plan" setting (add-property-wizard.tsx, schemes.payment_plan, a
+ *   payment frequency, not the NSW statutory plan) keeps its label.
+ * - Screens (done): the strata roll table, the lots card, the building form,
+ *   the committee's lot page and the poll reason at conduct name the
+ *   contribution schedule lot entitlement (src/lib/jurisdiction/screen-words.ts
+ *   lotWordsFor, conduct-actions.ts). The committee's lot page also shows the
+ *   interest schedule lot entitlement. Also done (27 Oct 2026, sweep after
+ *   #117): the levy schedule page and its forms
+ *   (finance/levies/[scheduleId]/page.tsx, schedule-actions.tsx) say
+ *   contribution, the contribution schedule lot entitlement and the body
+ *   corporate, and, where the page splits the insurance part, that it is
+ *   shared by the interest schedule lot entitlement. The new schedule and
+ *   special contribution pages and forms (levies/new, levies/special/new,
+ *   levyFormWords), the onboarding income and budget screen
+ *   (migration/income-budget, levySharedBy: the insurance in the
+ *   administrative fund by the interest schedule), the capital works fund
+ *   plan page and new plan form (the pack's fund label; the page itself is
+ *   NSW only, FEATURES.capitalWorksFundPlan), the e-voting section (the body
+ *   corporate) and the lot's debt collection section (TERMINOLOGY.paymentPlan)
+ *   take the pack's words from their server pages.
+ * - Still NSW words a Queensland building can show (sweep of 27 Oct 2026, to
+ *   change before go-live):
+ *   - "levy" and "levies" across the finance screens: the finance overview
+ *     (finance/page.tsx), the adviser and accountant reports pages
+ *     (finance/reports/page.tsx, levy-register, fund-projections, cash-flow,
+ *     fund-summary, committee-pack, owner-statement, aged-arrears,
+ *     statutory-pack, gst-summary, audit-trail, drill-down), the
+ *     reconciliation page and workbench (allocation-workbench.tsx), owner
+ *     credits (owner-credits/page.tsx, credit-forms.tsx), the budget screens
+ *     (budget-client.tsx, budget-status-panel.tsx), the cutover
+ *     (migration/cutover), the journal and finance documents pages, the lot
+ *     financials (lots/[lotId]/lot-financials.tsx), the adviser lot page's
+ *     "+Levies" snapshot and its owner's view sentence (lots/[lotId]/page.tsx),
+ *     the building page's levies card (schemes/[id]/page.tsx LeviesCard), the
+ *     insurance form, the owner finance, treasurer, payment and notifications
+ *     pages, the vault's issued-by card and the activity timeline
+ *     (src/components/activity-timeline.tsx). Statuses, labels and reports
+ *     there name a levy throughout.
+ *   - "unit entitlement": the lot form's fallback label, used only where the
+ *     pack gives no label (lots/lot-form.tsx, lots/[lotId]/page.tsx), the
+ *     migration import description (migration/migration-client.tsx) and the
+ *     notice plan check (src/lib/levies/notice-plan.ts checkPlan, "Registered
+ *     lots hold ... unit entitlement").
+ *   - "owners corporation": the schemes list (schemes/page.tsx), the owner
+ *     scheme page (owner/(scheme)/scheme/page.tsx), the adviser home
+ *     (adviser/page.tsx), the owner platform fees page description
+ *     (owner/(scheme)/finance/platform-fees/page.tsx), the issue refusal
+ *     "Record the owners corporation's approval" (finance/actions.ts) and the
+ *     ballot refusal (src/lib/meetings/evoting.ts validateCanOpenBallot, not
+ *     reached: Queensland has no pre-meeting e-voting).
+ *   - "capital works": the reports pages' fund projection description ("Helps
+ *     plan capital works funding"), and the capital works plan detail page,
+ *     statutory pack and its PDF (capital-works/[planId]/page.tsx,
+ *     src/lib/finance/statutory-pack.ts, src/lib/pdf/documents.ts,
+ *     statutory-pack-view.tsx; NSW only features).
+ *   - "Payment Plan": the default status labels in the debt recovery clients
+ *     (used only where the page passes none), the adviser case page's payment
+ *     plan card and the owner levies page's button (NSW only,
+ *     FEATURES.statutoryPaymentPlans).
+ *   - "Hardship Request" is still a word in code (caseWordsFor, where the pack
+ *     has a hardship statement or no HARDSHIP_REVIEW step).
  */
 
 /**
@@ -529,17 +620,29 @@ export const DEBT_RECOVERY = {
  * reminder points, wording and the gaps in FOR_REVIEW.
  * The debt recovery screens take the step labels, the late charge heading
  * (TERMINOLOGY.lateCharge) and the levy words from the pack, and hide the
- * payment plan panel without FEATURES.statutoryPaymentPlans. Still NSW words,
- * to change before go-live:
- * - the owner case page's "Hardship Request" badge (from the case's
- *   hasHardshipRequest flag, case-detail-owner-client.tsx);
- * - "Payment Plan" as a case status label and the owner case page's payment
- *   plan card (only shown with a plan; a Queensland case never starts in
- *   PAYMENT_PLAN, and has no statutory plan);
- * - the owner debt recovery list page ("Manage levy debt recovery cases",
- *   "Back to Levies"), which lists cases from several buildings, and the
- *   owner levies section it sits in;
- * - fee explanations other than the recovery fees, which say "levy".
+ * payment plan panel without FEATURES.statutoryPaymentPlans. Done on
+ * 27 Oct 2026 (QLD wording go-live, src/lib/jurisdiction/screen-words.ts):
+ * - the owner case page's badge for hasHardshipRequest is the pack's
+ *   HARDSHIP_REVIEW step label ("Waiver Request") where the pack has no
+ *   hardship statement (caseWordsFor);
+ * - the PAYMENT_PLAN status label (owner and adviser lists and case pages),
+ *   the owner case page's plan card and the lot's debt collection section
+ *   take the pack's TERMINOLOGY.paymentPlan ("Payment Arrangement", as there
+ *   is no statutory payment plan), and the owner list shows no payment plan
+ *   count unless a building listed has one;
+ * - the owner debt recovery list ("Manage contribution debt recovery cases",
+ *   "Back to Contributions") and the owner levies section (the levies page,
+ *   the notice titles, the statement page) take the words of the buildings
+ *   shown, per building where each row has its own (sharedLevyWords: where
+ *   NSW and Queensland buildings are shown together, words for both, and
+ *   the packs' TERMINOLOGY.lateChargeGeneral, "late payment charge"; each
+ *   notice row says its own building's penalty or interest);
+ * - fee explanations and payer labels say "body corporate" and
+ *   "contribution" in the fee schedule (getPlatformFeesData), the platform
+ *   fees page and the transaction fee disclosure on the levy, invoice and
+ *   reconciliation pages (feeWordingFor, inBuildingWords).
+ *   The usage fee disclosures for meetings, ballots, works contracts,
+ *   variations and insurance claims take the building's words too.
  */
 
 /** How the owner-facing step text cites the Act and the SM. */
@@ -1334,6 +1437,17 @@ export const TERMINOLOGY = {
   bodyCorporateName: "Body corporate for {name} community titles scheme {plan}",
   /** Queensland has no short form: the full name. */
   bodyCorporateShortName: "Body corporate for {name} community titles scheme {plan}",
+  /**
+   * An agreed arrangement to pay overdue contributions. Queensland has no
+   * statutory payment plan (FEATURES.statutoryPaymentPlans off), so it is
+   * not called a plan (wording only, FOR_REVIEW).
+   */
+  paymentPlan: "Payment Arrangement",
+  /**
+   * The general word, where an owner's Queensland and NSW lots are shown
+   * together (wording only; the NSW pack gives none, so it is unchanged).
+   */
+  lateChargeGeneral: "late payment charge",
   scheme: "community titles scheme",
   governingDocument: "community management statement",
   manager: "body corporate manager",
@@ -1559,6 +1673,16 @@ export const FOR_REVIEW = [
     point:
       "The order is applied within each notice. Which notice a payment goes to is the adviser's choice, and owner credit goes to the earliest due notice first. Whether SM s 166(5) needs every penalty on the lot paid before any contribution is not confirmed.",
     where: "PAYMENT_ALLOCATION_ORDER; src/lib/finance/owner-credit.ts planCreditApplication",
+  },
+  {
+    point:
+      "An agreed arrangement to pay overdue contributions is called a \"Payment Arrangement\", not a payment plan, because Queensland has no statutory payment plan. Where an owner's Queensland and NSW lots are shown together, the penalty and NSW interest are together called a \"late payment charge\". Both are StrataVerze wording, not words of the Act or the SM.",
+    where: "TERMINOLOGY.paymentPlan, TERMINOLOGY.lateChargeGeneral",
+  },
+  {
+    point:
+      "The Add Property wizard asks for a new building's plan format and saves it with the building. Any listed format can be chosen, as in the building settings, so a standard format plan is accepted and its contributions that include insurance are refused later.",
+    where: "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts createSchemeAction, src/lib/queries/schemes.ts createScheme",
   },
 ] as const;
 

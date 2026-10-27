@@ -6,6 +6,8 @@ import { toCents } from "@/lib/billing/money";
 import { billingCaptureEnabled, loadPriceBook, transactionFeeMode } from "@/lib/billing/capture";
 import { feeSchedule, feeTotals, type FeeScheduleRow, type FeeTotals } from "@/lib/billing/fee-schedule";
 import { isPromotional, subscriptionPrice, type TierPrice } from "@/lib/billing/subscription-tier";
+import { feeWordingFor, type FeeWording } from "@/lib/billing/disclosure";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 
 const isoDay = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? "").slice(0, 10));
 const isoTime = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? ""));
@@ -51,13 +53,15 @@ export interface PlatformFeesData {
   schedule: FeeScheduleRow[];
   /** Null while the referral income feature is switched off. */
   referralIncome: ReferralIncomeRow[] | null;
+  /** The building's words for its fees, from its rule pack (feeWordingFor). */
+  wording: FeeWording;
 }
 
 /** Everything the scheme's StrataVerze fees page shows. Caller checks access. */
 export async function getPlatformFeesData(schemeId: string, lotCount: number): Promise<PlatformFeesData> {
   // StrataVerze's own billing day.
   const today = platformToday();
-  const [priceBook, subscription, eventRows, invoiceRows] = await Promise.all([
+  const [priceBook, subscription, eventRows, invoiceRows, { rules }] = await Promise.all([
     loadPriceBook(),
     db.orm.public.SchemeSubscription.where((s) => s.schemeId.eq(schemeId)).first(),
     db.orm.public.PlatformFeeEvent.where((e) => e.schemeId.eq(schemeId))
@@ -68,7 +72,9 @@ export async function getPlatformFeesData(schemeId: string, lotCount: number): P
       .orderBy((i) => i.periodStart.desc())
       .limit(120)
       .all(),
+    rulesForScheme(schemeId),
   ]);
+  const wording = feeWordingFor(rules);
 
   const events: PlatformFeeEventRow[] = eventRows.map((e) => {
     const exGstCents = toCents(String(e.amountExGst));
@@ -116,8 +122,9 @@ export async function getPlatformFeesData(schemeId: string, lotCount: number): P
       totalCents: toCents(String(i.total)),
       status: i.status,
     })),
-    schedule: feeSchedule(priceBook, today, { transactionFeeMode: transactionFeeMode() }),
+    schedule: feeSchedule(priceBook, today, { transactionFeeMode: transactionFeeMode(), wording }),
     referralIncome: referralIncomeEnabled() ? await getReferralIncomeForScheme(schemeId) : null,
+    wording,
   };
 }
 

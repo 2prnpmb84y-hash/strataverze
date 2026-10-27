@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { CaseWords } from "@/lib/jurisdiction/screen-words";
 
 interface DebtRecoveryCase {
   id: string;
@@ -55,9 +56,15 @@ export function DebtRecoveryOwnerClient({
   cases,
   isCommittee,
   stepLabels,
+  caseWords,
+  showPaymentPlans,
 }: {
   cases: DebtRecoveryCase[];
   isCommittee: boolean;
+  /** Each building's case words, by scheme id (caseWordsFor). */
+  caseWords: Readonly<Record<string, CaseWords>>;
+  /** Whether any building listed has the statutory payment plan (FEATURES.statutoryPaymentPlans). */
+  showPaymentPlans: boolean;
   /** Each building's name for each recovery step type, by scheme id (`rules.DEBT_RECOVERY_STEP_LABELS`). */
   stepLabels: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }) {
@@ -91,7 +98,7 @@ export function DebtRecoveryOwnerClient({
   return (
     <>
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 ${showPaymentPlans ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-4`}>
         <StatCard
           label="Active Cases"
           value={String(activeCases.length)}
@@ -102,11 +109,13 @@ export function DebtRecoveryOwnerClient({
           value={formatCurrency(totalOwed)}
           accent={totalOwed > 0 ? "bg-red-500" : "bg-green-500"}
         />
-        <StatCard
-          label="Payment Plans"
-          value={String(paymentPlanCount)}
-          accent="bg-blue-500"
-        />
+        {showPaymentPlans && (
+          <StatCard
+            label="Payment Plans"
+            value={String(paymentPlanCount)}
+            accent="bg-blue-500"
+          />
+        )}
         <StatCard
           label="Legal Referrals"
           value={String(legalCount)}
@@ -167,7 +176,7 @@ export function DebtRecoveryOwnerClient({
                         {c.caseNumber}
                       </p>
                       <StatusChip
-                        status={STATUS_LABEL[c.status] ?? c.status}
+                        status={c.status === "PAYMENT_PLAN" ? (caseWords[c.schemeId]?.paymentPlan ?? STATUS_LABEL[c.status]) : (STATUS_LABEL[c.status] ?? c.status)}
                         variant={STATUS_VARIANT[c.status] ?? "default"}
                       />
                       {c.priority === "HIGH" && (

@@ -4,6 +4,8 @@ import { debtorMayView } from "@/lib/owner/debt-case-view";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee, getSchemesForOwner } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { caseWordsFor, sharedLevyWords } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 import { needRule } from "@/config/statutory";
 import {
   getDebtRecoveryCasesForOwner,
@@ -14,6 +16,9 @@ import { connection } from "next/server";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { DebtRecoveryOwnerClient } from "./debt-recovery-owner-client";
+
+/** "Levies", "Contributions", "Levies and Contributions". */
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/ And /g, " and ");
 
 export default async function OwnerDebtRecoveryPage() {
   await connection();
@@ -59,6 +64,8 @@ export default async function OwnerDebtRecoveryPage() {
     caseSchemes.filter((s) => withSteps.has(s.id)).map((s) => [s.id, needRule(rulesForState(s.state).rules, "DEBT_RECOVERY_STEP_LABELS")]),
   );
   const cases = visible.filter((c) => withSteps.has(c.schemeId));
+  // Each building's case words (the hardship or waiver request, the payment plan), from its rule pack.
+  const caseWords = Object.fromEntries(caseSchemes.filter((s) => withSteps.has(s.id)).map((s) => [s.id, caseWordsFor(rulesForState(s.state).rules)]));
 
   // Build lot/scheme lookup from the user's schemes
   const byId = new Map<string, { id: string; name: string }>();
@@ -66,6 +73,13 @@ export default async function OwnerDebtRecoveryPage() {
   const schemes = scopeToSelectedScheme([...byId.values()], selectedSchemeId);
 
   const schemeLookup = new Map(schemes.map((s) => [s.id, s.name]));
+  // The levy words of the buildings listed (their own where they share them),
+  // and whether any of them has the statutory payment plan.
+  const listedRules = [...ownerSchemes, ...committeeSchemes]
+    .filter((s) => byId.has(s.id) && schemes.some((x) => x.id === s.id))
+    .map((s) => rulesForState(s.state).rules);
+  const levyWords = sharedLevyWords(listedRules, rulesForState(DEFAULT_SCHEME_STATE).rules);
+  const paymentPlans = (listedRules.length ? listedRules : [rulesForState(DEFAULT_SCHEME_STATE).rules]).some((r) => r.FEATURES.statutoryPaymentPlans);
 
   // Build lot lookup from scheme lots
   const lotLookup = new Map<string, { lotNumber: string; unitNumber: string | null }>();
@@ -111,17 +125,21 @@ export default async function OwnerDebtRecoveryPage() {
         title="Debt Recovery"
         description={
           isCommittee
-            ? "Manage levy debt recovery cases across your schemes."
+            ? levyWords.shared
+              ? `Manage ${levyWords.levy} debt recovery cases across your schemes.`
+              : "Manage debt recovery cases across your schemes."
             : "View debt recovery cases related to your lots."
         }
         backHref="/owner/levies"
-        backLabel="Back to Levies"
+        backLabel={`Back to ${titleCase(levyWords.levies)}`}
       />
 
       <DebtRecoveryOwnerClient
         cases={serialisedCases}
         isCommittee={isCommittee}
         stepLabels={stepLabels}
+        caseWords={caseWords}
+        showPaymentPlans={paymentPlans}
       />
     </div>
   );

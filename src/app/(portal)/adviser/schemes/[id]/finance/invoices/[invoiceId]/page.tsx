@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { InvoiceActions } from "./invoice-actions";
 import { transactionFeeTable } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { isStrataVerzeSupplier } from "@/lib/billing/strataverze-supplier";
 import { getInvoiceControlView } from "@/lib/finance/control-view";
 import { ApprovalPanel } from "@/components/finance/approval-panel";
@@ -257,7 +259,7 @@ export default async function InvoiceDetailPage({
               schemeId={id}
               invoiceId={invoiceId}
               currentStatus={status}
-              feeTable={isStrataVerzeSupplier(invoice.supplierId) ? null : await transactionFeeTable()}
+              feeTable={isStrataVerzeSupplier(invoice.supplierId) ? null : await transactionFeeTable(feeWordingFor(rulesForState(scheme.state).rules))}
               approveBlockedReason={controls?.approve.result === "blocked" ? controls.approve.reason : null}
               paymentBlockedReason={paymentBlocked}
               cancelDisabled={isStrataVerzeSupplier(invoice.supplierId)}

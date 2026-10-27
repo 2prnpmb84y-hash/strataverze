@@ -18,6 +18,7 @@ interface StatementLine {
 }
 
 export function OwnerStatementTable({
+  levy,
   lotOptions,
   selectedSchemeId,
   selectedLotId,
@@ -30,6 +31,8 @@ export function OwnerStatementTable({
   closingBalance,
   statementLines,
 }: {
+  /** The word for a levy of the lots shown (sharedLevyWords). */
+  levy: string;
   lotOptions: { id: string; label: string }[];
   /** The scheme of the selected lot, for the PDF link. */
   selectedSchemeId: string;
@@ -124,13 +127,14 @@ export function OwnerStatementTable({
           totalPayments={totalPayments}
           closingBalance={closingBalance}
           lines={statementLines}
+          levy={levy}
         />
       )}
 
       {!selectedLotId && lotOptions.length > 1 && (
         <EmptyState
           title="Select a lot"
-          description="Choose a lot above to view your levy statement."
+          description={`Choose a lot above to view your ${levy} statement.`}
         />
       )}
     </div>

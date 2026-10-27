@@ -1823,6 +1823,14 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "point": "The order is applied within each notice. Which notice a payment goes to is the adviser's choice, and owner credit goes to the earliest due notice first. Whether SM s 166(5) needs every penalty on the lot paid before any contribution is not confirmed.",
       "where": "PAYMENT_ALLOCATION_ORDER; src/lib/finance/owner-credit.ts planCreditApplication",
     },
+    {
+      "point": "An agreed arrangement to pay overdue contributions is called a "Payment Arrangement", not a payment plan, because Queensland has no statutory payment plan. Where an owner's Queensland and NSW lots are shown together, the penalty and NSW interest are together called a "late payment charge". Both are StrataVerze wording, not words of the Act or the SM.",
+      "where": "TERMINOLOGY.paymentPlan, TERMINOLOGY.lateChargeGeneral",
+    },
+    {
+      "point": "The Add Property wizard asks for a new building's plan format and saves it with the building. Any listed format can be chosen, as in the building settings, so a standard format plan is accepted and its contributions that include insurance are refused later.",
+      "where": "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts createSchemeAction, src/lib/queries/schemes.ts createScheme",
+    },
   ],
   "FUND_CATALOGUE": [
     {
@@ -2334,10 +2342,12 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     "governingDocument": "community management statement",
     "jurisdictionShort": "Qld",
     "lateCharge": "penalty",
+    "lateChargeGeneral": "late payment charge",
     "levies": "contributions",
     "levy": "contribution",
     "manager": "body corporate manager",
     "ownersCorporation": "body corporate",
+    "paymentPlan": "Payment Arrangement",
     "planLabel": "Community titles scheme",
     "scheme": "community titles scheme",
     "source": "Body Corporate and Community Management Act 1997 (Qld) ss 22, 31, 33, 46; Body Corporate and Community Management (Standard Module) Regulation 2020 (Qld) ss 81, 162, 167",

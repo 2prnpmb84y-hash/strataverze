@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FinancialStatusChip } from "@/components/lots/financial-status";
+import type { LotWords } from "@/lib/jurisdiction/screen-words";
 
 type StrataRollRow = {
   id: string;
@@ -45,9 +46,12 @@ export function StrataRollTable({
   schemeId,
   lotHrefBase,
   showMoney = true,
+  words,
 }: {
   rows: StrataRollRow[];
   schemeId: string;
+  /** The building's words for the entitlement, levies and late charge (lotWordsFor). */
+  words: LotWords;
   /** Where a lot opens, followed by the lot id. Defaults to the adviser's lot page. */
   lotHrefBase?: string;
   /** The levy columns. The committee's roll shows status only. */
@@ -138,7 +142,7 @@ export function StrataRollTable({
                 Unit No.
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                Unit Entitlement
+                {words.entitlement}
               </th>
               <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                 Owner
@@ -151,13 +155,13 @@ export function StrataRollTable({
                 Brought forward
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                +Levies
+                {`+${words.levies}`}
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 +Special
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
-                +Interest charged
+                {`+${words.lateCharge} charged`}
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium text-ink-muted whitespace-nowrap">
                 −Paid

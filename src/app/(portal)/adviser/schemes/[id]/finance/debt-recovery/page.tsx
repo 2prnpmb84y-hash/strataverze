@@ -13,6 +13,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { DebtRecoveryListClient } from "./debt-recovery-client";
 import { needRule } from "@/config/statutory";
+import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { auDate } from "@/lib/onboarding/property-onboarding";
 import { proceedingsDeadlineRule, proceedingsDeadlineWarning } from "@/lib/debt-recovery/proceedings-deadline";
@@ -141,6 +142,7 @@ export default async function DebtRecoveryPage({
         lotsWithOwners={lotsWithOwners}
         stepLabels={needRule(rules, "DEBT_RECOVERY_STEP_LABELS")}
         levies={terms.levies}
+        paymentPlanLabel={caseWordsFor(rules).paymentPlan}
       />
     </div>
   );

@@ -12,6 +12,7 @@ import Link from "next/link";
 import { executeWorksContract } from "@/lib/actions/works";
 import { FeeActionButton } from "@/components/billing/fee-action-button";
 import { previewUsageFee } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -77,7 +78,7 @@ export default async function ContractDetailPage({
     ? await previewUsageFee({
         code: "WORKS_CONTRACT",
         bandValue: Math.round(Number(contract.contractValue) * 100),
-      })
+      }, feeWordingFor(rulesForState(scheme.state).rules))
     : null;
 
   async function executeAction(feeConfirmedCents: number | null) {

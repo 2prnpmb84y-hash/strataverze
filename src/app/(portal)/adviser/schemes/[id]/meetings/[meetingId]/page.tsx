@@ -34,6 +34,7 @@ import { validateNoticePeriod, type MeetingType } from "@/lib/meetings/rules";
 import { canEditDetails, canTransition, isBeforeNotice, meetingStatusLabel } from "@/lib/meetings/lifecycle";
 import { connection } from "next/server";
 import { hasFeeEvent, previewUsageFee } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
 import { isChargeableMeetingType } from "@/lib/billing/hook-codes";
 import { needRule } from "@/config/statutory";
 
@@ -69,7 +70,7 @@ export default async function MeetingDetailPage({
     isChargeableMeetingType(normalisedType) &&
     !(await hasFeeEvent({ code: "MEETING_EGM", sourceType: "Meeting", sourceId: meetingId }));
   const noticeFee =
-    chargeAdjournment || chargeMeeting ? await previewUsageFee({ code: "MEETING_EGM" }) : null;
+    chargeAdjournment || chargeMeeting ? await previewUsageFee({ code: "MEETING_EGM" }, feeWordingFor(rulesForState(scheme.state).rules)) : null;
   const motionLibrary = getMotionLibrary(
     scheme.state,
     normalisedType ?? undefined,
@@ -310,9 +311,10 @@ export default async function MeetingDetailPage({
           adopted={scheme.preMeetingEvotingAdopted}
           canOpen={canOpenBallot}
           ballot={ballotView}
-          fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" })}
+          fee={ballotView ? null : await previewUsageFee({ code: "BALLOT" }, feeWordingFor(rulesForState(scheme.state).rules))}
           timeZone={meetingTz}
           adoptionCitation={needRule(rulesForState(scheme.state).rules, "CITATIONS").evotingAdoption}
+          ownersCorporation={terms.ownersCorporation}
         />
       )}
 

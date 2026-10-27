@@ -155,7 +155,10 @@ export function CaseDetailClient({
   stepLabels,
   lateChargeLabel,
   paymentPlans,
+  paymentPlanLabel,
 }: {
+  /** The PAYMENT_PLAN status, as the building's pack has it ("Payment Plan", "Payment Arrangement"; caseWordsFor). */
+  paymentPlanLabel: string;
   /** The building's late charge heading: "Interest" (NSW), "Penalty" (Queensland). */
   lateChargeLabel: string;
   /** Whether the building's pack has the payment plan workflow (FEATURES.statutoryPaymentPlans). */
@@ -195,10 +198,12 @@ export function CaseDetailClient({
     "none" | "payment" | "documents" | "activity" | "close"
   >("none");
 
-  const statusInfo = STATUS_MAP[debtCase.status] ?? {
-    label: debtCase.status,
-    variant: "default" as ChipStatus,
-  };
+  const known = STATUS_MAP[debtCase.status];
+  const statusInfo = known
+    ? debtCase.status === "PAYMENT_PLAN"
+      ? { ...known, label: paymentPlanLabel }
+      : known
+    : { label: debtCase.status, variant: "default" as ChipStatus };
 
   const isClosed = [
     "CLOSED_PAID",

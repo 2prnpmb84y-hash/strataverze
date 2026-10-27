@@ -4,6 +4,8 @@ import { getContactsForScheme } from "@/lib/queries/contacts";
 import { StrataRollTable } from "../strata-roll-table";
 import { ContactsCard } from "../_sections/contacts-card";
 import { requireAdviserScheme } from "../_sections/require-adviser-scheme";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
 
 /** Lots / Owners pill: the strata roll, with scheme contacts nested here. */
 export default async function LotsSectionPage({
@@ -33,7 +35,7 @@ export default async function LotsSectionPage({
           </p>
         </div>
       </div>
-      <StrataRollTable rows={strataRollRows} schemeId={id} />
+      <StrataRollTable rows={strataRollRows} schemeId={id} words={lotWordsFor(rulesForState(scheme.state).rules)} />
       <div className="mt-6">
         <ContactsCard id={id} contacts={contacts} />
       </div>

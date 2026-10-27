@@ -228,6 +228,23 @@ export interface SharedTerminology {
    * {plan}"); a pack with no short form gives its full name.
    */
   bodyCorporateShortName: string;
+  /**
+   * What an agreed arrangement to pay overdue amounts is called, as a debt
+   * recovery case's status, the owner's card and the lot's debt collection
+   * section head it (QLD wording go-live, 27 Oct 2026): "Payment
+   * Arrangement" (Queensland, which has no statutory payment plan).
+   * Optional: a pack without it (NSW, whose statutory payment plan the
+   * screens have always called "Payment Plan") keeps the screens' label.
+   */
+  paymentPlan?: string;
+  /**
+   * What a charge on an overdue amount is called in general, where buildings
+   * with different words for it are shown together (an owner with NSW and
+   * Queensland lots): "late payment charge". Optional: the first pack shown
+   * that gives one is used, and where none does the buildings' own words are
+   * joined. NSW gives none, so its pack is unchanged.
+   */
+  lateChargeGeneral?: string;
 }
 
 /**

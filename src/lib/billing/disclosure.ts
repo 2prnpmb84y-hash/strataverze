@@ -64,13 +64,21 @@ export const VARIANT_EXPLANATIONS: Record<string, string> = {
 export interface FeeWording {
   ownersCorporation: string;
   recoverable: string | null;
+  /** Its word for a levy and levies (QLD go-live, 27 Oct 2026): "contribution", "contributions". */
+  levy: string;
+  levies: string;
 }
 
-const NSW_WORDING: FeeWording = { ownersCorporation: "owners corporation", recoverable: null };
+const NSW_WORDING: FeeWording = { ownersCorporation: "owners corporation", recoverable: null, levy: "levy", levies: "levies" };
 
 /** A building's fee wording from its rule pack (pass `rules`). */
-export function feeWordingFor(rules: { TERMINOLOGY: { ownersCorporation: string }; RECOVERY_COSTS_RECOVERABLE?: string }): FeeWording {
-  return { ownersCorporation: rules.TERMINOLOGY.ownersCorporation, recoverable: rules.RECOVERY_COSTS_RECOVERABLE ?? null };
+export function feeWordingFor(rules: { TERMINOLOGY: { ownersCorporation: string; levy: string; levies: string }; RECOVERY_COSTS_RECOVERABLE?: string }): FeeWording {
+  return {
+    ownersCorporation: rules.TERMINOLOGY.ownersCorporation,
+    recoverable: rules.RECOVERY_COSTS_RECOVERABLE ?? null,
+    levy: rules.TERMINOLOGY.levy,
+    levies: rules.TERMINOLOGY.levies,
+  };
 }
 
 /** The NSW sentences that say a fee is recoverable, replaced where a pack words it differently. */
@@ -85,8 +93,27 @@ const RECOVERABLE_VARIANT_LEADS: Record<string, string> = {
 const DEFAULT_EXPLANATION = "A StrataVerze charge for this action.";
 const DEFAULT_PAYER = "Charged to the owners corporation";
 
-const isNsw = (w: FeeWording) => w.recoverable == null && w.ownersCorporation === NSW_WORDING.ownersCorporation;
-const named = (text: string, w: FeeWording) => text.split(NSW_WORDING.ownersCorporation).join(w.ownersCorporation);
+const isNsw = (w: FeeWording) =>
+  w.recoverable == null && w.ownersCorporation === NSW_WORDING.ownersCorporation && w.levy === NSW_WORDING.levy && w.levies === NSW_WORDING.levies;
+/** The text with the building's names for the owners corporation, a levy and levies. */
+const named = (text: string, w: FeeWording) =>
+  text
+    .split(NSW_WORDING.ownersCorporation)
+    .join(w.ownersCorporation)
+    .replace(/\blevies\b/g, w.levies)
+    .replace(/\blevy\b/g, w.levy);
+
+/**
+ * A fee's own explanation or payer label (as the fee schedule lists them) in
+ * the building's words: its name for the owners corporation and a levy, and,
+ * where its pack says it differently, how a recovery fee can be passed to the
+ * owner. NSW text is returned unchanged.
+ */
+export function inBuildingWords(text: string, w: FeeWording = NSW_WORDING): string {
+  if (isNsw(w)) return text;
+  const passed = w.recoverable ? text.split(NSW_RECOVERY_SENTENCE).join(`It ${w.recoverable}.`).split(NSW_RECOVERABLE_PAYER).join(`and ${w.recoverable}`) : text;
+  return named(passed, w);
+}
 
 function explanationFor(quote: FeeQuote, w: FeeWording): string {
   const key = `${quote.code}:${quote.variant ?? ""}`;

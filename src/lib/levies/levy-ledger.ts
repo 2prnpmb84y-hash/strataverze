@@ -51,21 +51,27 @@ function monthYear(iso: string): string {
   return `${MONTHS[m - 1]} ${y}`;
 }
 
-/** What the notice is for, e.g. "Special levy: Roof" or "Administrative Fund levy, Jul–Sep 2026". */
-export function noticeLabel(n: LedgerNotice): string {
+/**
+ * What the notice is for, e.g. "Special levy: Roof" or "Administrative Fund
+ * levy, Jul–Sep 2026", in the building's word for a levy (`terms`, from its
+ * rule pack: "Special contribution: Roof" for Queensland). Without `terms`
+ * the notice is called a levy.
+ */
+export function noticeLabel(n: LedgerNotice, terms: Pick<Terms, "levy"> = { levy: "levy" }): string {
+  const levy = terms.levy;
   const schedule = n.levySchedule;
   if (schedule && String(schedule.levyType ?? "") === "SPECIAL") {
-    return `Special levy: ${String(schedule.title ?? "Untitled")}`;
+    return `Special ${levy}: ${String(schedule.title ?? "Untitled")}`;
   }
-  const fund = n.fund?.name ? String(n.fund.name) : "Levy";
+  const fund = n.fund?.name ? String(n.fund.name) : capitalise(levy);
   const start = toIsoDay(n.periodStart);
   const end = toIsoDay(n.periodEnd);
   if (start && end) {
     const [sm, em] = [monthYear(start), monthYear(end)];
     const range = sm.slice(-4) === em.slice(-4) ? `${sm.slice(0, 3)}–${em}` : `${sm}–${em}`;
-    return `${fund} levy, ${range}`;
+    return `${fund} ${levy}, ${range}`;
   }
-  return `${fund} levy`;
+  return `${fund} ${levy}`;
 }
 
 export type DisplayStatus = "ISSUED" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "WRITTEN_OFF" | "DRAFT";
@@ -165,7 +171,7 @@ export function buildStatement(
   for (const n of notices) {
     if (String(n.status) === "DRAFT") continue;
     const due = toIsoDay(n.dueDate);
-    const label = noticeLabel(n);
+    const label = noticeLabel(n, terms);
     const amountDue = num(n.amountDue);
     if (amountDue > 0) {
       entries.push({ id: `${n.id}-charge`, date: due, kind: "LEVY", description: `${label} (${n.noticeNumber})`, charge: amountDue, payment: 0 });
@@ -374,6 +380,8 @@ export function levyItems(
   /** Today, or today for a building (each building's own time zone). */
   today: string | ((schemeId: string) => string),
   lots: Map<string, { label: string; schemeId: string }>,
+  /** Each building's word for a levy (`rules.TERMINOLOGY`), by scheme id. Without it a notice is called a levy. */
+  termsFor?: (schemeId: string) => Pick<Terms, "levy">,
 ): LevyItem[] {
   const todayFor = typeof today === "string" ? () => today : today;
   const items = notices
@@ -383,7 +391,7 @@ export function levyItems(
       lotId: n.lotId,
       lotLabel: lots.get(n.lotId)?.label ?? "",
       schemeId: lots.get(n.lotId)?.schemeId ?? n.schemeId,
-      title: noticeLabel(n),
+      title: noticeLabel(n, termsFor?.(lots.get(n.lotId)?.schemeId ?? n.schemeId)),
       noticeNumber: String(n.noticeNumber),
       fundName: n.fund ? String(n.fund.name) : "",
       dueDate: toIsoDay(n.dueDate),

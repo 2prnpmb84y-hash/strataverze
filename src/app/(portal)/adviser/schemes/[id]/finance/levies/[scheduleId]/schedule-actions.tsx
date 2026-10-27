@@ -29,8 +29,8 @@ function Message({ state }: { state: ActionState }) {
   return null;
 }
 
-/** Record the owners corporation's approval (resolution date). */
-export function ApproveScheduleForm({ schemeId, scheduleId }: { schemeId: string; scheduleId: string }) {
+/** Record the owners corporation's approval (resolution date). `ownersCorporation` is the building's word for it, from its rule pack. */
+export function ApproveScheduleForm({ schemeId, scheduleId, ownersCorporation }: { schemeId: string; scheduleId: string; ownersCorporation: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     approveLevyScheduleAction.bind(null, schemeId, scheduleId),
     {},
@@ -43,7 +43,7 @@ export function ApproveScheduleForm({ schemeId, scheduleId }: { schemeId: string
         name="resolutionDate"
         type="date"
         required
-        helpText="Date of the general meeting at which the owners corporation set these contributions."
+        helpText={`Date of the general meeting at which the ${ownersCorporation} set these contributions.`}
         error={state.fieldErrors?.resolutionDate}
       />
       <Button type="submit" disabled={pending}>
@@ -61,12 +61,15 @@ export function IssueNoticesForm({
   noticeCount,
   blocked,
   timing,
+  levyWords,
 }: {
   schemeId: string;
   scheduleId: string;
   isSpecial: boolean;
   noticeCount: number;
   blocked: boolean;
+  /** The building's words for a levy, from its rule pack ("levy", "contribution"). */
+  levyWords: { levy: string; levies: string };
   /** The building's levy notice timing (5 weeks, the statutory 30 days in NSW). */
   timing: NoticeTimingWords;
 }) {
@@ -119,13 +122,13 @@ export function IssueNoticesForm({
         <label className="flex items-start gap-2 text-sm text-ink">
           <input type="checkbox" name="urgentSpecialLevy" className="mt-1" />
           <span>
-            This is an urgent special levy for emergency repairs. The minimum notice to pay is {timing.urgentDays} days instead of {timing.minimumDays}.
+            This is an urgent special {levyWords.levy} for emergency repairs. The minimum notice to pay is {timing.urgentDays} days instead of {timing.minimumDays}.
           </span>
         </label>
       )}
       {!isSpecial && (
         <p className="text-sm text-ink-muted">
-          Levies are paid in advance: each instalment falls due on the first day of the period it covers. Each notice goes out by email {timing.lead} before
+          {levyWords.levies[0].toUpperCase() + levyWords.levies.slice(1)} are paid in advance: each instalment falls due on the first day of the period it covers. Each notice goes out by email {timing.lead} before
           it falls due. Any whose {timing.mark} has passed go out today, once you confirm.
         </p>
       )}
