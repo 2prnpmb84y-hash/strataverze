@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { InterestWords } from "@/lib/jurisdiction/wording";
+import type { LateChargeWords } from "@/lib/jurisdiction/wording";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,14 +26,6 @@ type NoticeRow = {
   interestReason: string;
 };
 
-const reasonLabel = (words: InterestWords): Record<string, string> => ({
-  IN_GRACE: `In the ${words.grace} grace period`,
-  PAID_IN_GRACE: "Paid within the grace period",
-  NOT_YET_DUE: "Not yet due",
-  NOTHING_OWING: "Nothing owing",
-  NO_INTEREST_RESOLUTION: "No interest by resolution",
-});
-
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
     style: "currency",
@@ -52,16 +44,17 @@ function formatDate(date: string): string {
 export function InterestClient({
   schemeId,
   notices,
-  annualRate,
+  charging,
   words,
 }: {
   schemeId: string;
   notices: NoticeRow[];
-  annualRate: number;
-  /** The building's interest wording. */
-  words: InterestWords;
+  /** Whether the building's setting charges anything. */
+  charging: boolean;
+  /** The building's late charge wording (NSW interest, Queensland penalty). */
+  words: LateChargeWords;
 }) {
-  const REASON_LABEL = reasonLabel(words);
+  const REASON_LABEL = words.reasons;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +78,7 @@ export function InterestClient({
       if (result.error) {
         setError(result.error);
       } else {
-        setSuccess("Interest charged successfully.");
+        setSuccess(`${words.Term} charged successfully.`);
         router.refresh();
       }
     });
@@ -101,14 +94,14 @@ export function InterestClient({
       } else {
         const charged = (result.data?.charged as number) ?? 0;
         setSuccess(
-          `Interest charged on ${charged} notice${charged !== 1 ? "s" : ""}.`,
+          `${words.Term} charged on ${charged} notice${charged !== 1 ? "s" : ""}.`,
         );
         router.refresh();
       }
     });
   }
 
-  if (annualRate <= 0) {
+  if (!charging) {
     return (
       <EmptyState
         icon={
@@ -127,8 +120,8 @@ export function InterestClient({
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         }
-        title="No interest is charged"
-        description={`The ${words.ownersCorporation} has resolved that contributions bear no interest (${words.noInterestCitation}). Change the setting above if that resolution is revoked.`}
+        title={words.noCharge.title}
+        description={words.noCharge.description}
       />
     );
   }
@@ -151,8 +144,8 @@ export function InterestClient({
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
         }
-        title="No overdue levies"
-        description="There are no overdue levy notices to charge interest on."
+        title={`No overdue ${words.levies}`}
+        description={`There are no overdue ${words.levy} notices to charge ${words.term} on.`}
       />
     );
   }
@@ -169,7 +162,7 @@ export function InterestClient({
         </span>
         {chargeableNotices.length > 0 && (
           <span className="font-medium text-amber-600">
-            Additional interest owed: {formatCurrency(totalAdditional)}
+            Additional {words.term} owed: {formatCurrency(totalAdditional)}
           </span>
         )}
         {chargeableNotices.length > 0 && (

@@ -14,7 +14,8 @@ import { logActivity } from "./activity-log";
 import { fromCents } from "@/lib/billing/money";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { getSchemeInterestSetting, statutoryInterestForScheme } from "@/lib/finance/interest-setting";
-import { needRule } from "@/config/statutory";
+import { effectiveLateChargeMode, lateChargeApplies } from "@/lib/finance/statutory-interest";
+import { capitalise } from "@/lib/jurisdiction/wording";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric<P extends number = 12, S extends number = 2>(
@@ -31,9 +32,10 @@ function toTimestamp(value: string): TimestampString<3> {
 // ─── Interest Calculation ────────────────────────────────────────
 
 /**
- * Overdue levy notices for a scheme with statutory interest owed to date
- * (SSMA 2015 s 85: simple interest at 10% a year on the unpaid levy, none if
- * paid within one month of the due date). See src/config/statutory.ts.
+ * Overdue levy notices for a scheme with the late charge owed to date, under
+ * the building's `rules.LATE_CHARGE` (NSW, SSMA 2015 s 85: simple interest at
+ * 10% a year on the unpaid levy, none if paid within one month of the due
+ * date; Queensland: the resolved monthly penalty). See src/config/statutory.ts.
  */
 export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
   try {
@@ -73,10 +75,20 @@ export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
       };
     });
 
+    const rule = setting.rules.rules.LATE_CHARGE;
+    const charging = lateChargeApplies(rule, setting);
     return {
       notices: noticesWithInterest,
-      annualRate: setting.mode === "NO_INTEREST" ? 0 : needRule(setting.rules.rules, "STATUTORY_INTEREST").annualRatePercent,
+      /** The fixed annual rate while it is charged (NSW), else 0. */
+      annualRate: charging ? (rule.annualRatePercent ?? 0) : 0,
+      /** The resolved monthly rate while it is charged (Queensland), else 0. */
+      monthlyRate: charging && rule.annualRatePercent == null ? (setting.monthlyRatePercent ?? 0) : 0,
+      /** Whether the building's setting charges anything. */
+      charging,
       mode: setting.mode,
+      /** The setting as the pack reads it (a mode the pack does not allow is its default). */
+      effectiveMode: effectiveLateChargeMode(rule, setting.mode),
+      terms: setting.rules.rules.TERMINOLOGY,
       schemeName: scheme ? String(scheme.name) : "",
     };
   } catch (err) {
@@ -119,8 +131,10 @@ export async function chargeInterest(data: {
     throw new Error("Levy notice not found.");
   }
 
-  // The building's rule pack, recorded on the interest journal.
-  const { label: rulePack } = await rulesForScheme(schemeId);
+  // The building's rule pack, recorded on the interest journal, and its words for the late charge.
+  const { label: rulePack, rules } = await rulesForScheme(schemeId);
+  const t = rules.TERMINOLOGY;
+  const LateCharge = capitalise(t.lateCharge);
 
   // Never charge more than the statutory interest owed to date.
   const owed = data.alreadyVerified
@@ -128,7 +142,7 @@ export async function chargeInterest(data: {
     : (await statutoryInterestForScheme(schemeId)).find((i) => i.noticeId === noticeId);
   if (!owed || Math.round(interestAmount * 100) > owed.additionalCents) {
     throw new Error(
-      `No more than $${fromCents(owed?.additionalCents ?? 0).toFixed(2)} of interest is owed on this notice to date.`,
+      `No more than $${fromCents(owed?.additionalCents ?? 0).toFixed(2)} of ${t.lateCharge} is owed on this notice to date.`,
     );
   }
 
@@ -176,7 +190,7 @@ export async function chargeInterest(data: {
     schemeId,
     entryNumber,
     transactionDate: today,
-    description: `Interest charged on overdue levy — notice ${String(notice.noticeNumber)}`,
+    description: `${LateCharge} charged on overdue ${t.levy} — notice ${String(notice.noticeNumber)}`,
     entryType: "INTEREST",
     sourceType: "INTEREST",
     sourceId: noticeId,
@@ -187,14 +201,14 @@ export async function chargeInterest(data: {
         accountCodeId: receivableAccount.id,
         fundId: notice.fundId,
         debit: interestAmount,
-        description: `Interest receivable — notice ${String(notice.noticeNumber)}`,
+        description: `${LateCharge} receivable — notice ${String(notice.noticeNumber)}`,
         lotId: notice.lotId,
       },
       {
         accountCodeId: interestIncomeAccount.id,
         fundId: notice.fundId,
         credit: interestAmount,
-        description: `Interest income on overdue levy`,
+        description: `${LateCharge} income on overdue ${t.levy}`,
       },
     ],
   });
@@ -241,12 +255,15 @@ export async function chargeInterestBatch(data: {
   if (!result) {
     return { charged: 0, totalInterest: 0, results: [] };
   }
-  const { notices, mode } = result;
+  const { notices, effectiveMode, charging, terms: t } = result;
 
-  if (mode === "NO_INTEREST") {
+  if (effectiveMode === "NO_INTEREST") {
     throw new Error(
-      "The owners corporation has resolved that contributions bear no interest, so none can be charged.",
+      `The ${t.ownersCorporation} has resolved that contributions bear no ${t.lateCharge}, so none can be charged.`,
     );
+  }
+  if (!charging) {
+    throw new Error(`No ${t.lateCharge} applies until the ${t.ownersCorporation} records the resolution that sets its rate, so none can be charged.`);
   }
 
   const chargeable = notices.filter((n) => n.additionalInterest > 0);

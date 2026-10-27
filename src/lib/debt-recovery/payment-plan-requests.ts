@@ -28,6 +28,7 @@ import {
   type TermsInput,
 } from "./payment-plans";
 import { needRule } from "@/config/statutory";
+import { allocatePayment, type PaymentAllocationOrder } from "@/lib/finance/statutory-interest";
 
 export class PaymentPlanError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -88,9 +89,11 @@ async function openCaseFor(schemeId: string, lotId: string) {
 
 /**
  * What the lot owes now on levy notices past their due date: levies and
- * interest, with payments applied to the levy first, then interest.
+ * interest, with each notice's payments applied in the building's order
+ * (`rules.PAYMENT_ALLOCATION_ORDER`): NSW applies them to the levy first, then
+ * interest. Without an order, levy first.
  */
-export async function lotArrears(schemeId: string, lotId: string, today: string) {
+export async function lotArrears(schemeId: string, lotId: string, today: string, order?: PaymentAllocationOrder) {
   const notices = await db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.lotId.eq(lotId), n.status.neq("DRAFT"), n.status.neq("WRITTEN_OFF"))).limit(2000).all();
   let leviesCents = 0;
   let interestCents = 0;
@@ -99,8 +102,10 @@ export async function lotArrears(schemeId: string, lotId: string, today: string)
     const due = toCents(String(n.amountDue));
     const paid = toCents(String(n.amountPaid ?? 0));
     const interest = toCents(String(n.interestCharged ?? 0));
-    leviesCents += Math.max(0, due - paid);
-    interestCents += Math.max(0, interest - Math.max(0, paid - due));
+    // A notice with a negative levy (a credit) adds it to what is paid, as before.
+    const applied = allocatePayment(paid - Math.min(0, due), { levyCents: Math.max(0, due), interestCents: interest, recoveryCostsCents: 0 }, order);
+    leviesCents += Math.max(0, due - applied.levyCents);
+    interestCents += Math.max(0, interest - applied.interestCents);
   }
   return { leviesCents, interestCents };
 }
@@ -433,8 +438,8 @@ export async function decisionDefaults(schemeId: string, lotId: string, actorId:
     db.orm.public.SchemeBankAccount.where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true))).limit(20).all(),
     db.orm.public.Profile.where((p) => p.id.eq(actorId)).first(),
   ]);
-  const { leviesCents, interestCents } = await lotArrears(schemeId, lotId, today);
   const rules = setting.rules.rules;
+  const { leviesCents, interestCents } = await lotArrears(schemeId, lotId, today, rules.PAYMENT_ALLOCATION_ORDER);
   const i = needRule(rules, "STATUTORY_INTEREST");
   const citations = needRule(rules, "CITATIONS");
   const interestMethod =

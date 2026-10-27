@@ -726,6 +726,21 @@ exports[`NSW funds and entitlement schedules (phase 2 foundation) > are the fund
       "status": "GUIDANCE",
     },
   ],
+  "LATE_CHARGE": {
+    "annualRatePercent": 10,
+    "defaultMode": "STATUTORY",
+    "graceMonths": 1,
+    "maxMonthlyRatePercent": null,
+    "method": "DAILY_SIMPLE_ANNUAL",
+    "modes": [
+      "STATUTORY",
+      "NO_INTEREST",
+    ],
+    "resolutionRequiredFor": [
+      "NO_INTEREST",
+    ],
+    "source": "Strata Schemes Management Act 2015 (NSW) s 85",
+  },
   "NOTICE_RULES": {
     "contents": [
       "the strata plan number",

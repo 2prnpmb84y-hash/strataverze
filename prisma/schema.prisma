@@ -156,8 +156,12 @@ model Scheme {
   gstRegistered       Boolean             @default(false) @map("gst_registered")
   preMeetingEvotingAdopted Boolean        @default(false) @map("pre_meeting_evoting_adopted") // body resolved to adopt pre-meeting e-voting (Reg cl 14)
   interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // Deprecated: interest follows SSMA s 85 (see interestMode)
-  /// STATUTORY (SSMA 2015 s 85: 10% simple, one month grace) or NO_INTEREST by recorded resolution (s 85(3)).
+  /// The late charge mode, from the building's rule pack (LATE_CHARGE.modes). NSW: STATUTORY (SSMA 2015 s 85:
+  /// 10% simple, one month grace) or NO_INTEREST by recorded resolution (s 85(3)). QLD: NONE (no penalty) or
+  /// RESOLVED_RATE (a monthly penalty at the rate a recorded resolution set, Standard Module s 165).
   interestMode        String              @default("STATUTORY") @map("interest_mode")
+  /// The resolved monthly penalty rate; set exactly when interestMode is RESOLVED_RATE (> 0, <= 100; the pack caps it lower).
+  lateChargeMonthlyRatePercent Decimal?   @db.Decimal(5, 2) @map("late_charge_monthly_rate_percent")
   interestResolutionMeetingId String?     @map("interest_resolution_meeting_id") @db.Uuid
   interestResolutionMotionId  String?     @map("interest_resolution_motion_id") @db.Uuid
   interestResolutionRecordedBy String?    @map("interest_resolution_recorded_by") @db.Uuid

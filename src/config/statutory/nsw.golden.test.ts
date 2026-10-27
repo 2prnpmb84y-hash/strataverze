@@ -54,9 +54,9 @@ const WORDING = ["TERMINOLOGY", "CITATIONS", "HARDSHIP_INFORMATION", "DEBT_RECOV
 const WORKFLOWS = ["PAYMENT_PLANS", "COMMITTEE_TRAINING", "ANNUAL_REPORTING", "RECORD_RETENTION", "SALE_CERTIFICATE", "RECORDS_INSPECTION"] as const;
 /**
  * The funds and entitlement schedules as data (phase 2 foundation, 27 Oct 2026), the workflows the pack switches on
- * (stage 2), and the notice rules in the shared shape (stage 2, step 5).
+ * (stage 2), the notice rules in the shared shape (stage 2, step 5) and the late charge in the shared shape (step 6).
  */
-const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES", "FEATURES", "NOTICE_RULES"] as const;
+const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES", "FEATURES", "NOTICE_RULES", "LATE_CHARGE"] as const;
 
 describe("NSW statutory workflows (Oct 2026)", () => {
   it("are the rules recorded", () => {

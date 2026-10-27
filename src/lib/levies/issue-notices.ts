@@ -42,7 +42,6 @@ import { addDays, toCents, toIsoDay } from "./notice-plan";
 import { issueDateFor, issueTiming, lateMessage } from "./issue-timing";
 import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
-import { needRule } from "@/config/statutory";
 import { platformToday, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { schemeTimeZone, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
@@ -133,9 +132,7 @@ export async function issueNoticeBatch(input: {
   if (input.notices.length === 0) return { count: 0, emailed: 0, creditAppliedCents: 0 };
   const owners = await currentOwners(input.schemeId);
   // The building's rule pack, recorded on each notice it issues.
-  const { label: rulePack, rules: packRules } = await rulesForScheme(input.schemeId);
-  // Notices state the late charge from the NSW interest rule until stage 2 step 6, so a pack without it issues nothing (checked here too, so no caller can skip it).
-  needRule(packRules, "STATUTORY_INTEREST");
+  const { label: rulePack } = await rulesForScheme(input.schemeId);
   // One stamp for this run's claims, so a failure puts back only what this run claimed.
   const claimedAt = new Date().toISOString();
   const claimed: BatchNotice[] = [];
@@ -341,8 +338,6 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
     try {
       // The building's own notice rules (throws for a state with no rule pack), and its today.
       const scheduleRules = rulesForState(stateOf.get(schedule.schemeId)).rules;
-      // A pack without the late charge rule issues nothing, before anything is written (stage 2 step 6 replaces this).
-      needRule(scheduleRules, "STATUTORY_INTEREST");
       const rule = scheduleRules.NOTICE_RULES;
       const today = todayIn(timeZoneOf(schemeOf.get(schedule.schemeId)), now);
       // Not yet in the building's issue window: next run.

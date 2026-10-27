@@ -151,6 +151,48 @@ export interface HardshipInformation {
 }
 
 /**
+ * A building's late charge setting (`schemes.interest_mode`):
+ * - STATUTORY: the rate the law fixes (NSW);
+ * - NO_INTEREST: none, because a recorded resolution says so (NSW);
+ * - NONE: none, because none has been resolved (Queensland's default);
+ * - RESOLVED_RATE: at the rate a recorded resolution set (Queensland).
+ */
+export type LateChargeMode = "STATUTORY" | "NO_INTEREST" | "NONE" | "RESOLVED_RATE";
+
+/**
+ * How the late charge on an overdue levy is worked out:
+ * - DAILY_SIMPLE_ANNUAL: simple interest at an annual rate, day by day from
+ *   the due date, after a grace period (NSW);
+ * - MONTHLY_SIMPLE_WHOLE_MONTHS: simple interest at a monthly rate for each
+ *   whole month in arrears after the date for payment (Queensland).
+ */
+export type LateChargeMethod = "DAILY_SIMPLE_ANNUAL" | "MONTHLY_SIMPLE_WHOLE_MONTHS";
+
+/**
+ * The late charge on overdue levies (NSW interest, Queensland penalty), in
+ * one shape for every pack (stage 2, step 6, 27 Oct 2026).
+ */
+export interface LateChargeRules {
+  method: LateChargeMethod;
+  /** The settings a building may choose. */
+  modes: readonly LateChargeMode[];
+  /** The setting a new building starts with. */
+  defaultMode: LateChargeMode;
+  /** The settings that need the recorded general meeting resolution that decided them. */
+  resolutionRequiredFor: readonly LateChargeMode[];
+  /** The fixed annual rate (STATUTORY), or null where the law fixes none. */
+  annualRatePercent: number | null;
+  /** The highest monthly rate a resolution may set (RESOLVED_RATE), or null where none can be set. */
+  maxMonthlyRatePercent: number | null;
+  /** Whole months after the due date within which a levy paid in full bears no charge. */
+  graceMonths: number;
+  source: string;
+}
+
+/** The order a payment is applied to what an owner owes ("INTEREST" is the late charge, Queensland's penalty). */
+export type PaymentAllocationPart = "LEVY" | "INTEREST" | "RECOVERY_COSTS";
+
+/**
  * The rules for the notice that asks an owner to pay a levy (NSW) or a
  * contribution (Queensland), in one shape for every pack (stage 2, step 5,
  * 27 Oct 2026).

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { interestWords } from "@/lib/jurisdiction/wording";
+import { lateChargeWords } from "@/lib/jurisdiction/wording";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getOverdueLevyNoticesWithInterest } from "@/lib/queries/interest";
@@ -35,25 +35,20 @@ export default async function InterestPage({
     resolutionMeetings(id),
   ]);
   const notices = interestData?.notices ?? [];
-  const annualRate = interestData?.annualRate ?? 0;
-  // The building's interest wording (rate, grace period, citations).
-  const words = interestWords(setting.rules.rules);
+  // Whether the building's setting charges anything (NSW interest, Queensland penalty).
+  const charging = interestData?.charging ?? false;
+  // The building's late charge wording (its pack's modes, rate, grace period, citations).
+  const words = lateChargeWords(setting.rules.rules, setting, charging);
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Interest on Overdue Levies"
-        description={
-          annualRate > 0
-            ? `Statutory interest: ${annualRate}% a year simple interest on levies unpaid ${words.grace} after the due date (${words.citation}).`
-            : `No interest: the ${words.ownersCorporation} resolved that contributions bear no interest (${words.noInterestCitation}).`
-        }
-      />
+      <PageHeader title={words.title} description={words.description} />
 
       <Card>
         <InterestSettingForm
           schemeId={id}
           mode={setting.mode}
+          monthlyRatePercent={setting.monthlyRatePercent}
           meetingId={setting.meetingId}
           motionId={setting.motionId}
           meetings={meetings}
@@ -77,7 +72,7 @@ export default async function InterestPage({
           graceEnds: n.graceEnds,
           interestReason: n.interestReason,
         }))}
-        annualRate={annualRate}
+        charging={charging}
         words={words}
       />
     </div>
