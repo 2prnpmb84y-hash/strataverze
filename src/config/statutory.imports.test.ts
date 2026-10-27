@@ -23,6 +23,9 @@ const ALLOWED = new Set([
   "UnsupportedJurisdictionError",
   "StatutoryRules",
   "RulePack",
+  "NswRules",
+  "needRule",
+  "RuleNotInPackError",
 ]);
 
 const SRC = join(__dirname, "..");
@@ -42,7 +45,8 @@ describe("statutory rule imports", () => {
       const rel = relative(SRC, file);
       if (rel.startsWith("config/")) continue;
       const text = readFileSync(file, "utf8");
-      if (/from "@\/config\/statutory\/[^"]+"/.test(text)) problems.push(`${rel} imports a jurisdiction file directly`);
+      // need-rule holds no rules (needRule and RuleNotInPackError only), so it may be imported directly.
+      for (const m of text.matchAll(/from "@\/config\/statutory\/([^"]+)"/g)) if (m[1] !== "need-rule") problems.push(`${rel} imports a jurisdiction file directly`);
       for (const m of text.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+"@\/config\/statutory"/g)) {
         for (const raw of m[1].split(",")) {
           const name = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim();
@@ -56,7 +60,7 @@ describe("statutory rule imports", () => {
 
   it("the allowed names exist", () => {
     for (const n of ALLOWED) {
-      if (n === "StatutoryRules" || n === "RulePack") continue; // types
+      if (n === "StatutoryRules" || n === "RulePack" || n === "NswRules") continue; // types
       expect(statutory, n).toHaveProperty(n);
     }
   });

@@ -20,11 +20,35 @@
  */
 import * as NSW from "./statutory/nsw";
 import * as QLD from "./statutory/qld";
+import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures, SharedTerminology } from "./statutory/types";
 
 export * from "./statutory/nsw";
 
-/** The rules every jurisdiction's pack provides. */
-export type StatutoryRules = typeof NSW;
+/** The NSW pack's rules, every one of them. */
+export type NswRules = typeof NSW;
+
+/**
+ * What every pack provides (stage 2, 27 Oct 2026). Shared code may read these
+ * for any building.
+ */
+export interface SharedRules {
+  TERMINOLOGY: SharedTerminology;
+  FUND_CATALOGUE: readonly FundDefinition[];
+  ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[];
+  PAYMENT_ALLOCATION_ORDER: readonly ("LEVY" | "INTEREST" | "RECOVERY_COSTS")[];
+  FEATURES: PackFeatures;
+}
+
+/**
+ * A building's rules. Everything beyond SharedRules is in the NSW shape and
+ * optional: code that needs one of those rules gets it with `needRule`, which
+ * refuses a building whose pack does not have it, or checks FEATURES first.
+ * As each area is made jurisdiction-neutral, its rule moves into SharedRules.
+ */
+export type StatutoryRules = SharedRules & Partial<Omit<NswRules, keyof SharedRules>>;
+
+/** `needRule` and `RuleNotInPackError` live in a module with no pack data, so the browser can use them. */
+export { needRule, RuleNotInPackError } from "./statutory/need-rule";
 
 export interface RulePack {
   /** Jurisdiction code, for example AU-NSW. */
@@ -59,7 +83,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     // the audit lots test also leaves out common property rows (decided by StrataVerze).
     // 2026.10.7 (26 Oct 2026): SALE_CERTIFICATE and RECORDS_INSPECTION added (s 184 certificates, s 182 inspections).
     // 2026.10.8 (27 Oct 2026): FUND_CATALOGUE and ENTITLEMENT_SCHEDULES added (the funds and unit entitlement as data); no rule value changed.
-    version: "2026.10.8",
+    // 2026.10.9 (27 Oct 2026): FEATURES added (which NSW workflows the pack switches on); no rule value changed.
+    version: "2026.10.9",
     reviewer: "Matthew Wrigley",
     // The NSW rules were in use before the plan. Several were confirmed one by
     // one (dates noted on each in nsw.ts), but the pack as a whole has not
@@ -97,7 +122,9 @@ export const PENDING_RULE_PACKS = {
     // 2026.10.1 (27 Oct 2026): Standard Module, researched from the in-force Act and SM, for review.
     // 2026.10.2 (27 Oct 2026): signed off by Matthew Wrigley with the six decisions in DECISIONS; the
     // points in NOT_CONFIRMED stay not confirmed.
-    version: "2026.10.2",
+    // 2026.10.3 (27 Oct 2026): FEATURES added (none of the NSW workflows applies); a platform switch,
+    // not a rule of law, so the sign-off stands.
+    version: "2026.10.3",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

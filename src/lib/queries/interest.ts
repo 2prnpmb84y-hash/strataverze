@@ -14,6 +14,7 @@ import { logActivity } from "./activity-log";
 import { fromCents } from "@/lib/billing/money";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { getSchemeInterestSetting, statutoryInterestForScheme } from "@/lib/finance/interest-setting";
+import { needRule } from "@/config/statutory";
 
 /** Cast a number or string to the Prisma 8 Numeric branded type. */
 function toNumeric<P extends number = 12, S extends number = 2>(
@@ -74,7 +75,7 @@ export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
 
     return {
       notices: noticesWithInterest,
-      annualRate: setting.mode === "NO_INTEREST" ? 0 : setting.rules.rules.STATUTORY_INTEREST.annualRatePercent,
+      annualRate: setting.mode === "NO_INTEREST" ? 0 : needRule(setting.rules.rules, "STATUTORY_INTEREST").annualRatePercent,
       mode: setting.mode,
       schemeName: scheme ? String(scheme.name) : "",
     };

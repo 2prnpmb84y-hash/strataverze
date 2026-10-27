@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getLotDetail } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
@@ -100,10 +101,12 @@ export default async function LotDetailPage({
           <FileText size={14} />
           Strata Report
         </Button>
-        <Button variant="secondary" className="text-xs h-9 px-4" href={`/adviser/schemes/${id}/lots/${lotId}/certificates`}>
-          <Award size={14} />
-          Info Certificate
-        </Button>
+        {rulesForState(scheme.state).rules.FEATURES.strataInformationCertificate && (
+          <Button variant="secondary" className="text-xs h-9 px-4" href={`/adviser/schemes/${id}/lots/${lotId}/certificates`}>
+            <Award size={14} />
+            Info Certificate
+          </Button>
+        )}
         <LotActionButtons schemeId={id} lotId={lotId} deliveryPrefs={deliveryPrefs} />
         <ChangeOwnerButton
           schemeId={id}

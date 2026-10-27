@@ -12,6 +12,7 @@ import { committeeMembers, decisionsFor, mayWithdraw } from "./review";
 import { decodeSummary } from "./marketplace";
 import { requestPhotos } from "./requests";
 import { ROUTE_OUTCOMES, isRouteOutcome, requestStatusLabel, tally, votesSentence } from "./decision-rules";
+import { needRule } from "@/config/statutory";
 
 export interface DecisionVoteView {
   voterName: string;
@@ -145,7 +146,7 @@ export async function loadRequestView(schemeId: string, requestId: string, viewe
         : null,
   };
 
-  const spending = (await rulesForScheme(schemeId)).rules.WORKS_SPENDING_RULES;
+  const spending = needRule((await rulesForScheme(schemeId)).rules, "WORKS_SPENDING_RULES");
   return {
     /** The building's time zone, for showing dates and times. */
     timeZone: tz,

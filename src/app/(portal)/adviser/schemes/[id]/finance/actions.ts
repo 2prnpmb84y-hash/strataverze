@@ -97,7 +97,7 @@ import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconcili
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { UnsupportedJurisdictionError } from "@/config/statutory";
+import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
 import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
@@ -1201,7 +1201,7 @@ export async function issueScheduleNoticesAction(
 
     // When each notice goes out: 5 weeks before it falls due. A special levy
     // is resolved for one date and goes out now.
-    const levyRule = (await rulesForScheme(schemeId)).rules.LEVY_NOTICE_RULES;
+    const levyRule = needRule((await rulesForScheme(schemeId)).rules, "LEVY_NOTICE_RULES");
     const timed = plan.map((n) => ({ n, t: isSpecial ? ({ kind: "planned", issueOn: today, dueDate: n.dueDate } as IssueTiming) : issueTiming(n.dueDate, today, levyRule) }));
     const late = [...new Map(timed.filter((x) => x.t.kind !== "planned").map((x) => [x.n.instalment, lateMessage(x.t, `Instalment ${x.n.instalment}`, levyRule)!])).values()];
     if (late.length && formData.get("confirmLate") !== "on") {
@@ -1301,7 +1301,7 @@ export async function issueOverdueNoticesAction(
     if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be sent." };
     const today = await schemeToday(schemeId);
     const list = await overdueDrafts(schemeId, scheduleId, today);
-    const levyRule = (await rulesForScheme(schemeId)).rules.LEVY_NOTICE_RULES;
+    const levyRule = needRule((await rulesForScheme(schemeId)).rules, "LEVY_NOTICE_RULES");
     if (!list.length) return { error: `No planned notice is past its ${noticeLeadMark(levyRule)}.` };
     const late = [...new Set(list.map(({ n, t }) => lateMessage(t, `Notices due ${toIsoDay(n.dueDate).split("-").reverse().join("/")}`, levyRule)!))];
     if (formData.get("confirmLate") !== "on") {
@@ -2851,7 +2851,7 @@ export async function saveInterestSettingAction(
     const meetingId = String(formData.get("meetingId") ?? "").trim() || null;
     const motionId = String(formData.get("motionId") ?? "").trim() || null;
     const { rules } = await rulesForScheme(schemeId);
-    const problem = interestSettingProblem({ mode, resolutionMeetingId: meetingId, resolutionMotionId: motionId }, rules.STATUTORY_INTEREST);
+    const problem = interestSettingProblem({ mode, resolutionMeetingId: meetingId, resolutionMotionId: motionId }, needRule(rules, "STATUTORY_INTEREST"));
     if (problem) return { error: problem };
 
     if (mode === "NO_INTEREST") {

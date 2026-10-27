@@ -10,6 +10,7 @@ import { toCents } from "@/lib/billing/money";
 import { formatLotLabel } from "@/lib/format";
 import { paymentPlanRequestDetail } from "@/lib/debt-recovery/payment-plan-requests";
 import { renderPaymentPlanReplyPdf } from "./payment-plan";
+import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -24,7 +25,7 @@ export async function generatePaymentPlanReplyPdf(schemeId: string, requestId: s
     db.orm.public.LotDetail.where((d) => d.lotId.eq(r.lotId)).first(),
     schemeToday(schemeId),
   ]);
-  const pp = rules.PAYMENT_PLANS;
+  const pp = needRule(rules, "PAYMENT_PLANS");
   const oc = rules.TERMINOLOGY.ownersCorporation;
   const bytes = await renderPaymentPlanReplyPdf({
     schemeName: String(scheme?.name ?? ""),

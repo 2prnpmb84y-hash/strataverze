@@ -27,6 +27,7 @@ import {
   type LevyNoticeDocument,
 } from "./documents";
 import { storeGeneratedPdf } from "./store";
+import { needRule } from "@/config/statutory";
 
 const APP_URL = siteUrl();
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
@@ -81,8 +82,8 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       },
       ledgerUrl: `${APP_URL}/owner/levies`,
       noInterest: setting.mode === "NO_INTEREST",
-      interest: setting.rules.rules.STATUTORY_INTEREST,
-      hardship: setting.rules.rules.HARDSHIP_INFORMATION,
+      interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
+      hardship: needRule(setting.rules.rules, "HARDSHIP_INFORMATION"),
       ownersCorporation: setting.rules.rules.TERMINOLOGY.ownersCorporation,
     },
   };
@@ -211,11 +212,13 @@ export async function generateCommitteePackPdf(input: { schemeId: string; startD
 /** The rules shown on an adopted copy that was stored before rule packs were recorded. */
 async function adoptedPackRulesFallback(schemeId: string): Promise<StatutoryPack["rules"]> {
   const { rules } = await rulesForScheme(schemeId);
-  return { rulePack: "", keyFinancialInformation: rules.KEY_FINANCIAL_INFORMATION, auditThreshold: rules.AUDIT_THRESHOLD };
+  return { rulePack: "", keyFinancialInformation: needRule(rules, "KEY_FINANCIAL_INFORMATION"), auditThreshold: needRule(rules, "AUDIT_THRESHOLD") };
 }
 
 /** The statutory statements: the locked copy once adopted at the AGM, else recalculated from the ledger. */
 export async function generateStatutoryPackPdf(input: { schemeId: string; financialYear: number; actorId: string }): Promise<GeneratedPdf | null> {
+  // Only buildings whose rule pack has the statement of key financial information.
+  if (!(await rulesForScheme(input.schemeId)).rules.FEATURES.keyFinancialInformation) return null;
   const snapshot = await db.orm.public.StatutoryPackSnapshot
     .where((s) => and(s.schemeId.eq(input.schemeId), s.financialYear.eq(input.financialYear)))
     .first();

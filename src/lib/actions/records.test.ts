@@ -7,6 +7,12 @@ vi.mock("@/lib/auth/require-membership", async () => {
   return { ...actual, requireSchemeMembership: (...a: unknown[]) => membership(...a) };
 });
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// The building's rule pack has the workflow unless a test says otherwise.
+const hasFeature = vi.fn(async (_schemeId: string, _feature: string) => true);
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
+  return { ...actual, schemeHasFeature: (...a: [string, string]) => hasFeature(...a) };
+});
 const store = {
   createCertificate: vi.fn(async () => ({ id: "c1" })),
   saveCertificateDraft: vi.fn(),
@@ -69,5 +75,21 @@ describe("certificate and inspection actions", () => {
     membership.mockResolvedValue({ profile: { id: "a1" }, membership: {}, roles: ["ADVISER"] });
     await actions.issueCertificateAction(SCHEME, "lot-1", "c1", {}, form({}));
     expect(store.issueCertificate).toHaveBeenCalledWith(expect.objectContaining({ checkedAll: false }));
+  });
+});
+
+describe("a building whose rule pack does not have the workflow", () => {
+  it("refuses to start a certificate or record an inspection, writing nothing", async () => {
+    membership.mockResolvedValue({ profile: { id: "a1" }, membership: {}, roles: ["ADVISER"] });
+    hasFeature.mockResolvedValue(false);
+    try {
+      expect((await actions.createCertificateAction(SCHEME, "lot-1", {}, form({}))).error).toBe("This is not available for this building.");
+      expect((await actions.createInspectionAction(SCHEME, {}, form({}))).error).toBe("This is not available for this building.");
+      expect(hasFeature.mock.calls.map((c) => c[1])).toEqual(["strataInformationCertificate", "recordsInspections"]);
+      expect(store.createCertificate).not.toHaveBeenCalled();
+      expect(store.createInspection).not.toHaveBeenCalled();
+    } finally {
+      hasFeature.mockResolvedValue(true);
+    }
   });
 });

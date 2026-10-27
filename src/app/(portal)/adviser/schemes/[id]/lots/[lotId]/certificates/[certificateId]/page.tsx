@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { CertificateEditor, ConfirmButton, RecordsForm } from "@/components/records/records-forms";
+import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -27,7 +28,8 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   const cert = await db.orm.public.SaleCertificate.where((c) => c.id.eq(certificateId)).first();
   if (!cert || cert.schemeId !== id || cert.lotId !== lotId) notFound();
   const [lot, { rules }, today] = await Promise.all([db.orm.public.Lot.where((l) => l.id.eq(lotId)).first(), rulesForScheme(id), schemeToday(id)]);
-  const c = rules.SALE_CERTIFICATE;
+  if (!rules.FEATURES.strataInformationCertificate) notFound();
+  const c = needRule(rules, "SALE_CERTIFICATE");
   const items = cert.items as unknown as CertificateItem[];
   const toComplete = items.filter((i) => /check and complete/i.test(i.text)).map((i) => i.no);
   const pdf = `/api/records/certificate/${cert.id}?schemeId=${id}`;

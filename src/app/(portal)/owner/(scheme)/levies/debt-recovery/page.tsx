@@ -3,6 +3,7 @@ import { scopeToSelectedScheme, scopeSchemeIds } from "@/lib/owner/scheme-scope"
 import { debtorMayView } from "@/lib/owner/debt-case-view";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemesForCommittee, getSchemesForOwner } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import {
   getDebtRecoveryCasesForOwner,
   getDebtRecoveryCasesForSchemes,
@@ -39,7 +40,7 @@ export default async function OwnerDebtRecoveryPage() {
   const isCommittee = committeeIds.length > 0;
   const committeeCases = await getDebtRecoveryCasesForSchemes(committeeIds);
   const seen = new Set(committeeCases.map((c) => c.id));
-  const cases = [
+  const visible = [
     ...committeeCases,
     ...ownCases.filter(
       (c) =>
@@ -48,6 +49,11 @@ export default async function OwnerDebtRecoveryPage() {
         debtorMayView(c, profile.id, ownerMemberships),
     ),
   ];
+  // Only cases of buildings whose rule pack has the debt recovery steps.
+  const caseSchemeIds = [...new Set(visible.map((c) => c.schemeId))];
+  const caseSchemes = caseSchemeIds.length ? await db.orm.public.Scheme.where((s) => s.id.in(caseSchemeIds)).limit(caseSchemeIds.length).all() : [];
+  const withSteps = new Set(caseSchemes.filter((s) => rulesForState(s.state).rules.FEATURES.debtRecoverySteps).map((s) => s.id));
+  const cases = visible.filter((c) => withSteps.has(c.schemeId));
 
   // Build lot/scheme lookup from the user's schemes
   const byId = new Map<string, { id: string; name: string }>();

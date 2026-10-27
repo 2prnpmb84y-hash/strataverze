@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { RecordsForm } from "@/components/records/records-forms";
+import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 
@@ -32,7 +33,8 @@ export default async function LotCertificatesPage({ params }: { params: Promise<
     schemeToday(id),
     db.orm.public.SaleCertificate.where((c) => c.lotId.eq(lotId)).orderBy((c) => c.number.desc()).limit(200).all(),
   ]);
-  const c = rules.SALE_CERTIFICATE;
+  if (!rules.FEATURES.strataInformationCertificate) notFound();
+  const c = needRule(rules, "SALE_CERTIFICATE");
   const base = `/adviser/schemes/${id}/lots/${lotId}/certificates`;
   return (
     <div className="space-y-6 max-w-4xl">

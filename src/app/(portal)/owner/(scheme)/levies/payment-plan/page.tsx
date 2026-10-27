@@ -18,6 +18,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { PaymentPlanRequestForm } from "@/components/debt-recovery/payment-plan-forms";
 import { OwnerWithdrawButton } from "./withdraw-button";
+import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 const aud = (v: unknown) => formatAud(toCents(String(v ?? 0)));
@@ -30,8 +31,11 @@ export default async function OwnerPaymentPlanPage() {
   if (!profile) return null;
   const schemes = scopeToSelectedScheme(await getSchemesForOwner(profile.id), await getVerifiedSelectedSchemeId());
   if (schemes.length === 0) notFound();
+  // Only buildings whose rule pack has the payment plan workflow.
+  const planSchemes = schemes.filter((s) => rulesForState(s.state).rules.FEATURES.statutoryPaymentPlans);
+  if (planSchemes.length === 0) notFound();
 
-  const lots = schemes.flatMap((s) =>
+  const lots = planSchemes.flatMap((s) =>
     s.memberships
       .filter((m) => m.lotId && m.role === "OWNER" && m.isActive && m.profileId === profile.id)
       .map((m) => ({ scheme: s, lotId: m.lotId!, ownerSince: storedDayIn(timeZoneOf(s), m.startDate), label: `${formatLotLabel(m.lot ? String(m.lot.lotNumber) : "")}${m.lot?.unitNumber ? ` (Unit ${m.lot.unitNumber})` : ""}` })),
@@ -54,7 +58,8 @@ export default async function OwnerPaymentPlanPage() {
       <PageHeader title="Payment plan" description="If you are in financial hardship and cannot pay overdue levies in full, you can ask for a payment plan." backHref="/owner/levies" backLabel="My Levies" />
       {lots.map((lot) => {
         const pack = rulesForState(lot.scheme.state).rules;
-        const pp = pack.PAYMENT_PLANS;
+        const pp = needRule(pack, "PAYMENT_PLANS");
+        const hardship = needRule(pack, "HARDSHIP_INFORMATION");
         const oc = pack.TERMINOLOGY.ownersCorporation;
         const today = todayIn(timeZoneOf(lot.scheme));
         // Only requests and plans from this owner's own ownership (not the previous owner's).
@@ -158,7 +163,7 @@ export default async function OwnerPaymentPlanPage() {
                   ownersCorporation={oc}
                 />
                 <p className="mt-3 text-xs text-ink-muted">
-                  Free financial counselling: {pack.HARDSHIP_INFORMATION.helplineName}, {pack.HARDSHIP_INFORMATION.helplinePhone}, {pack.HARDSHIP_INFORMATION.helplineWeb}. More information: {pp.helpUrl}
+                  Free financial counselling: {hardship.helplineName}, {hardship.helplinePhone}, {hardship.helplineWeb}. More information: {pp.helpUrl}
                 </p>
               </Card>
             )}

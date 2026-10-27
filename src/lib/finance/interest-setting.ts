@@ -11,6 +11,7 @@ import { rulesForState, SchemeNotFoundError, type SchemeRules } from "@/lib/juri
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { todayIn } from "@/lib/jurisdiction/time-zone";
 import type { InterestSettingMode } from "./statutory-interest";
+import { needRule } from "@/config/statutory";
 
 const isoDay = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? "").slice(0, 10));
 
@@ -56,7 +57,7 @@ export interface NoticeInterest extends InterestResult {
 export async function statutoryInterestForScheme(schemeId: string, asAtDay?: string): Promise<NoticeInterest[]> {
   const setting = await getSchemeInterestSetting(schemeId);
   const asAt = asAtDay ?? todayIn(setting.timeZone);
-  const rule = setting.rules.rules.STATUTORY_INTEREST;
+  const rule = needRule(setting.rules.rules, "STATUTORY_INTEREST");
   const notices = await db.orm.public.LevyNotice
     .where((n) => and(n.schemeId.eq(schemeId), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"])))
     .limit(5000)

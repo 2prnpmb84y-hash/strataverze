@@ -12,7 +12,7 @@
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
-import type { EntitlementScheduleDefinition, FundDefinition } from "./types";
+import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures } from "./types";
 
 /**
  * Interest on unpaid contributions.
@@ -748,3 +748,14 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
   },
 ];
 
+/** The NSW workflows, all on (stage 2, 27 Oct 2026). */
+export const FEATURES: PackFeatures = {
+  statutoryPaymentPlans: true,
+  committeeTraining: true,
+  strataHubAnnualReport: true,
+  capitalWorksFundPlan: true,
+  keyFinancialInformation: true,
+  strataInformationCertificate: true,
+  recordsInspections: true,
+  debtRecoverySteps: true,
+};

@@ -11,6 +11,7 @@ import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { isCalendarDay, meetingZone, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { getFundsWithBalances } from "@/lib/queries/funds";
 import { annualReportStatus } from "./annual-report";
+import { needRule } from "@/config/statutory";
 
 export class AnnualReportError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -56,7 +57,9 @@ export async function annualReportOverview(schemeId: string, now: Date = new Dat
   const tz = timeZoneOf(scheme);
   const today = todayIn(tz, now);
   const pack = rulesForState(scheme.state).rules;
-  const rules = pack.ANNUAL_REPORTING;
+  // Only buildings whose pack has the Strata Hub report: for the others there is no report and no reminder.
+  if (!pack.FEATURES.strataHubAnnualReport) return null;
+  const rules = needRule(pack, "ANNUAL_REPORTING");
   const [{ agms, rows }, lots, funds, policies] = await Promise.all([
     agmsHeld(schemeId, tz, today),
     db.orm.public.Lot.where((l) => l.schemeId.eq(schemeId)).limit(5000).all(),

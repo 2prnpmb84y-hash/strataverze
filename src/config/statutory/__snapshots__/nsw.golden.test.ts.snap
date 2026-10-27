@@ -692,6 +692,16 @@ exports[`NSW funds and entitlement schedules (phase 2 foundation) > are the fund
       ],
     },
   ],
+  "FEATURES": {
+    "capitalWorksFundPlan": true,
+    "committeeTraining": true,
+    "debtRecoverySteps": true,
+    "keyFinancialInformation": true,
+    "recordsInspections": true,
+    "statutoryPaymentPlans": true,
+    "strataHubAnnualReport": true,
+    "strataInformationCertificate": true,
+  },
   "FUND_CATALOGUE": [
     {
       "key": "ADMINISTRATIVE",

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { Card, CardHeader } from "@/components/ui/card";
 import { connection } from "next/server";
@@ -128,6 +129,8 @@ export default async function ReportsPage({
     (m) => m.profileId === profile.id && m.role === "ADVISER",
   );
   if (!isAdviser) notFound();
+  // The statutory statements only where the building's rule pack has key financial information.
+  const keyFinancialInformation = rulesForState(scheme.state).rules.FEATURES.keyFinancialInformation;
 
   return (
     <div className="space-y-6">
@@ -141,7 +144,7 @@ export default async function ReportsPage({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {reports.map((report) => (
+        {reports.filter((report) => report.key !== "statutory-pack" || keyFinancialInformation).map((report) => (
           <Link
             key={report.key}
             href={`/adviser/schemes/${id}/finance/reports${report.href}`}

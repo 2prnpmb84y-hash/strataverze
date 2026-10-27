@@ -9,6 +9,7 @@ import {
 } from "@/lib/queries/debt-recovery";
 import { CaseDetailClient } from "./case-detail-client";
 import { previewRecoveryFees } from "@/lib/billing/capture";
+import { needRule } from "@/config/statutory";
 
 export default async function DebtRecoveryCaseDetailPage({
   params,
@@ -27,6 +28,8 @@ export default async function DebtRecoveryCaseDetailPage({
     (m) => m.profileId === profile.id && m.role === "ADVISER",
   );
   if (!isAdviser) notFound();
+  const { rules } = await rulesForScheme(id);
+  if (!rules.FEATURES.debtRecoverySteps) notFound();
 
   const debtCase = await getDebtRecoveryCaseWithDetails(caseId);
   if (!debtCase || debtCase.schemeId !== id) notFound();
@@ -67,7 +70,7 @@ export default async function DebtRecoveryCaseDetailPage({
   return (
     <CaseDetailClient
       recoveryFees={await previewRecoveryFees()}
-      stepGuidance={(await rulesForScheme(id)).rules.DEBT_RECOVERY_GUIDANCE}
+      stepGuidance={needRule(rules, "DEBT_RECOVERY_GUIDANCE")}
       schemeId={id}
       lotNumber={lot ? String(lot.lotNumber) : "—"}
       unitNumber={lot?.unitNumber ?? null}

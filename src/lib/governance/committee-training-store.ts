@@ -10,6 +10,7 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { isTrainingExemption, trainingStatus, type TrainingStatus } from "./committee-training";
+import { needRule } from "@/config/statutory";
 
 export class TrainingError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -53,7 +54,10 @@ export async function committeeTrainingRows(schemeId: string, now: Date = new Da
   if (!scheme) return null;
   const tz = timeZoneOf(scheme);
   const today = todayIn(tz, now);
-  const rules = rulesForState(scheme.state).rules;
+  const pack = rulesForState(scheme.state).rules;
+  // Only buildings whose pack has committee training: for the others there is nothing to track or remind.
+  if (!pack.FEATURES.committeeTraining) return null;
+  const training = needRule(pack, "COMMITTEE_TRAINING");
   const [members, records, schemeLots] = await Promise.all([
     db.orm.public.SchemeMembership.where((m) => and(m.schemeId.eq(schemeId), m.role.eq("COMMITTEE"), m.isActive.eq(true))).limit(200).all(),
     db.orm.public.CommitteeTraining.where((t) => t.schemeId.eq(schemeId)).limit(500).all(),
@@ -68,7 +72,7 @@ export async function committeeTrainingRows(schemeId: string, now: Date = new Da
     const appointedOn = r && appointmentRecorded ? day(r.appointedOn) : storedDayIn(tz, m.startDate);
     const s = trainingStatus(
       { appointedOn, appointmentRecorded, completedOn: r?.completedOn ? day(r.completedOn) : null, exemption: r?.exemption ?? null, schemeLots, today },
-      rules.COMMITTEE_TRAINING,
+      training,
     );
     return {
       profileId: m.profileId,
@@ -83,7 +87,7 @@ export async function committeeTrainingRows(schemeId: string, now: Date = new Da
     };
   });
   rows.sort((a, b) => a.name.localeCompare(b.name, "en-AU"));
-  return { scheme, today, timeZone: tz, rules: rules.COMMITTEE_TRAINING, ownersCorporation: rules.TERMINOLOGY.ownersCorporation, rows };
+  return { scheme, today, timeZone: tz, rules: training, ownersCorporation: pack.TERMINOLOGY.ownersCorporation, rows };
 }
 
 async function activeCommitteeMember(schemeId: string, profileId: string) {

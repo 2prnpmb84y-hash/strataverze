@@ -2,11 +2,15 @@
 /** Strata Hub annual report actions (advisers): record an AGM held outside StrataVerze, and the report made. */
 import { revalidatePath } from "next/cache";
 import { AuthorisationError, requireSchemeMembership } from "@/lib/auth/require-membership";
+import { schemeHasFeature } from "@/lib/jurisdiction/scheme-rules";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { logError } from "@/lib/log";
 import { AnnualReportError, recordAgmHeld, recordReported, removeRecordedAgm } from "@/lib/compliance/annual-report-store";
 
 export type ReportFormState = { error?: string; fieldErrors?: Record<string, string>; success?: string; values?: Record<string, string> };
+
+/** A building whose rule pack does not have the Strata Hub report. */
+const NOT_AVAILABLE = "This is not available for this building.";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const echo = (f: FormData) => Object.fromEntries([...f.entries()].filter(([, v]) => typeof v === "string")) as Record<string, string>;
@@ -21,6 +25,7 @@ function failure(err: unknown, f: FormData): ReportFormState {
 export async function recordAgmHeldAction(schemeId: string, _prev: ReportFormState, formData: FormData): Promise<ReportFormState> {
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!(await schemeHasFeature(schemeId, "strataHubAnnualReport"))) return { error: NOT_AVAILABLE };
     await recordAgmHeld({ schemeId, agmOn: text(formData, "agmOn"), today: await schemeToday(schemeId) });
     revalidatePath(`/adviser/schemes/${schemeId}/governance`, "layout");
     return { success: "AGM recorded." };
@@ -43,6 +48,7 @@ export async function removeRecordedAgmAction(schemeId: string, _prev: ReportFor
 export async function recordReportedAction(schemeId: string, _prev: ReportFormState, formData: FormData): Promise<ReportFormState> {
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
+    if (!(await schemeHasFeature(schemeId, "strataHubAnnualReport"))) return { error: NOT_AVAILABLE };
     await recordReported({
       schemeId,
       agmOn: text(formData, "agmOn"),

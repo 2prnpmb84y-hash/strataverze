@@ -14,6 +14,7 @@ import { graceText } from "@/lib/jurisdiction/wording";
 import { toCents } from "@/lib/billing/money";
 import { addMonths } from "@/lib/levies/notice-plan";
 import { lotArrears } from "@/lib/debt-recovery/payment-plan-requests";
+import { needRule } from "@/config/statutory";
 
 export interface CertificateItem {
   no: string;
@@ -73,11 +74,12 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
   const ordinary = (type: string) => relevant.filter((n) => !special.has(n.levyScheduleId) && (fundType.get(n.fundId) ?? "").includes(type));
   const specials = relevant.filter((n) => special.has(n.levyScheduleId));
 
-  const i = pack.STATUTORY_INTEREST;
+  const i = needRule(pack, "STATUTORY_INTEREST");
+  const citations = needRule(pack, "CITATIONS");
   const interestText =
     setting.mode === "NO_INTEREST"
-      ? `The ${pack.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${pack.CITATIONS.noInterestResolution}).`
-      : `Simple interest at ${i.annualRatePercent}% a year on contributions not paid ${graceText(i)} after they are due (${pack.CITATIONS.interest}).`;
+      ? `The ${pack.TERMINOLOGY.ownersCorporation} has resolved that contributions bear no interest (${citations.noInterestResolution}).`
+      : `Simple interest at ${i.annualRatePercent}% a year on contributions not paid ${graceText(i)} after they are due (${citations.interest}).`;
 
   // Meetings that opened (or were adjourned), and legacy SCHEDULED meetings whose date has passed (to confirm).
   const held = meetings
@@ -147,5 +149,5 @@ export async function draftCertificateItems(schemeId: string, lotId: string, now
     "22": "Only if the scheme is a member of a building management committee. Check and complete.",
     "23": NOT_HELD,
   };
-  return pack.SALE_CERTIFICATE.items.map(([no, title]) => ({ no, title, text: text[no] ?? NOT_HELD }));
+  return needRule(pack, "SALE_CERTIFICATE").items.map(([no, title]) => ({ no, title, text: text[no] ?? NOT_HELD }));
 }

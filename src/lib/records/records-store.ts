@@ -12,6 +12,7 @@ import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { localToInstant } from "@/lib/jurisdiction/time-zone";
 import { FIGURE_ITEMS, draftCertificateItems, type CertificateItem } from "./certificate-draft";
 import { certificateFee, inspectionDeadlines, inspectionFee, type InspectorType } from "./fees";
+import { needRule } from "@/config/statutory";
 
 export class RecordsError extends Error {
   constructor(message: string, readonly fieldErrors: Record<string, string> = {}) {
@@ -148,6 +149,7 @@ export async function refreshCertificateFigures(input: { schemeId: string; certi
 export async function issueCertificate(input: { schemeId: string; certificateId: string; actorId: string; checkedAll: boolean }) {
   if (!input.checkedAll) throw new RecordsError("Confirm you have checked every item.", { checkedAll: "Confirm you have checked and completed every item." });
   const [c, today, { rules, label }] = await Promise.all([draftOf(input.schemeId, input.certificateId), schemeToday(input.schemeId), rulesForScheme(input.schemeId)]);
+  const saleCertificate = needRule(rules, "SALE_CERTIFICATE");
   if (c.status !== "DRAFT") throw new RecordsError("This certificate has already been issued or cancelled.");
   if (day(c.draftedOn) < today) {
     throw new RecordsError(`The figures were taken from the records on ${day(c.draftedOn)}. Refresh them from the records, check them, then issue.`);
@@ -163,7 +165,7 @@ export async function issueCertificate(input: { schemeId: string; certificateId:
     if (!lot) throw new RecordsError("Lot not found.");
     await tx.orm.public.Lot.where((l) => l.id.eq(c.lotId)).update({ lotNumber: lot.lotNumber });
     const earlier = await tx.orm.public.SaleCertificate.where((x) => and(x.lotId.eq(c.lotId), x.status.eq("ISSUED"))).limit(500).all();
-    fee = certificateFee(today, earlier.map((x) => day(x.certificateDate)), rules.SALE_CERTIFICATE);
+    fee = certificateFee(today, earlier.map((x) => day(x.certificateDate)), saleCertificate);
     const n = await tx.orm.public.SaleCertificate.where((x) => and(x.id.eq(c.id), x.status.eq("DRAFT"))).updateAndCount({
       status: "ISSUED",
       certificateDate: today,
@@ -229,14 +231,15 @@ async function inspectionOf(schemeId: string, id: string) {
 /** Record the agreed time and place, or the one the owners corporation set by written notice. */
 export async function scheduleInspection(input: { schemeId: string; id: string; when: string; place: string; setByNotice: boolean }) {
   const [r, tz, { rules }] = await Promise.all([inspectionOf(input.schemeId, input.id), schemeTimeZone(input.schemeId), rulesForScheme(input.schemeId)]);
+  const inspection = needRule(rules, "RECORDS_INSPECTION");
   const at = localToInstant(tz, input.when);
   const e: Record<string, string> = {};
   if (!at) e.when = "Enter the date and time.";
   else {
     const on = input.when.slice(0, 10);
-    const { setBy } = inspectionDeadlines(day(r.requestedOn), rules.RECORDS_INSPECTION);
+    const { setBy } = inspectionDeadlines(day(r.requestedOn), inspection);
     if (on < day(r.requestedOn)) e.when = "The inspection cannot be before the request.";
-    else if (input.setByNotice && on > setBy) e.when = `A date set by notice must be within ${rules.RECORDS_INSPECTION.setWithinDays} days of the request (by ${setBy}).`;
+    else if (input.setByNotice && on > setBy) e.when = `A date set by notice must be within ${inspection.setWithinDays} days of the request (by ${setBy}).`;
   }
   if (!input.place.trim()) e.place = "Enter the place (or how it will be given electronically).";
   if (Object.keys(e).length) throw new RecordsError("Check the time and place.", e);
@@ -253,7 +256,7 @@ export async function scheduleInspection(input: { schemeId: string; id: string; 
 export async function completeInspection(input: { schemeId: string; id: string; minutes: number }) {
   const [r, { rules }] = await Promise.all([inspectionOf(input.schemeId, input.id), rulesForScheme(input.schemeId)]);
   if (!(Number.isInteger(input.minutes) && input.minutes > 0 && input.minutes <= 24 * 60)) throw new RecordsError("Enter how long it took.", { minutes: "Enter the minutes it took." });
-  const fee = inspectionFee(r.inspectorType as InspectorType, input.minutes, rules.RECORDS_INSPECTION);
+  const fee = inspectionFee(r.inspectorType as InspectorType, input.minutes, needRule(rules, "RECORDS_INSPECTION"));
   const n = await db.orm.public.RecordsInspection.where((x) => and(x.id.eq(r.id), x.status.in(["REQUESTED", "SCHEDULED"]))).updateAndCount({ status: "COMPLETED", minutes: input.minutes, feeCents: fee });
   if (n !== 1) throw new RecordsError("This inspection is already completed or cancelled.");
   return fee;

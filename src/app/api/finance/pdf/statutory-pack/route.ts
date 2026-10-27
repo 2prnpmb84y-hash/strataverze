@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { recordSecurityEventLater } from "@/lib/audit/security-audit";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { generateStatutoryPackPdf } from "@/lib/pdf/generate";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { canReadCommitteeReports } from "@/lib/finance/finance-access";
 import { forbidden } from "@/lib/finance/access-denied";
 import { notFound, pdfResponse, signIn, UUID } from "@/lib/pdf/response";
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
   if (!(await canReadCommitteeReports(profile, schemeId))) {
     return forbidden({ schemeId, actorId: profile.id, entityType: "Scheme", entityId: schemeId, what: "Statutory statements PDF" });
   }
+  if (!(await rulesForScheme(schemeId)).rules.FEATURES.keyFinancialInformation) return notFound();
   const pdf = await generateStatutoryPackPdf({ schemeId, financialYear, actorId: profile.id });
   if (pdf) {
     await recordSecurityEventLater({

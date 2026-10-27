@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { statutoryRulesFor } from "@/config/statutory";
+import { statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { escapeHtml, html, plainSubject, safeHref, trustedHtml } from "./html";
 import { announcementPublishedEmail } from "./announcement";
 import { invitationEmail } from "./invitation";
@@ -49,8 +49,8 @@ describe("every email template", () => {
       noticeDate: "2026-10-01", dueDate: "2026-11-01", fundName: EVIL, amount: EVIL,
       payment: { accountName: EVIL, bsb: EVIL, accountNumber: EVIL, reference: EVIL },
       contact: { name: EVIL, emailOrPhone: EVIL }, ledgerUrl: "https://evil.example/", noInterest: false,
-      interest: statutoryRulesFor("NSW").STATUTORY_INTEREST,
-      hardship: statutoryRulesFor("NSW").HARDSHIP_INFORMATION,
+      interest: (statutoryRulesFor("NSW") as NswRules).STATUTORY_INTEREST,
+      hardship: (statutoryRulesFor("NSW") as NswRules).HARDSHIP_INFORMATION,
       ownersCorporation: "owners corporation",
     }),
     possibleDuplicatePaymentEmail({ recipientEmails: [], schemeName: EVIL, lotLabel: EVIL, noticeNumber: EVIL, amount: EVIL, documentDate: EVIL, earlierUploadedAt: EVIL, reviewUrl: URL }),

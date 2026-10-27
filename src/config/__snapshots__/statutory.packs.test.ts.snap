@@ -169,6 +169,16 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       ],
     },
   ],
+  "FEATURES": {
+    "capitalWorksFundPlan": false,
+    "committeeTraining": false,
+    "debtRecoverySteps": false,
+    "keyFinancialInformation": false,
+    "recordsInspections": false,
+    "statutoryPaymentPlans": false,
+    "strataHubAnnualReport": false,
+    "strataInformationCertificate": false,
+  },
   "FEE_UNIT_DOLLARS": {
     "2026-27": {
       "certificateCents": 8695,

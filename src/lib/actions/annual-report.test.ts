@@ -7,6 +7,12 @@ vi.mock("@/lib/auth/require-membership", async () => {
   return { ...actual, requireSchemeMembership: (...a: unknown[]) => membership(...a) };
 });
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// The building's rule pack has the workflow unless a test says otherwise.
+const hasFeature = vi.fn(async (_schemeId: string, _feature: string) => true);
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
+  return { ...actual, schemeHasFeature: (...a: [string, string]) => hasFeature(...a) };
+});
 vi.mock("@/lib/jurisdiction/scheme-time", () => ({ schemeToday: vi.fn(async () => "2026-10-26") }));
 const store = { recordAgmHeld: vi.fn(), recordReported: vi.fn() };
 vi.mock("@/lib/compliance/annual-report-store", async () => {
@@ -39,5 +45,21 @@ describe("Strata Hub actions", () => {
     store.recordReported.mockRejectedValueOnce(new AnnualReportError("Check the report details.", { reportedOn: "x" }));
     const r = await actions.recordReportedAction(SCHEME, {}, form({ agmOn: "2026-09-15", reportedOn: "2027-01-01", reference: "kept" }));
     expect(r.values?.reference).toBe("kept");
+  });
+});
+
+describe("Strata Hub actions for a building whose pack has no Strata Hub report", () => {
+  it("refuse, writing nothing", async () => {
+    membership.mockResolvedValue({ profile: { id: "adviser-1" }, membership: {}, roles: ["ADVISER"] });
+    hasFeature.mockResolvedValue(false);
+    try {
+      expect((await actions.recordAgmHeldAction(SCHEME, {}, form({ agmOn: "2026-09-15" }))).error).toBe("This is not available for this building.");
+      expect((await actions.recordReportedAction(SCHEME, {}, form({ agmOn: "2026-09-15", reportedOn: "2026-10-01" }))).error).toBe("This is not available for this building.");
+      for (const c of hasFeature.mock.calls) expect(c).toEqual([SCHEME, "strataHubAnnualReport"]);
+      expect(store.recordAgmHeld).not.toHaveBeenCalled();
+      expect(store.recordReported).not.toHaveBeenCalled();
+    } finally {
+      hasFeature.mockResolvedValue(true);
+    }
   });
 });

@@ -37,7 +37,7 @@ import { issueDateFor, issueTiming, lateMessage } from "@/lib/levies/issue-timin
 import { projectPlan, requiredAnnualContribution, reviewDueDate, spendByYear } from "@/lib/finance/capital-works-plan";
 import { auditRequired } from "@/lib/finance/key-financial-information";
 // The NSW rules, as a building in NSW gets them (phase 1: every helper takes its building's rules).
-const NSW = statutory.statutoryRulesFor("NSW");
+const NSW = statutory.statutoryRulesFor("NSW") as statutory.NswRules;
 const DEFAULT_RECOVERY_STEPS = NSW.DEBT_RECOVERY_STEPS;
 const HARDSHIP_INFORMATION = NSW.HARDSHIP_INFORMATION;
 import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
@@ -52,8 +52,8 @@ const WORDING = ["TERMINOLOGY", "CITATIONS", "HARDSHIP_INFORMATION", "DEBT_RECOV
  * multi-jurisdiction review), each with its own golden output below.
  */
 const WORKFLOWS = ["PAYMENT_PLANS", "COMMITTEE_TRAINING", "ANNUAL_REPORTING", "RECORD_RETENTION", "SALE_CERTIFICATE", "RECORDS_INSPECTION"] as const;
-/** The funds and entitlement schedules as data (phase 2 foundation, 27 Oct 2026). */
-const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES"] as const;
+/** The funds and entitlement schedules as data (phase 2 foundation, 27 Oct 2026), and the workflows the pack switches on (stage 2). */
+const FOUNDATION = ["FUND_CATALOGUE", "ENTITLEMENT_SCHEDULES", "FEATURES"] as const;
 
 describe("NSW statutory workflows (Oct 2026)", () => {
   it("are the rules recorded", () => {

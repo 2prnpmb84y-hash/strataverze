@@ -38,3 +38,8 @@ export async function rulesForScheme(schemeId: string, orm: typeof db.orm = db.o
   if (!scheme) throw new SchemeNotFoundError();
   return rulesForState(scheme.state);
 }
+
+/** Whether a building's rule pack has one of the workflows in FEATURES. Throws as rulesForScheme does. */
+export async function schemeHasFeature(schemeId: string, feature: keyof StatutoryRules["FEATURES"], orm: typeof db.orm = db.orm): Promise<boolean> {
+  return (await rulesForScheme(schemeId, orm)).rules.FEATURES[feature];
+}

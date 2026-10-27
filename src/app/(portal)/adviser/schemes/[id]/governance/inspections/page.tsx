@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { notFound } from "next/navigation";
 import { db } from "@/prisma/db";
 import { requireAdviserScheme } from "../../_sections/require-adviser-scheme";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
@@ -11,6 +12,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { ConfirmButton, RecordsForm } from "@/components/records/records-forms";
+import { needRule } from "@/config/statutory";
 
 const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "")).slice(0, 10);
 const aud = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -28,7 +30,8 @@ export default async function InspectionsPage({ params }: { params: Promise<{ id
     db.orm.public.RecordsInspection.where((r) => r.schemeId.eq(id)).orderBy((r) => r.createdAt.desc()).limit(200).all(),
     db.orm.public.Lot.where((l) => l.schemeId.eq(id)).limit(5000).all(),
   ]);
-  const r = rules.RECORDS_INSPECTION;
+  if (!rules.FEATURES.recordsInspections) notFound();
+  const r = needRule(rules, "RECORDS_INSPECTION");
   const lotLabel = new Map(lots.map((l) => [l.id, formatLotLabel(String(l.lotNumber))]));
   const lotOptions = [...lots].sort((a, b) => String(a.lotNumber).localeCompare(String(b.lotNumber), "en-AU", { numeric: true })).map((l) => ({ value: l.id, label: formatLotLabel(String(l.lotNumber)) }));
   return (

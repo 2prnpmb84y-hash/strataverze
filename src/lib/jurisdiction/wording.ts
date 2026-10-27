@@ -5,6 +5,7 @@
  * from what the platform does.
  */
 import type { StatutoryRules } from "@/config/statutory";
+import { needRule } from "@/config/statutory/need-rule";
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 
 /** How long before the due date a notice goes out: "5 weeks", "1 week" or "40 days". */
@@ -76,14 +77,16 @@ export interface InterestWords {
   ownersCorporation: string;
 }
 
-export function interestWords(rules: Pick<StatutoryRules, "STATUTORY_INTEREST" | "CITATIONS" | "TERMINOLOGY">): InterestWords {
+export function interestWords(rules: StatutoryRules): InterestWords {
+  const interest = needRule(rules, "STATUTORY_INTEREST");
+  const citations = needRule(rules, "CITATIONS");
   return {
-    ratePercent: rules.STATUTORY_INTEREST.annualRatePercent,
-    grace: graceText(rules.STATUTORY_INTEREST),
-    citation: rules.CITATIONS.interest,
-    fullCitation: `${actName(rules.TERMINOLOGY)} ${rules.CITATIONS.interestSection}`,
-    noInterestCitation: rules.CITATIONS.noInterestResolution,
-    noInterestSection: rules.CITATIONS.noInterestSection,
+    ratePercent: interest.annualRatePercent,
+    grace: graceText(interest),
+    citation: citations.interest,
+    fullCitation: `${actName(rules.TERMINOLOGY)} ${citations.interestSection}`,
+    noInterestCitation: citations.noInterestResolution,
+    noInterestSection: citations.noInterestSection,
     ownersCorporation: rules.TERMINOLOGY.ownersCorporation,
   };
 }

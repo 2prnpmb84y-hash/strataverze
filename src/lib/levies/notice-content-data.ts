@@ -13,6 +13,7 @@ import { validateLevyNoticeContent, type MissingItem } from "@/lib/finance/levy-
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { rulesForState, SchemeNotFoundError } from "@/lib/jurisdiction/scheme-rules";
 import { generateLevyNoticePdf } from "@/lib/pdf/generate";
+import { needRule } from "@/config/statutory";
 
 const APP_URL = siteUrl();
 
@@ -51,7 +52,7 @@ export async function checkPlannedNotices(input: {
   const { scheme, fund, issuer, account } = await noticeContext(input.schemeId, input.fundId, input.issuerId);
   if (!scheme) throw new SchemeNotFoundError();
   // The building's own levy notice rules (throws for a state with no rule pack).
-  const rule = rulesForState(scheme.state).rules.LEVY_NOTICE_RULES;
+  const rule = needRule(rulesForState(scheme.state).rules, "LEVY_NOTICE_RULES");
   const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
   const rollNames = await rollOwnerNames(input.notices.map((n) => n.lotId));
   const seen = new Map<string, MissingItem>();
@@ -172,8 +173,8 @@ export async function sendIssuedNotices(input: {
           },
           ledgerUrl: `${APP_URL}/owner/levies`,
           noInterest: setting.mode === "NO_INTEREST",
-          interest: setting.rules.rules.STATUTORY_INTEREST,
-          hardship: setting.rules.rules.HARDSHIP_INFORMATION,
+          interest: needRule(setting.rules.rules, "STATUTORY_INTEREST"),
+          hardship: needRule(setting.rules.rules, "HARDSHIP_INFORMATION"),
           ownersCorporation: setting.rules.rules.TERMINOLOGY.ownersCorporation,
         }),
         attachments,

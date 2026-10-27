@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { statutoryRulesFor } from "@/config/statutory";
+import { statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { actName, capitalise, graceText, noticeLeadText } from "./wording";
 
-const NSW = statutoryRulesFor("NSW");
+const NSW = statutoryRulesFor("NSW") as NswRules;
 
 describe("wording from the rules", () => {
   it("gives the NSW phrases the platform has always used", () => {
