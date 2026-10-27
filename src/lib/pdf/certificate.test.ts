@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { SALE_CERTIFICATE } from "@/config/statutory";
+import { CERTIFICATE, SALE_CERTIFICATE } from "@/config/statutory";
 import { certificateBlocks, renderCertificatePdf, type CertificateDocument } from "./certificate";
 
 const base: CertificateDocument = {
   schemeName: "Harbour View",
   planNumber: "12345",
   planLabel: "Strata Plan",
+  planRowLabel: CERTIFICATE.planRowLabel,
   title: SALE_CERTIFICATE.title,
   section: SALE_CERTIFICATE.section,
   number: 3,
@@ -17,8 +18,10 @@ const base: CertificateDocument = {
   ownersCorporation: "owners corporation",
   items: SALE_CERTIFICATE.items.map(([no, title]) => ({ no, title, text: `Text for ${no}` })),
   execution: SALE_CERTIFICATE.execution,
+  executionLines: CERTIFICATE.executionLines,
   conclusiveNote: SALE_CERTIFICATE.conclusiveNote,
   form: SALE_CERTIFICATE.form,
+  follows: CERTIFICATE.follows,
   preparedOn: "2026-10-26",
 };
 

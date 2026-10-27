@@ -342,7 +342,7 @@ export function QuotesPanel({
         )}
         {rfq.quotes.length > 0 && !rfq.readyToApprove && !rfq.sealed && rfq.status !== "AWARDED" && <p className="mt-2 text-xs text-ink-muted">You can approve a quote once quotes close, or once every invited contractor has quoted.</p>}
         {canAct && rfq.canCancel && <div className="mt-4"><CancelRfq schemeId={schemeId} requestId={requestId} rfqId={rfq.id} /></div>}
-        {over && <p className="mt-2 text-xs text-ink-muted">Over ${rfq.twoQuoteThreshold.toLocaleString("en-AU")}, at least {rfq.minimumQuotes} quotes are needed before one is approved ({rfq.twoQuoteCitation}).</p>}
+        {over && <p className="mt-2 text-xs text-ink-muted">{rfq.twoQuoteSentence}</p>}
         {decisionOpen && <p className="mt-2 text-xs text-ink-muted">A proposal is open above. Vote on it first.</p>}
         <p className="mt-2 text-xs text-ink-muted">Quote links last 15 minutes. Reload the page if one does not open.</p>
       </div>

@@ -21,7 +21,7 @@ const store = {
   recordFeePaid: vi.fn(),
   createInspection: vi.fn(),
   scheduleInspection: vi.fn(),
-  completeInspection: vi.fn(async () => 3_100),
+  completeInspection: vi.fn(async () => ({ cents: 3_100, gstIncluded: true })),
   refreshCertificateFigures: vi.fn(),
   cancelInspection: vi.fn(),
 };
@@ -85,7 +85,8 @@ describe("a building whose rule pack does not have the workflow", () => {
     try {
       expect((await actions.createCertificateAction(SCHEME, "lot-1", {}, form({}))).error).toBe("This is not available for this building.");
       expect((await actions.createInspectionAction(SCHEME, {}, form({}))).error).toBe("This is not available for this building.");
-      expect(hasFeature.mock.calls.map((c) => c[1])).toEqual(["strataInformationCertificate", "recordsInspections"]);
+      // Stage 2, step 9: a certificate needs either the NSW s 184 certificate or the Queensland body corporate certificate.
+      expect(hasFeature.mock.calls.map((c) => c[1])).toEqual(["strataInformationCertificate", "bodyCorporateCertificate", "recordsInspections"]);
       expect(store.createCertificate).not.toHaveBeenCalled();
       expect(store.createInspection).not.toHaveBeenCalled();
     } finally {

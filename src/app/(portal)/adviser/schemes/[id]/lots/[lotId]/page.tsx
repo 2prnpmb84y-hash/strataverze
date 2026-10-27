@@ -85,6 +85,9 @@ export default async function LotDetailPage({
     lot.owners.length > 0
       ? `${lot.owners[0].firstName} ${lot.owners[0].lastName}`.trim()
       : "No owner assigned";
+  // The certificate the building's pack has (stage 2, step 9), named as the pack names its button.
+  const packRules = rulesForState(scheme.state).rules;
+  const certificateButton = packRules.FEATURES.strataInformationCertificate || packRules.FEATURES.bodyCorporateCertificate ? packRules.CERTIFICATE?.buttonLabel : undefined;
 
   return (
     <div className="max-w-5xl">
@@ -101,10 +104,10 @@ export default async function LotDetailPage({
           <FileText size={14} />
           Strata Report
         </Button>
-        {rulesForState(scheme.state).rules.FEATURES.strataInformationCertificate && (
+        {certificateButton && (
           <Button variant="secondary" className="text-xs h-9 px-4" href={`/adviser/schemes/${id}/lots/${lotId}/certificates`}>
             <Award size={14} />
-            Info Certificate
+            {certificateButton}
           </Button>
         )}
         <LotActionButtons schemeId={id} lotId={lotId} deliveryPrefs={deliveryPrefs} />

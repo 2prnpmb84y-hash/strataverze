@@ -1,0 +1,256 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW inspections page (stage 2, step 9) > header, deadlines and requests are unchanged 1`] = `
+[
+  "Governance",
+  "Records inspections",
+  "Strata Schemes Management Act 2015 (NSW) s 182. If a time and place cannot be agreed within 3 days, the owners corporation may set a date within 10 days of the request by written notice. Fees include GST and are paid into the administrative fund: an owner $31.00 for the first hour and $16.00 for each further half hour; another authorised person $60.00 and $30.00. Each part of a further half hour is charged as a whole half hour (not confirmed).",
+  "Jo Citizen (owner), Lot 7",
+  "Requested 2026-10-26. Agree a time by 2026-10-29, or set one by notice for a date by 2026-11-05.",
+  "Requested",
+  "Date and time",
+  "Place (or how the records are given electronically)",
+  "Set by the owners corporation&#x27;s written notice (not agreed)",
+  "Record time and place",
+  "How long it took (minutes)",
+  "Record inspection made",
+  "Cancel request",
+  "Sam Agent (authorised by Pat Owner), Lot 12",
+  "Requested 2026-10-20. Set by notice: 30 Oct 2026, 11:00 am, Office.",
+  "Scheduled",
+  "Date and time",
+  "Place (or how the records are given electronically)",
+  "Set by the owners corporation&#x27;s written notice (not agreed)",
+  "Record time and place",
+  "How long it took (minutes)",
+  "Record inspection made",
+  "Cancel request",
+  "Jo Citizen (owner), Lot 7",
+  "Requested 2026-10-01. Agreed: 3 Oct 2026, 10:00 am, Office.",
+  "Completed",
+  "75 minutes. Fee $47.00 including GST. Not yet recorded as paid (collected outside StrataVerze).",
+  "Date the fee was paid",
+  "Record payment",
+  "Record a request",
+  "Owners may inspect; anyone else needs the owner&#x27;s authority.",
+  "Lot of the owner",
+  "Lot 7",
+  "Lot 12",
+  "Who will inspect",
+  "The owner",
+  "A person the owner authorised",
+  "Name of the person inspecting",
+  "If authorised: the owner who authorised it",
+  "Date of the request",
+  "Records asked for (optional)",
+  "Record request",
+]
+`;
+
+exports[`NSW request errors (stage 2, step 9) > are unchanged 1`] = `
+{
+  "certificateAuthorised": {
+    "fieldErrors": {
+      "authorisedByAddress": "Enter that person's address.",
+      "authorisedByName": "Enter the name of the person who authorised them.",
+      "authorisedByType": "Choose who authorised them.",
+    },
+    "message": "Check the request details.",
+  },
+  "certificateBadType": {
+    "fieldErrors": {
+      "requestedOn": "Enter the date the request was received (not in the future).",
+      "requesterName": "Enter their name.",
+      "requesterType": "Choose who is asking.",
+    },
+    "message": "Check the request details.",
+  },
+  "completeNoMinutes": {
+    "fieldErrors": {
+      "minutes": "Enter the minutes it took.",
+    },
+    "message": "Enter how long it took.",
+  },
+  "inspectionAuthorised": {
+    "fieldErrors": {
+      "authorisedBy": "Enter the owner who authorised it.",
+    },
+    "message": "Check the request.",
+  },
+  "inspectionBadType": {
+    "fieldErrors": {
+      "inspectorName": "Enter the name of the person inspecting.",
+      "inspectorType": "Choose the owner or a person they authorised.",
+      "requestedOn": "Enter the date of the request (not in the future).",
+    },
+    "message": "Check the request.",
+  },
+  "inspectionNoLot": {
+    "fieldErrors": {
+      "lotId": "Choose the lot whose owner is inspecting or authorised it.",
+    },
+    "message": "Check the request.",
+  },
+  "saveDraft": {
+    "fieldErrors": {
+      "authorisedByAddress": "Enter that person's address.",
+      "authorisedByName": "Enter the name of the person who authorised them.",
+      "authorisedByType": "Choose who authorised them.",
+      "item_1": "Complete this item (write “Nil” if it does not apply).",
+    },
+    "message": "Check the certificate.",
+  },
+  "scheduleEarly": {
+    "fieldErrors": {
+      "place": "Enter the place (or how it will be given electronically).",
+      "when": "The inspection cannot be before the request.",
+    },
+    "message": "Check the time and place.",
+  },
+  "scheduleLate": {
+    "fieldErrors": {
+      "when": "A date set by notice must be within 10 days of the request (by 2026-11-05).",
+    },
+    "message": "Check the time and place.",
+  },
+}
+`;
+
+exports[`NSW s 184 draft (stage 2, step 9) > items are unchanged 1`] = `
+[
+  {
+    "no": "1",
+    "text": "No strata renewal committee is recorded in StrataVerze. Check and complete.",
+    "title": "Strata renewal committee",
+  },
+  {
+    "no": "2",
+    "text": "Whether there is an exclusive supply network, and which services (electricity, gas, hot water, chilled water, internet, other): StrataVerze holds no record of this. Check and complete.",
+    "title": "Exclusive supply network (s 184(8))",
+  },
+  {
+    "no": "3",
+    "text": "Due 2026-08-01 (period 2026-07-01 to 2026-09-30): $450.00, unpaid (overdue)
+Total outstanding on these notices: $450.00. Amounts in credit and any early payment discount: check and complete.",
+    "title": "Administrative fund contributions (s 73)",
+  },
+  {
+    "no": "4",
+    "text": "Due 2026-11-01 (period 2026-10-01 to 2026-12-31): $200.00, $150.00 unpaid
+Total outstanding on these notices: $150.00. Amounts in credit and any early payment discount: check and complete.",
+    "title": "Capital works fund contributions (s 74)",
+  },
+  {
+    "no": "5",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Amounts for additional amenities or services (s 117)",
+  },
+  {
+    "no": "6",
+    "text": "Due 2026-09-01 (period 2026-09-01 to 2026-09-30): $1,000.00, paid
+Total outstanding on these notices: $0.00. Amounts in credit and any early payment discount: check and complete.
+Purpose of each special contribution: check and complete.",
+    "title": "Special contributions to the administrative or capital works fund (s 81(4))",
+  },
+  {
+    "no": "7",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Money unpaid under a by-law conferring a right or privilege",
+  },
+  {
+    "no": "8",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Proposals for funding matters in the 10-year capital works fund plan",
+  },
+  {
+    "no": "9",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Contributions towards legal proceedings (s 90)",
+  },
+  {
+    "no": "10",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Amount recoverable for work carried out by the owners corporation (s 120)",
+  },
+  {
+    "no": "11",
+    "text": "Simple interest at 10% a year on contributions not paid one month after they are due (SSMA 2015 s 85).
+Interest payable on outstanding contributions at 2026-10-27: $13.75 ($11.25 charged and unpaid, $2.50 accrued since). Check and complete.",
+    "title": "Interest on contributions (s 85)",
+  },
+  {
+    "no": "12",
+    "text": "Contributions overdue and recoverable at 2026-10-27: $450.00 in levies and $13.75 in interest. Monetary penalties: StrataVerze holds no record of this. Check and complete.",
+    "title": "Unpaid contributions and penalties",
+  },
+  {
+    "no": "12A",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Outstanding orders and compliance action",
+  },
+  {
+    "no": "13",
+    "text": "2026-03-11: Annual general meeting
+2026-06-01: Strata committee meeting (recorded as scheduled: confirm it was held)
+Meetings held outside StrataVerze: check and complete.",
+    "title": "General and strata committee meetings held in the 12 months before the date of this certificate",
+  },
+  {
+    "no": "14",
+    "text": "2026-11-20: General meeting
+Meetings notified outside StrataVerze: check and complete.",
+    "title": "Meetings notified but not yet held",
+  },
+  {
+    "no": "15",
+    "text": "Owner: Jo Citizen
+Address: 7/1 Example St
+Mortgagees or covenant chargees who have given notice of their interest, and their addresses for notices: check and complete.",
+    "title": "Strata roll for the lot",
+  },
+  {
+    "no": "16",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Strata managing agent (s 49) and building manager (s 67)",
+  },
+  {
+    "no": "17",
+    "text": "Ann Chair (address: check and complete)
+Chairperson, secretary and treasurer: check and complete.",
+    "title": "Strata committee",
+  },
+  {
+    "no": "18",
+    "text": "By-laws in force recorded with a date in the previous six months (StrataVerze does not record lodgement):
+By-law 12, Pets, dated 2026-08-15
+List here only by-laws made in the previous six months that are not yet lodged with the Registrar-General: check and complete.",
+    "title": "By-laws made in the previous six months not yet lodged with the Registrar-General (s 141)",
+  },
+  {
+    "no": "19",
+    "text": "building: Acme, policy B1, sum insured $15,000,000.00, due 2027-03-31, premium $9,000.00, broker Brokers Co. Last premium date: check and complete.
+public liability: Acme, policy PL1, sum insured $20,000,000.00, due 2027-03-31, premium $1,200.00. Last premium date: check and complete.",
+    "title": "Insurance policies",
+  },
+  {
+    "no": "20",
+    "text": "Only if the scheme is part of a community scheme. Check and complete.",
+    "title": "Community association administrative fund contributions (community schemes only)",
+  },
+  {
+    "no": "21",
+    "text": "Only if the scheme is part of a community scheme. Check and complete.",
+    "title": "Community association sinking fund contributions (community schemes only)",
+  },
+  {
+    "no": "22",
+    "text": "Only if the scheme is a member of a building management committee. Check and complete.",
+    "title": "Building management committee contributions (members only)",
+  },
+  {
+    "no": "23",
+    "text": "StrataVerze holds no record of this. Check and complete.",
+    "title": "Amounts payable to any other person or body not connected to maintenance or insurance of common property",
+  },
+]
+`;

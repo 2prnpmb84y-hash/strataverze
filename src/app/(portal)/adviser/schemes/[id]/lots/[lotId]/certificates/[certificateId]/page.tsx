@@ -7,7 +7,8 @@ import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { cancelCertificateAction, recordFeePaidAction, refreshCertificateAction, saveCertificateAction } from "@/lib/actions/records";
 import { requesterFields } from "@/lib/records/requester-fields";
-import type { CertificateItem } from "@/lib/records/certificate-draft";
+import { certificateDrafting, type CertificateItem } from "@/lib/records/certificate-draft";
+import { certificateDueText } from "@/lib/records/certificate-text";
 import { formatLotLabel } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -28,8 +29,9 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
   const cert = await db.orm.public.SaleCertificate.where((c) => c.id.eq(certificateId)).first();
   if (!cert || cert.schemeId !== id || cert.lotId !== lotId) notFound();
   const [lot, { rules }, today] = await Promise.all([db.orm.public.Lot.where((l) => l.id.eq(lotId)).first(), rulesForScheme(id), schemeToday(id)]);
-  if (!rules.FEATURES.strataInformationCertificate) notFound();
-  const c = needRule(rules, "SALE_CERTIFICATE");
+  if (!rules.FEATURES.strataInformationCertificate && !rules.FEATURES.bodyCorporateCertificate) notFound();
+  const c = needRule(rules, "CERTIFICATE");
+  const due = certificateDueText(c, day(cert.requestedOn));
   const items = cert.items as unknown as CertificateItem[];
   const toComplete = items.filter((i) => /check and complete/i.test(i.text)).map((i) => i.no);
   const pdf = `/api/records/certificate/${cert.id}?schemeId=${id}`;
@@ -46,19 +48,25 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
           <Card>
             <CardHeader
               title="Check and complete every item"
-              description={`Figures from the records as at ${day(cert.draftedOn)}${day(cert.draftedOn) < today ? " (refresh them before issuing)" : ""}. ${toComplete.length ? `Items still to complete: ${toComplete.join(", ")}.` : "Every item has been completed. Check them once more before issuing."} Issuing dates the certificate today (${today}), fixes its items and records the fee due.`}
+              description={`${due ? `${due} ` : ""}Figures from the records as at ${day(cert.draftedOn)}${day(cert.draftedOn) < today ? " (refresh them before issuing)" : ""}. ${toComplete.length ? `Items still to complete: ${toComplete.join(", ")}.` : "Every item has been completed. Check them once more before issuing."} Issuing dates the certificate today (${today}), fixes its items and records the fee due.`}
               action={<StatusChip status="Draft" variant="warning" />}
             />
             <CertificateEditor
               action={saveCertificateAction.bind(null, id, lotId, cert.id)}
-              requesterFields={requesterFields({ requesterTypes: c.requesterTypes, today, values: { ...cert, requestedOn: day(cert.requestedOn) } })}
+              requesterFields={requesterFields({ requesterTypes: c.requesterTypes, agentType: c.agentType, today, values: { ...cert, requestedOn: day(cert.requestedOn) } })}
               items={items}
+              ownersCorporation={rules.TERMINOLOGY.ownersCorporation}
             />
             <p className="mt-3 text-xs text-ink-muted">
-              StrataVerze lays the certificate out itself, following the items of the {c.form}. Check it against the current approved form.{" "}
-              <a className="underline" href={c.helpUrl} target="_blank" rel="noreferrer">
-                The approved form
-              </a>
+              StrataVerze lays the certificate out itself, following {c.follows}. Check it against the current approved form.
+              {c.helpUrl && (
+                <>
+                  {" "}
+                  <a className="underline" href={c.helpUrl} target="_blank" rel="noreferrer">
+                    The approved form
+                  </a>
+                </>
+              )}
             </p>
           </Card>
           <Card>
@@ -66,7 +74,7 @@ export default async function CertificatePage({ params }: { params: Promise<{ id
             <div className="flex flex-wrap items-center gap-3">
               <ConfirmButton
                 label="Refresh figures from the records"
-                confirmText="Replace items 3, 4, 6, 11 to 14, 18 and 19 with today's figures? Your other items are kept."
+                confirmText={certificateDrafting(rules).refreshPrompt}
                 act={refreshCertificateAction.bind(null, id, lotId, cert.id)}
               />
               <a href={pdf} target="_blank" rel="noreferrer" className="text-sm text-turquoise underline">

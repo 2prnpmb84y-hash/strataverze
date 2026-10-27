@@ -56,7 +56,7 @@ export default async function DocumentsSectionPage({
     {banner && <VaultBanner schemeId={id} data={banner} timeZone={tz} />}
     <DocumentsTabContent
       vaultLabels={vaultLabels}
-      retention={(await rulesForScheme(id)).rules.RECORD_RETENTION}
+      retention={(await rulesForScheme(id)).rules.DOCUMENT_RETENTION}
       timeZone={tz}
       schemeId={id}
       schemePlanNumber={scheme.planNumber}

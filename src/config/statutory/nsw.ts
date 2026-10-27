@@ -12,7 +12,19 @@
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
-import type { DebtRecoveryStepRule, EntitlementScheduleDefinition, FeeVariant, FundDefinition, LateChargeRules, NoticeRules, PackFeatures } from "./types";
+import type {
+  CertificateRules,
+  DebtRecoveryStepRule,
+  DocumentRetentionRules,
+  EntitlementScheduleDefinition,
+  FeeVariant,
+  FundDefinition,
+  InspectionRules,
+  LateChargeRules,
+  NoticeRules,
+  PackFeatures,
+  WorksQuoteRules,
+} from "./types";
 
 /**
  * Interest on unpaid contributions.
@@ -848,6 +860,74 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
     status: "NOT_CONFIRMED",
   },
 ];
+
+/*
+ * The certificate, inspections, record keeping and works quotes in the shapes
+ * every pack shares (stage 2, step 9, 27 Oct 2026), from SALE_CERTIFICATE,
+ * RECORDS_INSPECTION, RECORD_RETENTION, WORKS_SPENDING_RULES and CITATIONS,
+ * with the words the screens and the certificate PDF already showed. No rule
+ * value changed.
+ */
+
+/** The s 184 certificate in the shared shape. */
+export const CERTIFICATE: CertificateRules = {
+  title: SALE_CERTIFICATE.title,
+  buttonLabel: "Info Certificate",
+  section: SALE_CERTIFICATE.section,
+  form: SALE_CERTIFICATE.form,
+  requesterTypes: SALE_CERTIFICATE.requesterTypes,
+  agentType: "AUTHORISED_PERSON",
+  items: SALE_CERTIFICATE.items,
+  planRowLabel: "Strata plan",
+  execution: SALE_CERTIFICATE.execution,
+  executionLines: ["Date affixed: ____________", "Signature: ____________   Name: ____________", "Signature: ____________   Name: ____________"],
+  follows: `the items of the ${SALE_CERTIFICATE.form}`,
+  conclusiveNote: SALE_CERTIFICATE.conclusiveNote,
+  helpUrl: SALE_CERTIFICATE.helpUrl,
+  // The research behind SALE_CERTIFICATE records no time limit.
+  giveWithinBusinessDays: null,
+  fee: {
+    basis: "CENTS",
+    feeCents: SALE_CERTIFICATE.feeCents,
+    repeatFeeCents: SALE_CERTIFICATE.repeatFeeCents,
+    repeatWithinMonths: SALE_CERTIFICATE.repeatWithinMonths,
+    repeatSamePersonOnly: false,
+    source: SALE_CERTIFICATE.feeSource,
+  },
+};
+
+/** The s 182 inspection rules in the shared shape. */
+export const INSPECTIONS: InspectionRules = {
+  basis: "HOURLY",
+  section: RECORDS_INSPECTION.section,
+  whoMayAsk: "Owners may inspect; anyone else needs the owner's authority.",
+  requesterTypes: { OWNER: "The owner", AUTHORISED_PERSON: "A person the owner authorised" },
+  agentType: "AUTHORISED_PERSON",
+  agreeWithinDays: RECORDS_INSPECTION.agreeWithinDays,
+  setWithinDays: RECORDS_INSPECTION.setWithinDays,
+  fees: RECORDS_INSPECTION.fees,
+  feesIncludeGst: RECORDS_INSPECTION.feesIncludeGst,
+  paidInto: RECORDS_INSPECTION.paidInto,
+  partHalfHour: RECORDS_INSPECTION.partHalfHour,
+  source: RECORDS_INSPECTION.source,
+};
+
+/** Record keeping in the document library, from RECORD_RETENTION. */
+export const DOCUMENT_RETENTION: DocumentRetentionRules = {
+  byCategory: RECORD_RETENTION.byCategory,
+  generalYears: RECORD_RETENTION.generalYears,
+  unlimited: "kept for the life of the scheme",
+  note: `Records with a longer period (such as minor renovation approvals, ${RECORD_RETENTION.minorRenovationYears} years) are kept longer than shown.`,
+  source: RECORD_RETENTION.source,
+};
+
+/** The two-quote rule (s 102), from WORKS_SPENDING_RULES. */
+export const WORKS_QUOTES: WorksQuoteRules = {
+  minimumQuotes: WORKS_SPENDING_RULES.minimumQuotes,
+  threshold: { basis: "FIXED", dollars: WORKS_SPENDING_RULES.twoQuoteThreshold },
+  citation: CITATIONS.worksTwoQuotes,
+  source: WORKS_SPENDING_RULES.source,
+};
 
 /** The NSW workflows, all on (stage 2, 27 Oct 2026). */
 export const FEATURES: PackFeatures = {
