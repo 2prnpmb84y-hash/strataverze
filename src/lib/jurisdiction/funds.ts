@@ -83,7 +83,14 @@ export function fundTypeLabel(source: CatalogueSource, fundType: string, legacyL
   return legacyLabels[fundType] ?? fundLabel(source, fundType) ?? fundType;
 }
 
-/** The funds every new building is given: the catalogue's required funds, in its order, named by their label. */
+/**
+ * The funds every new building is given: the catalogue's required funds, in its order, named by their label.
+ *
+ * GO-LIVE GAP (WA pack, 27 Oct 2026): this reads `required` only. Before
+ * Western Australia goes live it must also read each fund's `requiredWhen`
+ * (with the building's size class, by-laws and designated status), or WA
+ * buildings get neither fund.
+ */
 export function defaultFunds(source: CatalogueSource): { name: string; fundType: LedgerFund }[] {
   return catalogueOf(source)
     .filter((f) => f.required)
