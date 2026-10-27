@@ -32,13 +32,13 @@ import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { entitlementInputProblem, onLotEntitlementWords, parseEntitlement, separateEntitlement, type SeparateEntitlement } from "@/lib/jurisdiction/building-data";
 import type { StatutoryRules } from "@/config/statutory";
+import { LOT_TYPES } from "@/lib/lots/lot-types";
 
 export type LotFormState = {
   error?: string;
   fieldErrors?: Record<string, string>;
 };
 
-const LOT_TYPES = ["RESIDENTIAL", "COMMERCIAL", "PARKING", "STORAGE", "COMMON"];
 
 function validateLotForm(formData: FormData) {
   const errors: Record<string, string> = {};

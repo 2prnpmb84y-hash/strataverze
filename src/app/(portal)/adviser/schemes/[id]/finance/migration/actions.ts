@@ -8,12 +8,12 @@ import {
   AuthorisationError,
 } from "@/lib/auth/require-membership";
 import {
+  checkImportRows,
   importLots,
   importChartOfAccounts,
-  validateLots,
-  validateChartOfAccounts,
-  validateOpeningBalances,
+  MigrationImportError,
 } from "@/lib/queries/data-migration";
+import { isImportDataType } from "@/lib/finance/migration-import-fields";
 import {
   createCutover,
   CutoverError,
@@ -25,6 +25,7 @@ import {
 } from "@/lib/finance/migration-batches";
 import { CUTOVER_DATA_TYPES, type CutoverDataType } from "@/lib/finance/migration-cutover";
 import { FundIntegrityError } from "@/lib/finance/fund-integrity";
+import { UnsupportedJurisdictionError } from "@/config/statutory";
 
 type ActionState = {
   error?: string;
@@ -56,16 +57,11 @@ export async function processMigrationAction(
       };
     }
 
-    // Validate again here: the rows come from the browser, so their own error lists are not trusted.
-    const required: Record<string, string[]> = { lots: ["lotNumber", "entitlement"], chart_of_accounts: ["code", "name", "accountType"] };
-    if (!required[dataType]) return { error: `Unknown data type: ${dataType}` };
-    const fresh = rows.map((r) => ({
-      rowNumber: r.rowNumber,
-      data: r.data,
-      warnings: [] as string[],
-      errors: required[dataType].filter((f) => !String(r.data[f] ?? "").trim()).map((f) => `Required field "${f}" is missing or empty`),
-    }));
-    const checked = dataType === "lots" ? await validateLots(schemeId, fresh) : await validateChartOfAccounts(schemeId, fresh);
+    if (dataType !== "lots" && dataType !== "chart_of_accounts") return { error: `Unknown data type: ${dataType}` };
+    // Check again here, the same way as the preview: the rows come from the
+    // browser, so their own error lists are not trusted. This also translates
+    // the browser's column keys to the field names the import reads.
+    const checked = await checkImportRows(schemeId, dataType, rows);
     const validRows = checked.filter((r) => r.errors.length === 0);
 
     if (validRows.length === 0) {
@@ -107,6 +103,13 @@ export async function processMigrationAction(
     if (err instanceof AuthorisationError) {
       return { error: err.message };
     }
+    // The lot checks read the building's rule pack (stage 2, step 10): a building with none fails closed, in plain words.
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    if (err instanceof MigrationImportError) {
+      // Nothing was saved: the transaction rolled back. The database message stays in the log.
+      logError(`Migration import error on row ${err.rowNumber}:`, err.cause);
+      return { error: err.message };
+    }
     logError("Migration import error:", err);
     return {
       // Database and library messages stay in the server log (S7, SEC-025).
@@ -128,21 +131,12 @@ export async function validateMigrationAction(
   try {
     await requireSchemeMembership(schemeId, ["ADVISER"]);
 
-    let validatedRows;
+    if (!isImportDataType(dataType)) return { error: `Unknown data type: ${dataType}` };
 
-    switch (dataType) {
-      case "lots":
-        validatedRows = await validateLots(schemeId, rows);
-        break;
-      case "chart_of_accounts":
-        validatedRows = await validateChartOfAccounts(schemeId, rows);
-        break;
-      case "opening_balances":
-        validatedRows = await validateOpeningBalances(schemeId, rows);
-        break;
-      default:
-        return { error: `Unknown data type: ${dataType}` };
-    }
+    // The same check the import runs. The rows go back with the browser's own
+    // column keys, so the preview table and the import read them unchanged.
+    const checked = await checkImportRows(schemeId, dataType, rows);
+    const validatedRows = checked.map((r, i) => ({ ...r, data: rows[i].data }));
 
     const errorCount = validatedRows.filter(
       (r: { errors: string[] }) => r.errors.length > 0,
@@ -165,6 +159,7 @@ export async function validateMigrationAction(
     if (err instanceof AuthorisationError) {
       return { error: err.message };
     }
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     logError("Migration validation error:", err);
     return {
       // Database and library messages stay in the server log (S7, SEC-025).

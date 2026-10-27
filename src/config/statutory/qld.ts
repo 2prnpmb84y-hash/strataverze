@@ -182,13 +182,13 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   and the CSV lot import). A Queensland building with no module, an
  *   unsupported module or a lot without the entitlement is flagged to the
  *   adviser on the building and lot pages (src/lib/jurisdiction/building-data.ts).
- *   No page offers lot create yet (createLotAction is ready), and the CSV lot
- *   import sends its columns under keys the server does not read (lot_number,
- *   unit_number, floor_area, lot_type), so lot files fail for every building
- *   until that is fixed (its own change, not this step). The interest schedule
- *   column is sent and read under the server's key, interestScheduleEntitlement
- *   (migration-client.tsx targetFieldsFor, data-migration.ts validateLots and
- *   importLots): keep that key when the others are mapped.
+ *   No page offers lot create yet (createLotAction is ready). The CSV lot
+ *   import sends the interest schedule column under the browser key
+ *   interest_schedule_entitlement, which the shared mapping table
+ *   (src/lib/finance/migration-import-fields.ts) translates to
+ *   interestScheduleEntitlement, like every other column; the preview and the
+ *   import both check it with this pack (data-migration.ts checkImportRows,
+ *   validateLots and importLots).
  * - Read: the body corporate certificate draft fills the module and both lot
  *   entitlements (SM s 233AA(1)). Contributions, polls, the special resolution
  *   test and the penalty keep using lots.entitlement, the contribution

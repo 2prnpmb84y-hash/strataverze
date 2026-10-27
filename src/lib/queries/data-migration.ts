@@ -7,6 +7,12 @@ import type {
 import { logActivity } from "@/lib/queries/activity-log";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { entitlementInputProblem, parseEntitlement, separateEntitlement } from "@/lib/jurisdiction/building-data";
+import {
+  missingRequired,
+  toServerData,
+  type ImportDataType,
+} from "@/lib/finance/migration-import-fields";
+import { LOT_TYPES } from "@/lib/lots/lot-types";
 
 // ─── Prisma 8 Branded-Type Helpers ────────────────────────────
 
@@ -516,6 +522,56 @@ const VALID_ACCOUNT_SUB_TYPES = [
   "OTHER_EXPENSE",
 ] as const;
 
+/** The largest entitlement the lots.entitlement column (a Postgres integer) holds. */
+const MAX_ENTITLEMENT = 2_147_483_647;
+/** Column lengths from prisma/schema.prisma (AccountCode.code and AccountCode.name). */
+const ACCOUNT_CODE_MAX = 10;
+const ACCOUNT_NAME_MAX = 200;
+
+/** Characters as Postgres counts them for a VarChar. */
+const charCount = (value: string) => Array.from(value).length;
+
+/** A fund name or type, compared without case, spaces, underscores or a trailing "fund". */
+export function normaliseFundName(value: string): string {
+  return value.toLowerCase().replace(/[_\s]+/g, " ").trim().replace(/\s*\bfund$/, "").trim();
+}
+
+type FundLookup = { fundId: string | null; error?: undefined } | { fundId?: undefined; error: string };
+
+/**
+ * Finds the fund a chart of accounts row names, by the fund's name and then
+ * by its type, both normalised. A blank fund name keeps the old default, the
+ * first fund found. A fund name that matches nothing, or a type shared by
+ * more than one fund, is an error, never a silent guess.
+ */
+export function fundResolver(funds: Array<{ id: string; name: unknown; fundType: unknown }>) {
+  const byName = new Map<string, string>();
+  const byType = new Map<string, string[]>();
+  for (const fund of funds) {
+    const name = normaliseFundName(String(fund.name ?? ""));
+    if (name && !byName.has(name)) byName.set(name, fund.id);
+    const type = normaliseFundName(String(fund.fundType ?? ""));
+    if (type) byType.set(type, [...(byType.get(type) ?? []), fund.id]);
+  }
+  return (given: string | undefined): FundLookup => {
+    const raw = given?.trim() ?? "";
+    if (!raw) return { fundId: funds[0]?.id ?? null };
+    const key = normaliseFundName(raw);
+    const named = byName.get(key);
+    if (named) return { fundId: named };
+    const typed = byType.get(key) ?? [];
+    if (typed.length === 1) return { fundId: typed[0] };
+    if (typed.length > 1) return { error: `Fund "${raw}" matches more than one fund in this scheme. Use the fund's full name` };
+    return { error: `Fund "${raw}" does not match any fund in this scheme` };
+  };
+}
+
+async function activeFunds(schemeId: string) {
+  return db.orm.public.Fund
+    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
+    .all();
+}
+
 /**
  * Validate lot migration rows.
  * Checks for duplicate lot numbers within the file and against existing DB lots.
@@ -576,6 +632,10 @@ export async function validateLots(
         );
       } else if (num <= 0) {
         errors.push(`Entitlement must be positive, got ${num}`);
+      } else if (!Number.isInteger(num)) {
+        errors.push(`Entitlement must be a whole number, got ${entitlement.trim()}`);
+      } else if (num > MAX_ENTITLEMENT) {
+        errors.push(`Entitlement is too large, the most allowed is ${MAX_ENTITLEMENT}`);
       }
     }
 
@@ -599,6 +659,14 @@ export async function validateLots(
       }
     }
 
+    // Lot type, if given, must be one the lot form allows (any case)
+    const lotType = row.data.lotType?.trim();
+    if (lotType && !LOT_TYPES.includes(lotType.toUpperCase())) {
+      errors.push(
+        `Lot type "${lotType}" is not a valid lot type. Use one of: ${LOT_TYPES.join(", ")}`,
+      );
+    }
+
     return { ...row, errors, warnings };
   });
 }
@@ -619,6 +687,8 @@ export async function validateChartOfAccounts(
   const existingCodes = new Set(
     existingAccounts.map((a) => String(a.code).trim()),
   );
+
+  const resolveFund = fundResolver(await activeFunds(schemeId));
 
   const seenCodes = new Map<string, number>();
 
@@ -645,7 +715,24 @@ export async function validateChartOfAccounts(
           `Account code "${code}" already exists in this scheme`,
         );
       }
+
+      if (charCount(code) > ACCOUNT_CODE_MAX) {
+        errors.push(
+          `Account code "${code}" is longer than ${ACCOUNT_CODE_MAX} characters`,
+        );
+      }
     }
+
+    const name = row.data.name?.trim();
+    if (name && charCount(name) > ACCOUNT_NAME_MAX) {
+      errors.push(
+        `Account name is longer than ${ACCOUNT_NAME_MAX} characters (it has ${charCount(name)})`,
+      );
+    }
+
+    // The fund, if named, must match one of the scheme's funds
+    const fund = resolveFund(row.data.fundType);
+    if (fund.error) errors.push(fund.error);
 
     // Validate accountType
     const accountType = row.data.accountType?.trim().toUpperCase();
@@ -758,7 +845,55 @@ export async function validateOpeningBalances(
   return validated;
 }
 
+/**
+ * Check rows exactly as the migration page's browser sends them, for both the
+ * preview and the import, so a row the preview calls valid is one the import
+ * accepts. Each row is translated from the browser's keys to the field names
+ * above (see migration-import-fields), and the browser's own error lists are
+ * ignored: the required field check and the field rules run again here.
+ * A lot's second entitlement (Queensland's interest schedule, stage 2, step
+ * 10) is translated for every building, then required and checked, or
+ * ignored, by validateLots from the building's pack, so the preview and the
+ * import agree on it too.
+ */
+export async function checkImportRows(
+  schemeId: string,
+  dataType: ImportDataType,
+  rows: Array<{ rowNumber: number; data: Record<string, unknown> }>,
+): Promise<MigrationRow[]> {
+  const fresh: MigrationRow[] = rows.map((r) => {
+    const data = toServerData(dataType, r.data ?? {});
+    return { rowNumber: r.rowNumber, data, errors: missingRequired(dataType, data), warnings: [] };
+  });
+  switch (dataType) {
+    case "lots":
+      return validateLots(schemeId, fresh);
+    case "chart_of_accounts":
+      return validateChartOfAccounts(schemeId, fresh);
+    case "opening_balances":
+      return validateOpeningBalances(schemeId, fresh);
+  }
+}
+
 // ─── Import Execution ───────────────────────────────────────
+
+/**
+ * A row failed to save during an import. The rows share one transaction and
+ * Prisma 8's transaction has no savepoints, so after one failed insert
+ * Postgres refuses the rest. The importers therefore treat any row failure as
+ * failing the whole import: this error leaves the transaction, which rolls it
+ * back, and nothing is saved. The database's own message stays in `cause`
+ * for the server log.
+ */
+export class MigrationImportError extends Error {
+  constructor(
+    public readonly rowNumber: number,
+    cause: unknown,
+  ) {
+    super(`Row ${rowNumber} could not be saved, so nothing was imported. Check that row and try again.`, { cause });
+    this.name = "MigrationImportError";
+  }
+}
 
 /**
  * Import lot records into the scheme.
@@ -770,20 +905,20 @@ export async function importLots(
   userId: string,
 ): Promise<{ created: number; errors: string[] }> {
   const validRows = rows.filter((r) => r.errors.length === 0);
-  const importErrors: string[] = [];
   let created = 0;
   // The second lot entitlement, where the building's lots hold one (validated by validateLots).
   const separateField = separateEntitlement((await rulesForScheme(schemeId)).rules)?.field ?? null;
 
+  // All or nothing: a row that fails aborts the transaction (see MigrationImportError).
   await db.transaction(async (tx) => {
     for (const row of validRows) {
       try {
         const entitlement = Number(row.data.entitlement);
         const second = separateField ? parseEntitlement(row.data[separateField]) : null;
         if (second && (!second.ok || second.value == null)) throw new Error("The second lot entitlement is missing or not a whole number of at least 1.");
-        const floorArea = row.data.floorArea
-          ? Number(row.data.floorArea)
-          : null;
+        // A floor area that is not a number is skipped, as the preview says.
+        const area = row.data.floorArea?.trim() ? Number(row.data.floorArea) : NaN;
+        const floorArea = Number.isFinite(area) ? area : null;
 
         await tx.orm.public.Lot.create({
           schemeId,
@@ -801,9 +936,7 @@ export async function importLots(
 
         created++;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Unknown error";
-        importErrors.push(`Row ${row.rowNumber}: ${message}`);
+        throw new MigrationImportError(row.rowNumber, err);
       }
     }
   });
@@ -820,7 +953,7 @@ export async function importLots(
     },
   });
 
-  return { created, errors: importErrors };
+  return { created, errors: [] };
 }
 
 /**
@@ -833,49 +966,25 @@ export async function importChartOfAccounts(
   userId: string,
 ): Promise<{ created: number; errors: string[] }> {
   const validRows = rows.filter((r) => r.errors.length === 0);
-  const importErrors: string[] = [];
   let created = 0;
 
-  // Pre-fetch funds for the scheme so we can map by name
-  const funds = await db.orm.public.Fund
-    .where((f) => and(f.schemeId.eq(schemeId), f.deletedAt.eq(null)))
-    .all();
+  // The same fund matching as the preview (validateChartOfAccounts)
+  const resolveFund = fundResolver(await activeFunds(schemeId));
 
-  const fundByName = new Map<string, string>();
-  const fundByType = new Map<string, string>();
-  for (const fund of funds) {
-    fundByName.set(String(fund.name).toLowerCase().trim(), fund.id);
-    if (fund.fundType) {
-      fundByType.set(
-        String(fund.fundType).toLowerCase().trim(),
-        fund.id,
-      );
-    }
-  }
-
+  // All or nothing: a row that fails aborts the transaction (see MigrationImportError).
   await db.transaction(async (tx) => {
     for (const row of validRows) {
       try {
-        // Resolve fundId: try by fund name, then by fund type, then first fund
-        let fundId: string | null = null;
-        const fundName = row.data.fundType?.trim().toLowerCase();
-        if (fundName) {
-          fundId =
-            fundByName.get(fundName) ??
-            fundByType.get(fundName) ??
-            null;
-        }
-        // Fall back to the first available fund if none matched
-        if (!fundId && funds.length > 0) {
-          fundId = funds[0].id;
-        }
+        const fund = resolveFund(row.data.fundType);
+        if (fund.error !== undefined) throw new Error(fund.error);
+        const fundId = fund.fundId;
 
         await tx.orm.public.AccountCode.create({
           schemeId,
           code: toVarchar<10>(row.data.code.trim()),
           name: toVarchar<200>(row.data.name.trim()),
           accountType: row.data.accountType.trim().toUpperCase(),
-          accountSubType: row.data.accountSubType?.trim().toUpperCase() ?? null,
+          accountSubType: row.data.accountSubType?.trim().toUpperCase() || null,
           fundId: fundId,
           isSystemAccount: false,
           isActive: true,
@@ -886,9 +995,7 @@ export async function importChartOfAccounts(
 
         created++;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Unknown error";
-        importErrors.push(`Row ${row.rowNumber}: ${message}`);
+        throw new MigrationImportError(row.rowNumber, err);
       }
     }
   });
@@ -905,7 +1012,7 @@ export async function importChartOfAccounts(
     },
   });
 
-  return { created, errors: importErrors };
+  return { created, errors: [] };
 }
 
 /*
