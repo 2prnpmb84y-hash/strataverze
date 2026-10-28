@@ -96,7 +96,7 @@ import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconcili
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
 import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { auditLabelWords, levyFormWords, packWordsFor } from "@/lib/jurisdiction/screen-words";
+import { auditLabelWords, levyFormWords } from "@/lib/jurisdiction/screen-words";
 import { capitalise } from "@/lib/jurisdiction/wording";
 import { fundNameWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { UnsupportedJurisdictionError, type StatutoryRules } from "@/config/statutory";

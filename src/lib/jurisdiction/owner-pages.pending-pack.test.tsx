@@ -88,15 +88,9 @@ const { default: PaymentPage } = await import("@/app/(portal)/owner/(scheme)/fin
 const { default: NotificationsPage } = await import("@/app/(portal)/owner/(scheme)/notifications/page");
 const { default: OwnerPlatformFeesPage } = await import("@/app/(portal)/owner/(scheme)/finance/platform-fees/page");
 const { default: OwnerHome } = await import("@/app/(portal)/owner/page");
-const { default: OwnerSchemePage } = await import("@/app/(portal)/owner/(scheme)/scheme/page");
 const { default: AdviserSchemesPage } = await import("@/app/(portal)/adviser/schemes/page");
 const { default: AdviserHome } = await import("@/app/(portal)/adviser/page");
 const { default: ReportingPage } = await import("@/app/(portal)/adviser/reporting/page");
-const { PortalShell } = await import("@/components/portal-shell");
-const { IssuedByStrataVerze } = await import("@/components/vault/issued-by-strataverze");
-const { DocumentUploadModal } = await import("@/components/documents/document-upload-modal");
-const { statutoryRulesFor } = await import("@/config/statutory");
-const NSW = statutoryRulesFor("NSW");
 
 const NOTICE = {
   id: "n1",
