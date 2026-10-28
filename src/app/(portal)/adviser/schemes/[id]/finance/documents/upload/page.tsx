@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FinancialDocumentUploadForm } from "../upload-form";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function UploadFinancialDocumentPage({
   params,
@@ -35,7 +36,7 @@ export default async function UploadFinancialDocumentPage({
           description="Upload a receipt, invoice, bank statement, or other financial document."
         />
         <div className="px-6 pb-6">
-          <FinancialDocumentUploadForm schemeId={id} />
+          <FinancialDocumentUploadForm schemeId={id} levy={rulesForState(scheme.state).rules.TERMINOLOGY.levy} />
         </div>
       </Card>
     </div>

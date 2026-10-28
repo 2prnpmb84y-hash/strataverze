@@ -6,6 +6,8 @@ import { parseDrillDownParams } from "@/lib/finance/drill-down";
 import { getEntrySources, getJournalEntriesForReportCell } from "@/lib/finance/report-drill-down";
 import { PageHeader } from "@/components/ui/page-header";
 import { ReportCellDrillDown } from "@/components/finance/report-cell-drill-down";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 /** TC-013 for the scheme's accountant: read only, with the documents behind each entry. */
 export default async function AccountantReportDrillDownPage({
@@ -25,7 +27,8 @@ export default async function AccountantReportDrillDownPage({
   if (!p) notFound();
   const cell = await getJournalEntriesForReportCell(id, p.accountId, p.fundId, { start: p.start, end: p.end }, p.mode);
   if (!cell) notFound();
-  const sources = await getEntrySources(id, cell.rows.map((r) => ({ id: r.entryId, sourceType: r.sourceType, sourceId: r.sourceId })));
+  const { rules } = rulesForState(scheme.state);
+  const sources = await getEntrySources(id, cell.rows.map((r) => ({ id: r.entryId, sourceType: r.sourceType, sourceId: r.sourceId })), rules.TERMINOLOGY);
 
   return (
     <div className="space-y-6">
@@ -33,6 +36,7 @@ export default async function AccountantReportDrillDownPage({
       <ReportCellDrillDown
         cell={cell}
         sources={sources}
+        words={packWordsFor(rules)}
         links={{
           source: (s) => (s.kind === "LEVY_NOTICE" ? `/api/finance/pdf/levy-notice/${s.id}` : null),
           document: (d) => `/api/finance/documents/${d.id}`,

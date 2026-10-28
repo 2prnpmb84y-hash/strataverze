@@ -14,18 +14,22 @@ export type IssuedRecord = {
   label: { tone: LabelTone; text: string; detail: string } | null;
 };
 
-const TYPE_TEXT: Record<string, string> = {
-  LEVY_NOTICE: "Levy notice",
+/** Each record type's name; a levy notice in the building's words (`levy`, capitalised). */
+const typeText = (Levy: string): Record<string, string> => ({
+  LEVY_NOTICE: `${Levy} notice`,
   REMITTANCE_ADVICE: "Remittance advice",
   COMMITTEE_PACK: "Committee report",
   STATUTORY_PACK: "Statutory statements",
   MINUTES: "Minutes",
   MEETING_NOTICE: "Meeting notice",
-};
+});
 
 /** The documents StrataVerze itself issued for this building, as kept in the vault. */
 /** `timeZone` is the building's, for the capture times. */
-export function IssuedByStrataVerze({ schemeId, records, timeZone }: { schemeId: string; records: IssuedRecord[]; timeZone: string }) {
+/** `levy` is the building's word for a levy (TERMINOLOGY.levy). */
+export function IssuedByStrataVerze({ schemeId, records, timeZone, levy }: { schemeId: string; records: IssuedRecord[]; timeZone: string; levy: string }) {
+  const Levy = levy ? levy[0].toUpperCase() + levy.slice(1) : levy;
+  const TYPE_TEXT = typeText(Levy);
   const [openId, setOpenId] = useState<string | null>(null);
   const [type, setType] = useState("");
   const types = [...new Set(records.map((r) => r.recordType))];
@@ -51,7 +55,7 @@ export function IssuedByStrataVerze({ schemeId, records, timeZone }: { schemeId:
       </div>
       {shown.length === 0 ? (
         <p className="rounded-[var(--radius-card)] border border-dashed border-line p-6 text-center text-sm text-ink-muted">
-          Nothing yet. Levy notices, remittance advices, committee and statutory packs, meeting notices and confirmed minutes appear here once StrataVerze issues them.
+          Nothing yet. {Levy} notices, remittance advices, committee and statutory packs, meeting notices and confirmed minutes appear here once StrataVerze issues them.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

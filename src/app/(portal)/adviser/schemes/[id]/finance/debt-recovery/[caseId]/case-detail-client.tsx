@@ -102,7 +102,7 @@ type Activity = {
 const STATUS_MAP: Record<string, { label: string; variant: ChipStatus }> = {
   OPEN: { label: "Open", variant: "success" },
   IN_PROGRESS: { label: "In Progress", variant: "warning" },
-  PAYMENT_PLAN: { label: "Payment Plan", variant: "default" },
+  // PAYMENT_PLAN is labelled in the building's words (paymentPlanLabel).
   ON_HOLD: { label: "On Hold", variant: "default" },
   REFERRED_LEGAL: { label: "Legal", variant: "danger" },
   CLOSED_PAID: { label: "Closed", variant: "success" },
@@ -198,12 +198,10 @@ export function CaseDetailClient({
     "none" | "payment" | "documents" | "activity" | "close"
   >("none");
 
-  const known = STATUS_MAP[debtCase.status];
-  const statusInfo = known
-    ? debtCase.status === "PAYMENT_PLAN"
-      ? { ...known, label: paymentPlanLabel }
-      : known
-    : { label: debtCase.status, variant: "default" as ChipStatus };
+  const statusInfo =
+    debtCase.status === "PAYMENT_PLAN"
+      ? { label: paymentPlanLabel, variant: "default" as ChipStatus }
+      : (STATUS_MAP[debtCase.status] ?? { label: debtCase.status, variant: "default" as ChipStatus });
 
   const isClosed = [
     "CLOSED_PAID",

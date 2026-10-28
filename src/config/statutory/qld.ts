@@ -292,12 +292,15 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   building cannot be created until it is decided and added (the tests lend
  *   it the NSW one). The strata roll reader reads NSW rolls (unit
  *   entitlement, NSW postcodes) and finds no interest schedule
- *   (src/lib/parse-strata-roll.ts). The draft cutover's own error messages
- *   name the capital works fund (src/lib/onboarding/stage-opening-cutover.ts,
- *   logged only), and the income statement reader's issue says "capital
- *   works fund" (src/lib/onboarding/read-income-statement.ts). The income and
- *   budget checks say "the cutover's outstanding levy notices"
- *   (src/lib/onboarding/income-budget.ts checkIncomeBudget). The wizard's
+ *   (src/lib/parse-strata-roll.ts), so its issues, and the Add Property
+ *   wizard's refusal of a file that is not a roll (adviser/schemes/actions.ts),
+ *   name a unit entitlement and a levy notice. The draft cutover's own error
+ *   messages name the capital works fund and levies receivable
+ *   (src/lib/onboarding/stage-opening-cutover.ts; logged only, never shown).
+ *   Done on 28 Oct 2026: the income statement reader names the building's
+ *   funds (read-income-statement.ts), and the income and budget checks and
+ *   locks use its words (income-budget.ts checkIncomeBudget,
+ *   save-income-budget.ts). The wizard's
  *   "Payment Plan" setting (add-property-wizard.tsx, schemes.payment_plan, a
  *   payment frequency, not the NSW statutory plan) keeps its label.
  * - Screens (done): the strata roll table, the lots card, the building form,
@@ -318,47 +321,97 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   NSW only, FEATURES.capitalWorksFundPlan), the e-voting section (the body
  *   corporate) and the lot's debt collection section (TERMINOLOGY.paymentPlan)
  *   take the pack's words from their server pages.
- * - Still NSW words a Queensland building can show (sweep of 27 Oct 2026, to
- *   change before go-live):
- *   - "levy" and "levies" across the finance screens: the finance overview
- *     (finance/page.tsx), the adviser and accountant reports pages
- *     (finance/reports/page.tsx, levy-register, fund-projections, cash-flow,
- *     fund-summary, committee-pack, owner-statement, aged-arrears,
- *     statutory-pack, gst-summary, audit-trail, drill-down), the
- *     reconciliation page and workbench (allocation-workbench.tsx), owner
- *     credits (owner-credits/page.tsx, credit-forms.tsx), the budget screens
- *     (budget-client.tsx, budget-status-panel.tsx), the cutover
- *     (migration/cutover), the journal and finance documents pages, the lot
- *     financials (lots/[lotId]/lot-financials.tsx), the adviser lot page's
- *     "+Levies" snapshot and its owner's view sentence (lots/[lotId]/page.tsx),
- *     the building page's levies card (schemes/[id]/page.tsx LeviesCard), the
- *     insurance form, the owner finance, treasurer, payment and notifications
- *     pages, the vault's issued-by card and the activity timeline
- *     (src/components/activity-timeline.tsx). Statuses, labels and reports
- *     there name a levy throughout.
- *   - "unit entitlement": the lot form's fallback label, used only where the
- *     pack gives no label (lots/lot-form.tsx, lots/[lotId]/page.tsx), the
- *     migration import description (migration/migration-client.tsx) and the
- *     notice plan check (src/lib/levies/notice-plan.ts checkPlan, "Registered
- *     lots hold ... unit entitlement").
- *   - "owners corporation": the schemes list (schemes/page.tsx), the owner
- *     scheme page (owner/(scheme)/scheme/page.tsx), the adviser home
- *     (adviser/page.tsx), the owner platform fees page description
- *     (owner/(scheme)/finance/platform-fees/page.tsx), the issue refusal
- *     "Record the owners corporation's approval" (finance/actions.ts) and the
- *     ballot refusal (src/lib/meetings/evoting.ts validateCanOpenBallot, not
- *     reached: Queensland has no pre-meeting e-voting).
- *   - "capital works": the reports pages' fund projection description ("Helps
- *     plan capital works funding"), and the capital works plan detail page,
- *     statutory pack and its PDF (capital-works/[planId]/page.tsx,
- *     src/lib/finance/statutory-pack.ts, src/lib/pdf/documents.ts,
- *     statutory-pack-view.tsx; NSW only features).
- *   - "Payment Plan": the default status labels in the debt recovery clients
- *     (used only where the page passes none), the adviser case page's payment
- *     plan card and the owner levies page's button (NSW only,
- *     FEATURES.statutoryPaymentPlans).
- *   - "Hardship Request" is still a word in code (caseWordsFor, where the pack
- *     has a hardship statement or no HARDSHIP_REVIEW step).
+ * - Done on 28 Oct 2026 (QLD finance wording go-live): every place the
+ *   27 Oct sweep listed takes the building's words from its pack
+ *   (src/lib/jurisdiction/screen-words.ts packWordsFor, and sharedPackWords
+ *   where a page shows several buildings, as sharedLevyWords does): the
+ *   finance overview and its tabs, the levies list, every adviser and
+ *   accountant report (the reports lists, levy register, aged arrears, fund
+ *   projections, cash flow, fund summary, committee pack, owner statement,
+ *   statutory statements, GST summary, audit trail and its CSV, drill-down),
+ *   the committee pack, owner statement and statutory statements PDFs, the
+ *   levy notice PDF's file name and the vault's title for it, the
+ *   reconciliation page and workbench, owner credits, the budget screens, the
+ *   cutover (file and field names, row errors, control accounts, problems,
+ *   the brought-forward schedule), the data migration page, the journal
+ *   pages (an INTEREST entry or source type is shown as PENALTY; the type is
+ *   stored as it is), the finance documents pages and upload form, the
+ *   periods form, the adviser lot page, its financials and the lot form
+ *   (lotFormEntitlementWords, no fallback label), the building page's levies
+ *   card, activity timeline and danger zone, the owner finance, treasurer,
+ *   payment, notifications, home and platform fees
+ *   pages, the committee's lot page, the portal's "Levies & Finance" entry
+ *   (src/lib/owner/levy-nav.ts), the schemes list, adviser home and
+ *   reporting pages (TERMINOLOGY.ownersCorporations: "bodies corporate"), the
+ *   document library and the vault, and the notice plan check
+ *   (notice-plan.ts checkPlan). The messages advisers see name the building's
+ *   words too: the finance actions (src/app/(portal)/adviser/schemes/[id]/
+ *   finance/actions.ts, including "Record the body corporate's approval"),
+ *   receipting, reconciliation and reversal refusals (levy-receipts.ts,
+ *   bank-allocations.ts, levy-reversal.ts, levy-receipt-reversal.ts), the
+ *   penalty charge (src/lib/queries/interest.ts), the budget refusal
+ *   (budget-status.ts), the notice content check (levy-notice-content.ts),
+ *   the e-voting refusal (evoting.ts validateCanOpenBallot), debt recovery
+ *   and duplicate payment checks, and the contribution notice email's
+ *   footer (email-templates/layout.ts). New journals for a contribution are
+ *   described in the building's words (issue-notices.ts). Where a message
+ *   cannot read the building it uses the default state's words
+ *   (scheme-rules.ts messageTermsFor). NSW is unchanged (the
+ *   *.nsw.golden tests in src/lib/jurisdiction, recorded before the change).
+ * - Still NSW words a Queensland building can show (sweep of 28 Oct 2026):
+ *   - Stored data, kept as it is (only labels changed): the chart of
+ *     accounts StrataVerze seeds for a new building ("Levies Receivable",
+ *     "Levies Paid in Advance", "Levy Income", "Interest Income";
+ *     src/lib/queries/seed-chart-of-accounts.ts), which the chart of
+ *     accounts page, the reports and the drill-down show by name, and the
+ *     sub-types the chart of accounts page shows as stored
+ *     (finance/accounts/page.tsx). Naming a Queensland building's accounts is
+ *     a data decision for onboarding (with defaultAccountingBasis, above).
+ *     Also journals, activity entries and adopted statutory statements
+ *     already written, and an audit log reason that names a "Levy notice
+ *     PDF" (api/finance/pdf/levy-notice route, logged only).
+ *   - Emails other than contribution notices: their shared footer still says
+ *     "a member of an Owners Corporation" (src/lib/email-templates/layout.ts
+ *     emailLayout, where the template passes no words: meeting,
+ *     announcement, work order, works, compliance, payment confirmation and
+ *     invitation emails), and the unused levyIssuedEmail
+ *     (email-templates/levy.ts, notifications.ts notifyLevyIssued, called
+ *     nowhere). Emails were outside this sweep of the screens and PDFs.
+ *   - NSW only, not reached by a Queensland building: the capital works fund
+ *     plan pages (FEATURES.capitalWorksFundPlan; capital-works/[planId],
+ *     plan-forms.tsx "capital works levy schedule"), the statutory
+ *     statements' notes and NSW approved form content
+ *     (src/lib/finance/statutory-pack.ts needs AUDIT_THRESHOLD,
+ *     KEY_FINANCIAL_INFORMATION and STATUTORY_INTEREST), the statutory payment
+ *     plan pages, forms, emails and PDF (FEATURES.statutoryPaymentPlans:
+ *     debt-recovery/payment-plans, components/debt-recovery/
+ *     payment-plan-forms.tsx, src/lib/pdf/payment-plan.ts,
+ *     src/lib/debt-recovery/payment-plan-*.ts), the s 184 certificate draft
+ *     (src/lib/records/certificate-draft.ts) and the NSW AGM template
+ *     (src/lib/meetings/templates.ts, chosen by state).
+ *   - Words in code that only NSW uses: caseWordsFor's "Hardship Request"
+ *     and "Payment Plan" (screen-words.ts), shown where the pack has a
+ *     hardship statement or names no payment arrangement, which is NSW.
+ *     Queensland gets "Waiver Request" and "Payment Arrangement" from its
+ *     pack. Moving them into the NSW pack would change its recorded wording
+ *     and every pending pack would have to carry them, for no change on any
+ *     screen. Also the defaults a few helpers keep for callers that pass no
+ *     words (noticeLabel, levyRegister, statutoryPackBlocks, getEntrySources,
+ *     modeLabel, validateLevyNoticeContent, checkIncomeBudget,
+ *     evaluateResolution, DEFAULT_CHECK_WORDS): every page and action now
+ *     passes the building's words.
+ *   - Not a levy, interest or owners corporation in the strata sense, so
+ *     kept: the insurance premium's "taxes, duties, levies and fees"
+ *     (insurance/insurance-form.tsx), contractors' "expression of interest"
+ *     in the works marketplace, "earns no interest on scheme money" on the
+ *     platform fees page, the public home and privacy pages, the role picker
+ *     at sign in (no building chosen yet), and the referral income
+ *     disclosure, which StrataVerze staff edit per record
+ *     (src/lib/billing/referral.ts).
+ *   - Kept sentence shapes: where an NSW sentence has a dash or semicolon,
+ *     the Queensland version keeps it with the Queensland word (for example
+ *     the overview's "overdue – charge penalty" and the budget panel), so
+ *     the NSW text stays exactly as it was.
  */
 
 /**
@@ -1448,6 +1501,8 @@ export const TERMINOLOGY = {
    * together (wording only; the NSW pack gives none, so it is unchanged).
    */
   lateChargeGeneral: "late payment charge",
+  /** The plural, where a page lists several (wording only). */
+  ownersCorporations: "bodies corporate",
   scheme: "community titles scheme",
   governingDocument: "community management statement",
   manager: "body corporate manager",
@@ -1678,6 +1733,11 @@ export const FOR_REVIEW = [
     point:
       "An agreed arrangement to pay overdue contributions is called a \"Payment Arrangement\", not a payment plan, because Queensland has no statutory payment plan. Where an owner's Queensland and NSW lots are shown together, the penalty and NSW interest are together called a \"late payment charge\". Both are StrataVerze wording, not words of the Act or the SM.",
     where: "TERMINOLOGY.paymentPlan, TERMINOLOGY.lateChargeGeneral",
+  },
+  {
+    point:
+      "Where a page lists several buildings, Queensland ones are called \"bodies corporate\". Where Queensland and NSW buildings are listed together, the page names both (\"Owners Corporations and Bodies Corporate\"). Wording only, StrataVerze's choice of plural.",
+    where: "TERMINOLOGY.ownersCorporations; src/lib/jurisdiction/screen-words.ts sharedPackWords",
   },
   {
     point:

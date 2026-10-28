@@ -7,6 +7,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { SchemeList } from "@/components/scheme-list";
 import { connection } from "next/server";
+import { rulesForListedStates, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { sharedPackWords } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 export default async function AdviserSchemesPage({
   searchParams,
@@ -18,6 +21,8 @@ export default async function AdviserSchemesPage({
   if (!profile) return null;
 
   const schemes = await getSchemesForAdviser(profile.id);
+  // The words of the buildings listed (the default state's where there are none).
+  const w = sharedPackWords(rulesForListedStates(schemes.map((s) => s.state)), rulesForState(DEFAULT_SCHEME_STATE).rules);
 
   const sp = await searchParams;
   const { page } = parsePage(sp);
@@ -27,7 +32,7 @@ export default async function AdviserSchemesPage({
     <div className="max-w-4xl">
       <PageHeader
         title="Schemes"
-        description="Manage the Owners Corporations you advise."
+        description={`Manage the ${w.OwnersCorporationsTitle} you advise.`}
         action={
           profile.isPlatformAdmin ? (
             <Button href="/adviser/schemes/new">Add Scheme</Button>
@@ -53,7 +58,7 @@ export default async function AdviserSchemesPage({
             </svg>
           }
           title="No schemes yet"
-          description="Create your first scheme to start managing an Owners Corporation."
+          description={`Create your first scheme to start managing ${/^[aeiou]/i.test(w.OwnersCorporationTitle) ? "an" : "a"} ${w.OwnersCorporationTitle}.`}
           actionLabel="Add Scheme"
           actionHref="/adviser/schemes/new"
         />

@@ -7,7 +7,8 @@
  * UnsupportedJurisdictionError rather than run on the NSW rules.
  */
 import { db } from "@/prisma/db";
-import { RULE_PACKS, rulePackForScheme, rulePackLabel, type RulePack, type StatutoryRules } from "@/config/statutory";
+import { RULE_PACKS, rulePackFor, rulePackForScheme, rulePackLabel, type RulePack, type StatutoryRules } from "@/config/statutory";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 export interface SchemeRules {
   pack: RulePack;
@@ -52,4 +53,33 @@ export async function rulesForScheme(schemeId: string, orm: typeof db.orm = db.o
 /** Whether a building's rule pack has one of the workflows in FEATURES. Throws as rulesForScheme does. */
 export async function schemeHasFeature(schemeId: string, feature: keyof StatutoryRules["FEATURES"], orm: typeof db.orm = db.orm): Promise<boolean> {
   return (await rulesForScheme(schemeId, orm)).rules.FEATURES[feature] === true;
+}
+
+/**
+ * The building's words, for a message that names a levy or a late charge
+ * (QLD finance wording, 28 Oct 2026). Never throws: where the building cannot
+ * be read (the message is then about that), the default state's words are
+ * used, as the pages that show several buildings do. Only for words: a rule is
+ * never taken from here.
+ */
+export async function messageTermsFor(schemeId: string, orm: typeof db.orm = db.orm): Promise<StatutoryRules["TERMINOLOGY"]> {
+  try {
+    return (await rulesForScheme(schemeId, orm)).rules.TERMINOLOGY;
+  } catch {
+    return rulesForState(DEFAULT_SCHEME_STATE).rules.TERMINOLOGY;
+  }
+}
+
+/**
+ * The rules of the packs of the buildings a page lists, once per state, for
+ * the words the page shows for them all (sharedPackWords). A state with no
+ * pack is left out, so a list never fails on one building.
+ */
+export function rulesForListedStates(states: Iterable<string | null | undefined>): StatutoryRules[] {
+  const out = new Map<string, StatutoryRules>();
+  for (const state of states) {
+    const pack = rulePackFor(state);
+    if (pack) out.set(pack.state, pack.rules);
+  }
+  return [...out.values()];
 }

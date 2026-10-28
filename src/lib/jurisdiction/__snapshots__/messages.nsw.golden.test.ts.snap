@@ -1,0 +1,204 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW cutover words (golden) > an outstanding notice's row errors > not amounts 1`] = `
+[
+  "Levy outstanding "x" is not an amount.",
+  "Interest charged "y" is not an amount.",
+  "Interest paid "z" is not an amount.",
+]
+`;
+
+exports[`NSW cutover words (golden) > an outstanding notice's row errors > paid more 1`] = `
+[
+  "Interest paid is more than the interest charged.",
+]
+`;
+
+exports[`NSW cutover words (golden) > the control accounts and the problems > controls 1`] = `
+[
+  "Levies receivable, Administrative Fund",
+  "Levies paid in advance, Administrative Fund",
+]
+`;
+
+exports[`NSW cutover words (golden) > the control accounts and the problems > problems 1`] = `
+[
+  "Set the cutover date.",
+  "Add the opening trial balance.",
+  "Outstanding levy notices: 1 row has errors.",
+]
+`;
+
+exports[`NSW cutover words (golden) > the file and field names, and the missing columns > fields 1`] = `
+[
+  {
+    "field": "lotNumber",
+    "label": "Lot number",
+    "required": true,
+  },
+  {
+    "field": "fundName",
+    "label": "Fund",
+  },
+  {
+    "field": "noticeNumber",
+    "label": "Notice number",
+  },
+  {
+    "field": "dueDate",
+    "label": "Original due date",
+    "required": true,
+  },
+  {
+    "field": "periodStart",
+    "label": "Period from",
+  },
+  {
+    "field": "periodEnd",
+    "label": "Period to",
+  },
+  {
+    "field": "levyOutstanding",
+    "label": "Levy outstanding",
+    "required": true,
+  },
+  {
+    "field": "interestCharged",
+    "label": "Interest charged to date",
+  },
+  {
+    "field": "interestPaid",
+    "label": "Interest paid",
+  },
+  {
+    "field": "description",
+    "label": "Description",
+  },
+]
+`;
+
+exports[`NSW cutover words (golden) > the file and field names, and the missing columns > files 1`] = `
+{
+  "bank_balances": "Bank reconciled balances",
+  "levy_arrears": "Outstanding levy notices",
+  "opening_balances": "Opening trial balance",
+  "owner_credits": "Owner credit balances",
+  "unpaid_invoices": "Unpaid supplier invoices",
+}
+`;
+
+exports[`NSW cutover words (golden) > the file and field names, and the missing columns > missing 1`] = `
+[
+  "Lot number",
+  "Original due date",
+  "Levy outstanding",
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the audit trail labels > actions 1`] = `
+[
+  "Interest Charged",
+  "Levy Notice Issued",
+  "Levies Generated",
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the audit trail labels > entities 1`] = `
+[
+  "Levy",
+  "Levy Item",
+  "Levy Notice",
+  "Levy Schedule",
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the basis labels 1`] = `
+[
+  "Cash basis: levy income when received, expenses when paid",
+  "Accrual basis: levies when raised, expenses when approved",
+  "Every posted line on this account",
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the email footer 1`] = `
+"You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+              "
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the levy register's titles 1`] = `
+[
+  [
+    "FY 2026 budget levy, Administrative Fund",
+    "Budget",
+  ],
+  [
+    "Special levy: Roof",
+    "Special",
+  ],
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the plan check 1`] = `
+[
+  "The levy amount must be greater than zero.",
+  "Registered lots hold 10 unit entitlement, but the schedule's total is 20. Register every lot (or correct the total) so each lot is levied its proper share.",
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the receipt reversal refusals 1`] = `
+[
+  "This entry is not a levy receipt.",
+  "No levy payments are linked to this entry, so it cannot be reversed as a receipt.",
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the source labels 1`] = `
+[
+  "Levy notice LN-1, Lot ?",
+  "Levy schedule FY2026 (quarterly)",
+  "Levy receipt for notices LN-1 (Lot ?)",
+]
+`;
+
+exports[`NSW drill-down, audit, vault and register words (golden) > the vault titles of a levy notice 1`] = `
+[
+  "Levy notice LN 1 Lot 1",
+  "Levy notice: scan",
+]
+`;
+
+exports[`NSW notice content check (golden) > names every missing item 1`] = `
+[
+  "The strata plan number.",
+  "The scheme name.",
+  "The lot number.",
+  "The owner's name. Record the lot owner on the strata roll.",
+  "The fund the levy is for (administrative or capital works).",
+  "The amount payable.",
+  "How to pay: the scheme's bank account name, BSB and account number. Add the operating bank account in Finance.",
+  "A payment reference for the owner to quote.",
+  "Who to contact with questions (name and email or phone).",
+  "A warning that interest is charged on overdue amounts.",
+  "How the owner can check their levy ledger.",
+  "The Financial Hardship Information Statement.",
+]
+`;
+
+exports[`NSW onboarding checks (golden) > a fund the income statement reader does not recognise 1`] = `
+[
+  ""Special Fund" is not recognised as the administrative or capital works fund.",
+]
+`;
+
+exports[`NSW onboarding checks (golden) > the income and budget levy questions > all raised 1`] = `
+[
+  "Every instalment for 1 July 2026 to 30 June 2027 was raised before the takeover, so none is raised again and no levy schedule is made. Bring every unpaid notice across in the cutover's outstanding levy notices, including those not yet due, with their original due dates.",
+]
+`;
+
+exports[`NSW onboarding checks (golden) > the income and budget levy questions 1`] = `
+[
+  "Say whether the previous manager raised the levies for 1 July 2026 to 30 June 2027 before the takeover.",
+  "Choose how often levies are raised.",
+]
+`;

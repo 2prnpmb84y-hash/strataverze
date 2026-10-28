@@ -61,6 +61,8 @@ type Props = {
   retention?: DocumentRetention;
   /** The building's time zone, for upload dates and the day a document was added. */
   timeZone: string;
+  /** The building's word for a levy (TERMINOLOGY.levy). */
+  levy: string;
 };
 
 export function DocumentsTabContent({
@@ -70,6 +72,7 @@ export function DocumentsTabContent({
   vaultLabels,
   retention,
   timeZone,
+  levy,
 }: Props) {
   const router = useRouter();
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -447,6 +450,7 @@ export function DocumentsTabContent({
         onClose={() => setShowUploadModal(false)}
         onFilesReady={handleFilesReady}
         schemePlanNumber={schemePlanNumber}
+        levy={levy}
       />
     </div>
   );

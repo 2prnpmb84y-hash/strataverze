@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
-const tabs = [
+/** The tabs, the levy and late charge ones named in the building's words. */
+const tabsFor = (w: Pick<PackWords, "Levies" | "LateCharge">) => [
   { key: "overview", label: "Overview", href: "" },
   { key: "accounts", label: "Chart of Accounts", href: "/accounts" },
   { key: "bank-accounts", label: "Bank Accounts", href: "/bank-accounts" },
-  { key: "levies", label: "Levies", href: "/levies" },
+  { key: "levies", label: w.Levies, href: "/levies" },
   { key: "invoices", label: "Invoices", href: "/invoices" },
   { key: "suppliers", label: "Suppliers", href: "/suppliers" },
   { key: "journal", label: "Journal", href: "/journal" },
@@ -16,21 +18,24 @@ const tabs = [
   { key: "matching-rules", label: "Matching Rules", href: "/matching-rules" },
   { key: "budget", label: "Budget", href: "/budget" },
   { key: "capital-works", label: "Capital Works Plan", href: "/capital-works" },
-  { key: "interest", label: "Interest", href: "/interest" },
+  { key: "interest", label: w.LateCharge, href: "/interest" },
   { key: "owner-credits", label: "Owner Credits", href: "/owner-credits" },
   { key: "periods", label: "Periods", href: "/periods" },
   { key: "reports", label: "Reports", href: "/reports" },
   { key: "documents", label: "Documents", href: "/documents" },
   { key: "migration", label: "Migration", href: "/migration" },
   { key: "platform-fees", label: "StrataVerze Fees", href: "/platform-fees" },
-] as const;
+];
 
-/** `capitalWorksPlan`: the building's rule pack has the capital works fund plan, so its tab shows. */
-export function FinanceTabs({ schemeId, capitalWorksPlan }: { schemeId: string; capitalWorksPlan: boolean }) {
+type Tab = ReturnType<typeof tabsFor>[number];
+
+/** `capitalWorksPlan`: the building's rule pack has the capital works fund plan, so its tab shows. `words` are the building's (packWordsFor). */
+export function FinanceTabs({ schemeId, capitalWorksPlan, words }: { schemeId: string; capitalWorksPlan: boolean; words: Pick<PackWords, "Levies" | "LateCharge"> }) {
   const pathname = usePathname();
   const basePath = `/adviser/schemes/${schemeId}/finance`;
+  const tabs = tabsFor(words);
 
-  function isActive(tab: (typeof tabs)[number]) {
+  function isActive(tab: Tab) {
     if (tab.href === "") {
       return pathname === basePath || pathname === `${basePath}/`;
     }

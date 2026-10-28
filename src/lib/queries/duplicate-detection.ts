@@ -1,3 +1,4 @@
+import { messageTermsFor } from "@/lib/jurisdiction/scheme-rules";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type {
@@ -237,7 +238,7 @@ export async function checkPaymentDuplicates(
         lotNumber: notice.lot ? String(notice.lot.lotNumber) : "—",
         amountPaid: currentPaid,
         paidDate: notice.paidInFullAt ? String(notice.paidInFullAt).slice(0, 10) : "—",
-        matchReason: "This levy notice is already fully paid",
+        matchReason: `This ${(await messageTermsFor(String(notice.schemeId))).levy} notice is already fully paid`,
       });
     } else if (currentPaid + paymentAmount > amountDue) {
       matches.push({

@@ -349,6 +349,7 @@ import {
   formatActionLabel,
   formatEntityTypeLabel,
   type AuditTrailFilters,
+  type LabelWords,
 } from "./activity-log-utils";
 
 export type { AuditTrailFilters } from "./activity-log-utils";
@@ -482,7 +483,8 @@ export async function getAuditTrailForExport(
  * Generate CSV content from audit trail rows.
  */
 /** `timeZone`: the building's, for the date and time of each row. */
-export function formatAuditTrailCsv(rows: AuditTrailRow[], timeZone: string): string {
+/** `words` are the building's (packWordsFor), for the action and entity labels. */
+export function formatAuditTrailCsv(rows: AuditTrailRow[], timeZone: string, words?: LabelWords): string {
   const headers = [
     "Date/Time",
     "User",
@@ -515,8 +517,8 @@ export function formatAuditTrailCsv(rows: AuditTrailRow[], timeZone: string): st
         escCsv(dateStr),
         escCsv(row.actorName),
         escCsv(row.actorEmail),
-        escCsv(formatActionLabel(row.action)),
-        escCsv(formatEntityTypeLabel(row.entityType)),
+        escCsv(formatActionLabel(row.action, words)),
+        escCsv(formatEntityTypeLabel(row.entityType, words)),
         escCsv(row.entityId ?? ""),
         escCsv(details),
       ].join(","),

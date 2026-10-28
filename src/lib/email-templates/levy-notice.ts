@@ -82,6 +82,6 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
   return {
     to: p.to,
     subject: plainSubject(`${Levy} notice ${p.noticeNumber}: $${p.amount} due ${day(p.dueDate)} (${p.schemeName})`),
-    html: emailLayout(content),
+    html: emailLayout(content, { ownersCorporation: t.ownersCorporation }),
   };
 }

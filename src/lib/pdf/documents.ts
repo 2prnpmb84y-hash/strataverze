@@ -309,7 +309,8 @@ export function renderCommitteePackPdf(p: CommitteeReportingPack, planNumber: st
 
 // ─── Statutory statements pack ──────────────────────────────────────────────
 
-export function statutoryPackBlocks(pack: StatutoryPack): PdfBlock[] {
+/** `terms` is the building's TERMINOLOGY (the register is headed with its word for a levy). */
+export function statutoryPackBlocks(pack: StatutoryPack, terms: Pick<DocumentTerms, "levy"> = { levy: "levy" }): PdfBlock[] {
   const kfi = pack.rules.keyFinancialInformation;
   const rows = kfi.rows;
   const blocks: PdfBlock[] = [
@@ -377,7 +378,7 @@ export function statutoryPackBlocks(pack: StatutoryPack): PdfBlock[] {
       f.arrearsByLot.length
         ? { kind: "table", columns: [{ header: "Lot", width: 4 }, { header: "Unpaid", width: 1.5, align: "right" }], rows: f.arrearsByLot.map((a) => [`Lot ${a.lotNumber}`, aud(a.unpaidCents)]) }
         : { kind: "text", text: "None." },
-      { kind: "heading", text: "Levy register", level: 2 },
+      { kind: "heading", text: `${capitalise(terms.levy)} register`, level: 2 },
       {
         kind: "table",
         columns: [
@@ -396,13 +397,13 @@ export function statutoryPackBlocks(pack: StatutoryPack): PdfBlock[] {
   return blocks;
 }
 
-/** `terms` is the building's TERMINOLOGY, for the plan line in the header. */
-export function renderStatutoryPackPdf(pack: StatutoryPack, terms: Pick<DocumentTerms, "planLabel">) {
+/** `terms` is the building's TERMINOLOGY, for the plan line in the header and the register's heading. */
+export function renderStatutoryPackPdf(pack: StatutoryPack, terms: Pick<DocumentTerms, "planLabel" | "levy">) {
   return renderPdf({
     title: `Financial statements FY ${pack.financialYear}`,
     schemeName: pack.scheme.name,
     schemeLine: planLine(terms, pack.scheme.planNumber),
-    blocks: statutoryPackBlocks(pack),
+    blocks: statutoryPackBlocks(pack, terms),
     footerNote: `${pack.start} to ${pack.end}`,
   });
 }

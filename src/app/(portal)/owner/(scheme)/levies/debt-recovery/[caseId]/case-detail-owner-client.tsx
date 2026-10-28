@@ -111,7 +111,7 @@ const STATUS_VARIANT: Record<string, "success" | "warning" | "danger" | "default
 const STATUS_LABEL: Record<string, string> = {
   OPEN: "Open",
   IN_PROGRESS: "In Progress",
-  PAYMENT_PLAN: "Payment Plan",
+  // PAYMENT_PLAN is labelled in the building's words (caseWords).
   REFERRED_LEGAL: "Legal Referral",
   CLOSED_PAID: "Closed (Paid)",
   CLOSED_WRITTEN_OFF: "Written Off",

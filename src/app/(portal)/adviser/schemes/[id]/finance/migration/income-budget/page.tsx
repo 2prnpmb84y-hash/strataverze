@@ -26,7 +26,7 @@ export default async function IncomeBudgetPage({ params }: { params: Promise<{ i
     <div className="space-y-6">
       <PageHeader
         title="Income, Expenditure and Budget"
-        description="Part of onboarding: last year's income and expenditure from the previous manager's statements, this year's budget, and the levies it sets."
+        description={`Part of onboarding: last year's income and expenditure from the previous manager's statements, this year's budget, and the ${rules.TERMINOLOGY.levies} it sets.`}
         backHref={"problem" in data ? cutoverBase : `${cutoverBase}?batch=${data.cutover.id}`}
         backLabel="Cutover"
       />

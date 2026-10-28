@@ -245,6 +245,14 @@ export interface SharedTerminology {
    * joined. NSW gives none, so its pack is unchanged.
    */
   lateChargeGeneral?: string;
+  /**
+   * The body that owns the common property, plural, where a page lists
+   * several (the schemes list, the adviser home): "bodies corporate" (QLD
+   * finance wording go-live, 28 Oct 2026). Optional: a pack without it (NSW)
+   * adds an "s" to ownersCorporation ("owners corporations"), as the screens
+   * have always said, so its pack is unchanged.
+   */
+  ownersCorporations?: string;
 }
 
 /**

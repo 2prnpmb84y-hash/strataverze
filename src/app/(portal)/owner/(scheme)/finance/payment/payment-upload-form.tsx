@@ -7,6 +7,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { uploadPaymentConfirmationAction } from "../actions";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 interface Notice {
   id: string;
@@ -26,9 +27,12 @@ const allowedMimeTypes = [
 export function PaymentUploadForm({
   defaultSchemeId,
   outstandingNotices,
+  words: w,
 }: {
   defaultSchemeId: string;
   outstandingNotices: Notice[];
+  /** The words of the owner's buildings (sharedPackWords). */
+  words: Pick<PackWords, "levy" | "Levy">;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -171,10 +175,10 @@ export function PaymentUploadForm({
 
         {outstandingNotices.length > 0 && (
           <SelectField
-            label="Levy Notice (optional)"
+            label={`${w.Levy} Notice (optional)`}
             name="levyNoticeId"
             options={[
-              { value: "", label: "Select a levy notice..." },
+              { value: "", label: `Select a ${w.levy} notice...` },
               ...outstandingNotices.map((n) => ({
                 value: n.id,
                 label: `${n.schemeName} - ${n.label}`,
@@ -230,7 +234,7 @@ export function PaymentUploadForm({
         <FormField
           label="Reference / Description"
           name="payeeReference"
-          placeholder="e.g. Levy Q1 2026 Lot 5"
+          placeholder={`e.g. ${w.Levy} Q1 2026 Lot 5`}
           helpText="Bank reference used for the transfer."
         />
 

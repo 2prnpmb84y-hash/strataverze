@@ -1,3 +1,4 @@
+import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { logError } from "@/lib/log";
 /**
  * Gather what each levy notice will state, check it against the content
@@ -88,7 +89,10 @@ export async function checkPlannedNotices(input: {
       lateChargeApplies: lateChargeApplies(rules.LATE_CHARGE, setting),
       includesHardshipStatement: rule.hardship != null,
       includesLedgerAccess: true,
-    }, rule, rules.TERMINOLOGY);
+    }, rule, rules.TERMINOLOGY, {
+      admin: ledgerFundDefinition(rules, "ADMINISTRATIVE").name.replace(/ fund$/, ""),
+      capitalWorks: ledgerFundDefinition(rules, "CAPITAL_WORKS").name.replace(/ fund$/, ""),
+    });
     for (const item of items) {
       const key = item.code;
       if (item.code === "OWNER") {

@@ -10,12 +10,14 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { DocumentActions } from "./document-actions";
 import { connection } from "next/server";
 import { formatLotLabel } from "@/lib/format";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
   INVOICE: "Invoice",
   BANK_STATEMENT: "Bank Statement",
-  LEVY_NOTICE: "Levy Notice",
+  // LEVY_NOTICE is named in the building's words (typeLabels).
   INSURANCE: "Insurance",
   CONTRACTOR_QUOTE: "Contractor Quote",
   TAX_DOCUMENT: "Tax Document",
@@ -91,12 +93,15 @@ export default async function DocumentDetailPage({
 
   const basePath = `/adviser/schemes/${id}/finance/documents`;
   const tz = timeZoneOf(scheme);
+  const w = packWordsFor(rulesForState(scheme.state).rules);
+  // A levy notice is named in the building's words; the type is stored as it is.
+  const typeLabels: Record<string, string> = { ...docTypeLabels, LEVY_NOTICE: `${w.Levy} Notice` };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={String(doc.fileName)}
-        description={docTypeLabels[doc.documentType] ?? doc.documentType}
+        description={typeLabels[doc.documentType] ?? doc.documentType}
         backHref={basePath}
         backLabel="Documents"
       />
@@ -133,7 +138,7 @@ export default async function DocumentDetailPage({
             <div className="px-6 pb-6">
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                 <DetailItem label="Document Type">
-                  {docTypeLabels[doc.documentType] ?? doc.documentType}
+                  {typeLabels[doc.documentType] ?? doc.documentType}
                 </DetailItem>
                 <DetailItem label="File Name">
                   {String(doc.fileName)}
@@ -205,7 +210,7 @@ export default async function DocumentDetailPage({
               )}
               {doc.levyNotice && (
                 <LinkedRecord
-                  label="Levy Notice"
+                  label={`${w.Levy} Notice`}
                   value={`Notice ${String(doc.levyNotice.noticeNumber)}`}
                 />
               )}
@@ -222,7 +227,7 @@ export default async function DocumentDetailPage({
                 !doc.bankTransaction && (
                   <p className="text-sm text-ink-muted">
                     No linked records. This document can be linked to a lot,
-                    supplier, invoice, levy notice, or bank transaction.
+                    supplier, invoice, {w.levy} notice, or bank transaction.
                   </p>
                 )}
             </div>

@@ -14,11 +14,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { VaultBanner } from "@/components/vault/vault-banner";
 import { VaultLabelChip } from "@/components/vault/vault-label";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export const instant = false;
 
-const TYPE_TEXT: Record<string, string> = {
-  LEVY_NOTICE: "Levy notices",
+/** Each kind of record, a levy notice in the building's words (`Levy`, capitalised). */
+const typeText = (Levy: string): Record<string, string> => ({
+  LEVY_NOTICE: `${Levy} notices`,
   REMITTANCE_ADVICE: "Remittance advices",
   COMMITTEE_PACK: "Committee reports",
   STATUTORY_PACK: "Statutory statements",
@@ -29,7 +32,7 @@ const TYPE_TEXT: Record<string, string> = {
   FINANCIAL: "Financial",
   REPORT: "Reports and compliance",
   OTHER: "Other",
-};
+});
 
 /**
  * The building vault (trial): its timeline, its checks, what is not in it
@@ -50,6 +53,7 @@ export default async function VaultPage({
   if (!scheme || !isVaultTrialBuilding(scheme.planNumber) || !(await getVault(id))) redirect(`/adviser/schemes/${id}/documents`);
 
   const tz = timeZoneOf(scheme);
+  const TYPE_TEXT = typeText(packWordsFor(rulesForState(scheme.state).rules).Levy);
 
   const sp = await searchParams;
   const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : "");

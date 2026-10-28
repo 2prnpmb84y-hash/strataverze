@@ -4,6 +4,7 @@ import { getSchemeById } from "@/lib/queries/schemes";
 import { PageHeader } from "@/components/ui/page-header";
 import { GeneratePeriodsForm } from "./generate-periods-form";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function GeneratePeriodsPage({
   params,
@@ -31,7 +32,7 @@ export default async function GeneratePeriodsPage({
         backHref={`/adviser/schemes/${id}/finance/periods`}
         backLabel="Periods"
       />
-      <GeneratePeriodsForm schemeId={id} />
+      <GeneratePeriodsForm schemeId={id} jurisdiction={rulesForState(scheme.state).rules.TERMINOLOGY.jurisdictionShort} />
     </div>
   );
 }

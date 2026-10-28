@@ -26,7 +26,7 @@
  * claim is undone, so the notices are issued on a later run instead.
  */
 import { db } from "@/prisma/db";
-import { noticeLeadMark } from "@/lib/jurisdiction/wording";
+import { capitalise, noticeLeadMark } from "@/lib/jurisdiction/wording";
 import { fundTypeWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { TimestampString } from "@prisma/orm-postgres/target/codec-types";
@@ -41,7 +41,7 @@ import { loadPlanLots } from "./load-plan-lots";
 import { addDays, toCents, toIsoDay } from "./notice-plan";
 import { issueDateFor, issueTiming, lateMessage } from "./issue-timing";
 import { RULE_PACKS, UnsupportedJurisdictionError } from "@/config/statutory";
-import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { messageTermsFor, rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { platformToday, storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { schemeTimeZone, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
@@ -89,21 +89,26 @@ export async function postLevyRaisedJournal(args: {
   }
 
   // The fund as the building's pack names it: "Capital Works fund" (NSW), "Sinking fund" (Queensland).
-  const fundWords = fundTypeWords(ledgerFundDefinition((await rulesForScheme(args.schemeId)).rules, fundType === "CAPITAL_WORKS" ? "CAPITAL_WORKS" : "ADMINISTRATIVE"));
+  const { rules: packRules } = await rulesForScheme(args.schemeId);
+  const fundWords = fundTypeWords(ledgerFundDefinition(packRules, fundType === "CAPITAL_WORKS" ? "CAPITAL_WORKS" : "ADMINISTRATIVE"));
+  // The journal's words, in the building's words for a levy ("Levies raised", "Contributions raised").
+  const t = packRules.TERMINOLOGY;
+  const Levies = t.levies[0].toUpperCase() + t.levies.slice(1);
+  const Levy = t.levy[0].toUpperCase() + t.levy.slice(1);
   await numberedTransaction(args.schemeId, async (tx) => {
     await addNumberedJournal(
       tx,
       {
         schemeId: args.schemeId,
         transactionDate: args.date,
-        description: `Levies raised — ${args.noticeCount} notice(s) due ${args.date.split("-").reverse().join("/")}, ${fundWords} fund`,
+        description: `${Levies} raised — ${args.noticeCount} notice(s) due ${args.date.split("-").reverse().join("/")}, ${fundWords} fund`,
         entryType: "AUTO",
         sourceType: "LEVY_RAISED",
         sourceId: args.scheduleId,
         createdBy: args.profileId,
         lines: [
-          { accountCodeId: receivableAccount.id, fundId: args.fundId, debit: args.totalAmount, description: "Levies receivable raised" },
-          { accountCodeId: incomeAccount.id, fundId: args.fundId, credit: args.totalAmount, description: "Levy income recognised" },
+          { accountCodeId: receivableAccount.id, fundId: args.fundId, debit: args.totalAmount, description: `${Levies} receivable raised` },
+          { accountCodeId: incomeAccount.id, fundId: args.fundId, credit: args.totalAmount, description: `${Levy} income recognised` },
         ],
       },
       args.profileId,
@@ -276,7 +281,7 @@ export async function postPendingLevies(now = new Date()): Promise<number> {
     const done = await postLevies(schedule.schemeId, schedule.fundId, scheduleId, actorId, mine);
     posted += done.length;
     if (done.length) {
-      await logActivity({ schemeId: schedule.schemeId, actorId, action: "LEVY_NOTICES_ISSUED", entityType: "LevySchedule", entityId: scheduleId, metadata: { count: done.length, note: "Levy posted by the daily job after an interrupted run." } });
+      await logActivity({ schemeId: schedule.schemeId, actorId, action: "LEVY_NOTICES_ISSUED", entityType: "LevySchedule", entityId: scheduleId, metadata: { count: done.length, note: `${capitalise((await messageTermsFor(schedule.schemeId)).levy)} posted by the daily job after an interrupted run.` } });
     }
   }
   return posted;
@@ -373,7 +378,7 @@ export async function issueDueNotices(now: Date = new Date()): Promise<DueRunRes
           action: "LEVY_NOTICES_HELD",
           entityType: "LevySchedule",
           entityId: schedule.id,
-          metadata: { count: late.length, reason: `Past the ${noticeLeadMark(rule)}: confirm on the levy schedule to send them.`, missing: lines },
+          metadata: { count: late.length, reason: `Past the ${noticeLeadMark(rule)}: confirm on the ${scheduleRules.TERMINOLOGY.levy} schedule to send them.`, missing: lines },
         });
       }
       const notices: BatchNotice[] = onTime.map((n) => ({

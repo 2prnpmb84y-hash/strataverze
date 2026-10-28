@@ -6,8 +6,11 @@ import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access
 import { Card, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { connection } from "next/server";
+import { packWordsFor, type PackWords } from "@/lib/jurisdiction/screen-words";
+import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 
-const reports = [
+/** The reports, described in the building's words (w) and with its capital works or sinking fund (capital, lower case). */
+const reportsFor = (w: PackWords, capital: string) => [
   {
     key: "platform-charges",
     title: "Platform Charges",
@@ -17,9 +20,9 @@ const reports = [
   },
   {
     key: "levy-register",
-    title: "Levy Register",
+    title: `${w.Levy} Register`,
     description:
-      "All levy notices by lot with payment status, grouped by fund and period.",
+      `All ${w.levy} notices by lot with payment status, grouped by fund and period.`,
     href: "/levy-register",
   },
   {
@@ -33,7 +36,7 @@ const reports = [
     key: "aged-arrears",
     title: "Aged Arrears",
     description:
-      "Outstanding levy balances grouped by age bracket (current, 30, 60, 90, 90+ days).",
+      `Outstanding ${w.levy} balances grouped by age bracket (current, 30, 60, 90, 90+ days).`,
     href: "/aged-arrears",
   },
   {
@@ -52,7 +55,7 @@ const reports = [
   {
     key: "statutory-pack",
     title: "Statutory Statements",
-    description: "Statement of key financial information, income and expenditure, balance sheet, levy register and notes for the AGM, with the audit export.",
+    description: `Statement of key financial information, income and expenditure, balance sheet, ${w.levy} register and notes for the AGM, with the audit export.`,
     href: "/statutory-pack",
   },
   {
@@ -66,21 +69,21 @@ const reports = [
     key: "fund-summary",
     title: "Fund Summary",
     description:
-      "Opening and closing balances, income, expenses, and levy collection status for each fund.",
+      `Opening and closing balances, income, expenses, and ${w.levy} collection status for each fund.`,
     href: "/fund-summary",
   },
   {
     key: "cash-flow",
     title: "Cash Flow Forecast",
     description:
-      "Projected cash inflows and outflows over the coming months based on levy notices, supplier invoices, and budget estimates.",
+      `Projected cash inflows and outflows over the coming months based on ${w.levy} notices, supplier invoices, and budget estimates.`,
     href: "/cash-flow",
   },
   {
     key: "fund-projections",
     title: "Fund Balance Projections",
     description:
-      "Multi-year fund balance trajectory based on current levy schedules and budget. Helps plan capital works funding.",
+      `Multi-year fund balance trajectory based on current ${w.levy} schedules and budget. Helps plan ${capital} funding.`,
     href: "/fund-projections",
   },
   {
@@ -94,14 +97,14 @@ const reports = [
     key: "audit-trail",
     title: "Audit Trail",
     description:
-      "Chronological log of all financial actions including journal postings, levy changes, and bank reconciliation events.",
+      `Chronological log of all financial actions including journal postings, ${w.levy} changes, and bank reconciliation events.`,
     href: "/audit-trail",
   },
   {
     key: "owner-statement",
     title: "Owner Statement",
     description:
-      "Individual lot owner account statement showing levies raised, payments received, interest charged, and running balance.",
+      `Individual lot owner account statement showing ${w.levies} raised, payments received, ${w.lateCharge} charged, and running balance.`,
     href: "/owner-statement",
   },
   {
@@ -125,7 +128,9 @@ export default async function AccountantReportsPage({
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
   // The statutory statements only where the building's rule pack has key financial information.
-  const keyFinancialInformation = rulesForState(scheme.state).rules.FEATURES.keyFinancialInformation;
+  const { rules } = rulesForState(scheme.state);
+  const keyFinancialInformation = rules.FEATURES.keyFinancialInformation;
+  const reports = reportsFor(packWordsFor(rules), ledgerFundDefinition(rules, "CAPITAL_WORKS").shortLabel.toLowerCase());
 
   return (
     <div className="space-y-6">

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import type { getLevySchedulesForScheme } from "@/lib/queries/levy-schedules";
 import { toIsoDay } from "@/lib/levies/notice-plan";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 function money(value: number): string {
   return value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
@@ -22,18 +23,21 @@ const STATUS_STYLES: Record<string, string> = {
   SUPERSEDED: "bg-amber-100 text-amber-700",
 };
 
-/** Summary of the scheme's levies (budget schedules and special levies). */
+/** Summary of the scheme's levies (budget schedules and special levies), in the building's words. */
 export function LeviesCard({
   id,
   schedules,
   className = "mb-6",
   today,
+  words: w,
 }: {
   id: string;
   schedules: Awaited<ReturnType<typeof getLevySchedulesForScheme>>;
   className?: string;
   /** Today in the building's time zone. */
   today: string;
+  /** The building's words (packWordsFor). */
+  words: PackWords;
 }) {
   const rows = schedules.map((s) => {
     const notices = (s.levyNotices ?? []).filter((n) => String(n.status) !== "DRAFT");
@@ -45,8 +49,8 @@ export function LeviesCard({
       id: s.id,
       title:
         s.levyType === "SPECIAL"
-          ? `Special levy: ${String(s.title ?? "Untitled")}`
-          : `FY ${String(s.financialYear)} budget levy`,
+          ? `Special ${w.levy}: ${String(s.title ?? "Untitled")}`
+          : `FY ${String(s.financialYear)} budget ${w.levy}`,
       fund: s.fund ? String(s.fund.name) : "",
       status: String(s.status),
       amount: Number(s.budgetAmount ?? 0),
@@ -59,19 +63,19 @@ export function LeviesCard({
   return (
     <Card className={className}>
       <CardHeader
-        title="Levies"
+        title={w.Levies}
         description={
           rows.length === 0
-            ? "No levies raised yet."
-            : `${rows.length} lev${rows.length === 1 ? "y" : "ies"} on record.`
+            ? `No ${w.levies} raised yet.`
+            : `${rows.length} ${rows.length === 1 ? w.levy : w.levies} on record.`
         }
         action={
           <div className="flex flex-wrap gap-2">
             <Button href={`/adviser/schemes/${id}/finance/levies/special/new`} variant="secondary">
-              Raise Special Levy
+              Raise Special {w.Levy}
             </Button>
             <Button href={`/adviser/schemes/${id}/finance/levies`} variant="secondary">
-              Go to Levies
+              Go to {w.Levies}
             </Button>
           </div>
         }
@@ -111,7 +115,7 @@ export function LeviesCard({
         </div>
       ) : (
         <p className="text-sm text-ink-muted">
-          Create a budget levy schedule or raise a special levy under Financials.
+          Create a budget {w.levy} schedule or raise a special {w.levy} under Financials.
         </p>
       )}
     </Card>

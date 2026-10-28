@@ -12,6 +12,7 @@ import {
   formatEntityTypeLabel,
   type AuditTrailFilters,
 } from "@/lib/queries/activity-log-utils";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 const inputClasses =
   "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
@@ -85,6 +86,7 @@ export function AuditTrailClient({
   filters,
   basePath,
   readOnly,
+  words,
 }: {
   schemeId: string;
   rows: AuditTrailRow[];
@@ -92,6 +94,8 @@ export function AuditTrailClient({
   hasMore: boolean;
   actors: { id: string; name: string }[];
   filters: AuditTrailFilters;
+  /** The building's words (packWordsFor), for the action and entity labels. */
+  words: Pick<PackWords, "Levy" | "Levies" | "LateCharge">;
   basePath?: string;
   readOnly?: boolean;
 }) {
@@ -184,7 +188,7 @@ export function AuditTrailClient({
               { value: "", label: "All entity types" },
               ...ENTITY_TYPES.map((et) => ({
                 value: et,
-                label: formatEntityTypeLabel(et),
+                label: formatEntityTypeLabel(et, words),
               })),
             ]}
           />
@@ -262,10 +266,10 @@ export function AuditTrailClient({
                   <div className="text-xs">{formatTime(row.createdAt)}</div>
                 </div>
                 <div className="text-sm text-ink font-medium">
-                  {formatActionLabel(row.action)}
+                  {formatActionLabel(row.action, words)}
                 </div>
                 <div className="text-sm text-ink-muted">
-                  {formatEntityTypeLabel(row.entityType)}
+                  {formatEntityTypeLabel(row.entityType, words)}
                 </div>
                 <div className="text-sm text-ink truncate" title={row.actorEmail}>
                   {row.actorName}

@@ -20,6 +20,7 @@ import {
   type AllocationRequest,
 } from "./reconciliation";
 import { LevyReceiptError, prepareLevyReceipt, suspenseAccount, type PreparedLevyReceipt } from "./levy-receipts";
+import { messageTermsFor } from "@/lib/jurisdiction/scheme-rules";
 
 export class ReconciliationError extends Error {}
 
@@ -242,7 +243,7 @@ export async function receiptDepositToNotices(input: {
 }) {
   const txn = await loadTransaction(input.schemeId, input.transactionId);
   const amount = cents(txn.amount);
-  if (amount <= 0) throw new ReconciliationError("Only a deposit can be receipted to levy notices.");
+  if (amount <= 0) throw new ReconciliationError(`Only a deposit can be receipted to ${(await messageTermsFor(input.schemeId)).levy} notices.`);
   const already = (await allocatedByTransaction([txn.id])).get(txn.id) ?? 0;
   const left = unallocatedCents(amount, already);
   const total = input.receipts.reduce((s, r) => s + r.amountCents, 0);
@@ -306,8 +307,9 @@ export async function receiptDepositToNotices(input: {
   });
   await receipt.log(result);
   if (!result.journalEntryId) {
+    const { levies } = await messageTermsFor(input.schemeId);
     throw new ReconciliationError(
-      "The notices were receipted but no journal could be posted. Check the chart of accounts has the bank, levies receivable and levies paid in advance accounts.",
+      `The notices were receipted but no journal could be posted. Check the chart of accounts has the bank, ${levies} receivable and ${levies} paid in advance accounts.`,
     );
   }
   await logAllocation(allocation(result.journalEntryId));
@@ -450,7 +452,7 @@ export async function clearSuspenseItem(input: {
 
   let clearedJournalEntryId: string;
   if (input.target.kind === "LEVY_NOTICE") {
-    if (amount <= 0) throw new ReconciliationError("Only money received can be cleared to a levy notice.");
+    if (amount <= 0) throw new ReconciliationError(`Only money received can be cleared to a ${(await messageTermsFor(input.schemeId)).levy} notice.`);
     const asReconciliation = (err: unknown) => (err instanceof LevyReceiptError ? new ReconciliationError(err.message) : err);
     let receipt: PreparedLevyReceipt;
     try {
@@ -478,7 +480,7 @@ export async function clearSuspenseItem(input: {
       return out;
     });
     await receipt.log(result);
-    if (!result.journalEntryId) throw new ReconciliationError("The levy payment was recorded but no journal could be posted.");
+    if (!result.journalEntryId) throw new ReconciliationError(`The ${(await messageTermsFor(input.schemeId)).levy} payment was recorded but no journal could be posted.`);
     clearedJournalEntryId = result.journalEntryId;
   } else {
     const accountCodeId = input.target.accountCodeId;

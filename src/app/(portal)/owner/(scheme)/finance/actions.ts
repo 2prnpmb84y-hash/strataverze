@@ -2,6 +2,7 @@
 import { logError } from "@/lib/log";
 import { formatDateIn, PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 import { revalidatePath } from "next/cache";
 import { siteUrl } from "@/lib/site-url";
@@ -79,7 +80,7 @@ export async function uploadPaymentConfirmationAction(
     let noticeNumber: string | null = null;
     if (data.levyNoticeId) {
       const notice = await db.orm.public.LevyNotice.where((n) => and(n.id.eq(data.levyNoticeId!), n.schemeId.eq(schemeId))).first();
-      if (!notice || notice.status === "DRAFT" || !ownLots.includes(notice.lotId)) return { error: "Choose one of your own levy notices." };
+      if (!notice || notice.status === "DRAFT" || !ownLots.includes(notice.lotId)) return { error: `Choose one of your own ${rulesForState(scheme.state).rules.TERMINOLOGY.levy} notices.` };
       lotId = notice.lotId;
       noticeNumber = String(notice.noticeNumber);
     }

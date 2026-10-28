@@ -143,7 +143,7 @@ export default async function LevyScheduleDetailPage({
   const totalCents = toCents(String(schedule.budgetAmount));
   const checked =
     status === "APPROVED" && notices.length === 0
-      ? checkPlan({ lots, totalEntitlement: Number(schedule.totalEntitlement), totalCents })
+      ? checkPlan({ lots, totalEntitlement: Number(schedule.totalEntitlement), totalCents, words: { levy, entitlement } })
       : [];
   // Where the building's pack shares insurance by its own schedule (Queensland),
   // the same split the generate action uses, or why it cannot be made. Never for NSW.

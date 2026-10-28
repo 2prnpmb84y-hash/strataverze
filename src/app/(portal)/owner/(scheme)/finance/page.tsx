@@ -14,6 +14,13 @@ import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { sharedPackWords } from "@/lib/jurisdiction/screen-words";
+import { capitalise } from "@/lib/jurisdiction/wording";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
+
+/** "levy contributions" from "Levy contributions". */
+const lowerFirst = (s: string) => (s ? s[0].toLowerCase() + s.slice(1) : s);
 
 function formatCurrency(value: number): string {
   if (value < 0) {
@@ -32,12 +39,17 @@ export default async function OwnerFinancePage() {
     await getVerifiedSelectedSchemeId(),
   );
 
+  // Each building's words, from its rule pack, and the words the page uses for them all.
+  const rulesBy = new Map(schemes.map((s) => [s.id, rulesForState(s.state).rules]));
+  const w = sharedPackWords([...rulesBy.values()], rulesForState(DEFAULT_SCHEME_STATE).rules);
+  const termsOf = (schemeId: string) => rulesBy.get(schemeId)?.TERMINOLOGY ?? w;
+
   if (schemes.length === 0) {
     return (
       <div className="space-y-6">
         <PageHeader
           title="Finance"
-          description="Your levy contributions and fund balances."
+          description={`Your ${lowerFirst(w.OwnerContributions)} and fund balances.`}
         />
         <EmptyState
           title="No properties found"
@@ -90,14 +102,17 @@ export default async function OwnerFinancePage() {
     amountPaid: number;
     balance: number;
     interestCharged: number;
+    /** The building's word for the late charge, with a capital: "Interest", "Penalty". */
+    LateCharge: string;
   }
 
   const displayLevies: DisplayLevy[] = issued.map((notice) => {
     const entry = lotEntries.find((e) => e.lotId === notice.lotId);
     const today = todayBy.get(entry?.schemeId ?? notice.schemeId) ?? todayIn(timeZoneOf(schemes[0]));
+    const schemeId = entry?.schemeId ?? notice.schemeId;
     return {
       id: notice.id,
-      title: `${noticeLabel(notice)} (${String(notice.noticeNumber)})`,
+      title: `${noticeLabel(notice, termsOf(schemeId))} (${String(notice.noticeNumber)})`,
       dueDate: toIsoDay(notice.dueDate),
       fundName: notice.fund ? String(notice.fund.name) : "",
       status: effectiveStatus(notice, today),
@@ -106,6 +121,7 @@ export default async function OwnerFinancePage() {
       amountPaid: Number(notice.amountPaid ?? 0),
       balance: Number(notice.balanceOutstanding ?? 0),
       interestCharged: Number(notice.interestCharged ?? 0),
+      LateCharge: capitalise(termsOf(schemeId).lateCharge),
     };
   });
 
@@ -118,7 +134,7 @@ export default async function OwnerFinancePage() {
     <div className="space-y-6">
       <PageHeader
         title="Finance"
-        description="Your levy contributions and fund balances."
+        description={`Your ${lowerFirst(w.OwnerContributions)} and fund balances.`}
         action={
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" href="/owner/finance/approvals">
@@ -167,7 +183,7 @@ export default async function OwnerFinancePage() {
         />
         {totalInterest > 0 && (
           <StatCard
-            label="Interest Charged"
+            label={`${w.LateCharge} Charged`}
             value={formatCurrency(totalInterest)}
             accent="bg-amber-500"
           />
@@ -215,8 +231,8 @@ export default async function OwnerFinancePage() {
 
       {displayLevies.length === 0 ? (
         <EmptyState
-          title="No levies yet"
-          description="No levies have been issued for your lots. Your strata manager will create levy notices when contributions are due."
+          title={`No ${w.levies} yet`}
+          description={`No ${w.levies} have been issued for your lots. Your strata manager will create ${w.levy} notices when contributions are due.`}
         />
       ) : (
         <>
@@ -224,8 +240,8 @@ export default async function OwnerFinancePage() {
           {outstandingLevies.length > 0 && (
             <Card>
               <CardHeader
-                title="Outstanding Levies"
-                description={`${outstandingLevies.length} lev${outstandingLevies.length === 1 ? "y" : "ies"} with amounts due.`}
+                title={`Outstanding ${w.Levies}`}
+                description={`${outstandingLevies.length} ${outstandingLevies.length === 1 ? w.levy : w.levies} with amounts due.`}
               />
               <div className="flex flex-col gap-2 px-6 pb-6">
                 {outstandingLevies.map((levy) => {
@@ -271,7 +287,7 @@ export default async function OwnerFinancePage() {
                       {levy.interestCharged > 0 && (
                         <div className="flex items-center justify-between text-xs mt-1">
                           <span className="text-ink-muted">
-                            Interest charged
+                            {levy.LateCharge} charged
                           </span>
                           <span className="tabular-nums text-amber-600">
                             {formatCurrency(levy.interestCharged)}
@@ -308,8 +324,8 @@ export default async function OwnerFinancePage() {
           {paidLevies.length > 0 && (
             <Card>
               <CardHeader
-                title="Paid Levies"
-                description={`${paidLevies.length} lev${paidLevies.length === 1 ? "y" : "ies"} fully paid.`}
+                title={`Paid ${w.Levies}`}
+                description={`${paidLevies.length} ${paidLevies.length === 1 ? w.levy : w.levies} fully paid.`}
               />
               <div className="flex flex-col gap-2 px-6 pb-6">
                 {paidLevies.map((levy) => {

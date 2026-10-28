@@ -13,6 +13,10 @@ import {
   receiptDepositAction,
 } from "@/lib/actions/reconciliation";
 import { excludeTransactionAction, reconcileTransactionAction, unmatchTransactionAction } from "../actions";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
+
+/** The building's words the workbench shows (packWordsFor). */
+type WorkbenchWords = Pick<PackWords, "levy" | "Levy">;
 
 export interface TxnRow {
   id: string;
@@ -92,12 +96,14 @@ function AllocatePanel({
   notices,
   feeTable,
   onDone,
+  words: w,
 }: {
   schemeId: string;
   txn: TxnRow;
   candidates: CandidateRow[];
   notices: NoticeRow[];
   feeTable: TransactionFeeTable | null;
+  words: WorkbenchWords;
   onDone: () => void;
 }) {
   const isDeposit = txn.amountCents > 0;
@@ -135,7 +141,7 @@ function AllocatePanel({
       <div className="flex flex-wrap gap-2" role="tablist">
         {isDeposit && (
           <Button type="button" variant={mode === "NOTICES" ? "primary" : "secondary"} onClick={() => setMode("NOTICES")}>
-            Levy notices
+            {w.Levy} notices
           </Button>
         )}
         <Button type="button" variant={mode === "ENTRIES" ? "primary" : "secondary"} onClick={() => setMode("ENTRIES")}>
@@ -210,7 +216,7 @@ function AllocatePanel({
       {mode === "NOTICES" && (
         <>
           {shownNotices.length === 0 ? (
-            <p className="text-sm text-ink-muted">No open levy notices match.</p>
+            <p className="text-sm text-ink-muted">No open {w.levy} notices match.</p>
           ) : (
             <ul className="divide-y divide-line">
               {shownNotices.map((n) => (
@@ -303,11 +309,13 @@ function SuspenseClearForm({
   item,
   notices,
   accounts,
+  words: w,
 }: {
   schemeId: string;
   item: SuspenseRowView;
   notices: NoticeRow[];
   accounts: AccountOption[];
+  words: WorkbenchWords;
 }) {
   const isReceipt = item.amountCents > 0;
   const [kind, setKind] = useState<"LEVY_NOTICE" | "ACCOUNT">(isReceipt ? "LEVY_NOTICE" : "ACCOUNT");
@@ -323,7 +331,7 @@ function SuspenseClearForm({
       <div className="flex flex-wrap items-center gap-2">
         {isReceipt && (
           <select value={kind} onChange={(e) => { setKind(e.target.value as "LEVY_NOTICE" | "ACCOUNT"); setTarget(""); }} aria-label="Clear to" className={input}>
-            <option value="LEVY_NOTICE">A levy notice</option>
+            <option value="LEVY_NOTICE">A {w.levy} notice</option>
             <option value="ACCOUNT">An account</option>
           </select>
         )}
@@ -380,6 +388,7 @@ export function AllocationWorkbench({
   suspense,
   accounts,
   feeTable,
+  words,
 }: {
   schemeId: string;
   unmatched: TxnRow[];
@@ -389,6 +398,8 @@ export function AllocationWorkbench({
   suspense: SuspenseRowView[];
   accounts: AccountOption[];
   feeTable: TransactionFeeTable | null;
+  /** The building's words (packWordsFor). */
+  words: WorkbenchWords;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const [clearing, setClearing] = useState<string | null>(null);
@@ -412,7 +423,7 @@ export function AllocationWorkbench({
           description={
             unmatched.length === 0
               ? undefined
-              : `${unmatched.length} transaction${unmatched.length === 1 ? "" : "s"}, ${aud(unmatchedTotal)} not yet allocated. Split a deposit across levy notices, combine payments against one entry, or park what you cannot identify in suspense.`
+              : `${unmatched.length} transaction${unmatched.length === 1 ? "" : "s"}, ${aud(unmatchedTotal)} not yet allocated. Split a deposit across ${words.levy} notices, combine payments against one entry, or park what you cannot identify in suspense.`
           }
         />
         {unmatched.length === 0 ? (
@@ -473,7 +484,7 @@ export function AllocationWorkbench({
                     </div>
                   )}
                   {open === t.id && (
-                    <AllocatePanel schemeId={schemeId} txn={t} candidates={candidates} notices={notices} feeTable={feeTable} onDone={() => setOpen(null)} />
+                    <AllocatePanel schemeId={schemeId} txn={t} candidates={candidates} notices={notices} feeTable={feeTable} onDone={() => setOpen(null)} words={words} />
                   )}
                 </li>
               );
@@ -534,7 +545,7 @@ export function AllocationWorkbench({
                       </Button>
                     </span>
                   </div>
-                  {clearing === i.id && <SuspenseClearForm schemeId={schemeId} item={i} notices={notices} accounts={accounts} />}
+                  {clearing === i.id && <SuspenseClearForm schemeId={schemeId} item={i} notices={notices} accounts={accounts} words={words} />}
                 </li>
               ))}
             </ul>

@@ -6,6 +6,7 @@ import { FormField } from "@/components/ui/form-field";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { fundLabel, fundTypeWords, ledgerFundDefinition, type FundCatalogue } from "@/lib/jurisdiction/funds";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 interface FundSummaryData {
   fundId: string;
@@ -46,6 +47,7 @@ export function FundSummaryClient({
   endDate,
   summaries,
   catalogue,
+  words: w,
   basePath,
 }: {
   schemeId: string;
@@ -54,6 +56,8 @@ export function FundSummaryClient({
   summaries: FundSummaryData[];
   /** The building's FUND_CATALOGUE, which names its funds. */
   catalogue: FundCatalogue;
+  /** The building's words (packWordsFor). */
+  words: PackWords;
   basePath?: string;
 }) {
   const router = useRouter();
@@ -122,7 +126,7 @@ export function FundSummaryClient({
               accent={totalNetMovement >= 0 ? "bg-green-500" : "bg-yellow-500"}
             />
             <StatCard
-              label="Arrears (levies and interest)"
+              label={`Arrears (${w.levies} and ${w.lateCharge})`}
               value={formatCurrency(totalOutstanding)}
               accent={totalOutstanding > 0 ? "bg-red-500" : "bg-green-500"}
             />
@@ -199,7 +203,7 @@ export function FundSummaryClient({
                 {fund.totalLevied > 0 && (
                   <div className="mt-4 pt-4 border-t border-line">
                     <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2">
-                      Levy Collection
+                      {w.Levy} Collection
                     </h4>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="rounded-[var(--radius-card)] bg-muted px-3 py-2 text-center">

@@ -17,6 +17,7 @@ import { LeviesCard } from "../_sections/levies-card";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
+import { entryTypeLabel, packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -61,6 +62,7 @@ export default async function FinanceDashboardPage({
   const catalogue = rules.FUND_CATALOGUE;
   const adminWords = ledgerFundDefinition(catalogue, "ADMINISTRATIVE");
   const capitalWords = ledgerFundDefinition(catalogue, "CAPITAL_WORKS");
+  const w = packWordsFor(rules);
 
   const adminFund = funds.find((f) => f.fundType === "ADMINISTRATIVE");
   const capitalFund = funds.find((f) => f.fundType === "CAPITAL_WORKS");
@@ -95,7 +97,7 @@ export default async function FinanceDashboardPage({
           accent="bg-emerald-500"
         />
         <StatCard
-          label="Overdue Levies"
+          label={`Overdue ${w.Levies}`}
           value={overdueLevies.length > 0 ? formatCurrency(totalOverdueLevyAmount) : "$0.00"}
           accent={overdueLevies.length > 0 ? "bg-amber-500" : "bg-zinc-300"}
         />
@@ -110,7 +112,7 @@ export default async function FinanceDashboardPage({
       <FundsCard id={id} funds={funds} catalogue={catalogue} className="" />
 
       {/* Levies (nested under Financials) */}
-      <LeviesCard id={id} schedules={levySchedules} className="" today={await schemeToday(id)} />
+      <LeviesCard id={id} schedules={levySchedules} className="" today={await schemeToday(id)} words={w} />
 
       {/* Setup checklist — shown if chart of accounts is not yet seeded */}
       {!hasChartOfAccounts && (
@@ -123,7 +125,7 @@ export default async function FinanceDashboardPage({
             <SetupStep
               number={1}
               label="Seed chart of accounts"
-              description="Create the default NSW strata account codes"
+              description={`Create the default ${w.jurisdiction} strata account codes`}
               href={`/adviser/schemes/${id}/finance/accounts`}
               done={hasChartOfAccounts}
             />
@@ -136,8 +138,8 @@ export default async function FinanceDashboardPage({
             />
             <SetupStep
               number={3}
-              label="Create levy schedule"
-              description="Set up the first quarterly or annual levy schedule"
+              label={`Create ${w.levy} schedule`}
+              description={`Set up the first quarterly or annual ${w.levy} schedule`}
               href={`/adviser/schemes/${id}/finance/levies`}
               done={levySchedules.length > 0}
             />
@@ -169,7 +171,7 @@ export default async function FinanceDashboardPage({
           }
         />
         <QuickActionCard
-          title="Levy Schedules"
+          title={`${w.Levy} Schedules`}
           description={`${levySchedules.length} schedule${levySchedules.length !== 1 ? "s" : ""}`}
           href={`/adviser/schemes/${id}/finance/levies`}
           icon={
@@ -216,8 +218,8 @@ export default async function FinanceDashboardPage({
           }
         />
         <QuickActionCard
-          title="Interest"
-          description={`${overdueLevies.length} overdue – charge interest`}
+          title={w.LateCharge}
+          description={`${overdueLevies.length} overdue – charge ${w.lateCharge}`}
           href={`/adviser/schemes/${id}/finance/interest`}
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -267,7 +269,7 @@ export default async function FinanceDashboardPage({
                       {entry.entryNumber} — {entry.description}
                     </p>
                     <p className="text-xs text-ink-muted">
-                      {new Date(String(entry.transactionDate)).toLocaleDateString("en-AU")} · {entry.entryType}
+                      {new Date(String(entry.transactionDate)).toLocaleDateString("en-AU")} · {entryTypeLabel(String(entry.entryType), w)}
                     </p>
                   </div>
                   <div className="ml-4 text-right shrink-0">
@@ -287,7 +289,7 @@ export default async function FinanceDashboardPage({
       {overdueLevies.length > 0 && (
         <Card>
           <CardHeader
-            title={`Overdue Levies (${overdueLevies.length})`}
+            title={`Overdue ${w.Levies} (${overdueLevies.length})`}
             action={
               <Button variant="ghost" href={`/adviser/schemes/${id}/finance/levies`}>
                 View all

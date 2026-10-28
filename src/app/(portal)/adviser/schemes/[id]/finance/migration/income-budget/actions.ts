@@ -6,6 +6,8 @@ import { saveIncomeBudget, IncomeBudgetError } from "@/lib/onboarding/save-incom
 import type { IncomeBudgetCheck, IncomeBudgetInput } from "@/lib/onboarding/income-budget";
 import { readIncomeStatementPDF, type IncomeStatement } from "@/lib/onboarding/read-income-statement";
 import { TooManyPagesError } from "@/lib/pdf/layout-text";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 
 export interface SaveIncomeBudgetState {
   saved?: boolean;
@@ -66,7 +68,12 @@ export async function readIncomeStatementAction(schemeId: string, formData: Form
   if (file.type !== "application/pdf" && ext !== "pdf") return { ok: false, error: "Only a PDF can be read." };
   if (file.size > 30 * 1024 * 1024) return { ok: false, error: "The file must be smaller than 30 MB." };
   try {
-    const statement = await readIncomeStatementPDF(new Uint8Array(await file.arrayBuffer()));
+    // A fund not recognised is named as the building's pack names its funds.
+    const { rules } = await rulesForScheme(schemeId);
+    const statement = await readIncomeStatementPDF(new Uint8Array(await file.arrayBuffer()), {
+      admin: ledgerFundDefinition(rules, "ADMINISTRATIVE").name.replace(/ fund$/, ""),
+      capitalWorks: ledgerFundDefinition(rules, "CAPITAL_WORKS").name,
+    });
     return { ok: true, statement };
   } catch (err) {
     if (err instanceof TooManyPagesError) return { ok: false, error: err.message };

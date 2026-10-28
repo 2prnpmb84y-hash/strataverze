@@ -7,6 +7,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { connection } from "next/server";
+import { rulesForListedStates, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { sharedPackWords } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 export default async function AdviserReportingPage() {
   await connection();
@@ -15,6 +18,8 @@ export default async function AdviserReportingPage() {
 
   const schemes = await getSchemesForAdviser(profile.id);
   const schemeIds = schemes.map((s) => s.id);
+  // The words of the buildings shown (the default state's where there are none).
+  const w = sharedPackWords(rulesForListedStates(schemes.map((s) => s.state)), rulesForState(DEFAULT_SCHEME_STATE).rules);
 
   const [levyNotices, workOrders, complianceItems] = schemeIds.length > 0
     ? await Promise.all([
@@ -129,7 +134,7 @@ export default async function AdviserReportingPage() {
           <Card className="mb-6">
             <CardHeader
               title="Financial Summary"
-              description="Levy collection across all schemes."
+              description={`${w.Levy} collection across all schemes.`}
             />
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-3 gap-3">

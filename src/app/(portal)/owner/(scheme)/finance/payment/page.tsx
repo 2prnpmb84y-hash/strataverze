@@ -8,6 +8,12 @@ import { noticeLabel } from "@/lib/levies/levy-ledger";
 import { PageHeader } from "@/components/ui/page-header";
 import { PaymentUploadForm } from "./payment-upload-form";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { sharedPackWords } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
+
+/** "levy contributions" from "Levy contributions". */
+const lowerFirst = (s: string) => (s ? s[0].toLowerCase() + s.slice(1) : s);
 
 export default async function PaymentUploadPage() {
   await connection();
@@ -32,6 +38,9 @@ export default async function PaymentUploadPage() {
   );
   const lotIds = lotEntries.map((e) => e.lotId);
   const notices = await getLevyNoticesForLots(lotIds);
+  // Each building's words, from its rule pack, and the words the page uses for them all.
+  const rulesBy = new Map(schemes.map((s) => [s.id, rulesForState(s.state).rules]));
+  const w = sharedPackWords([...rulesBy.values()], rulesForState(DEFAULT_SCHEME_STATE).rules);
 
   const outstandingNotices = notices
     .filter(
@@ -39,9 +48,10 @@ export default async function PaymentUploadPage() {
     )
     .map((n) => {
       const entry = lotEntries.find((e) => e.lotId === n.lotId);
+      const terms = rulesBy.get(entry?.schemeId ?? n.schemeId)?.TERMINOLOGY ?? w;
       return {
         id: n.id,
-        label: `${String(n.noticeNumber)} · ${noticeLabel(n)} · $${Number(n.balanceOutstanding ?? 0).toFixed(2)} outstanding`,
+        label: `${String(n.noticeNumber)} · ${noticeLabel(n, terms)} · $${Number(n.balanceOutstanding ?? 0).toFixed(2)} outstanding`,
         schemeId: entry?.schemeId ?? n.schemeId,
         schemeName: entry?.schemeName ?? "",
       };
@@ -54,13 +64,14 @@ export default async function PaymentUploadPage() {
     <div className="space-y-6">
       <PageHeader
         title="Upload Payment Confirmation"
-        description="Upload proof of payment for your levy contributions. Your strata manager will review and confirm the payment."
+        description={`Upload proof of payment for your ${lowerFirst(w.OwnerContributions)}. Your strata manager will review and confirm the payment.`}
         backHref="/owner/finance"
         backLabel="Finance"
       />
       <PaymentUploadForm
         defaultSchemeId={defaultSchemeId}
         outstandingNotices={outstandingNotices}
+        words={w}
       />
     </div>
   );

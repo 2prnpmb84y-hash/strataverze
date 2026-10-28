@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { drillDownHref } from "@/lib/finance/drill-down";
 import { fundShortLabel, type FundCatalogue } from "@/lib/jurisdiction/funds";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 import { useRouter } from "next/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -147,6 +148,7 @@ export function CommitteePackClient({
   endDate,
   pack,
   catalogue,
+  words: w,
   basePath,
 }: {
   schemeId: string;
@@ -157,6 +159,8 @@ export function CommitteePackClient({
   pack: CommitteeReportingPack;
   /** The building's FUND_CATALOGUE, which names its funds. */
   catalogue: FundCatalogue;
+  /** The building's words (packWordsFor). */
+  words: PackWords;
   basePath?: string;
 }) {
   const router = useRouter();
@@ -247,7 +251,7 @@ export function CommitteePackClient({
       {!hasData ? (
         <EmptyState
           title="No financial data"
-          description="There is no financial data available for the selected period. Ensure funds, levies, and journal entries have been set up."
+          description={`There is no financial data available for the selected period. Ensure funds, ${w.levies}, and journal entries have been set up.`}
         />
       ) : (
         <>
@@ -264,7 +268,7 @@ export function CommitteePackClient({
               accent={pack.cashPosition >= 0 ? "bg-blue-500" : "bg-red-500"}
             />
             <StatCard
-              label="Levy Collection Rate"
+              label={`${w.Levy} Collection Rate`}
               value={formatPercent(pack.levyCollectionRate)}
               accent={
                 pack.levyCollectionRate >= 90
@@ -390,7 +394,7 @@ export function CommitteePackClient({
             <Card>
               <CardHeader
                 title="Aged Arrears"
-                description={`${pack.arrearsSnapshot.lotCount} lot${pack.arrearsSnapshot.lotCount !== 1 ? "s" : ""} with outstanding levies`}
+                description={`${pack.arrearsSnapshot.lotCount} lot${pack.arrearsSnapshot.lotCount !== 1 ? "s" : ""} with outstanding ${w.levies}`}
               />
               <div className="px-6 pb-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -578,12 +582,12 @@ export function CommitteePackClient({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-ink">
                         <span className="font-medium">
-                          {formatActionLabel(activity.action)}
+                          {formatActionLabel(activity.action, w)}
                         </span>
                         <span className="text-ink-muted">
                           {" "}
                           on{" "}
-                          {formatEntityTypeLabel(activity.entityType)}
+                          {formatEntityTypeLabel(activity.entityType, w)}
                         </span>
                       </p>
                       <p className="text-xs text-ink-muted mt-0.5">

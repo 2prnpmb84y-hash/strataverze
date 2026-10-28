@@ -39,9 +39,10 @@ export function LotForm({
   lockStructure?: boolean;
   /**
    * The pack's label and help for each lot's entitlement, from the server page
-   * (stage 2, step 10). Null keeps the words this form has always shown.
+   * (stage 2, step 10; lotFormEntitlementWords). With no help from the pack
+   * the form's own help is shown.
    */
-  entitlementWords?: { label: string | null; help: string | null };
+  entitlementWords: { label: string; help: string | null };
   /**
    * The second schedule the building's lots hold (Queensland's interest
    * schedule), from the server page, or null (NSW). Locked like the unit
@@ -89,14 +90,14 @@ export function LotForm({
           />
 
           <FormField
-            label={entitlementWords?.label ?? "Unit Entitlement"}
+            label={entitlementWords.label}
             name="entitlement"
             readOnly={lockStructure}
             type="number"
             required
             defaultValue={defaults?.entitlement}
             placeholder="e.g. 50"
-            helpText={entitlementWords?.help ?? "Lot entitlement within the scheme"}
+            helpText={entitlementWords.help ?? "Lot entitlement within the scheme"}
             error={state.fieldErrors?.entitlement}
           />
 

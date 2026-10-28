@@ -138,3 +138,145 @@ export function caseWordsFor(rules: Pick<StatutoryRules, "NOTICE_RULES" | "DEBT_
     paymentPlan: rules.TERMINOLOGY.paymentPlan ?? "Payment Plan",
   };
 }
+
+// ─── The pack's words in every form a screen, report or PDF needs ──────────
+
+/**
+ * A building's words, in the forms the finance screens, reports and PDFs
+ * show them (QLD finance wording go-live, 28 Oct 2026): lower case for the
+ * middle of a sentence, a capital first letter for the start of one or a
+ * label, and title case for headings and column headers. Plain data, so a
+ * server page can pass it to the browser. NSW gives exactly the words its
+ * screens have always shown ("Levy Register", "Overdue Levies", "Interest").
+ */
+export interface PackWords {
+  /** "levy", "contribution" */
+  levy: string;
+  /** "levies", "contributions" */
+  levies: string;
+  /** "Levy", "Contribution" */
+  Levy: string;
+  /** "Levies", "Contributions" */
+  Levies: string;
+  /** "interest", "penalty" */
+  lateCharge: string;
+  /** "Interest", "Penalty" */
+  LateCharge: string;
+  /** "owners corporation", "body corporate" */
+  ownersCorporation: string;
+  /** "Owners corporation", "Body corporate" */
+  OwnersCorporation: string;
+  /** "Owners Corporation", "Body Corporate" */
+  OwnersCorporationTitle: string;
+  /** The short form, as the screens write it: "OC", "BC". */
+  OC: string;
+  /** The plural: "owners corporations", "bodies corporate". */
+  ownersCorporations: string;
+  /** The same, in title case: "Owners Corporations", "Bodies Corporate". */
+  OwnersCorporationsTitle: string;
+  /** "strata committee", "committee" */
+  committee: string;
+  /** "Strata committee", "Committee" */
+  Committee: string;
+  /** "Strata Committee", "Committee" */
+  CommitteeTitle: string;
+  /** The entitlement on each lot: "unit entitlement", "contribution schedule lot entitlement". */
+  entitlement: string;
+  /** The same, as a field label: "Unit entitlement". */
+  Entitlement: string;
+  /** The same, as a column heads it: "Unit Entitlement", "Contribution Schedule Lot Entitlement". */
+  EntitlementTitle: string;
+  /**
+   * What owners pay, as a sentence starts it: "Levy contributions" (NSW, as
+   * the screens have always said) or "Contributions" where the pack's word
+   * is already "contribution".
+   */
+  OwnerContributions: string;
+  /** The jurisdiction, as it follows the Act's name: "NSW", "Qld". */
+  jurisdiction: string;
+}
+
+type WordRules = Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES" | "TERMINOLOGY">;
+
+export function packWordsFor(rules: WordRules): PackWords {
+  const t = rules.TERMINOLOGY;
+  const schedule = onLotSchedule(rules);
+  return {
+    levy: t.levy,
+    levies: t.levies,
+    Levy: sentenceCase(t.levy),
+    Levies: sentenceCase(t.levies),
+    lateCharge: t.lateCharge,
+    LateCharge: sentenceCase(t.lateCharge),
+    ownersCorporation: t.ownersCorporation,
+    OwnersCorporation: sentenceCase(t.ownersCorporation),
+    OwnersCorporationTitle: titleCase(t.ownersCorporation),
+    OC: t.ownersCorporation.split(/\s+/).map((part) => part[0]?.toUpperCase() ?? "").join(""),
+    ownersCorporations: t.ownersCorporations ?? `${t.ownersCorporation}s`,
+    OwnersCorporationsTitle: titleCase(t.ownersCorporations ?? `${t.ownersCorporation}s`),
+    committee: t.committee,
+    Committee: sentenceCase(t.committee),
+    CommitteeTitle: titleCase(t.committee),
+    entitlement: schedule.name,
+    Entitlement: sentenceCase(schedule.name),
+    EntitlementTitle: schedule.label ?? titleCase(schedule.name),
+    OwnerContributions: /contribution/i.test(t.levy) ? sentenceCase(t.levies) : `${sentenceCase(t.levy)} contributions`,
+    jurisdiction: t.jurisdictionShort,
+  };
+}
+
+/**
+ * The words for a page that shows several buildings (the schemes list, the
+ * adviser home, an owner with lots in two states): the buildings' own where
+ * they all use the same, else each word for both, the fallback pack's first
+ * ("owners corporation or body corporate", "levies and contributions"), and
+ * the packs' general word for a late charge (sharedLevyWords).
+ */
+/** Plural words, joined with "and" where the buildings use different ones. */
+const PLURAL_KEYS = new Set<keyof PackWords>(["levies", "Levies", "ownersCorporations", "OwnersCorporationsTitle"]);
+
+export function sharedPackWords(rules: readonly WordRules[], fallback: WordRules): PackWords {
+  const all = (rules.length ? rules : [fallback]).map(packWordsFor);
+  const first = packWordsFor(fallback);
+  const levy = sharedLevyWords(rules, fallback);
+  const keys = Object.keys(first) as (keyof PackWords)[];
+  const out = {} as PackWords;
+  for (const k of keys) {
+    const values = [...new Set(all.map((w) => w[k]))].sort((a, b) => Number(b === first[k]) - Number(a === first[k]) || a.localeCompare(b));
+    out[k] = values.length === 1 ? values[0] : values.join(PLURAL_KEYS.has(k) ? " and " : " or ");
+  }
+  // Where the buildings name a late charge differently, the packs' general word for it ("late payment charge").
+  if (!levy.shared && levy.lateCharge !== out.lateCharge) {
+    out.lateCharge = levy.lateCharge;
+    out.LateCharge = sentenceCase(levy.lateCharge);
+  }
+  return out;
+}
+
+/**
+ * A journal entry's type or source type as the screens show it. The code is
+ * stored as it is ("INTEREST", "LEVY_RAISED"); its levy and late charge parts
+ * are shown in the building's words, in capitals as the screens show every
+ * code ("PENALTY", "CONTRIBUTION_RAISED"). NSW codes show as they are.
+ */
+export function entryTypeLabel(code: string, w: Pick<PackWords, "levy" | "levies" | "lateCharge">): string {
+  const up = (s: string) => s.toUpperCase().replace(/\s+/g, "_");
+  return code
+    .split("_")
+    .map((part) => (part === "LEVY" ? up(w.levy) : part === "LEVIES" ? up(w.levies) : part === "INTEREST" ? up(w.lateCharge) : part))
+    .join("_");
+}
+
+/** The lot form's label and help for each lot's entitlement: "Unit Entitlement" and the pack's help, or none. */
+export function lotFormEntitlementWords(rules: WordRules): { label: string; help: string | null } {
+  return { label: packWordsFor(rules).EntitlementTitle, help: onLotSchedule(rules).help ?? null };
+}
+
+/**
+ * What owners pay, as the owner's levies page describes it: "Levies and
+ * contributions" (NSW, as the page has always said), or the building's word
+ * alone where it is already "contributions".
+ */
+export function leviesAndContributions(levies: string): string {
+  return /contribution/i.test(levies) ? sentenceCase(levies) : `${sentenceCase(levies)} and contributions`;
+}

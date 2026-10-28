@@ -31,7 +31,7 @@ import {
   getPaymentPlanForCase,
   getDebtRecoverySteps,
 } from "@/lib/queries/debt-recovery";
-import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError, needRule } from "@/config/statutory";
 import { stepPausedByPlan } from "@/lib/debt-recovery/payment-plans";
 import { lotOwnerIds } from "@/lib/debt-recovery/lot-owners";
@@ -94,7 +94,7 @@ export async function initiateDebtRecoveryAction(
     // Gather overdue levy notices
     const overdueNotices = await getOverdueLevyNoticesForLot(schemeId, lotId);
     if (overdueNotices.length === 0) {
-      return { error: "No overdue levy notices found for this lot" };
+      return { error: `No overdue ${(await messageTermsFor(schemeId)).levy} notices found for this lot` };
     }
 
     const principalOwed = overdueNotices.reduce(

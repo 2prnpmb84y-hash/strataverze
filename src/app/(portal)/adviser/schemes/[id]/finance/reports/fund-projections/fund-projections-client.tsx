@@ -5,6 +5,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import type { FundBalanceProjections } from "@/lib/queries/reports";
 import { fundLabel, fundNameWords, ledgerFundDefinition, type FundCatalogue } from "@/lib/jurisdiction/funds";
 import { capitalise } from "@/lib/jurisdiction/wording";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 const yearOptions = [
   { value: "3", label: "3 years" },
@@ -56,10 +57,12 @@ interface Props {
   catalogue: FundCatalogue;
   /** Whether the building's pack has the capital works fund plan (FEATURES.capitalWorksFundPlan). */
   capitalWorksPlan: boolean;
+  /** The building's words (packWordsFor). */
+  words: PackWords;
   basePath?: string;
 }
 
-export function FundProjectionsClient({ schemeId, yearsAhead, data, catalogue, capitalWorksPlan, basePath }: Props) {
+export function FundProjectionsClient({ schemeId, yearsAhead, data, catalogue, capitalWorksPlan, words: w, basePath }: Props) {
   const router = useRouter();
   const reportBase = basePath ?? `/adviser/schemes/${schemeId}/finance/reports`;
 
@@ -140,7 +143,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, catalogue, c
                 </div>
                 <div className="rounded-[var(--radius-card)] bg-white border border-line p-3">
                   <p className="text-xs text-ink-muted">
-                    Annual Levy Income
+                    Annual {w.Levy} Income
                   </p>
                   <p className="text-lg font-semibold text-emerald-600 mt-0.5">
                     {fund.years[0]
@@ -189,7 +192,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, catalogue, c
                       Opening
                     </th>
                     <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
-                      Levy Income
+                      {w.Levy} Income
                     </th>
                     <th scope="col" className="px-4 py-3 font-medium text-ink-muted text-right">
                       Expenses
@@ -293,7 +296,7 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, catalogue, c
               <div className="mx-4 mb-4 rounded-[var(--radius-card)] border border-rose-400/50 bg-rose-50/10 p-3">
                 <p className="text-xs font-medium text-rose-600">
                   ⚠ This fund is projected to go into deficit. Consider
-                  reviewing the levy schedule or deferring planned expenditure.
+                  reviewing the {w.levy} schedule or deferring planned expenditure.
                 </p>
               </div>
             )}
@@ -308,11 +311,11 @@ export function FundProjectionsClient({ schemeId, yearsAhead, data, catalogue, c
         </p>
         <ul className="list-disc list-inside space-y-0.5">
           <li>
-            Projections assume current levy schedules and budget allocations
+            Projections assume current {w.levy} schedules and budget allocations
             remain unchanged across future financial years.
           </li>
           <li>
-            Annual levy income is sourced from active levy schedules. Where no
+            Annual {w.levy} income is sourced from active {w.levy} schedules. Where no
             schedule exists, budget income is used as the estimate.
           </li>
           <li>

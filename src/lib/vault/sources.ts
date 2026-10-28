@@ -6,6 +6,7 @@ import { toStoragePath } from "@/lib/queries/document-url";
 import { LIBRARY_CATEGORY_TO_RECORD_TYPE, VAULT_CAPTURED_FINANCIAL_TYPES } from "@/config/vault";
 import { appendVaultEvent, captureFile, getTrialVault, type CaptureResult } from "./capture";
 import { canonicalJson } from "./chain";
+import { messageTermsFor } from "@/lib/jurisdiction/scheme-rules";
 
 /**
  * What goes into a building's vault, and from where (server side):
@@ -21,16 +22,21 @@ import { canonicalJson } from "./chain";
 
 const titleFromFile = (name: string) => name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || name;
 
-const FINANCIAL_TITLES: Record<string, string> = {
-  LEVY_NOTICE: "Levy notice",
+/** Each kind's name; a levy notice in the building's word for a levy (`levy`). */
+const financialTitles = (levy: string): Record<string, string> => ({
+  LEVY_NOTICE: `${levy ? levy[0].toUpperCase() + levy.slice(1) : levy} notice`,
   REMITTANCE_ADVICE: "Remittance advice",
   COMMITTEE_PACK: "Committee report",
   STATUTORY_PACK: "Statutory statements",
-};
+});
 
-/** "Levy notice LN 1001 Lot 1", not "Levy notice: Levy notice LN 1001 Lot 1". */
-export function financialTitle(documentType: string, fileName: string): string {
-  const kind = FINANCIAL_TITLES[documentType] ?? "Document";
+/**
+ * "Levy notice LN 1001 Lot 1", not "Levy notice: Levy notice LN 1001 Lot 1".
+ * `levy` is the building's word for a levy (TERMINOLOGY.levy), as its notice
+ * PDFs are named.
+ */
+export function financialTitle(documentType: string, fileName: string, levy: string = "levy"): string {
+  const kind = financialTitles(levy)[documentType] ?? "Document";
   const name = titleFromFile(fileName);
   return name.toLowerCase().startsWith(kind.toLowerCase()) ? name : `${kind}: ${name}`;
 }
@@ -75,7 +81,7 @@ export async function captureGeneratedPdf(input: {
       mimeType: "application/pdf",
       source: "STRATAVERZE",
       sourceRef,
-      record: { recordType: input.documentType, title: financialTitle(input.documentType, input.fileName) },
+      record: { recordType: input.documentType, title: financialTitle(input.documentType, input.fileName, (await messageTermsFor(input.schemeId)).levy) },
       details: { documentDate: input.documentDate ? String(input.documentDate).slice(0, 10) : null },
     });
   });
@@ -243,9 +249,10 @@ export async function pendingSources(schemeId: string): Promise<Array<{ sourceRe
         db.orm.public.Notice.where((n) => n.meetingId.in(meetingIds)).all(),
       ])
     : [[], []];
+  const levy = (await messageTermsFor(schemeId)).levy;
   const out: Array<{ sourceRef: string; title: string; kind: "library" | "financial" | "minutes" | "notice"; id: string }> = [];
   for (const d of docs) if (!done.has(`Document:${d.id}`)) out.push({ sourceRef: `Document:${d.id}`, title: d.title, kind: "library", id: d.id });
-  for (const d of fin) if (generated.has(d.id) && !done.has(`FinancialDocument:${d.id}`)) out.push({ sourceRef: `FinancialDocument:${d.id}`, title: financialTitle(d.documentType, d.fileName), kind: "financial", id: d.id });
+  for (const d of fin) if (generated.has(d.id) && !done.has(`FinancialDocument:${d.id}`)) out.push({ sourceRef: `FinancialDocument:${d.id}`, title: financialTitle(d.documentType, d.fileName, levy), kind: "financial", id: d.id });
   for (const m of minutes) if (!done.has(`Minutes:${m.id}`)) out.push({ sourceRef: `Minutes:${m.id}`, title: `Minutes: ${titleOf.get(m.meetingId) ?? "meeting"} (version ${m.version})`, kind: "minutes", id: m.id });
   for (const n of notices) if (!done.has(`Notice:${n.id}`)) out.push({ sourceRef: `Notice:${n.id}`, title: `Meeting notice: ${titleOf.get(n.meetingId) ?? "meeting"} (version ${n.version})`, kind: "notice", id: n.id });
   return out;

@@ -11,7 +11,8 @@ const docTypeOptions = [
   { value: "RECEIPT", label: "Receipt" },
   { value: "INVOICE", label: "Invoice" },
   { value: "BANK_STATEMENT", label: "Bank Statement" },
-  { value: "LEVY_NOTICE", label: "Levy Notice" },
+  // Labelled in the building's words below.
+  { value: "LEVY_NOTICE", label: "" },
   { value: "INSURANCE", label: "Insurance" },
   { value: "CONTRACTOR_QUOTE", label: "Contractor Quote" },
   { value: "TAX_DOCUMENT", label: "Tax Document" },
@@ -26,10 +27,13 @@ const allowedMimeTypes = [
   "image/heic",
 ];
 
+/** `levy` is the building's word for a levy (packWordsFor), for the notice type's label. */
 export function FinancialDocumentUploadForm({
   schemeId,
+  levy,
 }: {
   schemeId: string;
+  levy: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -159,7 +163,7 @@ export function FinancialDocumentUploadForm({
         label="Document Type"
         name="documentType"
         required
-        options={docTypeOptions}
+        options={docTypeOptions.map((o) => (o.value === "LEVY_NOTICE" ? { ...o, label: `${levy[0].toUpperCase()}${levy.slice(1)} Notice` } : o))}
       />
 
       <div>

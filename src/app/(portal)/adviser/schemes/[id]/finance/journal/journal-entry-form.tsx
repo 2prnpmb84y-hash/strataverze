@@ -22,6 +22,8 @@ interface Props {
   schemeId: string;
   accountCodes: { value: string; label: string }[];
   funds: { value: string; label: string }[];
+  /** The building's word for a levy (packWordsFor). */
+  levy: string;
 }
 
 const emptyLine = (): JournalLine => ({
@@ -35,7 +37,7 @@ const emptyLine = (): JournalLine => ({
 const inputClasses =
   "w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors";
 
-export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
+export function JournalEntryForm({ schemeId, accountCodes, funds, levy }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
@@ -146,7 +148,7 @@ export function JournalEntryForm({ schemeId, accountCodes, funds }: Props) {
           label="Description"
           name="description"
           required
-          placeholder="e.g. Monthly levy receipts"
+          placeholder={`e.g. Monthly ${levy} receipts`}
         />
       </div>
 

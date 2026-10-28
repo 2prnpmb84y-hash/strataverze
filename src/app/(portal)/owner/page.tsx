@@ -4,6 +4,8 @@ import { getSchemeNotificationCounts } from "@/lib/queries/schemes";
 import { SchemeGrid } from "./scheme-grid";
 import { connection } from "next/server";
 import { schemeThumbnails } from "@/lib/schemes/photos";
+import { rulesForListedStates, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 export default async function OwnerSchemePicker() {
   await connection();
@@ -52,6 +54,8 @@ export default async function OwnerSchemePicker() {
       lotNumber: membership?.lot?.lotNumber ?? null,
       unitNumber: membership?.lot?.unitNumber ?? null,
       pendingLevies: counts.pendingLevies,
+      // The building's own words (the default state's where its state has no pack).
+      levyWords: (({ levy, levies }) => ({ levy, levies }))((rulesForListedStates([scheme.state])[0] ?? rulesForState(DEFAULT_SCHEME_STATE).rules).TERMINOLOGY),
       activeWorkOrders: counts.activeWorkOrders,
       upcomingMeetings: counts.upcomingMeetings,
       photoUrl: thumbs[scheme.id] ?? null,

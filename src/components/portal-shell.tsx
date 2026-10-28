@@ -45,7 +45,8 @@ type PortalKey = keyof typeof portalConfig;
 /*  Page title map — derives a display title from the current route    */
 /* ------------------------------------------------------------------ */
 
-const pageTitles: Record<string, string> = {
+/** The page titles; the owner's levies page in the words of their buildings (`leviesLabel`). */
+const pageTitlesFor = (leviesLabel: string): Record<string, string> => ({
   "": "Dashboard",
   dashboard: "Dashboard",
   scheme: "My Property",
@@ -53,7 +54,7 @@ const pageTitles: Record<string, string> = {
   contacts: "Community",
   maintenance: "Work Orders",
   works: "Works requests",
-  levies: "Levies & Finance",
+  levies: leviesLabel,
   documents: "Documents",
   meetings: "Meetings",
   bylaws: "By-laws",
@@ -71,9 +72,9 @@ const pageTitles: Record<string, string> = {
   invoices: "Invoices",
   settings: "Settings",
   invitations: "Invitations",
-};
+});
 
-function derivePageTitle(pathname: string): string {
+function derivePageTitle(pathname: string, pageTitles: Record<string, string>): string {
   const parts = pathname.split("/").filter(Boolean);
   // Try the second segment first (e.g. /owner/levies -> "levies")
   if (parts.length >= 2) {
@@ -88,13 +89,14 @@ function derivePageTitle(pathname: string): string {
 /*  Mobile nav items (kept for the mobile horizontal scroll nav)       */
 /* ------------------------------------------------------------------ */
 
-const ownerBaseNav = [
+/** The owner's nav; the levies entry in the words of their buildings (`leviesLabel`). */
+const ownerBaseNavFor = (leviesLabel: string) => [
   { label: "Dashboard", href: "/owner" },
   { label: "My Property", href: "/owner/scheme" },
   { label: "Compliance", href: "/owner/compliance" },
   { label: "Community", href: "/owner/contacts" },
   { label: "Work Orders", href: "/owner/works" },
-  { label: "Levies & Finance", href: "/owner/levies" },
+  { label: leviesLabel, href: "/owner/levies" },
   { label: "Documents", href: "/owner/documents" },
   { label: "Meetings", href: "/owner/meetings" },
   { label: "By-laws", href: "/owner/bylaws" },
@@ -109,7 +111,8 @@ const committeeExtraNav = [
   { label: "Compliance", href: "/owner/compliance" },
 ];
 
-function buildOwnerNav(isCommitteeMember: boolean) {
+function buildOwnerNav(isCommitteeMember: boolean, leviesLabel: string) {
+  const ownerBaseNav = ownerBaseNavFor(leviesLabel);
   if (!isCommitteeMember) return ownerBaseNav;
   const nav = [...ownerBaseNav];
   nav.splice(3, 0, ...committeeExtraNav);
@@ -147,7 +150,7 @@ const adminMobileNav = [
   { label: "Audit log", href: "/admin/audit" },
 ];
 
-const mobileNavByPortal: Record<string, typeof ownerBaseNav> = {
+const mobileNavByPortal: Record<string, Array<{ label: string; href: string }>> = {
   admin: adminMobileNav,
   adviser: adviserNav,
   supplier: supplierNav,
@@ -164,10 +167,13 @@ export function PortalShell({
   isCommitteeMember = false,
   pendingInvitationCount = 0,
   isPlatformAdmin = false,
+  leviesNavLabel,
   children,
 }: {
   user: User;
   isPlatformAdmin?: boolean;
+  /** The owner portal's "Levies & Finance", in the words of the person's buildings (ownerLevyNavLabel). */
+  leviesNavLabel: string;
   availablePortals?: string[];
   isCommitteeMember?: boolean;
   pendingInvitationCount?: number;
@@ -182,11 +188,11 @@ export function PortalShell({
   // Mobile nav
   const mobileNav =
     portal === "owner"
-      ? buildOwnerNav(isCommitteeMember)
-      : mobileNavByPortal[portal] ?? ownerBaseNav;
+      ? buildOwnerNav(isCommitteeMember, leviesNavLabel)
+      : mobileNavByPortal[portal] ?? ownerBaseNavFor(leviesNavLabel);
 
   const otherPortals = availablePortals.filter((p) => p !== portal);
-  const pageTitle = derivePageTitle(pathname);
+  const pageTitle = derivePageTitle(pathname, pageTitlesFor(leviesNavLabel));
 
   return (
     <div className="flex min-h-screen">
@@ -199,7 +205,7 @@ export function PortalShell({
       </a>
 
       {/* Desktop side rail */}
-      <SideRail portal={portal} isPlatformAdmin={isPlatformAdmin} />
+      <SideRail portal={portal} isPlatformAdmin={isPlatformAdmin} leviesNavLabel={leviesNavLabel} />
 
       {/* Main column */}
       <div className="flex flex-col flex-1 min-w-0">

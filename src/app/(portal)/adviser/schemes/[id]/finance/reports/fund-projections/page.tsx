@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { FundProjectionsClient } from "./fund-projections-client";
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function FundProjectionsPage({
   params,
@@ -51,6 +52,7 @@ export default async function FundProjectionsPage({
         data={data}
         catalogue={rules.FUND_CATALOGUE}
         capitalWorksPlan={rules.FEATURES.capitalWorksFundPlan}
+        words={packWordsFor(rules)}
       />
     </div>
   );

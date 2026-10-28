@@ -313,8 +313,8 @@ export interface RegisterGroup {
   }[];
 }
 
-/** Group issued notices by levy (schedule) for the levy register. */
-export function levyRegister(notices: RegisterNotice[], today: string): RegisterGroup[] {
+/** Group issued notices by levy (schedule) for the levy register, titled in the building's word for a levy. */
+export function levyRegister(notices: RegisterNotice[], today: string, terms: Pick<Terms, "levy"> = { levy: "levy" }): RegisterGroup[] {
   const groups = new Map<string, RegisterGroup>();
   for (const n of notices) {
     if (String(n.status) === "DRAFT") continue;
@@ -325,8 +325,8 @@ export function levyRegister(notices: RegisterNotice[], today: string): Register
       {
         id: n.levyScheduleId,
         title: isSpecial
-          ? `Special levy: ${String(s?.title ?? "Untitled")}`
-          : `FY ${String(s?.financialYear ?? "")} budget levy${n.fund?.name ? `, ${String(n.fund.name)}` : ""}`,
+          ? `Special ${terms.levy}: ${String(s?.title ?? "Untitled")}`
+          : `FY ${String(s?.financialYear ?? "")} budget ${terms.levy}${n.fund?.name ? `, ${String(n.fund.name)}` : ""}`,
         levyType: isSpecial ? "Special" : "Budget",
         dueDate: toIsoDay(n.dueDate),
         status: String(s?.status ?? ""),

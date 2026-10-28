@@ -7,7 +7,8 @@ import { FormField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { generateFinancialPeriodsAction } from "../../actions";
 
-export function GeneratePeriodsForm({ schemeId }: { schemeId: string }) {
+/** `jurisdiction` is the building's, as its pack writes it ("NSW", "Qld"). */
+export function GeneratePeriodsForm({ schemeId, jurisdiction }: { schemeId: string; jurisdiction: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +72,7 @@ export function GeneratePeriodsForm({ schemeId }: { schemeId: string }) {
             type="date"
             required
             defaultValue={defaultStart}
-            helpText="Typically 1 July for NSW strata schemes"
+            helpText={`Typically 1 July for ${jurisdiction} strata schemes`}
           />
           <FormField
             label="Financial Year End"

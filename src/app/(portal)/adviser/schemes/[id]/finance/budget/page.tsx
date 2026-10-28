@@ -13,6 +13,8 @@ import { getBudgets } from "@/lib/finance/budgets";
 import { workingBudgets } from "@/lib/finance/budget-status";
 import { resolutionMeetings } from "@/lib/finance/resolutions";
 import { BudgetStatusPanel, type FundBudgetStatus } from "./budget-status-panel";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function BudgetPage({
   params,
@@ -82,6 +84,7 @@ export default async function BudgetPage({
     fundId: ac.fundId,
   }));
 
+  const words = packWordsFor(rulesForState(scheme.state).rules);
   return (
     <div className="space-y-6">
       <PageHeader
@@ -91,7 +94,7 @@ export default async function BudgetPage({
         backLabel="Finance"
       />
 
-      <BudgetStatusPanel schemeId={id} rows={statusRows} meetings={meetings} />
+      <BudgetStatusPanel schemeId={id} rows={statusRows} meetings={meetings} levies={words.levies} />
 
       <BudgetClient
         schemeId={id}
@@ -113,6 +116,7 @@ export default async function BudgetPage({
         }))}
         selectedFundId={selectedFundId}
         budgetVsActual={budgetVsActual}
+        words={words}
       />
     </div>
   );

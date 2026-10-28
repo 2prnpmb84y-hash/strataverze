@@ -63,6 +63,7 @@ export async function openBallotAction(
     const blocked = validateCanOpenBallot({
       adopted: scheme.preMeetingEvotingAdopted,
       meetingStatus: meeting.status,
+      ownersCorporation: rulesForState(scheme.state).rules.TERMINOLOGY.ownersCorporation,
     });
     if (blocked) return { error: blocked };
 

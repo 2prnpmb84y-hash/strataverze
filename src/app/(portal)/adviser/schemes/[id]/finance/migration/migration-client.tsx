@@ -42,6 +42,8 @@ interface MigrationClientProps {
    * lots file. Null for NSW.
    */
   separateEntitlement?: BuildingSeparateEntitlement;
+  /** The entitlement on each lot, as the building's pack names it ("unit entitlement"). */
+  entitlement: string;
 }
 
 // ── Constants ────────────────────────────────────────────────────
@@ -80,16 +82,17 @@ const SOURCE_SYSTEMS: {
   },
 ];
 
-const DATA_TYPES: {
+/** The files that can be imported, with `entitlement` the building's entitlement on each lot ("unit entitlement"). */
+const dataTypesFor = (entitlement: string): {
   id: DataType;
   name: string;
   description: string;
-}[] = [
+}[] => [
   {
     id: "lots",
     name: "Lots & Units",
     description:
-      "Import lot numbers, unit entitlements, floor areas and lot types from the source system.",
+      `Import lot numbers, ${entitlement}s, floor areas and lot types from the source system.`,
   },
   {
     id: "chart_of_accounts",
@@ -128,7 +131,7 @@ const STEP_LABELS: { step: MigrationStep; label: string }[] = [
 
 // ── Component ────────────────────────────────────────────────────
 
-export function MigrationClient({ schemeId, schemeName, separateEntitlement = null }: MigrationClientProps) {
+export function MigrationClient({ schemeId, schemeName, separateEntitlement = null, entitlement }: MigrationClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -345,6 +348,9 @@ export function MigrationClient({ schemeId, schemeName, separateEntitlement = nu
   ).length;
 
   // ── Render ───────────────────────────────────────────────────
+
+  // The files that can be imported, described in the building's words.
+  const DATA_TYPES = dataTypesFor(entitlement);
 
   return (
     <div className="space-y-6">

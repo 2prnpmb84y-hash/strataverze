@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
 import { connection } from "next/server";
 import { requirePageAccess } from "@/lib/auth/require-access";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { entryTypeLabel, packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -30,7 +32,8 @@ export default async function JournalEntriesPage({
   const { id } = await params;
   // Adviser finance: checked here as well as in the layout.
   if (!(await requirePageAccess(id, "finance.write"))) return null;
-  const entries = await getJournalEntriesForScheme(id);
+  const [entries, { rules }] = await Promise.all([getJournalEntriesForScheme(id), rulesForScheme(id)]);
+  const words = packWordsFor(rules);
 
   const totalEntries = entries.length;
   const postedCount = entries.filter((e) => e.status === "POSTED").length;
@@ -84,7 +87,7 @@ export default async function JournalEntriesPage({
                           {entry.status}
                         </span>
                         <span className="text-xs text-ink-muted">
-                          {entry.entryType}
+                          {entryTypeLabel(String(entry.entryType), words)}
                         </span>
                       </div>
                       <p className="mt-1 text-sm font-medium">

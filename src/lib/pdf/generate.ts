@@ -27,7 +27,7 @@ import {
   type LevyNoticeDocument,
 } from "./documents";
 import { storeGeneratedPdf } from "./store";
-import { noticeLateCharge } from "@/lib/jurisdiction/wording";
+import { capitalise, noticeLateCharge } from "@/lib/jurisdiction/wording";
 import { needRule } from "@/config/statutory";
 import { insuranceBasis } from "@/lib/levies/contribution-shares";
 
@@ -99,7 +99,8 @@ export async function generateLevyNoticePdf(noticeId: string, actorId: string): 
   const loaded = await levyNoticeData(noticeId, actorId);
   if (!loaded) return null;
   const bytes = await renderLevyNoticePdf(loaded.data);
-  const fileName = safeName(`Levy-notice-${loaded.data.noticeNumber}-Lot-${loaded.data.lotNumber}.pdf`);
+  // Named with the building's word for a levy ("Levy-notice-...", "Contribution-notice-...").
+  const fileName = safeName(`${capitalise(loaded.data.terms.levy)}-notice-${loaded.data.noticeNumber}-Lot-${loaded.data.lotNumber}.pdf`);
   const stored = await storeGeneratedPdf({
     schemeId: loaded.schemeId,
     documentType: "LEVY_NOTICE",

@@ -13,9 +13,11 @@ import { getNextEntryNumber, lockJournalNumbering, validatePeriodForPosting } fr
 import { ensureLeviesInAdvanceAccount } from "@/lib/queries/seed-chart-of-accounts";
 import { logActivity } from "@/lib/queries/activity-log";
 import { financialYearStart } from "@/lib/levies/notice-plan";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { capitalise } from "@/lib/jurisdiction/wording";
 import {
   CUTOVER_DATA_TYPES,
-  CUTOVER_LABELS,
+  cutoverLabels,
   cutoverDate as parseCutoverDate,
   cutoverReadiness,
   executionProblem,
@@ -28,6 +30,7 @@ import {
   type CutoverDataType,
   type CutoverFile,
   type CutoverRows,
+  type CutoverTerms,
   type Lookups,
   type ParsedRow,
   type Readiness,
@@ -80,14 +83,18 @@ export const sha256Text = (text: string) => createHash("sha256").update(text, "u
 
 /** Everything a cutover file is checked against, for one scheme. */
 export async function loadCutoverLookups(schemeId: string): Promise<Lookups & { lotEntitlement: Map<string, number> }> {
-  const [accounts, funds, lots, suppliers, bankAccounts] = await Promise.all([
+  const [accounts, funds, lots, suppliers, bankAccounts, scheme] = await Promise.all([
     db.orm.public.AccountCode.where((a) => and(a.schemeId.eq(schemeId), a.isActive.eq(true))).limit(2000).all(),
     db.orm.public.Fund.where((f) => and(f.schemeId.eq(schemeId), f.isActive.eq(true))).limit(50).all(),
     db.orm.public.Lot.where((l) => l.schemeId.eq(schemeId)).limit(5000).all(),
     db.orm.public.Supplier.where((s) => s.schemeId.eq(schemeId)).limit(5000).all(),
     db.orm.public.SchemeBankAccount.where((b) => and(b.schemeId.eq(schemeId), b.isActive.eq(true))).limit(100).all(),
+    db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first(),
   ]);
+  // The building's words for the messages and labels (its pack's TERMINOLOGY).
+  const terms: CutoverTerms | undefined = scheme ? rulesForState(scheme.state).rules.TERMINOLOGY : undefined;
   return {
+    terms,
     accounts: accounts.map((a) => ({ id: a.id, code: String(a.code), accountType: String(a.accountType), accountSubType: a.accountSubType ?? null, fundId: a.fundId ?? null })),
     funds: funds.map((f) => ({ id: f.id, name: String(f.name), fundType: String(f.fundType) })),
     lots: lots.map((l) => ({ id: l.id, lotNumber: String(l.lotNumber) })),
@@ -121,7 +128,7 @@ export function evaluateCutover(staged: StagedFiles, lookups: Lookups, cutover: 
     const list = (rows[t] ?? []) as ParsedRow<unknown>[];
     return { dataType: t, fileName: staged[t]!.fileName, sha256: staged[t]!.sha256, rowCount: list.length, errorCount: list.filter((r) => r.errors.length > 0).length };
   });
-  return { rows, files, readiness: cutoverReadiness({ files, rows, funds: lookups.funds, cutoverDate: cutover }) };
+  return { rows, files, readiness: cutoverReadiness({ files, rows, funds: lookups.funds, cutoverDate: cutover, terms: lookups.terms }) };
 }
 
 async function loadBatch(schemeId: string, batchId: string) {
@@ -211,8 +218,13 @@ export async function stageCutoverFile(input: {
       throw new CutoverError(`The column chosen for "${field}" is not in the file.`);
     }
   }
-  const missing = missingFields(mapping, input.dataType);
-  if (missing.length > 0) return { headers, mapping, missing, staged: false };
+  let missing = missingFields(mapping, input.dataType);
+  if (missing.length > 0) {
+    // Named in the building's words.
+    const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(input.schemeId)).first();
+    if (scheme) missing = missingFields(mapping, input.dataType, rulesForState(scheme.state).rules.TERMINOLOGY);
+    return { headers, mapping, missing, staged: false };
+  }
   const file: StagedFile = {
     fileName: input.fileName.slice(0, 300),
     sha256: sha256Text(input.content),
@@ -271,7 +283,7 @@ export async function getCutoverView(schemeId: string, batchId: string): Promise
     status: batch.status,
     staged: CUTOVER_DATA_TYPES.filter((t) => staged[t]).map((t) => ({
       dataType: t,
-      label: CUTOVER_LABELS[t],
+      label: cutoverLabels(lookups.terms)[t],
       fileName: staged[t]!.fileName,
       sha256: staged[t]!.sha256,
       stagedAt: staged[t]!.stagedAt,
@@ -342,6 +354,7 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
   const problem = executionProblem({ status: batch.status, readiness: evaluation.readiness, signOff: (batch.signOff as unknown as SignOff | null) ?? null, files: evaluation.files });
   if (problem) throw new CutoverError(problem);
   const date = cutover!;
+  const terms = lookups.terms ?? { levy: "levy", levies: "levies", lateCharge: "interest" };
 
   const [scheme, executed, ownerMemberships, existingNotices, existingInvoices] = await Promise.all([
     db.orm.public.Scheme.where((s) => s.id.eq(input.schemeId)).first(),
@@ -440,8 +453,8 @@ export async function executeCutover(input: { schemeId: string; batchId: string;
         budgetAmount: money(list.reduce((s, x) => s + x.a.levyOutstandingCents, 0)),
         frequency: "ONE_OFF",
         levyType: "BROUGHT_FORWARD",
-        title: `Levies brought forward from ${sourceLabel}`,
-        description: `Outstanding at the cutover on ${date}. The levies were raised in ${sourceLabel}; interest continues from each original due date.`,
+        title: `${capitalise(terms.levies)} brought forward from ${sourceLabel}`,
+        description: `Outstanding at the cutover on ${date}. The ${terms.levies} were raised in ${sourceLabel}; ${terms.lateCharge} continues from each original due date.`,
         totalLots: lotIds.length,
         totalEntitlement: String(lotIds.reduce((s, id) => s + (lookups.lotEntitlement.get(id) ?? 0), 0)) as unknown as Numeric<10, 2>,
         status: "MIGRATED",

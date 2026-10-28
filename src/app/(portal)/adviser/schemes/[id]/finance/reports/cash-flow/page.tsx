@@ -5,6 +5,8 @@ import { getCashFlowForecast } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { CashFlowClient } from "./cash-flow-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function CashFlowPage({
   params,
@@ -47,6 +49,7 @@ export default async function CashFlowPage({
         schemeId={id}
         monthsAhead={validMonths}
         forecast={forecast}
+        words={packWordsFor(rulesForState(scheme.state).rules)}
       />
     </div>
   );

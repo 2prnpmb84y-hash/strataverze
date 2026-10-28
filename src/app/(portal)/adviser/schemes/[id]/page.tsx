@@ -35,7 +35,7 @@ import { BuildingDataNotice } from "./_sections/building-data-notice";
 import { RegulationModuleForm } from "./regulation-module-form";
 import { PlanFormatForm } from "./plan-format-form";
 import { buildingDataProblems, planFormatChoices, regulationModuleChoices } from "@/lib/jurisdiction/building-data";
-import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
+import { lotWordsFor, packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { planNumberLabel } from "@/lib/onboarding/onboarding-words";
 import { connection } from "next/server";
 
@@ -106,6 +106,7 @@ export default async function SchemeDetailPage({
   const moduleChoices = regulationModuleChoices(packRules);
   const formatChoices = planFormatChoices(packRules);
   const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots);
+  const words = packWordsFor(packRules);
 
   return (
     <div>
@@ -126,7 +127,7 @@ export default async function SchemeDetailPage({
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={packRules.FUND_CATALOGUE} />
       <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} words={lotWordsFor(packRules)} />
-      <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} />
+      <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} words={words} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} timeZone={timeZoneOf(scheme)} />
       <WorkOrdersCard id={id} workOrders={workOrders} />
@@ -151,7 +152,7 @@ export default async function SchemeDetailPage({
             </div>
           }
         />
-        <ActivityTimeline activities={activities} />
+        <ActivityTimeline activities={activities} words={words} />
       </Card>
 
       {moduleChoices && <RegulationModuleForm schemeId={scheme.id} choices={moduleChoices} current={scheme.regulationModule ?? null} />}
@@ -190,7 +191,7 @@ export default async function SchemeDetailPage({
             title="Danger Zone"
             description="Irreversible actions for this scheme."
           />
-          <DeleteSchemeButton schemeId={scheme.id} schemeName={scheme.name} />
+          <DeleteSchemeButton schemeId={scheme.id} schemeName={scheme.name} levies={words.levies} />
         </Card>
       )}
     </div>
