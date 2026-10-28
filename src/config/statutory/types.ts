@@ -542,6 +542,14 @@ export interface DebtRecoveryRules {
  */
 export type DatedLegalStatus = "IN_FORCE" | "ENACTED_NOT_COMMENCED" | "MADE_NOT_COMMENCED" | "ANNOUNCED_NO_LEGISLATION" | "NOT_LAW";
 
+/**
+ * The value recorded where the law has no statutory rule on the point (for
+ * example no statutory order for applying a payment). It is a value, so code
+ * can tell "no statutory rule" from "no value recorded" (the reader refuses
+ * the second). Its `status` says how far the absence was checked.
+ */
+export type NoStatutoryRule = "NO_STATUTORY_RULE";
+
 interface DatedValueBase<T> {
   value: T;
   source: string;

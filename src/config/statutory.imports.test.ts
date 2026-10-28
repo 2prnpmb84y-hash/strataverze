@@ -31,11 +31,12 @@ const ALLOWED = new Set([
   "DatedRule",
   "DatedRules",
   "DatedValue",
+  "NoStatutoryRule",
   "PendingDatedValue",
 ]);
 
 /** The allowed names that are types, so have no value to check. */
-const TYPES = new Set(["StatutoryRules", "RulePack", "NswRules", "DatedLegalStatus", "DatedRule", "DatedRules", "DatedValue", "PendingDatedValue"]);
+const TYPES = new Set(["StatutoryRules", "RulePack", "NswRules", "DatedLegalStatus", "DatedRule", "DatedRules", "DatedValue", "NoStatutoryRule", "PendingDatedValue"]);
 
 const SRC = join(__dirname, "..");
 

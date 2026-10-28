@@ -2754,6 +2754,13 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "title": "Order a payment is applied in",
       "versions": [
         {
+          "from": "2026-09-09",
+          "legalStatus": "IN_FORCE",
+          "source": "Owners Corporations Act 2006 (Vic) (Version 024, in force 9 Sep 2026, read in full): the notes record no order before s 32I commences",
+          "status": "NOT_CONFIRMED",
+          "value": "NO_STATUTORY_RULE",
+        },
+        {
           "commencedOn": null,
           "commencement": "on proclamation, or 1 Dec 2027 if not proclaimed earlier (No. 36/2026 s 2(3), (6))",
           "fixedStartDate": null,
@@ -2865,6 +2872,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       ],
     },
     "PROXY_LIMIT": {
+      "note": "maxLotOwners is the limit for every meeting, or at or below the occupiable lots threshold where aboveThreshold is given.",
       "title": "Proxy limit",
       "versions": [
         {
@@ -2873,17 +2881,19 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
           "source": "Owners Corporations Act 2006 (Vic) s 89D (Version 024, in force 9 Sep 2026); Owners Corporations Regulations 2018 (Vic) reg 8A",
           "status": "CONFIRMED",
           "value": {
-            "counts": "occupiable lots",
+            "aboveThreshold": {
+              "counts": "occupiable lots",
+              "maxPercentOfLotOwners": 5,
+              "occupiableLotsMoreThan": 20,
+              "roundingStatus": "NOT_CONFIRMED",
+            },
             "exceptions": [
               "family members",
               "one owner with multiple lots (prescribed)",
               "owners corporations managing commercial, retail or industrial common property (prescribed)",
             ],
-            "maxLotOwnersWhenAtOrBelowThreshold": 1,
-            "maxPercentOfLotOwnersWhenAboveThreshold": 5,
-            "occupiableLotsThreshold": 20,
-            "roundingStatus": "NOT_CONFIRMED",
-            "source": "Owners Corporations Act 2006 (Vic) s 89D; Owners Corporations Regulations 2018 (Vic) reg 8A",
+            "exceptionsStatus": "CONFIRMED",
+            "maxLotOwners": 1,
           },
         },
         {
@@ -2896,9 +2906,14 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
           "source": "Consumer Legislation Amendment Act 2026 (Vic) (No. 36/2026), as made s 43A (new OCA s 89D(1))",
           "status": "CONFIRMED",
           "value": {
-            "exceptionsUnchanged": true,
+            "aboveThreshold": null,
+            "exceptions": [
+              "family members",
+              "one owner with multiple lots (prescribed)",
+              "owners corporations managing commercial, retail or industrial common property (prescribed)",
+            ],
+            "exceptionsStatus": "NOT_CONFIRMED",
             "maxLotOwners": 1,
-            "words": "A person must not vote as a proxy on a resolution at a meeting of the owners corporation on behalf of more than one lot owner.",
           },
         },
       ],
@@ -3528,7 +3543,13 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "any code reads a dated rule",
       "key": "DATED_RULES",
       "kind": "STRATAVERZE",
-      "point": "Each pending change is restated in DATED_RULES. An enacted or made change stays off, even after its fixed or latest start date, until a pack version records the day it commenced; the pending law check lists those past their date (SR 53/2026 from 25 Nov 2026). In-force values start on the day the version read came into force (OCA Version 024, OCR Version 002), so earlier days have no value. Confirm both choices.",
+      "point": "Each pending change is restated in DATED_RULES. An enacted or made change stays off, even after its fixed or latest start date, until a pack version records the day it commenced; once that date passes the reader refuses the rule and the pending law check lists it (SR 53/2026 from 25 Nov 2026). In-force values start on the day the version read came into force (OCA Version 024, OCR Version 002), so earlier days have no value. Before s 32I the payment order is recorded as no statutory rule, NOT_CONFIRMED. The pending proxy limit carries the exceptions in force, NOT_CONFIRMED (the notes say only that the s 89D(2) exceptions are not amended). Confirm these choices.",
+    },
+    {
+      "before": "25 Nov 2026",
+      "key": "FIXED_DATE_COMMENCEMENT",
+      "kind": "STRATAVERZE",
+      "point": "Whether an instrument that fixes its own start date (SR 53/2026, 25 Nov 2026) should count as commenced on that date without a new pack version recording it. Until decided, it does not: from 25 Nov 2026 the reader refuses the manager registration fees until a pack version records commencedOn.",
     },
     {
       "before": "CLAA 2026 Part 6 Div 2 commences (1 Dec 2027 at the latest)",

@@ -11,10 +11,13 @@
  * - a value read in the in-force text applies from its `from` day;
  * - an enacted or made value applies only from the `commencedOn` day a pack
  *   version records. Its fixed or latest start date passing does not switch
- *   it on: `pendingLawCheck` lists it instead, so a person checks the
- *   Government Gazette or the legislation register and bumps the pack;
+ *   it on. Once that date has passed the reader refuses the rule until the
+ *   pack is checked against the Government Gazette or the legislation
+ *   register and bumped; `pendingLawCheck` lists those rules;
  * - a Bill or an announcement never applies.
  * Where no value covers the day, it refuses (fails closed) rather than guess.
+ * A value may record that there is no statutory rule (NO_STATUTORY_RULE),
+ * which is not the same as no value being recorded.
  */
 import type { DatedRule, DatedRules, DatedValue, PendingDatedValue } from "@/config/statutory";
 import { dayIn, formatDateIn, isCalendarDay } from "./time-zone";
@@ -77,21 +80,77 @@ export interface RuleOnDay<T> {
   appliesFrom: string;
   /**
    * Values due to have started by the day (their fixed or latest start date
-   * has passed) whose commencement no pack version records. They are not
-   * applied; `value` is still the one in force as recorded. A person should
-   * check whether they commenced (see `pendingLawCheck`).
+   * has passed) whose commencement no pack version records. Empty unless the
+   * caller passed `allowUnconfirmed`: by default the reader refuses instead.
+   * They are never applied; `value` is the one in force as recorded.
    */
   unconfirmed: readonly PendingDatedValue<T>[];
 }
 
-/** The value of `rule` in force on `day` (YYYY-MM-DD in the building's time zone), or null when none is recorded. */
-export function ruleOnDay<R extends DatedRule<unknown>>(rule: R, day: string): RuleOnDay<DatedValueOf<R>> | null {
+/** Options for reading a dated rule. */
+export interface RuleReadOptions {
+  /**
+   * Give the value in force as recorded even when a later value's fixed or
+   * latest start date has passed without a recorded commencement, with those
+   * values in `unconfirmed`. Only for reports and checks, never to apply a rule.
+   */
+  allowUnconfirmed?: boolean;
+}
+
+/** Two values of a dated rule start on the same day, so which applies is not known. */
+export class SameDayValuesError extends Error {
+  constructor(
+    readonly title: string,
+    readonly from: string,
+  ) {
+    super(`Two values of "${title}" start on ${from}, so StrataVerze cannot tell which applies. The pack needs correcting.`);
+    this.name = "SameDayValuesError";
+  }
+}
+
+/**
+ * A later value of a dated rule was due to start by the day asked for (its
+ * fixed or latest start date has passed), but no pack version records that it
+ * commenced, so the value recorded as in force may be out of date.
+ */
+export class UnconfirmedCommencementError extends Error {
+  constructor(
+    readonly title: string,
+    readonly day: string,
+    readonly dueOn: string,
+  ) {
+    super(
+      `"${title}" may have changed: a new value was due to start by ${formatDateIn("UTC", `${dueOn}T00:00:00Z`)}, but no pack version records that it commenced. ` +
+        `The pack needs checking against the Government Gazette or the legislation register before this rule is applied on ${day}.`,
+    );
+    this.name = "UnconfirmedCommencementError";
+  }
+}
+
+/** The day a value applies from, refusing one recorded with a malformed day. */
+function checkedStart(rule: DatedRule<unknown>, version: DatedValue<unknown>): string | null {
+  const from = appliesFrom(version);
+  if (from !== null && (typeof from !== "string" || !isCalendarDay(from))) throw new RangeError(`A value of "${rule.title}" has a start day that is not a date: ${String(from)}`);
+  return from;
+}
+
+/**
+ * The value of `rule` in force on `day` (YYYY-MM-DD in the building's time
+ * zone). Fails closed:
+ * - NoRuleInForceError when no value covers the day;
+ * - SameDayValuesError when the latest values to start by then start on the same day;
+ * - UnconfirmedCommencementError when a later value's fixed or latest start
+ *   date has passed but no pack version records its commencement (unless
+ *   `allowUnconfirmed`);
+ * - RangeError for a day, or a recorded start day, that is not a date.
+ */
+export function ruleInForceOn<R extends DatedRule<unknown>>(rule: R, day: string, options: RuleReadOptions = {}): RuleOnDay<DatedValueOf<R>> {
   if (!isCalendarDay(day)) throw new RangeError(`Not a date: ${day}`);
   let best: { version: DatedValue<unknown>; from: string } | null = null;
   let tied = false;
   for (const version of rule.versions) {
-    const from = appliesFrom(version);
-    if (from === null || !isCalendarDay(from) || from > day) continue;
+    const from = checkedStart(rule, version);
+    if (from === null || from > day) continue;
     if (!best || from > best.from) {
       best = { version, from };
       tied = false;
@@ -99,25 +158,25 @@ export function ruleOnDay<R extends DatedRule<unknown>>(rule: R, day: string): R
       tied = true;
     }
   }
-  // Two values starting on the same day: the record is ambiguous, so none is applied.
-  if (!best || tied) return null;
-  const found: RuleOnDay<unknown> = { value: best.version.value, version: best.version, appliesFrom: best.from, unconfirmed: dueButUnconfirmed(rule, day) };
+  if (!best) throw new NoRuleInForceError(rule.title, day);
+  if (tied) throw new SameDayValuesError(rule.title, best.from);
+  const unconfirmed = dueButUnconfirmed(rule, day);
+  if (unconfirmed.length && !options.allowUnconfirmed) {
+    const due = unconfirmed.map((v) => dueDate(v)?.day ?? day).sort()[0];
+    throw new UnconfirmedCommencementError(rule.title, day, due);
+  }
+  const found: RuleOnDay<unknown> = { value: best.version.value, version: best.version, appliesFrom: best.from, unconfirmed };
   return found as RuleOnDay<DatedValueOf<R>>;
 }
 
-/**
- * The value of `rule` in force on `day` (YYYY-MM-DD in the building's time
- * zone). Throws NoRuleInForceError when no value covers the day.
- */
-export function ruleInForceOn<R extends DatedRule<unknown>>(rule: R, day: string): RuleOnDay<DatedValueOf<R>> {
-  const found = ruleOnDay(rule, day);
-  if (!found) throw new NoRuleInForceError(rule.title, day);
-  return found;
-}
-
-/** The value of `rule` in force at an instant, on the day it falls on in the building's time zone `tz`. */
-export function ruleInForceAt<R extends DatedRule<unknown>>(rule: R, tz: string, instant: Date | string | number = new Date()): RuleOnDay<DatedValueOf<R>> {
-  return ruleInForceOn(rule, dayIn(tz, instant));
+/** The value of `rule` in force at an instant, on the day it falls on in the building's time zone `tz` (see `ruleInForceOn`). */
+export function ruleInForceAt<R extends DatedRule<unknown>>(
+  rule: R,
+  tz: string,
+  instant: Date | string | number = new Date(),
+  options: RuleReadOptions = {},
+): RuleOnDay<DatedValueOf<R>> {
+  return ruleInForceOn(rule, dayIn(tz, instant), options);
 }
 
 /** A pending value that should have started by now but whose commencement no pack version records. */

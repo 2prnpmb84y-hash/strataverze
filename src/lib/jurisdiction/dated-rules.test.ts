@@ -5,7 +5,16 @@
  */
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS, RULE_PACKS, type DatedRule, type DatedValue, type StatutoryRules } from "@/config/statutory";
-import { datedRuleProblems, NoRuleInForceError, pendingLawCheck, pendingLawWarning, ruleInForceAt, ruleInForceOn, ruleOnDay } from "./dated-rules";
+import {
+  datedRuleProblems,
+  NoRuleInForceError,
+  pendingLawCheck,
+  pendingLawWarning,
+  ruleInForceAt,
+  ruleInForceOn,
+  SameDayValuesError,
+  UnconfirmedCommencementError,
+} from "./dated-rules";
 
 const inForce = (from: string, value: string): DatedValue<string> => ({ legalStatus: "IN_FORCE", from, value, source: "Fixture Act s 1", status: "CONFIRMED" });
 const enacted = (value: string, dates: { commencedOn?: string | null; fixedStartDate?: string | null; latestStartDate?: string | null }): DatedValue<string> => ({
@@ -51,7 +60,7 @@ describe("ruleInForceOn", () => {
 
   it("fails closed when no value covers the day", () => {
     expect(() => ruleInForceOn(changing, "2025-12-31")).toThrow(NoRuleInForceError);
-    expect(ruleOnDay(changing, "2025-12-31")).toBeNull();
+    expect(() => ruleInForceOn(changing, "2025-12-31", { allowUnconfirmed: true })).toThrow(NoRuleInForceError);
     expect(() => ruleInForceOn(rule(), "2026-11-25")).toThrow(NoRuleInForceError);
   });
 
@@ -60,8 +69,25 @@ describe("ruleInForceOn", () => {
     expect(() => ruleInForceOn(changing, "25/11/2026")).toThrow(RangeError);
   });
 
-  it("refuses two values that start on the same day", () => {
-    expect(ruleOnDay(rule(inForce("2026-01-01", "a"), inForce("2026-01-01", "b")), "2026-06-01")).toBeNull();
+  it("throws on a malformed start day rather than skipping the value", () => {
+    for (const from of ["2026-13-01", "1 Dec 2026", "2026-02-30"]) {
+      expect(() => ruleInForceOn(rule(inForce("2026-01-01", "old"), inForce(from, "new")), "2026-06-01")).toThrow(RangeError);
+    }
+    expect(() => ruleInForceOn(rule(inForce("2026-01-01", "old"), enacted("new", { commencedOn: "2027-3-1" })), "2026-06-01")).toThrow(/start day that is not a date/);
+  });
+
+  it("refuses two values that start on the same day, with its own error", () => {
+    const tie = rule(inForce("2026-01-01", "a"), inForce("2026-01-01", "b"));
+    expect(() => ruleInForceOn(tie, "2026-06-01")).toThrow(SameDayValuesError);
+    expect(() => ruleInForceOn(tie, "2026-06-01")).toThrow(/Two values of "Fixture rule" start on 2026-01-01/);
+  });
+
+  it("refuses a tie while it is the latest value, and applies a later value once it starts", () => {
+    const tieThenLater = rule(inForce("2026-01-01", "a"), inForce("2026-01-01", "b"), inForce("2026-07-01", "c"));
+    expect(() => ruleInForceOn(tieThenLater, "2026-06-30")).toThrow(SameDayValuesError);
+    expect(ruleInForceOn(tieThenLater, "2026-07-01").value).toBe("c");
+    // The pack tests still catch the tie in the record.
+    expect(datedRuleProblems("FIXTURE", tieThenLater)).toEqual(["FIXTURE: two values start on 2026-01-01"]);
   });
 
   describe("an enacted value with no commencement recorded", () => {
@@ -71,9 +97,16 @@ describe("ruleInForceOn", () => {
       expect(ruleInForceOn(pending, "2027-11-30")).toMatchObject({ value: "old", unconfirmed: [] });
     });
 
-    it("still never applies on or after its latest start date, and is listed as unconfirmed", () => {
+    it("never applies on or after its latest start date: the reader refuses until the pack is checked", () => {
       for (const day of ["2027-12-01", "2027-12-02", "2030-01-01"]) {
-        const found = ruleInForceOn(pending, day);
+        expect(() => ruleInForceOn(pending, day)).toThrow(UnconfirmedCommencementError);
+        expect(() => ruleInForceOn(pending, day)).toThrow(/Government Gazette/);
+      }
+    });
+
+    it("gives the old value with the change listed as unconfirmed, only when a report asks", () => {
+      for (const day of ["2027-12-01", "2030-01-01"]) {
+        const found = ruleInForceOn(pending, day, { allowUnconfirmed: true });
         expect(found.value).toBe("old");
         expect(found.unconfirmed.map((v) => v.value)).toEqual(["new"]);
       }
@@ -95,10 +128,11 @@ describe("ruleInForceOn", () => {
   it("does not apply a made value whose fixed start date has passed but is not recorded as commenced", () => {
     const fixed = rule(inForce("2021-12-01", "old fees"), made("new fees", "2026-11-25"));
     expect(ruleInForceOn(fixed, "2026-11-24")).toMatchObject({ value: "old fees", unconfirmed: [] });
-    const after = ruleInForceOn(fixed, "2026-11-25");
+    expect(() => ruleInForceOn(fixed, "2026-11-25")).toThrow(UnconfirmedCommencementError);
+    expect(() => ruleInForceOn(fixed, "2027-06-01")).toThrow(UnconfirmedCommencementError);
+    const after = ruleInForceOn(fixed, "2026-11-25", { allowUnconfirmed: true });
     expect(after.value).toBe("old fees");
     expect(after.unconfirmed).toHaveLength(1);
-    expect(ruleInForceOn(fixed, "2027-06-01").value).toBe("old fees");
   });
 
   it("never applies a Bill, even with a start day forced onto it", () => {
@@ -161,9 +195,32 @@ describe("pending law check", () => {
     expect(warning).toContain("Government Gazette");
     expect(warning).toContain("still applies the earlier rule");
 
-    const fees = ruleInForceOn(vic.DATED_RULES.MANAGER_REGISTRATION_FEE_UNITS, "2026-11-25");
+    expect(() => ruleInForceOn(vic.DATED_RULES.MANAGER_REGISTRATION_FEE_UNITS, "2026-11-25")).toThrow(UnconfirmedCommencementError);
+    const fees = ruleInForceOn(vic.DATED_RULES.MANAGER_REGISTRATION_FEE_UNITS, "2026-11-25", { allowUnconfirmed: true });
     expect(fees.value).toEqual({ application: 14.26, annual: 10.01, lateLodgement: 1 });
     expect(fees.unconfirmed.map((v) => v.value)).toEqual([{ application: 29.12, annual: 22.05, lateLodgement: 1.35 }]);
+  });
+
+  describe("SR 53/2026's fixed start date (FOR_REVIEW FIXED_DATE_COMMENCEMENT), either way Matthew Wrigley decides", () => {
+    const rule53 = vic.DATED_RULES.MANAGER_REGISTRATION_FEE_UNITS;
+    const OCR_FEES = { application: 14.26, annual: 10.01, lateLodgement: 1 };
+    const SR53_FEES = { application: 29.12, annual: 22.05, lateLodgement: 1.35 };
+
+    it("is a point for review", () => {
+      expect(vic.FOR_REVIEW.find((r) => r.key === "FIXED_DATE_COMMENCEMENT")?.point).toContain("SR 53/2026");
+    });
+
+    it("not counted as commenced until a pack version records it: refused from 25 Nov 2026", () => {
+      expect(ruleInForceOn(rule53, "2026-11-24").value).toEqual(OCR_FEES);
+      expect(() => ruleInForceOn(rule53, "2026-11-25")).toThrow(UnconfirmedCommencementError);
+    });
+
+    it("counted as commenced on its date: a pack version records commencedOn, and the new fees apply from that day", () => {
+      const recorded = { ...rule53, versions: [rule53.versions[0], { ...rule53.versions[1], commencedOn: "2026-11-25" }] } as typeof rule53;
+      expect(ruleInForceOn(recorded, "2026-11-24").value).toEqual(OCR_FEES);
+      expect(ruleInForceOn(recorded, "2026-11-25")).toMatchObject({ value: SR53_FEES, appliesFrom: "2026-11-25", unconfirmed: [] });
+      expect(pendingLawCheck({ DATED_RULES: { MANAGER_REGISTRATION_FEE_UNITS: recorded } }, "2026-11-25")).toEqual([]);
+    });
   });
 
   it("lists each VIC change by its latest start date once that has passed", () => {
@@ -220,18 +277,39 @@ describe("dated rules in the packs", () => {
     }
   });
 
-  it("keep the VIC in-force values on until a commencement is recorded", () => {
-    expect(ruleInForceOn(vic.DATED_RULES.PROXY_LIMIT, "2026-10-28").value).toBe(vic.PROXIES.limit);
-    expect(ruleInForceOn(vic.DATED_RULES.PROXY_LIMIT, "2028-01-01").value).toBe(vic.PROXIES.limit);
+  it("give both VIC proxy limit values one shape, with the exceptions on both", () => {
+    const [current, pending] = vic.DATED_RULES.PROXY_LIMIT.versions;
+    expect(Object.keys(pending.value).sort()).toEqual(Object.keys(current.value).sort());
+    expect(current.value).toEqual({
+      maxLotOwners: 1,
+      aboveThreshold: { occupiableLotsMoreThan: 20, maxPercentOfLotOwners: 5, counts: "occupiable lots", roundingStatus: "NOT_CONFIRMED" },
+      exceptions: vic.PROXIES.limit.exceptions,
+      exceptionsStatus: "CONFIRMED",
+    });
+    expect(pending.value).toEqual({ maxLotOwners: 1, aboveThreshold: null, exceptions: vic.PROXIES.limit.exceptions, exceptionsStatus: "NOT_CONFIRMED" });
+  });
+
+  it("keep the VIC in-force proxy limit until a commencement is recorded, refusing it once the latest start date passes", () => {
+    expect(ruleInForceOn(vic.DATED_RULES.PROXY_LIMIT, "2026-10-28").value.aboveThreshold).toMatchObject({ occupiableLotsMoreThan: 20 });
+    expect(() => ruleInForceOn(vic.DATED_RULES.PROXY_LIMIT, "2028-01-01")).toThrow(UnconfirmedCommencementError);
+    expect(ruleInForceOn(vic.DATED_RULES.PROXY_LIMIT, "2028-01-01", { allowUnconfirmed: true }).value.aboveThreshold).not.toBeNull();
     expect(() => ruleInForceOn(vic.DATED_RULES.PROXY_LIMIT, "2026-09-08")).toThrow(NoRuleInForceError);
-    // No order in force is recorded, so none is given, before or after s 32I's latest start date.
-    expect(() => ruleInForceOn(vic.DATED_RULES.PAYMENT_ALLOCATION_ORDER, "2026-10-28")).toThrow(NoRuleInForceError);
-    expect(() => ruleInForceOn(vic.DATED_RULES.PAYMENT_ALLOCATION_ORDER, "2028-01-01")).toThrow(NoRuleInForceError);
-    expect(vic.DATED_RULES.PAYMENT_ALLOCATION_ORDER.versions[0].value).toEqual(["LEVY", "INTEREST", "RECOVERY_COSTS"]);
+  });
+
+  it("record no statutory payment order before s 32I, apart from no value recorded", () => {
+    const order = vic.DATED_RULES.PAYMENT_ALLOCATION_ORDER;
+    expect(ruleInForceOn(order, "2026-10-28")).toMatchObject({ value: "NO_STATUTORY_RULE", appliesFrom: "2026-09-09", version: { status: "NOT_CONFIRMED" } });
+    expect(() => ruleInForceOn(order, "2026-09-08")).toThrow(NoRuleInForceError);
+    expect(() => ruleInForceOn(order, "2028-01-01")).toThrow(UnconfirmedCommencementError);
+    expect(order.versions[1].value).toEqual(["LEVY", "INTEREST", "RECOVERY_COSTS"]);
+    expect(order.versions[1].legalStatus).toBe("ENACTED_NOT_COMMENCED");
   });
 
   it("keep the ACT quorum at the in-force values, the Bill never applied", () => {
     expect(act.PENDING_REFORMS[0].legalStatus).toBe("NOT_LAW");
+    // The commencement words follow the Bill's record.
+    expect(act.DATED_RULES.QUORUM_FRACTION_OF_UNITS.versions[1].commencement).toContain(`${act.PENDING_REFORMS[0].commencementMonthsAfterNotification} months after notification`);
+    expect(act.DATED_RULES.QUORUM_FRACTION_OF_UNITS.versions[1].commencement).toContain("not notified");
     for (const day of ["2026-10-28", "2040-01-01"]) {
       expect(ruleInForceOn(act.DATED_RULES.QUORUM_FRACTION_OF_UNITS, day).value).toEqual({ fractionOfUnits: 1 / 2, retirementVillageFractionOfUnits: 1 / 3 });
       expect(ruleInForceOn(act.DATED_RULES.ABSENTEE_VOTES_COUNT_TOWARDS_QUORUM, day).value).toBe(false);

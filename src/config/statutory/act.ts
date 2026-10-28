@@ -1231,8 +1231,9 @@ export const TERMINOLOGY = {
  * Changes not yet law. Each is a dated switch: `appliesFrom` stays null until
  * the change is notified and its commencement date is known, and the change
  * is to apply only on and after that date. Until then the in-force
- * rules above apply. The quorum changes are also restated as dated rules
- * (DATED_RULES), which is what code reads.
+ * rules above apply. Two of the changes, the quorum fraction and absentee
+ * votes counting towards the quorum, are also restated as dated rules
+ * (DATED_RULES); the reduced quorum and proxy changes are held here only.
  */
 export const PENDING_REFORMS = [
   {
@@ -1285,7 +1286,7 @@ const billValue = <T>(value: T) =>
     legalStatus: BILL_2026.legalStatus,
     value,
     presentedOn: BILL_2026.presentedOn,
-    commencement: "If passed, pt 6 (unit titles) commences 3 months after notification (cl 2(2)); not notified",
+    commencement: `If passed, pt 6 (unit titles) commences ${BILL_2026.commencementMonthsAfterNotification} months after notification (cl 2(2)); ${BILL_2026.notifiedOn === null ? "not notified" : `notified ${String(BILL_2026.notifiedOn)}`}`,
     source: BILL_2026.source,
     textStatus: BILL_2026.textStatus,
     pendingChange: BILL_2026.key,
