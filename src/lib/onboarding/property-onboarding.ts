@@ -27,10 +27,14 @@
  * charge) are the building's, from its rule pack (OnboardingCheckWords, made
  * by onboardingWordsFor in ./onboarding-words). Where none are passed the
  * checks use the words they have always shown (QLD go-live, 27 Oct 2026).
- * A pack with a second lot entitlement (Queensland's interest schedule) has
- * each lot's entitlement in it checked too: a whole number, not 0. The
- * building records no total for it, so the lots are not added up against one.
+ * A pack with a second lot entitlement (Queensland's interest schedule,
+ * Victoria's lot entitlement) has each lot's entitlement in it checked too: a
+ * whole number, not 0. Each row holds it under the lot field the pack's
+ * schedule is held in (OnboardingCheckWords.separate.field). The building
+ * records no total for it, so the lots are not added up against one.
  */
+
+import type { SeparateEntitlementField } from "@/lib/jurisdiction/building-data";
 
 export const MAX_LOTS = 2000;
 
@@ -38,8 +42,11 @@ export const MAX_LOTS = 2000;
 export interface OnboardingCheckWords {
   /** The entitlement held on each lot, as the pack names it: "unit entitlement". */
   entitlement: string;
-  /** A second entitlement each lot holds, as the pack names it, or null where the pack has none. */
-  separate: { name: string } | null;
+  /**
+   * A second entitlement each lot holds, as the pack names it, with the lot
+   * field it is held and sent in, or null where the pack has none.
+   */
+  separate: { name: string; field: SeparateEntitlementField } | null;
   /** "levies" */
   levies: string;
   /** "interest" */
@@ -177,6 +184,8 @@ export interface OnboardingLot {
   ownerName: string;
   /** The second entitlement, where the building's pack has one (Queensland's interest schedule). */
   interestScheduleEntitlement?: string;
+  /** The second entitlement, where the building's pack has one (Victoria's lot entitlement). */
+  lotEntitlement?: string;
   /** Where the row was read from ("Roll page 1; owner on page 2"). Shown only; not saved. */
   source?: string;
 }
@@ -187,8 +196,9 @@ export interface CleanLot {
   entitlement: number;
   /** As it appears on the strata roll: only leading and trailing spaces are removed. */
   ownerName: string | null;
-  /** Present only where the building's pack has a second entitlement. */
+  /** Present only where the building's pack has a second entitlement, under the field it is held in. */
   interestScheduleEntitlement?: number;
+  lotEntitlement?: number;
 }
 
 export interface LotsCheck {
@@ -253,7 +263,7 @@ export function checkLots(
     else if (entitlement > MAX_ENTITLEMENT) problems.push(`The ${ent} is too large.`);
     let second = NaN;
     if (separate) {
-      const text = String(row.interestScheduleEntitlement ?? "").trim().replace(/,/g, "");
+      const text = String(row[separate.field] ?? "").trim().replace(/,/g, "");
       second = /^\d+$/.test(text) ? Number(text) : NaN;
       if (!text) problems.push(`Enter the ${separate.name}.`);
       else if (!Number.isInteger(second) || second < 1) problems.push(`The ${separate.name} must be a whole number of at least 1.`);
@@ -266,7 +276,7 @@ export function checkLots(
 
     if (Number.isInteger(entitlement) && entitlement > 0) entitlementSum += entitlement;
     if (problems.length) rowErrors[i] = problems;
-    else lots.push({ lotNumber, unitNumber: unitNumber || null, entitlement, ownerName: ownerName || null, ...(separate ? { interestScheduleEntitlement: second } : {}) });
+    else lots.push({ lotNumber, unitNumber: unitNumber || null, entitlement, ownerName: ownerName || null, ...(separate ? { [separate.field]: second } : {}) });
   });
 
   const count = rows.length;

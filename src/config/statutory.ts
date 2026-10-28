@@ -402,7 +402,18 @@ export const PENDING_RULE_PACKS = {
     // as a ledger choice (status STRATAVERZE, unchanged), so every building has a ledger fund and a chart of accounts;
     // FOR_REVIEW ADMINISTRATIVE_FUND says so. The GO-LIVE GAP note is replaced, and FOR_REVIEW MAINTENANCE_FUND_REQUIRED
     // and BUILDING_FACTS_RECORDED_BY are rewritten. No legal value or status changed; still a draft.
-    version: "2026.10.4",
+    // 2026.10.5 (28 Oct 2026): the second schedule (stage 2 PR 4). ENTITLEMENT_SCHEDULES gains a label and help for each
+    // schedule (wording only), lot entitlement's uses in `usedFor` gain the quorum (s 77), calling a meeting or arranging a
+    // ballot (ss 74, 83 to 85) and VCAT consent (SA s 34D(3)(ba)), all from the notes, and each schedule gains `decides`:
+    // lot liability decides CONTRIBUTIONS (ss 23(3), 24(2), 53(1A)); lot entitlement decides POLL_VOTE (s 89(3)),
+    // SPECIAL_RESOLUTION and UNANIMOUS_RESOLUTION (ss 95, 96), QUORUM (s 77), COMMON_PROPERTY_SHARE (SA s 30) and the new
+    // INSURANCE_PREMIUM_FEE (s 23A). Lot entitlement is now held (lots.lot_entitlement, migration 20261121, not applied).
+    // CONTRIBUTION_INSURANCE added: the insurance part of an annual fee to the administrative fund is shared by lot
+    // entitlement (s 23A) and the rest by lot liability (s 23(3)), status NOT_CONFIRMED because the notes do not say
+    // whether the s 23A fee is required or how it is raised. FOR_REVIEW gains ENTITLEMENT_DECIDES, SECOND_SCHEDULE_HELD
+    // and CONTRIBUTION_INSURANCE_S23A, and a GO-LIVE GAP note at ENTITLEMENT_SCHEDULES says what is applied. No legal
+    // value or status already recorded changed; still a draft.
+    version: "2026.10.5",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

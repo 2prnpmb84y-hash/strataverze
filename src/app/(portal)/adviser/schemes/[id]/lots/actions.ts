@@ -30,7 +30,14 @@ import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { rulesForScheme, rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
-import { entitlementInputProblem, onLotEntitlementWords, parseEntitlement, separateEntitlement, type SeparateEntitlement } from "@/lib/jurisdiction/building-data";
+import {
+  SEPARATE_ENTITLEMENT_FIELDS,
+  entitlementInputProblem,
+  onLotEntitlementWords,
+  parseEntitlement,
+  separateEntitlement,
+  type SeparateEntitlement,
+} from "@/lib/jurisdiction/building-data";
 import type { StatutoryRules } from "@/config/statutory";
 import { LOT_TYPES } from "@/lib/lots/lot-types";
 
@@ -69,14 +76,13 @@ function validateLotForm(formData: FormData) {
   };
 }
 
-/** The form field for the second schedule's entitlement (Queensland's interest schedule, stage 2, step 10). */
-const SEPARATE_FIELD = "interestScheduleEntitlement";
-
 /**
  * The second schedule's entitlement from the lot form, for a pack whose lots
  * hold one: a positive whole number, required for a new lot. An existing lot
  * may be saved without it (it stays flagged). Fails closed for a schedule
- * StrataVerze does not hold.
+ * StrataVerze does not hold. The form sends it under the lot field the pack's
+ * schedule is held in (Queensland's interestScheduleEntitlement, stage 2,
+ * step 10; Victoria's lotEntitlement, stage 2, PR 4).
  */
 function readSeparateEntitlement(
   formData: FormData,
@@ -84,7 +90,7 @@ function readSeparateEntitlement(
   required: boolean,
 ): { error: string } | { value: number | null } {
   if (!separate.field) return { error: `StrataVerze does not hold each lot's ${separate.name} yet, so this lot cannot be saved here.` };
-  const text = formData.get(SEPARATE_FIELD);
+  const text = formData.get(separate.field);
   const problem = entitlementInputProblem(separate.label, text, required);
   if (problem) return { error: problem };
   const parsed = parseEntitlement(text);
@@ -117,16 +123,17 @@ export async function createLotAction(
     const rules = rulesForState(scheme.state).rules;
     const named = errors.entitlement ? null : namedEntitlementProblem(rules, formData);
     if (named) errors.entitlement = named;
-    // A pack whose lots hold a second schedule (Queensland's interest schedule): required for a new lot.
+    // A pack whose lots hold a second schedule (Queensland's interest
+    // schedule, Victoria's lot entitlement): required for a new lot.
     const separate = separateEntitlement(rules);
     const second = separate ? readSeparateEntitlement(formData, separate, true) : null;
     if (second && "error" in second) {
       if (!separate?.field) return { error: second.error };
-      errors[SEPARATE_FIELD] = second.error;
+      errors[separate.field] = second.error;
     }
     if (Object.keys(errors).length || !isValid) return { fieldErrors: errors };
 
-    const lot = await createLot({ ...data, ...(second && "value" in second ? { interestScheduleEntitlement: second.value } : {}), schemeId });
+    const lot = await createLot({ ...data, ...(separate?.field && second && "value" in second ? { [separate.field]: second.value } : {}), schemeId });
 
     await logActivity({
       schemeId,
@@ -177,18 +184,22 @@ export async function updateLotAction(
     assertInScheme(lot, schemeId, "Lot");
 
     // The second schedule's entitlement, only when the form sends it (a pack
-    // whose lots hold one, stage 2, step 10). An NSW lot form never does.
-    let update: typeof data & { interestScheduleEntitlement?: number | null } = data;
-    if (formData.has(SEPARATE_FIELD)) {
+    // whose lots hold one, stage 2, step 10). An NSW lot form never does. A
+    // value sent under another pack's field is refused, never saved.
+    let update: typeof data & { interestScheduleEntitlement?: number | null; lotEntitlement?: number | null } = data;
+    const sent = SEPARATE_ENTITLEMENT_FIELDS.filter((f) => formData.has(f));
+    if (sent.length) {
       const separate = separateEntitlement((await rulesForScheme(schemeId)).rules);
       if (!separate) return { error: "This building's lots hold one lot entitlement only." };
       const second = readSeparateEntitlement(formData, separate, false);
-      if ("error" in second) return { fieldErrors: { [SEPARATE_FIELD]: second.error } };
-      update = { ...data, interestScheduleEntitlement: second.value };
+      if ("error" in second) return separate.field ? { fieldErrors: { [separate.field]: second.error } } : { error: second.error };
+      if (sent.some((f) => f !== separate.field)) return { error: `This building's lots hold their ${separate.name} only, so this lot cannot be saved here.` };
+      update = { ...data, [separate.field!]: second.value };
     }
 
     // The lot number and unit entitlement are locked: StrataVerze only (24 Oct).
-    // So is a Queensland lot's interest schedule lot entitlement (stage 2, step 10).
+    // So is a Queensland lot's interest schedule lot entitlement (stage 2, step 10)
+    // and a Victorian lot's lot entitlement (stage 2, PR 4).
     const locked = changedLockedFields(LOCKED_LOT_FIELDS, lot as Record<string, unknown>, update);
     if (locked.length && !isAdmin) {
       await recordSecurityEvent({

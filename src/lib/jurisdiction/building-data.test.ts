@@ -121,7 +121,8 @@ describe("a lot's entitlement in a schedule", () => {
   });
 
   it("refuses a schedule StrataVerze does not hold", () => {
-    expect(() => entitlementFor({ entitlement: 5 }, { key: "LOT_ENTITLEMENT", onLot: false, name: "lot entitlement" })).toThrow(EntitlementRuleError);
+    expect(() => entitlementFor({ entitlement: 5 }, { key: "UNHELD", onLot: false, name: "unheld schedule" })).toThrow(EntitlementRuleError);
+    expect(() => entitlementFor({ entitlement: 5 }, { key: "toString", onLot: false, name: "unheld schedule" })).toThrow(EntitlementRuleError);
   });
 });
 

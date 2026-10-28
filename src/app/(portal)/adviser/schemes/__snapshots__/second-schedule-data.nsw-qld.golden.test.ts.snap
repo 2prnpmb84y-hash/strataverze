@@ -1,0 +1,1147 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`a Queensland contribution's insurance split, from the building's data > NSW 1`] = `
+{
+  "problem": null,
+  "split": null,
+}
+`;
+
+exports[`a Queensland contribution's insurance split, from the building's data > building 1`] = `
+{
+  "problem": null,
+  "split": {
+    "contributionSchedule": {
+      "key": "CONTRIBUTION",
+      "name": "contribution schedule lot entitlement",
+    },
+    "insuranceCents": 40001,
+    "insuranceSchedule": {
+      "key": "INTEREST",
+      "name": "interest schedule lot entitlement",
+    },
+    "shares": [
+      {
+        "insuranceCents": 12000,
+        "totalCents": 22000,
+      },
+      {
+        "insuranceCents": 12000,
+        "totalCents": 32000,
+      },
+      {
+        "insuranceCents": 16001,
+        "totalCents": 46000,
+      },
+    ],
+  },
+}
+`;
+
+exports[`a Queensland contribution's insurance split, from the building's data > missing interest 1`] = `
+{
+  "problem": "Lot 2 has no interest schedule lot entitlement recorded, so its share cannot be worked out. The interest schedule lot entitlement of lot 3 is 0, but each entitlement is a whole number of at least 1. StrataVerze corrects them from the building's records. The contributions were not issued.",
+  "split": null,
+}
+`;
+
+exports[`a Queensland contribution's insurance split, from the building's data > no insurance line 1`] = `
+{
+  "problem": "The administrative fund budget has no insurance. Put the insurance premium in the budget on the Insurance account, so each lot's share of it can be worked out, then issue the contributions.",
+  "split": null,
+}
+`;
+
+exports[`a Queensland contribution's insurance split, from the building's data > no plan format 1`] = `
+{
+  "problem": "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised. The contributions were not issued.",
+  "split": null,
+}
+`;
+
+exports[`a Queensland contribution's insurance split, from the building's data > sinking fund 1`] = `
+{
+  "problem": null,
+  "split": null,
+}
+`;
+
+exports[`a Queensland contribution's insurance split, from the building's data > special 1`] = `
+{
+  "problem": null,
+  "split": null,
+}
+`;
+
+exports[`a Queensland contribution's insurance split, from the building's data > standard 1`] = `
+{
+  "problem": "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then. The contributions were not issued.",
+  "split": null,
+}
+`;
+
+exports[`a state change keeps each lot's values as before > NSW to QLD 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "l",
+      "interestScheduleEntitlement": 4,
+      "lotNumber": "1",
+      "occupiable": null,
+      "schemeId": "s",
+    },
+  ],
+  "scheme": [
+    {
+      "id": "s",
+      "postcode": "4000",
+      "state": "QLD",
+      "timeZone": "Australia/Brisbane",
+    },
+  ],
+}
+`;
+
+exports[`a state change keeps each lot's values as before > QLD to NSW 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "l",
+      "interestScheduleEntitlement": 4,
+      "lotNumber": "1",
+      "occupiable": null,
+      "schemeId": "s",
+    },
+  ],
+  "scheme": [
+    {
+      "id": "s",
+      "planFormat": null,
+      "postcode": "2000",
+      "regulationModule": null,
+      "state": "NSW",
+      "timeZone": "Australia/Sydney",
+    },
+  ],
+}
+`;
+
+exports[`createScheme lots > NSW 1`] = `
+{
+  "created": "created",
+  "lots": [
+    {
+      "entitlement": 40,
+      "lotNumber": "1",
+      "unitNumber": null,
+    },
+    {
+      "entitlement": 60,
+      "lotNumber": "2",
+      "unitNumber": null,
+    },
+  ],
+}
+`;
+
+exports[`createScheme lots > NSW with a second value 1`] = `
+{
+  "created": "threw SchemeDataError: Lot 1 has a second lot entitlement, which this building's rules do not hold.",
+  "lots": [],
+}
+`;
+
+exports[`createScheme lots > QLD 1`] = `
+{
+  "created": "created",
+  "lots": [
+    {
+      "entitlement": 40,
+      "interestScheduleEntitlement": 45,
+      "lotNumber": "1",
+      "unitNumber": null,
+    },
+    {
+      "entitlement": 60,
+      "interestScheduleEntitlement": 55,
+      "lotNumber": "2",
+      "unitNumber": null,
+    },
+  ],
+}
+`;
+
+exports[`createScheme lots > QLD one missing 1`] = `
+{
+  "created": "created",
+  "lots": [
+    {
+      "entitlement": 40,
+      "interestScheduleEntitlement": 45,
+      "lotNumber": "1",
+      "unitNumber": null,
+    },
+    {
+      "entitlement": 60,
+      "lotNumber": "2",
+      "unitNumber": null,
+    },
+  ],
+}
+`;
+
+exports[`createScheme lots > QLD out of range 1`] = `
+{
+  "created": "threw SchemeDataError: Lot 1: the interest schedule lot entitlement must be a whole number from 1 to 1,000,000.",
+  "lots": [],
+}
+`;
+
+exports[`createScheme lots > newSchemeDataProblem 1`] = `
+{
+  "nsw": [
+    null,
+    "Lot 1 has a second lot entitlement, which this building's rules do not hold.",
+    "Lot 1 has a second lot entitlement, which this building's rules do not hold.",
+    "Lot 1 has a second lot entitlement, which this building's rules do not hold.",
+    "Lot 1 has a second lot entitlement, which this building's rules do not hold.",
+  ],
+  "qld": [
+    null,
+    null,
+    null,
+    "Lot 1: the interest schedule lot entitlement must be a whole number from 1 to 1,000,000.",
+    "Lot 1: the interest schedule lot entitlement must be a whole number from 1 to 1,000,000.",
+  ],
+}
+`;
+
+exports[`nsw CSV lot import > checks and writes 1`] = `
+{
+  "checked": [
+    {
+      "data": {
+        "entitlement": "10",
+        "interestScheduleEntitlement": "12",
+        "lotNumber": "2",
+      },
+      "errors": [],
+      "rowNumber": 2,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "10",
+        "lotNumber": "3",
+      },
+      "errors": [],
+      "rowNumber": 3,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "10",
+        "interestScheduleEntitlement": "0",
+        "lotNumber": "4",
+      },
+      "errors": [],
+      "rowNumber": 4,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "10",
+        "interestScheduleEntitlement": "2.5",
+        "lotNumber": "5",
+      },
+      "errors": [],
+      "rowNumber": 5,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "-1",
+        "lotNumber": "1",
+      },
+      "errors": [
+        "Lot number "1" already exists in this scheme",
+        "Entitlement must be positive, got -1",
+      ],
+      "rowNumber": 6,
+      "warnings": [],
+    },
+  ],
+  "imported": {
+    "created": 1,
+    "errors": [],
+  },
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 10,
+      "floorArea": null,
+      "id": "fake-Lot-7",
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": null,
+    },
+  ],
+}
+`;
+
+exports[`nsw lot form actions > create 0 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 20,
+      "floorArea": null,
+      "id": "fake-Lot-1",
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": null,
+    },
+  ],
+  "result": "redirected",
+}
+`;
+
+exports[`nsw lot form actions > create 1 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 20,
+      "floorArea": null,
+      "id": "fake-Lot-2",
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": null,
+    },
+  ],
+  "result": "redirected",
+}
+`;
+
+exports[`nsw lot form actions > create 2 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 20,
+      "floorArea": null,
+      "id": "fake-Lot-3",
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": null,
+    },
+  ],
+  "result": "redirected",
+}
+`;
+
+exports[`nsw lot form actions > create 3 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 20,
+      "floorArea": null,
+      "id": "fake-Lot-4",
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": null,
+    },
+  ],
+  "result": "redirected",
+}
+`;
+
+exports[`nsw lot form actions > create 4 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 12.5,
+      "floorArea": null,
+      "id": "fake-Lot-5",
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": null,
+    },
+  ],
+  "result": "redirected",
+}
+`;
+
+exports[`nsw lot form actions > create 5 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "entitlement": "Entitlement must be at least 1.",
+      "lotNumber": "Lot number is required.",
+    },
+  },
+}
+`;
+
+exports[`nsw lot form actions > update 0 (StrataVerze false) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "floorArea": undefined,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": "4",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {},
+}
+`;
+
+exports[`nsw lot form actions > update 1 (StrataVerze false) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "error": "This building's lots hold one lot entitlement only.",
+  },
+}
+`;
+
+exports[`nsw lot form actions > update 2 (StrataVerze false) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "error": "This building's lots hold one lot entitlement only.",
+  },
+}
+`;
+
+exports[`nsw lot form actions > update 3 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "error": "This building's lots hold one lot entitlement only.",
+  },
+}
+`;
+
+exports[`nsw lot form actions > update 4 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "error": "This building's lots hold one lot entitlement only.",
+  },
+}
+`;
+
+exports[`nsw lot form actions > update 5 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 12.5,
+      "floorArea": undefined,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+      "unitNumber": undefined,
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {},
+}
+`;
+
+exports[`nsw lot form actions > update 6 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "entitlement": "Entitlement must be at least 1.",
+    },
+  },
+}
+`;
+
+exports[`qld CSV lot import > checks and writes 1`] = `
+{
+  "checked": [
+    {
+      "data": {
+        "entitlement": "10",
+        "interestScheduleEntitlement": "12",
+        "lotNumber": "2",
+      },
+      "errors": [],
+      "rowNumber": 2,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "10",
+        "lotNumber": "3",
+      },
+      "errors": [
+        "Enter the interest schedule lot entitlement.",
+      ],
+      "rowNumber": 3,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "10",
+        "interestScheduleEntitlement": "0",
+        "lotNumber": "4",
+      },
+      "errors": [
+        "Interest Schedule Lot Entitlement must be a whole number of at least 1.",
+      ],
+      "rowNumber": 4,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "10",
+        "interestScheduleEntitlement": "2.5",
+        "lotNumber": "5",
+      },
+      "errors": [
+        "Interest Schedule Lot Entitlement must be a whole number of at least 1.",
+      ],
+      "rowNumber": 5,
+      "warnings": [],
+    },
+    {
+      "data": {
+        "entitlement": "-1",
+        "lotNumber": "1",
+      },
+      "errors": [
+        "Lot number "1" already exists in this scheme",
+        "Entitlement must be positive, got -1",
+        "Enter the interest schedule lot entitlement.",
+      ],
+      "rowNumber": 6,
+      "warnings": [],
+    },
+  ],
+  "imported": {
+    "created": 1,
+    "errors": [],
+  },
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 10,
+      "floorArea": null,
+      "id": "fake-Lot-8",
+      "interestScheduleEntitlement": 12,
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+      "unitNumber": null,
+    },
+  ],
+}
+`;
+
+exports[`qld lot form actions > create 0 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "interestScheduleEntitlement": "Enter the interest schedule lot entitlement.",
+    },
+  },
+}
+`;
+
+exports[`qld lot form actions > create 1 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "interestScheduleEntitlement": "Enter the interest schedule lot entitlement.",
+    },
+  },
+}
+`;
+
+exports[`qld lot form actions > create 2 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "interestScheduleEntitlement": "Interest Schedule Lot Entitlement must be a whole number of at least 1.",
+    },
+  },
+}
+`;
+
+exports[`qld lot form actions > create 3 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+    {
+      "entitlement": 20,
+      "floorArea": null,
+      "id": "fake-Lot-6",
+      "interestScheduleEntitlement": 18,
+      "lotNumber": "2",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+      "unitNumber": null,
+    },
+  ],
+  "result": "redirected",
+}
+`;
+
+exports[`qld lot form actions > create 4 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "entitlement": "Contribution Schedule Lot Entitlement must be a whole number of at least 1.",
+    },
+  },
+}
+`;
+
+exports[`qld lot form actions > create 5 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "entitlement": "Entitlement must be at least 1.",
+      "interestScheduleEntitlement": "Enter the interest schedule lot entitlement.",
+      "lotNumber": "Lot number is required.",
+    },
+  },
+}
+`;
+
+exports[`qld lot form actions > update 0 (StrataVerze false) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "floorArea": undefined,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+      "unitNumber": "4",
+    },
+  ],
+  "result": {},
+}
+`;
+
+exports[`qld lot form actions > update 1 (StrataVerze false) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "floorArea": undefined,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+      "unitNumber": "4",
+    },
+  ],
+  "result": {},
+}
+`;
+
+exports[`qld lot form actions > update 2 (StrataVerze false) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "error": "This is part of the locked building record. Only StrataVerze can change it.",
+  },
+}
+`;
+
+exports[`qld lot form actions > update 3 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "floorArea": undefined,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": 12,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+      "unitNumber": undefined,
+    },
+  ],
+  "result": {},
+}
+`;
+
+exports[`qld lot form actions > update 4 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "interestScheduleEntitlement": "Interest Schedule Lot Entitlement must be a whole number of at least 1.",
+    },
+  },
+}
+`;
+
+exports[`qld lot form actions > update 5 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "entitlement": "Contribution Schedule Lot Entitlement must be a whole number of at least 1.",
+    },
+  },
+}
+`;
+
+exports[`qld lot form actions > update 6 (StrataVerze true) 1`] = `
+{
+  "lots": [
+    {
+      "entitlement": 10,
+      "id": "lot-nsw",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "nsw",
+    },
+    {
+      "entitlement": 10,
+      "id": "lot-qld",
+      "interestScheduleEntitlement": null,
+      "lotNumber": "1",
+      "lotType": "RESIDENTIAL",
+      "schemeId": "qld",
+    },
+  ],
+  "result": {
+    "fieldErrors": {
+      "entitlement": "Entitlement must be at least 1.",
+    },
+  },
+}
+`;

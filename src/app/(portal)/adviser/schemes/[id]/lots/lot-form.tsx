@@ -18,6 +18,7 @@ type LotDefaults = {
   unitNumber?: string | null;
   entitlement?: number;
   interestScheduleEntitlement?: number | null;
+  lotEntitlement?: number | null;
   floorArea?: number | null;
   lotType?: string;
 };
@@ -44,7 +45,8 @@ export function LotForm({
   entitlementWords?: { label: string | null; help: string | null };
   /**
    * The second schedule the building's lots hold (Queensland's interest
-   * schedule), from the server page, or null (NSW). Locked like the unit
+   * schedule, Victoria's lot entitlement), from the server page, or null
+   * (NSW). Sent under the lot field it is held in. Locked like the unit
    * entitlement, and required for a new lot.
    */
   separate?: SeparateEntitlement | null;
@@ -107,7 +109,7 @@ export function LotForm({
               readOnly={lockStructure}
               type="number"
               required={mode === "create"}
-              defaultValue={defaults?.interestScheduleEntitlement ?? ""}
+              defaultValue={defaults?.[separate.field] ?? ""}
               placeholder="e.g. 50"
               helpText={separate.help ?? undefined}
               error={state.fieldErrors?.[separate.field]}

@@ -38,6 +38,8 @@ describe("the browser key to server field table", () => {
       floor_area: "floorArea",
       lot_type: "lotType",
       interest_schedule_entitlement: "interestScheduleEntitlement",
+      // Victoria's lot entitlement (stage 2, PR 4).
+      lot_entitlement: "lotEntitlement",
     });
     expect(pairs("chart_of_accounts")).toEqual({
       account_code: "code",
@@ -108,6 +110,28 @@ describe("the browser key to server field table", () => {
     expect(importFieldsFor("lots", { field: "somethingElse", label: "X" })).toEqual(importFieldsFor("lots"));
     // The table's own required list is unchanged: the pack decides.
     expect(missingRequired("lots", { lotNumber: "1", entitlement: "5" })).toEqual([]);
+  });
+
+  it("shows Victoria's lot entitlement column for a Victorian building only, required, and sends it under its own key (stage 2, PR 4)", () => {
+    const vicSeparate = separateEntitlement(PENDING_RULE_PACKS.VIC.rules as Parameters<typeof separateEntitlement>[0])!;
+    const vic = { field: vicSeparate.field!, label: vicSeparate.label };
+    expect(vic).toEqual({ field: "lotEntitlement", label: "Lot Entitlement" });
+    const fields = importFieldsFor("lots", vic);
+    expect(fields.filter((f) => f.separateEntitlement).map((f) => [f.key, f.field, f.label, f.required])).toEqual([["lot_entitlement", "lotEntitlement", "Lot Entitlement", true]]);
+    // Neither second column for NSW, and only its own for Queensland.
+    expect(importFieldsFor("lots").map((f) => f.field)).not.toContain("lotEntitlement");
+    expect(importFieldsFor("lots", qldSeparate).map((f) => f.field)).not.toContain("lotEntitlement");
+
+    const headers = ["Lot", "Lot Liability", "Lot Entitlement"];
+    const mapping = autoDetectMapping("lots", headers, vic);
+    expect(mapping).toEqual({ lot_entitlement: "Lot Entitlement" });
+    const rows = buildImportRows("lots", headers, [["1", "1", "60"], ["2", "1", ""]], { ...mapping, lot_number: "Lot", entitlement: "Lot Liability" }, vic);
+    expect(rows.map((r) => [r.data, r.errors])).toEqual([
+      [{ lot_number: "1", entitlement: "1", lot_entitlement: "60" }, []],
+      // An empty one is refused by the server against the pack (validateLots), for the preview and the import alike, as Queensland's is.
+      [{ lot_number: "2", entitlement: "1", lot_entitlement: "" }, []],
+    ]);
+    expect(toServerData("lots", rows[0].data)).toEqual({ lotNumber: "1", entitlement: "1", lotEntitlement: "60" });
   });
 
   it("is the only list of columns: the page keeps no key list of its own", () => {

@@ -7,7 +7,9 @@
  * except insurance (SM s 162(5)). The insurance part is shared by the
  * schedule the pack says decides both premiums for the building: the
  * interest schedule, for a building or volumetric format plan (SM ss 197(4),
- * 201(1)). The rest is shared by the schedule that decides CONTRIBUTIONS.
+ * 201(1)). Victoria's insurance premium fee is shared the same way, by lot
+ * entitlement (OCA s 23A; stage 2, PR 4). The rest is shared by the schedule
+ * that decides CONTRIBUTIONS.
  * Each part is shared in whole cents by the largest remainder method, so each
  * adds up exactly, and a lot's share is the sum of its two parts.
  *
@@ -42,6 +44,8 @@ export type ShareRules = Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES" | "FUND_CA
 /** A lot as the split needs it: the plan lot, with its separately held entitlement. */
 export interface ShareLot extends PlanLot {
   interestScheduleEntitlement?: number | null;
+  /** Victoria's lot entitlement (stage 2, PR 4). */
+  lotEntitlement?: number | null;
 }
 
 export interface InsuranceSplit {

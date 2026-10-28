@@ -91,6 +91,8 @@ export async function createLot(data: {
   entitlement: number;
   /** The second schedule's entitlement, for a pack that holds one (Queensland's interest schedule). */
   interestScheduleEntitlement?: number | null;
+  /** Victoria's lot entitlement, the second schedule its lots hold (stage 2, PR 4). */
+  lotEntitlement?: number | null;
   floorArea?: number;
   lotType?: string;
 }) {
@@ -100,6 +102,7 @@ export async function createLot(data: {
     unitNumber: data.unitNumber ?? null,
     entitlement: data.entitlement,
     ...(data.interestScheduleEntitlement !== undefined ? { interestScheduleEntitlement: data.interestScheduleEntitlement } : {}),
+    ...(data.lotEntitlement !== undefined ? { lotEntitlement: data.lotEntitlement } : {}),
     floorArea: data.floorArea ?? null,
     lotType: data.lotType ?? "RESIDENTIAL",
   });
@@ -125,6 +128,7 @@ export async function updateLot(
     unitNumber: string | null;
     entitlement: number;
     interestScheduleEntitlement: number | null;
+    lotEntitlement: number | null;
     floorArea: number | null;
     lotType: string;
   }>,
@@ -240,6 +244,7 @@ export async function getLotDetail(lotId: string) {
     unitNumber: lot.unitNumber,
     entitlement: lot.entitlement,
     interestScheduleEntitlement: lot.interestScheduleEntitlement ?? null,
+    lotEntitlement: lot.lotEntitlement ?? null,
     floorArea: lot.floorArea,
     lotType: lot.lotType,
     streetNo: (lot as Record<string, unknown>).streetNo as string | null ?? null,

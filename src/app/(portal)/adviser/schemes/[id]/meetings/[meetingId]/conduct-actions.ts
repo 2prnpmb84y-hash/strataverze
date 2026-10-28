@@ -179,7 +179,7 @@ async function recordCountedOutcome(p: {
     state: string;
     timeZone: string | null;
     totalLots: number | null;
-    lots: readonly { id: string; lotNumber: string; entitlement: number | null; interestScheduleEntitlement?: number | null }[];
+    lots: readonly { id: string; lotNumber: string; entitlement: number | null; interestScheduleEntitlement?: number | null; lotEntitlement?: number | null }[];
   };
   ruleSet: MeetingRuleSet;
   requestedOutcome: Outcome;
@@ -195,6 +195,7 @@ async function recordCountedOutcome(p: {
     lotNumber: String(l.lotNumber),
     entitlement: l.entitlement ?? null,
     interestScheduleEntitlement: l.interestScheduleEntitlement ?? null,
+    lotEntitlement: l.lotEntitlement ?? null,
   }));
   const chairVotes = parseChairVotes(p.votes, lots.length);
   if (!chairVotes || (p.poll != null && typeof p.poll !== "boolean")) {

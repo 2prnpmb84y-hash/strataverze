@@ -6,7 +6,8 @@
  * entitlement in every schedule the pack lists (ENTITLEMENT_SCHEDULES). The
  * schedule marked `onLot` is held
  * in `lots.entitlement`; Queensland's interest schedule is held in
- * `lots.interest_schedule_entitlement`.
+ * `lots.interest_schedule_entitlement`, and Victoria's lot entitlement in
+ * `lots.lot_entitlement` (VIC, ACT and WA stage 2, PR 4, 28 Oct 2026).
  *
  * Missing data fails closed: a building whose pack has a module selector but
  * no supported module recorded, or a lot without an entitlement its pack
@@ -32,17 +33,28 @@ export interface BuildingSettings {
   planFormat?: string | null;
 }
 
-/** The lot field each separately held schedule is kept in. A schedule not listed is not held yet. */
-const SEPARATE_FIELDS: Readonly<Record<string, SeparateEntitlementField>> = {
+/**
+ * The lot field each separately held schedule is kept in, by the schedule's
+ * key in its pack. A schedule not listed is not held yet. Each field has its
+ * own column, so a value entered under one pack's schedule is never read as
+ * another's: Queensland's interest schedule (stage 2, step 10) and Victoria's
+ * lot entitlement (stage 2, PR 4). Forms, the CSV import and the Add Property
+ * wizard send each value under its field name.
+ */
+const SEPARATE_FIELDS = {
   INTEREST: "interestScheduleEntitlement",
-};
-export type SeparateEntitlementField = "interestScheduleEntitlement";
+  LOT_ENTITLEMENT: "lotEntitlement",
+} as const satisfies Readonly<Record<string, string>>;
+export type SeparateEntitlementField = (typeof SEPARATE_FIELDS)[keyof typeof SEPARATE_FIELDS];
+/** Every lot field a second schedule may be held in. */
+export const SEPARATE_ENTITLEMENT_FIELDS: readonly SeparateEntitlementField[] = Object.values(SEPARATE_FIELDS);
 
 /** A lot's entitlements, as stored. */
 export interface LotEntitlements {
   lotNumber?: string | null;
   entitlement: number | null;
   interestScheduleEntitlement?: number | null;
+  lotEntitlement?: number | null;
 }
 
 /** The pack does not say which schedule decides a use, or StrataVerze does not hold the schedule. */
@@ -92,7 +104,7 @@ export function scheduleFor(rules: ScheduleRules, use: EntitlementUse, building:
 /** The lot field a schedule is held in, or null when StrataVerze does not hold it yet. */
 export function entitlementField(schedule: Pick<EntitlementSchedule, "key" | "onLot">): "entitlement" | SeparateEntitlementField | null {
   if (schedule.onLot) return "entitlement";
-  return SEPARATE_FIELDS[schedule.key] ?? null;
+  return Object.prototype.hasOwnProperty.call(SEPARATE_FIELDS, schedule.key) ? SEPARATE_FIELDS[schedule.key as keyof typeof SEPARATE_FIELDS] : null;
 }
 
 /**
@@ -121,7 +133,8 @@ export function onLotSchedule(rules: ScheduleRules): EntitlementSchedule {
 
 /**
  * The second schedule a building's lots hold, as forms and lot pages show
- * it, or null when the pack has none (NSW). Plain data a server page can pass
+ * it, or null when the pack has none (NSW): Queensland's interest schedule,
+ * Victoria's lot entitlement. Plain data a server page can pass
  * to the browser. `field` is null when StrataVerze does not hold it yet.
  */
 export interface SeparateEntitlement {

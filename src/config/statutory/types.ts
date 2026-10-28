@@ -123,14 +123,27 @@ export interface FundRequiredWhen {
  *   order);
  * - VALUE_BASED_RATES: value-based local government and State charges, rates
  *   and taxes.
+ *
+ * Added for Victoria (VIC, ACT and WA stage 2, PR 4, 28 Oct 2026):
+ * - UNANIMOUS_RESOLUTION: the entitlement test in a unanimous resolution (in
+ *   Victoria on a ballot or poll);
+ * - QUORUM: the entitlement test a quorum falls back to (in Victoria where
+ *   50% of the lots is not available);
+ * - INSURANCE_PREMIUM_FEE: the lot's share of the separate fee for the
+ *   reinstatement and replacement insurance premium (Victoria).
+ * A pack that lists none of them has no schedule for them, so a reader asking
+ * for one is refused (EntitlementRuleError), never given another schedule.
  */
 export type EntitlementUse =
   | "CONTRIBUTIONS"
   | "POLL_VOTE"
   | "SPECIAL_RESOLUTION"
+  | "UNANIMOUS_RESOLUTION"
+  | "QUORUM"
   | "COMMON_PROPERTY_SHARE"
   | "INSURANCE_COMMON_PROPERTY"
   | "INSURANCE_BUILDINGS"
+  | "INSURANCE_PREMIUM_FEE"
   | "TERMINATION_INTEREST"
   | "VALUE_BASED_RATES";
 
@@ -176,8 +189,9 @@ export interface ConditionalEntitlementUse {
 /**
  * The part of a contribution that pays for insurance, shared between the
  * lots by its own schedule rather than with the rest of the contribution
- * (Queensland, SM s 162(5); QLD go-live gap, 27 Oct 2026). A pack without it
- * shares the whole levy by the schedule that decides CONTRIBUTIONS.
+ * (Queensland, SM s 162(5); QLD go-live gap, 27 Oct 2026; Victoria's
+ * insurance premium fee, OCA s 23A, stage 2 PR 4). A pack without it shares
+ * the whole levy by the schedule that decides CONTRIBUTIONS.
  */
 export interface ContributionInsuranceRules {
   /**

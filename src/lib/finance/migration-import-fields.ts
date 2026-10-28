@@ -10,7 +10,8 @@
  * actions translate every row with it before checking or importing anything.
  *
  * A field marked `separateEntitlement` is a second lot entitlement that only
- * some rule packs hold (Queensland's interest schedule, stage 2, step 10). It
+ * some rule packs hold (Queensland's interest schedule, stage 2, step 10;
+ * Victoria's lot entitlement, stage 2, PR 4). It
  * is not required here: the building's pack decides. The page shows it, under
  * the pack's label and as a required column, only for a building whose pack
  * holds it (importFieldsFor), and the server translates it for every building
@@ -51,6 +52,14 @@ export const IMPORT_FIELDS = {
       key: "interest_schedule_entitlement",
       field: "interestScheduleEntitlement",
       label: "Interest Schedule Lot Entitlement",
+      required: false,
+      separateEntitlement: true,
+    },
+    // Victoria's lot entitlement (stage 2, PR 4), the same way.
+    {
+      key: "lot_entitlement",
+      field: "lotEntitlement",
+      label: "Lot Entitlement",
       required: false,
       separateEntitlement: true,
     },

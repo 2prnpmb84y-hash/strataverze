@@ -1,0 +1,162 @@
+/**
+ * The adviser's lot page and the committee's lot page for NSW and Queensland
+ * lots, unchanged by Victoria's second schedule (VIC, ACT and WA stage 2,
+ * PR 4). The snapshots were recorded on feat/fund-conditions (2b04048),
+ * before the change, and must match byte for byte. The adviser page's tabs
+ * are all rendered, so the details, the flag and the lot form are covered.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import type { ReactNode } from "react";
+
+const state = vi.hoisted(() => ({
+  scheme: { id: "s1", state: "NSW" } as Record<string, unknown>,
+  lot: {} as Record<string, unknown>,
+  profile: { id: "adviser-1", isPlatformAdmin: false } as Record<string, unknown>,
+}));
+
+vi.mock("next/server", () => ({ connection: async () => {} }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+  notFound: () => {
+    throw new Error("NOT_FOUND");
+  },
+}));
+vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
+vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
+vi.mock("@/lib/queries/profiles", () => ({ getCurrentProfile: vi.fn(async () => state.profile) }));
+vi.mock("@/lib/owner/selected-scheme", () => ({
+  getVerifiedSelectedSchemeId: vi.fn(async () => null),
+  getSelectedOwnerScheme: vi.fn(async () => ({ schemeId: "s1", roles: ["COMMITTEE"] })),
+}));
+vi.mock("@/lib/queries/schemes", () => ({
+  getSchemeById: vi.fn(async () => state.scheme),
+  getSchemesForCommittee: vi.fn(async () => []),
+  getSchemesForOwner: vi.fn(async () => []),
+}));
+vi.mock("@/lib/queries/lots", () => ({
+  getLotDetail: vi.fn(async () => state.lot),
+  getLotInScheme: vi.fn(async () => state.lot),
+  getStrataRollData: vi.fn(async () => []),
+}));
+vi.mock("@/lib/queries/documents", () => ({ getDocumentsForScheme: vi.fn(async () => []) }));
+vi.mock("@/lib/queries/document-url", () => ({ resolveDocumentUrl: vi.fn(async () => null) }));
+vi.mock("@/lib/queries/lot-workflows", () => ({
+  getLotDetailExtended: vi.fn(async () => ({ rollOwnerName: "J CITIZEN", ownerEmail: "j@example.com", ownerMobile: null, ownerPhone: null, ownerAddress: null, lastSettled: null })),
+  getTenantsForLot: vi.fn(async () => []),
+  getPropertyManager: vi.fn(async () => null),
+  getDeliveryPreferences: vi.fn(async () => []),
+  getDebtCollection: vi.fn(async () => null),
+}));
+vi.mock("@/lib/levies/lot-levy-view", () => ({
+  loadLotLevyView: vi.fn(async () => ({ items: [], statement: { openingBalance: 0, totalCharges: 0, totalPayments: 0, closingBalance: 0, lines: [] } })),
+}));
+vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEventLater: vi.fn(async () => {}) }));
+vi.mock("@/lib/jurisdiction/scheme-time", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-time")>("@/lib/jurisdiction/scheme-time");
+  return { ...actual, schemeToday: vi.fn(async () => "2026-10-27") };
+});
+vi.mock("@/lib/jurisdiction/time-zone", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/time-zone")>("@/lib/jurisdiction/time-zone");
+  return { ...actual, todayIn: () => "2026-10-27", platformToday: () => "2026-10-27" };
+});
+vi.mock("@/lib/actions/change-owner", () => ({ changeOwnerAction: vi.fn() }));
+vi.mock("@/lib/storage/client-upload", () => ({ stageFormFile: vi.fn(), stageUpload: vi.fn() }));
+vi.mock("@/app/(portal)/adviser/schemes/[id]/lots/actions", () => ({
+  createLotAction: vi.fn(),
+  updateLotAction: vi.fn(),
+  deleteLotAction: vi.fn(),
+  assignOwnerAction: vi.fn(),
+  removeOwnerAction: vi.fn(),
+  searchOwnersAction: vi.fn(),
+}));
+// Every tab, so the whole page is in the snapshot.
+vi.mock("@/app/(portal)/adviser/schemes/[id]/lots/[lotId]/lot-detail-tabs", () => ({
+  LotDetailTabs: ({ children }: { children: Record<string, ReactNode> }) => (
+    <div>
+      {Object.entries(children).map(([k, v]) => (
+        <section key={k} data-tab={k}>
+          {v}
+        </section>
+      ))}
+    </div>
+  ),
+}));
+vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
+  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  return {
+    ...actual,
+    rulesForState: (s: string | null | undefined) => (s === "QLD" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(s)),
+  };
+});
+
+const { sharedFake } = await import("@/test/fake-orm");
+const { default: AdviserLotPage } = await import("@/app/(portal)/adviser/schemes/[id]/lots/[lotId]/page");
+const { default: CommitteeLotPage } = await import("@/app/(portal)/owner/(scheme)/scheme/lots/[lotId]/page");
+
+const lotRow = (state: string, interest: number | null) => ({
+  id: "l1",
+  schemeId: "s1",
+  lotNumber: "1",
+  unitNumber: "3",
+  entitlement: 40,
+  interestScheduleEntitlement: interest,
+  floorArea: null,
+  lotType: "RESIDENTIAL",
+  streetNo: null,
+  streetName: null,
+  suburb: null,
+  accessoryUnit: null,
+  uof: null,
+  crn: null,
+  owners: [],
+  isCommitteeMember: false,
+  financials: { opening: 0, annual: 400, special: 0, interest: 0, paid: 300, closing: 100 },
+  levyHistory: [],
+  state,
+});
+
+beforeEach(() => {
+  state.profile = { id: "adviser-1", isPlatformAdmin: false };
+});
+
+describe.each([
+  ["NSW", "Australia/Sydney", null],
+  ["QLD", "Australia/Brisbane", 45],
+  ["QLD", "Australia/Brisbane", null],
+] as const)("%s lot pages (%s, second value %s)", (code, timeZone, interest) => {
+  beforeEach(() => {
+    state.scheme = {
+      id: "s1",
+      name: "Harbour View",
+      planNumber: "SP 12345",
+      state: code,
+      timeZone,
+      address: "1 Harbour St",
+      suburb: "Sydney",
+      memberships: [{ profileId: "adviser-1", role: "ADVISER" }],
+      bankAccounts: [],
+    };
+    state.lot = lotRow(code, interest);
+    sharedFake.reset({
+      Scheme: [{ id: "s1", name: "Harbour View", state: code, planNumber: "SP 12345", timeZone }],
+      Lot: [{ id: "l1", schemeId: "s1", lotNumber: "1", unitNumber: "3", entitlement: 40, interestScheduleEntitlement: interest }],
+      SchemeMembership: [{ id: "m1", profileId: "owner-1", schemeId: "s1", lotId: "l1", role: "OWNER", isActive: true }],
+    });
+  });
+
+  it.each([false, true])("adviser page (StrataVerze %s)", async (admin) => {
+    state.profile = { id: "adviser-1", isPlatformAdmin: admin };
+    const html = renderToStaticMarkup(await AdviserLotPage({ params: Promise.resolve({ id: "s1", lotId: "l1" }) }));
+    expect(html).toMatchSnapshot();
+  });
+
+  it("committee page", async () => {
+    state.profile = { id: "owner-1" };
+    const html = renderToStaticMarkup(await CommitteeLotPage({ params: Promise.resolve({ lotId: "l1" }) }));
+    expect(html).toMatchSnapshot();
+  });
+});

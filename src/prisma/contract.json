@@ -12419,6 +12419,13 @@
                   "kind": "scalar"
                 }
               },
+              "lotEntitlement": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "lotNumber": {
                 "nullable": false,
                 "type": {
@@ -12793,6 +12800,9 @@
                 },
                 "interestScheduleEntitlement": {
                   "column": "interest_schedule_entitlement"
+                },
+                "lotEntitlement": {
+                  "column": "lot_entitlement"
                 },
                 "lotNumber": {
                   "column": "lot_number"
@@ -45614,6 +45624,11 @@
                   "dataType": "pg/int4",
                   "nullable": true
                 },
+                "lot_entitlement": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "lot_number": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -61399,7 +61414,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7d4f8fdcb3e333b289efde33f9c59d8e96d382cd52ccc3c8e7a87b0744862b03"
+    "storageHash": "28741ae902226e32e3792317b8d527cff0632677e5840f4f595d013215a58a22"
   },
   "execution": {
     "executionHash": "8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8",

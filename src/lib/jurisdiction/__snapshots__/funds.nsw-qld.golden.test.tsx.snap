@@ -457,6 +457,7 @@ exports[`QLD funds > Add Property wizard words 1`] = `
     ],
   },
   "separate": {
+    "field": "interestScheduleEntitlement",
     "help": "From the interest schedule in the community management statement. A whole number, not 0.",
     "label": "Interest Schedule Lot Entitlement",
     "name": "interest schedule lot entitlement",

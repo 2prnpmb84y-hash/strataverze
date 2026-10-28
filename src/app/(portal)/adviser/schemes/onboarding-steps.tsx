@@ -201,8 +201,8 @@ export function LotsStep({
                         aria-label={`${capitalise(words.separate.name)}, row ${i + 1}`}
                         inputMode="numeric"
                         className={money}
-                        value={lot.interestScheduleEntitlement ?? ""}
-                        onChange={(e) => set(i, "interestScheduleEntitlement", e.target.value)}
+                        value={lot[words.separate.field] ?? ""}
+                        onChange={(e) => set(i, words.separate!.field, e.target.value)}
                       />
                     </td>
                   )}

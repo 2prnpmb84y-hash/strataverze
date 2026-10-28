@@ -8,7 +8,13 @@ import { defaultFunds, noLedgerProblem } from "@/lib/jurisdiction/funds";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
 import { needRule, type StatutoryRules } from "@/config/statutory";
-import { planFormatChoiceProblem, regulationModuleChoiceProblem, separateEntitlement } from "@/lib/jurisdiction/building-data";
+import {
+  SEPARATE_ENTITLEMENT_FIELDS,
+  planFormatChoiceProblem,
+  regulationModuleChoiceProblem,
+  separateEntitlement,
+  type SeparateEntitlementField,
+} from "@/lib/jurisdiction/building-data";
 import { MAX_ENTITLEMENT } from "@/lib/onboarding/property-onboarding";
 
 /**
@@ -123,7 +129,7 @@ export function newSchemeDataProblem(
   rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> &
     Partial<Pick<StatutoryRules, "PLAN_FORMAT" | "FUND_CATALOGUE" | "BUILDING_SELECTORS" | "BUILDING_FACTS" | "TERMINOLOGY">>,
   data: { regulationModule?: string | null; planFormat?: string | null; totalLots?: number | null },
-  lots: readonly { lotNumber: string; interestScheduleEntitlement?: number | null }[],
+  lots: readonly ({ lotNumber: string } & Partial<Record<SeparateEntitlementField, number | null>>)[],
 ): string | null {
   if (data.regulationModule != null) {
     if (!rules.REGULATION_MODULE) return "This building's rules have no regulation module, so none can be saved.";
@@ -135,14 +141,18 @@ export function newSchemeDataProblem(
     const problem = planFormatChoiceProblem(rules, data.planFormat);
     if (problem) return problem;
   }
+  // Each second lot entitlement only in the field the pack holds its schedule
+  // in (Queensland's interest schedule, Victoria's lot entitlement, stage 2,
+  // PR 4), and only as a whole number from 1 to MAX_ENTITLEMENT.
   const separate = separateEntitlement(rules);
-  const held = separate?.field === "interestScheduleEntitlement";
   for (const lot of lots) {
-    const value = lot.interestScheduleEntitlement;
-    if (value == null) continue;
-    if (!held) return `Lot ${lot.lotNumber} has a second lot entitlement, which this building's rules do not hold.`;
-    if (!Number.isInteger(value) || value < 1 || value > MAX_ENTITLEMENT)
-      return `Lot ${lot.lotNumber}: the ${separate!.name} must be a whole number from 1 to ${MAX_ENTITLEMENT.toLocaleString("en-AU")}.`;
+    for (const field of SEPARATE_ENTITLEMENT_FIELDS) {
+      const value = lot[field];
+      if (value == null) continue;
+      if (separate?.field !== field) return `Lot ${lot.lotNumber} has a second lot entitlement, which this building's rules do not hold.`;
+      if (!Number.isInteger(value) || value < 1 || value > MAX_ENTITLEMENT)
+        return `Lot ${lot.lotNumber}: the ${separate.name} must be a whole number from 1 to ${MAX_ENTITLEMENT.toLocaleString("en-AU")}.`;
+    }
   }
   if (rules.FUND_CATALOGUE) {
     const problem = noLedgerProblem({ ...rules, FUND_CATALOGUE: rules.FUND_CATALOGUE }, onboardingBuilding(data, lots));
@@ -190,7 +200,7 @@ export async function createScheme(
    * entitlement total match the building). Each owner's name is stored as it
    * appears on the strata roll.
    */
-  lots: readonly { lotNumber: string; unitNumber: string | null; entitlement: number; ownerName: string | null; interestScheduleEntitlement?: number | null }[] = [],
+  lots: readonly ({ lotNumber: string; unitNumber: string | null; entitlement: number; ownerName: string | null } & Partial<Record<SeparateEntitlementField, number | null>>)[] = [],
 ) {
   // The building's rule pack. A state with no pack is refused before anything is created.
   const { rules } = rulesForState(data.state);
@@ -262,8 +272,10 @@ export async function createScheme(
           lotNumber: l.lotNumber,
           unitNumber: l.unitNumber,
           entitlement: l.entitlement,
-          // The second entitlement, where the pack has one (Queensland's interest schedule).
-          ...(l.interestScheduleEntitlement != null ? { interestScheduleEntitlement: l.interestScheduleEntitlement } : {}),
+          // The second entitlement, where the pack has one (Queensland's
+          // interest schedule, Victoria's lot entitlement): newSchemeDataProblem
+          // has refused one in any other field.
+          ...Object.fromEntries(SEPARATE_ENTITLEMENT_FIELDS.filter((f) => l[f] != null).map((f) => [f, l[f]])),
         })),
       );
       const idByNumber = new Map(rows.map((r) => [r.lotNumber, r.id]));
@@ -352,6 +364,10 @@ export async function updateScheme(
     });
     await tx.orm.public.SchemeSelectorValue.where((v) => v.schemeId.eq(schemeId)).deleteAndCount();
     await tx.orm.public.Lot.where((l) => and(l.schemeId.eq(schemeId), l.occupiable.isNotNull())).updateAndCount({ occupiable: null });
+    // Victoria's lot entitlement (stage 2, PR 4) belongs to the pack the same
+    // way. A lot has no state for a database check, so it is cleared here.
+    // Queensland's interest schedule lot entitlement is kept, as before.
+    await tx.orm.public.Lot.where((l) => and(l.schemeId.eq(schemeId), l.lotEntitlement.isNotNull())).updateAndCount({ lotEntitlement: null });
     return updated;
   });
 }

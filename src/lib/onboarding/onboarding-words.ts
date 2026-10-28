@@ -15,6 +15,7 @@ import {
   separateEntitlement,
   type PlanFormatChoices,
   type RegulationModuleChoices,
+  type SeparateEntitlementField,
 } from "@/lib/jurisdiction/building-data";
 import { hasFundConditions, ledgerFundDefinition, type FundRules } from "@/lib/jurisdiction/funds";
 import type { OnboardingCheckWords } from "./property-onboarding";
@@ -45,7 +46,7 @@ export interface OnboardingWords extends OnboardingCheckWords {
   /** The help the pack gives for it, or null. */
   entitlementHelp: string | null;
   /** A second entitlement each lot holds, or null (NSW). */
-  separate: { name: string; label: string; help: string | null } | null;
+  separate: { name: string; label: string; help: string | null; field: SeparateEntitlementField } | null;
   /** The funds every new building is given, as the pack names them. */
   fundWords: { admin: OnboardingFundWords; capitalWorks: OnboardingFundWords };
   /** The module to choose, or null where the pack has none (NSW). Only supported options can be chosen. */
@@ -100,7 +101,7 @@ export function onboardingWordsFor(state: string, rules: StatutoryRules): Onboar
     entitlement: onLot.name,
     entitlementLabel: onLot.label ?? titleCase(onLot.name),
     entitlementHelp: onLot.help ?? null,
-    separate: second ? { name: second.name, label: second.label, help: second.help } : null,
+    separate: second?.field ? { name: second.name, label: second.label, help: second.help, field: second.field } : null,
     funds: { admin: admin.name, capitalWorks: capitalWorks.name },
     fundWords: { admin, capitalWorks },
     regulationModule: regulationModuleChoices(rules),

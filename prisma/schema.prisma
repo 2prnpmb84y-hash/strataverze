@@ -272,9 +272,12 @@ model Lot {
   schemeId           String              @map("scheme_id") @db.Uuid
   lotNumber          String              @map("lot_number")
   unitNumber         String?             @map("unit_number")
-  entitlement        Int                 // the schedule the pack holds on each lot (NSW unit entitlement, Queensland contribution schedule)
+  entitlement        Int                 // the schedule the pack holds on each lot (NSW unit entitlement, Queensland contribution schedule, Victorian lot liability)
   /// The Queensland interest schedule lot entitlement (BCCMA s 46), the pack's second schedule; positive when set, null for NSW.
   interestScheduleEntitlement Int?       @map("interest_schedule_entitlement")
+  /// The Victorian lot entitlement (OCA s 3), the pack's second schedule (lot liability is in entitlement); positive when
+  /// set, null for every other building. Cleared when the building's state changes.
+  lotEntitlement     Int?                @map("lot_entitlement")
   /// Whether the lot is occupiable (Victoria, OCA s 3: ordinarily used for residential or business purposes), a fact the
   /// pack's derived tier reads (BUILDING_FACTS LOT_OCCUPIABLE). Null for every other building and until answered.
   occupiable         Boolean?
