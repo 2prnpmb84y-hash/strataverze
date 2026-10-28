@@ -5,6 +5,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { FundForm } from "../fund-form";
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { fundRequirementsView, hasFundConditions } from "@/lib/jurisdiction/funds";
+import { getRecordedSelectorValues } from "@/lib/queries/building-selectors";
+import { FundRequirements } from "../../_sections/fund-requirements";
 
 export default async function NewFundPage({
   params,
@@ -24,6 +27,13 @@ export default async function NewFundPage({
   );
   if (!isAdviser) notFound();
 
+  const rules = rulesForState(scheme.state).rules;
+  // Which funds the building needs and why, for a pack with fund conditions
+  // (stage 2, PR 3). Read only for such a pack: nothing shows for NSW or Queensland.
+  const requirements = hasFundConditions(rules)
+    ? fundRequirementsView(rules, { scheme, lots: scheme.lots, recorded: await getRecordedSelectorValues(scheme.id) })
+    : null;
+
   return (
     <div className="max-w-3xl">
       <PageHeader
@@ -33,7 +43,9 @@ export default async function NewFundPage({
         backLabel="Financials"
       />
 
-      <FundForm schemeId={id} mode="create" catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE} />
+      <FundRequirements requirements={requirements} className="mb-6" />
+
+      <FundForm schemeId={id} mode="create" catalogue={rules.FUND_CATALOGUE} />
     </div>
   );
 }

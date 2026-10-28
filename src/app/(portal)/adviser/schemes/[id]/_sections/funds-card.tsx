@@ -1,18 +1,23 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { fundNameWords, fundTypeLabel, fundTypeWords, ledgerFundDefinition, type FundCatalogue } from "@/lib/jurisdiction/funds";
+import { fundNameWords, fundTypeLabel, fundTypeWords, ledgerFundDefinition, type FundCatalogue, type FundRequirementView } from "@/lib/jurisdiction/funds";
+import { FundRequirements } from "./fund-requirements";
 
 /**
  * Moved unchanged from the scheme main page so it can also back its section
  * page. `catalogue` is the building's FUND_CATALOGUE, which names its funds.
+ * `requirements`: which funds the building needs and why, for a pack with
+ * fund conditions (fundRequirementsView, stage 2, PR 3). Absent or null for
+ * NSW and Queensland, so their card is unchanged.
  */
 export function FundsCard({
-  id, funds, catalogue, className = "mb-6",
+  id, funds, catalogue, requirements, className = "mb-6",
 }: {
   id: string;
   funds: { id: string; name: string; fundType: string; balance: unknown }[];
   catalogue: FundCatalogue;
+  requirements?: readonly FundRequirementView[] | null;
   className?: string;
 }) {
   const admin = ledgerFundDefinition(catalogue, "ADMINISTRATIVE");
@@ -70,9 +75,11 @@ export function FundsCard({
         </div>
       ) : (
         <p className="text-sm text-ink-muted">
-          {`Set up ${fundNameWords(admin)} and ${fundNameWords(capital)} funds for this scheme.`}
+          {/* With fund conditions the funds to set up depend on the building, so the list below says which. */}
+          {requirements?.length ? "Set up the funds this building needs, listed below." : `Set up ${fundNameWords(admin)} and ${fundNameWords(capital)} funds for this scheme.`}
         </p>
       )}
+      <FundRequirements requirements={requirements} className="mt-4" />
     </Card>
   );
 }

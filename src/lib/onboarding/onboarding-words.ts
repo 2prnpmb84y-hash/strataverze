@@ -16,7 +16,7 @@ import {
   type PlanFormatChoices,
   type RegulationModuleChoices,
 } from "@/lib/jurisdiction/building-data";
-import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
+import { hasFundConditions, ledgerFundDefinition, type FundRules } from "@/lib/jurisdiction/funds";
 import type { OnboardingCheckWords } from "./property-onboarding";
 
 /** One fund as the wizard names it. */
@@ -56,6 +56,13 @@ export interface OnboardingWords extends OnboardingCheckWords {
    * does not support yet is marked, with its note.
    */
   planFormat: PlanFormatChoices | null;
+  /**
+   * For a pack whose funds have conditions (VIC, ACT and WA stage 2, PR 3):
+   * the pack's funds and the selectors and facts their conditions read, so
+   * the wizard can show which funds the building will be given and why.
+   * Absent for NSW and Queensland, whose words are unchanged.
+   */
+  fundRules?: FundRules;
 }
 
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -98,6 +105,16 @@ export function onboardingWordsFor(state: string, rules: StatutoryRules): Onboar
     fundWords: { admin, capitalWorks },
     regulationModule: regulationModuleChoices(rules),
     planFormat: planFormatChoices(rules),
+    ...(hasFundConditions(rules)
+      ? {
+          fundRules: {
+            FUND_CATALOGUE: rules.FUND_CATALOGUE,
+            BUILDING_SELECTORS: rules.BUILDING_SELECTORS,
+            BUILDING_FACTS: rules.BUILDING_FACTS,
+            TERMINOLOGY: rules.TERMINOLOGY,
+          },
+        }
+      : {}),
   };
 }
 

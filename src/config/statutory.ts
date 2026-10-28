@@ -360,7 +360,12 @@ export const PENDING_RULE_PACKS = {
     // officer, proxy limit, the unit leg of the audit test) become selectors worked out from the number of units, with the
     // thresholds unchanged. Member thresholds are not worked out. TERMINOLOGY gains lot and lots ("unit", "units", wording
     // only), so the building rules say units. FOR_REVIEW gains that point. No legal value or status changed; still a draft.
-    version: "2026.10.3",
+    // 2026.10.4 (28 Oct 2026): fund conditions (stage 2 PR 3). The sinking fund gains `requiredWhen`, written against the
+    // SINKING_FUND_REQUIRED selector: required with 4 or more units (ss 81(1), 82(1)), not required with fewer (s 81(1)),
+    // so a building of 4 or more units is given one. `required` stays false and the threshold is unchanged. FOR_REVIEW's
+    // sinking fund point is rewritten (whether fewer units may keep one is not in the notes). No legal value or status
+    // changed; still a draft.
+    version: "2026.10.4",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -389,7 +394,15 @@ export const PENDING_RULE_PACKS = {
     // StrataVerze choice until decided). Services only is read as tier 5 before s 7(7) and (8) (a StrataVerze reading). A
     // PARKING or STORAGE lot answered occupiable is flagged (a StrataVerze reading of s 3). FOR_REVIEW gains
     // BUILDING_SELECTORS_TIER and BUILDING_FACTS_RECORDED_BY. No legal value or status changed; still a draft.
-    version: "2026.10.3",
+    // 2026.10.4 (28 Oct 2026): fund conditions (stage 2 PR 3). MAINTENANCE_PLAN_APPROVED added (a recorded yes or no,
+    // flagged only where the maintenance fund depends on it). The maintenance fund gains `requiredWhen`, written against
+    // TIER and that selector: required for tiers 1 and 2 (ss 36, 40, 42; requiring it before a plan is approved is a
+    // StrataVerze reading), not required for tier 5 (ss 7A(1)(b), 8), and at tiers 3 and 4 required where a plan is
+    // approved (ss 40, 42) and not required otherwise. `required` stays false. The administrative fund becomes required
+    // as a ledger choice (status STRATAVERZE, unchanged), so every building has a ledger fund and a chart of accounts;
+    // FOR_REVIEW ADMINISTRATIVE_FUND says so. The GO-LIVE GAP note is replaced, and FOR_REVIEW MAINTENANCE_FUND_REQUIRED
+    // and BUILDING_FACTS_RECORDED_BY are rewritten. No legal value or status changed; still a draft.
+    version: "2026.10.4",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -406,7 +419,15 @@ export const PENDING_RULE_PACKS = {
     // unchanged (s 100(7), reg 79: 10 or more lots, or a replacement cost of more than $5,000,000 for the scheme type), with
     // the replacement cost as a recorded fact. No override, as the notes record none. FOR_REVIEW gains three points. No legal
     // value or status changed; still a draft.
-    version: "2026.10.2",
+    // 2026.10.3 (28 Oct 2026): fund conditions (stage 2 PR 3). `requiredWhen` is now written against the building
+    // selectors, with the meaning of the first forms (PR #107) unchanged: the administrative fund by SCHEME_SIZE and the
+    // new ADMINISTRATIVE_FUND_BY_LAWS (recorded, flagged only for 2 to 5 lots: s 140(1)(b), (2)), plus an SAT order
+    // (s 140(3), from the notes: CONFIRMED for 3 to 5 lots, NOT_CONFIRMED for 2 lots, whose scope against s 140(1)(b)
+    // the notes do not give), and the reserve fund by DESIGNATED_STATUS (s 100(2), (7); reg 79). defaultFunds reads
+    // them, so the GO-LIVE GAP at FUND_CATALOGUE is closed. FOR_REVIEW's funds point is rewritten and gains the by-laws
+    // selector, the 2-lot SAT order and schemes with no fund (refused at onboarding, flagged after). No legal value or
+    // status changed; still a draft.
+    version: "2026.10.3",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
