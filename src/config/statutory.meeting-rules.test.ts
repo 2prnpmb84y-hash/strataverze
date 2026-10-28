@@ -130,12 +130,13 @@ describe("Western Australia", () => {
 });
 
 describe("NSW and Queensland", () => {
-  it("carry none of the draft packs' keys", () => {
+  it("carry none of the draft packs' keys, except that Queensland leaves common property rows out (2026.10.20)", () => {
     for (const rs of [NSW_RULE_SET, QLD_RULE_PACK.rules.MEETING_RULES]) {
       for (const [c, rule] of rulesOf(rs)) expect(usesDraftKeys(rule), c).toBe(false);
-      expect(rs).not.toHaveProperty("excludeCommonPropertyRows");
       expect(rs).not.toHaveProperty("memberBandSelector");
       expect(rs).not.toHaveProperty("categoryRequiredAtGeneralMeetings");
     }
+    expect(NSW_RULE_SET).not.toHaveProperty("excludeCommonPropertyRows");
+    expect(QLD_RULE_PACK.rules.MEETING_RULES.excludeCommonPropertyRows).toBe(true);
   });
 });

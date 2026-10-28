@@ -8,6 +8,13 @@
  * change. Never regenerate these snapshots to make a change pass: a
  * difference is a change to NSW or Queensland.
  *
+ * One deliberate change (29 Oct 2026, approved by Matthew Wrigley): the
+ * Queensland pack moved to 2026.10.20 (common property rows not counted at
+ * conduct, no notice rule changed), so the Queensland notice rows (16, in the
+ * three issuing tests) record "AU-QLD 2026.10.20". Only those rulePack lines
+ * were updated, by a targeted run of the issuing tests; every other entry is
+ * byte-identical.
+ *
  * Covered: the content check over a grid (notice period, urgent notice,
  * hardship statement before and after it was required, late charge stated or
  * not), the timing (issue date, planned, late or moved, the late message,

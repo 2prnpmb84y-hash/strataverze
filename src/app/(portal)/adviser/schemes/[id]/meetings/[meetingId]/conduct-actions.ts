@@ -206,7 +206,7 @@ async function recordCountedOutcome(p: {
   // Decided when its voting period closes (Western Australia): refused before anything is read.
   const later = laterDecisionRefusal(p.ruleSet, p.item.resolutionCategory, p.requestedOutcome);
   if (later) return { error: later };
-  // Every lot of the building, as read with it. Its type lets a draft pack leave common property rows out.
+  // Every lot of the building, as read with it. Its type lets Queensland and the draft packs leave common property rows out.
   const lots = p.scheme.lots.map((l) => ({
     id: l.id,
     lotNumber: String(l.lotNumber),

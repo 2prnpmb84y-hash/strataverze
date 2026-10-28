@@ -67,6 +67,8 @@ const KNOWN_VERSIONS: Record<string, string> = {
   "AU-NSW 2026.10.16": "e41d2d2f89591b872f7734b37fe837e66dffb19f87dcf12c581091677ea889d9",
   // Queensland, active from 2026.10.19 (the switch-on, 28 Oct 2026). Its earlier versions were pending, never recorded on a notice.
   "AU-QLD 2026.10.19": "bccd55cd5c758e8002c00142e474fed1b80a23a05553558b154786d4b647eea2",
+  // 2026.10.20 (29 Oct 2026): common property rows are not counted at conduct (MEETING_RULES.excludeCommonPropertyRows).
+  "AU-QLD 2026.10.20": "d0e02cc613e8a7186ac6af546bd3e8c69ec6827b5b9f4241926fd693f253b6a0",
 };
 
 describe("rule pack versions", () => {

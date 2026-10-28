@@ -3237,6 +3237,7 @@ exports[`Queensland pack (active) > is the rules recorded for review 1`] = `
       "WITHOUT_DISSENT",
     ],
     "effectiveFrom": "2026-10-27",
+    "excludeCommonPropertyRows": true,
     "generalMeetingCategories": [
       "ORDINARY",
       "SPECIAL",

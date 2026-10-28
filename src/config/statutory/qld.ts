@@ -1163,9 +1163,13 @@ const GENERAL_MEETING_QUORUM: QuorumRule = {
  * are added; one vote per lot. totalLots is every lot (Act s 106(3)(b)) and
  * must equal the building's recorded number of lots, which must be recorded;
  * totalEntitlement is every lot's contribution schedule lot entitlement
- * (s 106(3)(c)). A poll is offered on pollCategories and counted by the
- * contribution schedule (s 110(3)). The debtor check (debtorsMayVoteOn) now
- * covers the chair's votes, with debts judged on the meeting's date: a lot
+ * (s 106(3)(c)). A common property row entered with the lots is not a lot:
+ * it is left out of the lots, the totals and the lots entitled to vote, is
+ * not offered a vote, and a vote sent for it is refused
+ * (excludeCommonPropertyRows, 2026.10.20, 29 Oct 2026). A poll is offered on
+ * pollCategories and counted by the contribution schedule (s 110(3)). The
+ * debtor check (debtorsMayVoteOn) now covers the chair's votes, with debts
+ * judged on the meeting's date: a lot
  * owing money is not counted except on a resolution without dissent or an
  * item with no category (a committee election). A missing entitlement fails
  * closed. An outcome the count does not give is refused and nothing is stored
@@ -1243,6 +1247,10 @@ export const MEETING_RULES: MeetingRuleSet = {
   pollCategories: (["ORDINARY", "SPECIAL", "WITHOUT_DISSENT", "MAJORITY"] as const).filter((c) => RESOLUTIONS[c].pollAvailable),
   // No proxies on a majority resolution (Act s 107; SM s 130(3), in PROXIES.notFor).
   proxiesBarredOn: ["MAJORITY"],
+  // Common property is not a lot, so a common property row entered with the lots is left out of the count
+  // at conduct: the number of lots (s 106(3)(b)), the entitlement (s 106(3)(c)) and the lots entitled to vote (s 107).
+  // As the draft packs do. Fixed with Matthew Wrigley's approval on 29 Oct 2026 (2026.10.20).
+  excludeCommonPropertyRows: true,
   notes:
     "From the Queensland pack signed off on 27 Oct 2026 (Standard Module). How the 21 days' notice is counted is not confirmed.",
 };

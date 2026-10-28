@@ -71,7 +71,9 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   if (seed.pollCategories) ruleSet.pollCategories = seed.pollCategories;
   if (seed.proxiesBarredOn) ruleSet.proxiesBarredOn = seed.proxiesBarredOn;
   // No column either, and only where the seed has them (the draft packs, VIC,
-  // ACT and WA stage 2, PR 8a-i): an NSW or Queensland rule set never has the keys.
+  // ACT and WA stage 2, PR 8a-i): an NSW rule set never has the keys, and a
+  // Queensland one has only excludeCommonPropertyRows (2026.10.20, 29 Oct 2026),
+  // so a stored Queensland row takes it from the seed however old the row is.
   if (seed.excludeCommonPropertyRows) ruleSet.excludeCommonPropertyRows = seed.excludeCommonPropertyRows;
   if (seed.memberBandSelector) ruleSet.memberBandSelector = seed.memberBandSelector;
   if (seed.categoryRequiredAtGeneralMeetings) ruleSet.categoryRequiredAtGeneralMeetings = seed.categoryRequiredAtGeneralMeetings;

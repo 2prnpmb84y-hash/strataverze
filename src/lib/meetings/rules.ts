@@ -276,9 +276,10 @@ export interface MeetingRuleSet {
   proxiesBarredOn?: readonly ResolutionCategory[];
   /**
    * Where the pack records it (the draft packs, VIC, ACT and WA stage 2,
-   * PR 8a-i): common property rows are not lots, so they are left out of the
-   * lots counted at conduct. NSW and Queensland leave it out, and count every
-   * row as before.
+   * PR 8a-i; Queensland from pack 2026.10.20, 29 Oct 2026): common property
+   * rows are not lots, so they are left out of the lots counted at conduct
+   * and the conduct screen, and a vote for one is refused. NSW leaves it out:
+   * its votes are not counted at conduct.
    */
   excludeCommonPropertyRows?: true;
   /**

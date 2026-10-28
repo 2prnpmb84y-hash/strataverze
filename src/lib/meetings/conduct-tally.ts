@@ -26,15 +26,19 @@
  *   entitlement the pack says decides a poll vote (s 110(3)).
  * - Anything missing fails closed: nothing is counted and the chair is told
  *   what to fix.
+ * - A common property row entered with the lots is not a lot (Queensland pack
+ *   2026.10.20, 29 Oct 2026, excludeCommonPropertyRows): it is left out of the
+ *   lots, the totals and the lots entitled to vote, the conduct screen does
+ *   not list it, and a vote for it, by the chair or online, is refused.
  *
  * The draft packs (VIC, ACT and WA stage 2, PR 8a-i, 28 Oct 2026) count the
  * same way, with what their own tests need: the totals of every lot, their
  * entitlement, the votes those present could cast, the lots recorded and the
  * building's band of members (BASIS_NEEDS). They leave common property rows
- * out of the lots. A resolution decided only when its voting period closes
- * (Western Australia) is refused before anything is read. An item with no
- * category cannot be recorded as resolved at their general meetings, since
- * nothing counts it (uncategorisedRefusal).
+ * out of the lots, as Queensland does. A resolution decided only when its
+ * voting period closes (Western Australia) is refused before anything is
+ * read. An item with no category cannot be recorded as resolved at their
+ * general meetings, since nothing counts it (uncategorisedRefusal).
  */
 import type { StatutoryRules } from "@/config/statutory";
 import {
@@ -140,6 +144,9 @@ export function countNeedsMemberBand(ruleSet: MeetingRuleSet, category: string |
 
 /** Whether a lot row is a lot, not the common property (as the building facts read it). */
 const isLotRow = (l: { lotType?: string | null }) => String(l.lotType ?? "").toUpperCase() !== "COMMON";
+
+/** A common property row as the chair knows it: "(entered as lot CP)". */
+const enteredAs = (row: { lotNumber: string }) => `(entered as lot ${row.lotNumber})`;
 
 /** A committee meeting: its members vote, not the lots (Queensland SM ss 60, 68). */
 export function isCommitteeMeeting(meetingType: string | null | undefined): boolean {
@@ -256,8 +263,12 @@ export function buildConductTally(input: {
   /** The building's band of members, as its building rules record it, where a rule needs it (the ACT). */
   memberBand?: string | null;
 }): ConductTallyResult {
-  // A draft pack leaves common property rows out of the lots; NSW and Queensland count every row, as before.
+  // Queensland and the draft packs leave common property rows out of the lots; NSW counts every row, as before.
   const params = input.ruleSet.excludeCommonPropertyRows ? { ...input, lots: input.lots.filter(isLotRow) } : input;
+  // The rows left out, so a vote for one is refused by name rather than as a lot outside the building.
+  const commonRows = new Map(
+    input.ruleSet.excludeCommonPropertyRows ? input.lots.filter((l) => !isLotRow(l)).map((l) => [l.id, l] as const) : [],
+  );
   const { ruleSet } = params;
   const raw = params.category && params.category.trim() ? params.category : null;
   if (raw && !isResolutionCategory(ruleSet, raw)) {
@@ -285,6 +296,13 @@ export function buildConductTally(input: {
     if (v.isInformal || !v.lotId) continue;
     if (!(CHAIR_VOTE_VALUES as readonly string[]).includes(v.voteValue)) continue;
     const lot = lotsById.get(v.lotId);
+    const common = lot ? undefined : commonRows.get(v.lotId);
+    if (common) {
+      return {
+        ok: false,
+        error: `A vote cast online is for common property ${enteredAs(common)}, which is not a lot and has no vote, so the votes cannot be counted.`,
+      };
+    }
     if (!lot) return { ok: false, error: "A vote cast online is for a lot that is not in this building, so the votes cannot be counted." };
     if (seen.has(lot.id)) return { ok: false, error: `Lot ${lot.lotNumber} has more than one vote recorded. Each lot has one vote.` };
     seen.set(lot.id, "ONLINE");
@@ -293,6 +311,13 @@ export function buildConductTally(input: {
 
   for (const v of params.chairVotes) {
     const lot = lotsById.get(v.lotId);
+    const common = lot ? undefined : commonRows.get(v.lotId);
+    if (common) {
+      return {
+        ok: false,
+        error: `Common property ${enteredAs(common)} is not a lot and has no vote, so nothing was counted. Reload the page and record the votes again.`,
+      };
+    }
     if (!lot) return { ok: false, error: "A vote is for a lot that is not in this building." };
     const earlier = seen.get(lot.id);
     if (earlier === "ONLINE") return { ok: false, error: `Lot ${lot.lotNumber} has already voted online, so its vote cannot be recorded again.` };
@@ -464,7 +489,7 @@ export function conductVotingView(
   meetingType: string | null | undefined,
 ): ConductVotingView | null {
   if (!countsVotesAtMeeting(ruleSet, meetingType)) return null;
-  // A draft pack leaves common property rows out, as the count does.
+  // Queensland and the draft packs leave common property rows out, as the count does.
   const rows = ruleSet.excludeCommonPropertyRows ? lots.filter(isLotRow) : lots;
   let pollLabel = "Poll asked for";
   try {

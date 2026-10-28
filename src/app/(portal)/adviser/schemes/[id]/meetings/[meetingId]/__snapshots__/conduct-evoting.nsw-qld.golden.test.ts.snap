@@ -17314,7 +17314,7 @@ exports[`recordAgendaOutcomeAction (golden) > judges debts on the meeting's date
   "commonPropertyMajority": {
     "log": [],
     "result": {
-      "error": "The votes recorded show the motion is carried, not lost. Votes for are more than half of the lots entitled to vote. Nothing was saved. Check the votes entered, or record the outcome the count gives.",
+      "error": "The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
     },
   },
   "commonPropertyOrdinary": {
@@ -17346,7 +17346,7 @@ exports[`recordAgendaOutcomeAction (golden) > judges debts on the meeting's date
               "abstainCount": 0,
               "againstCount": 1,
               "forCount": 6,
-              "totalLots": 9,
+              "totalLots": 8,
             },
             "votes": [
               {
@@ -17413,7 +17413,7 @@ exports[`recordAgendaOutcomeAction (golden) > judges debts on the meeting's date
   "commonPropertySpecial": {
     "log": [],
     "result": {
-      "error": "The votes cannot be counted. Lot CP has no contribution schedule lot entitlement recorded. Enter it before this can be worked out.",
+      "error": "The building records 9 lots but 8 are entered, so this resolution cannot be counted. Enter every lot, or correct the number of lots, first.",
     },
   },
   "noEntitlement": {

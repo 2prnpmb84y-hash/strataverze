@@ -9,6 +9,15 @@
  * snapshots to make a change pass: a difference is a change to NSW or
  * Queensland. The NSW conduct golden without votes is conduct.nsw.golden.test.tsx.
  *
+ * One deliberate change (29 Oct 2026, approved by Matthew Wrigley): the
+ * Queensland pack 2026.10.20 leaves common property rows out of the count at
+ * conduct. Only the three entries holding a common property row
+ * (commonPropertyOrdinary, commonPropertySpecial, commonPropertyMajority) were
+ * updated, by a targeted run of their test: the ordinary resolution now counts
+ * 8 lots, not 9, and the special and majority resolutions are refused because
+ * the fixture's building records 9 lots, counting the row as a lot. Every
+ * other entry is byte-identical.
+ *
  * The rule set is read through the real rule-set repository (no stored row,
  * so each building is given its pack's seed), and the online votes and debts
  * through the real repositories on the in-memory database.
