@@ -6,19 +6,20 @@
  */
 import type { StatutoryRules } from "@/config/statutory";
 import { needRule } from "@/config/statutory/need-rule";
+import { noticeLeadDays, noticeTimingFor, type CheckedNoticeRules, type NoticeTimingRule } from "@/lib/levies/notice-rule-check";
 import { annualLateChargeMissing, annualLateChargeRate, lateChargeApplies, type InterestRule, type LateChargeSetting } from "@/lib/finance/statutory-interest";
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 
 /** How long before the due date a notice goes out: "5 weeks", "1 week" or "40 days". */
-export function noticeLeadText(rule: { issueDaysBeforeDue: number }): string {
-  const d = rule.issueDaysBeforeDue;
+export function noticeLeadText(rule: { issueDaysBeforeDue: number; checked?: CheckedNoticeRules }): string {
+  const d = noticeLeadDays(rule);
   if (d > 0 && d % 7 === 0) return d === 7 ? "1 week" : `${d / 7} weeks`;
   return d === 1 ? "1 day" : `${d} days`;
 }
 
 /** The point a notice should have gone out by: "5-week mark", "40-day mark". */
-export function noticeLeadMark(rule: { issueDaysBeforeDue: number }): string {
-  const d = rule.issueDaysBeforeDue;
+export function noticeLeadMark(rule: { issueDaysBeforeDue: number; checked?: CheckedNoticeRules }): string {
+  const d = noticeLeadDays(rule);
   return d > 0 && d % 7 === 0 ? `${d / 7}-week mark` : `${d}-day mark`;
 }
 
@@ -32,11 +33,24 @@ export interface NoticeTimingWords {
   minimumDays: number;
   /** The minimum notice for an urgent special levy, in days (14), or null where the pack has none (the option is not offered). */
   urgentDays: number | null;
+  /**
+   * Given only for a pack with checked notice rules (VIC, ACT and WA stage 2,
+   * PR 6a), so NSW and Queensland words are unchanged: the most notice the
+   * law allows (null where none is set or known), whether the minimum is the
+   * law's (false: a StrataVerze choice) and whether a late notice may fall
+   * due later (false: it cannot go out).
+   */
+  maximumDays?: number | null;
+  minimumIsStatutory?: boolean;
+  dueDateMayMove?: boolean;
 }
 
 /** From the building's `rules.NOTICE_RULES`. */
-export function noticeTimingWords(rule: { issueDaysBeforeDue: number; minimumNoticeDays: number; urgentNoticeDays: number | null }): NoticeTimingWords {
-  return { lead: noticeLeadText(rule), mark: noticeLeadMark(rule), minimumDays: rule.minimumNoticeDays, urgentDays: rule.urgentNoticeDays };
+export function noticeTimingWords(rule: NoticeTimingRule): NoticeTimingWords {
+  const timing = noticeTimingFor(rule);
+  const words: NoticeTimingWords = { lead: noticeLeadText(rule), mark: noticeLeadMark(rule), minimumDays: timing.minimumDays, urgentDays: timing.urgentDays };
+  if (!rule.checked) return words;
+  return { ...words, maximumDays: timing.maximumDays, minimumIsStatutory: timing.minimumIsStatutory, dueDateMayMove: timing.dueDateMayMove };
 }
 
 /** A small count in words ("two quotes"), as the platform writes rule counts. */

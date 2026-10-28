@@ -409,7 +409,18 @@ export const PENDING_RULE_PACKS = {
     // setting (s 94(1) opening words, for legal review). PAYMENT_ALLOCATION_ORDER added (contributions, then interest,
     // then recovery costs, as NSW): a StrataVerze choice Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS.
     // NOT_CONFIRMED and FOR_REVIEW gain the points. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.5",
+    // 2026.10.6 (28 Oct 2026): the notice rules (stage 2, PR 6a). NOTICE_RULES added in the shared shape, from
+    // CONTRIBUTION_NOTICES unchanged, with checked values: the due date not later than 28 days after the notice is the
+    // most notice (ss 79(2)(e), 90(2)(e), CONFIRMED); the 14-day least notice and the 28-day lead are StrataVerze choices
+    // Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS; a late notice may state a later date (a StrataVerze
+    // reading of ss 80, 91, for review: the notes say only that a contribution is payable on the date stated). The
+    // general fund is given one notice for each instalment (a StrataVerze reading, FOR LEGAL REVIEW against s 79(2)(f));
+    // the sinking fund's yearly notice within 1 month after the AGM (s 90(1)) is refused until StrataVerze can give it.
+    // Every notice is refused while StrataVerze notices cannot state what ss 79(2) and 90(2) require (each other unit's
+    // contribution, the fund totals, the proportion and method, the instalment dates, any discount and the interest).
+    // No approved form is recorded (Form 1 not read). FOR_REVIEW gains the points. No legal value or status already
+    // recorded changed; still a draft.
+    version: "2026.10.6",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -471,7 +482,18 @@ export const PENDING_RULE_PACKS = {
     // Wrigley made on 28 Oct 2026, recorded in DECISIONS; DATED_RULES still records no statutory order before s 32I.
     // DEFERRED_SHARED_SHAPES drops LATE_CHARGE and PAYMENT_ALLOCATION_ORDER. FOR_REVIEW gains LATE_CHARGE, INTEREST_WAIVER
     // and PAYMENT_ALLOCATION_ORDER. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.6",
+    // 2026.10.7 (28 Oct 2026): the notice rules (stage 2, PR 6a). NOTICE_RULES added in the shared shape, from FEE_NOTICES
+    // unchanged, with checked values: the 28-day least notice is StrataVerze's reading of s 31(2)(a), kept as CONFIRMED,
+    // and the 35-day lead is a StrataVerze choice, both Matthew Wrigley's decision of 28 Oct 2026, recorded in DECISIONS.
+    // The most notice is NOT_CONFIRMED (the approved form's "or by the due date specified below" is guidance only), the
+    // approved form is required (s 31(1)) and its start date is NOT_CONFIRMED, and the notice must state the 28-day
+    // obligation, the interest rate and the dispute process (s 31(2)). StrataVerze cannot produce the form or state those
+    // yet, so every fee notice is refused, each with its reason. A late notice falling due 28 days after it is given and
+    // one notice for each instalment are StrataVerze choices for review. DEFERRED_SHARED_SHAPES drops NOTICE_RULES.
+    // FOR_REVIEW gains NOTICE_RULES, NOTICE_MINIMUM, NOTICE_MAXIMUM, NOTICE_DISPUTE_PROCESS, NOTICE_DUE_DATE_MOVE,
+    // NOTICE_TIER_5 and FINAL_FEE_NOTICE, and APPROVED_FORMS_DATE, APPROVED_FORMS_USE and DEFERRED_SHARED_SHAPES are
+    // updated. No legal value or status already recorded changed; still a draft.
+    version: "2026.10.7",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -505,7 +527,13 @@ export const PENDING_RULE_PACKS = {
     // charged until a pack version records it. PAYMENT_ALLOCATION_ORDER added (contributions, then interest, then recovery
     // costs, as NSW): a StrataVerze choice Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS. NOT_CONFIRMED and
     // FOR_REVIEW gain the points. No legal value or status already recorded changed; still a draft.
-    version: "2026.10.4",
+    // 2026.10.5 (28 Oct 2026): the notice rules (stage 2, PR 6a). NOTICE_RULES added in the shared shape, from LEVY_NOTICES
+    // unchanged, with checked values: no most notice and no content or form (CONFIRMED absent from the STA and STGR; by-laws
+    // not checked); the 35-day lead, the 14-day least notice and never moving a due date (s 100(4)(a): the levy decision
+    // fixes it) are StrataVerze choices Matthew Wrigley made on 28 Oct 2026, recorded in DECISIONS; one notice for each
+    // instalment is a StrataVerze choice for review. FOR_REVIEW gains the points. No legal value or status already
+    // recorded changed; still a draft.
+    version: "2026.10.5",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

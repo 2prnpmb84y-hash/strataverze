@@ -389,3 +389,145 @@ describe("the urgent special levy option (stage 2, step 5)", () => {
     expect(notices().filter((n) => n.levyScheduleId === "sp1")).toEqual([]);
   });
 });
+
+// ─── Checked notice rules (VIC, ACT and WA stage 2, PR 6a) ─────────────────
+
+type Rules = import("@/config/statutory").StatutoryRules["NOTICE_RULES"];
+const checked = (v: number | boolean, status: "CONFIRMED" | "STRATAVERZE" = "STRATAVERZE") => ({ value: v, status, source: "Test Act s 1" }) as never;
+/** ACT-shaped: a 14-day floor, a 28-day lead and the law's 28-day maximum; a late notice may move. */
+const actShaped: Rules = {
+  minimumNoticeDays: 14,
+  issueDaysBeforeDue: 28,
+  urgentNoticeDays: null,
+  hardship: null,
+  contents: [],
+  source: "Test Act",
+  checked: {
+    minimumNoticeDays: checked(14),
+    maximumNoticeDays: checked(28, "CONFIRMED"),
+    issueDaysBeforeDue: checked(28),
+    dueDateMayMove: checked(true, "CONFIRMED"),
+    noticeMode: { ADMINISTRATIVE: { value: "PER_INSTALMENT", status: "STRATAVERZE", source: "Test Act s 2" } },
+    requiredContents: [],
+    form: null,
+    source: "Test Act",
+  },
+};
+/** WA-shaped: a 14-day floor, a 35-day lead, no maximum, and a due date that never moves. */
+const waShaped: Rules = {
+  ...actShaped,
+  issueDaysBeforeDue: 35,
+  checked: { ...actShaped.checked!, maximumNoticeDays: null, issueDaysBeforeDue: checked(35), dueDateMayMove: checked(false) },
+};
+
+describe("a pack with a maximum notice (ACT-shaped)", () => {
+  const special = (dueDate: string) => {
+    sharedFake.table("LevySchedule").push({
+      id: "sp2", schemeId: "s1", fundId: "admin", financialYear: 2026, budgetAmount: "10000.00", frequency: "ONE_OFF", levyType: "SPECIAL",
+      title: "Lift", totalLots: 2, totalEntitlement: "100", status: "APPROVED", approvedBy: "adviser", approvedAt: "2026-05-01", dueDate,
+    });
+    return issueScheduleNoticesAction("s1", "sp2", {}, new FormData());
+  };
+
+  it("plans each budget levy notice 28 days before it falls due", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = actShaped;
+    expect(await generate()).toMatchObject({ success: true, data: { count: 0, planned: 8, nextIssueOn: "2026-06-03" } });
+    expect(await issueDueNotices(midday("2026-06-02"))).toEqual([]);
+    expect((await issueDueNotices(midday("2026-06-03")))[0]).toMatchObject({ issued: 2, held: null });
+  });
+
+  it("plans a special levy due further away than the maximum for its lead before the due date, and the daily job sends it", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = actShaped;
+    const r = await special("2026-07-20");
+    expect(r).toMatchObject({ success: true, data: { count: 0, planned: 2, nextIssueOn: "2026-06-22" } });
+    expect(sent.notices).toEqual([]);
+    expect((await issueDueNotices(midday("2026-06-22"))).find((x) => x.scheduleId === "sp2")).toMatchObject({ issued: 2 });
+    expect(sent.notices.map((n) => n.dueDate)).toEqual(["2026-07-20", "2026-07-20"]);
+  });
+
+  it("sends a special levy within the maximum today, as NSW sends every special levy", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = actShaped;
+    expect(await special("2026-05-25")).toMatchObject({ success: true, data: { count: 2, planned: 0 } });
+    // NSW (no maximum): a special levy due 80 days away still goes out today.
+    noticeRules.override = null;
+    sharedFake.table("LevySchedule").splice(0, sharedFake.table("LevySchedule").length, ...sharedFake.table("LevySchedule").filter((x) => x.id !== "sp2"));
+    sharedFake.table("LevyNotice").splice(0);
+    expect(await special("2026-07-20")).toMatchObject({ success: true, data: { count: 2, planned: 0 } });
+  });
+});
+
+describe("a pack whose due dates never move (WA-shaped)", () => {
+  it("refuses to plan a schedule with an instalment too close to its due date, and creates nothing", async () => {
+    today.value = "2026-06-25";
+    noticeRules.override = waShaped;
+    const r = await generate(true);
+    expect(r.error).toContain("this building's rules do not let a due date move");
+    expect(r.data?.missing).toEqual([
+      { code: "DUE_DATE_CANNOT_MOVE", message: "Instalment 1: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out." },
+    ]);
+    expect(notices()).toHaveLength(0);
+  });
+
+  it("asks for confirmation of a late notice with 14 days or more left, which keeps its due date", async () => {
+    today.value = "2026-06-10";
+    noticeRules.override = waShaped;
+    expect((await generate()).data?.late).toEqual(["Instalment 1: due 01/07/2026, so it goes out today with 21 days' notice instead of 5 weeks."]);
+    const r = await generate(true);
+    expect(r).toMatchObject({ success: true, data: { count: 2 } });
+    expect(notices().filter((n) => n.status === "ISSUED").map((n) => n.dueDate)).toEqual(["2026-07-01", "2026-07-01"]);
+  });
+
+  it("the daily job holds a notice it can no longer send, and the Adviser cannot send it either", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = waShaped;
+    await generate();
+    // Past the mark with 21 days left: waits for the Adviser, as for NSW.
+    expect((await issueDueNotices(midday("2026-06-10")))[0]).toMatchObject({ issued: 0, held: null, awaitingConfirmation: 2 });
+    // 11 days left: held, never sent.
+    const held = await issueDueNotices(midday("2026-06-20"));
+    const line = "Notices due 01/07/2026: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out.";
+    expect(held[0]).toMatchObject({ issued: 0, awaitingConfirmation: 0, held: [line] });
+    expect(notices().every((n) => n.status === "DRAFT")).toBe(true);
+    today.value = "2026-06-20";
+    const fd = new FormData();
+    fd.set("confirmLate", "on");
+    // Confirmed: nothing can go out, and the Adviser is told why (a warning, not an error).
+    expect(await issueOverdueNoticesAction("s1", "ls1", {}, fd)).toEqual({ success: true, data: { count: 0, emailed: 0, held: [line] } });
+    expect(notices().every((n) => n.status === "DRAFT")).toBe(true);
+    expect(sent.notices).toEqual([]);
+  });
+
+  it("sends the overdue notices that can still go out, holding only those that cannot", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = waShaped;
+    await generate();
+    // 1 Sep: the first instalment's due date has passed (cannot go out); the second has 30 days left (late, sendable).
+    today.value = "2026-09-01";
+    const fd = new FormData();
+    fd.set("confirmLate", "on");
+    const r = await issueOverdueNoticesAction("s1", "ls1", {}, fd);
+    expect(r).toEqual({
+      success: true,
+      data: { count: 2, emailed: 2, held: ["Notices due 01/07/2026: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out."] },
+    });
+    expect(notices().filter((n) => n.status === "ISSUED").map((n) => n.dueDate)).toEqual(["2026-10-01", "2026-10-01"]);
+  });
+
+  it("keeps the held lines when the daily job's content check also fails", async () => {
+    today.value = "2026-05-01";
+    noticeRules.override = waShaped;
+    await generate();
+    content.missing = [{ code: "PAYMENT_DETAILS", message: "How to pay" }];
+    // 27 Nov: the third instalment is on time; the first two can no longer go out.
+    const r = await issueDueNotices(midday("2026-11-27"));
+    expect(r[0]).toMatchObject({ issued: 0, awaitingConfirmation: 0 });
+    expect(r[0].held).toEqual([
+      "How to pay",
+      "Notices due 01/07/2026: due 01/07/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out.",
+      "Notices due 01/10/2026: due 01/10/2026, fewer than 14 days away. Its due date cannot be moved under this building's rules, so it cannot go out.",
+    ]);
+  });
+});

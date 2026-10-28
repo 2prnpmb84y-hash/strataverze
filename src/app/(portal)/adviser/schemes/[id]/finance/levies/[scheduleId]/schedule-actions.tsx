@@ -29,6 +29,15 @@ function Message({ state }: { state: ActionState }) {
   return null;
 }
 
+/**
+ * How the confirmations name the minimum notice: "statutory" (NSW,
+ * Queensland, or a minimum the law sets), or "minimum of" where it is a
+ * StrataVerze choice (VIC, ACT and WA stage 2, PR 6a).
+ */
+function minimumWords(timing: NoticeTimingWords): string {
+  return timing.minimumIsStatutory === false ? "StrataVerze minimum of" : "statutory";
+}
+
 /** Record the owners corporation's approval (resolution date). `ownersCorporation` is the building's word for it, from its rule pack. */
 export function ApproveScheduleForm({ schemeId, scheduleId, ownersCorporation }: { schemeId: string; scheduleId: string; ownersCorporation: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
@@ -102,7 +111,7 @@ export function IssueNoticesForm({
           </ul>
           <label className="flex items-start gap-2">
             <input type="checkbox" name="confirmLate" className="mt-1" />
-            <span>I confirm these notices go out today with less than {timing.lead}&apos; notice (never less than the statutory {timing.minimumDays} days).</span>
+            <span>I confirm these notices go out today with less than {timing.lead}&apos; notice (never less than the {minimumWords(timing)} {timing.minimumDays} days).</span>
           </label>
         </div>
       )}
@@ -144,12 +153,17 @@ export function OverdueNoticesForm({ schemeId, scheduleId, count, timing }: { sc
   const [state, formAction, pending] = useActionState<ActionState, FormData>(issueOverdueNoticesAction.bind(null, schemeId, scheduleId), {});
   const late = Array.isArray(state.data?.late) ? (state.data.late as string[]) : [];
   const missing = Array.isArray(state.data?.missing) ? (state.data.missing as { code: string; message: string }[]) : [];
+  const held = Array.isArray(state.data?.held) ? (state.data.held as string[]) : [];
   return (
     <form action={formAction} className="space-y-3 rounded-[var(--radius-card)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <p className="font-medium">
         {count} planned notice{count === 1 ? " is" : "s are"} past {count === 1 ? "its" : "their"} {timing.mark} and {count === 1 ? "has" : "have"} not gone out.
       </p>
-      <p>They go out today once you confirm. Any with fewer than {timing.minimumDays} days left fall due {timing.minimumDays} days from today instead, the statutory minimum.</p>
+      {timing.dueDateMayMove === false ? (
+        <p>They go out today once you confirm. Any with fewer than {timing.minimumDays} days left cannot go out, because this building&apos;s rules do not let their due date move.</p>
+      ) : (
+        <p>They go out today once you confirm. Any with fewer than {timing.minimumDays} days left fall due {timing.minimumDays} days from today instead, the {timing.minimumIsStatutory === false ? "StrataVerze" : "statutory"} minimum.</p>
+      )}
       {late.length > 0 && (
         <ul className="list-disc space-y-1 pl-5">
           {late.map((m) => (
@@ -166,10 +180,20 @@ export function OverdueNoticesForm({ schemeId, scheduleId, count, timing }: { sc
       )}
       <label className="flex items-start gap-2">
         <input type="checkbox" name="confirmLate" className="mt-1" />
-        <span>I confirm these notices go out today with less than {timing.lead}&apos; notice (never less than the statutory {timing.minimumDays} days).</span>
+        <span>I confirm these notices go out today with less than {timing.lead}&apos; notice (never less than the {minimumWords(timing)} {timing.minimumDays} days).</span>
       </label>
       {state.error && <p role="alert" className="text-red-700">{state.error}</p>}
       {state.success && <p className="text-green-700">{String(state.data?.count ?? 0)} notice(s) sent, {String(state.data?.emailed ?? 0)} emailed to owners.</p>}
+      {state.success && held.length > 0 && (
+        <div role="status" className="space-y-1">
+          <p className="font-medium">These notices were not sent:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            {held.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <Button type="submit" disabled={pending}>{pending ? "Sending..." : "Send them now"}</Button>
     </form>
   );

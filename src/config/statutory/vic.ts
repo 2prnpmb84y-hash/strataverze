@@ -6,8 +6,9 @@
  * DRAFT, FOR STRATAVERZE TO REVIEW (27 Oct 2026). Not signed off and not
  * applied to any building: `rulePackFor` returns active packs only, and
  * Victoria is not in SUPPORTED_SCHEME_STATES or the database's state check.
- * DECISIONS lists proposed choices, and one decided: the payment order
- * (Matthew Wrigley, 28 Oct 2026). FOR_REVIEW lists the points to settle first.
+ * DECISIONS lists proposed choices, and two decided: the payment order and
+ * the notice timing (Matthew Wrigley, 28 Oct 2026). FOR_REVIEW lists the
+ * points to settle first.
  *
  * Every value comes from the research notes of 27 Oct 2026 prepared for
  * Matthew Wrigley ("Victoria: owners corporation law research notes"), which
@@ -48,11 +49,12 @@
  * records the difference (GUIDANCE_CONFLICTS).
  *
  * Shared shapes: TERMINOLOGY, FUND_CATALOGUE, ENTITLEMENT_SCHEDULES and
- * FEATURES are given, and LATE_CHARGE (from INTEREST) and
- * PAYMENT_ALLOCATION_ORDER (a StrataVerze choice) since stage 2, PR 5.
- * NOTICE_RULES and MEETING_RULES are deferred, with the reasons in
- * DEFERRED_SHARED_SHAPES; their Victorian rules are held as plain data in
- * FEE_NOTICES, PENDING_CHANGES and MEETINGS, RESOLUTIONS and PROXIES.
+ * FEATURES are given, LATE_CHARGE (from INTEREST) and
+ * PAYMENT_ALLOCATION_ORDER (a StrataVerze choice) since stage 2, PR 5, and
+ * NOTICE_RULES (from FEE_NOTICES, with checked values) since stage 2, PR 6a.
+ * MEETING_RULES is deferred, with the reason in DEFERRED_SHARED_SHAPES; its
+ * Victorian rules are held as plain data in MEETINGS, RESOLUTIONS and
+ * PROXIES. The final fee notice (s 32) stays in FEE_NOTICES.finalNotice.
  */
 
 import type {
@@ -66,6 +68,7 @@ import type {
   NoStatutoryRule,
   FundDefinition,
   LateChargeRules,
+  NoticeRules,
   PackFeatures,
   PaymentAllocationPart,
   RecordedBuildingSelector,
@@ -955,6 +958,98 @@ export const FEE_NOTICES = {
     source: `${CAV_FORMS}; ${OCR} Sch 2 rule 7(5)`,
   },
 } as const;
+
+/**
+ * The fee notice rules in the shared shape (stage 2, PR 6a, 28 Oct 2026),
+ * from FEE_NOTICES and the notes only. Every Victorian fee notice is refused
+ * today:
+ * - it must be in the approved form, "Owners corporation fee notice"
+ *   (s 31(1)), which StrataVerze cannot produce yet, and the day the current
+ *   form applied from is NOT_CONFIRMED;
+ * - it must state the obligation to pay within 28 days after the date of the
+ *   notice, the interest rate (if any) and the dispute resolution process
+ *   under the rules (s 31(2)), none of which StrataVerze notices state yet;
+ * - the most notice a fee notice may give is NOT_CONFIRMED: the approved
+ *   form's words "or by the due date specified below" are guidance only.
+ * The least notice, 28 days, is StrataVerze's reading of s 31(2)(a) (the
+ * obligation to pay within 28 days after the date of the notice), kept as the
+ * legal rule by Matthew Wrigley's decision of 28 Oct 2026, with the 35-day
+ * lead (DECISIONS). No hardship statement is required until new s 31(2)(ab)
+ * commences (HARDSHIP_ON_NOTICES). The tier 5 exemption from s 31 (s 7A(1)(a))
+ * is not applied yet, and the final fee notice (s 32) is a later PR.
+ *
+ * The fields outside `checked` hold the safest values for a reader that knows
+ * only them: the 28-day minimum, and a lead of 28 days, since the most notice
+ * is not confirmed. Until the most notice is checked, notices are timed with
+ * that 28-day lead, never the decided 35 (noticeLeadDays).
+ */
+export const NOTICE_RULES: NoticeRules = {
+  minimumNoticeDays: FEE_NOTICES.feeNotice.payWithinDaysAfterNotice,
+  issueDaysBeforeDue: FEE_NOTICES.feeNotice.payWithinDaysAfterNotice,
+  urgentNoticeDays: null,
+  hardship: null,
+  contents: FEE_NOTICES.feeNotice.mustState,
+  source: FEE_NOTICES.feeNotice.source,
+  checked: {
+    minimumNoticeDays: {
+      value: FEE_NOTICES.feeNotice.payWithinDaysAfterNotice,
+      status: "CONFIRMED",
+      source: `${OCA} s 31(2)(a)`,
+      note: "StrataVerze's reading of s 31(2)(a): a fee notice states the obligation to pay within 28 days after the date of the notice, read as the least notice. Kept as the legal rule by Matthew Wrigley's decision of 28 Oct 2026 (DECISIONS); FOR_REVIEW NOTICE_MINIMUM.",
+    },
+    maximumNoticeDays: {
+      value: null,
+      status: "NOT_CONFIRMED",
+      source: `${OCA} s 31(2)(a); ${CAV_FORMS}`,
+      note: "whether a fee notice may give more than 28 days to pay is not confirmed. The approved form says payment is due within 28 days of the date of the notice \"or by the due date specified below\", which is guidance only.",
+    },
+    issueDaysBeforeDue: {
+      value: 35,
+      status: "STRATAVERZE",
+      source: "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)",
+      note: "Each fee notice goes out 35 days before it falls due, as NSW and Queensland notices do. Not a rule of law.",
+    },
+    dueDateMayMove: {
+      value: true,
+      status: "STRATAVERZE",
+      source: `${OCA} s 31(2)(a)`,
+      note: "StrataVerze's reading: a fee notice that goes out late falls due 28 days after it is given, the s 31(2)(a) period. FOR_REVIEW NOTICE_DUE_DATE_MOVE.",
+    },
+    noticeMode: {
+      ADMINISTRATIVE: {
+        value: "PER_INSTALMENT",
+        status: "STRATAVERZE",
+        source: `${OCA} s 31; ${CAV_FORMS}`,
+        note: "One fee notice for each instalment as it falls due, as NSW: a StrataVerze choice. CAV guidance allows one notice with several due dates. FOR_REVIEW NOTICE_MODE.",
+      },
+      CAPITAL_WORKS: {
+        value: "PER_INSTALMENT",
+        status: "STRATAVERZE",
+        source: `${OCA} s 31; ${CAV_FORMS}`,
+        note: "One fee notice for each instalment as it falls due, as NSW: a StrataVerze choice. CAV guidance allows one notice with several due dates. FOR_REVIEW NOTICE_MODE.",
+      },
+    },
+    requiredContents: [
+      { key: "PAY_WITHIN_DAYS_STATEMENT", words: "the obligation to pay within 28 days after the date of the notice", status: "CONFIRMED", source: `${OCA} s 31(2)(a)` },
+      { key: "LATE_CHARGE_STATEMENT", words: "the interest rate, if interest is charged", status: "CONFIRMED", source: `${OCA} s 31(2)(b)` },
+      { key: "DISPUTE_PROCESS", words: "the dispute resolution process for disputed fees under the owners corporation's rules", status: "CONFIRMED", source: `${OCA} s 31(2)(c)` },
+    ],
+    form: {
+      required: { value: FEE_NOTICES.feeNotice.approvedFormRequired, status: "CONFIRMED", source: `${OCA} s 31(1)` },
+      title: FEE_NOTICES.approvedForms.forms[0].title,
+      reference: FEE_NOTICES.approvedForms.forms[0].reference,
+      appliedFrom: {
+        value: null,
+        status: "NOT_CONFIRMED",
+        source: FEE_NOTICES.approvedForms.appliedFrom.source,
+        note: "the day the current approved forms applied from is not confirmed (April 2025 in guidance; the 28 April 2025 date was found in no official source).",
+        guidance: FEE_NOTICES.approvedForms.appliedFrom.guidance,
+      },
+      source: `${OCA} ss 31(1), 200; ${CAV_FORMS}`,
+    },
+    source: `${OCA} ss 31, 200; ${CAV_FORMS}`,
+  },
+};
 
 /** Owners in arrears (OCA ss 89B, 89C(10), 103(7)). */
 export const ARREARS = {
@@ -2540,11 +2635,6 @@ export const DATED_RULES = {
 /** Shared shapes this draft does not give yet, and why. */
 export const DEFERRED_SHARED_SHAPES = [
   {
-    shape: "NOTICE_RULES",
-    reason:
-      "The 28-day fee notice rule is held in FEE_NOTICES. The shape also needs a StrataVerze lead time for issuing notices (none chosen yet) and a hardship start date (the approved forms' start date is not confirmed).",
-  },
-  {
     shape: "MEETING_RULES",
     reason:
       "MEETING_RULES is now a shared rule (MeetingRuleSet); a pending pack need not give it, and the ACT draft does not. A Victorian set needs a minutes deadline for ordinary meetings (not found in the notes), Victoria's interim resolutions and ballots mapped to its categories, and StrataVerze choices on wording and pre-meeting voting. Until then Victoria's meeting, resolution and proxy rules are held as data in MEETINGS, RESOLUTIONS and PROXIES.",
@@ -2604,13 +2694,13 @@ export const FOR_REVIEW = [
   },
   {
     key: "APPROVED_FORMS_DATE",
-    point: "The date the current approved fee notice forms applied from (the 28 April 2025 date is not confirmed).",
+    point: "The date the current approved fee notice forms applied from (the 28 April 2025 date is not confirmed). NOTICE_RULES.checked.form.appliedFrom has no value until it is (stage 2, PR 6a).",
     before: "historical notices are checked against the form",
     kind: "LEGAL",
   },
   {
     key: "APPROVED_FORMS_USE",
-    point: "How the platform reproduces the approved fee and final fee notice forms, changing only layout and adding only reference numbers, manager details and web or email details.",
+    point: "How the platform reproduces the approved fee and final fee notice forms, changing only layout and adding only reference numbers, manager details and web or email details. Since stage 2, PR 6a this blocks every fee notice: NOTICE_RULES requires the approved form (s 31(1)) and StrataVerze has no renderer for it, so each Victorian fee notice is refused with that reason.",
     before: "Victorian fee notices are generated",
     kind: "STRATAVERZE",
   },
@@ -2677,7 +2767,7 @@ export const FOR_REVIEW = [
   },
   {
     key: "DEFERRED_SHARED_SHAPES",
-    point: "NOTICE_RULES and MEETING_RULES are deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5.",
+    point: "MEETING_RULES is deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5, and NOTICE_RULES since stage 2, PR 6a.",
     before: "the pack moves to RULE_PACKS",
     kind: "STRATAVERZE",
   },
@@ -2747,12 +2837,55 @@ export const FOR_REVIEW = [
     before: "the s 23A fee is applied to Victorian fees",
     kind: "LEGAL",
   },
+  {
+    key: "NOTICE_RULES",
+    point:
+      "NOTICE_RULES (stage 2, PR 6a). Every Victorian fee notice is refused today, each with its reason: the approved form (s 31(1); APPROVED_FORMS_USE), the obligation to pay within 28 days (s 31(2)(a)), the interest rate (s 31(2)(b): notices cannot state an annual-rate interest yet) and the dispute resolution process (s 31(2)(c)) are not on StrataVerze notices, and the most notice a fee notice may give is not confirmed. The 35-day lead is Matthew Wrigley's decision of 28 Oct 2026 (DECISIONS). Recorded here so it is visible at sign-off.",
+    before: "Victorian fee notices are generated",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "NOTICE_MINIMUM",
+    point: "The 28-day least notice is StrataVerze's reading of s 31(2)(a) (the obligation to pay within 28 days after the date of the notice), recorded as CONFIRMED and kept as the legal rule by Matthew Wrigley's decision of 28 Oct 2026. Confirm the reading.",
+    before: "Victorian fee notices are generated",
+    kind: "LEGAL",
+  },
+  {
+    key: "NOTICE_MAXIMUM",
+    point: "Whether a fee notice may give more than 28 days to pay: the approved form says \"within 28 days of the date of this notice or by the due date specified below\" (guidance only), so NOTICE_RULES records no maximum and refuses every notice until one is checked (a number, or none).",
+    before: "Victorian fee notices are generated",
+    kind: "LEGAL",
+  },
+  {
+    key: "NOTICE_DISPUTE_PROCESS",
+    point: "The fee notice must describe the dispute resolution process under the owners corporation's rules (s 31(2)(c)). That needs each building's own dispute rule, or the model rule where it has made none (OCR Sch 2 rule 7; DISPUTE_MEETING_PERIOD), which StrataVerze does not hold yet.",
+    before: "Victorian fee notices are generated",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "NOTICE_DUE_DATE_MOVE",
+    point: "A fee notice that goes out late falls due 28 days after it is given (StrataVerze's reading of s 31(2)(a)), and each fee notice is given for one instalment (CAV guidance allows one notice with several due dates). Both are StrataVerze choices, not decided. Confirm.",
+    before: "Victorian fee notices are generated",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "NOTICE_TIER_5",
+    point: "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from ss 31 and 32 (ss 7A(1)(a), 8). The exemption is not applied yet: their notices are refused like every other Victorian fee notice.",
+    before: "Victorian fee notices are generated",
+    kind: "LEGAL",
+  },
+  {
+    key: "FINAL_FEE_NOTICE",
+    point: "The final fee notice (s 32) is a later PR (stage 2, PR 9). Its rules stay in FEE_NOTICES.finalNotice.",
+    before: "Victorian fee recovery is offered",
+    kind: "STRATAVERZE",
+  },
 ] as const;
 
 /**
  * StrataVerze choices this draft proposes. Matthew Wrigley has not reviewed
  * the draft, so `decidedBy` and `decidedOn` stay null on each, except the
- * payment order he decided on 28 Oct 2026.
+ * payment order and the notice timing he decided on 28 Oct 2026.
  */
 export const DECISIONS: readonly { decision: string; proposedOn: string; decidedBy: string | null; decidedOn: string | null }[] = [
   { decision: "Support unlimited owners corporations first; limited owners corporations are listed but blocked (OWNERS_CORPORATION_TYPE).", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
@@ -2764,6 +2897,13 @@ export const DECISIONS: readonly { decision: string; proposedOn: string; decided
   { decision: "Show owners \"fees\", \"fee notice\" and \"final notice\", never \"levy\".", proposedOn: "2026-10-27", decidedBy: null, decidedOn: null },
   {
     decision: "Apply a payment to fees first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order in force before s 32I.",
+    proposedOn: "2026-10-28",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
+  {
+    decision:
+      "Notice timing (NOTICE_RULES): each fee notice goes out 35 days before it falls due, a StrataVerze choice, and never with less than 28 days' notice, StrataVerze's reading of s 31(2)(a) kept as the legal rule. Matthew Wrigley's StrataVerze decision of 28 Oct 2026.",
     proposedOn: "2026-10-28",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-28",

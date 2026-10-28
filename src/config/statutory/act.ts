@@ -6,8 +6,9 @@
  *
  * DRAFT, FOR STRATAVERZE TO REVIEW (27 Oct 2026). Not signed off and not
  * applied to any building: `rulePackFor` returns active packs only, and the
- * ACT is not in SUPPORTED_SCHEME_STATES or the database's state check. The one
- * StrataVerze decision so far is the payment order (DECISIONS, 28 Oct 2026).
+ * ACT is not in SUPPORTED_SCHEME_STATES or the database's state check. The
+ * StrataVerze decisions so far are the payment order and the notice timing
+ * (DECISIONS, 28 Oct 2026).
  *
  * Every value comes from the research notes of 27 Oct 2026 prepared for
  * Matthew Wrigley ("ACT unit titles: research notes for the StrataVerze ACT
@@ -44,12 +45,13 @@
  * PENDING_REFORMS entry has `legalStatus: "NOT_LAW"` and `textStatus:
  * "READ_IN_BILL_TEXT"` instead of a `status`.
  *
- * Not included (shapes being changed in another branch): NOTICE_RULES and
- * MEETING_RULES. Their ACT rules are held as plain data in
- * CONTRIBUTION_NOTICES and MEETINGS. LATE_CHARGE is given from INTEREST
- * (stage 2, PR 5). PAYMENT_ALLOCATION_ORDER is a StrataVerze choice Matthew
- * Wrigley made on 28 Oct 2026 (contribution first, as NSW): the notes record
- * no order.
+ * Not included: MEETING_RULES (its ACT rules are held as plain data in
+ * MEETINGS). LATE_CHARGE is given from INTEREST (stage 2, PR 5).
+ * PAYMENT_ALLOCATION_ORDER is a StrataVerze choice Matthew Wrigley made on
+ * 28 Oct 2026 (contribution first, as NSW): the notes record no order.
+ * NOTICE_RULES is given from CONTRIBUTION_NOTICES (stage 2, PR 6a), with
+ * checked values; its lead time and least notice are StrataVerze choices
+ * Matthew Wrigley made on 28 Oct 2026 (DECISIONS).
  */
 
 import type {
@@ -59,6 +61,8 @@ import type {
   EntitlementScheduleDefinition,
   FundDefinition,
   LateChargeRules,
+  NoticeContentRequirement,
+  NoticeRules,
   PackFeatures,
   PaymentAllocationPart,
   RecordedBuildingSelector,
@@ -561,8 +565,8 @@ export const CONTRIBUTIONS = {
 } as const;
 
 /**
- * Contribution notices (ss 79, 90). Held as plain data; the shared
- * NOTICE_RULES shape is being changed in another branch.
+ * Contribution notices (ss 79, 90), as the notes give them. The shared
+ * NOTICE_RULES below is built from them (stage 2, PR 6a).
  */
 export const CONTRIBUTION_NOTICES = {
   /** General fund: no fixed lead time; contributions may be determined "from time to time" (s 78(1)). */
@@ -602,6 +606,95 @@ export const CONTRIBUTION_NOTICES = {
   source: `${UTMA} ss 78(1), 79(2), 90`,
   status: "CONFIRMED" as RuleStatus,
 } as const;
+
+/** Who decided the ACT's notice timing, as DECISIONS records it. */
+const NOTICE_DECISION = "Matthew Wrigley's StrataVerze decision of 28 Oct 2026 (DECISIONS)";
+
+/** What every ACT contribution notice must state that StrataVerze notices do not carry already (ss 79(2), 90(2)). */
+const NOTICE_CONTENTS: readonly NoticeContentRequirement[] = [
+  { key: "EVERY_LOT_CONTRIBUTION", words: "the contribution payable for each other unit", status: "CONFIRMED", source: `${UTMA} ss 79(2)(b), 90(2)(b)` },
+  { key: "FUND_TOTAL", words: "the fund or funds the contribution is for, the split between them and the totals", ledgerFunds: ["ADMINISTRATIVE"], status: "CONFIRMED", source: `${UTMA} s 79(2)(c)` },
+  { key: "FUND_TOTAL", words: "the total sinking fund contribution for the year", ledgerFunds: ["CAPITAL_WORKS"], status: "CONFIRMED", source: `${UTMA} s 90(2)(c)` },
+  { key: "PROPORTION_AND_METHOD", words: "the unit's proportion and how it is worked out", status: "CONFIRMED", source: `${UTMA} ss 79(2)(d), 90(2)(d)` },
+  { key: "INSTALMENT_DATES", words: "the instalment dates, if the contribution may be paid by instalments", status: "CONFIRMED", source: `${UTMA} ss 79(2)(f), 90(2)(f)` },
+  { key: "EARLY_PAYMENT_DISCOUNT", words: "any discount for paying early", status: "CONFIRMED", source: `${UTMA} ss 79(2)(h), 90(2)(h), 93` },
+  { key: "LATE_CHARGE_STATEMENT", words: "the interest payable for late payment", status: "CONFIRMED", source: `${UTMA} ss 79(2)(i), 90(2)(i), 94` },
+];
+
+/**
+ * The contribution notice rules in the shared shape (stage 2, PR 6a,
+ * 28 Oct 2026), from CONTRIBUTION_NOTICES and the notes only.
+ *
+ * The full-payment date must be not later than 28 days after the date of the
+ * notice (ss 79(2)(e), 90(2)(e)): the most notice, CONFIRMED. The ACT sets no
+ * least notice (contributions are determined from time to time, s 78(1)), so
+ * the 14-day floor and the 28-day lead are StrataVerze choices Matthew
+ * Wrigley made on 28 Oct 2026 (DECISIONS). A contribution is payable on the
+ * date the notice states (ss 80, 91), so a late notice may fall due 14 days
+ * after it goes out, within the 28 (a StrataVerze reading, FOR_REVIEW). The general fund is given one notice for
+ * each instalment (a StrataVerze reading, FOR LEGAL REVIEW against
+ * s 79(2)(f)); the sinking fund notice is given once a year, within 1 month
+ * after the AGM (s 90(1)), which StrataVerze cannot give yet, so sinking fund
+ * notices are refused. No notice can be issued yet: StrataVerze notices do
+ * not state the contribution for each other unit, the fund totals, the
+ * proportion and method, the instalment dates, any discount or the interest
+ * (FOR_REVIEW). No hardship statement is required (HARDSHIP), and no approved
+ * form is recorded (Form 1, AF2012-112, was not read: FOR_REVIEW).
+ *
+ * The fields outside `checked` hold the safest values for a reader that knows
+ * only them: the 14-day floor and the 28-day lead, the most the law allows.
+ */
+export const NOTICE_RULES: NoticeRules = {
+  minimumNoticeDays: 14,
+  issueDaysBeforeDue: 28,
+  urgentNoticeDays: null,
+  hardship: null,
+  contents: CONTRIBUTION_NOTICES.generalFundContents,
+  source: CONTRIBUTION_NOTICES.source,
+  checked: {
+    minimumNoticeDays: {
+      value: 14,
+      status: "STRATAVERZE",
+      source: NOTICE_DECISION,
+      note: "The ACT sets no least notice (UTMA s 78(1): contributions are determined from time to time). 14 days is StrataVerze's floor, not a rule of law.",
+    },
+    maximumNoticeDays: {
+      value: CONTRIBUTION_NOTICES.dueNotLaterThanDaysAfterNotice,
+      status: "CONFIRMED",
+      source: `${UTMA} ss 79(2)(e), 90(2)(e)`,
+      note: "The full-payment date must be not later than 28 days after the date of the notice.",
+    },
+    issueDaysBeforeDue: {
+      value: 28,
+      status: "STRATAVERZE",
+      source: NOTICE_DECISION,
+      note: "Each notice goes out 28 days before it falls due, the most notice the law allows.",
+    },
+    dueDateMayMove: {
+      value: true,
+      status: "STRATAVERZE",
+      source: `${UTMA} ss 80, 91`,
+      note: "StrataVerze's reading: the notes say only that a contribution is payable on the date stated in the notice, so a notice that goes out late states a later date, within the 28 days. FOR_REVIEW.",
+    },
+    noticeMode: {
+      ADMINISTRATIVE: {
+        value: "PER_INSTALMENT",
+        status: "STRATAVERZE",
+        source: `${UTMA} ss 78(1), 79(2)(f)`,
+        note: "One notice for each instalment as it falls due is StrataVerze's reading. FOR LEGAL REVIEW: s 79(2)(f) has one notice state the instalment dates, which may mean one notice for the whole contribution.",
+      },
+      CAPITAL_WORKS: {
+        value: { annualWithinMonthsAfterAgm: CONTRIBUTION_NOTICES.sinkingFundNoticeWithinMonthsAfterAgm },
+        status: "CONFIRMED",
+        source: `${UTMA} s 90(1)`,
+        note: "The sinking fund notice is given within 1 month after an AGM, for the financial year in which the meeting is held.",
+      },
+    },
+    requiredContents: NOTICE_CONTENTS,
+    form: null,
+    source: `${UTMA} ss 78(1), 79, 80, 90, 91, 93, 94`,
+  },
+};
 
 /** A discount by ordinary resolution, for paying before the due date, or for paying in full by the full-payment date when instalments are offered (s 93). The notes record no maximum. */
 export const DISCOUNTS = {
@@ -1628,17 +1721,30 @@ export const FOR_REVIEW = [
   "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
   "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). GO-LIVE GAP: the meeting engine's CARRIED does not apply the sch 3 s 3.16 special resolution test yet, so the recorded outcome is relied on until it does. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
   "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
+  "NOTICE_RULES (stage 2, PR 6a): each notice goes out 28 days before it falls due and never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS); the 28 days is the most the law allows (UTMA ss 79(2)(e), 90(2)(e)). A due date more than 28 days after the notice is refused, and a special contribution due further away is planned 28 days before it falls due. Recorded here so the decision is visible at sign-off.",
+  "FOR LEGAL REVIEW: whether a general fund contribution payable by instalments is given one notice for each instalment as it falls due (StrataVerze's reading, NOTICE_RULES.checked.noticeMode) or one notice that states every instalment date (UTMA s 79(2)(f)).",
+  "Sinking fund notices are refused until StrataVerze can give the yearly notice within 1 month after an AGM (UTMA s 90(1)); notices are given one instalment at a time only.",
+  "Every ACT contribution notice is refused until StrataVerze notices state what UTMA ss 79(2) and 90(2) require beyond the usual items: the contribution for each other unit, the fund or funds with the split and totals (the year's sinking fund total), the unit's proportion and how it is worked out, the instalment dates, any discount for early payment and the interest for late payment. A discount needs a record of the s 93 ordinary resolution, which StrataVerze does not hold yet. The interest is refused while it cannot be stated: its accrual values are NOT_CONFIRMED (LATE_CHARGE), and notices cannot state an annual-rate interest yet. The every-unit contents on the PDF and email are a later PR (6b).",
+  "The unit's proportion would be stated as its share by unit entitlement only (UTMA ss 78(2)(a), 89(2)(a)): a method set by special resolution (s 78(2)(b)) is not held yet, so a building with one must not have it stated as unit entitlement. Confirm before the contents are added.",
+  "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
+  "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
 ] as const;
 
 /**
  * StrataVerze's decisions. Matthew Wrigley has not reviewed this draft as a
- * whole; the one decision so far is the payment order (28 Oct 2026). Points
- * for the review are in FOR_REVIEW and marked "FOR REVIEW" and "FOR LEGAL
- * REVIEW" above.
+ * whole; the decisions so far are the payment order and the notice timing
+ * (28 Oct 2026). Points for the review are in FOR_REVIEW and marked "FOR
+ * REVIEW" and "FOR LEGAL REVIEW" above.
  */
 export const DECISIONS: readonly { decision: string; decidedBy: string; decidedOn: string }[] = [
   {
     decision: "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
+  {
+    decision:
+      "Notice timing (NOTICE_RULES): each contribution notice goes out 28 days before it falls due, the most the law allows (UTMA ss 79(2)(e), 90(2)(e)), and is never given less than 14 days' notice. Matthew Wrigley's StrataVerze decision of 28 Oct 2026: the ACT sets no least notice, so the 14 days and the 28-day lead are StrataVerze choices, not rules of law.",
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-28",
   },
