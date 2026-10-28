@@ -5,7 +5,7 @@
  * no shorter urgent notice does not offer it.
  */
 import { describe, expect, it, vi } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type NswRules, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type NswRules, type StatutoryRules } from "@/config/statutory";
 import { validateLevyNoticeContent, type LevyNoticeContentInput } from "@/lib/finance/levy-notice-content";
 import { lateChargeSentence, noticeLateCharge, noticeTimingWords } from "@/lib/jurisdiction/wording";
 import { levyNoticeEmail } from "@/lib/email-templates/levy-notice";
@@ -13,7 +13,7 @@ import { levyNoticeBlocks } from "@/lib/pdf/documents";
 import { issueDateFor, issueTiming, urgentNoticeProblem } from "./issue-timing";
 
 const NSW = statutoryRulesFor("NSW") as NswRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = QLD_RULE_PACK.rules;
 
 /** A building's rules as a Queensland pack gives them: the shared rules only. */
 const qldShaped: StatutoryRules = {

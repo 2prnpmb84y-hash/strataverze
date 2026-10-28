@@ -17,14 +17,14 @@ vi.mock("@/config/statutory", async (importOriginal) => {
   return {
     ...actual,
     rulePackFor: (state: string) =>
-      (state ?? "").trim().toUpperCase() === "QLD" ? actual.PENDING_RULE_PACKS.QLD : actual.rulePackFor(state),
+      (state ?? "").trim().toUpperCase() === "QLD" ? actual.QLD_RULE_PACK : actual.rulePackFor(state),
   };
 });
 
 import { getActiveRuleSet } from "./rule-set-repo";
-import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, QLD_RULE_PACK } from "@/config/statutory";
 
-const QLD = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+const QLD = QLD_RULE_PACK.rules.MEETING_RULES;
 
 /** A row as stored before stage 2, step 7. */
 const olderRow = (state: string, seed: typeof NSW_RULE_SET) => ({

@@ -49,16 +49,16 @@ vi.mock("@/lib/queries/seed-chart-of-accounts", () => ({ seedDefaultChartOfAccou
 // draft does not have yet, to reach the rest of createScheme.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { PENDING_RULE_PACKS, QLD_RULE_PACK } = await import("@/config/statutory");
   const forState = (state: string | null | undefined) => {
     const nsw = actual.rulesForState("NSW").rules;
     if (state === "VIC")
       return {
         pack: null,
-        rules: { ...PENDING_RULE_PACKS.VIC.rules, defaultAccountingBasis: nsw.defaultAccountingBasis, LATE_CHARGE: PENDING_RULE_PACKS.QLD.rules.LATE_CHARGE },
+        rules: { ...PENDING_RULE_PACKS.VIC.rules, defaultAccountingBasis: nsw.defaultAccountingBasis, LATE_CHARGE: QLD_RULE_PACK.rules.LATE_CHARGE },
         label: "AU-VIC test",
       };
-    if (state === "QLD") return { pack: null, rules: { ...PENDING_RULE_PACKS.QLD.rules, defaultAccountingBasis: nsw.defaultAccountingBasis }, label: "AU-QLD test" };
+    if (state === "QLD") return { pack: null, rules: { ...QLD_RULE_PACK.rules, defaultAccountingBasis: nsw.defaultAccountingBasis }, label: "AU-QLD test" };
     return actual.rulesForState(state);
   };
   return {
@@ -76,7 +76,7 @@ const { createLotAction, updateLotAction } = await import("./[id]/lots/actions")
 const { validateLots, importLots } = await import("@/lib/queries/data-migration");
 const { createScheme, newSchemeDataProblem, updateScheme, SchemeDataError } = await import("@/lib/queries/schemes");
 const { contributionInsurance } = await import("@/lib/levies/contribution-insurance");
-const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+const { PENDING_RULE_PACKS, QLD_RULE_PACK } = await import("@/config/statutory");
 type Rules = import("@/config/statutory").StatutoryRules;
 const VIC_RULES = PENDING_RULE_PACKS.VIC.rules as unknown as Rules;
 
@@ -218,7 +218,7 @@ describe("createScheme for a Victorian building", () => {
   it("is checked by newSchemeDataProblem for every pack", () => {
     expect(newSchemeDataProblem(VIC_RULES, {}, lots(60, 40))).toBeNull();
     expect(newSchemeDataProblem(VIC_RULES, {}, lots())).toBeNull();
-    const qld = PENDING_RULE_PACKS.QLD.rules as unknown as Rules;
+    const qld = QLD_RULE_PACK.rules as unknown as Rules;
     expect(newSchemeDataProblem(qld, { regulationModule: "STANDARD", planFormat: "BUILDING" }, lots(60, 40))).toBe(
       "Lot 1 has a second lot entitlement, which this building's rules do not hold.",
     );

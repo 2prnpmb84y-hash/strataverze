@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 import { defaultFunds, fundDefinition, fundLabel, fundTypeLabel, fundNameWords, fundShortLabel, fundTypeWords, ledgerFundDefinition, ledgerFundOf } from "./funds";
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = QLD_RULE_PACK.rules;
 
 const TYPES = ["ADMINISTRATIVE", "ADMIN", "CAPITAL_WORKS", "SINKING", "SPECIAL", "", null, undefined] as const;
 

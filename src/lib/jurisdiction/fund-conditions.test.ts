@@ -5,14 +5,14 @@
  * at its boundaries with the draft packs' own values.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { PENDING_RULE_PACKS, QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 import type { SelectorBuilding } from "./building-selectors";
 import { buildingSelectorProblems } from "./building-selectors";
 import { buildingDataProblems } from "./building-data";
 import { defaultFunds, fundProblems, fundRequirement, fundRequirementsView, hasFundConditions, noLedgerProblem, requiredFunds, type FundNeed } from "./funds";
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as typeof NSW;
+const QLD = QLD_RULE_PACK.rules as unknown as typeof NSW;
 const ACT = PENDING_RULE_PACKS.ACT.rules as unknown as typeof NSW;
 const VIC = PENDING_RULE_PACKS.VIC.rules as unknown as typeof NSW;
 const WA = PENDING_RULE_PACKS.WA.rules as unknown as typeof NSW;

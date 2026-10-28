@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type NswRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type NswRules } from "@/config/statutory";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { extractText, getDocumentProxy } from "unpdf";
 import { levyNoticeBlocks, ownerStatementBlocks, remittanceBlocks, renderLevyNoticePdf, renderOwnerStatementPdf, renderRemittancePdf, renderStatutoryPackPdf } from "./documents";
@@ -165,7 +165,7 @@ describe("wrap", () => {
 });
 
 describe("Queensland wording, from the pack's terms", () => {
-  const QLD = PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY;
+  const QLD = QLD_RULE_PACK.rules.TERMINOLOGY;
   // The interest rule and hardship statement are NSW's here: Queensland's penalty wording is its own step.
   const qldNotice = { ...notice, terms: QLD };
   const words = (blocks: unknown[]) => JSON.stringify(blocks.filter((b) => (b as { kind: string }).kind !== "box"));

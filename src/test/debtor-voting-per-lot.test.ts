@@ -115,16 +115,16 @@ vi.mock("@/config/statutory", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/config/statutory")>();
   return {
     ...actual,
-    rulePackFor: (state: string) => (state === "QLD" ? actual.PENDING_RULE_PACKS.QLD : actual.rulePackFor(state)),
+    rulePackFor: (state: string) => (state === "QLD" ? actual.QLD_RULE_PACK : actual.rulePackFor(state)),
   };
 });
 
-const { MEETING_RULES: NSW_RULE_SET, PENDING_RULE_PACKS } = await import("@/config/statutory");
+const { MEETING_RULES: NSW_RULE_SET, QLD_RULE_PACK } = await import("@/config/statutory");
 const { castBallotVoteAction, castVoteAction } = await import("@/app/(portal)/owner/(scheme)/meetings/actions");
 const { conductVotingData } = await import("@/lib/meetings/conduct-tally-repo");
 const { buildConductTally, countsVotesAtMeeting } = await import("@/lib/meetings/conduct-tally");
 
-const QLD_RULES = PENDING_RULE_PACKS.QLD.rules;
+const QLD_RULES = QLD_RULE_PACK.rules;
 const QLD = QLD_RULES.MEETING_RULES;
 
 const SCHEMES = {

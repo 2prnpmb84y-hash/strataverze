@@ -1827,7 +1827,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
 }
 `;
 
-exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
+exports[`Queensland pack (active) > is the rules recorded for review 1`] = `
 {
   "AUDIT": {
     "financialYearChangeOncePerYears": 5,
@@ -2222,6 +2222,16 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "decidedOn": "2026-10-27",
       "decision": "Support building and volumetric format plans only: record each building's plan format, share insurance (both premiums) by the interest schedule, and refuse to raise contributions that include insurance for a standard format plan until it is supported.",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Start a new Queensland building's funds on the same default accounting basis as NSW: the administrative fund on a cash basis and the sinking fund on an accrual basis. A StrataVerze choice, not a rule of law.",
+    },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Go-live sign-off: the stage 2 FOR_REVIEW points are accepted as built, except that the debtor test for voting is applied per lot (SM s 102(2)), fixed in a separate change, and switch-on is approved.",
+    },
   ],
   "DISPUTES": {
     "appealWithinWeeks": 6,
@@ -2495,6 +2505,10 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
     {
       "point": "The Add Property wizard asks for a new building's plan format and saves it with the building. Any listed format can be chosen, as in the building settings, so a standard format plan is accepted and its contributions that include insurance are refused later.",
       "where": "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts createSchemeAction, src/lib/queries/schemes.ts createScheme",
+    },
+    {
+      "point": "NOT CONFIRMED: whether a committee member's seat ends when they sell their lot in Queensland. The research notes do not say. StrataVerze ends it from the settlement date, as it does for NSW (SSMA 2015 s 35(1)(a)), unless the roll shows them owning another lot, and the change of owner message gives no Queensland provision for it.",
+      "where": "src/lib/actions/change-owner.ts changeOwnerAction, src/lib/owner/change-owner.ts applyChangeOwner",
     },
   ],
   "FUND_CATALOGUE": [
@@ -3029,6 +3043,7 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "perLotDollars": 1100,
     },
   },
+  "defaultAccountingBasis": [Function],
 }
 `;
 

@@ -124,7 +124,7 @@ vi.mock("@/app/(portal)/adviser/schemes/[id]/lots/[lotId]/lot-detail-tabs", () =
 // the debt case words on the adviser's lot page read, so Queensland's are lent.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { PENDING_RULE_PACKS, QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     ...actual,
     rulesForState: (s: string | null | undefined) =>
@@ -133,7 +133,7 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
             pack: null,
             rules: {
               ...PENDING_RULE_PACKS.VIC.rules,
-              NOTICE_RULES: PENDING_RULE_PACKS.QLD.rules.NOTICE_RULES,
+              NOTICE_RULES: QLD_RULE_PACK.rules.NOTICE_RULES,
             },
             label: "AU-VIC test",
           }
