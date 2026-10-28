@@ -3,6 +3,7 @@ import { html, plainSubject, type SafeHtml } from "./html";
 import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
 import { capitalise, lateChargeSentence, type NoticeLateChargeRule } from "@/lib/jurisdiction/wording";
 import type { DocumentTerms } from "@/lib/pdf/documents";
+import { everyLotSections, type EveryLotContent } from "@/lib/levies/every-lot";
 
 
 export interface LevyNoticeEmail {
@@ -27,6 +28,13 @@ export interface LevyNoticeEmail {
   hardship: HardshipInformation | null;
   /** The building's words for its owners corporation, plan, levies and late charges (`rules.TERMINOLOGY`). */
   terms: DocumentTerms;
+  /**
+   * Each unit's contribution for the same schedule and period, the fund and
+   * its totals, and the unit's proportion (the ACT, stage 2 PR 6b), as the
+   * PDF states them: the email is sent without the PDF when the PDF fails, so
+   * it states them too. Absent for every other notice.
+   */
+  everyLot?: EveryLotContent | null;
 }
 
 const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
@@ -40,6 +48,27 @@ const hardshipBox = (h: HardshipInformation) => html`<div style="margin:20px 0 0
         More information, including translations: ${h.moreInformationUrl}
       </p>
     </div>`;
+
+/** The every-lot content, in the same sections and words as the PDF (unit numbers and amounts only). */
+function everyLotHtml(e: EveryLotContent) {
+  const s = everyLotSections(e);
+  const heading = (text: string) => html`<h2 style="margin:16px 0 6px;font-size:15px;color:#1a1a2e;">${text}</h2>`;
+  const cell = "padding:3px 12px 3px 0;font-size:13px;color:#1A202C;";
+  const amount = "padding:3px 0;font-size:13px;color:#1A202C;text-align:right;";
+  const pairs = (rows: [string, string][]) =>
+    html`<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">${rows.map(
+      ([k, v]) => html`<tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#64748B;white-space:nowrap;">${k}</td><td style="padding:4px 0;font-size:14px;color:#1a1a2e;">${v}</td></tr>`,
+    )}</table>`;
+  return html`${heading(s.contributions.title)}
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
+      <tr><td style="${cell}color:#64748B;font-weight:600;">${s.contributions.columns[0]}</td><td style="${amount}color:#64748B;font-weight:600;">${s.contributions.columns[1]}</td></tr>
+      ${s.contributions.rows.map(([lot, cents]) => html`<tr><td style="${cell}">${lot}</td><td style="${amount}">${cents}</td></tr>`)}
+      <tr><td style="${cell}font-weight:600;border-top:1px solid #CBD5E1;">${s.contributions.total[0]}</td><td style="${amount}font-weight:600;border-top:1px solid #CBD5E1;">${s.contributions.total[1]}</td></tr>
+    </table>
+    ${heading(s.funds.title)}
+    ${pairs(s.funds.rows)}
+    ${s.proportion ? html`${heading(s.proportion.title)}${pairs(s.proportion.rows)}` : ""}`;
+}
 
 /** A levy notice with every item the content check requires (see validateLevyNoticeContent). */
 export function levyNoticeEmail(p: LevyNoticeEmail) {
@@ -77,7 +106,7 @@ export function levyNoticeEmail(p: LevyNoticeEmail) {
       You can check your ${t.levy} ledger at any time in the StrataVerze owner portal. For questions contact ${p.contact.name} (${p.contact.emailOrPhone}).
     </p>
     ${emailButton(`View your ${t.levy} ledger`, p.ledgerUrl)}
-    ${p.hardship ? hardshipBox(p.hardship) : ""}
+    ${p.everyLot ? everyLotHtml(p.everyLot) : ""}${p.hardship ? hardshipBox(p.hardship) : ""}
   `;
   return {
     to: p.to,

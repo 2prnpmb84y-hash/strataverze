@@ -188,6 +188,9 @@ export type ActivityAction =
   // A waiver of the late charge on one notice (VIC, ACT and WA stage 2, PR 5). Advisers only: not in any owner feed.
   | "LATE_CHARGE_WAIVER_RECORDED"
   | "LEVY_NOTICES_EMAILED"
+  // Issued notices not emailed because a content the building's rules require (each unit's contribution, the fund
+  // total, the proportion: the ACT, stage 2 PR 6b) can no longer be stated. Advisers only: not in any owner feed.
+  | "LEVY_NOTICES_NOT_EMAILED"
   // The building's regulation module (Queensland, stage 2, step 10). Advisers only: not in any owner feed.
   | "REGULATION_MODULE_CHANGED"
   // The building's plan format (Queensland, insurance in contributions). Advisers only: not in any owner feed.

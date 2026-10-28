@@ -97,6 +97,12 @@ export interface NoticeRuleContext {
   ledgerFund?: NoticeLedgerFund | null;
   /** What the notice states beyond the items every notice carries, by content key. A key not true is not stated. */
   states?: Partial<Record<NoticeContentKey, boolean>>;
+  /**
+   * Why a key StrataVerze can state is not stated for this notice (the data
+   * for it is not there), in words that follow "it cannot be stated for this
+   * notice:". The refusal then names the cause.
+   */
+  notStated?: Partial<Record<NoticeContentKey, string>>;
 }
 
 export interface NoticeRuleProblem {
@@ -175,7 +181,13 @@ export function noticeRuleProblems(rule: Pick<NoticeRules, "checked"> & Partial<
   for (const req of c.requiredContents) {
     if (fund && req.ledgerFunds && !req.ledgerFunds.includes(fund)) continue;
     if (ctx.states?.[req.key] === true) continue;
-    add(`requiredContents.${req.key}`, `The notice must state ${req.words} (${req.source}). StrataVerze notices cannot state it yet, so no notice can be issued.`);
+    const why = ctx.notStated?.[req.key];
+    add(
+      `requiredContents.${req.key}`,
+      why
+        ? `The notice must state ${req.words} (${req.source}), and it cannot be stated for this notice: ${why}. No notice can be issued until it can.`
+        : `The notice must state ${req.words} (${req.source}). StrataVerze notices cannot state it yet, so no notice can be issued.`,
+    );
   }
 
   // The approved form.

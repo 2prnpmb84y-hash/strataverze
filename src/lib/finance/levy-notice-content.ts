@@ -56,6 +56,8 @@ export interface LevyNoticeContentInput {
    * requires it refuses the notice.
    */
   states?: Partial<Record<NoticeContentKey, boolean>>;
+  /** Why a key that can be stated is not stated for this notice (its data is not there), so the refusal names the cause. */
+  notStated?: Partial<Record<NoticeContentKey, string>>;
 }
 
 export interface MissingItem {
@@ -131,6 +133,6 @@ export function validateLevyNoticeContent(
     }
   }
   // A pack's checked notice rules: anything not confirmed, or not yet stated, refuses the notice.
-  for (const p of noticeRuleProblems(rule, { ledgerFund: n.ledgerFund ?? null, states: n.states })) missing.push({ code: p.code, message: p.message });
+  for (const p of noticeRuleProblems(rule, { ledgerFund: n.ledgerFund ?? null, states: n.states, notStated: n.notStated })) missing.push({ code: p.code, message: p.message });
   return missing;
 }

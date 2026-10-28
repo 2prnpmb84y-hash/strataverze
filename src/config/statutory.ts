@@ -420,7 +420,15 @@ export const PENDING_RULE_PACKS = {
     // contribution, the fund totals, the proportion and method, the instalment dates, any discount and the interest).
     // No approved form is recorded (Form 1 not read). FOR_REVIEW gains the points. No legal value or status already
     // recorded changed; still a draft.
-    version: "2026.10.6",
+    // 2026.10.7 (28 Oct 2026): the every-unit contents (stage 2, PR 6b). No rule value changed. Notices now state the
+    // contribution for each unit (unit numbers and amounts only, a unit with no notice shown as nil), the fund with its
+    // totals and the unit's proportion by unit entitlement (ss 79(2)(b) to (d), 90(2)(b) to (d)); they are still
+    // refused for the instalment dates, any discount and the interest, and sinking fund notices for their yearly mode.
+    // FOR_REVIEW's notice contents point is rewritten and gains the instalment dates, the every-unit list (takeover
+    // notices never list), the fund and totals (withheld after a budget revision) and the proportion (only where every
+    // amount is the unit's share by its current unit entitlement) points, and a point that the contents are read and
+    // checked again from the data as it is when a notice is emailed or its PDF downloaded. Still a draft.
+    version: "2026.10.7",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
