@@ -1136,7 +1136,8 @@ const GENERAL_MEETING_QUORUM: QuorumRule = {
  *   resolution category here. The rule is for each lot, so it is applied lot
  *   by lot (28 Oct 2026): a lot that owes is barred and the same owner's lots
  *   that owe nothing still vote, both for an owner's vote online and for the
- *   votes the chair records (src/lib/meetings/debtor-voting.ts debtorBarsLot).
+ *   votes the chair records (src/lib/meetings/debtor-voting.ts debtorBarsLot),
+ *   with debts judged on the meeting's date in both.
  */
 /*
  * GO-LIVE GAP (stage 2, step 7; resolution tallies, 27 Oct 2026).
@@ -1547,7 +1548,7 @@ export const FOR_REVIEW = [
     where: "MEETING_RULES.committeeCategories, committeeCategoryRefusal",
   },
   {
-    point: "For voting, a lot owes the body corporate money when it has an issued contribution notice past its due date and not paid in full, on the building's today.",
+    point: "For voting, a lot owes the body corporate money when it has an issued contribution notice past its due date and not paid in full, on the meeting's date in the building's time zone, for an owner's vote online as for the chair's count.",
     where: "src/lib/meetings/debtor-voting-repo.ts",
   },
   {

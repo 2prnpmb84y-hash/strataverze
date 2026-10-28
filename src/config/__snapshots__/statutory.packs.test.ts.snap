@@ -2325,7 +2325,7 @@ exports[`Queensland pack (pending) > is the rules recorded for review 1`] = `
       "where": "MEETING_RULES.committeeCategories, committeeCategoryRefusal",
     },
     {
-      "point": "For voting, a lot owes the body corporate money when it has an issued contribution notice past its due date and not paid in full, on the building's today.",
+      "point": "For voting, a lot owes the body corporate money when it has an issued contribution notice past its due date and not paid in full, on the meeting's date in the building's time zone, for an owner's vote online as for the chair's count.",
       "where": "src/lib/meetings/debtor-voting-repo.ts",
     },
     {

@@ -143,6 +143,7 @@ vi.mock("@/lib/queries/agenda", () => agenda);
 const evoting = {
   getBallotForMeeting: vi.fn(),
   castElectronicVote: vi.fn(),
+  castOwnerBallotVotes: vi.fn(async (d: { lots: { lotId: string }[] }) => d.lots.map((l) => l.lotId)),
 };
 vi.mock("@/lib/queries/evoting", () => evoting);
 
@@ -178,7 +179,7 @@ vi.mock("@/lib/meetings/rule-set-repo", () => ({ getActiveRuleSet: vi.fn(async (
 // The debtor voting check (stage 2, step 7): NSW records no rule, so it finds no problem by default.
 const debtor = {
   debtorVoteProblem: vi.fn<(...a: unknown[]) => Promise<string | null>>(async () => null),
-  debtorVoteCheck: vi.fn(async (p: { lotIds: readonly string[] }) => ({ mayVote: [...p.lotIds], refusal: null as string | null })),
+  debtorVoteCheck: vi.fn(async (p: { lotIds: readonly string[] }) => ({ checksDebts: false, mayVote: [...p.lotIds], refusal: null as string | null })),
 };
 vi.mock("@/lib/meetings/debtor-voting-repo", () => debtor);
 const events = { recordMeetingEvent: vi.fn() };
@@ -612,22 +613,29 @@ describe("owner castBallotVoteAction (F8)", () => {
   it("checks each of the owner's lots for money owed, and writes nothing when none may vote", async () => {
     terminals.SchemeMembership.all.mockResolvedValue([ownerMembership, { ...ownerMembership, id: "m2", lotId: "lot-a2" }]);
     agenda.getAgendaItem.mockResolvedValue({ id: "item-a", meetingId: MEETING_A.id, resolutionCategory: "ORDINARY" });
-    debtor.debtorVoteCheck.mockResolvedValueOnce({ mayVote: [], refusal: "Your lot has an overdue amount owing." });
+    debtor.debtorVoteCheck.mockResolvedValueOnce({ checksDebts: true, mayVote: [], refusal: "Your lot has an overdue amount owing." });
     const r = await ownerMeetingActions.castBallotVoteAction(MEETING_A.id, "item-a", "FOR");
     expect(r.error).toBe("Your lot has an overdue amount owing.");
-    expect(debtor.debtorVoteCheck).toHaveBeenCalledWith({ schemeId: SCHEME_A, lotIds: [LOT_A.id, "lot-a2"], category: "ORDINARY" });
+    expect(debtor.debtorVoteCheck).toHaveBeenCalledWith(
+      expect.objectContaining({ schemeId: SCHEME_A, lotIds: [LOT_A.id, "lot-a2"], category: "ORDINARY" }),
+    );
+    expect(evoting.castOwnerBallotVotes).not.toHaveBeenCalled();
     expect(evoting.castElectronicVote).not.toHaveBeenCalled();
   });
 
-  it("records the vote for the owner's lot that may vote, not one that owes", async () => {
+  it("where the pack judges debts, records the vote for each of the owner's lots that may vote, not one that owes", async () => {
     const LOT_A2 = { ...LOT_A, id: "lot-a2", lotNumber: "2" };
     terminals.SchemeMembership.all.mockResolvedValue([ownerMembership, { ...ownerMembership, id: "m2", lotId: LOT_A2.id }]);
-    terminals.Lot.first.mockResolvedValue(LOT_A2);
+    model("Lot");
+    terminals.Lot.all.mockResolvedValue([LOT_A2, LOT_A]);
     agenda.getAgendaItem.mockResolvedValue({ id: "item-a", meetingId: MEETING_A.id, resolutionCategory: "ORDINARY" });
-    debtor.debtorVoteCheck.mockResolvedValueOnce({ mayVote: [LOT_A2.id], refusal: null });
+    debtor.debtorVoteCheck.mockResolvedValueOnce({ checksDebts: true, mayVote: [LOT_A2.id], refusal: null });
     const r = await ownerMeetingActions.castBallotVoteAction(MEETING_A.id, "item-a", "FOR");
     expect(r.error).toBeUndefined();
-    expect(evoting.castElectronicVote).toHaveBeenCalledWith(expect.objectContaining({ lotId: LOT_A2.id }));
+    expect(evoting.castOwnerBallotVotes).toHaveBeenCalledWith(
+      expect.objectContaining({ lots: [{ lotId: LOT_A2.id, unitEntitlement: 10 }], withdrawLotIds: [LOT_A.id], profileId: caller.id }),
+    );
+    expect(evoting.castElectronicVote).not.toHaveBeenCalled();
   });
 
   it("records the vote against the owner's lot", async () => {

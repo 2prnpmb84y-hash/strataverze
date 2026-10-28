@@ -164,6 +164,7 @@ describe("debtorVoteCheck (reads the building, lot by lot)", () => {
     schemeFirst.mockResolvedValue({ id: "s", state: "QLD", timeZone: "Australia/Brisbane" });
     noticesAll.mockResolvedValue([overdue, paid]);
     expect(await debtorVoteCheck({ schemeId: "s", lotIds: ["lot-1", "lot-2"], category: "ORDINARY" })).toEqual({
+      checksDebts: true,
       mayVote: ["lot-2"],
       refusal: null,
     });
@@ -172,6 +173,7 @@ describe("debtorVoteCheck (reads the building, lot by lot)", () => {
   it("refuses only when every lot asked about owes", async () => {
     schemeFirst.mockResolvedValue({ id: "s", state: "QLD", timeZone: "Australia/Brisbane" });
     noticesAll.mockResolvedValue([overdue, { ...overdue, lotId: "lot-2" }]);
+    expect(await debtorVoteCheck({ schemeId: "s", lotIds: [], category: "SPECIAL" })).toEqual({ checksDebts: false, mayVote: [], refusal: null });
     const r = await debtorVoteCheck({ schemeId: "s", lotIds: ["lot-1", "lot-2"], category: "SPECIAL" });
     expect(r.mayVote).toEqual([]);
     expect(r.refusal).toContain("cannot vote on this motion");
@@ -180,9 +182,21 @@ describe("debtorVoteCheck (reads the building, lot by lot)", () => {
   it("lets every lot vote, in the order given, for an NSW building and reads no notices", async () => {
     schemeFirst.mockResolvedValue({ id: "s", state: "NSW", timeZone: "Australia/Sydney" });
     expect(await debtorVoteCheck({ schemeId: "s", lotIds: ["lot-2", "lot-1", "lot-2"], category: "ORDINARY" })).toEqual({
+      checksDebts: false,
       mayVote: ["lot-2", "lot-1"],
       refusal: null,
     });
     expect(noticesAll).not.toHaveBeenCalled();
+  });
+
+  it("judges debts on the meeting's date in the building's time zone when given one", async () => {
+    schemeFirst.mockResolvedValue({ id: "s", state: "QLD", timeZone: "Australia/Brisbane" });
+    // Due on 1 Dec 2099, unpaid: not owing today, owing on a meeting on 2 Dec 2099 (Brisbane).
+    const later = { lotId: "lot-1", status: "ISSUED", dueDate: "2099-12-01", balanceOutstanding: "50.00" };
+    noticesAll.mockResolvedValue([later]);
+    expect((await debtorVoteCheck({ schemeId: "s", lotIds: ["lot-1"], category: "ORDINARY" })).mayVote).toEqual(["lot-1"]);
+    const atMeeting = await debtorVoteCheck({ schemeId: "s", lotIds: ["lot-1"], category: "ORDINARY", meetingAt: "2099-12-01T15:00:00Z" });
+    expect(atMeeting.mayVote).toEqual([]);
+    expect(atMeeting.refusal).toContain("cannot vote on this motion");
   });
 });

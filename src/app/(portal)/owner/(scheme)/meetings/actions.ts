@@ -7,7 +7,7 @@ import { requireSchemeAccess } from "@/lib/auth/require-access";
 import { castVote, getMotionById, VOTE_VALUES } from "@/lib/queries/motions";
 import { getMeetingById } from "@/lib/queries/meetings";
 import { getAgendaItem } from "@/lib/queries/agenda";
-import { getBallotForMeeting, castElectronicVote } from "@/lib/queries/evoting";
+import { getBallotForMeeting, castElectronicVote, castOwnerBallotVotes } from "@/lib/queries/evoting";
 import { isBallotOpen, isInformalVote } from "@/lib/meetings/evoting";
 import { isOpenForVoting } from "@/lib/meetings/lifecycle";
 import { debtorVoteCheck, debtorVoteProblem } from "@/lib/meetings/debtor-voting-repo";
@@ -111,12 +111,14 @@ export async function castVoteAction(motionId: string, voteValue: string) {
 
     // Where the building's pack limits what a lot owing money may vote on
     // (Queensland), refused before anything is written. Judged lot by lot on
-    // the lots this vote is for: it stands for those that owe nothing, and is
-    // refused only when every one of them owes. NSW records no such rule.
+    // the lots this vote is for, on the meeting's date: it stands for those
+    // that owe nothing, and is refused only when every one of them owes. NSW
+    // records no such rule.
     const debtorProblem = await debtorVoteProblem({
       schemeId: motion.schemeId,
       lotIds: votesFor,
       category: motion.motionType,
+      meetingAt: String(meeting.startTime ?? meeting.scheduledAt),
     });
     if (debtorProblem) return { error: debtorProblem };
 
@@ -182,18 +184,47 @@ export async function castBallotVoteAction(
     );
     if (!open) return { error: "The ballot is not currently open." };
 
-    // The vote is recorded for one of the owner's lots. Where the pack limits
-    // what a lot owing money may vote on (Queensland), each lot is judged on
-    // its own, as the chair's count does: the vote goes to the first lot that
-    // may vote, and is refused before anything is written only when every one
-    // of the owner's lots owes. Under NSW, which records no such rule, that is
-    // the owner's first lot, as before.
+    // Where the pack limits what a lot owing money may vote on (Queensland),
+    // each of the owner's lots is judged on its own, on the meeting's date, as
+    // the chair's count does. Refused before anything is written only when
+    // every one of the owner's lots owes.
     const check = await debtorVoteCheck({
       schemeId: meeting.schemeId,
       lotIds: memberships.map((m) => m.lotId as string),
       category: item.resolutionCategory,
+      meetingAt: String(meeting.startTime ?? meeting.scheduledAt),
     });
     if (check.refusal) return { error: check.refusal };
+
+    if (check.checksDebts) {
+      // The vote is recorded for each of the owner's lots that may vote, in lot
+      // order, and replaces the owner's earlier votes on the item, so a changed
+      // vote cannot leave an old one on another lot. A vote another owner of a
+      // shared lot cast is kept.
+      const ownLots = await db.orm.public.Lot
+        .where((l) => and(l.id.in(memberships.map((m) => m.lotId as string)), l.schemeId.eq(meeting.schemeId)))
+        .all();
+      const mayVote = new Set(check.mayVote);
+      const sorted = [...ownLots].sort((a, b) =>
+        String(a.lotNumber).localeCompare(String(b.lotNumber), undefined, { numeric: true }),
+      );
+      const voting = sorted.filter((l) => mayVote.has(l.id));
+      if (voting.length === 0) return { error: "You are not recorded as an owner of a lot in this scheme." };
+      const recorded = await castOwnerBallotVotes({
+        ballotId: ballot.id,
+        agendaItemId,
+        profileId: profile.id,
+        voteValue,
+        isInformal: isInformalVote(voteValue),
+        lots: voting.map((l) => ({ lotId: l.id, unitEntitlement: l.entitlement ?? 0 })),
+        withdrawLotIds: sorted.filter((l) => !mayVote.has(l.id)).map((l) => l.id),
+      });
+      if (recorded.length === 0) return { error: "A vote has already been cast for your lot." };
+      revalidatePath("/owner/meetings");
+      return {};
+    }
+
+    // No such rule (NSW): the vote is recorded for the owner's first lot, as before.
     const lotId = check.mayVote[0];
     if (!lotId) return { error: "You are not recorded as an owner of a lot in this scheme." };
     const lot = await db.orm.public.Lot
