@@ -15,7 +15,8 @@
  * - One vote per lot. A proxy's vote is the lot's vote, except on a category
  *   the pack bars proxies on (Queensland: a majority resolution).
  * - A lot owing money is not counted on a category outside the pack's
- *   `debtorsMayVoteOn` (Queensland SM s 102(2)). An item with no category
+ *   `debtorsMayVoteOn` (Queensland SM s 102(2)), judged lot by lot: the same
+ *   owner's lots that owe nothing are counted. An item with no category
  *   (a committee election) is not a resolution and counts it.
  * - The totals come from every lot of the building: the number of lots
  *   (Act s 106(3)(b)), the entitlement the pack says decides the special
@@ -35,7 +36,7 @@ import {
   type EntitlementUse,
   type LotEntitlements,
 } from "@/lib/jurisdiction/building-data";
-import { debtorVoteRefusal } from "./debtor-voting";
+import { debtorBarsLot } from "./debtor-voting";
 import { isResolutionCategory, type MeetingRuleSet, type ResolutionCategory, type ResolutionTally } from "./rules";
 import type { Outcome, OutcomeResult } from "./conduct";
 
@@ -169,8 +170,9 @@ export function buildConductTally(params: {
   }
 
   const lotsById = new Map(params.lots.map((l) => [l.id, l]));
-  // Whether a lot owing money is left out of the count for this item.
-  const debtorBarred = (lotId: string) => params.owingLotIds.has(lotId) && debtorVoteRefusal(ruleSet, category, true, "") != null;
+  // Whether a lot owing money is left out of the count for this item, lot by
+  // lot, as for an owner's own vote online (debtorVoteCheck).
+  const debtorBarred = (lotId: string) => debtorBarsLot(ruleSet, category, lotId, params.owingLotIds);
 
   const seen = new Map<string, "ONLINE" | "CHAIR">();
   const counted: CountedVote[] = [];

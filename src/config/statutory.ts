@@ -341,7 +341,14 @@ export const PENDING_RULE_PACKS = {
     // the plural where a page lists several buildings; wording only), and FOR_REVIEW gains that word and how buildings
     // in both states are named together. The finance screens, reports, PDFs and messages take the pack's words. The
     // legal values are unchanged, so the status stays REVIEWED. The GO-LIVE GAP note on the wording says what remains.
-    version: "2026.10.17",
+    // 2026.10.18 (28 Oct 2026): debtor voting lot by lot. SM s 102(2) bars each lot that owes money, so an owner of
+    // several lots is no longer refused only when every lot owes: a lot that owes is barred and the same owner's lots
+    // that owe nothing still vote, online and in the chair's count. An owner's vote online is judged on the meeting's
+    // date, as the chair's count is, so the FOR_REVIEW point on what counts as owing now names that day (what counts is
+    // unchanged: contribution notices only, still FOR_REVIEW). The FOR_REVIEW point on several lots records the lot by
+    // lot rule and keeps for review only how the motions list (one vote per owner, not per lot) applies it. No legal
+    // value changed, so the status stays REVIEWED.
+    version: "2026.10.18",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",
