@@ -8,6 +8,7 @@ import { ONBOARDING_SOURCE, getCutoverView, listCutovers, SOURCE_SYSTEMS, source
 import { CUTOVER_DATA_TYPES, cutoverLabels } from "@/lib/finance/migration-cutover";
 import { fieldsFor } from "@/lib/finance/migration-templates";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { PageHeader } from "@/components/ui/page-header";
 import { CutoverClient, type CutoverClientView } from "./cutover-client";
@@ -108,6 +109,7 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
         labels={cutoverLabels(rules.TERMINOLOGY)}
         fields={Object.fromEntries(CUTOVER_DATA_TYPES.map((t) => [t, fieldsFor(t, rules.TERMINOLOGY)]))}
         words={w}
+        timeZone={timeZoneOf(scheme)}
         funds={Object.fromEntries((await db.orm.public.Fund.where((f) => f.schemeId.eq(id)).limit(50).all()).map((f) => [f.id, String(f.name)]))}
       />
     </div>

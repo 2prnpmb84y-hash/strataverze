@@ -61,19 +61,23 @@ const ENTITY_TYPES: string[] = [
   "WorkOrder",
 ];
 
-function formatDate(value: string): string {
+/** The day an entry was recorded, in the building's time zone ("01 Oct 2026"). */
+function formatDate(value: string, timeZone: string): string {
   return new Date(value).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone,
   });
 }
 
-function formatTime(value: string): string {
+/** The time an entry was recorded, in the building's time zone ("10:00 am"). */
+function formatTime(value: string, timeZone: string): string {
   return new Date(value).toLocaleTimeString("en-AU", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone,
   });
 }
 
@@ -87,6 +91,7 @@ export function AuditTrailClient({
   basePath,
   readOnly,
   words,
+  timeZone,
 }: {
   schemeId: string;
   rows: AuditTrailRow[];
@@ -98,6 +103,8 @@ export function AuditTrailClient({
   words: Pick<PackWords, "Levy" | "Levies" | "LateCharge"> & { capitalWorks?: string };
   basePath?: string;
   readOnly?: boolean;
+  /** The building's time zone (schemes.time_zone), for the time of each entry. */
+  timeZone: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -262,8 +269,8 @@ export function AuditTrailClient({
                 className="grid grid-cols-1 lg:grid-cols-[140px_1fr_140px_120px_1fr] gap-2 lg:gap-4 px-6 py-3 items-start"
               >
                 <div className="text-sm text-ink-muted">
-                  <div>{formatDate(row.createdAt)}</div>
-                  <div className="text-xs">{formatTime(row.createdAt)}</div>
+                  <div>{formatDate(row.createdAt, timeZone)}</div>
+                  <div className="text-xs">{formatTime(row.createdAt, timeZone)}</div>
                 </div>
                 <div className="text-sm text-ink font-medium">
                   {formatActionLabel(row.action, words)}

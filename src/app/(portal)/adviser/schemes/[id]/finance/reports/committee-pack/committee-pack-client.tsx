@@ -116,7 +116,8 @@ function fundTypeLabel(catalogue: FundCatalogue, fundType: string): string {
   }
 }
 
-function formatDate(value: string): string {
+/** A calendar day (YYYY-MM-DD, such as a bank account's last reconciled date), as it is stored: not moved to a time zone. */
+function formatDay(value: string): string {
   return new Date(value).toLocaleDateString("en-AU", {
     day: "2-digit",
     month: "short",
@@ -124,11 +125,23 @@ function formatDate(value: string): string {
   });
 }
 
-function formatTime(value: string): string {
+/** The day an instant (a timestamp) falls on in the building's time zone ("01 Oct 2026"). */
+function formatDate(value: string, timeZone: string): string {
+  return new Date(value).toLocaleDateString("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone,
+  });
+}
+
+/** The time of an instant in the building's time zone ("10:00 am"). */
+function formatTime(value: string, timeZone: string): string {
   return new Date(value).toLocaleTimeString("en-AU", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
+    timeZone,
   });
 }
 
@@ -150,6 +163,7 @@ export function CommitteePackClient({
   catalogue,
   words: w,
   basePath,
+  timeZone,
 }: {
   schemeId: string;
   financialYear: number;
@@ -162,6 +176,8 @@ export function CommitteePackClient({
   /** The building's words (auditLabelWords). */
   words: PackWords & { capitalWorks?: string };
   basePath?: string;
+  /** The building's time zone (schemes.time_zone), for the activity times and when the report was generated. */
+  timeZone: string;
 }) {
   const router = useRouter();
   const resolvedBasePath = basePath ?? `/adviser/schemes/${schemeId}/finance/reports/committee-pack`;
@@ -554,7 +570,7 @@ export function CommitteePackClient({
                           </span>
                           <span className="text-ink">
                             {bank.lastReconciledDate
-                              ? formatDate(bank.lastReconciledDate)
+                              ? formatDay(bank.lastReconciledDate)
                               : "Not yet reconciled"}
                           </span>
                         </div>
@@ -596,10 +612,10 @@ export function CommitteePackClient({
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs text-ink-muted">
-                        {formatDate(activity.createdAt)}
+                        {formatDate(activity.createdAt, timeZone)}
                       </p>
                       <p className="text-xs text-ink-muted">
-                        {formatTime(activity.createdAt)}
+                        {formatTime(activity.createdAt, timeZone)}
                       </p>
                     </div>
                   </div>
@@ -610,8 +626,8 @@ export function CommitteePackClient({
 
           {/* ── Report metadata ─────────────────────────────── */}
           <p className="text-xs text-ink-muted text-center">
-            Report generated {formatDate(pack.reportDate)} at{" "}
-            {formatTime(pack.reportDate)} for {pack.schemeName}
+            Report generated {formatDate(pack.reportDate, timeZone)} at{" "}
+            {formatTime(pack.reportDate, timeZone)} for {pack.schemeName}
           </p>
         </>
       )}

@@ -9,6 +9,7 @@ import { StatusChip } from "@/components/ui/status-chip";
 import { FeeDisclosure, useFeeConfirmation } from "@/components/billing/fee-disclosure";
 import type { FeeView } from "@/lib/billing/disclosure";
 import { recoveryFeeVariant } from "@/lib/billing/hook-codes";
+import { formatDateIn, formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 
 type ChipStatus = "default" | "success" | "warning" | "danger";
 import {
@@ -119,7 +120,8 @@ function currency(value: number): string {
   }).format(value);
 }
 
-function fmtDate(date: string): string {
+/** A calendar day (YYYY-MM-DD, such as an instalment's due date), as it is stored: not moved to a time zone. */
+function fmtDay(date: string): string {
   return new Date(date).toLocaleDateString("en-AU", {
     day: "numeric",
     month: "short",
@@ -127,14 +129,14 @@ function fmtDate(date: string): string {
   });
 }
 
-function fmtDateTime(date: string): string {
-  return new Date(date).toLocaleString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+/** The day an instant (a timestamp) falls on in the building's time zone. */
+function fmtDate(date: string, timeZone: string): string {
+  return formatDateIn(timeZone, date);
+}
+
+/** An instant's date and time in the building's time zone. */
+function fmtDateTime(date: string, timeZone: string): string {
+  return formatDateTimeIn(timeZone, date, { hour: "2-digit" });
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -156,7 +158,10 @@ export function CaseDetailClient({
   lateChargeLabel,
   paymentPlans,
   paymentPlanLabel,
+  timeZone,
 }: {
+  /** The building's time zone (schemes.time_zone), for the dates and times of the case's events. */
+  timeZone: string;
   /** The PAYMENT_PLAN status, as the building's pack has it ("Payment Plan", "Payment Arrangement"; caseWordsFor). */
   paymentPlanLabel: string;
   /** The building's late charge heading: "Interest" (NSW), "Penalty" (Queensland). */
@@ -360,6 +365,7 @@ export function CaseDetailClient({
               guidance={stepGuidance[activeStep.stepType]}
               stepLabels={stepLabels}
               fee={recoveryFees[recoveryFeeVariant(activeStep.stepType) ?? ""] ?? null}
+              timeZone={timeZone}
             />
           )}
 
@@ -441,7 +447,7 @@ export function CaseDetailClient({
                 <div className="flex justify-between">
                   <span className="text-gray-500">Opened</span>
                   <span className="text-gray-900">
-                    {fmtDate(debtCase.createdAt)}
+                    {fmtDate(debtCase.createdAt, timeZone)}
                   </span>
                 </div>
                 {debtCase.solicitorName && (
@@ -614,7 +620,7 @@ export function CaseDetailClient({
           )}
 
           {sidePanel === "documents" && (
-            <DocumentsPanel documents={documents} />
+            <DocumentsPanel documents={documents} timeZone={timeZone} />
           )}
 
           {sidePanel === "activity" && (
@@ -622,6 +628,7 @@ export function CaseDetailClient({
               schemeId={schemeId}
               caseId={debtCase.id}
               activities={activities}
+              timeZone={timeZone}
               isPending={isPending}
               startTransition={startTransition}
               setError={setError}
@@ -668,7 +675,10 @@ function WizardStepContent({
   fee = null,
   guidance,
   stepLabels,
+  timeZone,
 }: {
+  /** The building's time zone, for when the step was completed and its notice sent. */
+  timeZone: string;
   /** The building's guidance for this step. */
   guidance?: string;
   /** The building's name for each recovery step type. */
@@ -839,7 +849,7 @@ function WizardStepContent({
         {isCompleted && (
           <div className="mb-4 rounded-lg border border-emerald-100 bg-emerald-50/50 p-4 space-y-2">
             <p className="text-xs font-medium text-emerald-700">
-              Completed {step.completedAt ? fmtDate(step.completedAt) : ""}
+              Completed {step.completedAt ? fmtDate(step.completedAt, timeZone) : ""}
             </p>
             {step.outcome && (
               <div>
@@ -863,7 +873,7 @@ function WizardStepContent({
               <p className="text-xs text-emerald-600">
                 Notice sent via{" "}
                 {step.noticeMethod.replace(/_/g, " ").toLowerCase()}
-                {step.noticeSentAt ? ` on ${fmtDate(step.noticeSentAt)}` : ""}
+                {step.noticeSentAt ? ` on ${fmtDate(step.noticeSentAt, timeZone)}` : ""}
               </p>
             )}
           </div>
@@ -1002,7 +1012,7 @@ function PaymentPlanPanel({
             <div key={inst.id} className="flex items-center justify-between py-2">
               <div>
                 <p className="text-xs font-medium text-gray-900">#{inst.instalmentNumber}</p>
-                <p className="text-[10px] text-gray-500">{fmtDate(inst.dueDate)}</p>
+                <p className="text-[10px] text-gray-500">{fmtDay(inst.dueDate)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-xs font-semibold tabular-nums">{currency(inst.amount)}</p>
@@ -1019,7 +1029,7 @@ function PaymentPlanPanel({
 
 // ─── Documents Panel ────────────────────────────────────────────
 
-function DocumentsPanel({ documents }: { documents: Document[] }) {
+function DocumentsPanel({ documents, timeZone }: { documents: Document[]; timeZone: string }) {
   if (documents.length === 0) {
     return (
       <Card>
@@ -1038,7 +1048,7 @@ function DocumentsPanel({ documents }: { documents: Document[] }) {
           <div key={doc.id} className="px-4 py-2.5">
             <p className="text-sm font-medium text-gray-900">{doc.title}</p>
             <p className="text-[10px] text-gray-500">
-              {doc.documentType.replace(/_/g, " ")} — {fmtDate(doc.createdAt)}
+              {doc.documentType.replace(/_/g, " ")} — {fmtDate(doc.createdAt, timeZone)}
             </p>
             <div className="mt-1">
               {doc.isDraft ? (
@@ -1060,6 +1070,7 @@ function ActivityPanel({
   schemeId,
   caseId,
   activities,
+  timeZone,
   isPending,
   startTransition,
   setError,
@@ -1070,6 +1081,7 @@ function ActivityPanel({
   schemeId: string;
   caseId: string;
   activities: Activity[];
+  timeZone: string;
   isPending: boolean;
   startTransition: React.TransitionStartFunction;
   setError: (v: string | null) => void;
@@ -1152,7 +1164,7 @@ function ActivityPanel({
                     {activity.description}
                   </p>
                   <p className="text-[10px] text-gray-400">
-                    {fmtDateTime(activity.createdAt)}
+                    {fmtDateTime(activity.createdAt, timeZone)}
                   </p>
                 </div>
               </div>

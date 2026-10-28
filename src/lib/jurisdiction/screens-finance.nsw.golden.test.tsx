@@ -299,6 +299,7 @@ describe("NSW cutover and data migration (golden)", () => {
         fields={{}}
         funds={{ f1: "Administrative Fund" }}
         words={W} /* words */
+        timeZone="Australia/Sydney"
       />,
     );
     expect(html).toMatchSnapshot();
@@ -312,6 +313,7 @@ describe("NSW cutover and data migration (golden)", () => {
         fields={{}}
         funds={{}}
         words={W} /* words */
+        timeZone="Australia/Sydney"
       />,
     );
     expect(done).toMatchSnapshot("executed");
