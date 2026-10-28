@@ -8,7 +8,7 @@
  * engine PRs are tested with fixtures, not pack values), marked "fixture".
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { PENDING_RULE_PACKS, RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
 import {
   allocatePayment,
   annualLateChargeMissing,
@@ -28,7 +28,7 @@ const ACT = PENDING_RULE_PACKS.ACT.rules;
 const WA = PENDING_RULE_PACKS.WA.rules;
 const VIC = PENDING_RULE_PACKS.VIC.rules;
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = RULE_PACKS.QLD.rules;
 
 /** A fixture: the pack's rule with the given accrual and range values filled in, as a later pack version would record them. */
 function fixture(

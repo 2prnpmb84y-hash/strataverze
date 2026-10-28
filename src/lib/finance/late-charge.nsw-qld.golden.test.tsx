@@ -109,9 +109,9 @@ vi.mock("@/lib/queries/seed-chart-of-accounts", async (importOriginal) => {
 // A Queensland building: the pack is not yet active, so the test gives it to a building directly.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { RULE_PACKS } = await import("@/config/statutory");
   const forState = (state: string | null | undefined) =>
-    state === "QLD-SHAPED" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state);
+    state === "QLD-SHAPED" ? { pack: null, rules: RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state);
   return {
     ...actual,
     rulesForState: forState,
@@ -131,10 +131,10 @@ const { receiptLevyPayment } = await import("./levy-receipts");
 const { lotArrears } = await import("@/lib/debt-recovery/payment-plan-requests");
 const { saveInterestSettingAction } = await import("@/app/(portal)/adviser/schemes/[id]/finance/actions");
 const InterestPage = (await import("@/app/(portal)/adviser/schemes/[id]/finance/interest/page")).default;
-const { statutoryRulesFor, PENDING_RULE_PACKS, STATUTORY_INTEREST } = await import("@/config/statutory");
+const { statutoryRulesFor, RULE_PACKS, STATUTORY_INTEREST } = await import("@/config/statutory");
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = RULE_PACKS.QLD.rules;
 
 // ─── 1. The engine over a grid ────────────────────────────────────────────
 
