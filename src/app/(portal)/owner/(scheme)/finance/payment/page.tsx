@@ -7,8 +7,9 @@ import { scopeToSelectedScheme } from "@/lib/owner/scheme-scope";
 import { noticeLabel } from "@/lib/levies/levy-ledger";
 import { PageHeader } from "@/components/ui/page-header";
 import { PaymentUploadForm } from "./payment-upload-form";
+import { paymentFormWords } from "./payment-words";
 import { connection } from "next/server";
-import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { rulesForListedStates, rulesForState, rulesForWords } from "@/lib/jurisdiction/scheme-rules";
 import { sharedPackWords } from "@/lib/jurisdiction/screen-words";
 import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
@@ -39,8 +40,10 @@ export default async function PaymentUploadPage() {
   const lotIds = lotEntries.map((e) => e.lotId);
   const notices = await getLevyNoticesForLots(lotIds);
   // Each building's words, from its rule pack, and the words the page uses for them all.
-  const rulesBy = new Map(schemes.map((s) => [s.id, rulesForState(s.state).rules]));
-  const w = sharedPackWords([...rulesBy.values()], rulesForState(DEFAULT_SCHEME_STATE).rules);
+  // A building with no live pack is shown in the default state's words and never fails the page.
+  const rulesBy = new Map(schemes.map((s) => [s.id, rulesForWords(s.state)]));
+  const listed = rulesForListedStates(schemes.map((s) => s.state));
+  const w = sharedPackWords(listed, rulesForState(DEFAULT_SCHEME_STATE).rules);
 
   const outstandingNotices = notices
     .filter(
@@ -71,7 +74,7 @@ export default async function PaymentUploadPage() {
       <PaymentUploadForm
         defaultSchemeId={defaultSchemeId}
         outstandingNotices={outstandingNotices}
-        words={w}
+        words={paymentFormWords(w, listed.map((r) => r.TERMINOLOGY.levy))}
       />
     </div>
   );

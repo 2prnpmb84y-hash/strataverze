@@ -7,7 +7,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { uploadPaymentConfirmationAction } from "../actions";
-import type { PackWords } from "@/lib/jurisdiction/screen-words";
+import type { PaymentFormWords } from "./payment-words";
 
 interface Notice {
   id: string;
@@ -31,8 +31,8 @@ export function PaymentUploadForm({
 }: {
   defaultSchemeId: string;
   outstandingNotices: Notice[];
-  /** The words of the owner's buildings (sharedPackWords). */
-  words: Pick<PackWords, "levy" | "Levy">;
+  /** The notice field's label and prompt, and the reference example, in the words of the owner's buildings (paymentFormWords). */
+  words: PaymentFormWords;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -175,10 +175,10 @@ export function PaymentUploadForm({
 
         {outstandingNotices.length > 0 && (
           <SelectField
-            label={`${w.Levy} Notice (optional)`}
+            label={w.noticeField}
             name="levyNoticeId"
             options={[
-              { value: "", label: `Select a ${w.levy} notice...` },
+              { value: "", label: w.noticePrompt },
               ...outstandingNotices.map((n) => ({
                 value: n.id,
                 label: `${n.schemeName} - ${n.label}`,
@@ -234,7 +234,7 @@ export function PaymentUploadForm({
         <FormField
           label="Reference / Description"
           name="payeeReference"
-          placeholder={`e.g. ${w.Levy} Q1 2026 Lot 5`}
+          placeholder={w.referenceExample}
           helpText="Bank reference used for the transfer."
         />
 

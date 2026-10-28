@@ -1,4 +1,5 @@
 import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
+import type { StatutoryRules } from "@/config/statutory";
 import { logError } from "@/lib/log";
 /**
  * Gather what each levy notice will state, check it against the content
@@ -89,10 +90,7 @@ export async function checkPlannedNotices(input: {
       lateChargeApplies: lateChargeApplies(rules.LATE_CHARGE, setting),
       includesHardshipStatement: rule.hardship != null,
       includesLedgerAccess: true,
-    }, rule, rules.TERMINOLOGY, {
-      admin: ledgerFundDefinition(rules, "ADMINISTRATIVE").name.replace(/ fund$/, ""),
-      capitalWorks: ledgerFundDefinition(rules, "CAPITAL_WORKS").name.replace(/ fund$/, ""),
-    });
+    }, rule, rules.TERMINOLOGY, noticeFundWords(rules));
     for (const item of items) {
       const key = item.code;
       if (item.code === "OWNER") {
@@ -199,4 +197,18 @@ export async function sendIssuedNotices(input: {
     logError("[levy-notices] Failed to send notices:", err);
   }
   return sent;
+}
+
+/**
+ * The two funds as the notice check names them: "administrative" and
+ * "capital works" where the words read as funds on their own, else the full
+ * names ("administrative fund", "sinking fund"). A pack whose short label
+ * keeps "Fund" ("Sinking Fund") says its word does not read as a fund alone.
+ */
+export function noticeFundWords(rules: Pick<StatutoryRules, "FUND_CATALOGUE">): { admin: string; capitalWorks: string } {
+  const admin = ledgerFundDefinition(rules, "ADMINISTRATIVE");
+  const capitalWorks = ledgerFundDefinition(rules, "CAPITAL_WORKS");
+  const keepFund = [admin, capitalWorks].some((f) => /\bfund$/i.test(f.shortLabel ?? ""));
+  const word = (name: string) => (keepFund ? name : name.replace(/ fund$/, ""));
+  return { admin: word(admin.name), capitalWorks: word(capitalWorks.name) };
 }

@@ -162,6 +162,8 @@ export interface PackWords {
   lateCharge: string;
   /** "Interest", "Penalty" */
   LateCharge: string;
+  /** "Interest", "Penalty", "Late Payment Charge": as a column or card heads it. */
+  LateChargeTitle: string;
   /** "owners corporation", "body corporate" */
   ownersCorporation: string;
   /** "Owners corporation", "Body corporate" */
@@ -208,6 +210,7 @@ export function packWordsFor(rules: WordRules): PackWords {
     Levies: sentenceCase(t.levies),
     lateCharge: t.lateCharge,
     LateCharge: sentenceCase(t.lateCharge),
+    LateChargeTitle: titleCase(t.lateCharge),
     ownersCorporation: t.ownersCorporation,
     OwnersCorporation: sentenceCase(t.ownersCorporation),
     OwnersCorporationTitle: titleCase(t.ownersCorporation),
@@ -233,7 +236,7 @@ export function packWordsFor(rules: WordRules): PackWords {
  * the packs' general word for a late charge (sharedLevyWords).
  */
 /** Plural words, joined with "and" where the buildings use different ones. */
-const PLURAL_KEYS = new Set<keyof PackWords>(["levies", "Levies", "ownersCorporations", "OwnersCorporationsTitle"]);
+const PLURAL_KEYS = new Set<keyof PackWords>(["levies", "Levies", "ownersCorporations", "OwnersCorporationsTitle", "OwnerContributions"]);
 
 export function sharedPackWords(rules: readonly WordRules[], fallback: WordRules): PackWords {
   const all = (rules.length ? rules : [fallback]).map(packWordsFor);
@@ -249,7 +252,10 @@ export function sharedPackWords(rules: readonly WordRules[], fallback: WordRules
   if (!levy.shared && levy.lateCharge !== out.lateCharge) {
     out.lateCharge = levy.lateCharge;
     out.LateCharge = sentenceCase(levy.lateCharge);
+    out.LateChargeTitle = titleCase(levy.lateCharge);
   }
+  // What owners pay, where the buildings name it differently: "Levies and contributions".
+  if (out.OwnerContributions.includes(" and ")) out.OwnerContributions = sentenceCase(out.levies);
   return out;
 }
 
@@ -279,4 +285,22 @@ export function lotFormEntitlementWords(rules: WordRules): { label: string; help
  */
 export function leviesAndContributions(levies: string): string {
   return /contribution/i.test(levies) ? sentenceCase(levies) : `${sentenceCase(levies)} and contributions`;
+}
+
+/**
+ * The building's kind of scheme, plural, after its jurisdiction: "NSW strata
+ * schemes", "Qld community titles schemes" (QLD finance wording review).
+ */
+export function schemesLabel(t: Pick<StatutoryRules["TERMINOLOGY"], "jurisdictionShort" | "scheme">): string {
+  return `${t.jurisdictionShort} ${t.scheme ?? "strata scheme"}s`;
+}
+
+/**
+ * The audit trail's words: the levy and late charge words, and the capital
+ * works fund's short label ("Capital Works", "Sinking Fund"), so an action
+ * such as CAPITAL_WORKS_LEVY_GENERATED reads in the building's words.
+ */
+export function auditLabelWords(rules: WordRules & Pick<StatutoryRules, "FUND_CATALOGUE">): PackWords & { capitalWorks?: string } {
+  const fund = rules.FUND_CATALOGUE.find((f) => f.ledgerFund === "CAPITAL_WORKS");
+  return { ...packWordsFor(rules), ...(fund ? { capitalWorks: fund.shortLabel ?? fund.label } : {}) };
 }

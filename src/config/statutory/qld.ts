@@ -408,6 +408,15 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *     at sign in (no building chosen yet), and the referral income
  *     disclosure, which StrataVerze staff edit per record
  *     (src/lib/billing/referral.ts).
+ *   - Web addresses: the pages' addresses keep their NSW names, for
+ *     example /owner/levies, /owner/levies/statement, finance/levies,
+ *     finance/interest and reports/levy-register (src/app routes). A
+ *     Queensland owner sees one printed on the contribution notice PDF and
+ *     email, whose ledger link is /owner/levies (src/lib/pdf/generate.ts
+ *     ledgerUrl, src/lib/pdf/documents.ts, src/lib/levies/notice-content-data.ts),
+ *     and in the browser's address bar. Renaming routes would break saved
+ *     links and every NSW notice already sent, so it needs redirects and is
+ *     left for a later change.
  *   - Kept sentence shapes: where an NSW sentence has a dash or semicolon,
  *     the Queensland version keeps it with the Queensland word (for example
  *     the overview's "overdue – charge penalty" and the budget panel), so

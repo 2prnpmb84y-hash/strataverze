@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
-import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { rulesForWords } from "@/lib/jurisdiction/scheme-rules";
 import { entryTypeLabel, packWordsFor, type PackWords } from "@/lib/jurisdiction/screen-words";
 
 /** The labels that name a levy, in each building's words. The actions are stored as they are. */
@@ -126,7 +126,7 @@ export default async function OwnerNotificationsPage() {
   }).slice(0, 100);
 
   const schemeNames = new Map(schemes.map((s) => [s.id, String(s.name)]));
-  const wordsBy = new Map(schemes.map((s) => [s.id, packWordsFor(rulesForState(s.state).rules)]));
+  const wordsBy = new Map(schemes.map((s) => [s.id, packWordsFor(rulesForWords(s.state))]));
   const labelsBy = new Map([...wordsBy].map(([id, w]) => [id, { ...actionLabels, ...levyActionLabels(w) }]));
 
   // Group activities by date

@@ -96,10 +96,10 @@ import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconcili
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
 import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { levyFormWords, packWordsFor } from "@/lib/jurisdiction/screen-words";
+import { auditLabelWords, levyFormWords, packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { capitalise } from "@/lib/jurisdiction/wording";
 import { fundNameWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
-import { UnsupportedJurisdictionError } from "@/config/statutory";
+import { UnsupportedJurisdictionError, type StatutoryRules } from "@/config/statutory";
 import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
@@ -232,11 +232,22 @@ const LEDGER_RULE_MESSAGES: readonly RegExp[] = [
   /^There is not enough credit for this\./,
 ];
 
-/** Validation messages thrown by the interest helpers (interest.ts). */
+/** A word as a pattern matches it exactly. */
+const literal = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Validation messages thrown by the interest helpers (interest.ts), with the
+ * building's own words: "Interest amount" and "Levy notice" (NSW), "Penalty
+ * amount" and "Contribution notice" (Queensland). Only those words match.
+ */
+const interestRuleMessages = (t: Pick<StatutoryRules["TERMINOLOGY"], "levy" | "lateCharge">): readonly RegExp[] => [
+  new RegExp(`^${literal(capitalise(t.lateCharge))} amount must be greater than zero\\.`),
+  new RegExp(`^${literal(capitalise(t.levy))} notice not found\\.`),
+  ...INTEREST_RULE_MESSAGES,
+];
+
+/** The interest helpers' other validation messages. */
 const INTEREST_RULE_MESSAGES: readonly RegExp[] = [
-  // In the building's words: "Interest amount" and "Levy notice" (NSW), "Penalty amount" and "Contribution notice" (Queensland).
-  /^\w+ amount must be greater than zero\./,
-  /^\w+ notice not found\./,
   // In the building's words: interest (NSW) or penalty (Queensland).
   /^No more than \$[\d,.]+ of \w+ is owed on this notice to date\./,
   /^Required system accounts .* not found\./,
@@ -2457,7 +2468,8 @@ export async function chargeInterestAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    return { error: unexpectedError(err, `Failed to charge ${(await messageTermsFor(schemeId)).lateCharge}.`, [...INTEREST_RULE_MESSAGES, ...LEDGER_RULE_MESSAGES]) };
+    const terms = await messageTermsFor(schemeId);
+    return { error: unexpectedError(err, `Failed to charge ${terms.lateCharge}.`, [...interestRuleMessages(terms), ...LEDGER_RULE_MESSAGES]) };
   }
 }
 
@@ -2484,7 +2496,8 @@ export async function chargeInterestBatchAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    return { error: unexpectedError(err, `Failed to charge ${(await messageTermsFor(schemeId)).lateCharge}.`, [...INTEREST_RULE_MESSAGES, ...LEDGER_RULE_MESSAGES]) };
+    const terms = await messageTermsFor(schemeId);
+    return { error: unexpectedError(err, `Failed to charge ${terms.lateCharge}.`, [...interestRuleMessages(terms), ...LEDGER_RULE_MESSAGES]) };
   }
 }
 
@@ -2818,7 +2831,7 @@ export async function exportAuditTrailAction(
       resourceId: schemeId,
       metadata: { kind: "finance_audit_trail", rows: rows.length },
     });
-    const csv = formatAuditTrailCsv(rows, await schemeTimeZone(schemeId), packWordsFor((await rulesForScheme(schemeId)).rules));
+    const csv = formatAuditTrailCsv(rows, await schemeTimeZone(schemeId), auditLabelWords((await rulesForScheme(schemeId)).rules));
 
     const datePart = await schemeToday(schemeId);
     const filename = `audit-trail-${datePart}.csv`;

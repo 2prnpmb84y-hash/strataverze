@@ -95,7 +95,7 @@ export function AuditTrailClient({
   actors: { id: string; name: string }[];
   filters: AuditTrailFilters;
   /** The building's words (packWordsFor), for the action and entity labels. */
-  words: Pick<PackWords, "Levy" | "Levies" | "LateCharge">;
+  words: Pick<PackWords, "Levy" | "Levies" | "LateCharge"> & { capitalWorks?: string };
   basePath?: string;
   readOnly?: boolean;
 }) {

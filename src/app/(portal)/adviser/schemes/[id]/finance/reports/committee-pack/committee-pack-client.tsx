@@ -159,8 +159,8 @@ export function CommitteePackClient({
   pack: CommitteeReportingPack;
   /** The building's FUND_CATALOGUE, which names its funds. */
   catalogue: FundCatalogue;
-  /** The building's words (packWordsFor). */
-  words: PackWords;
+  /** The building's words (auditLabelWords). */
+  words: PackWords & { capitalWorks?: string };
   basePath?: string;
 }) {
   const router = useRouter();

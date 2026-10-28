@@ -253,6 +253,12 @@ export interface SharedTerminology {
    * have always said, so its pack is unchanged.
    */
   ownersCorporations?: string;
+  /**
+   * What a scheme is called, lower case: "community titles scheme" (QLD
+   * finance wording review, 28 Oct 2026). Optional: a pack without it (NSW)
+   * keeps the screens' "strata scheme".
+   */
+  scheme?: string;
 }
 
 /**

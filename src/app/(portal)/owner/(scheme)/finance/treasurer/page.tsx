@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
-import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { rulesForScheme, rulesForWords } from "@/lib/jurisdiction/scheme-rules";
 import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
@@ -80,7 +80,8 @@ export default async function TreasurerHomePage() {
     );
   }
 
-  const [m, { rules }] = await Promise.all([getTreasurerMonth(schemeId), rulesForScheme(schemeId)]);
+  // Words only: a building with no live pack is shown in the default state's words.
+  const [m, rules] = await Promise.all([getTreasurerMonth(schemeId), rulesForScheme(schemeId).then((r) => r.rules, () => rulesForWords(null))]);
   const w = packWordsFor(rules);
   const more = (shown: number, count: number) => (count > shown ? ` Showing the first ${shown} of ${count}.` : "");
 

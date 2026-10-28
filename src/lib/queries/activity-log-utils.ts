@@ -16,12 +16,15 @@ export type AuditTrailFilters = {
  * (packWordsFor: "Levy", "Levies", "Interest"). The codes are stored as they
  * are; only the label shown names them in the building's words.
  */
-export type LabelWords = { Levy: string; Levies: string; LateCharge: string };
+/** `capitalWorks` is the fund's short label ("Capital Works", "Sinking Fund"); without it the label keeps "Capital Works". */
+export type LabelWords = { Levy: string; Levies: string; LateCharge: string; capitalWorks?: string };
 
 /** A label in the building's words: "Levy Notice Issued" becomes "Contribution Notice Issued". */
 function inWords(label: string, w?: LabelWords): string {
   if (!w) return label;
-  return label.replace(/\b(Levy|Levies|Interest)\b/g, (m) => (m === "Levy" ? w.Levy : m === "Levies" ? w.Levies : w.LateCharge));
+  const cw = w.capitalWorks;
+  const funded = cw ? label.replace(/\bCapital Works( Fund)?\b/g, (_m, fund?: string) => (fund && !/\bFund$/.test(cw) ? `${cw} Fund` : cw)) : label;
+  return funded.replace(/\b(Levy|Levies|Interest)\b/g, (m) => (m === "Levy" ? w.Levy : m === "Levies" ? w.Levies : w.LateCharge));
 }
 
 /** Human-readable label for an action code, in the building's words where given. */

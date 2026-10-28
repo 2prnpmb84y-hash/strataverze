@@ -90,6 +90,7 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
     rulesForScheme: vi.fn(async () => qld),
     messageTermsFor: vi.fn(async () => PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY),
     rulesForListedStates: (states: Iterable<string | null | undefined>) => [...new Set(states)].map((s) => forState(s).rules),
+    rulesForWords: (s: string | null | undefined) => forState(s).rules,
   };
 });
 vi.mock("@/lib/schemes/photos", () => ({ schemeThumbnails: vi.fn(async () => ({})) }));
@@ -213,6 +214,7 @@ const { cutoverLabels, controlTieOuts, cutoverReadiness, parseArrearsRow } = awa
 const { fieldsFor, missingFields } = await import("@/lib/finance/migration-templates");
 const { checkIncomeBudget, onboardingYears } = await import("@/lib/onboarding/income-budget");
 const { validateLevyNoticeContent } = await import("@/lib/finance/levy-notice-content");
+const { noticeFundWords } = await import("@/lib/levies/notice-content-data");
 const { parseIncomeStatement } = await import("@/lib/onboarding/read-income-statement");
 const { modeLabel } = await import("@/lib/finance/drill-down");
 const { formatActionLabel, formatEntityTypeLabel } = await import("@/lib/queries/activity-log-utils");
@@ -325,6 +327,8 @@ describe("the pack's words", () => {
       Levies: "Levies and Contributions",
       lateCharge: "late payment charge",
       LateCharge: "Late payment charge",
+      LateChargeTitle: "Late Payment Charge",
+      OwnerContributions: "Levies and contributions",
       OwnersCorporationsTitle: "Owners Corporations and Bodies Corporate",
     });
     expect(words.sharedPackWords([QLD, QLD], NSW)).toEqual(W);
@@ -449,6 +453,21 @@ describe("Queensland owner screens and lists", () => {
     expectQueensland(renderToStaticMarkup(await NotificationsPage()), "New contribution created", "Contribution notice issued", "Contributions generated");
   });
 
+  it("an owner with lots in both states sees words that read naturally", async () => {
+    const nswScheme = { ...SCHEME, id: "s1", name: "Harbour View", state: "NSW", timeZone: "Australia/Sydney" };
+    state.ownerSchemes = [SCHEME, nswScheme];
+    state.notices = [NOTICE];
+    const finance = visible(renderToStaticMarkup(await OwnerFinancePage()));
+    expect(finance).toContain("Your levies and contributions and fund balances.");
+    expect(finance).toContain("Late Payment Charges");
+    expect(finance).not.toMatch(/Charge Charged|contributions or contributions/);
+    const payment = visible(renderToStaticMarkup(await PaymentPage()));
+    expect(payment).toContain("Notice (optional)");
+    expect(payment).toContain("Select a notice...");
+    expect(payment).toContain("e.g. Q1 2026 Lot 5");
+    expect(payment).not.toMatch(/Levy or Contribution/);
+  });
+
   it("the owner home, the schemes list, reporting and the portal navigation", async () => {
     expectQueensland(renderToStaticMarkup(await OwnerHome()), "2 contributions");
     state.adviserSchemes = [{ ...SCHEME, memberships: [], lots: [] }];
@@ -505,14 +524,22 @@ describe("Queensland messages", () => {
       includesHardshipStatement: false,
       includesLedgerAccess: false,
     };
-    const messages = validateLevyNoticeContent(empty, QLD.NOTICE_RULES, t, { admin: "administrative", capitalWorks: "sinking" }).map((m) => m.message);
-    expect(messages).toEqual(expect.arrayContaining(["The community titles scheme number.", "The fund the contribution is for (administrative or sinking).", "How the owner can check their contribution ledger.", "A warning that penalty is charged on overdue amounts."]));
+    expect(noticeFundWords(QLD)).toEqual({ admin: "administrative fund", capitalWorks: "sinking fund" });
+    expect(noticeFundWords(NSW)).toEqual({ admin: "administrative", capitalWorks: "capital works" });
+    const messages = validateLevyNoticeContent(empty, QLD.NOTICE_RULES, t, noticeFundWords(QLD)).map((m) => m.message);
+    expect(messages).toEqual(expect.arrayContaining(["The community titles scheme number.", "The fund the contribution is for (administrative fund or sinking fund).", "How the owner can check their contribution ledger.", "A warning that penalty is charged on overdue amounts."]));
     expectQueensland(JSON.stringify(messages.filter((m) => !m.includes("strata roll"))));
   });
 
   it("the drill-down, audit, register, reversal, plan, budget, ballot and email words", () => {
     expectQueensland([modeLabel("CASH", t), modeLabel("ACCRUAL", t)].join(" "), "contribution income", "contributions when raised");
     expectQueensland(["INTEREST_CHARGED", "LEVY_NOTICE_ISSUED", "LEVIES_GENERATED"].map((a) => formatActionLabel(a, W)).join(" "), "Penalty Charged", "Contribution Notice Issued", "Contributions Generated");
+    // The capital works fund by the pack's label: the sinking fund.
+    const audit = words.auditLabelWords(QLD);
+    expect(["CAPITAL_WORKS_LEVY_GENERATED", "CAPITAL_WORKS_FUND_UPDATED", "CAPITAL_WORKS_PLAN_CREATED"].map((a) => formatActionLabel(a, audit))).toEqual(["Sinking Fund Contribution Generated", "Sinking Fund Updated", "Sinking Fund Plan Created"]);
+    expect(["CAPITAL_WORKS_LEVY_GENERATED", "CAPITAL_WORKS_FUND_UPDATED"].map((a) => formatActionLabel(a, words.auditLabelWords(NSW)))).toEqual(["Capital Works Levy Generated", "Capital Works Fund Updated"]);
+    expect(words.schemesLabel(QLD.TERMINOLOGY)).toBe("Qld community titles schemes");
+    expect(words.schemesLabel(NSW.TERMINOLOGY)).toBe("NSW strata schemes");
     expectQueensland(["Levy", "LevyNotice"].map((e) => formatEntityTypeLabel(e, W)).join(" "), "Contribution Notice");
     const base = { lotId: "l1", schemeId: "q1", fundId: "f1", status: "ISSUED", dueDate: "2026-08-01", amountDue: "1", amountPaid: "0", balanceOutstanding: "1", interestCharged: "0", fund: { name: "Administrative Fund" } };
     const groups = levyRegister([{ ...base, id: "n1", noticeNumber: "LN-1", levyScheduleId: "sc1", levySchedule: { levyType: "SPECIAL", title: "Roof" } }] as never, "2026-10-27", t);

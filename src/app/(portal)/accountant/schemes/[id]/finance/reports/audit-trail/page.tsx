@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { AuditTrailClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/audit-trail/audit-trail-client";
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
-import { packWordsFor } from "@/lib/jurisdiction/screen-words";
+import { auditLabelWords } from "@/lib/jurisdiction/screen-words";
 
 export default async function AuditTrailPage({
   params,
@@ -64,7 +64,7 @@ export default async function AuditTrailPage({
         hasMore={result.hasMore}
         actors={actors}
         filters={filters}
-        words={packWordsFor(rulesForState(scheme.state).rules)}
+        words={auditLabelWords(rulesForState(scheme.state).rules)}
         basePath={`/accountant/schemes/${id}/finance/reports/audit-trail`}
         readOnly
       />

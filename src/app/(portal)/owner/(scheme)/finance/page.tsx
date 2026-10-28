@@ -14,7 +14,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { connection } from "next/server";
-import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { rulesForListedStates, rulesForState, rulesForWords } from "@/lib/jurisdiction/scheme-rules";
 import { sharedPackWords } from "@/lib/jurisdiction/screen-words";
 import { capitalise } from "@/lib/jurisdiction/wording";
 import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
@@ -40,8 +40,9 @@ export default async function OwnerFinancePage() {
   );
 
   // Each building's words, from its rule pack, and the words the page uses for them all.
-  const rulesBy = new Map(schemes.map((s) => [s.id, rulesForState(s.state).rules]));
-  const w = sharedPackWords([...rulesBy.values()], rulesForState(DEFAULT_SCHEME_STATE).rules);
+  // A building with no live pack is shown in the default state's words and never fails the page.
+  const rulesBy = new Map(schemes.map((s) => [s.id, rulesForWords(s.state)]));
+  const w = sharedPackWords(rulesForListedStates(schemes.map((s) => s.state)), rulesForState(DEFAULT_SCHEME_STATE).rules);
   const termsOf = (schemeId: string) => rulesBy.get(schemeId)?.TERMINOLOGY ?? w;
 
   if (schemes.length === 0) {
@@ -183,7 +184,7 @@ export default async function OwnerFinancePage() {
         />
         {totalInterest > 0 && (
           <StatCard
-            label={`${w.LateCharge} Charged`}
+            label={/charge$/i.test(w.lateCharge) ? `${w.LateChargeTitle}s` : `${w.LateChargeTitle} Charged`}
             value={formatCurrency(totalInterest)}
             accent="bg-amber-500"
           />
