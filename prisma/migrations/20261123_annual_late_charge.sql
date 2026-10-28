@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS public.late_charge_waivers (
   CONSTRAINT late_charge_waivers_decided_by_check CHECK (decided_by IN ('GENERAL_MEETING', 'ORDINARY', 'SPECIAL'))
 );
 CREATE INDEX IF NOT EXISTS late_charge_waivers_levy_notice_id_idx ON public.late_charge_waivers (levy_notice_id);
-CREATE UNIQUE INDEX IF NOT EXISTS late_charge_waivers_levy_notice_id_resolution_motion_id_kind_key
+CREATE UNIQUE INDEX IF NOT EXISTS late_charge_waivers_levy_notice_id_resolution_motion_id_kin_key
   ON public.late_charge_waivers (levy_notice_id, resolution_motion_id, kind);
 CREATE INDEX IF NOT EXISTS late_charge_waivers_scheme_id_idx ON public.late_charge_waivers (scheme_id);
 -- RLS on, no policies: the Data API is denied; the app connects as the owner.
