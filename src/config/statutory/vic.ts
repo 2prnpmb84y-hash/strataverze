@@ -54,7 +54,7 @@
  * PENDING_CHANGES and MEETINGS, RESOLUTIONS and PROXIES.
  */
 
-import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures, PaymentAllocationPart, RuleStatus, SchemeSelector, SharedTerminology } from "./types";
+import type { DatedRules, DatedValue, EntitlementScheduleDefinition, NoStatutoryRule, FundDefinition, PackFeatures, PaymentAllocationPart, RuleStatus, SchemeSelector, SharedTerminology } from "./types";
 
 const OCA = "Owners Corporations Act 2006 (Vic)";
 const OCR = "Owners Corporations Regulations 2018 (Vic)";
@@ -803,7 +803,9 @@ const CLAA_DIV2_COMMENCEMENT = "on proclamation, or 1 Dec 2027 if not proclaimed
  * is the date it commences at the latest, the fixed date or the default date
  * if not proclaimed earlier (null where there is no legislation).
  * Until then the in-force rules above apply. The rule values are CONFIRMED as
- * enacted or made text, not as law in force.
+ * enacted or made text, not as law in force. Each change is also restated as
+ * a dated rule (DATED_RULES), for code to read with `ruleInForceOn`; the
+ * officer in effective control fee (new reg 20(2)) is held here only.
  */
 export const PENDING_CHANGES = [
   {
@@ -1969,6 +1971,161 @@ export const CHANGES = [
   { instrument: "SA Version 084 (1 Jul 2026)", change: "not checked", commenced: "2026-07-01", status: "NOT_CONFIRMED" as RuleStatus },
 ] as const;
 
+// ---------------------------------------------------------------------------
+// Dated rules
+// ---------------------------------------------------------------------------
+
+type PendingChange = (typeof PENDING_CHANGES)[number];
+
+/** A pending change, by key. */
+function pendingChange<K extends PendingChange["key"]>(key: K): Extract<PendingChange, { key: K }> {
+  const change = PENDING_CHANGES.find((c) => c.key === key);
+  if (!change) throw new Error(`No pending change ${key}`);
+  return change as Extract<PendingChange, { key: K }>;
+}
+
+/**
+ * A pending change restated as a dated value, with its legal status, dates,
+ * commencement, source and status copied from PENDING_CHANGES unchanged.
+ */
+function pendingValue<T>(change: PendingChange, value: T, source: string = change.source): DatedValue<T> {
+  if (change.legalStatus === "ANNOUNCED_NO_LEGISLATION") {
+    return { legalStatus: change.legalStatus, value, commencement: change.commencement, source, status: change.status, pendingChange: change.key };
+  }
+  return {
+    legalStatus: change.legalStatus,
+    value,
+    commencedOn: change.commencedOn,
+    fixedStartDate: change.fixedStartDate,
+    latestStartDate: change.latestStartDate,
+    commencement: change.commencement,
+    source,
+    status: change.status,
+    pendingChange: change.key,
+  };
+}
+
+/**
+ * The rules that change on a date (VIC, ACT and WA stage 2, PR 1), read with
+ * `ruleInForceOn` (src/lib/jurisdiction/dated-rules.ts). Every PENDING_CHANGES
+ * entry is restated here, so the pending law check covers each one. No value
+ * or status is changed: the in-force values are the ones above, and the
+ * pending ones are copied from PENDING_CHANGES.
+ *
+ * An in-force value starts on the day the version the notes read came into
+ * force (OCA Version 024, 9 Sep 2026; OCR Version 002, 1 Dec 2021), not the day
+ * the rule was first made: earlier versions were not read, so a day before
+ * that has no value and the reader refuses it. Where the pack records no
+ * in-force value before a change (payment plans, the s 29(1A) pause), the
+ * rule has none, and the reader gives none until the change is recorded as
+ * commenced. The payment order records NO_STATUTORY_RULE before s 32I. Once a
+ * change's fixed or latest start date passes without a recorded commencement,
+ * the reader refuses the rule until the pack is checked and bumped
+ * (FOR_REVIEW FIXED_DATE_COMMENCEMENT). No consumer reads these yet.
+ */
+export const DATED_RULES = {
+  /**
+   * The s 89D proxy limit, both values in one shape: in force by occupiable
+   * lots; one lot owner whatever the count once CLAA 2026 Part 6 Div 2
+   * commences.
+   */
+  PROXY_LIMIT: {
+    title: "Proxy limit",
+    versions: [
+      {
+        legalStatus: "IN_FORCE",
+        from: "2026-09-09",
+        value: {
+          maxLotOwners: PROXIES.limit.maxLotOwnersWhenAtOrBelowThreshold,
+          aboveThreshold: {
+            occupiableLotsMoreThan: PROXIES.limit.occupiableLotsThreshold,
+            maxPercentOfLotOwners: PROXIES.limit.maxPercentOfLotOwnersWhenAboveThreshold,
+            counts: PROXIES.limit.counts,
+            roundingStatus: PROXIES.limit.roundingStatus,
+          },
+          exceptions: PROXIES.limit.exceptions,
+          exceptionsStatus: PROXIES.status,
+        },
+        source: `${OCA} s 89D (Version 024, in force 9 Sep 2026); ${OCR} reg 8A`,
+        status: PROXIES.status,
+      },
+      pendingValue(pendingChange("CLAA_2026_PROXY_LIMIT"), {
+        maxLotOwners: pendingChange("CLAA_2026_PROXY_LIMIT").rules.maxLotOwners,
+        aboveThreshold: null,
+        // The notes say only that the s 89D(2) exceptions are not amended. They do not say which of the
+        // exceptions in force (family members; the OCR reg 8A cases) sit in s 89D(2), so that each carries over is NOT_CONFIRMED.
+        exceptions: PROXIES.limit.exceptions,
+        exceptionsStatus: "NOT_CONFIRMED" as RuleStatus,
+      }),
+    ],
+    note: "maxLotOwners is the limit for every meeting, or at or below the occupiable lots threshold where aboveThreshold is given.",
+  },
+  /** Manager registration fees in fee units: OCR regs 19 to 21 in force; SR 53/2026's from 25 Nov 2026 once recorded as commenced. */
+  MANAGER_REGISTRATION_FEE_UNITS: {
+    title: "Manager registration fees (fee units)",
+    versions: [
+      { legalStatus: "IN_FORCE", from: "2021-12-01", value: MANAGER.registrationFeeUnits, source: `${OCR} regs 19 to 21 (Version 002, in force 1 Dec 2021)`, status: MANAGER.status },
+      pendingValue(pendingChange("SR_53_2026_MANAGER_FEES"), pendingChange("SR_53_2026_MANAGER_FEES").rules.feeUnits),
+    ],
+    note: "The officer in effective control fee (new reg 20(2), from 30 Jun 2027) stays in PENDING_CHANGES only.",
+  },
+  /**
+   * The order a payment is applied in. Before s 32I: no statutory order, as
+   * the notes record none (NOT_CONFIRMED, NOT_CONFIRMED list and
+   * DEFERRED_SHARED_SHAPES). Then the s 32I order, for all owners corporations.
+   */
+  PAYMENT_ALLOCATION_ORDER: {
+    title: "Order a payment is applied in",
+    versions: [
+      {
+        legalStatus: "IN_FORCE",
+        from: "2026-09-09",
+        value: "NO_STATUTORY_RULE" as NoStatutoryRule,
+        source: `${OCA} (Version 024, in force 9 Sep 2026, read in full): the notes record no order before s 32I commences`,
+        status: "NOT_CONFIRMED" as RuleStatus,
+      },
+      pendingValue(
+        pendingChange("CLAA_2026_PAYMENT_PLANS"),
+        pendingChange("CLAA_2026_PAYMENT_PLANS").rules.paymentAllocationOrder,
+        `${CLAA} ss 2(3), (6), 40 (new OCA s 32I)`,
+      ),
+    ],
+  },
+  /** The new s 29(1A) pause on interest. The pack records none in force. */
+  INTEREST_PAUSE: {
+    title: "No interest during a payment plan request or plan",
+    versions: [pendingValue(pendingChange("CLAA_2026_INTEREST_PAUSE"), pendingChange("CLAA_2026_INTEREST_PAUSE").rules)],
+  },
+  PAYMENT_PLANS: {
+    title: "Payment plans",
+    versions: [pendingValue(pendingChange("CLAA_2026_PAYMENT_PLANS"), pendingChange("CLAA_2026_PAYMENT_PLANS").rules)],
+  },
+  ARREARS_CARVE_OUTS: {
+    title: "Not in arrears with a payment plan request or plan",
+    versions: [pendingValue(pendingChange("CLAA_2026_ARREARS_CARVE_OUTS"), pendingChange("CLAA_2026_ARREARS_CARVE_OUTS").rules)],
+  },
+  PRIVACY: {
+    title: "Privacy of owner information",
+    versions: [pendingValue(pendingChange("CLAA_2026_PRIVACY"), pendingChange("CLAA_2026_PRIVACY").rules)],
+  },
+  OTHER_DIV2: {
+    title: "Seal witness and the Part 12 correction",
+    versions: [pendingValue(pendingChange("CLAA_2026_OTHER_DIV2"), pendingChange("CLAA_2026_OTHER_DIV2").rules)],
+  },
+  MANAGER_EDUCATION: {
+    title: "Manager education reforms",
+    versions: [pendingValue(pendingChange("HSRA_2025_MANAGER_EDUCATION"), pendingChange("HSRA_2025_MANAGER_EDUCATION").rules)],
+  },
+  SALE_OF_LAND: {
+    title: "Vendor's statements: when made available",
+    versions: [pendingValue(pendingChange("CLAA_2026_SALE_OF_LAND"), pendingChange("CLAA_2026_SALE_OF_LAND").rules)],
+  },
+  MANAGER_LICENSING: {
+    title: "Manager licensing scheme (announced)",
+    versions: [pendingValue(pendingChange("MANAGER_LICENSING_ANNOUNCEMENT_2026"), pendingChange("MANAGER_LICENSING_ANNOUNCEMENT_2026").rules)],
+  },
+} as const satisfies DatedRules;
+
 /** Shared shapes this draft does not give yet, and why. */
 export const DEFERRED_SHARED_SHAPES = [
   {
@@ -2090,6 +2247,18 @@ export const FOR_REVIEW = [
     point: "Check the Government Gazette for proclamations of CLAA 2026 Part 6 Div 2 and HSRA 2025 Part 4 Div 1 before each pack release. SR 53/2026 commences on 25 Nov 2026 and needs a new pack version to switch on.",
     before: "each pack release, and 25 Nov 2026",
     kind: "LEGAL",
+  },
+  {
+    key: "DATED_RULES",
+    point: "Each pending change is restated in DATED_RULES. An enacted or made change stays off, even after its fixed or latest start date, until a pack version records the day it commenced; once that date passes the reader refuses the rule and the pending law check lists it (SR 53/2026 from 25 Nov 2026). In-force values start on the day the version read came into force (OCA Version 024, OCR Version 002), so earlier days have no value. Before s 32I the payment order is recorded as no statutory rule, NOT_CONFIRMED. The pending proxy limit carries the exceptions in force, NOT_CONFIRMED (the notes say only that the s 89D(2) exceptions are not amended). Confirm these choices.",
+    before: "any code reads a dated rule",
+    kind: "STRATAVERZE",
+  },
+  {
+    key: "FIXED_DATE_COMMENCEMENT",
+    point: "Whether an instrument that fixes its own start date (SR 53/2026, 25 Nov 2026) should count as commenced on that date without a new pack version recording it. Until decided, it does not: from 25 Nov 2026 the reader refuses the manager registration fees until a pack version records commencedOn.",
+    before: "25 Nov 2026",
+    kind: "STRATAVERZE",
   },
   {
     key: "PAYMENT_PLAN_WORKFLOW",

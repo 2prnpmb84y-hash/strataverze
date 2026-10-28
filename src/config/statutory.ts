@@ -27,6 +27,7 @@ import type { MeetingRuleSet } from "@/lib/meetings/rules";
 import type {
   CertificateRules,
   ContributionInsuranceRules,
+  DatedRules,
   DebtRecoveryRules,
   DocumentRetentionRules,
   InspectionRules,
@@ -123,6 +124,12 @@ export interface SharedRules {
   DOCUMENT_RETENTION?: DocumentRetentionRules;
   /** When works need more than one quote. */
   WORKS_QUOTES?: WorksQuoteRules;
+  /**
+   * Rules that change on a date (VIC, ACT and WA stage 2, PR 1, 28 Oct 2026),
+   * read with `ruleInForceOn` (src/lib/jurisdiction/dated-rules.ts). A pack
+   * without the key has none (NSW, Queensland).
+   */
+  DATED_RULES?: DatedRules;
 }
 
 /**
@@ -135,6 +142,9 @@ export type StatutoryRules = SharedRules & Partial<Omit<NswRules, keyof SharedRu
 
 /** `needRule` and `RuleNotInPackError` live in a module with no pack data, so the browser can use them. */
 export { needRule, RuleNotInPackError } from "./statutory/need-rule";
+
+/** The dated rule shapes (types only, no rules), for the reader in src/lib/jurisdiction/dated-rules.ts. */
+export type { DatedLegalStatus, DatedRule, DatedRules, DatedValue, NoStatutoryRule, PendingDatedValue } from "./statutory/types";
 
 export interface RulePack {
   /** Jurisdiction code, for example AU-NSW. */
@@ -327,7 +337,11 @@ export const PENDING_RULE_PACKS = {
     name: "Australian Capital Territory",
     // 2026.10.1 (27 Oct 2026): units plans, drafted from the research notes (UTMA R25, UTMR R6, UTA R38,
     // DI2026-115, DI2026-22) for Matthew Wrigley to review; not signed off, no decisions yet.
-    version: "2026.10.1",
+    // 2026.10.2 (28 Oct 2026): DATED_RULES added (the dated rule shape, stage 2 PR 1). The Bill's quorum and absentee
+    // vote changes are restated as NOT LAW values that are never applied, beside the in-force values from MEETINGS
+    // (R25, from 26 Jun 2026); the commencement words follow the Bill's record. FOR_REVIEW gains that point. No legal
+    // value or status changed; still a draft.
+    version: "2026.10.2",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
@@ -339,7 +353,15 @@ export const PENDING_RULE_PACKS = {
     name: "Victoria",
     // 2026.10.1 (27 Oct 2026): researched from OCA Version 024, OCR Version 002 and SA Part 5, for review. Pending
     // changes (CLAA 2026 Part 6 Div 2, SR 53/2026, HSRA 2025 Part 4 Div 1) are held as data, not in force.
-    version: "2026.10.1",
+    // 2026.10.2 (28 Oct 2026): DATED_RULES added (the dated rule shape, stage 2 PR 1). Every PENDING_CHANGES entry is
+    // restated as a dated value with its legal status, dates and commencement unchanged, none recorded as commenced;
+    // the proxy limit and manager fees also hold their in-force values (from OCA Version 024 and OCR Version 002),
+    // the two proxy limit values in one shape with the exceptions on both (the pending one's NOT_CONFIRMED: the notes
+    // say only that the s 89D(2) exceptions are not amended), and the payment order records no statutory order before
+    // s 32I (NOT_CONFIRMED: the notes record none). FOR_REVIEW gains DATED_RULES and FIXED_DATE_COMMENCEMENT. No legal
+    // value or status changed; still a draft. SR 53/2026 (25 Nov 2026) stays off until a pack version records that it
+    // commenced, and from that day the reader refuses the manager fees until then.
+    version: "2026.10.2",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

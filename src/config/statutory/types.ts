@@ -537,6 +537,110 @@ export interface DebtRecoveryRules {
   source: string;
 }
 
+/*
+ * Dated rules (VIC, ACT and WA stage 2, PR 1, 28 Oct 2026). A rule whose
+ * value changes on a date holds every value it has had or will have, each
+ * with where it stands in law. Code reads the value in force on a day with
+ * `ruleInForceOn` (src/lib/jurisdiction/dated-rules.ts). A value that is
+ * only enacted or made is never applied until a pack version records the day
+ * it commenced, and a Bill or an announcement is never applied.
+ */
+
+/**
+ * Where a dated value stands in law:
+ * - IN_FORCE: read in the in-force text, applying from `from`;
+ * - ENACTED_NOT_COMMENCED: in an Act that has passed, not yet commenced;
+ * - MADE_NOT_COMMENCED: in a regulation that has been made, not yet commenced;
+ * - ANNOUNCED_NO_LEGISLATION: announced, with no Bill or Act;
+ * - NOT_LAW: in a Bill. Never law until it passes.
+ */
+export type DatedLegalStatus = "IN_FORCE" | "ENACTED_NOT_COMMENCED" | "MADE_NOT_COMMENCED" | "ANNOUNCED_NO_LEGISLATION" | "NOT_LAW";
+
+/**
+ * The value recorded where the law has no statutory rule on the point (for
+ * example no statutory order for applying a payment). It is a value, so code
+ * can tell "no statutory rule" from "no value recorded" (the reader refuses
+ * the second). Its `status` says how far the absence was checked.
+ */
+export type NoStatutoryRule = "NO_STATUTORY_RULE";
+
+interface DatedValueBase<T> {
+  value: T;
+  source: string;
+  /** The pack's own record of the change this value comes from (VIC PENDING_CHANGES, ACT PENDING_REFORMS), by key. */
+  pendingChange?: string;
+  note?: string;
+}
+
+/**
+ * A value read in the in-force text. It applies from `from` (YYYY-MM-DD, a
+ * day in the building's time zone). Where the notes read only the current
+ * version of the law, `from` is that version's start, not the day the rule
+ * was first made: a day before it has no value recorded.
+ */
+export interface InForceDatedValue<T> extends DatedValueBase<T> {
+  legalStatus: "IN_FORCE";
+  from: string;
+  status: RuleStatus;
+}
+
+/**
+ * A value enacted or made but not yet commenced. It applies only from
+ * `commencedOn`, which stays null until a pack version records the day it
+ * commenced (after checking the Government Gazette or the legislation
+ * register). `fixedStartDate` is the day the instrument itself fixes, or null
+ * where it commences on proclamation; `latestStartDate` is the day it
+ * commences at the latest. Neither switches the value on: once one has
+ * passed, the pending law check lists the value so a person checks.
+ */
+export interface PendingDatedValue<T> extends DatedValueBase<T> {
+  legalStatus: "ENACTED_NOT_COMMENCED" | "MADE_NOT_COMMENCED";
+  commencedOn: string | null;
+  fixedStartDate: string | null;
+  latestStartDate: string | null;
+  /** How it commences, in plain words. */
+  commencement: string;
+  /** How far the enacted or made text was checked (not that it is in force). */
+  status: RuleStatus;
+}
+
+/** A change announced with no legislation. Never applied. */
+export interface AnnouncedDatedValue<T> extends DatedValueBase<T> {
+  legalStatus: "ANNOUNCED_NO_LEGISLATION";
+  commencement: string;
+  status: RuleStatus;
+}
+
+/**
+ * A value in a Bill. Never applied: when the Bill passes, a pack version
+ * restates it as enacted, with its commencement. A Bill's text is not a
+ * RuleStatus (CONFIRMED means read in the in-force text), so it has
+ * `textStatus` instead.
+ */
+export interface BillDatedValue<T> extends DatedValueBase<T> {
+  legalStatus: "NOT_LAW";
+  /** The day the Bill was presented. */
+  presentedOn: string;
+  commencement: string;
+  textStatus: "READ_IN_BILL_TEXT";
+}
+
+export type DatedValue<T> = InForceDatedValue<T> | PendingDatedValue<T> | AnnouncedDatedValue<T> | BillDatedValue<T>;
+
+/**
+ * A rule that changes on a date: every value it has had or will have, oldest
+ * first. A pack holds its dated rules in DATED_RULES, by key.
+ */
+export interface DatedRule<T> {
+  /** What the rule is, in plain words. */
+  title: string;
+  versions: readonly DatedValue<T>[];
+  note?: string;
+}
+
+/** A pack's dated rules, by key. */
+export type DatedRules = Readonly<Record<string, DatedRule<unknown>>>;
+
 /** A StrataVerze fee (price book code and variant). */
 export interface FeeVariant {
   code: string;
