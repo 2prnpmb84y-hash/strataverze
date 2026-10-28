@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { FundSummaryClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/fund-summary/fund-summary-client";
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function AccountantFundSummaryPage({
   params,
@@ -49,6 +50,7 @@ export default async function AccountantFundSummaryPage({
         endDate={endDate}
         summaries={summaries}
         catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE}
+        words={packWordsFor(rulesForState(scheme.state).rules)}
         basePath={`/accountant/schemes/${id}/finance/reports`}
       />
     </div>

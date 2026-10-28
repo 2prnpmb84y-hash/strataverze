@@ -95,9 +95,11 @@ import {
 import { suspenseBlockingClose, unallocatedCents } from "@/lib/finance/reconciliation";
 import { schemeTimeZone, schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { interestSettingProblem } from "@/lib/finance/statutory-interest";
-import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { auditLabelWords, levyFormWords } from "@/lib/jurisdiction/screen-words";
+import { capitalise } from "@/lib/jurisdiction/wording";
 import { fundNameWords, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
-import { UnsupportedJurisdictionError } from "@/config/statutory";
+import { UnsupportedJurisdictionError, type StatutoryRules } from "@/config/statutory";
 import { generalMeetingResolutionProblem } from "@/lib/finance/resolutions";
 import { BudgetError, assertLineEditable, editableBudgetFor, getBudgets } from "@/lib/finance/budgets";
 import { levyScheduleActivationProblem } from "@/lib/finance/budget-status";
@@ -230,10 +232,22 @@ const LEDGER_RULE_MESSAGES: readonly RegExp[] = [
   /^There is not enough credit for this\./,
 ];
 
-/** Validation messages thrown by the interest helpers (interest.ts). */
+/** A word as a pattern matches it exactly. */
+const literal = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Validation messages thrown by the interest helpers (interest.ts), with the
+ * building's own words: "Interest amount" and "Levy notice" (NSW), "Penalty
+ * amount" and "Contribution notice" (Queensland). Only those words match.
+ */
+const interestRuleMessages = (t: Pick<StatutoryRules["TERMINOLOGY"], "levy" | "lateCharge">): readonly RegExp[] => [
+  new RegExp(`^${literal(capitalise(t.lateCharge))} amount must be greater than zero\\.`),
+  new RegExp(`^${literal(capitalise(t.levy))} notice not found\\.`),
+  ...INTEREST_RULE_MESSAGES,
+];
+
+/** The interest helpers' other validation messages. */
 const INTEREST_RULE_MESSAGES: readonly RegExp[] = [
-  /^Interest amount must be greater than zero\./,
-  /^Levy notice not found\./,
   // In the building's words: interest (NSW) or penalty (Queensland).
   /^No more than \$[\d,.]+ of \w+ is owed on this notice to date\./,
   /^Required system accounts .* not found\./,
@@ -741,7 +755,7 @@ export async function reverseJournalEntryAction(
       }
       const notice = original.sourceId ? await db.orm.public.LevyNotice.where((n) => n.id.eq(original.sourceId!)).first() : null;
       if (notice) {
-        return { error: "This levy receipt was recorded before receipts were linked to their payments. Record a correcting entry instead of reversing it." };
+        return { error: `This ${(await messageTermsFor(schemeId)).levy} receipt was recorded before receipts were linked to their payments. Record a correcting entry instead of reversing it.` };
       }
     }
 
@@ -1071,11 +1085,16 @@ export async function createLevyScheduleAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    return { error: "Failed to create levy schedule." };
+    return { error: `Failed to create ${(await messageTermsFor(schemeId)).levy} schedule.` };
   }
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** "Levy schedule not found.", in the building's words. */
+async function scheduleNotFound(schemeId: string): Promise<string> {
+  return `${capitalise((await messageTermsFor(schemeId)).levy)} schedule not found.`;
+}
 
 /** Load a schedule and confirm it belongs to the scheme. */
 async function loadScheduleForScheme(schemeId: string, scheduleId: string) {
@@ -1098,10 +1117,10 @@ export async function approveLevyScheduleAction(
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     const resolutionDate = String(formData.get("resolutionDate") ?? "").trim();
     if (!ISO_DATE.test(resolutionDate)) {
-      return { fieldErrors: { resolutionDate: "Enter the date the levies were resolved." } };
+      return { fieldErrors: { resolutionDate: `Enter the date the ${(await messageTermsFor(schemeId)).levies} were resolved.` } };
     }
     const schedule = await loadScheduleForScheme(schemeId, scheduleId);
-    if (!schedule) return { error: "Levy schedule not found." };
+    if (!schedule) return { error: await scheduleNotFound(schemeId) };
     if (schedule.status !== "DRAFT") return { error: "Only a draft schedule can be approved." };
 
     await approveLevySchedule(scheduleId, profile.id, resolutionDate);
@@ -1135,9 +1154,9 @@ export async function issueScheduleNoticesAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     const schedule = await loadScheduleForScheme(schemeId, scheduleId);
-    if (!schedule) return { error: "Levy schedule not found." };
+    if (!schedule) return { error: await scheduleNotFound(schemeId) };
     if (schedule.status !== "APPROVED") {
-      return { error: "Record the owners corporation's approval before issuing notices." };
+      return { error: `Record the ${(await messageTermsFor(schemeId)).ownersCorporation}'s approval before issuing notices.` };
     }
     if ((schedule.levyNotices ?? []).length > 0) {
       return { error: "Notices have already been issued for this schedule." };
@@ -1150,16 +1169,19 @@ export async function issueScheduleNoticesAction(
       financialYear: Number(schedule.financialYear),
       fundName: String(schedule.fund?.name ?? "fund"),
       budgets: (await getBudgets(schemeId, Number(schedule.financialYear))).filter((b) => b.fundId === schedule.fundId),
+      levies: (await messageTermsFor(schemeId)).levies,
     });
     if (activation) return { error: activation };
     const scheme = await getSchemeById(schemeId);
     if (!scheme) return { error: "Scheme not found." };
     const lots = await loadPlanLots(schemeId);
     const totalCents = toCents(String(schedule.budgetAmount));
+    const formWords = levyFormWords((await rulesForScheme(schemeId)).rules);
     const issues = checkPlan({
       lots,
       totalEntitlement: Number(schedule.totalEntitlement),
       totalCents,
+      words: { levy: formWords.levy, entitlement: formWords.entitlement },
     });
     if (issues.length > 0) return { error: issues.map((i) => i.message).join(" ") };
     // Where the building's pack shares insurance by its own schedule (Queensland,
@@ -1175,7 +1197,7 @@ export async function issueScheduleNoticesAction(
       ? toIsoDay(schedule.approvedAt) || toIsoDay(schedule.dueDate)
       : financialYearStart(Number(schedule.financialYear), String(scheme.financialYearEnd));
     const firstDueDate = isSpecial ? toIsoDay(schedule.dueDate) : periodStart;
-    if (!ISO_DATE.test(firstDueDate)) return { error: "This special levy has no due date." };
+    if (!ISO_DATE.test(firstDueDate)) return { error: `This special ${(await messageTermsFor(schemeId)).levy} has no due date.` };
     // Instalments the previous manager raised before the takeover are not raised again.
     const raisedBefore = new Set(String(schedule.raisedBeforeTakeover ?? "").split(",").map((x) => Number(x.trim())).filter((x) => x > 0));
     const plan = planNotices({
@@ -1195,7 +1217,7 @@ export async function issueScheduleNoticesAction(
         .limit(50)
         .all();
       if (sameYear.some((x) => x.id !== scheduleId && x.status === "ACTIVE")) {
-        return { error: "This fund already has an active levy schedule for this year. Stop its planned notices first." };
+        return { error: `This fund already has an active ${(await messageTermsFor(schemeId)).levy} schedule for this year. Stop its planned notices first.` };
       }
       const earlier = sameYear.filter((x) => x.id !== scheduleId && x.status === "SUPERSEDED");
       const earlierRaised = new Set(earlier.flatMap((x) => String(x.raisedBeforeTakeover ?? "").split(",").map((v) => Number(v.trim())).filter((v) => v > 0)));
@@ -1305,7 +1327,7 @@ export async function issueScheduleNoticesAction(
       return { error: `${err.message} The notices were not sent; they stay planned.` };
     }
     if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
-    return { error: "Failed to issue levy notices." };
+    return { error: `Failed to issue ${(await messageTermsFor(schemeId)).levy} notices.` };
   }
 }
 
@@ -1323,7 +1345,7 @@ export async function issueOverdueNoticesAction(
   try {
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     const schedule = await loadScheduleForScheme(schemeId, scheduleId);
-    if (!schedule) return { error: "Levy schedule not found." };
+    if (!schedule) return { error: await scheduleNotFound(schemeId) };
     if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be sent." };
     const today = await schemeToday(schemeId);
     const list = await overdueDrafts(schemeId, scheduleId, today);
@@ -1362,7 +1384,7 @@ export async function stopPlannedNoticesAction(schemeId: string, scheduleId: str
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
     await requireRecentMfa();
     const schedule = await loadScheduleForScheme(schemeId, scheduleId);
-    if (!schedule) return { error: "Levy schedule not found." };
+    if (!schedule) return { error: await scheduleNotFound(schemeId) };
     if (schedule.status !== "ACTIVE") return { error: "Only an active schedule's planned notices can be stopped." };
     if (formData.get("confirmStop") !== "on") return { error: "Confirm that the planned notices are to be stopped." };
     const drafts = await db.orm.public.LevyNotice
@@ -1410,7 +1432,7 @@ export async function createSpecialLevyAction(
 
     const fieldErrors: Record<string, string> = {};
     if (!fundId) fieldErrors.fundId = "Fund is required.";
-    if (!title) fieldErrors.title = "Give the special levy a title.";
+    if (!title) fieldErrors.title = `Give the special ${(await messageTermsFor(schemeId)).levy} a title.`;
     if (!(amount > 0)) fieldErrors.amount = "Amount must be greater than zero.";
     if (!ISO_DATE.test(resolutionDate)) fieldErrors.resolutionDate = "Enter the resolution date.";
     if (!ISO_DATE.test(dueDate)) fieldErrors.dueDate = "Enter the due date.";
@@ -1451,7 +1473,7 @@ export async function createSpecialLevyAction(
     return { success: true, data: { id: schedule.id } };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
-    return { error: "Failed to create the special levy." };
+    return { error: `Failed to create the special ${(await messageTermsFor(schemeId)).levy}.` };
   }
 }
 
@@ -2021,10 +2043,11 @@ export async function uploadFinancialDocumentAction(
       const invoice = await db.orm.public.SupplierInvoice.where((i) => and(i.id.eq(invoiceId), i.schemeId.eq(schemeId))).first();
       if (!invoice) return { error: "Invoice not found." };
     }
-    const noticeId = idList([data.levyNoticeId], "Levy notice")[0];
+    const levyNotice = `${capitalise((await messageTermsFor(schemeId)).levy)} notice`;
+    const noticeId = idList([data.levyNoticeId], levyNotice)[0];
     if (noticeId) {
       const notice = await db.orm.public.LevyNotice.where((n) => and(n.id.eq(noticeId), n.schemeId.eq(schemeId))).first();
-      if (!notice) return { error: "Levy notice not found." };
+      if (!notice) return { error: `${levyNotice} not found.` };
     }
     const transactionId = idList([data.bankTransactionId], "Bank transaction")[0];
     if (transactionId && !(await schemeTransaction(schemeId, transactionId))) {
@@ -2422,7 +2445,7 @@ export async function chargeInterestAction(
     const { profile } = await requireSchemeMembership(schemeId, ["ADVISER"]);
 
     if (interestAmount <= 0) {
-      return { error: "Interest amount must be greater than zero." };
+      return { error: `${capitalise((await messageTermsFor(schemeId)).lateCharge)} amount must be greater than zero.` };
     }
 
     const result = await chargeInterest({
@@ -2445,7 +2468,8 @@ export async function chargeInterestAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    return { error: unexpectedError(err, "Failed to charge interest.", [...INTEREST_RULE_MESSAGES, ...LEDGER_RULE_MESSAGES]) };
+    const terms = await messageTermsFor(schemeId);
+    return { error: unexpectedError(err, `Failed to charge ${terms.lateCharge}.`, [...interestRuleMessages(terms), ...LEDGER_RULE_MESSAGES]) };
   }
 }
 
@@ -2472,7 +2496,8 @@ export async function chargeInterestBatchAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (isRedirectError(err)) throw err;
-    return { error: unexpectedError(err, "Failed to charge interest.", [...INTEREST_RULE_MESSAGES, ...LEDGER_RULE_MESSAGES]) };
+    const terms = await messageTermsFor(schemeId);
+    return { error: unexpectedError(err, `Failed to charge ${terms.lateCharge}.`, [...interestRuleMessages(terms), ...LEDGER_RULE_MESSAGES]) };
   }
 }
 
@@ -2806,7 +2831,7 @@ export async function exportAuditTrailAction(
       resourceId: schemeId,
       metadata: { kind: "finance_audit_trail", rows: rows.length },
     });
-    const csv = formatAuditTrailCsv(rows, await schemeTimeZone(schemeId));
+    const csv = formatAuditTrailCsv(rows, await schemeTimeZone(schemeId), auditLabelWords((await rulesForScheme(schemeId)).rules));
 
     const datePart = await schemeToday(schemeId);
     const filename = `audit-trail-${datePart}.csv`;
@@ -2921,6 +2946,6 @@ export async function saveInterestSettingAction(
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
-    return { error: "Failed to save the interest setting." };
+    return { error: `Failed to save the ${(await messageTermsFor(schemeId)).lateCharge} setting.` };
   }
 }

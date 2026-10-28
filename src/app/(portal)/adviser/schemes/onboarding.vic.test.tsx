@@ -77,7 +77,8 @@ const { LotsStep } = await import("./onboarding-steps");
 const { LotForm } = await import("./[id]/lots/lot-form");
 const { onboardingWordsFor } = await import("@/lib/onboarding/onboarding-words");
 const { checkLots } = await import("@/lib/onboarding/property-onboarding");
-const { onLotEntitlementWords, separateEntitlement } = await import("@/lib/jurisdiction/building-data");
+const { separateEntitlement } = await import("@/lib/jurisdiction/building-data");
+const { lotFormEntitlementWords } = await import("@/lib/jurisdiction/screen-words");
 const { PENDING_RULE_PACKS } = await import("@/config/statutory");
 type Rules = import("@/config/statutory").StatutoryRules;
 const VIC = PENDING_RULE_PACKS.VIC.rules as unknown as Rules;
@@ -191,7 +192,7 @@ describe("createSchemeAction for a Victorian building", () => {
 
 describe("the lot form for a Victorian lot", () => {
   const defaults = { lotNumber: "3", unitNumber: "12", entitlement: 1, floorArea: null, lotType: "RESIDENTIAL" };
-  const props = { entitlementWords: onLotEntitlementWords(VIC), separate: separateEntitlement(VIC) };
+  const props = { entitlementWords: lotFormEntitlementWords(VIC), separate: separateEntitlement(VIC) };
 
   it("names lot liability and asks for the lot entitlement on a new lot", () => {
     const html = renderToStaticMarkup(<LotForm mode="create" schemeId="s1" {...props} />);

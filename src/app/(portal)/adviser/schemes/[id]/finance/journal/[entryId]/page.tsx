@@ -14,6 +14,8 @@ import { toCents } from "@/lib/billing/money";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { entryTypeLabel, packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -72,7 +74,9 @@ export default async function JournalEntryDetailPage({
   const entry = await getJournalEntryById(entryId);
   // An entry is only shown under its own scheme.
   if (!entry || entry.schemeId !== id) notFound();
-  const sources = (await getEntrySources(id, [{ id: entry.id, sourceType: entry.sourceType, sourceId: entry.sourceId }])).get(entry.id);
+  const { rules } = rulesForState(scheme.state);
+  const words = packWordsFor(rules);
+  const sources = (await getEntrySources(id, [{ id: entry.id, sourceType: entry.sourceType, sourceId: entry.sourceId }], rules.TERMINOLOGY)).get(entry.id);
   const base = `/adviser/schemes/${id}/finance`;
   const sourceHref = (() => {
     const s = sources?.source;
@@ -116,9 +120,9 @@ export default async function JournalEntryDetailPage({
               return { id: p.id, label: `Notice ${String(n?.noticeNumber ?? "?")}, Lot ${String(n?.lot?.lotNumber ?? "?")}`, amountCents: toCents(String(p.amount)) };
             }).concat(receipt.credits.map((c) => ({ id: `credit-${c.id}`, label: `Held as Lot ${c.lotNumber}'s credit`, amountCents: c.amountCents }))),
             problems: {
-              WRONG_LOT: receiptReversalProblem(receipt, "WRONG_LOT"),
-              DISHONOURED: receiptReversalProblem(receipt, "DISHONOURED"),
-              ENTERED_IN_ERROR: receiptReversalProblem(receipt, "ENTERED_IN_ERROR"),
+              WRONG_LOT: receiptReversalProblem(receipt, "WRONG_LOT", words.levy),
+              DISHONOURED: receiptReversalProblem(receipt, "DISHONOURED", words.levy),
+              ENTERED_IN_ERROR: receiptReversalProblem(receipt, "ENTERED_IN_ERROR", words.levy),
             },
             notices: openNotices
               .filter((n) => !current.has(n.id))
@@ -156,7 +160,7 @@ export default async function JournalEntryDetailPage({
           {status}
         </span>
         <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-600 px-3 py-1 text-xs font-medium">
-          {String(entry.entryType)}
+          {entryTypeLabel(String(entry.entryType), words)}
         </span>
       </div>
 
@@ -178,10 +182,10 @@ export default async function JournalEntryDetailPage({
             label="Entry Number"
             value={entry.entryNumber ? String(entry.entryNumber) : null}
           />
-          <DetailItem label="Entry Type" value={String(entry.entryType)} />
+          <DetailItem label="Entry Type" value={entryTypeLabel(String(entry.entryType), words)} />
           <DetailItem
             label="Source Type"
-            value={entry.sourceType ? String(entry.sourceType) : null}
+            value={entry.sourceType ? entryTypeLabel(String(entry.sourceType), words) : null}
           />
           <DetailItem
             label="Description"
@@ -288,7 +292,7 @@ export default async function JournalEntryDetailPage({
 
       {receiptPanel && (
         <Card>
-          <CardHeader title="Levy receipt" description="Reverse or move this receipt. Its notices are put back too, and the owner's statement shows the reversal." />
+          <CardHeader title={`${words.Levy} receipt`} description="Reverse or move this receipt. Its notices are put back too, and the owner's statement shows the reversal." />
           <LevyReceiptPanel schemeId={id} entryId={entryId} {...receiptPanel} />
         </Card>
       )}

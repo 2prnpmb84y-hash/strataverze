@@ -9,6 +9,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { OwnerCreditsCard } from "@/components/finance/owner-credits-card";
 
 function formatCurrency(value: number): string {
@@ -35,9 +37,12 @@ export default async function AccountantLevyRegisterPage({
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
+  const { rules } = rulesForState(scheme.state);
+  const w = packWordsFor(rules);
   const levies = levyRegister(
     await getIssuedLevyNoticesForScheme(id),
     await schemeToday(id),
+    rules.TERMINOLOGY,
   );
 
   // Calculate totals
@@ -58,7 +63,7 @@ export default async function AccountantLevyRegisterPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Levy Register"
+        title={`${w.Levy} Register`}
         description={String(scheme.name)}
         backHref={`/accountant/schemes/${id}/finance/reports`}
         backLabel="Reports"
@@ -66,8 +71,8 @@ export default async function AccountantLevyRegisterPage({
 
       {levies.length === 0 ? (
         <EmptyState
-          title="No levies raised"
-          description="No levies have been issued for this scheme yet."
+          title={`No ${w.levies} raised`}
+          description={`No ${w.levies} have been issued for this scheme yet.`}
         />
       ) : (
         <>
@@ -88,7 +93,7 @@ export default async function AccountantLevyRegisterPage({
               accent="bg-amber-500"
             />
             <StatCard
-              label="Levy Notices"
+              label={`${w.Levy} Notices`}
               value={String(itemCount)}
               accent="bg-zinc-400"
             />
@@ -98,7 +103,7 @@ export default async function AccountantLevyRegisterPage({
             <Card key={levy.id}>
               <CardHeader
                 title={levy.title}
-                description={`${levy.levyType} levy | First due: ${formatDate(levy.dueDate)} | ${levy.items.length} notice${levy.items.length === 1 ? "" : "s"}`}
+                description={`${levy.levyType} ${w.levy} | First due: ${formatDate(levy.dueDate)} | ${levy.items.length} notice${levy.items.length === 1 ? "" : "s"}`}
               />
 
               {/* Table header */}
@@ -175,7 +180,7 @@ export default async function AccountantLevyRegisterPage({
               <div className="px-6 py-3 border-t border-line bg-muted/20">
                 <div className="grid grid-cols-1 sm:grid-cols-[80px_80px_1fr_100px_100px_100px_90px] gap-2 sm:gap-4 items-center">
                   <div className="sm:col-span-3 text-sm font-semibold text-ink">
-                    Levy Total
+                    {w.Levy} Total
                   </div>
                   <div className="text-sm text-right tabular-nums font-semibold text-ink">
                     {formatCurrency(levy.totalAmount)}

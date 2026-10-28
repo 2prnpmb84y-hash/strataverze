@@ -34,7 +34,7 @@ type LotWithOwner = {
 const STATUS_MAP: Record<string, { label: string; variant: ChipStatus }> = {
   OPEN: { label: "Open", variant: "success" },
   IN_PROGRESS: { label: "In Progress", variant: "warning" },
-  PAYMENT_PLAN: { label: "Payment Plan", variant: "default" },
+  // PAYMENT_PLAN is labelled in the building's words (paymentPlanLabel).
   ON_HOLD: { label: "On Hold", variant: "default" },
   REFERRED_LEGAL: { label: "Legal", variant: "danger" },
   CLOSED_PAID: { label: "Closed — Paid", variant: "success" },
@@ -226,12 +226,10 @@ export function DebtRecoveryListClient({
       ) : (
         <div className="space-y-3">
           {filteredCases.map((c) => {
-            const known = STATUS_MAP[c.status];
-            const statusInfo = known
-              ? c.status === "PAYMENT_PLAN"
-                ? { ...known, label: paymentPlanLabel }
-                : known
-              : { label: c.status, variant: "default" as ChipStatus };
+            const statusInfo =
+              c.status === "PAYMENT_PLAN"
+                ? { label: paymentPlanLabel, variant: "default" as ChipStatus }
+                : (STATUS_MAP[c.status] ?? { label: c.status, variant: "default" as ChipStatus });
             return (
               <Link
                 key={c.id}

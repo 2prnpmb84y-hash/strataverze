@@ -14,7 +14,7 @@ import {
 import { addNumberedJournal, numberedTransaction } from "./journal-numbering";
 import { logActivity } from "./activity-log";
 import { fromCents, toCents } from "@/lib/billing/money";
-import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
 import { getSchemeInterestSetting, lateChargePosition, statutoryInterestForScheme, type SchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { effectiveLateChargeMode, lateChargeApplies, lateChargeFirst } from "@/lib/finance/statutory-interest";
 import { livePayments } from "@/lib/finance/levy-reversal";
@@ -121,7 +121,7 @@ export async function chargeInterest(data: {
   const { schemeId, noticeId, interestAmount, actorId } = data;
 
   if (interestAmount <= 0) {
-    throw new Error("Interest amount must be greater than zero.");
+    throw new Error(`${capitalise((await messageTermsFor(schemeId)).lateCharge)} amount must be greater than zero.`);
   }
 
   // Fetch the notice to get current values
@@ -131,7 +131,7 @@ export async function chargeInterest(data: {
     .first();
 
   if (!notice || notice.schemeId !== schemeId) {
-    throw new Error("Levy notice not found.");
+    throw new Error(`${capitalise((await messageTermsFor(schemeId)).levy)} notice not found.`);
   }
 
   // The building's rule pack, recorded on the interest journal, and its words for the late charge.
@@ -428,7 +428,7 @@ async function chargeInterestLocked(data: {
   const wanted = Math.round(data.interestAmount * 100);
   const charged = await numberedTransaction(data.schemeId, async (tx) => {
     const locked = await lockLateCharge(tx, { schemeId: data.schemeId, noticeId: data.noticeId, asAt, setting });
-    if (!locked) throw new Error("Levy notice not found.");
+    if (!locked) throw new Error(`${capitalise(data.terms.levy)} notice not found.`);
     const owed = locked.position.additionalCents;
     if (!data.alreadyVerified && wanted > owed) {
       throw new Error(`No more than $${fromCents(owed).toFixed(2)} of ${data.terms.lateCharge} is owed on this notice to date.`);

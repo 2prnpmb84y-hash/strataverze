@@ -6,6 +6,8 @@ import { parseDrillDownParams } from "@/lib/finance/drill-down";
 import { getEntrySources, getJournalEntriesForReportCell } from "@/lib/finance/report-drill-down";
 import { PageHeader } from "@/components/ui/page-header";
 import { ReportCellDrillDown } from "@/components/finance/report-cell-drill-down";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 /** TC-013: from a report figure to the journal entries, source records and documents behind it. */
 export default async function ReportDrillDownPage({
@@ -27,7 +29,8 @@ export default async function ReportDrillDownPage({
   if (!p) notFound();
   const cell = await getJournalEntriesForReportCell(id, p.accountId, p.fundId, { start: p.start, end: p.end }, p.mode);
   if (!cell) notFound();
-  const sources = await getEntrySources(id, cell.rows.map((r) => ({ id: r.entryId, sourceType: r.sourceType, sourceId: r.sourceId })));
+  const { rules } = rulesForState(scheme.state);
+  const sources = await getEntrySources(id, cell.rows.map((r) => ({ id: r.entryId, sourceType: r.sourceType, sourceId: r.sourceId })), rules.TERMINOLOGY);
   const base = `/adviser/schemes/${id}/finance`;
 
   return (
@@ -36,6 +39,7 @@ export default async function ReportDrillDownPage({
       <ReportCellDrillDown
         cell={cell}
         sources={sources}
+        words={packWordsFor(rules)}
         links={{
           entry: (entryId) => `${base}/journal/${entryId}`,
           source: (s) => {

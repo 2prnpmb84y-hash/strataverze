@@ -6,7 +6,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
-import { onLotEntitlementWords, regulationModuleChoices, separateEntitlement } from "@/lib/jurisdiction/building-data";
+import { regulationModuleChoices, separateEntitlement } from "@/lib/jurisdiction/building-data";
+import { lotFormEntitlementWords } from "@/lib/jurisdiction/screen-words";
 
 vi.mock("./actions", () => ({ createLotAction: vi.fn(), updateLotAction: vi.fn() }));
 vi.mock("../../actions", () => ({ saveRegulationModuleAction: vi.fn() }));
@@ -20,9 +21,10 @@ const defaults = { lotNumber: "3", unitNumber: "12", entitlement: 50, floorArea:
 
 describe("the lot form", () => {
   it("is the same for an NSW building with the pack's words as without them", () => {
-    const before = renderToStaticMarkup(<LotForm mode="edit" schemeId="s1" lotId="l1" defaults={defaults} />);
+    // The words the form showed before it took them from the pack.
+    const before = renderToStaticMarkup(<LotForm mode="edit" schemeId="s1" lotId="l1" defaults={defaults} entitlementWords={{ label: "Unit Entitlement", help: null }} />);
     const after = renderToStaticMarkup(
-      <LotForm mode="edit" schemeId="s1" lotId="l1" defaults={defaults} entitlementWords={onLotEntitlementWords(NSW)} separate={separateEntitlement(NSW)} />,
+      <LotForm mode="edit" schemeId="s1" lotId="l1" defaults={defaults} entitlementWords={lotFormEntitlementWords(NSW)} separate={separateEntitlement(NSW)} />,
     );
     expect(after).toBe(before);
     expect(after).toContain(">Unit Entitlement<");
@@ -31,7 +33,7 @@ describe("the lot form", () => {
   });
 
   it("names both Queensland schedules and asks for the interest schedule on a new lot", () => {
-    const html = renderToStaticMarkup(<LotForm mode="create" schemeId="s1" entitlementWords={onLotEntitlementWords(QLD)} separate={separateEntitlement(QLD)} />);
+    const html = renderToStaticMarkup(<LotForm mode="create" schemeId="s1" entitlementWords={lotFormEntitlementWords(QLD)} separate={separateEntitlement(QLD)} />);
     expect(html).toContain(">Contribution Schedule Lot Entitlement<");
     expect(html).toContain(">Interest Schedule Lot Entitlement<");
     expect(html).toContain("From the interest schedule in the community management statement. A whole number, not 0.");
@@ -41,7 +43,7 @@ describe("the lot form", () => {
 
   it("shows a Queensland lot's interest schedule entitlement, locked for the adviser", () => {
     const html = renderToStaticMarkup(
-      <LotForm mode="edit" schemeId="s1" lotId="l1" lockStructure defaults={{ ...defaults, interestScheduleEntitlement: 45 }} entitlementWords={onLotEntitlementWords(QLD)} separate={separateEntitlement(QLD)} />,
+      <LotForm mode="edit" schemeId="s1" lotId="l1" lockStructure defaults={{ ...defaults, interestScheduleEntitlement: 45 }} entitlementWords={lotFormEntitlementWords(QLD)} separate={separateEntitlement(QLD)} />,
     );
     expect(html).toMatch(/<input id="interestScheduleEntitlement"[^>]*readOnly=""[^>]*name="interestScheduleEntitlement" value="45"/);
     // Not required on an existing lot: one saved without it stays flagged.

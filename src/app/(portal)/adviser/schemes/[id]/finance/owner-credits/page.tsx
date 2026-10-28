@@ -3,6 +3,8 @@ import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { connection } from "next/server";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { getOwnerCreditRefunds, getOwnerCredits } from "@/lib/finance/owner-credits";
 import { getInvoiceControlView } from "@/lib/finance/control-view";
 import { formatAud, toCents } from "@/lib/billing/money";
@@ -41,6 +43,7 @@ export default async function OwnerCreditsPage({ params }: { params: Promise<{ i
   if (!isAdviser) notFound();
 
   const [credits, refunds] = await Promise.all([getOwnerCredits(id), getOwnerCreditRefunds([id])]);
+  const w = packWordsFor(rulesForState(scheme.state).rules);
   const lotNumber = (lotId: string) => String(scheme.lots?.find((l) => l.id === lotId)?.lotNumber ?? "?");
   const fundName = (fundId: string) => String(scheme.funds.find((f) => f.id === fundId)?.name ?? "Fund");
   const openRefunds = refunds.filter((r) => r.status === "AWAITING_APPROVAL" || r.status === "APPROVED");
@@ -55,12 +58,12 @@ export default async function OwnerCreditsPage({ params }: { params: Promise<{ i
     <div className="space-y-6">
       <PageHeader
         title="Owner Credits"
-        description="Payments above what a levy notice owed are held as the owner's credit for that lot, in the same fund."
+        description={`Payments above what a ${w.levy} notice owed are held as the owner's credit for that lot, in the same fund.`}
       />
 
       <Card>
         <div className="space-y-4">
-          <AutoApplyToggle schemeId={id} enabled={scheme.autoApplyOwnerCredit !== false} />
+          <AutoApplyToggle schemeId={id} enabled={scheme.autoApplyOwnerCredit !== false} levy={w.levy} />
           <ApplyCreditNowButton schemeId={id} />
         </div>
       </Card>

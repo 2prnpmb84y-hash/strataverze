@@ -216,9 +216,9 @@ export function sourceCandidates(sourceType: string | null): SourceKind[] {
   }
 }
 
-/** A plain description of the drill-down basis, for the page heading. */
-export function modeLabel(mode: DrillMode): string {
-  if (mode === "CASH") return "Cash basis: levy income when received, expenses when paid";
-  if (mode === "ACCRUAL") return "Accrual basis: levies when raised, expenses when approved";
+/** A plain description of the drill-down basis, for the page heading, in the building's words for a levy. */
+export function modeLabel(mode: DrillMode, terms: { levy: string; levies: string } = { levy: "levy", levies: "levies" }): string {
+  if (mode === "CASH") return `Cash basis: ${terms.levy} income when received, expenses when paid`;
+  if (mode === "ACCRUAL") return `Accrual basis: ${terms.levies} when raised, expenses when approved`;
   return "Every posted line on this account";
 }

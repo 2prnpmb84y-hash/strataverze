@@ -6,6 +6,8 @@ import { getGstSummaryReport } from "@/lib/queries/reports";
 import { PageHeader } from "@/components/ui/page-header";
 import { GstSummaryClient } from "./gst-summary-client";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function GstSummaryPage({
   params,
@@ -112,6 +114,7 @@ export default async function GstSummaryPage({
         endDate={endDate}
         quarters={quarters}
         report={report}
+        words={packWordsFor(rulesForState(scheme.state).rules)}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { PageHeader } from "@/components/ui/page-header";
 import { JournalEntryForm } from "../journal-entry-form";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 export default async function NewJournalEntryPage({
   params,
@@ -52,6 +53,7 @@ export default async function NewJournalEntryPage({
         schemeId={id}
         accountCodes={accountCodeOptions}
         funds={fundOptions}
+        levy={rulesForState(scheme.state).rules.TERMINOLOGY.levy}
       />
     </div>
   );

@@ -31,6 +31,8 @@ import {
   type OnboardingLevyFrequency,
 } from "./income-budget";
 import { formatMoney } from "./property-onboarding";
+import { messageTermsFor } from "@/lib/jurisdiction/scheme-rules";
+import { capitalise } from "@/lib/jurisdiction/wording";
 
 export class IncomeBudgetError extends Error {}
 
@@ -71,6 +73,8 @@ async function takeoverCutover(schemeId: string) {
 export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPageData | { problem: string }> {
   const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
   if (!scheme) return { problem: "Building not found." };
+  // The building's words, for the messages.
+  const terms = await messageTermsFor(schemeId);
   const batch = await takeoverCutover(schemeId);
   if (!batch) {
     return { problem: "Enter the building's opening balances first. Last year's figures are reconciled with them, and the takeover date sets the years." };
@@ -134,7 +138,7 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
       locks.budget[f.id] = `The ${f.name} budget was adopted at a general meeting held in StrataVerze. Change it on the Budget page.`;
     }
     if (liveSchedules.some((x) => x.fundId === f.id && (x.status === "ACTIVE" || (noticeCounts.get(x.id) ?? 0) > 0))) {
-      locks.levies[f.id] = `Levy notices have been raised for the ${f.name} this year. Change the levies on the Levies page.`;
+      locks.levies[f.id] = `${capitalise(terms.levy)} notices have been raised for the ${f.name} this year. Change the ${terms.levies} on the ${capitalise(terms.levies)} page.`;
     }
     const byAccount = new Map<string, { actual: number; budget: number | null }>();
     for (const a of actuals.filter((x) => x.fundId === f.id)) byAccount.set(a.accountCodeId, { actual: centsOf(a.amount), budget: null });
@@ -185,7 +189,7 @@ export async function loadIncomeBudget(schemeId: string): Promise<IncomeBudgetPa
   };
 
   return {
-    ctx: { takeoverDate, years, funds: ctxFunds },
+    ctx: { takeoverDate, years, funds: ctxFunds, words: { levy: terms.levy, levies: terms.levies } },
     cutover: { id: batch.id, label: sourceSystemLabel(batch.sourceSystem), status: batch.status },
     saved,
     locks,
@@ -334,7 +338,7 @@ export async function saveIncomeBudget(schemeId: string, actorId: string, input:
       // Checked again here, in case notices were raised since the page loaded.
       const ids = all.filter((s) => s.status !== "SUPERSEDED").map((s) => s.id);
       const raised = ids.length ? await tx.orm.public.LevyNotice.where((n) => n.levyScheduleId.in(ids)).limit(1).all() : [];
-      if (raised.length || all.some((s) => s.status === "ACTIVE")) throw new IncomeBudgetError("Levy notices have been raised for this year since the page was opened. Reload the page.");
+      if (raised.length || all.some((s) => s.status === "ACTIVE")) throw new IncomeBudgetError(`${capitalise(ctx.words?.levy ?? "levy")} notices have been raised for this year since the page was opened. Reload the page.`);
       const existing = all.filter((s) => s.status === "DRAFT" || s.status === "APPROVED");
       const keep = existing[0] ?? null;
       for (const extra of existing.slice(1)) {

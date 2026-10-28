@@ -8,12 +8,14 @@ import { connection } from "next/server";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { formatDateIn } from "@/lib/jurisdiction/time-zone";
+import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 const docTypeLabels: Record<string, string> = {
   RECEIPT: "Receipt",
   INVOICE: "Invoice",
   BANK_STATEMENT: "Bank Statement",
-  LEVY_NOTICE: "Levy Notice",
+  // LEVY_NOTICE is named in the building's words (typeLabels).
   INSURANCE: "Insurance",
   CONTRACTOR_QUOTE: "Contractor Quote",
   TAX_DOCUMENT: "Tax Document",
@@ -75,6 +77,8 @@ export default async function FinanceDocumentsPage({
   if (!(await requirePageAccess(id, "finance.write"))) return null;
   const { type, status, verification } = await searchParams;
   const tz = await schemeTimeZone(id);
+  // A levy notice is named in the building's words; the type is stored as it is.
+  const typeLabels: Record<string, string> = { ...docTypeLabels, LEVY_NOTICE: `${packWordsFor((await rulesForScheme(id)).rules).Levy} Notice` };
 
   const [documents, unreviewedDocs] = await Promise.all([
     getFinancialDocumentsForScheme(id, {
@@ -195,7 +199,7 @@ export default async function FinanceDocumentsPage({
                   </div>
                   <div className="flex items-center gap-3 text-xs text-ink-muted">
                     <span>
-                      {docTypeLabels[doc.documentType] ?? doc.documentType}
+                      {typeLabels[doc.documentType] ?? doc.documentType}
                     </span>
                     <span>Uploaded: {formatDate(doc.uploadedAt, tz)}</span>
                     <span>{formatFileSize(doc.fileSize)}</span>

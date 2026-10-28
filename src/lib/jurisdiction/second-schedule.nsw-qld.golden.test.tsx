@@ -19,7 +19,7 @@ const { onboardingWordsFor } = await import("@/lib/onboarding/onboarding-words")
 const { checkLots } = await import("@/lib/onboarding/property-onboarding");
 const { LotsStep } = await import("@/app/(portal)/adviser/schemes/onboarding-steps");
 const { insuranceBasis, insuranceSplit } = await import("@/lib/levies/contribution-shares");
-const { levySharedBy, levyFormWords, lotWordsFor } = await import("./screen-words");
+const { levySharedBy, levyFormWords, lotFormEntitlementWords, lotWordsFor } = await import("./screen-words");
 
 const NSW = statutoryRulesFor("NSW");
 const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
@@ -37,7 +37,8 @@ const attempt = <T,>(f: () => T): { ok: T } | { error: string; name: string } =>
 };
 
 describe.each(PACKS)("%s lot form", (_code, rules) => {
-  const words = data.onLotEntitlementWords(rules);
+  // The words the lot page passes since #122 (lotFormEntitlementWords).
+  const words = lotFormEntitlementWords(rules);
   const separate = data.separateEntitlement(rules);
   const defaults = { lotNumber: "3", unitNumber: "12", entitlement: 50, floorArea: null, lotType: "RESIDENTIAL" };
   it.each([

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { STATUS_LABELS, STATUS_STYLES } from "@/lib/levies/levy-ledger";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 
 type LevyHistoryItem = {
   id: string;
@@ -55,11 +56,14 @@ export function LotFinancials({
   financials,
   levyHistory,
   timeZone,
+  words: w,
 }: {
   financials: Financials;
   levyHistory: LevyHistoryItem[];
   /** The building's time zone. */
   timeZone: string;
+  /** The building's words (packWordsFor). */
+  words: Pick<PackWords, "levy" | "Levy" | "Levies" | "LateCharge">;
 }) {
   const [filterType, setFilterType] = useState<"ALL" | "ORDINARY" | "SPECIAL">("ALL");
 
@@ -73,9 +77,9 @@ export function LotFinancials({
       {/* Financial summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <SummaryCard label="Brought forward" value={financials.opening} />
-        <SummaryCard label="+Levies" value={financials.annual} />
+        <SummaryCard label={`+${w.Levies}`} value={financials.annual} />
         <SummaryCard label="+Special" value={financials.special} />
-        <SummaryCard label="+Interest charged" value={financials.interest} />
+        <SummaryCard label={`+${w.LateCharge} charged`} value={financials.interest} />
         <SummaryCard label="−Paid" value={financials.paid} variant="green" />
         <SummaryCard label="=Owing" value={financials.closing} variant="bold" />
       </div>
@@ -84,7 +88,7 @@ export function LotFinancials({
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <h3 className="font-heading font-semibold text-ink">
-            Levy History
+            {w.Levy} History
           </h3>
           <div className="flex rounded-[var(--radius-card)] border border-line overflow-hidden">
             {(["ALL", "ORDINARY", "SPECIAL"] as const).map((type) => (
@@ -106,7 +110,7 @@ export function LotFinancials({
 
         {filtered.length === 0 ? (
           <div className="rounded-[var(--radius-card)] border border-line px-4 py-8 text-center text-sm text-ink-muted">
-            No levy items recorded for this lot.
+            No {w.levy} items recorded for this lot.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
@@ -114,7 +118,7 @@ export function LotFinancials({
               <thead>
                 <tr className="bg-muted/50">
                   <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
-                    Levy
+                    {w.Levy}
                   </th>
                   <th scope="col" className="px-3 py-2.5 text-left font-medium text-ink-muted whitespace-nowrap">
                     Type

@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getAvailablePortals, hasCommitteeRole } from "@/lib/queries/profiles";
 import { getPendingInvitationsForEmail } from "@/lib/queries/invitations";
 import { PortalShell } from "@/components/portal-shell";
+import { levyNavLabel, ownerLevyNavLabel } from "@/lib/owner/levy-nav";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 // Auth-protected layout reads cookies at request time, so it cannot be
 // prerendered into the static shell. Opt out of instant validation.
@@ -28,13 +31,15 @@ export default async function PortalLayout({
   }
 
   const profile = await getCurrentProfile();
-  const [availablePortals, isCommitteeMember, pendingInvitations] =
+  const [availablePortals, isCommitteeMember, pendingInvitations, leviesNavLabel] =
     await Promise.all([
       profile ? getAvailablePortals(profile.id) : Promise.resolve([]),
       profile ? hasCommitteeRole(profile.id) : Promise.resolve(false),
       profile
         ? getPendingInvitationsForEmail(profile.email)
         : Promise.resolve([]),
+      // The owner portal's "Levies & Finance", in the words of the person's buildings.
+      profile ? ownerLevyNavLabel(profile.id) : Promise.resolve(levyNavLabel(rulesForState(DEFAULT_SCHEME_STATE).rules.TERMINOLOGY.levies)),
     ]);
 
   return (
@@ -44,6 +49,7 @@ export default async function PortalLayout({
       isCommitteeMember={isCommitteeMember}
       pendingInvitationCount={pendingInvitations.length}
       isPlatformAdmin={profile?.isPlatformAdmin ?? false}
+      leviesNavLabel={leviesNavLabel}
     >
       {children}
     </PortalShell>

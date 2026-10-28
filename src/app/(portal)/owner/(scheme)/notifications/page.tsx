@@ -11,13 +11,19 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { connection } from "next/server";
+import { rulesForWords } from "@/lib/jurisdiction/scheme-rules";
+import { entryTypeLabel, packWordsFor, type PackWords } from "@/lib/jurisdiction/screen-words";
+
+/** The labels that name a levy, in each building's words. The actions are stored as they are. */
+const levyActionLabels = (w: PackWords): Record<string, string> => ({
+  LEVY_CREATED: `New ${w.levy} created`,
+  LEVY_ISSUED: `${w.Levy} notice issued`,
+  LEVIES_GENERATED: `${w.Levies} generated`,
+  LEVY_NOTICES_ISSUED: `${w.Levy} notices issued`,
+});
 
 const actionLabels: Record<string, string> = {
-  LEVY_CREATED: "New levy created",
-  LEVY_ISSUED: "Levy notice issued",
-  LEVIES_GENERATED: "Levies generated",
   LEVY_PAYMENT_RECORDED: "Payment recorded",
-  LEVY_NOTICES_ISSUED: "Levy notices issued",
   MEETING_SCHEDULED: "Meeting scheduled",
   WORK_ORDER_CREATED: "Work order raised",
   WORK_ORDER_COMPLETED: "Work order completed",
@@ -120,6 +126,8 @@ export default async function OwnerNotificationsPage() {
   }).slice(0, 100);
 
   const schemeNames = new Map(schemes.map((s) => [s.id, String(s.name)]));
+  const wordsBy = new Map(schemes.map((s) => [s.id, packWordsFor(rulesForWords(s.state))]));
+  const labelsBy = new Map([...wordsBy].map(([id, w]) => [id, { ...actionLabels, ...levyActionLabels(w) }]));
 
   // Group activities by date
   const grouped = new Map<string, typeof activities>();
@@ -153,8 +161,9 @@ export default async function OwnerNotificationsPage() {
               {items.map((item) => {
                 const createdAt = new Date(String(item.createdAt));
                 const label =
-                  actionLabels[item.action] ??
-                  item.action.replace(/_/g, " ").toLowerCase();
+                  (labelsBy.get(item.schemeId) ?? actionLabels)[item.action] ??
+                  // Any other action, its levy and late charge parts in the building's words.
+                  (wordsBy.has(item.schemeId) ? entryTypeLabel(item.action, wordsBy.get(item.schemeId)!) : item.action).replace(/_/g, " ").toLowerCase();
                 const icon = actionIcons[item.action] ?? "📌";
                 const schemeName = schemeNames.get(item.schemeId) ?? "";
                 // Financial events do not name other people.

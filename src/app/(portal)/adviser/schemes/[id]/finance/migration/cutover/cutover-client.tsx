@@ -11,6 +11,7 @@ import {
   stageCutoverFileAction,
 } from "../actions";
 import type { CutoverDataType, CutoverFile, Readiness, SignOff } from "@/lib/finance/migration-cutover";
+import type { PackWords } from "@/lib/jurisdiction/screen-words";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField, TextareaField } from "@/components/ui/form-field";
@@ -34,13 +35,16 @@ export interface CutoverClientView {
 type Field = { field: string; label: string; required?: boolean };
 
 const ORDER: CutoverDataType[] = ["opening_balances", "levy_arrears", "unpaid_invoices", "owner_credits", "bank_balances"];
-const HELP: Record<CutoverDataType, string> = {
+/** The building's words the cutover shows (packWordsFor). */
+type CutoverWords = Pick<PackWords, "levy" | "Levies" | "lateCharge" | "LateCharge">;
+
+const helpFor = (w: CutoverWords): Record<CutoverDataType, string> => ({
   opening_balances: "Every account's balance at the cutover date: debit and credit columns, or one signed balance. It must net to zero.",
-  levy_arrears: "One row per unpaid notice, with its original due date, so interest and ageing carry on correctly. Interest the old system charged is counted as already charged.",
+  levy_arrears: `One row per unpaid notice, with its original due date, so ${w.lateCharge} and ageing carry on correctly. ${w.LateCharge} the old system charged is counted as already charged.`,
   unpaid_invoices: "Invoices approved in the old system but not fully paid. Suppliers must be set up first.",
-  owner_credits: "Levies paid in advance, by lot and fund.",
+  owner_credits: `${w.Levies} paid in advance, by lot and fund.`,
   bank_balances: "Each bank account's last reconciled statement balance and date.",
-};
+});
 
 const aud = (cents: number) => (cents / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD" });
 const day = (iso: string | null) => (iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "not set");
@@ -53,6 +57,7 @@ export function CutoverClient({
   labels,
   fields,
   funds,
+  words,
 }: {
   schemeId: string;
   sources: Array<{ value: string; label: string }>;
@@ -61,8 +66,11 @@ export function CutoverClient({
   labels: Record<CutoverDataType, string>;
   fields: Record<string, Field[]>;
   funds: Record<string, string>;
+  /** The building's words (packWordsFor). */
+  words: CutoverWords;
 }) {
   const router = useRouter();
+  const HELP = helpFor(words);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState(sources[0]?.value ?? "");
@@ -385,7 +393,7 @@ export function CutoverClient({
             />
             {locked && view.results ? (
               <p className="text-sm text-ink">
-                Done: journal entry {String(view.results.entryNumber)} with {String(view.results.openingLines)} lines, {String(view.results.notices)} levy notices, {String(view.results.invoices)} invoices,{" "}
+                Done: journal entry {String(view.results.entryNumber)} with {String(view.results.openingLines)} lines, {String(view.results.notices)} {words.levy} notices, {String(view.results.invoices)} invoices,{" "}
                 {String(view.results.credits)} owner credits and {String(view.results.bankAccounts)} bank accounts.
               </p>
             ) : confirmRun ? (

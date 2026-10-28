@@ -39,7 +39,7 @@ import { buildingDataProblems, planFormatChoices, regulationModuleChoices } from
 import { buildingRulesView } from "@/lib/jurisdiction/building-selectors";
 import { fundRequirementsView } from "@/lib/jurisdiction/funds";
 import { getRecordedSelectorValues } from "@/lib/queries/building-selectors";
-import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
+import { lotWordsFor, packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { planNumberLabel } from "@/lib/onboarding/onboarding-words";
 import { connection } from "next/server";
 
@@ -119,6 +119,7 @@ export default async function SchemeDetailPage({
   // conditions, so nothing changes for them.
   const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots, recorded, scheme.funds);
   const rulesView = buildingRulesView(packRules, { scheme, lots: scheme.lots, recorded });
+  const words = packWordsFor(packRules);
   // Which funds the building needs and why: null for NSW and Queensland.
   const fundRequirements = fundRequirementsView(packRules, { scheme, lots: scheme.lots, recorded });
 
@@ -141,7 +142,7 @@ export default async function SchemeDetailPage({
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={packRules.FUND_CATALOGUE} requirements={fundRequirements} />
       <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} words={lotWordsFor(packRules)} />
-      <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} />
+      <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} words={words} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} timeZone={timeZoneOf(scheme)} />
       <WorkOrdersCard id={id} workOrders={workOrders} />
@@ -166,7 +167,7 @@ export default async function SchemeDetailPage({
             </div>
           }
         />
-        <ActivityTimeline activities={activities} />
+        <ActivityTimeline activities={activities} words={words} />
       </Card>
 
       {moduleChoices && <RegulationModuleForm schemeId={scheme.id} choices={moduleChoices} current={scheme.regulationModule ?? null} />}
@@ -206,7 +207,7 @@ export default async function SchemeDetailPage({
             title="Danger Zone"
             description="Irreversible actions for this scheme."
           />
-          <DeleteSchemeButton schemeId={scheme.id} schemeName={scheme.name} />
+          <DeleteSchemeButton schemeId={scheme.id} schemeName={scheme.name} levies={words.levies} />
         </Card>
       )}
     </div>

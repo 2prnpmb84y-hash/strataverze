@@ -89,8 +89,9 @@ export function receiptJournalLines(
   for (const p of parts) {
     if (p.appliedCents > 0) {
       const receivable = accounts.receivableByFund[p.fundId];
-      if (!receivable) throw new Error("No levies receivable account for the notice's fund.");
       const t = accounts.terms;
+      // The NSW receipt (no late charge first) keeps its words; a building with its own words (Queensland) is named in them.
+      if (!receivable) throw new Error(`No ${t?.levies ?? "levies"} receivable account for the notice's fund.`);
       // Late charge first: the late charge part, then the levy part.
       const charge = t ? Math.min(p.appliedCents, Math.max(0, p.lateChargeCents ?? 0)) : 0;
       if (t && charge > 0) {
@@ -104,7 +105,7 @@ export function receiptJournalLines(
     }
     if (p.excessCents > 0) {
       const advance = accounts.advanceByFund[p.fundId];
-      if (!advance) throw new Error("No levies paid in advance account for the notice's fund.");
+      if (!advance) throw new Error(`No ${accounts.terms?.levies ?? "levies"} paid in advance account for the notice's fund.`);
       lines.push({ accountCodeId: advance, fundId: p.fundId, creditCents: p.excessCents, description: `Overpayment held as owner credit, notice ${p.noticeNumber}`, lotId: p.lotId });
     }
   }
@@ -131,13 +132,16 @@ export interface ReversalCheck {
   credits: Array<{ amountCents: number; availableCents: number; lotNumber: string }>;
   bankTransactions: Array<{ status: string }>;
   reason: ReversalReason;
+  /** The building's word for a levy (TERMINOLOGY.levy), for the messages. Default: "levy". */
+  levy?: string;
 }
 
 /** Why a receipt cannot be reversed, or null. */
 export function reversalProblem(c: ReversalCheck): string | null {
-  if (c.sourceType !== "PAYMENT") return "This entry is not a levy receipt.";
+  const levy = c.levy ?? "levy";
+  if (c.sourceType !== "PAYMENT") return `This entry is not a ${levy} receipt.`;
   if (c.entryStatus !== "POSTED") return "Only a posted receipt can be reversed.";
-  if (c.payments.length === 0) return "No levy payments are linked to this entry, so it cannot be reversed as a receipt.";
+  if (c.payments.length === 0) return `No ${levy} payments are linked to this entry, so it cannot be reversed as a receipt.`;
   if (c.payments.some((p) => p.reversedAt)) return "This receipt has already been reversed.";
   const short = c.credits.find((x) => x.amountCents > x.availableCents);
   if (short) return `Lot ${short.lotNumber}'s credit from this receipt has already been used or refunded. Reverse that first.`;

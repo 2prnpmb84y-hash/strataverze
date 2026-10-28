@@ -8,6 +8,9 @@ import { getPlatformFeesData } from "@/lib/queries/platform-billing";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlatformFeesView } from "@/components/billing/platform-fees-view";
+import { rulesForListedStates, rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { sharedPackWords } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 /**
  * StrataVerze fees for the owner's selected scheme. Every StrataVerze charge
@@ -23,14 +26,16 @@ export default async function OwnerPlatformFeesPage() {
     getSchemesForOwner(profile.id),
     getSchemesForCommittee(profile.id),
   ]);
-  const byId = new Map<string, { id: string; name: string }>();
-  for (const s of [...owned, ...committee]) byId.set(s.id, { id: s.id, name: String(s.name) });
+  const byId = new Map<string, { id: string; name: string; state: string }>();
+  for (const s of [...owned, ...committee]) byId.set(s.id, { id: s.id, name: String(s.name), state: String(s.state) });
   const schemes = scopeToSelectedScheme([...byId.values()], await getVerifiedSelectedSchemeId());
+  // The words of the buildings shown (the default state's where there are none).
+  const w = sharedPackWords(rulesForListedStates(schemes.map((s) => s.state)), rulesForState(DEFAULT_SCHEME_STATE).rules);
 
   const header = (
     <PageHeader
       title="StrataVerze Fees"
-      description="What StrataVerze charges your owners corporation, and why."
+      description={`What StrataVerze charges your ${w.ownersCorporation}, and why.`}
       backHref="/owner/finance"
       backLabel="Finance"
     />

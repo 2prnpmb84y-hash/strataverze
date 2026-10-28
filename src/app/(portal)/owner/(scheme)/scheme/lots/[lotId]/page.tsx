@@ -31,14 +31,16 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
   if (!lot) notFound();
 
   const [scheme, detail, roll] = await Promise.all([getSchemeById(schemeId), getLotDetailExtended(lotId), getStrataRollData(schemeId)]);
+  // The lot was found in the building, so the building is there.
+  if (!scheme) notFound();
   const row = roll.find((r) => r.id === lotId);
   await recordSecurityEventLater({ action: "view.owner_details", outcome: "allowed", actorRole: "COMMITTEE", schemeId, resourceType: "Lot", resourceId: lotId });
 
   const lotLabel = `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${lot.unitNumber})` : ""}`;
-  const settled = detail?.lastSettled && scheme ? formatDateIn(timeZoneOf(scheme), String(detail.lastSettled), { day: "2-digit", month: "2-digit" }) : "—";
+  const settled = detail?.lastSettled ? formatDateIn(timeZoneOf(scheme), String(detail.lastSettled), { day: "2-digit", month: "2-digit" }) : "—";
   // The entitlement's name, and any second one, from the building's rule pack.
-  const packRules = scheme ? rulesForState(scheme.state).rules : null;
-  const second = packRules ? separateEntitlement(packRules) : null;
+  const packRules = rulesForState(scheme.state).rules;
+  const second = separateEntitlement(packRules);
   const rows: Array<[string, string]> = [
     ["Owner (strata roll)", detail?.rollOwnerName || row?.ownerNames || "—"],
     ["Email", detail?.ownerEmail || "—"],
@@ -46,7 +48,7 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
     ["Phone", detail?.ownerPhone || "—"],
     ["Postal address", detail?.ownerAddress || "—"],
     ["Last settled", settled],
-    [packRules ? lotWordsFor(packRules).entitlementLabel : "Unit entitlement", String(lot.entitlement)],
+    [lotWordsFor(packRules).entitlementLabel, String(lot.entitlement)],
     ...(second?.field ? ([[second.label.charAt(0) + second.label.slice(1).toLowerCase(), lot[second.field] != null ? String(lot[second.field]) : "Not recorded"]] as Array<[string, string]>) : []),
   ];
 

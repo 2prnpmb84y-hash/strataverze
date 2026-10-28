@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { FundProjectionsClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/fund-projections/fund-projections-client";
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function AccountantFundProjectionsPage({
   params,
@@ -44,6 +45,7 @@ export default async function AccountantFundProjectionsPage({
         data={data}
         catalogue={rules.FUND_CATALOGUE}
         capitalWorksPlan={rules.FEATURES.capitalWorksFundPlan}
+        words={packWordsFor(rules)}
         basePath={`/accountant/schemes/${id}/finance/reports`}
       />
     </div>

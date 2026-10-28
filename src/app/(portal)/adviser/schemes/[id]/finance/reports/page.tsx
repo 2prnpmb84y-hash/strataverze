@@ -5,8 +5,11 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { Card, CardHeader } from "@/components/ui/card";
 import { connection } from "next/server";
+import { packWordsFor, type PackWords } from "@/lib/jurisdiction/screen-words";
+import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
 
-const reports = [
+/** The reports, described in the building's words (w) and with its capital works or sinking fund (capital, lower case). */
+const reportsFor = (w: PackWords, capital: string) => [
   {
     key: "platform-charges",
     title: "Platform Charges",
@@ -16,9 +19,9 @@ const reports = [
   },
   {
     key: "levy-register",
-    title: "Levy Register",
+    title: `${w.Levy} Register`,
     description:
-      "All levy notices by lot with payment status, grouped by fund and period.",
+      `All ${w.levy} notices by lot with payment status, grouped by fund and period.`,
     href: "/levy-register",
   },
   {
@@ -32,14 +35,14 @@ const reports = [
     key: "aged-arrears",
     title: "Aged Arrears",
     description:
-      "Outstanding levy balances grouped by age bracket (current, 30, 60, 90, 90+ days).",
+      `Outstanding ${w.levy} balances grouped by age bracket (current, 30, 60, 90, 90+ days).`,
     href: "/aged-arrears",
   },
   {
     key: "owner-statement",
     title: "Owner Statement",
     description:
-      "Individual owner's levy history, payments received, and running balance.",
+      `Individual owner's ${w.levy} history, payments received, and running balance.`,
     href: "/owner-statement",
   },
   {
@@ -58,7 +61,7 @@ const reports = [
   {
     key: "statutory-pack",
     title: "Statutory Statements",
-    description: "Statement of key financial information, income and expenditure, balance sheet, levy register and notes for the AGM, with the audit export.",
+    description: `Statement of key financial information, income and expenditure, balance sheet, ${w.levy} register and notes for the AGM, with the audit export.`,
     href: "/statutory-pack",
   },
   {
@@ -72,7 +75,7 @@ const reports = [
     key: "fund-summary",
     title: "Fund Summary",
     description:
-      "Opening and closing balances, income, expenses, and levy collection status for each fund.",
+      `Opening and closing balances, income, expenses, and ${w.levy} collection status for each fund.`,
     href: "/fund-summary",
   },
   {
@@ -93,14 +96,14 @@ const reports = [
     key: "cash-flow",
     title: "Cash Flow Forecast",
     description:
-      "Projected cash inflows and outflows over the coming months based on levy notices, supplier invoices, and budget estimates.",
+      `Projected cash inflows and outflows over the coming months based on ${w.levy} notices, supplier invoices, and budget estimates.`,
     href: "/cash-flow",
   },
   {
     key: "fund-projections",
     title: "Fund Balance Projections",
     description:
-      "Multi-year fund balance trajectory based on current levy schedules and budget. Helps plan capital works funding.",
+      `Multi-year fund balance trajectory based on current ${w.levy} schedules and budget. Helps plan ${capital} funding.`,
     href: "/fund-projections",
   },
   {
@@ -130,7 +133,9 @@ export default async function ReportsPage({
   );
   if (!isAdviser) notFound();
   // The statutory statements only where the building's rule pack has key financial information.
-  const keyFinancialInformation = rulesForState(scheme.state).rules.FEATURES.keyFinancialInformation;
+  const { rules } = rulesForState(scheme.state);
+  const keyFinancialInformation = rules.FEATURES.keyFinancialInformation;
+  const reports = reportsFor(packWordsFor(rules), ledgerFundDefinition(rules, "CAPITAL_WORKS").shortLabel.toLowerCase());
 
   return (
     <div className="space-y-6">

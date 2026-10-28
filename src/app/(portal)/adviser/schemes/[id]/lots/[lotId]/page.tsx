@@ -3,7 +3,7 @@ import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { schemeToday } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
-import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
+import { caseWordsFor, lotFormEntitlementWords, packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { getLotDetail } from "@/lib/queries/lots";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getDocumentsForScheme } from "@/lib/queries/documents";
@@ -59,7 +59,7 @@ export default async function LotDetailPage({
   );
   if (!isAdviser) notFound();
 
-  const lot = await getLotDetail(lotId);
+  const lot = await getLotDetail(lotId, rulesForState(scheme.state).rules.TERMINOLOGY);
   if (!lot || lot.schemeId !== id) notFound();
 
   const lotLabel = `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${lot.unitNumber})` : ""}`;
@@ -97,6 +97,7 @@ export default async function LotDetailPage({
   const entitlementWords = onLotEntitlementWords(packRules);
   const separate = separateEntitlement(packRules);
   const lotDataProblem = lotEntitlementProblem(packRules, lot);
+  const words = packWordsFor(packRules);
 
   return (
     <div className="max-w-5xl">
@@ -186,7 +187,7 @@ export default async function LotDetailPage({
                       value={lot.accessoryUnit ?? "—"}
                     />
                     <DetailRow
-                      label={entitlementWords.label ?? "Unit Entitlement"}
+                      label={entitlementWords.label ?? words.EntitlementTitle}
                       value={String(lot.entitlement)}
                     />
                     {separate && (
@@ -312,7 +313,7 @@ export default async function LotDetailPage({
                     value={lot.financials.opening}
                   />
                   <SnapshotStat
-                    label="+Levies"
+                    label={`+${words.Levies}`}
                     value={lot.financials.annual}
                   />
                   <SnapshotStat
@@ -320,7 +321,7 @@ export default async function LotDetailPage({
                     value={lot.financials.special}
                   />
                   <SnapshotStat
-                    label="+Interest charged"
+                    label={`+${words.LateCharge} charged`}
                     value={lot.financials.interest}
                   />
                   <SnapshotStat
@@ -342,6 +343,7 @@ export default async function LotDetailPage({
           financials: (
             <LotFinancials
               timeZone={timeZoneOf(scheme)}
+              words={words}
               financials={lot.financials}
               levyHistory={lot.levyHistory.map((lh) => ({
                 ...lh,
@@ -355,7 +357,7 @@ export default async function LotDetailPage({
           owner: (
             <div className="space-y-6">
               <p className="text-sm text-ink-muted">
-                What the owner of this lot sees in their portal: their levies and their statement. Read only.
+                What the owner of this lot sees in their portal: their {words.levies} and their statement. Read only.
               </p>
               <Card>
                 <CardHeader title="Owner details" description="As recorded for this lot." />
@@ -457,7 +459,7 @@ export default async function LotDetailPage({
                   schemeId={id}
                   lotId={lotId}
                   lockStructure={!profile?.isPlatformAdmin}
-                  entitlementWords={entitlementWords}
+                  entitlementWords={lotFormEntitlementWords(packRules)}
                   separate={separate}
                   defaults={{
                     lotNumber: lot.lotNumber,

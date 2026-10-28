@@ -60,14 +60,15 @@ const portalIcon: Record<string, LucideIcon> = {
 
 type NavItem = { label: string; href: string; icon: LucideIcon; match?: string[] };
 
-const ownerNav: NavItem[] = [
+/** The owner's nav; the levies entry in the words of their buildings (`leviesLabel`). */
+const ownerNavFor = (leviesLabel: string): NavItem[] => [
   { label: "Properties", href: "/owner/properties", icon: LayoutGrid },
   { label: "My Property", href: "/owner/scheme", icon: Building2 },
   { label: "Compliance", href: "/owner/compliance", icon: CheckSquare },
   { label: "Community", href: "/owner/contacts", icon: Users },
   // One entry for works: new requests, with earlier maintenance work orders linked from that page.
   { label: "Work Orders", href: "/owner/works", icon: Wrench, match: ["/owner/maintenance"] },
-  { label: "Levies & Finance", href: "/owner/levies", icon: ClipboardList },
+  { label: leviesLabel, href: "/owner/levies", icon: ClipboardList },
   { label: "Documents", href: "/owner/documents", icon: FileText },
 ];
 
@@ -109,7 +110,6 @@ const adminNav = [
 
 const navByPortal: Record<string, NavItem[]> = {
   admin: adminNav,
-  owner: ownerNav,
   adviser: adviserNav,
   supplier: supplierNav,
   accountant: accountantNav,
@@ -119,10 +119,11 @@ const navByPortal: Record<string, NavItem[]> = {
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
 
-export function SideRail({ portal, isPlatformAdmin = false }: { portal: string; isPlatformAdmin?: boolean }) {
+/** `leviesNavLabel` is the owner portal's "Levies & Finance", in the words of the person's buildings. */
+export function SideRail({ portal, isPlatformAdmin = false, leviesNavLabel }: { portal: string; isPlatformAdmin?: boolean; leviesNavLabel: string }) {
   const pathname = usePathname();
   // Contractor review is StrataVerze staff work.
-  const nav = (navByPortal[portal] ?? ownerNav).filter(
+  const nav = (navByPortal[portal] ?? ownerNavFor(leviesNavLabel)).filter(
     (item) => isPlatformAdmin || item.href !== "/adviser/contractors",
   );
 

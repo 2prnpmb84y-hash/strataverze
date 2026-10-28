@@ -5,6 +5,7 @@ import { requireFinancialReadAccess } from "@/lib/auth/require-accountant-access
 import { financialYearRange, getStatutoryStatementsPack } from "@/lib/finance/statutory-pack";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatutoryPackView } from "@/components/finance/statutory-pack-view";
 
@@ -54,7 +55,7 @@ export default async function AccountantStatutoryPackPage({ params, searchParams
           </a>
         )}
       </form>
-      <StatutoryPackView pack={pack} reportsBase={`/accountant/schemes/${id}/finance/reports`} />
+      <StatutoryPackView pack={pack} reportsBase={`/accountant/schemes/${id}/finance/reports`} words={packWordsFor(rulesForState(scheme.state).rules)} />
     </div>
   );
 }

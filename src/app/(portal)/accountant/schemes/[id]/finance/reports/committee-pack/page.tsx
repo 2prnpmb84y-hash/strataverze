@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CommitteePackClient } from "@/app/(portal)/adviser/schemes/[id]/finance/reports/committee-pack/committee-pack-client";
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { auditLabelWords } from "@/lib/jurisdiction/screen-words";
 import { addDays, financialYearStart } from "@/lib/levies/notice-plan";
 
 export default async function CommitteePackPage({
@@ -63,6 +64,7 @@ export default async function CommitteePackPage({
         endDate={endDate}
         pack={pack}
         catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE}
+        words={auditLabelWords(rulesForState(scheme.state).rules)}
         basePath={`/accountant/schemes/${id}/finance/reports/committee-pack`}
       />
     </div>

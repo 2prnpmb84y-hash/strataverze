@@ -20,6 +20,8 @@ type SchemeCard = {
   lotNumber: string | null;
   unitNumber: string | null;
   pendingLevies: number;
+  /** The building's words for a levy, lower case (TERMINOLOGY), for the count. */
+  levyWords: { levy: string; levies: string };
   activeWorkOrders: number;
   upcomingMeetings: number;
   /** The property photo, a short-lived signed link, or null. */
@@ -222,7 +224,7 @@ export function SchemeGrid({
                     {scheme.pendingLevies > 0 && (
                       <span className="inline-flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-danger" />
-                        {scheme.pendingLevies} {scheme.pendingLevies === 1 ? "levy" : "levies"}
+                        {scheme.pendingLevies} {scheme.pendingLevies === 1 ? scheme.levyWords.levy : scheme.levyWords.levies}
                       </span>
                     )}
                     {scheme.activeWorkOrders > 0 && (

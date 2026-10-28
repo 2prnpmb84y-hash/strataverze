@@ -6,7 +6,17 @@ import { html, safeHref, type SafeHtml } from "./html";
  * The content must be SafeHtml (built with `html`), so every value in it
  * has been escaped (S7, SEC-019).
  */
-export function emailLayout(content: SafeHtml): string {
+export function emailLayout(
+  content: SafeHtml,
+  /**
+   * The building's word for its owners corporation (TERMINOLOGY), for the
+   * footer: "a member of a Body Corporate". Without it the footer says what
+   * it always has ("an Owners Corporation").
+   */
+  opts: { ownersCorporation?: string } = {},
+): string {
+  const oc = opts.ownersCorporation ? opts.ownersCorporation.replace(/(^|\s)(\S)/g, (_m, s: string, c: string) => s + c.toUpperCase()) : "Owners Corporation";
+  const member = `${/^[aeiou]/i.test(oc) ? "an" : "a"} ${oc}`;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,7 +46,7 @@ export function emailLayout(content: SafeHtml): string {
             <td style="padding-top:24px;text-align:center;">
               <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">
                 This is an automated notification from StrataVerze.<br />
-                You are receiving this because you are a member of an Owners Corporation on StrataVerze.
+                You are receiving this because you are a member of ${member} on StrataVerze.
               </p>
             </td>
           </tr>

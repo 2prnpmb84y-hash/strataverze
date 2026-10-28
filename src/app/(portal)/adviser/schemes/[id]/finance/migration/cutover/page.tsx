@@ -5,8 +5,10 @@ import { db } from "@/prisma/db";
 import { requireSchemeMembership } from "@/lib/auth/require-membership";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { ONBOARDING_SOURCE, getCutoverView, listCutovers, SOURCE_SYSTEMS, sourceSystemLabel } from "@/lib/finance/migration-batches";
-import { CUTOVER_DATA_TYPES, CUTOVER_LABELS } from "@/lib/finance/migration-cutover";
-import { FIELDS } from "@/lib/finance/migration-templates";
+import { CUTOVER_DATA_TYPES, cutoverLabels } from "@/lib/finance/migration-cutover";
+import { fieldsFor } from "@/lib/finance/migration-templates";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { PageHeader } from "@/components/ui/page-header";
 import { CutoverClient, type CutoverClientView } from "./cutover-client";
 
@@ -21,6 +23,8 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
 
+  const { rules } = rulesForState(scheme.state);
+  const w = packWordsFor(rules);
   const batches = await listCutovers(id);
   // With no cutover chosen, open the one that matters: the executed one, else
   // the draft onboarding prepared (hand-started drafts are easy to open by mistake).
@@ -76,14 +80,14 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
       {selectedId && batches.find((b) => b.id === selectedId)?.sourceSystem === ONBOARDING_SOURCE.value && view?.status !== "EXECUTED" && (
         <div className="rounded-[var(--radius-card)] border border-line bg-mint-soft/40 px-4 py-3 text-sm text-ink">
           These opening balances were entered when the building was onboarded. Check them against the previous manager&apos;s handover, then sign off
-          and post. The lot arrears carry the takeover date as their due date; to keep each levy&apos;s original due date (for ageing and interest),
-          replace the outstanding levy notices file with the notices from the previous system before signing off. If the balance sheet had
+          and post. The lot arrears carry the takeover date as their due date; to keep each {w.levy}&apos;s original due date (for ageing and {w.lateCharge}),
+          replace the outstanding {w.levy} notices file with the notices from the previous system before signing off. If the balance sheet had
           creditors, sign-off asks you to acknowledge the accounts payable difference until the unpaid supplier invoices are loaded.
         </div>
       )}
       {selectedId && (
         <div className="rounded-[var(--radius-card)] border border-line bg-white px-4 py-3 text-sm text-ink">
-          Onboarding also needs last year&apos;s income and expenditure, this year&apos;s budget and the levies.{" "}
+          Onboarding also needs last year&apos;s income and expenditure, this year&apos;s budget and the {w.levies}.{" "}
           <Link href={`/adviser/schemes/${id}/finance/migration/income-budget`} className="font-medium text-turquoise underline">
             Enter income, expenditure and budget
           </Link>
@@ -101,8 +105,9 @@ export default async function CutoverPage({ params, searchParams }: { params: Pr
           createdAt: String(b.createdAt),
         }))}
         view={view}
-        labels={CUTOVER_LABELS}
-        fields={Object.fromEntries(CUTOVER_DATA_TYPES.map((t) => [t, FIELDS[t]]))}
+        labels={cutoverLabels(rules.TERMINOLOGY)}
+        fields={Object.fromEntries(CUTOVER_DATA_TYPES.map((t) => [t, fieldsFor(t, rules.TERMINOLOGY)]))}
+        words={w}
         funds={Object.fromEntries((await db.orm.public.Fund.where((f) => f.schemeId.eq(id)).limit(50).all()).map((f) => [f.id, String(f.name)]))}
       />
     </div>

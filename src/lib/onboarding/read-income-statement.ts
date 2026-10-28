@@ -75,8 +75,12 @@ function fundTypeOf(name: string): FundKind | null {
 
 const STATEMENT_HEAD = /^Income and Expenditure Statement( \(continued\))?$/i;
 
+/** The building's two funds, lower case, as its pack names them, for the issue a fund not recognised raises. */
+export type StatementFundNames = { admin: string; capitalWorks: string };
+const DEFAULT_FUND_NAMES: StatementFundNames = { admin: "administrative", capitalWorks: "capital works fund" };
+
 /** Pure: the statement from layout lines (so it can be tested without a PDF). */
-export function parseIncomeStatement(lines: LayoutLine[]): IncomeStatement {
+export function parseIncomeStatement(lines: LayoutLine[], fundNames: StatementFundNames = DEFAULT_FUND_NAMES): IncomeStatement {
   const issues: string[] = [];
   const funds: StatementFund[] = [];
   let period: IncomeStatement["period"] = null;
@@ -179,7 +183,7 @@ export function parseIncomeStatement(lines: LayoutLine[]): IncomeStatement {
     if (f.openingBalanceCents !== null && f.closingBalanceCents !== null && f.openingBalanceCents + inc - exp !== f.closingBalanceCents) {
       issues.push(`${f.fundName}: the opening balance plus income less expenditure does not equal the closing balance the statement prints.`);
     }
-    if (!f.fundType) issues.push(`"${f.fundName}" is not recognised as the administrative or capital works fund.`);
+    if (!f.fundType) issues.push(`"${f.fundName}" is not recognised as the ${fundNames.admin} or ${fundNames.capitalWorks}.`);
   }
   if (funds.length === 0) issues.push("No Income and Expenditure Statement was found in this PDF.");
   return { period, funds, issues };
@@ -192,7 +196,7 @@ function money(cents: number) {
 
 export const MAX_STATEMENT_PAGES = 400;
 
-export async function readIncomeStatementPDF(data: Uint8Array): Promise<IncomeStatement> {
+export async function readIncomeStatementPDF(data: Uint8Array, fundNames?: StatementFundNames): Promise<IncomeStatement> {
   const { lines } = await readLayoutLines(data, { maxPages: MAX_STATEMENT_PAGES });
-  return parseIncomeStatement(lines);
+  return parseIncomeStatement(lines, fundNames);
 }

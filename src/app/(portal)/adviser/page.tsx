@@ -8,6 +8,9 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { connection } from "next/server";
 import { schemeThumbnails } from "@/lib/schemes/photos";
 import { SchemeThumb } from "@/components/schemes/scheme-thumb";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
+import { DEFAULT_SCHEME_STATE } from "@/config/jurisdictions";
 
 export default async function AdviserDashboard() {
   await connection();
@@ -73,7 +76,7 @@ export default async function AdviserDashboard() {
             >
               Schemes
             </Link>{" "}
-            page to begin managing owners corporations.
+            page to begin managing {packWordsFor(rulesForState(DEFAULT_SCHEME_STATE).rules).ownersCorporations}.
           </p>
         </div>
       ) : (

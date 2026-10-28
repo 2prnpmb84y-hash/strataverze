@@ -131,24 +131,30 @@ export interface PlanIssue {
   message: string;
 }
 
-/** Checks that must pass before notices can be issued. */
+/**
+ * Checks that must pass before notices can be issued. `words` are the
+ * building's word for a levy and its entitlement on each lot (levyFormWords),
+ * for the messages.
+ */
 export function checkPlan(input: {
   lots: PlanLot[];
   totalEntitlement: number;
   totalCents: number;
+  words: { levy: string; entitlement: string };
 }): PlanIssue[] {
   const issues: PlanIssue[] = [];
+  const { words } = input;
   if (input.lots.length === 0) {
     issues.push({ kind: "NO_LOTS", message: "No lots are registered for this scheme." });
   }
   if (input.totalCents <= 0) {
-    issues.push({ kind: "ZERO_AMOUNT", message: "The levy amount must be greater than zero." });
+    issues.push({ kind: "ZERO_AMOUNT", message: `The ${words.levy} amount must be greater than zero.` });
   }
   const registered = input.lots.reduce((a, l) => a + l.entitlement, 0);
   if (input.lots.length > 0 && registered !== input.totalEntitlement) {
     issues.push({
       kind: "ENTITLEMENT_MISMATCH",
-      message: `Registered lots hold ${registered} unit entitlement, but the schedule's total is ${input.totalEntitlement}. Register every lot (or correct the total) so each lot is levied its proper share.`,
+      message: `Registered lots hold ${registered} ${words.entitlement}, but the schedule's total is ${input.totalEntitlement}. Register every lot (or correct the total) so each lot is levied its proper share.`,
     });
   }
   return issues;

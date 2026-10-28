@@ -51,22 +51,31 @@ const daysBetween = (a: string, b: string) =>
   Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 86_400_000);
 
 /**
- * `terms` are the building's words (`rules.TERMINOLOGY`); without them the
- * late charge item is worded as it always was ("interest").
+ * `terms` are the building's words (`rules.TERMINOLOGY`), and `funds` its two
+ * funds without the word "fund" ("administrative", "capital works"); without
+ * them each item is worded as it always was ("interest", "levy", "strata plan").
  */
-export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: NoticeRules, terms?: Pick<StatutoryRules["TERMINOLOGY"], "lateCharge">): MissingItem[] {
+export function validateLevyNoticeContent(
+  n: LevyNoticeContentInput,
+  rule: NoticeRules,
+  terms?: Pick<StatutoryRules["TERMINOLOGY"], "lateCharge"> & Partial<Pick<StatutoryRules["TERMINOLOGY"], "levy" | "planLabel">>,
+  funds?: { admin: string; capitalWorks: string },
+): MissingItem[] {
   const missing: MissingItem[] = [];
+  const levy = terms?.levy ?? "levy";
+  const plan = (terms?.planLabel ?? "Strata Plan").toLowerCase();
+  const fundKinds = funds ?? { admin: "administrative", capitalWorks: "capital works" };
   const need = (ok: unknown, code: string, message: string) => {
     if (!ok) missing.push({ code, message });
   };
 
-  need(n.scheme.planNumber?.trim(), "PLAN_NUMBER", "The strata plan number.");
+  need(n.scheme.planNumber?.trim(), "PLAN_NUMBER", `The ${plan} number.`);
   need(n.scheme.name?.trim(), "SCHEME_NAME", "The scheme name.");
   need(n.lotNumber?.trim(), "LOT", "The lot number.");
   need(n.ownerNames.some((x) => x.trim()), "OWNER", "The owner's name. Record the lot owner on the strata roll.");
   need(/^\d{4}-\d{2}-\d{2}$/.test(n.noticeDate), "NOTICE_DATE", "The date of the notice.");
   need(/^\d{4}-\d{2}-\d{2}$/.test(n.dueDate), "DUE_DATE", "The due date.");
-  need(n.fundName?.trim(), "FUND", "The fund the levy is for (administrative or capital works).");
+  need(n.fundName?.trim(), "FUND", `The fund the ${levy} is for (${fundKinds.admin} or ${fundKinds.capitalWorks}).`);
   need(n.amountCents > 0, "AMOUNT", "The amount payable.");
   need(
     n.payment.accountName?.trim() && n.payment.bsb?.trim() && n.payment.accountNumber?.trim(),
@@ -79,7 +88,7 @@ export function validateLevyNoticeContent(n: LevyNoticeContentInput, rule: Notic
   if (n.lateChargeApplies ?? true) {
     need(n.includesInterestWarning, "INTEREST_WARNING", `A warning that ${terms?.lateCharge ?? "interest"} is charged on overdue amounts.`);
   }
-  need(n.includesLedgerAccess, "LEDGER_ACCESS", "How the owner can check their levy ledger.");
+  need(n.includesLedgerAccess, "LEDGER_ACCESS", `How the owner can check their ${levy} ledger.`);
   // A pack with no hardship statement (Queensland) does not require one.
   if (rule.hardship && n.noticeDate >= rule.hardship.requiredFrom) {
     need(n.includesHardshipStatement, "HARDSHIP_STATEMENT", "The Financial Hardship Information Statement.");

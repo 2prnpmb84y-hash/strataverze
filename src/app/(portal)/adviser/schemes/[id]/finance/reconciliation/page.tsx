@@ -11,6 +11,7 @@ import { getAllocationCandidates, getSuspenseItems } from "@/lib/finance/bank-al
 import { transactionFeeTable } from "@/lib/billing/capture";
 import { feeWordingFor } from "@/lib/billing/disclosure";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { toCents } from "@/lib/billing/money";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
@@ -37,10 +38,11 @@ export default async function ReconciliationPage({
   if (!scheme.memberships.some((m) => m.profileId === profile.id && m.role === "ADVISER")) notFound();
 
   const bankAccounts = await getBankAccountsForScheme(id);
+  const words = packWordsFor(rulesForState(scheme.state).rules);
   const header = (
     <PageHeader
       title="Bank Reconciliation"
-      description="Allocate each bank transaction to what it paid for. One deposit can cover several levy notices, and one entry can take several payments."
+      description={`Allocate each bank transaction to what it paid for. One deposit can cover several ${words.levy} notices, and one entry can take several payments.`}
     />
   );
   if (bankAccounts.length === 0) {
@@ -169,6 +171,7 @@ export default async function ReconciliationPage({
           .filter((a) => a.accountSubType !== "BANK" && a.accountSubType !== "SUSPENSE")
           .map((a) => ({ id: a.id, label: `${a.code} ${a.name}${a.fund ? ` (${a.fund.name})` : ""}` }))}
         feeTable={feeTable}
+        words={words}
       />
     </div>
   );

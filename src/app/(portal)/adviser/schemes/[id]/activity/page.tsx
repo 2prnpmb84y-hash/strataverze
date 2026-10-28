@@ -7,6 +7,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { connection } from "next/server";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 export default async function SchemeActivityPage({
   params,
@@ -65,7 +67,7 @@ export default async function SchemeActivityPage({
             description="Most recent activity shown first."
           />
           <div className="px-6 pb-6">
-            <ActivityTimeline activities={mapped} />
+            <ActivityTimeline activities={mapped} words={packWordsFor(rulesForState(scheme.state).rules)} />
           </div>
         </Card>
       )}

@@ -11,6 +11,7 @@ import { levyIncomeAccountPicker } from "./accounting-basis";
 import { LEDGER_STATUSES } from "./ledger-status";
 import { migratedInvoiceEntries } from "./migrated-invoices";
 import { cellRows, sourceCandidates, type DrillDownParams, type DrillEntry, type DrillResult, type SourceKind } from "./drill-down";
+import { capitalise, type Terms } from "@/lib/jurisdiction/wording";
 
 const ts = (v: string) => v as unknown as TimestampString<3>;
 const isoDay = (v: unknown) => String(v ?? "").slice(0, 10);
@@ -128,7 +129,10 @@ export interface EntrySources {
 export async function getEntrySources(
   schemeId: string,
   entries: Array<{ id: string; sourceType: string | null; sourceId: string | null }>,
+  /** The building's TERMINOLOGY, for the labels that name a levy. */
+  terms: Pick<Terms, "levy"> = { levy: "levy" },
 ): Promise<Map<string, EntrySources>> {
+  const Levy = capitalise(terms.levy);
   const out = new Map<string, EntrySources>();
   if (entries.length === 0) return out;
   const want = (k: SourceKind) => ids(entries.filter((e) => sourceCandidates(e.sourceType).includes(k)).map((e) => e.sourceId));
@@ -198,12 +202,12 @@ export async function getEntrySources(
         } else if (kind === "LEVY_NOTICE") {
           const n = notices.find((x) => x.id === sid);
           if (n) {
-            source = { kind, id: n.id, label: `Levy notice ${String(n.noticeNumber)}, Lot ${String(n.lot?.lotNumber ?? "?")}`, levyScheduleId: n.levyScheduleId };
+            source = { kind, id: n.id, label: `${Levy} notice ${String(n.noticeNumber)}, Lot ${String(n.lot?.lotNumber ?? "?")}`, levyScheduleId: n.levyScheduleId };
             docList.push(...noticeDocs.filter((d) => d.levyNoticeId === n.id).map(toDoc));
           }
         } else if (kind === "LEVY_SCHEDULE") {
           const s = schedules.find((x) => x.id === sid);
-          if (s) source = { kind, id: s.id, label: s.title ? String(s.title) : `Levy schedule FY${s.financialYear} (${String(s.frequency).toLowerCase().replace("_", " ")})` };
+          if (s) source = { kind, id: s.id, label: s.title ? String(s.title) : `${Levy} schedule FY${s.financialYear} (${String(s.frequency).toLowerCase().replace("_", " ")})` };
         } else if (kind === "BANK_TRANSACTION") {
           const t = txnById.get(sid);
           if (t) {
@@ -234,7 +238,7 @@ export async function getEntrySources(
       const own = receiptPayments.filter((p) => p.journalEntryId === e.id);
       if (own.length) {
         const nums = own.map((p) => receiptNotices.find((n) => n.id === p.levyNoticeId)).filter((n) => !!n).map((n) => `${String(n!.noticeNumber)} (Lot ${String(n!.lot?.lotNumber ?? "?")})`);
-        source = { kind: "LEVY_NOTICE", id: own[0].levyNoticeId, label: `Levy receipt for notices ${nums.join(", ")}`, levyScheduleId: receiptNotices.find((n) => n.id === own[0].levyNoticeId)?.levyScheduleId };
+        source = { kind: "LEVY_NOTICE", id: own[0].levyNoticeId, label: `${Levy} receipt for notices ${nums.join(", ")}`, levyScheduleId: receiptNotices.find((n) => n.id === own[0].levyNoticeId)?.levyScheduleId };
       }
     }
     for (const t of matched) if (t.matchedJournalEntryId === e.id) txnIds.add(t.id);

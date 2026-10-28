@@ -61,7 +61,7 @@ describe("NSW document library (stage 2, step 9)", () => {
   it("record keeping periods are unchanged", () => {
     const doc = (id: string, category: string) => ({ id, title: `Doc ${id}`, fileName: `${id}.pdf`, fileUrl: "", fileSize: null, mimeType: "application/pdf", category, documentType: null, documentDate: "2026-10-26", strataPlan: null, schedule: null, lotNumber: null, supplier: null, comments: null, description: null, createdAt: "2026-10-26T00:00:00Z" });
     const html = renderToStaticMarkup(
-      <DocumentsTabContent schemeId="s1" schemePlanNumber="12345" timeZone="Australia/Sydney" retention={NSW.DOCUMENT_RETENTION} documents={[doc("a", "FINANCIAL"), doc("b", "BYLAW"), doc("c", "SOMETHING_NEW")]} />,
+      <DocumentsTabContent schemeId="s1" schemePlanNumber="12345" timeZone="Australia/Sydney" retention={NSW.DOCUMENT_RETENTION} levy={NSW.TERMINOLOGY.levy} /* words */ documents={[doc("a", "FINANCIAL"), doc("b", "BYLAW"), doc("c", "SOMETHING_NEW")]} />,
     );
     expect(html.match(/Removing a document[^<]*/)?.[0]).toMatchSnapshot();
     expect([...html.matchAll(/ · (?:kept|keep)[^<]*/g)].map((m) => m[0])).toMatchSnapshot();

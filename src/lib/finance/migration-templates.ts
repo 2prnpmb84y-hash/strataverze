@@ -89,6 +89,27 @@ export const FIELDS: Record<TemplateDataType, Array<{ field: string; label: stri
   ],
 };
 
+/** The building's words for a levy and its late charge, lower case (TERMINOLOGY). */
+export type FieldTerms = { levy: string; lateCharge: string };
+
+const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+/**
+ * The fields as a building's adviser sees them: the outstanding notices'
+ * amounts named in its words ("Contribution outstanding", "Penalty paid").
+ * The fields themselves, and the names a column is matched by
+ * (suggestMapping), stay as they are.
+ */
+export function fieldsFor(dataType: TemplateDataType, terms?: FieldTerms): Array<{ field: string; label: string; required?: boolean }> {
+  if (!terms || dataType !== "levy_arrears") return FIELDS[dataType];
+  const labels: Record<string, string> = {
+    levyOutstanding: `${cap(terms.levy)} outstanding`,
+    interestCharged: `${cap(terms.lateCharge)} charged to date`,
+    interestPaid: `${cap(terms.lateCharge)} paid`,
+  };
+  return FIELDS[dataType].map((f) => (labels[f.field] ? { ...f, label: labels[f.field] } : f));
+}
+
 const key = (h: string) => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 /**
@@ -114,9 +135,9 @@ export function suggestMapping(headers: string[], dataType: TemplateDataType, so
   return out;
 }
 
-/** Required fields with no column. Opening balances need debit and credit, or a balance. */
-export function missingFields(mapping: Record<string, number>, dataType: TemplateDataType): string[] {
-  const missing = FIELDS[dataType].filter((f) => f.required && mapping[f.field] === undefined).map((f) => f.label);
+/** Required fields with no column, named in the building's words. Opening balances need debit and credit, or a balance. */
+export function missingFields(mapping: Record<string, number>, dataType: TemplateDataType, terms?: FieldTerms): string[] {
+  const missing = fieldsFor(dataType, terms).filter((f) => f.required && mapping[f.field] === undefined).map((f) => f.label);
   if (dataType === "opening_balances" && mapping.balance === undefined && (mapping.debit === undefined || mapping.credit === undefined)) {
     missing.push("Debit and credit, or a balance");
   }
