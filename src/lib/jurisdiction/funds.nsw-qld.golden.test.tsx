@@ -12,22 +12,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);
 vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).sharedFake.db }));
 vi.mock("@/lib/queries/seed-chart-of-accounts", () => ({ seedDefaultChartOfAccounts: vi.fn(async () => {}) }));
-vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
-  return {
-    ...actual,
-    // A Queensland building: the pending Queensland pack, lent the NSW default
-    // accounting basis (a go-live gap in qld.ts), as schemes.test.ts does.
-    rulesForState: (state: string) => {
-      if (state !== "QLD") return actual.rulesForState(state);
-      const nsw = actual.rulesForState("NSW").rules;
-      return { pack: null, rules: { ...PENDING_RULE_PACKS.QLD.rules, defaultAccountingBasis: nsw.defaultAccountingBasis }, label: "AU-QLD test" };
-    },
-  };
-});
+// A Queensland building has the real Queensland pack (live from the switch-on, 28 Oct 2026), with its own
+// default accounting basis, the same as the NSW one this test lent it before.
 
-const { PENDING_RULE_PACKS, statutoryRulesFor } = await import("@/config/statutory");
+const { QLD_RULE_PACK, statutoryRulesFor } = await import("@/config/statutory");
 const { defaultFunds } = await import("./funds");
 const { buildingDataProblems } = await import("./building-data");
 const { FundsCard } = await import("@/app/(portal)/adviser/schemes/[id]/_sections/funds-card");
@@ -37,7 +25,7 @@ const { sharedFake } = await import("@/test/fake-orm");
 const { createScheme } = await import("@/lib/queries/schemes");
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as typeof NSW;
+const QLD = QLD_RULE_PACK.rules as unknown as typeof NSW;
 
 const lots = (n: number) => Array.from({ length: n }, (_, i) => ({ lotNumber: String(i + 1), entitlement: 10, interestScheduleEntitlement: 4, lotType: "RESIDENTIAL", occupiable: null }));
 const FUNDS = {

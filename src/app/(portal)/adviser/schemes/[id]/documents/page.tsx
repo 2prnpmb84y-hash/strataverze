@@ -25,7 +25,7 @@ export default async function DocumentsSectionPage({
   const documents = await getDocumentsForScheme(id);
 
   // The building vault trial: the library is also the vault's front door.
-  const trial = isVaultTrialBuilding(scheme.planNumber);
+  const trial = isVaultTrialBuilding(scheme);
   // A vault problem must not take the library down with it.
   const vault = trial
     ? await vaultLibraryView(id).catch((err) => {

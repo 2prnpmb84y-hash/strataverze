@@ -46,7 +46,7 @@ export async function openVaultAction(schemeId: string): Promise<VaultActionResu
   try {
     const { profile } = await requireSchemeAccess(schemeId, "vault.manage");
     const scheme = await getSchemeById(schemeId);
-    if (!scheme || !isVaultTrialBuilding(scheme.planNumber)) throw new VaultError("The vault trial is not available for this building.");
+    if (!scheme || !isVaultTrialBuilding(scheme)) throw new VaultError("The vault trial is not available for this building.");
     await openVault(schemeId, profile.id);
     const result = await bringInPending(schemeId, profile.id);
     revalidatePath(libraryPath(schemeId), "layout");

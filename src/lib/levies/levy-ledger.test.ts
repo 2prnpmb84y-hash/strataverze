@@ -7,7 +7,7 @@ import {
   noticeTotals,
   type LedgerNotice,
 } from "./levy-ledger";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 
 const NSW = statutoryRulesFor("NSW").TERMINOLOGY;
 
@@ -137,7 +137,7 @@ describe("buildStatement wording", () => {
   });
 
   it("names a Queensland late charge penalty, never interest, and a levy a contribution", () => {
-    const s = buildStatement([charged], [], {}, [], PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY);
+    const s = buildStatement([charged], [], {}, [], QLD_RULE_PACK.rules.TERMINOLOGY);
     expect(s.lines.map((l) => [l.kind, l.type, l.description])).toEqual([
       ["LEVY", "Contribution", expect.any(String)],
       ["LATE_CHARGE", "Penalty", "Penalty on LN-0001"],

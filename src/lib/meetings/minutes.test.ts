@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { wholeDaysBetween } from "./rules";
-import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { MEETING_RULES as NSW_RULE_SET, QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 import {
   assembleMinutesContent,
   minutesDistributionDeadline,
@@ -9,7 +9,7 @@ import {
 } from "./minutes";
 
 const NSW = statutoryRulesFor("NSW").TERMINOLOGY;
-const QLD = PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY;
+const QLD = QLD_RULE_PACK.rules.TERMINOLOGY;
 
 const params: MinutesContentParams = {
   scheme: { name: "Example", planNumber: "3782" },
@@ -87,7 +87,7 @@ describe("retentionUntil", () => {
 
 describe("retentionUntil without a limit (Queensland)", () => {
   it("gives no retention date where the rule set keeps the record without a limit", () => {
-    const qld = PENDING_RULE_PACKS.QLD.rules.MEETING_RULES;
+    const qld = QLD_RULE_PACK.rules.MEETING_RULES;
     expect(qld.retention.generalYears).toBeNull();
     expect(retentionUntil(qld, new Date("2026-03-01T00:00:00Z"))).toBeNull();
   });

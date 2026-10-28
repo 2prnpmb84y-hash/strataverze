@@ -78,17 +78,17 @@ vi.mock("@/lib/queries/schemes", async (orig) => ({
   getSchemesForAdviser: vi.fn(async () => state.adviserSchemes),
   getSchemeNotificationCounts: vi.fn(async () => new Map([["q1", { pendingLevies: 2, activeWorkOrders: 0, upcomingMeetings: 0 }]])),
 }));
-// Queensland, with the pending Queensland pack.
+// Queensland, with the Queensland pack.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
-  const qld = { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" };
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
+  const qld = { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" };
   const forState = (s: string | null | undefined) => (s === "QLD" ? qld : actual.rulesForState(s));
   return {
     ...actual,
     rulesForState: forState,
     rulesForScheme: vi.fn(async () => qld),
-    messageTermsFor: vi.fn(async () => PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY),
+    messageTermsFor: vi.fn(async () => QLD_RULE_PACK.rules.TERMINOLOGY),
     rulesForListedStates: (states: Iterable<string | null | undefined>) => [...new Set(states)].map((s) => forState(s).rules),
     rulesForWords: (s: string | null | undefined) => forState(s).rules,
   };
@@ -170,9 +170,9 @@ vi.mock("@/lib/actions/budgets", () => ({ adoptBudgetAction: vi.fn(), proposeBud
 vi.mock("@/app/(portal)/owner/(scheme)/finance/actions", () => ({ uploadPaymentConfirmationAction: vi.fn() }));
 
 const { sharedFake } = await import("@/test/fake-orm");
-const { PENDING_RULE_PACKS, statutoryRulesFor } = await import("@/config/statutory");
+const { QLD_RULE_PACK, statutoryRulesFor } = await import("@/config/statutory");
 const words = await import("@/lib/jurisdiction/screen-words");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as import("@/config/statutory").StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as import("@/config/statutory").StatutoryRules;
 const NSW = statutoryRulesFor("NSW");
 const W = words.packWordsFor(QLD);
 

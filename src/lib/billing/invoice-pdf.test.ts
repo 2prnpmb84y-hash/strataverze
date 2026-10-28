@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
 import { extractText, getDocumentProxy } from "unpdf";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 import { renderInvoicePdf } from "./invoice-pdf";
 
 const NSW = statutoryRulesFor("NSW").TERMINOLOGY;
@@ -51,7 +51,7 @@ describe("the owners corporation billed", () => {
 
   it("is named from the Queensland pack for a Queensland building", async () => {
     const scheme = { ...base.scheme, name: "Harbour View", state: "QLD" };
-    const text = await textOf(await renderInvoicePdf({ ...base, lines, scheme }, PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY));
+    const text = await textOf(await renderInvoicePdf({ ...base, lines, scheme }, QLD_RULE_PACK.rules.TERMINOLOGY));
     expect(text).toContain("Body corporate for Harbour View community titles scheme 12345");
     expect(text).not.toContain("Strata Plan");
   });

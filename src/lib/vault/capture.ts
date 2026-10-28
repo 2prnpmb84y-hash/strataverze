@@ -32,7 +32,7 @@ export async function getVault(schemeId: string) {
  */
 export async function getTrialVault(schemeId: string) {
   const scheme = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
-  if (!scheme || !isVaultTrialBuilding(scheme.planNumber)) return null;
+  if (!scheme || !isVaultTrialBuilding(scheme)) return null;
   return getVault(schemeId);
 }
 

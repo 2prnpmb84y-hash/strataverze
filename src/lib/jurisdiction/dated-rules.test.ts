@@ -4,7 +4,7 @@
  * VIC and ACT dated rules as recorded.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, RULE_PACKS, type DatedRule, type DatedValue, type StatutoryRules } from "@/config/statutory";
+import { PENDING_RULE_PACKS, QLD_RULE_PACK, RULE_PACKS, type DatedRule, type DatedValue, type StatutoryRules } from "@/config/statutory";
 import {
   datedRuleProblems,
   NoRuleInForceError,
@@ -257,7 +257,7 @@ describe("dated rules in the packs", () => {
 
   it("are not given to NSW or Queensland", () => {
     expect((RULE_PACKS.NSW.rules as StatutoryRules).DATED_RULES).toBeUndefined();
-    expect((PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules).DATED_RULES).toBeUndefined();
+    expect((QLD_RULE_PACK.rules as unknown as StatutoryRules).DATED_RULES).toBeUndefined();
   });
 
   it("restate every VIC pending change unchanged, none recorded as commenced", () => {

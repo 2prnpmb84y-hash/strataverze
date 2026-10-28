@@ -3,7 +3,7 @@
  * fake database (QLD go-live gap, insurance in contributions, 27 Oct 2026):
  * the generate action splits each lot's share, stores each notice's insurance
  * part and refuses, creating nothing, where the split cannot be made. The
- * building is Queensland shaped: the pending pack's rules, as the other
+ * building is Queensland shaped: the Queensland pack's rules, as the other
  * Queensland tests use them.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,8 +32,8 @@ vi.mock("@/lib/jurisdiction/scheme-time", async () => {
 });
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
-  const forState = (state: string | null | undefined) => (state === "QLD-SHAPED" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state));
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
+  const forState = (state: string | null | undefined) => (state === "QLD-SHAPED" ? { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" } : actual.rulesForState(state));
   return {
     ...actual,
     rulesForState: forState,
@@ -72,7 +72,7 @@ const { sharedFake } = await import("@/test/fake-orm");
 const { issueScheduleNoticesAction } = await import("@/app/(portal)/adviser/schemes/[id]/finance/actions");
 const { budgetedInsuranceCents, contributionInsurance } = await import("./contribution-insurance");
 const { levyNoticeBlocks } = await import("@/lib/pdf/documents");
-const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+const { QLD_RULE_PACK } = await import("@/config/statutory");
 
 // Contribution schedule 10, 20, 30; interest schedule 30, 30, 40.
 function seed(opts: { planFormat?: string | null; fundId?: string; interest?: Array<number | null>; insurance?: string | null; budgetAmount?: string } = {}) {
@@ -243,9 +243,9 @@ describe("the notice", () => {
     contact: { name: "Adviser", emailOrPhone: "a@example.com" },
     ledgerUrl: "https://example.com",
     noInterest: true,
-    interest: { monthlyRatePercent: null, source: PENDING_RULE_PACKS.QLD.rules.LATE_CHARGE.source },
+    interest: { monthlyRatePercent: null, source: QLD_RULE_PACK.rules.LATE_CHARGE.source },
     hardship: null,
-    terms: PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY,
+    terms: QLD_RULE_PACK.rules.TERMINOLOGY,
   };
 
   it("states the insurance part and how each part is shared", () => {

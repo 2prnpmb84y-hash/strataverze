@@ -25,18 +25,18 @@ vi.mock("@/lib/queries/agenda", () => ({
   updateAgendaItem: (...a: unknown[]) => updateAgendaItem(...(a as [])),
 }));
 vi.mock("@/lib/meetings/events", () => ({ recordMeetingEvent: (...a: unknown[]) => recordMeetingEvent(...(a as [])) }));
-// Queensland is not active yet: give it the pending pack, as it will be once it is.
+// A Queensland building has the Queensland pack (live from the switch-on, 28 Oct 2026; given here as before it was).
 vi.mock("@/lib/meetings/rule-set-repo", async () => {
-  const { MEETING_RULES, PENDING_RULE_PACKS } = await import("@/config/statutory");
-  return { getActiveRuleSet: vi.fn(async (s: string) => (s === "QLD" ? PENDING_RULE_PACKS.QLD.rules.MEETING_RULES : MEETING_RULES)) };
+  const { MEETING_RULES, QLD_RULE_PACK } = await import("@/config/statutory");
+  return { getActiveRuleSet: vi.fn(async (s: string) => (s === "QLD" ? QLD_RULE_PACK.rules.MEETING_RULES : MEETING_RULES)) };
 });
 vi.mock("@/lib/jurisdiction/scheme-rules", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/jurisdiction/scheme-rules")>();
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     ...actual,
     rulesForState: (s: string) =>
-      s === "QLD" ? { pack: PENDING_RULE_PACKS.QLD, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD" } : actual.rulesForState(s),
+      s === "QLD" ? { pack: QLD_RULE_PACK, rules: QLD_RULE_PACK.rules, label: "AU-QLD" } : actual.rulesForState(s),
   };
 });
 vi.mock("@prisma/orm-postgres/orm-client", async () => (await import("@/test/fake-orm")).fakeOrmClient);

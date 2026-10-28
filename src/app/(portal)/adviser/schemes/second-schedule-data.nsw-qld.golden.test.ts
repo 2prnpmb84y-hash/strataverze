@@ -51,11 +51,11 @@ vi.mock("@/lib/queries/seed-chart-of-accounts", () => ({ seedDefaultChartOfAccou
 // A Queensland building has the pending Queensland pack, lent the NSW accounting basis to reach the rest of createScheme.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   const forState = (state: string | null | undefined) => {
     if (state === "QLD") {
       const nsw = actual.rulesForState("NSW").rules;
-      return { pack: null, rules: { ...PENDING_RULE_PACKS.QLD.rules, defaultAccountingBasis: nsw.defaultAccountingBasis }, label: "AU-QLD test" };
+      return { pack: null, rules: { ...QLD_RULE_PACK.rules, defaultAccountingBasis: nsw.defaultAccountingBasis }, label: "AU-QLD test" };
     }
     return actual.rulesForState(state);
   };
@@ -74,11 +74,11 @@ const { createLotAction, updateLotAction } = await import("./[id]/lots/actions")
 const { validateLots, importLots } = await import("@/lib/queries/data-migration");
 const { createScheme, newSchemeDataProblem, updateScheme } = await import("@/lib/queries/schemes");
 const { contributionInsurance } = await import("@/lib/levies/contribution-insurance");
-const { PENDING_RULE_PACKS, statutoryRulesFor } = await import("@/config/statutory");
+const { QLD_RULE_PACK, statutoryRulesFor } = await import("@/config/statutory");
 type Rules = import("@/config/statutory").StatutoryRules;
 
 const NSW_RULES = statutoryRulesFor("NSW");
-const QLD_RULES = PENDING_RULE_PACKS.QLD.rules as unknown as Rules;
+const QLD_RULES = QLD_RULE_PACK.rules as unknown as Rules;
 
 function form(fields: Record<string, string>) {
   const fd = new FormData();

@@ -1,8 +1,8 @@
 /**
  * Adding a Queensland building (QLD wording and onboarding go-live,
- * 27 Oct 2026). Queensland cannot be chosen until its pack is switched on, so
- * the pending Queensland pack is injected here as a supported state, as the
- * earlier Queensland tests inject it. The wizard then asks for the regulation
+ * 27 Oct 2026). Queensland is a supported state with its real pack since the
+ * switch-on (28 Oct 2026); before it, this test injected both. The wizard asks
+ * for the state first, then for the regulation
  * module (the Standard Module only), the plan format and each lot's interest
  * schedule lot entitlement, names the sinking fund, contributions and the
  * penalty, and the server saves the module, the plan format and both
@@ -52,29 +52,6 @@ vi.mock("@/prisma/db", () => {
   const chain = { where: () => chain, first: async () => null };
   return { db: { orm: { public: { Scheme: chain } } } };
 });
-// Queensland as a supported state, with the pending Queensland pack.
-vi.mock("@/config/jurisdictions", async () => {
-  const actual = await vi.importActual<typeof import("@/config/jurisdictions")>("@/config/jurisdictions");
-  const states = ["NSW", "QLD"] as const;
-  return {
-    ...actual,
-    SUPPORTED_SCHEME_STATES: states,
-    SCHEME_STATE_OPTIONS: states.map((s) => ({ value: s, label: actual.STATE_NAMES[s] })),
-    schemeStateProblem: (s: string | null | undefined) => (String(s ?? "").toUpperCase() === "QLD" ? null : actual.schemeStateProblem(s)),
-    schemeLocationProblems: (next: { state: string | null | undefined; postcode: string | null | undefined }, stored?: never) =>
-      String(next.state ?? "").toUpperCase() === "QLD" ? {} : actual.schemeLocationProblems(next, stored),
-  };
-});
-vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
-  return {
-    ...actual,
-    rulesForState: (state: string | null | undefined) =>
-      String(state ?? "").toUpperCase() === "QLD" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state),
-  };
-});
-
 const { default: NewSchemePage } = await import("./new/page");
 const { createSchemeAction } = await import("./actions");
 
@@ -98,6 +75,13 @@ describe("the Add Property wizard for a Queensland building", () => {
     // Where more than one state can be chosen, the state is asked first.
     const stateSelect = byName("state") as unknown as HTMLSelectElement;
     expect(stateSelect.closest(".hidden")).toBeNull();
+    // Both live states, New South Wales first and chosen by default (the switch-on, 28 Oct 2026).
+    expect([...stateSelect.options].filter((o) => o.value).map((o) => [o.value, o.textContent])).toEqual([
+      ["NSW", "New South Wales"],
+      ["QLD", "Queensland"],
+    ]);
+    expect(stateSelect.value).toBe("NSW");
+    expect(visible()).toContain("Only New South Wales and Queensland buildings can be set up for now.");
     expect(visible()).toContain("Enter the core details of the Owners Corporation.");
     fireEvent.change(stateSelect, { target: { value: "QLD" } });
     expect(visible()).toContain("Enter the core details of the Body Corporate.");

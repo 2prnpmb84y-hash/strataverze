@@ -3,6 +3,7 @@ import { LOCKED_MESSAGE, LOCKED_SCHEME_FIELDS, changedLockedFields, requireRoles
 import { defaultTimeZone, PLATFORM_TIME_ZONE, todayIn } from "@/lib/jurisdiction/time-zone";
 import { logError } from "@/lib/log";
 import { db } from "@/prisma/db";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 import { recordSecurityEvent } from "@/lib/audit/security-audit";
 import { redirect } from "next/navigation";
@@ -31,7 +32,7 @@ import {
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
 import { stageOnboardingCutover } from "@/lib/onboarding/stage-opening-cutover";
-import { AUSTRALIAN_STATES, SCHEME_STATE_OPTIONS, schemeLocationProblems } from "@/config/jurisdictions";
+import { AUSTRALIAN_STATES, SCHEME_STATE_OPTIONS, STATE_NAMES, schemeLocationProblems, type AustralianState } from "@/config/jurisdictions";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { planFormatChoiceProblem, regulationModuleChoiceProblem } from "@/lib/jurisdiction/building-data";
@@ -268,9 +269,12 @@ export async function createSchemeAction(
     // Buildings are onboarded by StrataVerze administrators only (SEC-002).
     const profile = await requirePlatformAdmin();
 
-    const existing = await db.orm.public.Scheme.where((s) => s.planNumber.eq(data.planNumber)).first();
+    // Plan numbers are unique within each state, not across the platform
+    // (decided 27 Oct 2026; schemes_state_plan_number_key, migration 20261122):
+    // an NSW and a Queensland building may have the same plan number.
+    const existing = await db.orm.public.Scheme.where((s) => and(s.state.eq(data.state), s.planNumber.eq(data.planNumber))).first();
     if (existing) {
-      const message = "A building with this plan number is already registered.";
+      const message = `A ${STATE_NAMES[data.state as AustralianState] ?? data.state} building with this plan number is already registered.`;
       return { fieldErrors: { planNumber: message }, step: "details", stepErrors: [message] };
     }
 
@@ -333,6 +337,20 @@ export async function createSchemeAction(
   redirect(destination);
 }
 
+/** Why a building's state cannot be changed once it has records (QLD switch-on review, 28 Oct 2026). */
+const STATE_CHANGE_REFUSED =
+  "The state cannot be changed, because this building already has funds, lots or notices set up under its current state's rules. If the state is wrong, the building needs to be set up again in the right state.";
+
+/** Whether a building has any fund, lot or notice. */
+async function buildingHasRecords(schemeId: string): Promise<boolean> {
+  const [fund, lot, notice] = await Promise.all([
+    db.orm.public.Fund.where((f) => f.schemeId.eq(schemeId)).first(),
+    db.orm.public.Lot.where((l) => l.schemeId.eq(schemeId)).first(),
+    db.orm.public.LevyNotice.where((n) => n.schemeId.eq(schemeId)).first(),
+  ]);
+  return !!(fund || lot || notice);
+}
+
 export async function updateSchemeAction(
   schemeId: string,
   _prev: SchemeFormState,
@@ -365,6 +383,23 @@ export async function updateSchemeAction(
         reason: "locked building record",
       });
       return { error: LOCKED_MESSAGE };
+    }
+    // A building's state decides its rule pack (QLD switch-on review, 28 Oct
+    // 2026). Once it has funds, lots or notices, they were set up under its
+    // state's rules (fund names and basis, chart of accounts, notices recorded
+    // with the pack), so the state can no longer be changed. An edit that
+    // keeps the state is not affected.
+    const stateChanged = data.state !== String(current.state ?? "").trim().toUpperCase();
+    if (stateChanged && (await buildingHasRecords(schemeId))) {
+      return { fieldErrors: { state: STATE_CHANGE_REFUSED } };
+    }
+    // A new plan number or state must not be another building's in that state
+    // (plan numbers are unique within each state, migration 20261122).
+    if (data.planNumber !== String(current.planNumber ?? "").trim() || stateChanged) {
+      const clash = await db.orm.public.Scheme.where((s) => and(s.state.eq(data.state), s.planNumber.eq(data.planNumber), s.id.neq(schemeId))).first();
+      if (clash && clash.id !== schemeId) {
+        return { fieldErrors: { planNumber: `A ${STATE_NAMES[data.state as AustralianState] ?? data.state} building with this plan number is already registered.` } };
+      }
     }
 
     await updateScheme(schemeId, data);

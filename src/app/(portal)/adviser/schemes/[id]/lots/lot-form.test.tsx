@@ -5,7 +5,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import { regulationModuleChoices, separateEntitlement } from "@/lib/jurisdiction/building-data";
 import { lotFormEntitlementWords } from "@/lib/jurisdiction/screen-words";
 
@@ -16,7 +16,7 @@ const { LotForm } = await import("./lot-form");
 const { RegulationModuleForm } = await import("../regulation-module-form");
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const defaults = { lotNumber: "3", unitNumber: "12", entitlement: 50, floorArea: null, lotType: "RESIDENTIAL" };
 
 describe("the lot form", () => {

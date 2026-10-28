@@ -5,14 +5,14 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import { planFormatChoices } from "@/lib/jurisdiction/building-data";
 
 vi.mock("../actions", () => ({ savePlanFormatAction: vi.fn() }));
 
 const { PlanFormatForm } = await import("./plan-format-form");
 
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 
 describe("the plan format setting", () => {
   it("has nothing to show for an NSW building", () => {

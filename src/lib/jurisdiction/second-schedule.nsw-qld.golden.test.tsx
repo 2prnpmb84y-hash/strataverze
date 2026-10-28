@@ -8,7 +8,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 
 vi.mock("@/app/(portal)/adviser/schemes/[id]/lots/actions", () => ({ createLotAction: vi.fn(), updateLotAction: vi.fn() }));
 
@@ -22,7 +22,7 @@ const { insuranceBasis, insuranceSplit } = await import("@/lib/levies/contributi
 const { levySharedBy, levyFormWords, lotFormEntitlementWords, lotWordsFor } = await import("./screen-words");
 
 const NSW = statutoryRulesFor("NSW");
-const QLD = PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules;
+const QLD = QLD_RULE_PACK.rules as unknown as StatutoryRules;
 const PACKS = [
   ["NSW", NSW],
   ["QLD", QLD],

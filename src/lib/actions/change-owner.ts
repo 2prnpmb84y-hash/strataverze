@@ -20,7 +20,6 @@ import { consumeUpload, uploadErrorMessage, verifyUpload } from "@/lib/storage/u
 import { applyChangeOwner, checkChangeOwner } from "@/lib/owner/change-owner";
 import { captureLibraryDocument, captureQuietly } from "@/lib/vault/sources";
 import { getTrialVault } from "@/lib/vault/capture";
-import { needRule } from "@/config/statutory";
 
 export type ChangeOwnerState = { error?: string; fieldErrors?: Record<string, string>; done?: string };
 
@@ -57,7 +56,9 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
 
     // Looked up before the change is saved, so nothing after the write can fail on it.
     const { rules } = await rulesForScheme(schemeId);
-    const seatCitation = needRule(rules, "CITATIONS").committeeSeatEndsOnSale;
+    // The provision that ends the seat, where the pack has one (NSW s 35(1)(a)). Queensland's pack
+    // has none: whether a seat ends on sale there is not confirmed (FOR_REVIEW), so no citation is given.
+    const seatCitation = rules.CITATIONS?.committeeSeatEndsOnSale ?? null;
     const committee = rules.TERMINOLOGY.committee;
     const result = await applyChangeOwner(schemeId, lotId, input);
     const lotNumber = lot!.lotNumber;
@@ -146,7 +147,9 @@ export async function changeOwnerAction(schemeId: string, lotId: string, _prev: 
     const parts = [`${input.ownerName} is now the owner of Lot ${lotNumber} on the strata roll, settled ${input.settlementDate.split("-").reverse().join("/")}.`];
     if (result.endedMemberships.length) parts.push(`The outgoing owner's portal access has ended.`);
     for (const m of result.movedAccess) parts.push(`The outgoing owner keeps portal access through Lot ${m.lotNumber}, which the strata roll shows they still own.`);
-    if (result.endedCommitteeSeats.length) parts.push(`Their seat on the ${committee} has ended from the settlement date, as they are no longer an owner (${seatCitation}).`);
+    if (result.endedCommitteeSeats.length) {
+      parts.push(`Their seat on the ${committee} has ended from the settlement date, as they are no longer an owner${seatCitation ? ` (${seatCitation})` : ""}.`);
+    }
     for (const k of result.keptCommitteeSeats) {
       const lots = k.lotNumbers.map((n) => `Lot ${n}`).join(", ");
       parts.push(`Their committee seat continues, as the strata roll shows them as the owner of ${lots}. If that is wrong, the seat needs to be ended separately.`);

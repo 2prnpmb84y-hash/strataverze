@@ -50,7 +50,7 @@ export default async function VaultPage({
   const access = await requirePageAccess(id, "vault.read");
   if (!access) return null;
   const scheme = await getSchemeById(id);
-  if (!scheme || !isVaultTrialBuilding(scheme.planNumber) || !(await getVault(id))) redirect(`/adviser/schemes/${id}/documents`);
+  if (!scheme || !isVaultTrialBuilding(scheme) || !(await getVault(id))) redirect(`/adviser/schemes/${id}/documents`);
 
   const tz = timeZoneOf(scheme);
   const TYPE_TEXT = typeText(packWordsFor(rulesForState(scheme.state).rules).Levy);

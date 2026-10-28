@@ -51637,9 +51637,10 @@
               "indexes": [
                 {
                   "columns": [
+                    "state",
                     "plan_number"
                   ],
-                  "name": "schemes_plan_number_key",
+                  "name": "schemes_state_plan_number_key",
                   "unique": true
                 }
               ],
@@ -61841,7 +61842,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "d0e45085d5e839f60ece4d312121616dfb81482f2ea0e51abb58e5db2a56eda1"
+    "storageHash": "617447ff517c5b30db5923c74ee546f368cb4c0a525f588d84037df6def66d54"
   },
   "execution": {
     "executionHash": "8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8",

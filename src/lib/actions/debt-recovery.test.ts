@@ -267,7 +267,7 @@ describe("initiateDebtRecoveryAction for a pack without the recovery steps", () 
 
 describe("initiateDebtRecoveryAction for a Queensland building (stage 2, step 8)", () => {
   it("starts at PAYMENT_PLAN for an active plan only where the pack has the payment plan workflow", async () => {
-    const { PENDING_RULE_PACKS, RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const { QLD_RULE_PACK, RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
     const ready = () => {
       membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
       lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
@@ -278,7 +278,7 @@ describe("initiateDebtRecoveryAction for a Queensland building (stage 2, step 8)
       planFirst.mockResolvedValue({ id: "plan-1", caseId: null });
     };
     ready();
-    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" });
+    schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, label: "AU-QLD test" });
     expect(await actions.initiateDebtRecoveryAction(SCHEME_A, "lot-1", "debtor", "ADVISER")).toEqual({ success: true, id: "new-case" });
     expect(planFirst).not.toHaveBeenCalled();
     expect(queries.updateDebtRecoveryCase).not.toHaveBeenCalled();
@@ -293,8 +293,8 @@ describe("initiateDebtRecoveryAction for a Queensland building (stage 2, step 8)
   });
 
   it("copies the Queensland pack's steps onto the case, without the rule status", async () => {
-    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
-    const qld = PENDING_RULE_PACKS.QLD.rules;
+    const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const qld = QLD_RULE_PACK.rules;
     membership.mockResolvedValue({ profile: { id: "committee-member" }, membership: {}, roles: ["COMMITTEE"] });
     lotFirst.mockResolvedValue({ id: "lot-1", schemeId: SCHEME_A });
     ownerMembershipFirst.mockResolvedValue({ id: "m" });
@@ -317,8 +317,8 @@ describe("initiateDebtRecoveryAction for a Queensland building (stage 2, step 8)
 
 describe("completeDebtRecoveryStepAction for a Queensland building (stage 2, step 8)", () => {
   it("completes a step: there is no statutory payment plan to pause it", async () => {
-    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
-    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
+    const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
     stepFirst.mockResolvedValue({ id: "step-4", caseId: "case-1", stepType: "FINAL_NOTICE", stepOrder: 4, status: "PENDING" });
     lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
     const r = await actions.completeDebtRecoveryStepAction("step-4", "case-1", SCHEME_A, new FormData());
@@ -326,11 +326,11 @@ describe("completeDebtRecoveryStepAction for a Queensland building (stage 2, ste
   });
 
   it("captures the step fee with the building's state, so its pack decides what the owner can be charged", async () => {
-    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
     const { db } = await import("@/prisma/db");
     vi.mocked(db.transaction).mockImplementationOnce((async (fn: (tx: { orm: unknown }) => Promise<unknown>) => fn({ orm: {} })) as never);
     feeVariant.mockReturnValueOnce("FINAL_NOTICE");
-    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
+    schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
     stepFirst.mockResolvedValue({ id: "step-4", caseId: "case-1", stepType: "FINAL_NOTICE", stepOrder: 4, status: "PENDING" });
     const r = await actions.completeDebtRecoveryStepAction("step-4", "case-1", SCHEME_A, new FormData());
     expect(r).toEqual({ success: true });
@@ -353,8 +353,8 @@ describe("updateDebtRecoveryCaseAction referral while a payment plan is followed
   });
 
   it("allows it for a pack without the payment plan workflow", async () => {
-    const { PENDING_RULE_PACKS } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
-    schemeRules.mockResolvedValueOnce({ rules: PENDING_RULE_PACKS.QLD.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
+    const { QLD_RULE_PACK } = await vi.importActual<typeof import("@/config/statutory")>("@/config/statutory");
+    schemeRules.mockResolvedValueOnce({ rules: QLD_RULE_PACK.rules, pack: { state: "QLD" }, label: "AU-QLD test" });
     lotPlansAll.mockResolvedValue([{ status: "ACTIVE" }]);
     const r = await actions.updateDebtRecoveryCaseAction("case-1", SCHEME_A, referral());
     expect(r).toEqual({ success: true });

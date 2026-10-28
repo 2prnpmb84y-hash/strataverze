@@ -6,7 +6,7 @@
  * tests, which are unchanged.
  */
 import { describe, expect, it } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type NswRules } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor, type NswRules } from "@/config/statutory";
 import {
   addMonths,
   allocatePayment,
@@ -19,7 +19,7 @@ import {
 } from "./statutory-interest";
 
 const NSW = statutoryRulesFor("NSW") as NswRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = QLD_RULE_PACK.rules;
 const none = [] as { date: string; amountCents: number }[];
 
 describe("the late charge rule of each pack", () => {

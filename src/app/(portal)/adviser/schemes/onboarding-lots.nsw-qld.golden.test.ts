@@ -60,11 +60,11 @@ vi.mock("@/config/jurisdictions", async () => {
 });
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     ...actual,
     rulesForState: (state: string | null | undefined) =>
-      String(state ?? "").toUpperCase() === "QLD" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state),
+      String(state ?? "").toUpperCase() === "QLD" ? { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" } : actual.rulesForState(state),
   };
 });
 

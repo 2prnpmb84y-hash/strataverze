@@ -47,11 +47,11 @@ const activity = vi.hoisted(() => ({ logActivity: vi.fn(async () => {}) }));
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: activity.logActivity, logActivityTx: vi.fn() }));
 vi.mock("@/lib/audit/security-audit", () => ({ recordSecurityEvent: vi.fn(async () => {}) }));
 vi.mock("@/lib/auth/session-register", () => ({ revokeAllSessions: vi.fn(async () => {}) }));
-// A Queensland-shaped building: the Queensland pack's rules (not yet active).
+// A Queensland-shaped building: the Queensland pack's rules (live from the switch-on, 28 Oct 2026).
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
-  const qld = PENDING_RULE_PACKS.QLD.rules;
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
+  const qld = QLD_RULE_PACK.rules;
   const forState = (state: string | null | undefined) => (state === "QLD-SHAPED" ? { pack: null, rules: qld, label: "AU-QLD test" } : actual.rulesForState(state));
   return {
     ...actual,

@@ -73,7 +73,7 @@ export async function messageTermsFor(schemeId: string, orm: typeof db.orm = db.
 /**
  * One building's pack, for the words a page or message shows for it (QLD
  * finance wording review, 28 Oct 2026). Pure and never throws: a building in
- * a state with no live pack (Queensland while its pack is pending) gets the
+ * a state with no live pack (a draft pack, such as Victoria's) gets the
  * default state's words, so one such building never fails a page that lists
  * several. Only for words: a rule is never taken from here.
  */

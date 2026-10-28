@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { PENDING_RULE_PACKS, statutoryRulesFor } from "@/config/statutory";
+import { QLD_RULE_PACK, statutoryRulesFor } from "@/config/statutory";
 import { assembleNoticeContent, type NoticeContentParams } from "./notice";
 
 const NSW = statutoryRulesFor("NSW").TERMINOLOGY;
-const QLD = PENDING_RULE_PACKS.QLD.rules.TERMINOLOGY;
+const QLD = QLD_RULE_PACK.rules.TERMINOLOGY;
 
 const params: NoticeContentParams = {
   scheme: {

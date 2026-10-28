@@ -5,11 +5,11 @@
  * Regulation 2020 ("SM").
  *
  * SIGNED OFF by Matthew Wrigley on 27 Oct 2026, with the decisions in
- * DECISIONS; the points in NOT_CONFIRMED stay not confirmed. Not yet applied
- * to any building: `rulePackFor` returns active packs only, and Queensland is
- * not in SUPPORTED_SCHEME_STATES or the database's state check. It becomes
- * active in stage 2, when the shared code can apply it (multi-jurisdiction
- * plan, phase 2).
+ * DECISIONS; the points in NOT_CONFIRMED stay not confirmed. ACTIVE from
+ * version 2026.10.19 (QLD stage 2, step 11, the switch-on, 28 Oct 2026): the
+ * pack is in RULE_PACKS, Queensland is in SUPPORTED_SCHEME_STATES, and
+ * migration 20261122 adds it to the database's state check. Queensland
+ * buildings can be set up and are given these rules.
  *
  * Sources, read on 27 Oct 2026 on legislation.qld.gov.au (in-force HTML):
  * - the Act, reprint current from 1 Aug 2025;
@@ -126,6 +126,20 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     status: "CONFIRMED",
   },
 ];
+
+/**
+ * The accounting basis a new building's fund starts on (QLD switch-on,
+ * 28 Oct 2026). A StrataVerze choice, not a rule of law, decided by Matthew
+ * Wrigley on 28 Oct 2026 (DECISIONS): the same as NSW, the administrative fund
+ * on a cash basis and the sinking fund (held in the ledger's capital works
+ * fund) on an accrual basis. The Act and the SM were not searched for a
+ * required basis. An adviser can change a fund's basis later. The basis changes how reports recognise income and expenditure,
+ * never how entries are posted. Takes the ledger's fund types, including the
+ * older ADMIN and SINKING names.
+ */
+export function defaultAccountingBasis(fundType: string): "CASH" | "ACCRUAL" {
+  return fundType === "CAPITAL_WORKS" || fundType === "SINKING" ? "ACCRUAL" : "CASH";
+}
 
 /** Rules about the funds as a whole. */
 export const FUND_RULES = {
@@ -287,10 +301,11 @@ export const ENTITLEMENT_SCHEDULES: readonly EntitlementScheduleDefinition[] = [
  *   lots_interest_schedule_entitlement_check. A server problem with the
  *   state goes back to Property Details where the state is asked there
  *   (actions.ts DETAIL_FIELDS).
- * - Still to do for onboarding: createScheme needs the pack's
- *   defaultAccountingBasis, which this pack does not have, so a Queensland
- *   building cannot be created until it is decided and added (the tests lend
- *   it the NSW one). The strata roll reader reads NSW rolls (unit
+ * - Done on 28 Oct 2026 (the switch-on): createScheme takes the pack's
+ *   defaultAccountingBasis (the NSW basis, a StrataVerze choice decided by
+ *   Matthew Wrigley on 28 Oct 2026, DECISIONS), so a Queensland building can
+ *   be created.
+ * - Still to do for onboarding: the strata roll reader reads NSW rolls (unit
  *   entitlement, NSW postcodes) and finds no interest schedule
  *   (src/lib/parse-strata-roll.ts), so its issues, and the Add Property
  *   wizard's refusal of a file that is not a roll (adviser/schemes/actions.ts),
@@ -1540,7 +1555,11 @@ export const NOT_CONFIRMED = [
 /**
  * StrataVerze design choices made after the sign-off (stage 2, step 7,
  * 27 Oct 2026) that are not in the signed-off data, for Matthew Wrigley to
- * confirm. Each is applied as stated until then.
+ * confirm. Each is applied as stated until then. On 28 Oct 2026 he accepted
+ * them as built for go-live (DECISIONS), except the debtor test for voting,
+ * applied per lot (SM s 102(2)) in 2026.10.18. They are kept
+ * here as the record of what was accepted, as the 27 Oct plan format
+ * decision kept its points.
  */
 export const FOR_REVIEW = [
   {
@@ -1758,6 +1777,11 @@ export const FOR_REVIEW = [
       "The Add Property wizard asks for a new building's plan format and saves it with the building. Any listed format can be chosen, as in the building settings, so a standard format plan is accepted and its contributions that include insurance are refused later.",
     where: "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts createSchemeAction, src/lib/queries/schemes.ts createScheme",
   },
+  {
+    point:
+      "NOT CONFIRMED: whether a committee member's seat ends when they sell their lot in Queensland. The research notes do not say. StrataVerze ends it from the settlement date, as it does for NSW (SSMA 2015 s 35(1)(a)), unless the roll shows them owning another lot, and the change of owner message gives no Queensland provision for it.",
+    where: "src/lib/actions/change-owner.ts changeOwnerAction, src/lib/owner/change-owner.ts applyChangeOwner",
+  },
 ] as const;
 
 /** StrataVerze's decisions in the sign-off of 27 Oct 2026 (review document, "Decisions"). */
@@ -1774,6 +1798,18 @@ export const DECISIONS = [
     decidedBy: "Matthew Wrigley",
     decidedOn: "2026-10-27",
   },
+  {
+    decision:
+      "Start a new Queensland building's funds on the same default accounting basis as NSW: the administrative fund on a cash basis and the sinking fund on an accrual basis. A StrataVerze choice, not a rule of law.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
+  {
+    decision:
+      "Go-live sign-off: the stage 2 FOR_REVIEW points are accepted as built, except that the debtor test for voting is applied per lot (SM s 102(2)), fixed in a separate change, and switch-on is approved.",
+    decidedBy: "Matthew Wrigley",
+    decidedOn: "2026-10-28",
+  },
 ] as const;
 
 /**
@@ -1782,8 +1818,8 @@ export const DECISIONS = [
  * fund plan, key financial information form or s 184 certificate. The debt
  * recovery steps are Queensland's own draft sequence (stage 2, step 8); the
  * body corporate certificate and records inspections are Queensland's own
- * (CERTIFICATE, INSPECTIONS, stage 2, step 9). Nothing is live: the pack is
- * still pending.
+ * (CERTIFICATE, INSPECTIONS, stage 2, step 9). Live from the switch-on
+ * (2026.10.19, 28 Oct 2026).
  */
 export const FEATURES: PackFeatures = {
   statutoryPaymentPlans: false,

@@ -5,9 +5,11 @@
  * sent and what it says.
  *
  * Only active buildings in a state whose live pack has the rule
- * (DEBT_RECOVERY.mustStartProceedings) are read. No live pack has it yet
- * (Queensland is pending), so the run returns before any query, and an NSW
- * building is never read or emailed. The state is matched as the packs match
+ * (DEBT_RECOVERY.mustStartProceedings) are read. Queensland's pack has it
+ * and is live from 2026.10.19 (the switch-on, 28 Oct 2026), so Queensland
+ * buildings are read. NSW's pack has no such rule, so an NSW building is
+ * never read or emailed. With no state's live pack having it, the run returns
+ * before any query. The state is matched as the packs match
  * it (trimmed, any letter case). Each building's day is its own time zone.
  *
  * Each stage of each lot is claimed in proceedings_deadline_reminders before
@@ -43,7 +45,7 @@ const day = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? "
 /** A building's state as the packs read it ("Qld " is QLD). */
 const normalState = (state: unknown) => String(state ?? "").trim().toUpperCase();
 
-/** The states whose live pack has the rule and the reminder words (none while Queensland is pending; never NSW). */
+/** The states whose live pack has the rule and the reminder words (Queensland; never NSW). */
 export function statesWithProceedingsRule(): string[] {
   return liveSchemeRules()
     .filter((r) => proceedingsDeadlineRule(r.rules) != null && r.rules.DEBT_RECOVERY?.proceedingsReminder != null)

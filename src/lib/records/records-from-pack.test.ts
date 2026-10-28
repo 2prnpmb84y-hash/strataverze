@@ -7,10 +7,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PENDING_RULE_PACKS, RULE_PACKS, type NswRules, type StatutoryRules } from "@/config/statutory";
+import { QLD_RULE_PACK, RULE_PACKS, type NswRules, type StatutoryRules } from "@/config/statutory";
 
 const NSW = RULE_PACKS.NSW.rules as NswRules;
-const QLD = PENDING_RULE_PACKS.QLD.rules;
+const QLD = QLD_RULE_PACK.rules;
 
 // ─── Store mocks (the database, the building's pack and its day) ─────
 

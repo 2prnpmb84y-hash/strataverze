@@ -134,10 +134,12 @@ model Profile {
 model Scheme {
   id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                String
-  planNumber          String              @unique @map("plan_number")
+  /// Unique within each state, not across the platform (decided 27 Oct 2026; @@unique([state, planNumber]) below,
+  /// migration 20261122): an NSW and a Queensland building may have the same plan number.
+  planNumber          String              @map("plan_number")
   address             String
   suburb              String
-  state               String              @default("NSW") // Only NSW buildings can be set up (src/config/jurisdictions.ts)
+  state               String              @default("NSW") // Only NSW and QLD buildings can be set up (src/config/jurisdictions.ts; schemes_state_has_rule_pack_check, migration 20261122)
   postcode            String
   totalLots           Int                 @map("total_lots")
   totalEntitlement    Int                 @map("total_entitlement")
@@ -255,6 +257,7 @@ model Scheme {
   worksSettings          WorksSettings?
   worksPreferredContractors WorksPreferredContractor[]
   worksDecisions         WorksDecision[]
+  @@unique([state, planNumber])
   @@map("schemes")
 }
 

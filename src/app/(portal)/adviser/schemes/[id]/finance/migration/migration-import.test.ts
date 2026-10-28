@@ -24,12 +24,12 @@ vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).shar
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/queries/activity-log", () => ({ logActivity: vi.fn(), getAuditTrailForExport: vi.fn(), formatAuditTrailCsv: vi.fn() }));
-// A building on Queensland's pack (pending, so given to no real building yet) for the interest schedule (stage 2, step 10).
+// A building on Queensland's pack, for the interest schedule (stage 2, step 10). Written while the pack was pending; it is live from 28 Oct 2026.
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   const forState = (state: string | null | undefined) =>
-    state === "QLD-SHAPED" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(state);
+    state === "QLD-SHAPED" ? { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" } : actual.rulesForState(state);
   return {
     ...actual,
     rulesForState: forState,

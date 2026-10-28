@@ -86,10 +86,10 @@ vi.mock("@/app/(portal)/adviser/schemes/[id]/lots/[lotId]/lot-detail-tabs", () =
 }));
 vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
   const actual = await vi.importActual<typeof import("@/lib/jurisdiction/scheme-rules")>("@/lib/jurisdiction/scheme-rules");
-  const { PENDING_RULE_PACKS } = await import("@/config/statutory");
+  const { QLD_RULE_PACK } = await import("@/config/statutory");
   return {
     ...actual,
-    rulesForState: (s: string | null | undefined) => (s === "QLD" ? { pack: null, rules: PENDING_RULE_PACKS.QLD.rules, label: "AU-QLD test" } : actual.rulesForState(s)),
+    rulesForState: (s: string | null | undefined) => (s === "QLD" ? { pack: null, rules: QLD_RULE_PACK.rules, label: "AU-QLD test" } : actual.rulesForState(s)),
   };
 });
 

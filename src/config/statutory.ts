@@ -151,7 +151,16 @@ export interface SharedRules {
  * refuses a building whose pack does not have it, or checks FEATURES first.
  * As each area is made jurisdiction-neutral, its rule moves into SharedRules.
  */
-export type StatutoryRules = SharedRules & Partial<Omit<NswRules, keyof SharedRules>>;
+export type StatutoryRules = SharedRules & Partial<Omit<NswRules, keyof SharedRules | OwnShapeRules>>;
+
+/**
+ * NSW rules another live pack holds under the same name in its own shape
+ * (Queensland's RECORD_RETENTION and RECORDS_INSPECTION, QLD switch-on,
+ * 28 Oct 2026). They are left out of StatutoryRules, so no shared code reads
+ * one as if it were in the NSW shape. Shared code reads DOCUMENT_RETENTION
+ * and INSPECTIONS instead; NSW code reads them from NswRules.
+ */
+type OwnShapeRules = "RECORD_RETENTION" | "RECORDS_INSPECTION";
 
 /** `needRule` and `RuleNotInPackError` live in a module with no pack data, so the browser can use them. */
 export { needRule, RuleNotInPackError } from "./statutory/need-rule";
@@ -180,6 +189,134 @@ export interface RulePack {
   reviewedOn: string | null;
   rules: StatutoryRules;
 }
+
+/**
+ * The Queensland pack (AU-QLD), active from 2026.10.19 (QLD stage 2, step 11,
+ * 28 Oct 2026). Exported with its rules' own types for tests and `src/config`.
+ * Application code gets a building's rules from `rulePackFor` or
+ * `statutoryRulesFor`, never from here (`statutory.imports.test.ts`).
+ */
+export const QLD_RULE_PACK = {
+  code: "AU-QLD",
+  state: "QLD",
+  name: "Queensland",
+  // 2026.10.1 (27 Oct 2026): Standard Module, researched from the in-force Act and SM, for review.
+  // 2026.10.2 (27 Oct 2026): signed off by Matthew Wrigley with the six decisions in DECISIONS; the
+  // points in NOT_CONFIRMED stay not confirmed.
+  // 2026.10.3 (27 Oct 2026): FEATURES added (none of the NSW workflows applies); a platform switch,
+  // not a rule of law, so the sign-off stands.
+  // 2026.10.4 (27 Oct 2026): TERMINOLOGY gains levies, lateCharge, planLabel, bodyCorporateName and
+  // bodyCorporateShortName (wording only, as decided in the sign-off), so the sign-off stands.
+  // 2026.10.5 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only, the names already
+  // in the pack), so the sign-off stands.
+  // 2026.10.6 (27 Oct 2026): NOTICE_RULES added (the contribution notice rules in the shared shape, from
+  // CONTRIBUTION_NOTICE_RULES). The 35-day lead is a StrataVerze choice, not a rule of law; the legal
+  // values are those already signed off, so the sign-off stands.
+  // 2026.10.7 (27 Oct 2026): LATE_CHARGE added (the late payment penalty in the shared shape, from
+  // LATE_PAYMENT_PENALTY). PAYMENT_ALLOCATION_ORDER is now read in two places only: the penalty
+  // engine (monthlyPenalty applies payments to the penalty first) and lotArrears (payments against
+  // posted interestCharged). Receipting, notice balances and status, owner credits and the receivable
+  // journals still take a payment against the notice total, levy first (see the note in qld.ts).
+  // The legal values are those already signed off, so the sign-off stands.
+  // 2026.10.8 (27 Oct 2026): MEETING_RULES added (the meeting rules in the shared shape, from MEETINGS,
+  // RESOLUTIONS, CONTRIBUTIONS.debtorMayVote and RECORD_RETENTION). Pre-meeting e-voting is not offered
+  // (none like the NSW ballot), the labels and the committee refusal are wording, and the legal values
+  // are those already signed off, so the sign-off stands. How the 21 days is counted stays not confirmed.
+  // Also: MEETINGS.statutoryMotions and COMMITTEE.electionIsLastBusiness (from the research notes, CONFIRMED,
+  // backing the draft AGM template), FOR_REVIEW (StrataVerze design choices for Matthew Wrigley to confirm)
+  // and a GO-LIVE GAP note (special and majority resolutions are not counted yet).
+  // 2026.10.9 (27 Oct 2026): DEBT_RECOVERY_STEPS, DEBT_RECOVERY_STEP_LABELS and DEBT_RECOVERY_GUIDANCE added.
+  // They are draft content (DRAFT, FOR STRATAVERZE TO REVIEW) for Matthew Wrigley's review, listed in FOR_REVIEW
+  // with the 2 year warning, the waiver step given to the committee and the fees. Also RECOVERY_COSTS_RECOVERABLE
+  // (fee wording, SM s 166(1)(c)), NEVER_RECOVERABLE_FEE_VARIANTS (none), DEBT_RECOVERY.mustStartProceedings.citation
+  // and FEATURES.debtRecoverySteps on. The legal values already signed off are unchanged, so the status stays
+  // REVIEWED. A GO-LIVE GAP note lists what is still NSW worded on the screens and that the 2 year rule has no
+  // daily reminder yet.
+  // 2026.10.10 (27 Oct 2026): CERTIFICATE (the body corporate certificate: 5 business days, fees in fee units with each
+  // year's dollar table from FEE_UNIT_DOLLARS, the interested persons of Act s 205(13)), INSPECTIONS (access within 7 days,
+  // owner and other fees and copies per page in fee units, the fee year from the written request), DOCUMENT_RETENTION
+  // (as decided: minutes and insurance policies without a limit, by-laws in force without a limit as of current relevance,
+  // every other category at least the 6 year disposal period of SM s 231) and WORKS_QUOTES (2 quotes above the major
+  // spending limit) added from the values already signed off, with FEATURES.recordsInspections and the new
+  // FEATURES.bodyCorporateCertificate on. The certificate follows the contents listed in SM s 233AA(1) (the approved
+  // form was not read). The certificate headings are draft content (DRAFT, FOR STRATAVERZE TO REVIEW), and the new
+  // StrataVerze choices are in FOR_REVIEW.
+  // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied yet
+  // (the priority certificate, public holidays, the audit, the resolved spending limits).
+  // 2026.10.11 (27 Oct 2026): the building data (stage 2, step 10). ENTITLEMENT_SCHEDULES gains a label and help
+  // for each schedule (wording only) and `decides`, the uses of `usedFor` as keys for code, from the provisions
+  // already signed off (Act s 47(2), (3), ss 106(3), 110(3); SM ss 162(5), 197(4)). The buildings insurance share
+  // (SM s 201(1), (2): interest schedule for building and volumetric format lots only, reinstatement cost for standard
+  // format lots) is given no schedule until each lot's plan format is held. REGULATION_MODULE
+  // becomes a shared rule (the building setting) with its values unchanged. FOR_REVIEW gains four StrataVerze
+  // choices (who saves the module, the interest schedule entitlement in the locked record, the buildings insurance
+  // share not worked out, flagging missing data).
+  // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied
+  // yet (the insurance part of contributions by the interest schedule, the onboarding wizard, the NSW labels).
+  // 2026.10.12 (27 Oct 2026): PAYMENT_ALLOCATION_ORDER (penalty first, SM s 166(5)) is now applied by receipting, notice
+  // balances and status, owner credit applied, reversals and the receivable journals, each as one transaction with the
+  // building's journal numbering and each notice locked while its penalty is charged and a payment applied. The engine is the source of the penalty charged, and the part recorded on
+  // each payment (levy_payments.late_charge_amount, migration 20261117) the source of the penalty paid (see the note in
+  // qld.ts). FOR_REVIEW gains three StrataVerze choices (the part of the contribution left unpaid when only the contribution
+  // is paid, as StrataVerze reads SM ss 165 and 166(5); charging the penalty to the payment date first, with future dates
+  // refused; the order within a notice). The legal values are unchanged, so the status stays REVIEWED.
+  // 2026.10.13 (27 Oct 2026): resolution tallies at conduct. MEETING_RULES gains pollCategories (ORDINARY, from
+  // RESOLUTIONS.pollAvailable: Act ss 109, 110(3)) and proxiesBarredOn (MAJORITY: Act s 107, SM s 130(3), as in
+  // PROXIES.notFor), both from values already signed off. Conduct now counts the votes at a Queensland general
+  // meeting (not a committee meeting) and checks the chair's outcome against the count; a majority resolution
+  // cannot be recorded as resolved until written votes are recorded. FOR_REVIEW gains the count deciding with no
+  // override, the lot count and the meeting's date for debts, abstentions and votes cast, and the debtor test
+  // reading contribution notices only. The legal values are unchanged, so the status stays REVIEWED.
+  // The GO-LIVE GAP note on MEETING_RULES says what is applied and what remains.
+  // 2026.10.14 (27 Oct 2026): insurance in contributions (go-live gap), as Matthew Wrigley decided on 27 Oct 2026
+  // (DECISIONS): building and volumetric format plans only. PLAN_FORMAT added (the building setting, held in
+  // schemes.plan_format: building, volumetric or standard format plan, SM ss 198, 199, 201; Act s 46B(2)(b)).
+  // ENTITLEMENT_SCHEDULES: the interest schedule now decides INSURANCE_BUILDINGS for building and volumetric format
+  // plans only (SM s 201(1)); no schedule decides it for a standard format plan. CONTRIBUTION_INSURANCE added: the
+  // insurance part of an administrative fund contribution is shared by the interest schedule and the rest by the
+  // contribution schedule (SM ss 160(2), 162(5), 197(4), 201(1)). FOR_REVIEW gains the s 201(2) adjustments not
+  // offered, what counts as insurance in the budget, the voluntary insurance scheme (s 204) not offered, the refusal
+  // without an insurance line (a StrataVerze choice, CONTRIBUTION_INSURANCE.insuranceLineRequired), special
+  // contributions, the plan format setting and refusing a standard format plan outright (stricter than s 197(4));
+  // the buildings premium and missing data points are updated. An insurance line in the sinking fund budget is refused. The legal values already signed off are unchanged and the new ones are from the same
+  // provisions, so the status stays REVIEWED. The GO-LIVE GAP note on ENTITLEMENT_SCHEDULES says what is applied.
+  // 2026.10.15 (27 Oct 2026): QLD wording and onboarding go-live. TERMINOLOGY gains paymentPlan ("Payment Arrangement",
+  // the agreed arrangement a debt recovery case shows, as there is no statutory payment plan) and lateChargeGeneral
+  // ("late payment charge", where Queensland and NSW lots are shown together), moved out of code (wording only).
+  // FOR_REVIEW gains those words and the plan format asked for by the Add Property wizard. The legal values are
+  // unchanged, so the status stays REVIEWED. The GO-LIVE GAP notes say which screens take the pack's words and which
+  // still show NSW words.
+  // 2026.10.16 (28 Oct 2026): the 2 year rule's daily reminder (go-live gap). DEBT_RECOVERY.proceedingsReminder added:
+  // the reminder's subject and heading, StrataVerze wording that calls the deadline the StrataVerze date. FOR_REVIEW:
+  // the 2 year warning point now says it is also a daily reminder, and new points give who is emailed and when (first
+  // flagged, 30, 14 and 7 days before the deadline, once after), no email for a deadline passed more than 30 days
+  // before the run (no burst at go-live), the owners left out and those not covered (several lots, company owners,
+  // attorneys), and a case closed after judgment not counting as proceedings. The GO-LIVE GAP note on DEBT_RECOVERY
+  // says what is applied and that migration 20261119 must be applied before go-live. No rule of law changed, so the
+  // status stays REVIEWED.
+  // 2026.10.17 (28 Oct 2026): QLD finance wording go-live. TERMINOLOGY gains ownersCorporations ("bodies corporate",
+  // the plural where a page lists several buildings; wording only), and FOR_REVIEW gains that word and how buildings
+  // in both states are named together. The finance screens, reports, PDFs and messages take the pack's words. The
+  // legal values are unchanged, so the status stays REVIEWED. The GO-LIVE GAP note on the wording says what remains.
+  // 2026.10.18 (28 Oct 2026): debtor voting lot by lot. SM s 102(2) bars each lot that owes money, so an owner of
+  // several lots is no longer refused only when every lot owes: a lot that owes is barred and the same owner's lots
+  // that owe nothing still vote, online and in the chair's count. An owner's vote online is judged on the meeting's
+  // date, as the chair's count is, so the FOR_REVIEW point on what counts as owing now names that day (what counts is
+  // unchanged: contribution notices only, still FOR_REVIEW). The FOR_REVIEW point on several lots records the lot by
+  // lot rule and keeps for review only how the motions list (one vote per owner, not per lot) applies it. No legal
+  // value changed, so the status stays REVIEWED.
+  // 2026.10.19 (28 Oct 2026): ACTIVE. Moved from PENDING_RULE_PACKS into RULE_PACKS (QLD stage 2, step 11, the
+  // switch-on, approved by Matthew Wrigley on 28 Oct 2026), so Queensland buildings can be set up and are given these
+  // rules. defaultAccountingBasis added (the basis a new building's funds start on, as for NSW: the administrative fund
+  // on a cash basis, the sinking fund on an accrual basis), a StrataVerze choice he decided on 28 Oct 2026. DECISIONS
+  // gains that choice and his go-live sign-off: the stage 2 FOR_REVIEW points accepted as built, except the debtor test
+  // for voting, applied per lot (SM s 102(2)) in 2026.10.18. FOR_REVIEW is kept as the record, and gains a NOT CONFIRMED
+  // point on whether a committee seat ends when a lot is sold. No rule of law changed, so the sign-off of 27 Oct 2026 stands.
+  version: "2026.10.19",
+  reviewer: "Matthew Wrigley",
+  reviewedOn: "2026-10-27",
+  rules: QLD,
+} as const satisfies RulePack;
 
 export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
   NSW: {
@@ -216,6 +353,7 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
     reviewedOn: null,
     rules: NSW,
   },
+  QLD: QLD_RULE_PACK,
 };
 
 /**
@@ -224,7 +362,8 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
  * them off. Neither is ever given to a building: `rulePackFor` and
  * `statutoryRulesFor` read RULE_PACKS only, and the state is not supported for
  * new buildings. A pack moves to RULE_PACKS, with the shared rule shape, when
- * the platform can apply it (stage 2).
+ * the platform can apply it (stage 2). Queensland moved on 28 Oct 2026
+ * (QLD_RULE_PACK, version 2026.10.19).
  */
 export interface PendingRulePack<R> {
   code: string;
@@ -239,121 +378,6 @@ export interface PendingRulePack<R> {
 }
 
 export const PENDING_RULE_PACKS = {
-  QLD: {
-    code: "AU-QLD",
-    state: "QLD",
-    name: "Queensland",
-    // 2026.10.1 (27 Oct 2026): Standard Module, researched from the in-force Act and SM, for review.
-    // 2026.10.2 (27 Oct 2026): signed off by Matthew Wrigley with the six decisions in DECISIONS; the
-    // points in NOT_CONFIRMED stay not confirmed.
-    // 2026.10.3 (27 Oct 2026): FEATURES added (none of the NSW workflows applies); a platform switch,
-    // not a rule of law, so the sign-off stands.
-    // 2026.10.4 (27 Oct 2026): TERMINOLOGY gains levies, lateCharge, planLabel, bodyCorporateName and
-    // bodyCorporateShortName (wording only, as decided in the sign-off), so the sign-off stands.
-    // 2026.10.5 (27 Oct 2026): FUND_CATALOGUE gains display labels (wording only, the names already
-    // in the pack), so the sign-off stands.
-    // 2026.10.6 (27 Oct 2026): NOTICE_RULES added (the contribution notice rules in the shared shape, from
-    // CONTRIBUTION_NOTICE_RULES). The 35-day lead is a StrataVerze choice, not a rule of law; the legal
-    // values are those already signed off, so the sign-off stands.
-    // 2026.10.7 (27 Oct 2026): LATE_CHARGE added (the late payment penalty in the shared shape, from
-    // LATE_PAYMENT_PENALTY). PAYMENT_ALLOCATION_ORDER is now read in two places only: the penalty
-    // engine (monthlyPenalty applies payments to the penalty first) and lotArrears (payments against
-    // posted interestCharged). Receipting, notice balances and status, owner credits and the receivable
-    // journals still take a payment against the notice total, levy first (see the note in qld.ts).
-    // The legal values are those already signed off, so the sign-off stands.
-    // 2026.10.8 (27 Oct 2026): MEETING_RULES added (the meeting rules in the shared shape, from MEETINGS,
-    // RESOLUTIONS, CONTRIBUTIONS.debtorMayVote and RECORD_RETENTION). Pre-meeting e-voting is not offered
-    // (none like the NSW ballot), the labels and the committee refusal are wording, and the legal values
-    // are those already signed off, so the sign-off stands. How the 21 days is counted stays not confirmed.
-    // Also: MEETINGS.statutoryMotions and COMMITTEE.electionIsLastBusiness (from the research notes, CONFIRMED,
-    // backing the draft AGM template), FOR_REVIEW (StrataVerze design choices for Matthew Wrigley to confirm)
-    // and a GO-LIVE GAP note (special and majority resolutions are not counted yet).
-    // 2026.10.9 (27 Oct 2026): DEBT_RECOVERY_STEPS, DEBT_RECOVERY_STEP_LABELS and DEBT_RECOVERY_GUIDANCE added.
-    // They are draft content (DRAFT, FOR STRATAVERZE TO REVIEW) for Matthew Wrigley's review, listed in FOR_REVIEW
-    // with the 2 year warning, the waiver step given to the committee and the fees. Also RECOVERY_COSTS_RECOVERABLE
-    // (fee wording, SM s 166(1)(c)), NEVER_RECOVERABLE_FEE_VARIANTS (none), DEBT_RECOVERY.mustStartProceedings.citation
-    // and FEATURES.debtRecoverySteps on. The legal values already signed off are unchanged, so the status stays
-    // REVIEWED. A GO-LIVE GAP note lists what is still NSW worded on the screens and that the 2 year rule has no
-    // daily reminder yet.
-    // 2026.10.10 (27 Oct 2026): CERTIFICATE (the body corporate certificate: 5 business days, fees in fee units with each
-    // year's dollar table from FEE_UNIT_DOLLARS, the interested persons of Act s 205(13)), INSPECTIONS (access within 7 days,
-    // owner and other fees and copies per page in fee units, the fee year from the written request), DOCUMENT_RETENTION
-    // (as decided: minutes and insurance policies without a limit, by-laws in force without a limit as of current relevance,
-    // every other category at least the 6 year disposal period of SM s 231) and WORKS_QUOTES (2 quotes above the major
-    // spending limit) added from the values already signed off, with FEATURES.recordsInspections and the new
-    // FEATURES.bodyCorporateCertificate on. The certificate follows the contents listed in SM s 233AA(1) (the approved
-    // form was not read). The certificate headings are draft content (DRAFT, FOR STRATAVERZE TO REVIEW), and the new
-    // StrataVerze choices are in FOR_REVIEW.
-    // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied yet
-    // (the priority certificate, public holidays, the audit, the resolved spending limits).
-    // 2026.10.11 (27 Oct 2026): the building data (stage 2, step 10). ENTITLEMENT_SCHEDULES gains a label and help
-    // for each schedule (wording only) and `decides`, the uses of `usedFor` as keys for code, from the provisions
-    // already signed off (Act s 47(2), (3), ss 106(3), 110(3); SM ss 162(5), 197(4)). The buildings insurance share
-    // (SM s 201(1), (2): interest schedule for building and volumetric format lots only, reinstatement cost for standard
-    // format lots) is given no schedule until each lot's plan format is held. REGULATION_MODULE
-    // becomes a shared rule (the building setting) with its values unchanged. FOR_REVIEW gains four StrataVerze
-    // choices (who saves the module, the interest schedule entitlement in the locked record, the buildings insurance
-    // share not worked out, flagging missing data).
-    // The legal values are unchanged, so the status stays REVIEWED. A GO-LIVE GAP note lists what is not applied
-    // yet (the insurance part of contributions by the interest schedule, the onboarding wizard, the NSW labels).
-    // 2026.10.12 (27 Oct 2026): PAYMENT_ALLOCATION_ORDER (penalty first, SM s 166(5)) is now applied by receipting, notice
-    // balances and status, owner credit applied, reversals and the receivable journals, each as one transaction with the
-    // building's journal numbering and each notice locked while its penalty is charged and a payment applied. The engine is the source of the penalty charged, and the part recorded on
-    // each payment (levy_payments.late_charge_amount, migration 20261117) the source of the penalty paid (see the note in
-    // qld.ts). FOR_REVIEW gains three StrataVerze choices (the part of the contribution left unpaid when only the contribution
-    // is paid, as StrataVerze reads SM ss 165 and 166(5); charging the penalty to the payment date first, with future dates
-    // refused; the order within a notice). The legal values are unchanged, so the status stays REVIEWED.
-    // 2026.10.13 (27 Oct 2026): resolution tallies at conduct. MEETING_RULES gains pollCategories (ORDINARY, from
-    // RESOLUTIONS.pollAvailable: Act ss 109, 110(3)) and proxiesBarredOn (MAJORITY: Act s 107, SM s 130(3), as in
-    // PROXIES.notFor), both from values already signed off. Conduct now counts the votes at a Queensland general
-    // meeting (not a committee meeting) and checks the chair's outcome against the count; a majority resolution
-    // cannot be recorded as resolved until written votes are recorded. FOR_REVIEW gains the count deciding with no
-    // override, the lot count and the meeting's date for debts, abstentions and votes cast, and the debtor test
-    // reading contribution notices only. The legal values are unchanged, so the status stays REVIEWED.
-    // The GO-LIVE GAP note on MEETING_RULES says what is applied and what remains.
-    // 2026.10.14 (27 Oct 2026): insurance in contributions (go-live gap), as Matthew Wrigley decided on 27 Oct 2026
-    // (DECISIONS): building and volumetric format plans only. PLAN_FORMAT added (the building setting, held in
-    // schemes.plan_format: building, volumetric or standard format plan, SM ss 198, 199, 201; Act s 46B(2)(b)).
-    // ENTITLEMENT_SCHEDULES: the interest schedule now decides INSURANCE_BUILDINGS for building and volumetric format
-    // plans only (SM s 201(1)); no schedule decides it for a standard format plan. CONTRIBUTION_INSURANCE added: the
-    // insurance part of an administrative fund contribution is shared by the interest schedule and the rest by the
-    // contribution schedule (SM ss 160(2), 162(5), 197(4), 201(1)). FOR_REVIEW gains the s 201(2) adjustments not
-    // offered, what counts as insurance in the budget, the voluntary insurance scheme (s 204) not offered, the refusal
-    // without an insurance line (a StrataVerze choice, CONTRIBUTION_INSURANCE.insuranceLineRequired), special
-    // contributions, the plan format setting and refusing a standard format plan outright (stricter than s 197(4));
-    // the buildings premium and missing data points are updated. An insurance line in the sinking fund budget is refused. The legal values already signed off are unchanged and the new ones are from the same
-    // provisions, so the status stays REVIEWED. The GO-LIVE GAP note on ENTITLEMENT_SCHEDULES says what is applied.
-    // 2026.10.15 (27 Oct 2026): QLD wording and onboarding go-live. TERMINOLOGY gains paymentPlan ("Payment Arrangement",
-    // the agreed arrangement a debt recovery case shows, as there is no statutory payment plan) and lateChargeGeneral
-    // ("late payment charge", where Queensland and NSW lots are shown together), moved out of code (wording only).
-    // FOR_REVIEW gains those words and the plan format asked for by the Add Property wizard. The legal values are
-    // unchanged, so the status stays REVIEWED. The GO-LIVE GAP notes say which screens take the pack's words and which
-    // still show NSW words.
-    // 2026.10.16 (28 Oct 2026): the 2 year rule's daily reminder (go-live gap). DEBT_RECOVERY.proceedingsReminder added:
-    // the reminder's subject and heading, StrataVerze wording that calls the deadline the StrataVerze date. FOR_REVIEW:
-    // the 2 year warning point now says it is also a daily reminder, and new points give who is emailed and when (first
-    // flagged, 30, 14 and 7 days before the deadline, once after), no email for a deadline passed more than 30 days
-    // before the run (no burst at go-live), the owners left out and those not covered (several lots, company owners,
-    // attorneys), and a case closed after judgment not counting as proceedings. The GO-LIVE GAP note on DEBT_RECOVERY
-    // says what is applied and that migration 20261119 must be applied before go-live. No rule of law changed, so the
-    // status stays REVIEWED.
-    // 2026.10.17 (28 Oct 2026): QLD finance wording go-live. TERMINOLOGY gains ownersCorporations ("bodies corporate",
-    // the plural where a page lists several buildings; wording only), and FOR_REVIEW gains that word and how buildings
-    // in both states are named together. The finance screens, reports, PDFs and messages take the pack's words. The
-    // legal values are unchanged, so the status stays REVIEWED. The GO-LIVE GAP note on the wording says what remains.
-    // 2026.10.18 (28 Oct 2026): debtor voting lot by lot. SM s 102(2) bars each lot that owes money, so an owner of
-    // several lots is no longer refused only when every lot owes: a lot that owes is barred and the same owner's lots
-    // that owe nothing still vote, online and in the chair's count. An owner's vote online is judged on the meeting's
-    // date, as the chair's count is, so the FOR_REVIEW point on what counts as owing now names that day (what counts is
-    // unchanged: contribution notices only, still FOR_REVIEW). The FOR_REVIEW point on several lots records the lot by
-    // lot rule and keeps for review only how the motions list (one vote per owner, not per lot) applies it. No legal
-    // value changed, so the status stays REVIEWED.
-    version: "2026.10.18",
-    status: "REVIEWED",
-    reviewer: "Matthew Wrigley",
-    reviewedOn: "2026-10-27",
-    rules: QLD,
-  } satisfies PendingRulePack<typeof QLD>,
   ACT: {
     code: "AU-ACT",
     state: "ACT",

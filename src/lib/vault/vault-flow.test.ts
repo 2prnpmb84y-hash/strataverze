@@ -81,8 +81,8 @@ beforeEach(() => {
   storage.objects.clear();
   sharedFake.reset({
     Scheme: [
-      { id: S1, name: "Opera House", planNumber: "SP 99999", timeZone: "Australia/Perth" },
-      { id: S2, name: "Other building", planNumber: "SP 1", timeZone: "Australia/Sydney" },
+      { id: S1, name: "Opera House", state: "NSW", planNumber: "SP 99999", timeZone: "Australia/Perth" },
+      { id: S2, name: "Other building", state: "NSW", planNumber: "SP 1", timeZone: "Australia/Sydney" },
     ],
     Vault: [], VaultRecord: [], VaultVersion: [], VaultReceipt: [], VaultEvent: [], VaultCheck: [], SecurityAuditEvent: [],
   });

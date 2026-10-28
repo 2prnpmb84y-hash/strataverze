@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PENDING_RULE_PACKS, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
+import { PENDING_RULE_PACKS, QLD_RULE_PACK, statutoryRulesFor, type StatutoryRules } from "@/config/statutory";
 import { buildingRulesView } from "@/lib/jurisdiction/building-selectors";
 
 vi.mock("../actions", () => ({ saveBuildingRulesAction: vi.fn() }));
@@ -25,7 +25,7 @@ describe("the Building rules section", () => {
   it("has nothing to show for an NSW or Queensland building", () => {
     const building = { scheme: { totalLots: 1 }, lots: lots(1), recorded: {} };
     expect(buildingRulesView(statutoryRulesFor("NSW"), building)).toBeNull();
-    expect(buildingRulesView(PENDING_RULE_PACKS.QLD.rules as unknown as StatutoryRules, building)).toBeNull();
+    expect(buildingRulesView(QLD_RULE_PACK.rules as unknown as StatutoryRules, building)).toBeNull();
   });
 
   it("offers a Western Australian building's recorded selectors and the replacement cost from the pack", () => {
