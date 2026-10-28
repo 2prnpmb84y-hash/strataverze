@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import { getComplianceRequirementById } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -56,6 +58,7 @@ export default async function ComplianceRequirementDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const requirement = await getComplianceRequirementById(requirementId);
   if (!requirement || requirement.schemeId !== id) notFound();
@@ -168,7 +171,7 @@ export default async function ComplianceRequirementDetailPage({
                         </span>
                       )}
                       {check.verifiedAt && (
-                        <span>on {formatDate(check.verifiedAt)}</span>
+                        <span>on {formatDateIn(tz, String(check.verifiedAt))}</span>
                       )}
                     </div>
                     {check.rejectionReason && (

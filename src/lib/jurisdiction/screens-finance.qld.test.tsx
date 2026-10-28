@@ -408,7 +408,7 @@ describe("Queensland reports and PDFs", () => {
     const report = { schemeName: "Eagle Place", abnOrGstRegistered: true, startDate: "2026-07-01", endDate: "2026-09-30", periodLabel: "Q1", g1TotalSales: 0, g2ExportSales: 0, g3OtherGstFreeSales: 0, g4InputTaxedSales: 0, g9GrossGstOnSales: 0, g10CapitalPurchases: 0, g11NonCapitalPurchases: 0, g14ExportPurchases: 0, g15PurchasesForInputTaxedSales: 0, g20GstOnPurchases: 0, netGstPayable: 0, incomeLines: [], expenseLines: [] };
     expectQueensland(renderToStaticMarkup(<GstSummaryClient schemeId="q1" startDate="2026-07-01" endDate="2026-09-30" quarters={[]} report={report} words={W} />), "Contributions from owners are generally not subject to GST", "if the BC is registered");
     const rows = [{ id: "r1", createdAt: "2026-10-01T00:00:00Z", actorName: "Ann Lee", actorEmail: "a@x", action: "INTEREST_CHARGED", entityType: "LevyNotice", entityId: "n1", metadata: null }];
-    expectQueensland(renderToStaticMarkup(<AuditTrailClient schemeId="q1" rows={rows as never} page={1} hasMore={false} actors={[]} filters={{}} words={W} />), "Penalty Charged", "Contribution Notice", "Contribution Schedule");
+    expectQueensland(renderToStaticMarkup(<AuditTrailClient schemeId="q1" rows={rows as never} page={1} hasMore={false} actors={[]} filters={{}} words={W} timeZone="Australia/Brisbane" />), "Penalty Charged", "Contribution Notice", "Contribution Schedule");
     const cell = {
       account: { id: "a1", code: "4-1000", name: "Contribution Income", accountType: "INCOME" },
       fund: { id: "f1", name: "Administrative Fund" },

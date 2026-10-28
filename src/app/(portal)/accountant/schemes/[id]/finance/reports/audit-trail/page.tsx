@@ -11,6 +11,7 @@ import { AuditTrailClient } from "@/app/(portal)/adviser/schemes/[id]/finance/re
 import { connection } from "next/server";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { auditLabelWords } from "@/lib/jurisdiction/screen-words";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
 export default async function AuditTrailPage({
   params,
@@ -65,6 +66,7 @@ export default async function AuditTrailPage({
         actors={actors}
         filters={filters}
         words={auditLabelWords(rulesForState(scheme.state).rules)}
+        timeZone={timeZoneOf(scheme)}
         basePath={`/accountant/schemes/${id}/finance/reports/audit-trail`}
         readOnly
       />

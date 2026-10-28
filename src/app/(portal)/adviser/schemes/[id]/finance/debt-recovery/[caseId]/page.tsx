@@ -12,6 +12,7 @@ import { previewRecoveryFees } from "@/lib/billing/capture";
 import { feeWordingFor } from "@/lib/billing/disclosure";
 import { needRule } from "@/config/statutory";
 import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 
 export default async function DebtRecoveryCaseDetailPage({
   params,
@@ -77,6 +78,7 @@ export default async function DebtRecoveryCaseDetailPage({
       lateChargeLabel={rules.TERMINOLOGY.lateCharge.charAt(0).toUpperCase() + rules.TERMINOLOGY.lateCharge.slice(1)}
       paymentPlans={rules.FEATURES.statutoryPaymentPlans}
       paymentPlanLabel={caseWordsFor(rules).paymentPlan}
+      timeZone={timeZoneOf(scheme)}
       schemeId={id}
       lotNumber={lot ? String(lot.lotNumber) : "—"}
       unitNumber={lot?.unitNumber ?? null}

@@ -47,6 +47,7 @@ const helpFor = (w: CutoverWords): Record<CutoverDataType, string> => ({
 });
 
 const aud = (cents: number) => (cents / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD" });
+/** A calendar day (YYYY-MM-DD, the cutover date), as it is stored: not moved to a time zone. */
 const day = (iso: string | null) => (iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "not set");
 
 export function CutoverClient({
@@ -58,6 +59,7 @@ export function CutoverClient({
   fields,
   funds,
   words,
+  timeZone,
 }: {
   schemeId: string;
   sources: Array<{ value: string; label: string }>;
@@ -68,6 +70,8 @@ export function CutoverClient({
   funds: Record<string, string>;
   /** The building's words (packWordsFor). */
   words: CutoverWords;
+  /** The building's time zone (schemes.time_zone), for when the cutover was signed off and executed. */
+  timeZone: string;
 }) {
   const router = useRouter();
   const HELP = helpFor(words);
@@ -141,7 +145,7 @@ export function CutoverClient({
       {view && (
         <>
           <Card>
-            <CardHeader title={`${view.sourceLabel} cutover`} description={locked ? `Executed ${view.executedAt ? new Date(view.executedAt).toLocaleString("en-AU") : ""}${view.executedByName ? ` by ${view.executedByName}` : ""}.` : "Changing any file or the date clears the sign-off."} />
+            <CardHeader title={`${view.sourceLabel} cutover`} description={locked ? `Executed ${view.executedAt ? new Date(view.executedAt).toLocaleString("en-AU", { timeZone }) : ""}${view.executedByName ? ` by ${view.executedByName}` : ""}.` : "Changing any file or the date clears the sign-off."} />
             {view.template?.status === "UNCONFIRMED" && (
               <div className="mb-4 rounded-[var(--radius-card)] border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 <p className="font-medium">Column template not yet confirmed</p>
@@ -360,7 +364,7 @@ export function CutoverClient({
             {view.signOff ? (
               <div className="space-y-2 text-sm">
                 <p className="text-ink">
-                  Signed off by {view.signOff.signedOffByName ?? view.signOff.signedOffBy} on {new Date(view.signOff.signedOffAt).toLocaleString("en-AU")}, cutover {day(view.signOff.cutoverDate)}.
+                  Signed off by {view.signOff.signedOffByName ?? view.signOff.signedOffBy} on {new Date(view.signOff.signedOffAt).toLocaleString("en-AU", { timeZone })}, cutover {day(view.signOff.cutoverDate)}.
                 </p>
                 <ul className="space-y-0.5 text-xs text-ink-muted break-all">
                   {view.signOff.files.map((f) => (

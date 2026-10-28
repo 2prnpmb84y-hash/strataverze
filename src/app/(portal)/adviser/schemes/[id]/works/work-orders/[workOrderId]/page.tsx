@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn, formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { getWorksWorkOrderById } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -9,6 +11,7 @@ import { StatusChip } from "@/components/ui/status-chip";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+/** A calendar day (a date column), as it is stored: not moved to a time zone. */
 function formatDate(date: Date | string | null): string {
   if (!date) return "—";
   return new Date(String(date)).toLocaleDateString("en-AU", {
@@ -18,15 +21,10 @@ function formatDate(date: Date | string | null): string {
   });
 }
 
-function formatDateTime(date: Date | string | null): string {
+/** An instant's date and time in the building's time zone (`tz`). */
+function formatDateTime(date: Date | string | null, tz: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeIn(tz, String(date), { hour: "2-digit" });
 }
 
 const statusLabel: Record<string, string> = {
@@ -55,6 +53,7 @@ export default async function WorkOrderDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const wo = await getWorksWorkOrderById(workOrderId);
   if (!wo || wo.schemeId !== id) notFound();
@@ -157,7 +156,7 @@ export default async function WorkOrderDetailPage({
                   {wo.authorisedBy.firstName} {wo.authorisedBy.lastName}
                   {wo.authorisedAt && (
                     <span className="text-xs text-ink-muted ml-2">
-                      {formatDateTime(wo.authorisedAt)}
+                      {formatDateTime(wo.authorisedAt, tz)}
                     </span>
                   )}
                 </dd>
@@ -169,7 +168,7 @@ export default async function WorkOrderDetailPage({
                   Acknowledged
                 </dt>
                 <dd className="text-sm text-ink">
-                  {formatDateTime(wo.acknowledgedAt)}
+                  {formatDateTime(wo.acknowledgedAt, tz)}
                 </dd>
               </div>
             )}
@@ -206,7 +205,7 @@ export default async function WorkOrderDetailPage({
                   </p>
                   <p className="text-xs text-ink-muted">
                     Due: {formatDate(ms.dueDate)}
-                    {ms.completedAt && ` · Completed: ${formatDate(ms.completedAt)}`}
+                    {ms.completedAt && ` · Completed: ${formatDateIn(tz, String(ms.completedAt))}`}
                   </p>
                 </div>
                 <StatusChip status={ms.status} />
@@ -356,7 +355,7 @@ export default async function WorkOrderDetailPage({
               >
                 <div>
                   <p className="text-sm font-medium text-ink">
-                    Submitted: {formatDateTime(cs.submittedAt)}
+                    Submitted: {formatDateTime(cs.submittedAt, tz)}
                   </p>
                   <p className="text-xs text-ink-muted">
                     By: {cs.submittedBy.firstName} {cs.submittedBy.lastName}
@@ -364,7 +363,7 @@ export default async function WorkOrderDetailPage({
                   {cs.reviewedBy && (
                     <p className="text-xs text-ink-muted">
                       Reviewed by: {cs.reviewedBy.firstName} {cs.reviewedBy.lastName}
-                      {cs.reviewedAt && ` on ${formatDateTime(cs.reviewedAt)}`}
+                      {cs.reviewedAt && ` on ${formatDateTime(cs.reviewedAt, tz)}`}
                     </p>
                   )}
                 </div>

@@ -3,6 +3,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { db } from "@/prisma/db";
 import { requirePlatformAdminPage } from "@/lib/auth/require-access";
 import { mfaMandatory } from "@/lib/auth/mfa-policy";
+import { PLATFORM_TIME_ZONE } from "@/lib/jurisdiction/time-zone";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -55,7 +56,7 @@ export default async function AdminSecurityPage() {
                       <p className="text-xs text-ink-muted">
                         {sessions === 0
                           ? "No open sessions"
-                          : `${sessions} open session${sessions === 1 ? "" : "s"}, last active ${new Date(lastSeen!).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}`}
+                          : `${sessions} open session${sessions === 1 ? "" : "s"}, last active ${new Date(lastSeen!).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: PLATFORM_TIME_ZONE })}`}
                       </p>
                     </div>
                     <span
