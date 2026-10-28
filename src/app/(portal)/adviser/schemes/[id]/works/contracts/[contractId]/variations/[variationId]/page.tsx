@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { getVariationById } from "@/lib/queries/works";
 import {
   submitWorksVariation,
@@ -25,15 +27,10 @@ function formatCurrency(value: number | string | null): string {
   }).format(num);
 }
 
-function formatDateTime(date: Date | string | null): string {
+/** An instant's date and time in the building's time zone (`tz`). */
+function formatDateTime(date: Date | string | null, tz: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeIn(tz, String(date), { hour: "2-digit" });
 }
 
 export default async function VariationDetailPage({
@@ -50,6 +47,7 @@ export default async function VariationDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const variation = await getVariationById(variationId);
   // The variation must be on this contract, and the contract on this scheme.
@@ -154,7 +152,7 @@ export default async function VariationDetailPage({
                 Created
               </dt>
               <dd className="text-sm text-ink">
-                {formatDateTime(variation.createdAt)}
+                {formatDateTime(variation.createdAt, tz)}
               </dd>
             </div>
             {variation.approvedBy && (
@@ -174,7 +172,7 @@ export default async function VariationDetailPage({
                   Approved At
                 </dt>
                 <dd className="text-sm text-ink">
-                  {formatDateTime(variation.approvedAt)}
+                  {formatDateTime(variation.approvedAt, tz)}
                 </dd>
               </div>
             )}

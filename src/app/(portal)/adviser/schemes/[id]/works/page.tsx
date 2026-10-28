@@ -2,6 +2,8 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
 import {
   getWorksRequestsForScheme,
   getWorksDashboardData,
@@ -20,15 +22,6 @@ function formatCurrency(value: number | string | null): string {
     style: "currency",
     currency: "AUD",
   }).format(num);
-}
-
-function formatDate(date: Date | string | null): string {
-  if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 const priorityLabel: Record<string, string> = {
@@ -76,6 +69,7 @@ export default async function WorksDashboardPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const [requests, dashboard] = await Promise.all([
     getWorksRequestsForScheme(id, { status, priority, search, limit: 50 }),
@@ -276,7 +270,7 @@ export default async function WorksDashboardPage({
                 </p>
                 <div className="flex items-center gap-4 mt-1 text-xs text-ink-muted">
                   {req.category && <span>{req.category.name}</span>}
-                  <span>{formatDate(req.createdAt)}</span>
+                  <span>{formatDateIn(tz, String(req.createdAt))}</span>
                   {req.raisedBy && (
                     <span>
                       by {req.raisedBy.firstName} {req.raisedBy.lastName}

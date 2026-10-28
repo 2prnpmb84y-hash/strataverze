@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn, formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { getWorksRfqById } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -17,24 +19,10 @@ function formatCurrency(value: number | string | null): string {
   }).format(num);
 }
 
-function formatDate(date: Date | string | null): string {
+/** An instant's date and time in the building's time zone (`tz`). */
+function formatDateTime(date: Date | string | null, tz: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(date: Date | string | null): string {
-  if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeIn(tz, String(date), { hour: "2-digit" });
 }
 
 const statusLabel: Record<string, string> = {
@@ -68,6 +56,7 @@ export default async function RfqDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const rfq = await getWorksRfqById(rfqId);
   if (!rfq || rfq.schemeId !== id) notFound();
@@ -139,7 +128,7 @@ export default async function RfqDetailPage({
                       : "text-ink"
                 }`}
               >
-                {formatDateTime(rfq.closingDate)}
+                {formatDateTime(rfq.closingDate, tz)}
               </dd>
             </div>
             {rfq.closedAt && (
@@ -148,7 +137,7 @@ export default async function RfqDetailPage({
                   Closed At
                 </dt>
                 <dd className="text-sm text-ink">
-                  {formatDateTime(rfq.closedAt)}
+                  {formatDateTime(rfq.closedAt, tz)}
                 </dd>
               </div>
             )}
@@ -161,7 +150,7 @@ export default async function RfqDetailPage({
                   {rfq.issuedBy.firstName} {rfq.issuedBy.lastName}
                   {rfq.issuedAt && (
                     <span className="text-xs text-ink-muted ml-2">
-                      {formatDateTime(rfq.issuedAt)}
+                      {formatDateTime(rfq.issuedAt, tz)}
                     </span>
                   )}
                 </dd>
@@ -242,13 +231,13 @@ export default async function RfqDetailPage({
                     {inv.contractorBusiness.companyName}
                   </Link>
                   <p className="text-xs text-ink-muted">
-                    Invited: {formatDateTime(inv.invitedAt)}
+                    Invited: {formatDateTime(inv.invitedAt, tz)}
                     {inv.invitedBy &&
                       ` by ${inv.invitedBy.firstName} ${inv.invitedBy.lastName}`}
                   </p>
                   {inv.respondedAt && (
                     <p className="text-xs text-ink-muted">
-                      Responded: {formatDateTime(inv.respondedAt)}
+                      Responded: {formatDateTime(inv.respondedAt, tz)}
                     </p>
                   )}
                   {inv.declineReason && (
@@ -284,7 +273,7 @@ export default async function RfqDetailPage({
                     #{Number(ad.addendumNumber)}: {ad.title}
                   </p>
                   <span className="text-xs text-ink-muted">
-                    {formatDateTime(ad.issuedAt)}
+                    {formatDateTime(ad.issuedAt, tz)}
                   </span>
                 </div>
                 <p className="text-xs text-ink-muted whitespace-pre-wrap">
@@ -320,7 +309,7 @@ export default async function RfqDetailPage({
                   </span>
                   <span className="text-xs text-ink-muted">
                     {cl.askedBy.firstName} {cl.askedBy.lastName} ·{" "}
-                    {formatDateTime(cl.askedAt)}
+                    {formatDateTime(cl.askedAt, tz)}
                   </span>
                   {cl.isPublic && (
                     <span className="inline-flex items-center rounded-full h-[18px] px-2 text-[10px] font-medium bg-blue-100 text-blue-700">
@@ -340,7 +329,7 @@ export default async function RfqDetailPage({
                       <span className="text-xs text-ink-muted">
                         {cl.answeredBy &&
                           `${cl.answeredBy.firstName} ${cl.answeredBy.lastName} · `}
-                        {formatDateTime(cl.answeredAt)}
+                        {formatDateTime(cl.answeredAt, tz)}
                       </span>
                     </div>
                     <p className="text-sm text-ink whitespace-pre-wrap">
@@ -377,11 +366,11 @@ export default async function RfqDetailPage({
                   </p>
                   <p className="text-xs text-ink-muted">
                     {q.quotationNumber}
-                    {q.submittedAt && ` · Submitted: ${formatDateTime(q.submittedAt)}`}
+                    {q.submittedAt && ` · Submitted: ${formatDateTime(q.submittedAt, tz)}`}
                   </p>
                   {q.validUntil && (
                     <p className="text-xs text-ink-muted">
-                      Valid until: {formatDate(q.validUntil)}
+                      Valid until: {formatDateIn("UTC", String(q.validUntil))}
                     </p>
                   )}
                   {q.estimatedDuration && (
@@ -424,7 +413,7 @@ export default async function RfqDetailPage({
                       {ev.evaluator.firstName} {ev.evaluator.lastName}
                     </p>
                     <p className="text-xs text-ink-muted">
-                      {formatDateTime(ev.evaluatedAt)}
+                      {formatDateTime(ev.evaluatedAt, tz)}
                     </p>
                   </div>
                   {ev.overallScore && (

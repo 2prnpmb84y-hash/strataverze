@@ -229,7 +229,7 @@ describe("NSW report screens (golden)", () => {
   it("the committee pack, empty and full, and its PDF", () => {
     const html = (pack: typeof PACK) =>
       renderToStaticMarkup(
-        <CommitteePackClient schemeId="s1" financialYear={2026} fyOptions={[{ value: "2026", label: "FY 2026/2027" }]} startDate="2026-07-01" endDate="2027-06-30" pack={pack} catalogue={catalogue} words={W} /* words */ />,
+        <CommitteePackClient schemeId="s1" financialYear={2026} fyOptions={[{ value: "2026", label: "FY 2026/2027" }]} startDate="2026-07-01" endDate="2027-06-30" pack={pack} catalogue={catalogue} words={W} /* words */ timeZone="Australia/Sydney" />,
       );
     expect(html(PACK)).toMatchSnapshot("full");
     expect(html({ ...PACK, fundSummaries: [], totalFundBalance: 0, bankSummaries: [], recentActivity: [] })).toMatchSnapshot("empty");
@@ -303,7 +303,7 @@ describe("NSW report screens (golden)", () => {
       { id: "r1", createdAt: "2026-10-01T00:00:00Z", actorName: "Ann Lee", actorEmail: "a@x", action: "INTEREST_CHARGED", entityType: "LevyNotice", entityId: "n1", metadata: null },
       { id: "r2", createdAt: "2026-10-02T00:00:00Z", actorName: "Ann Lee", actorEmail: "a@x", action: "LEVY_SCHEDULE_CREATED", entityType: "LevySchedule", entityId: "sc1", metadata: { amount: 4000 } },
     ];
-    expect(renderToStaticMarkup(<AuditTrailClient schemeId="s1" rows={rows as never} page={1} hasMore={false} actors={[]} filters={{}} words={W} /* words */ />)).toMatchSnapshot("screen");
+    expect(renderToStaticMarkup(<AuditTrailClient schemeId="s1" rows={rows as never} page={1} hasMore={false} actors={[]} filters={{}} words={W} /* words */ timeZone="Australia/Sydney" />)).toMatchSnapshot("screen");
     expect(formatAuditTrailCsv(rows as never, "Australia/Sydney", W)).toMatchSnapshot("CSV");
   });
 

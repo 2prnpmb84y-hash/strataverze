@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn, formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
@@ -30,6 +32,7 @@ function formatCurrency(value: number | string | null): string {
   }).format(num);
 }
 
+/** A calendar day (a date column), as it is stored: not moved to a time zone. */
 function formatDate(date: Date | string | null): string {
   if (!date) return "—";
   return new Date(String(date)).toLocaleDateString("en-AU", {
@@ -39,15 +42,10 @@ function formatDate(date: Date | string | null): string {
   });
 }
 
-function formatDateTime(date: Date | string | null): string {
+/** An instant's date and time in the building's time zone (`tz`). */
+function formatDateTime(date: Date | string | null, tz: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeIn(tz, String(date), { hour: "2-digit" });
 }
 
 const statusLabel: Record<string, string> = {
@@ -109,6 +107,7 @@ export default async function WorksRequestDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const request = await getWorksRequestById(requestId);
 
@@ -319,7 +318,7 @@ export default async function WorksRequestDetailPage({
                 Created
               </dt>
               <dd className="text-sm text-ink">
-                {formatDateTime(request.createdAt)}
+                {formatDateTime(request.createdAt, tz)}
               </dd>
             </div>
             {request.submittedAt && (
@@ -328,7 +327,7 @@ export default async function WorksRequestDetailPage({
                   Submitted
                 </dt>
                 <dd className="text-sm text-ink">
-                  {formatDateTime(request.submittedAt)}
+                  {formatDateTime(request.submittedAt, tz)}
                 </dd>
               </div>
             )}
@@ -338,7 +337,7 @@ export default async function WorksRequestDetailPage({
                   Closed
                 </dt>
                 <dd className="text-sm text-ink">
-                  {formatDateTime(request.closedAt)}
+                  {formatDateTime(request.closedAt, tz)}
                 </dd>
               </div>
             )}
@@ -411,7 +410,7 @@ export default async function WorksRequestDetailPage({
                   </span>
                 </div>
                 <p className="text-xs text-ink-muted">
-                  {formatDateTime(review.reviewedAt)}
+                  {formatDateTime(review.reviewedAt, tz)}
                 </p>
                 {review.procurementRoute && (
                   <p className="text-xs text-ink-muted mt-1">
@@ -460,7 +459,7 @@ export default async function WorksRequestDetailPage({
                   <p className="text-xs text-ink-muted mt-0.5">
                     {ver.createdBy.firstName} {ver.createdBy.lastName}
                     {" · "}
-                    {formatDateTime(ver.createdAt)}
+                    {formatDateTime(ver.createdAt, tz)}
                   </p>
                   <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <div>
@@ -509,7 +508,7 @@ export default async function WorksRequestDetailPage({
                     {doc.fileName}
                   </p>
                   <p className="text-xs text-ink-muted">
-                    Uploaded: {formatDate(doc.createdAt)}
+                    Uploaded: {formatDateIn(tz, String(doc.createdAt))}
                     {doc.uploadedBy &&
                       ` by ${doc.uploadedBy.firstName} ${doc.uploadedBy.lastName}`}
                   </p>

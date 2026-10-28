@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateIn, formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { getWorksInvoiceById } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -21,6 +23,7 @@ function formatCurrency(value: number | string | null): string {
   }).format(num);
 }
 
+/** A calendar day (a date column), as it is stored: not moved to a time zone. */
 function formatDate(date: Date | string | null): string {
   if (!date) return "—";
   return new Date(String(date)).toLocaleDateString("en-AU", {
@@ -30,15 +33,10 @@ function formatDate(date: Date | string | null): string {
   });
 }
 
-function formatDateTime(date: Date | string | null): string {
+/** An instant's date and time in the building's time zone (`tz`). */
+function formatDateTime(date: Date | string | null, tz: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeIn(tz, String(date), { hour: "2-digit" });
 }
 
 const statusLabel: Record<string, string> = {
@@ -72,6 +70,7 @@ export default async function InvoiceDetailPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const invoice = await getWorksInvoiceById(invoiceId);
   if (!invoice || invoice.schemeId !== id) notFound();
@@ -269,7 +268,7 @@ export default async function InvoiceDetailPage({
                   Response Deadline
                 </dt>
                 <dd className="text-sm text-ink">
-                  {formatDateTime(invoice.responseDeadline)}
+                  {formatDateTime(invoice.responseDeadline, tz)}
                 </dd>
               </div>
             )}
@@ -289,7 +288,7 @@ export default async function InvoiceDetailPage({
                 <dd className="text-sm text-ink">
                   {invoice.assessedBy.firstName} {invoice.assessedBy.lastName}
                   <span className="text-xs text-ink-muted ml-2">
-                    {formatDateTime(invoice.assessedAt)}
+                    {formatDateTime(invoice.assessedAt, tz)}
                   </span>
                 </dd>
               </div>
@@ -361,7 +360,7 @@ export default async function InvoiceDetailPage({
                     {pa.assessor.firstName} {pa.assessor.lastName}
                   </p>
                   <p className="text-xs text-ink-muted">
-                    {formatDateTime(pa.assessedAt)}
+                    {formatDateTime(pa.assessedAt, tz)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -404,7 +403,7 @@ export default async function InvoiceDetailPage({
                 </div>
                 <div className="flex items-center gap-4 text-xs text-ink-muted">
                   {pi.authorisedAt && (
-                    <span>Authorised: {formatDateTime(pi.authorisedAt)}</span>
+                    <span>Authorised: {formatDateTime(pi.authorisedAt, tz)}</span>
                   )}
                   {pi.authorisedBy && (
                     <span>
@@ -459,7 +458,7 @@ export default async function InvoiceDetailPage({
                     {doc.fileName}
                   </p>
                   <p className="text-xs text-ink-muted">
-                    Uploaded: {formatDate(doc.createdAt)}
+                    Uploaded: {formatDateIn(tz, String(doc.createdAt))}
                     {doc.uploadedBy &&
                       ` by ${doc.uploadedBy.firstName} ${doc.uploadedBy.lastName}`}
                   </p>

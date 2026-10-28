@@ -2,21 +2,18 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { getSchemeById } from "@/lib/queries/schemes";
+import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
+import { formatDateTimeIn } from "@/lib/jurisdiction/time-zone";
 import { getWorksAuditEvents } from "@/lib/queries/works";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 
-function formatDateTime(date: Date | string | null): string {
+/** An instant's date and time in the building's time zone (`tz`). */
+function formatDateTime(date: Date | string | null, tz: string): string {
   if (!date) return "—";
-  return new Date(String(date)).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTimeIn(tz, String(date), { hour: "2-digit" });
 }
 
 const entityTypeLabels: Record<string, string> = {
@@ -78,6 +75,7 @@ export default async function WorksAuditPage({
 
   const scheme = await getSchemeById(id);
   if (!scheme) notFound();
+  const tz = timeZoneOf(scheme);
 
   const events = await getWorksAuditEvents(id, {
     entityType: entityType || undefined,
@@ -182,7 +180,7 @@ export default async function WorksAuditPage({
               {/* Timestamp */}
               <div className="shrink-0 text-right">
                 <p className="text-xs text-ink-muted">
-                  {formatDateTime(event.createdAt)}
+                  {formatDateTime(event.createdAt, tz)}
                 </p>
               </div>
             </div>

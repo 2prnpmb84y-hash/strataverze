@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { schemeToday } from "@/lib/jurisdiction/scheme-time";
+import { schemeToday, timeZoneOf } from "@/lib/jurisdiction/scheme-time";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getCommitteeReportingPack } from "@/lib/queries/reports";
@@ -82,6 +82,7 @@ export default async function CommitteePackPage({
         pack={pack}
         catalogue={rulesForState(scheme.state).rules.FUND_CATALOGUE}
         words={auditLabelWords(rulesForState(scheme.state).rules)}
+        timeZone={timeZoneOf(scheme)}
       />
     </div>
   );
