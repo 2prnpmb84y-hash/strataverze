@@ -17,7 +17,7 @@ import {
   type StatutoryRules,
 } from "./statutory";
 import { schemeStateProblem, SUPPORTED_SCHEME_STATES } from "./jurisdictions";
-import type { EntitlementScheduleDefinition, FundDefinition, FundRequiredWhen, RuleStatus } from "./statutory/types";
+import type { BuildingSelector, EntitlementScheduleDefinition, FundDefinition, RuleStatus, SelectorCondition } from "./statutory/types";
 
 const STATUSES: RuleStatus[] = ["CONFIRMED", "GUIDANCE", "STRATAVERZE", "NOT_CONFIRMED"];
 const packs = [
@@ -51,6 +51,35 @@ describe.each(packs)("%s funds and entitlement schedules", (_code, rules) => {
       expect(f.name).toBe(f.name.toLowerCase());
       expect(f.source.length).toBeGreaterThan(10);
       expect(STATUSES).toContain(f.status);
+    }
+  });
+
+  it("writes each fund condition against the pack's own selectors and their options (stage 2, PR 3)", () => {
+    const selectors = ((rules as { BUILDING_SELECTORS?: readonly BuildingSelector[] }).BUILDING_SELECTORS ?? []).map((s) => [s.key, s.options.map((o) => o.value)] as const);
+    const known = new Map<string, readonly string[]>(selectors);
+    const walk = (c: SelectorCondition): void => {
+      if ("all" in c) c.all.forEach(walk);
+      else if ("any" in c) c.any.forEach(walk);
+      else if ("selector" in c) {
+        expect(known.has(c.selector), c.selector).toBe(true);
+        for (const v of c.in) expect(known.get(c.selector), `${c.selector} ${v}`).toContain(v);
+      }
+    };
+    for (const f of funds) {
+      if (!f.requiredWhen) continue;
+      // A condition decides, so `required` stays false (the safe default for a reader that ignores it).
+      expect(f.required).toBe(false);
+      expect(f.requiredWhen.rules.length).toBeGreaterThan(0);
+      expect(f.requiredWhen.noRuleFits.length).toBeGreaterThan(10);
+      for (const r of f.requiredWhen.rules) {
+        walk(r.when);
+        expect(["REQUIRED", "OPTIONAL", "NOT_ALLOWED"]).toContain(r.need);
+        expect(STATUSES).toContain(r.status);
+        expect(r.provision.length).toBeGreaterThan(5);
+        // Plain words for the screens: a sentence, with no dashes or semicolons.
+        expect(r.reason).toMatch(/^[A-Z].*\.$/);
+        expect(r.reason).not.toMatch(/[;\u2013\u2014]/);
+      }
     }
   });
 
@@ -127,7 +156,7 @@ describe("Australian Capital Territory pack (pending)", () => {
   it("is a draft for review, not signed off, with no decisions yet", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.3");
+    expect(pack.version).toBe("2026.10.4");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
@@ -206,10 +235,16 @@ describe("Australian Capital Territory pack (pending)", () => {
     expect(act.RECORDS.inspection.generalRecordsFeeFrom).toBe("2026-07-01");
   });
 
-  it("requires a sinking fund only from 4 units", () => {
+  it("requires a sinking fund only from 4 units, through the sinking fund selector", () => {
     expect(act.SIZE_THRESHOLDS.sinkingFundRequiredFromUnits).toBe(4);
     expect(act.FUND_RULES.sinkingFundRequiredFromUnits).toBe(4);
-    expect(act.FUND_CATALOGUE.find((f) => f.key === "SINKING")?.required).toBe(false);
+    const sinking = act.FUND_CATALOGUE.find((f) => f.key === "SINKING");
+    expect(sinking?.required).toBe(false);
+    expect(sinking?.requiredWhen?.rules.map((r) => [r.need, r.when, r.status])).toEqual([
+      ["REQUIRED", { selector: "sinkingFundRequired", in: ["REQUIRED"] }, "CONFIRMED"],
+      ["OPTIONAL", { selector: "sinkingFundRequired", in: ["NOT_REQUIRED"] }, "CONFIRMED"],
+    ]);
+    expect(act.FUND_CATALOGUE.find((f) => f.key === "ADMINISTRATIVE")?.required).toBe(true);
   });
 
   it("is the rules recorded for review", () => {
@@ -225,7 +260,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.3");
+    expect(pack.version).toBe("2026.10.4");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -262,7 +297,20 @@ describe("Victorian pack (pending)", () => {
     expect(admin?.ledgerFund).toBe("ADMINISTRATIVE");
     expect(admin?.status).toBe("STRATAVERZE");
     expect(admin?.required).toBe(false);
+    expect(admin?.requiredWhen).toBeUndefined();
     expect(vic.FOR_REVIEW.map((r) => r.key)).toEqual(expect.arrayContaining(["ADMINISTRATIVE_FUND", "MAINTENANCE_FUND_REQUIRED"]));
+  });
+
+  it("requires the maintenance fund by tier and an approved maintenance plan", () => {
+    const maintenance = vic.FUND_CATALOGUE.find((f) => f.key === "MAINTENANCE");
+    expect(maintenance?.requiredWhen?.rules.map((r) => [r.need, r.when, r.status])).toEqual([
+      ["REQUIRED", { selector: "tier", in: ["TIER_1", "TIER_2"] }, "STRATAVERZE"],
+      ["OPTIONAL", { selector: "tier", in: ["TIER_5"] }, "CONFIRMED"],
+      ["REQUIRED", { all: [{ selector: "tier", in: ["TIER_3", "TIER_4"] }, { selector: "maintenancePlanApproved", in: ["YES"] }] }, "CONFIRMED"],
+      ["OPTIONAL", { all: [{ selector: "tier", in: ["TIER_3", "TIER_4"] }, { selector: "maintenancePlanApproved", in: ["NO"] }] }, "CONFIRMED"],
+    ]);
+    expect(vic.MAINTENANCE_PLAN_APPROVED).toMatchObject({ held: "RECORDED", flagMissing: "FUND_CONDITIONS" });
+    expect(vic.MAINTENANCE_PLAN.mustTiers).toEqual([1, 2]);
   });
 
   it("holds lot liability on each lot and lot entitlement separately", () => {
@@ -425,7 +473,7 @@ describe("Western Australia pack (pending)", () => {
   const wa = pack.rules;
 
   it("is a draft, not yet signed off, with no decisions", () => {
-    expect(pack.version).toBe("2026.10.2");
+    expect(pack.version).toBe("2026.10.3");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(wa.DECISIONS).toHaveLength(0);
@@ -444,19 +492,25 @@ describe("Western Australia pack (pending)", () => {
   });
 
   it("requires the reserve fund exactly when the strata company is designated, via requiredWhen", () => {
-    // What requiredWhen says for one company, as defaultFunds must read it before go-live.
-    const mustHave = (when: FundRequiredWhen | undefined, designated: boolean) => (when === "ALWAYS" ? true : when === "DESIGNATED_ONLY" ? designated : null);
     const reserve = wa.FUND_CATALOGUE.find((f) => f.key === "RESERVE");
-    expect(reserve?.requiredWhen).toBe("DESIGNATED_ONLY");
-    expect(mustHave(reserve?.requiredWhen, true)).toBe(true);
-    expect(mustHave(reserve?.requiredWhen, false)).toBe(false);
+    expect(reserve?.requiredWhen?.rules.map((r) => [r.need, r.when])).toEqual([
+      ["REQUIRED", { selector: "designatedStrataCompany", in: ["DESIGNATED"] }],
+      ["OPTIONAL", { selector: "designatedStrataCompany", in: ["NOT_DESIGNATED"] }],
+    ]);
   });
 
-  it("gives no fund to every building, and sets the administrative fund by size class", () => {
+  it("gives no fund to every building, and sets the administrative fund by size class and by-laws, as the first form did", () => {
     expect(wa.FUND_CATALOGUE.every((f) => f.required === false)).toBe(true);
     const admin = wa.FUND_CATALOGUE.find((f) => f.key === "ADMINISTRATIVE");
-    expect(admin?.requiredWhen).toEqual({ bySchemeSize: { TWO_LOT: "ONLY_IF_BY_LAWS_REQUIRE", THREE_TO_FIVE_LOT: "UNLESS_BY_LAWS_EXEMPT", SIX_OR_MORE_LOT: "ALWAYS" } });
-    expect(Object.keys((admin?.requiredWhen as { bySchemeSize: object }).bySchemeSize).sort()).toEqual(wa.SCHEME_SIZE.options.map((o) => o.value).sort());
+    // The first form (PR #107): TWO_LOT ONLY_IF_BY_LAWS_REQUIRE, THREE_TO_FIVE_LOT UNLESS_BY_LAWS_EXEMPT, SIX_OR_MORE_LOT ALWAYS.
+    // Each size and by-laws answer, as the rules now decide it (first rule that holds).
+    const size = (c: SelectorCondition, key: string): string[] | null => ("selector" in c && c.selector === key ? [...c.in] : "all" in c ? c.all.map((p) => size(p, key)).find(Boolean) ?? null : null);
+    const decide = (s: string, b: string) => admin?.requiredWhen?.rules.find((r) => (size(r.when, "schemeSize") ?? []).includes(s) && (size(r.when, "administrativeFundByLaws") ?? [b]).includes(b))?.need;
+    expect(["NEITHER", "REQUIRE", "EXEMPT", "SAT_REQUIRED"].map((b) => decide("SIX_OR_MORE_LOT", b))).toEqual(["REQUIRED", "REQUIRED", "REQUIRED", "REQUIRED"]);
+    expect(["NEITHER", "REQUIRE", "EXEMPT", "SAT_REQUIRED"].map((b) => decide("THREE_TO_FIVE_LOT", b))).toEqual(["REQUIRED", "REQUIRED", "OPTIONAL", "REQUIRED"]);
+    expect(["NEITHER", "REQUIRE", "EXEMPT", "SAT_REQUIRED"].map((b) => decide("TWO_LOT", b))).toEqual(["NOT_ALLOWED", "REQUIRED", "NOT_ALLOWED", "REQUIRED"]);
+    expect(wa.ADMINISTRATIVE_FUND_BY_LAWS.options.map((o) => o.value)).toEqual(["NEITHER", "REQUIRE", "EXEMPT", "SAT_REQUIRED"]);
+    expect(wa.ADMINISTRATIVE_FUND_BY_LAWS.flagMissing).toBe("FUND_CONDITIONS");
   });
 
   it("designates a strata company at 10 or more lots or a replacement cost strictly more than $5m", () => {

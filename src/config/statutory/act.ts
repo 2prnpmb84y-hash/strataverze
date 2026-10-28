@@ -392,11 +392,34 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     // Kept in the ledger's capital works fund type, shown as the sinking fund.
     ledgerFund: "CAPITAL_WORKS",
     purpose: "Expenditure under the sinking fund plan: painting, acquiring or replacing property, fixtures and fittings, and other capital expenses.",
-    // Not required by default: the Act requires a sinking fund only with 4 or
-    // more units (s 81(1)). The shared FundDefinition has no field for a size
-    // threshold, so the threshold is FUND_RULES.sinkingFundRequiredFromUnits
-    // (taken from SIZE_THRESHOLDS.sinkingFundRequiredFromUnits). See FOR_REVIEW.
+    // The Act requires a sinking fund only with 4 or more units (s 81(1)), so
+    // `required` is false and `requiredWhen` reads the sinking fund selector
+    // (SINKING_FUND_REQUIRED, worked out from the number of units against
+    // SIZE_THRESHOLDS.sinkingFundRequiredFromUnits; stage 2, PR 3). Where the
+    // number of units is not known the fund is not worked out, and the
+    // building is flagged.
     required: false,
+    requiredWhen: {
+      rules: [
+        {
+          need: "REQUIRED",
+          when: { selector: SINKING_FUND_REQUIRED.key, in: ["REQUIRED"] },
+          reason: `Required with ${T.sinkingFundRequiredFromUnits} or more units, with a sinking fund plan.`,
+          provision: `${UTMA} ss 81(1), 82(1)`,
+          status: T.status,
+        },
+        {
+          // Not required below the threshold (s 81(1)). Whether a units plan
+          // of fewer units may still keep one is not in the notes (FOR_REVIEW).
+          need: "OPTIONAL",
+          when: { selector: SINKING_FUND_REQUIRED.key, in: ["NOT_REQUIRED"] },
+          reason: `Not required with fewer than ${T.sinkingFundRequiredFromUnits} units.`,
+          provision: `${UTMA} s 81(1)`,
+          status: T.status,
+        },
+      ],
+      noRuleFits: "Whether a sinking fund is required could not be worked out from the units recorded.",
+    },
     source: `${UTMA} ss 81, 83, 88`,
     status: "CONFIRMED",
   },
@@ -412,9 +435,9 @@ export const FUND_RULES = {
   generalFundReceipts: ["contributions", "common property sublet income", "disposal proceeds", "record and certificate fees"],
   /**
    * A sinking fund and a sinking fund plan are mandatory with 4 or more units
-   * (ss 81(1), 82(1)). FUND_CATALOGUE marks the sinking fund `required: false`
-   * because its shared shape cannot hold this threshold: a building with 4 or
-   * more units must have one.
+   * (ss 81(1), 82(1)). FUND_CATALOGUE requires the sinking fund through its
+   * `requiredWhen`, which reads the SINKING_FUND_REQUIRED selector built on
+   * this threshold (stage 2, PR 3).
    */
   sinkingFundRequiredFromUnits: SIZE_THRESHOLDS.sinkingFundRequiredFromUnits,
   sinkingFundPlanRequiredFromUnits: SIZE_THRESHOLDS.sinkingFundRequiredFromUnits,
@@ -1530,7 +1553,7 @@ export const NOT_CONFIRMED = [
 
 /** Points for Matthew Wrigley's review of this draft. */
 export const FOR_REVIEW = [
-  "The sinking fund is marked `required: false` in FUND_CATALOGUE because the shared FundDefinition has only a yes or no `required`. The Act requires a sinking fund and sinking fund plan only with 4 or more units (UTMA ss 81(1), 82(1)); the threshold is FUND_RULES.sinkingFundRequiredFromUnits. Before the pack applies, decide how the platform requires the fund for buildings of 4 or more units (for example, a size threshold in the shared fund shape).",
+  "The sinking fund is required through its `requiredWhen` (stage 2, PR 3): with 4 or more units (UTMA ss 81(1), 82(1)), read from the SINKING_FUND_REQUIRED selector, a new building of 4 or more units is given a sinking fund, and an existing one without it is flagged in Building data missing. Where the number of units is not known the fund is not worked out and the building is flagged. Below 4 units the fund is shown as not required: whether a units plan of fewer units may still keep one is not in the notes, so the screens do not say it may. Confirm.",
   "FEATURES switches off the certificate (strataInformationCertificate) and records inspection (recordsInspections) workflows for this draft. Those switches run the NSW workflows; the ACT has its own certificates (SALE_CERTIFICATE) and records inspection rules (RECORDS), which need ACT workflows before they can be switched on.",
   "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), \"unless otherwise decided by ordinary resolution\", let an ordinary resolution do (INTEREST.openingWords).",
   "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's \"yes\" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",

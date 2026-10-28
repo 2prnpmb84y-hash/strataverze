@@ -1,0 +1,801 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW funds > Add Property wizard words 1`] = `
+{
+  "bodyCorporateName": "The Owners - Strata Plan No. {plan}",
+  "entitlement": "unit entitlement",
+  "entitlementHelp": null,
+  "entitlementLabel": "Unit Entitlement",
+  "fundWords": {
+    "admin": {
+      "label": "Administrative Fund",
+      "name": "administrative fund",
+      "shortLabel": "Admin",
+    },
+    "capitalWorks": {
+      "label": "Capital Works Fund",
+      "name": "capital works fund",
+      "shortLabel": "Capital Works",
+    },
+  },
+  "funds": {
+    "admin": "administrative fund",
+    "capitalWorks": "capital works fund",
+  },
+  "lateCharge": "interest",
+  "levies": "levies",
+  "levy": "levy",
+  "ownersCorporation": "owners corporation",
+  "planFormat": null,
+  "planLabel": "Strata Plan",
+  "regulationModule": null,
+  "separate": null,
+  "state": "NSW",
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds adminOnly, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds adminOnly, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds adminOnly, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds adminOnly, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds adminOnly, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds both, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Capital Works Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds both, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Capital Works Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds both, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Capital Works Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds both, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Capital Works Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds both, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Capital Works Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds legacy, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Capital Works</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds legacy, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Capital Works</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds legacy, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Capital Works</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds legacy, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Capital Works</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds legacy, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Capital Works</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds none, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and capital works funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds none, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and capital works funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds none, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and capital works funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds none, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and capital works funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds none, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and capital works funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds special, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds special, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds special, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds special, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > building data missing and funds card: funds special, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW funds > default funds 1`] = `
+{
+  "catalogue": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Capital Works Fund",
+    },
+  ],
+  "fourLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Capital Works Fund",
+    },
+  ],
+  "noLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Capital Works Fund",
+    },
+  ],
+  "rules": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Capital Works Fund",
+    },
+  ],
+  "tenLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Capital Works Fund",
+    },
+  ],
+  "threeLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Capital Works Fund",
+    },
+  ],
+  "twoLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Capital Works Fund",
+    },
+  ],
+}
+`;
+
+exports[`NSW funds > funds createScheme gives a building, fourLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Capital Works Fund",
+  },
+]
+`;
+
+exports[`NSW funds > funds createScheme gives a building, tenLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Capital Works Fund",
+  },
+]
+`;
+
+exports[`NSW funds > funds createScheme gives a building, threeLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Capital Works Fund",
+  },
+]
+`;
+
+exports[`NSW funds > funds createScheme gives a building, twoLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Capital Works Fund",
+  },
+]
+`;
+
+exports[`QLD funds > Add Property wizard words 1`] = `
+{
+  "bodyCorporateName": "Body corporate for {name} community titles scheme {plan}",
+  "entitlement": "contribution schedule lot entitlement",
+  "entitlementHelp": "From the contribution schedule in the community management statement. A whole number, not 0.",
+  "entitlementLabel": "Contribution Schedule Lot Entitlement",
+  "fundWords": {
+    "admin": {
+      "label": "Administrative Fund",
+      "name": "administrative fund",
+      "shortLabel": "Admin",
+    },
+    "capitalWorks": {
+      "label": "Sinking Fund",
+      "name": "sinking fund",
+      "shortLabel": "Sinking Fund",
+    },
+  },
+  "funds": {
+    "admin": "administrative fund",
+    "capitalWorks": "sinking fund",
+  },
+  "lateCharge": "penalty",
+  "levies": "contributions",
+  "levy": "contribution",
+  "ownersCorporation": "body corporate",
+  "planFormat": {
+    "help": "The kind of plan of subdivision the scheme's lots are on, as registered for the scheme.",
+    "label": "Plan format",
+    "options": [
+      {
+        "label": "Building format plan",
+        "note": null,
+        "supported": true,
+        "value": "BUILDING",
+      },
+      {
+        "label": "Volumetric format plan",
+        "note": null,
+        "supported": true,
+        "value": "VOLUMETRIC",
+      },
+      {
+        "label": "Standard format plan",
+        "note": "Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+        "supported": false,
+        "value": "STANDARD",
+      },
+    ],
+  },
+  "planLabel": "Community titles scheme",
+  "regulationModule": {
+    "help": "The module named in the building's community management statement. If it names none, the Standard Module applies.",
+    "label": "Regulation module",
+    "options": [
+      {
+        "label": "Standard Module",
+        "note": null,
+        "supported": true,
+        "value": "STANDARD",
+      },
+      {
+        "label": "Accommodation Module",
+        "note": "Most lots are accommodation lots.",
+        "supported": false,
+        "value": "ACCOMMODATION",
+      },
+      {
+        "label": "Commercial Module",
+        "note": "Most lots are commercial; voting outside a general meeting and no committee spending limits.",
+        "supported": false,
+        "value": "COMMERCIAL",
+      },
+      {
+        "label": "Small Schemes Module",
+        "note": "6 lots or fewer; audit optional; one proxy per person.",
+        "supported": false,
+        "value": "SMALL_SCHEMES",
+      },
+      {
+        "label": "Specified Two-lot Schemes Module",
+        "note": "Two lots; decisions by the lot owners' agreement. The Act's committee, proxy and meeting provisions do not apply (module itself not researched).",
+        "supported": false,
+        "value": "SPECIFIED_TWO_LOT",
+      },
+    ],
+  },
+  "separate": {
+    "help": "From the interest schedule in the community management statement. A whole number, not 0.",
+    "label": "Interest Schedule Lot Entitlement",
+    "name": "interest schedule lot entitlement",
+  },
+  "state": "QLD",
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds adminOnly, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds adminOnly, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds adminOnly, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds adminOnly, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds adminOnly, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds both, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Sinking Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds both, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Sinking Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds both, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Sinking Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds both, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Sinking Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds both, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/a"><div><p class="text-sm font-medium text-ink">Administrative Fund</p><p class="text-xs text-ink-muted">Administrative Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$100.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/c"><div><p class="text-sm font-medium text-ink">Capital Works Fund</p><p class="text-xs text-ink-muted">Sinking Fund</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$200.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds legacy, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Sinking</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds legacy, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Sinking</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds legacy, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Sinking</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds legacy, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Sinking</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds legacy, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">2 funds configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/l"><div><p class="text-sm font-medium text-ink">Old admin</p><p class="text-xs text-ink-muted">Administrative</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/s"><div><p class="text-sm font-medium text-ink">Old sinking fund</p><p class="text-xs text-ink-muted">Sinking</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$5.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds none, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and sinking funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds none, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and sinking funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds none, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and sinking funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds none, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and sinking funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds none, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">No funds set up yet.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><p class="text-sm text-ink-muted">Set up administrative and sinking funds for this scheme.</p></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds special, fourLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds special, noLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds special, tenLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds special, threeLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > building data missing and funds card: funds special, twoLots 1`] = `
+{
+  "card": "<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 mb-6"><div class="flex items-start justify-between gap-4 mb-4"><div><h2 class="font-heading font-semibold text-base text-ink">Funds</h2><p class="text-sm text-ink-muted mt-0.5">1 fund configured.</p></div><div class="shrink-0"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1/funds/new">Manage Funds</a></div></div><div class="flex flex-col gap-2"><a class="flex items-center justify-between rounded-[var(--radius-card)] bg-muted px-4 py-3 hover:bg-muted/70 transition-colors" href="/adviser/schemes/s1/funds/x"><div><p class="text-sm font-medium text-ink">Roof levy</p><p class="text-xs text-ink-muted">SPECIAL</p></div><span class="text-sm font-medium text-ink font-variant-numeric tabular-nums">$0.00</span></a></div></div>",
+  "notice": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD funds > default funds 1`] = `
+{
+  "catalogue": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Sinking Fund",
+    },
+  ],
+  "fourLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Sinking Fund",
+    },
+  ],
+  "noLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Sinking Fund",
+    },
+  ],
+  "rules": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Sinking Fund",
+    },
+  ],
+  "tenLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Sinking Fund",
+    },
+  ],
+  "threeLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Sinking Fund",
+    },
+  ],
+  "twoLots": [
+    {
+      "fundType": "ADMINISTRATIVE",
+      "name": "Administrative Fund",
+    },
+    {
+      "fundType": "CAPITAL_WORKS",
+      "name": "Sinking Fund",
+    },
+  ],
+}
+`;
+
+exports[`QLD funds > funds createScheme gives a building, fourLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Sinking Fund",
+  },
+]
+`;
+
+exports[`QLD funds > funds createScheme gives a building, tenLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Sinking Fund",
+  },
+]
+`;
+
+exports[`QLD funds > funds createScheme gives a building, threeLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Sinking Fund",
+  },
+]
+`;
+
+exports[`QLD funds > funds createScheme gives a building, twoLots 1`] = `
+[
+  {
+    "accountingBasis": "CASH",
+    "fundType": "ADMINISTRATIVE",
+    "name": "Administrative Fund",
+  },
+  {
+    "accountingBasis": "ACCRUAL",
+    "fundType": "CAPITAL_WORKS",
+    "name": "Sinking Fund",
+  },
+]
+`;

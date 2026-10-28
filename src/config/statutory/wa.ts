@@ -272,24 +272,56 @@ export const DESIGNATED_STATUS: DerivedBuildingSelector = {
 };
 
 /**
+ * What the scheme by-laws, or SAT, say about the administrative fund of a 2
+ * to 5-lot scheme (STA s 140; stage 2, PR 3), recorded by the adviser. The
+ * administrative fund is a designated function (s 140(4)): a 2-lot scheme
+ * cannot establish one unless its by-laws require it (s 140(1)(b)), a 3 to
+ * 5-lot scheme's by-laws may exempt it (s 140(2)), and SAT may require it on a
+ * member's application (s 140(3)). One answer: an SAT order is recorded as
+ * such whatever the by-laws say. Read by the administrative fund's condition
+ * for 2 to 5 lots only, so a building is flagged for it only there. Which
+ * options are `supported` is a StrataVerze proposal (FOR_REVIEW).
+ */
+export const ADMINISTRATIVE_FUND_BY_LAWS: RecordedBuildingSelector = {
+  key: "administrativeFundByLaws",
+  held: "RECORDED",
+  label: "Administrative fund by-laws",
+  help: "For a scheme of 2 to 5 lots. Whether the scheme by-laws require an administrative fund or exempt the strata company from keeping one, or whether SAT has required one on a member's application. A 2-lot scheme cannot have an administrative fund unless its by-laws require one.",
+  options: [
+    { value: "NEITHER", label: "The by-laws neither require nor exempt", supported: true },
+    { value: "REQUIRE", label: "The by-laws require an administrative fund", supported: true },
+    { value: "EXEMPT", label: "The by-laws exempt the strata company", supported: true },
+    { value: "SAT_REQUIRED", label: "SAT has required an administrative fund", supported: true },
+  ],
+  flagMissing: "FUND_CONDITIONS",
+  source: `${STA} s 140(1) to (4)`,
+  status: "CONFIRMED",
+};
+
+/**
  * The building selectors (stage 2, PR 2): the scheme type and tenure,
  * recorded by the adviser, and the size class and designated status, worked
- * out from the number of lots, the scheme type and the replacement cost.
+ * out from the number of lots, the scheme type and the replacement cost. PR 3
+ * adds the administrative fund by-laws, recorded by the adviser.
  */
-export const BUILDING_SELECTORS: readonly BuildingSelector[] = [SCHEME_TYPE, TENURE, SCHEME_SIZE, DESIGNATED_STATUS];
+export const BUILDING_SELECTORS: readonly BuildingSelector[] = [SCHEME_TYPE, TENURE, SCHEME_SIZE, DESIGNATED_STATUS, ADMINISTRATIVE_FUND_BY_LAWS];
+
+const sizeIn = (...sizes: string[]) => ({ selector: SCHEME_SIZE.key, in: sizes });
+const byLawsIn = (...answers: string[]) => ({ selector: ADMINISTRATIVE_FUND_BY_LAWS.key, in: answers });
+const designatedIn = (...answers: string[]) => ({ selector: DESIGNATED_STATUS.key, in: answers });
+const designatedCostWords = `$${(DESIGNATED_STRATA_COMPANY.replacementCostMoreThanCents / 100).toLocaleString("en-AU")}`;
 
 /**
  * The two funds (STA s 100). Neither is required of every Western Australian
  * scheme, so both have `required: false` and `requiredWhen` says when the law
- * requires them. `required: false` is the safe default: `defaultFunds` then
- * never gives a building a fund the law forbids it (a 2-lot scheme's
- * administrative fund, s 140(1)(b)).
- *
- * GO-LIVE GAP: `defaultFunds` (src/lib/jurisdiction/funds.ts) reads `required`
- * only. Before Western Australia goes live it must read `requiredWhen`, with
- * the building's size class, by-laws and designated status, or a new WA
- * building gets no administrative fund and a designated strata company no
- * reserve fund (s 100(1)(a), (2), (7)).
+ * requires them (stage 2, PR 3), from the building selectors: the size class
+ * and the administrative fund by-laws for the administrative fund (s 140),
+ * and the designated status for the reserve fund (s 100(2), (7); reg 79).
+ * These replace the first forms (PR #107) with the same meaning, and add an
+ * SAT order under s 140(3). `defaultFunds` reads them, so a new building is
+ * given each fund the law requires of it, never one it may not have (a 2-lot
+ * scheme's administrative fund, s 140(1)(b)), and a fund that cannot be
+ * worked out is flagged, never guessed.
  */
 export const FUND_CATALOGUE: readonly FundDefinition[] = [
   {
@@ -303,7 +335,53 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     // 6 or more lots: always. 3 to 5 lots: unless the by-laws exempt the company
     // (s 140(2)). 2 lots: cannot establish one unless the by-laws require it
     // (s 140(1)(b)). SAT may require it on a member's application (s 140(3)).
-    requiredWhen: { bySchemeSize: { TWO_LOT: "ONLY_IF_BY_LAWS_REQUIRE", THREE_TO_FIVE_LOT: "UNLESS_BY_LAWS_EXEMPT", SIX_OR_MORE_LOT: "ALWAYS" } },
+    requiredWhen: {
+      rules: [
+        {
+          need: "REQUIRED",
+          when: sizeIn("SIX_OR_MORE_LOT"),
+          reason: "Required for a scheme of 6 or more lots.",
+          provision: `${STA} ss 100(1)(a), 140`,
+          status: "CONFIRMED",
+        },
+        {
+          need: "REQUIRED",
+          when: { all: [sizeIn("TWO_LOT", "THREE_TO_FIVE_LOT"), byLawsIn("SAT_REQUIRED")] },
+          reason: "Required because SAT has required it on a member's application.",
+          provision: `${STA} s 140(3)`,
+          status: "CONFIRMED",
+        },
+        {
+          need: "REQUIRED",
+          when: { all: [sizeIn("THREE_TO_FIVE_LOT"), byLawsIn("NEITHER", "REQUIRE")] },
+          reason: "Required for a scheme of 3 to 5 lots unless its by-laws exempt the strata company.",
+          provision: `${STA} ss 100(1)(a), 140(2)`,
+          status: "CONFIRMED",
+        },
+        {
+          need: "OPTIONAL",
+          when: { all: [sizeIn("THREE_TO_FIVE_LOT"), byLawsIn("EXEMPT")] },
+          reason: "Not required because the by-laws exempt the strata company.",
+          provision: `${STA} s 140(2)`,
+          status: "CONFIRMED",
+        },
+        {
+          need: "REQUIRED",
+          when: { all: [sizeIn("TWO_LOT"), byLawsIn("REQUIRE")] },
+          reason: "Required because the by-laws of this 2-lot scheme require it.",
+          provision: `${STA} s 140(1)(b)`,
+          status: "CONFIRMED",
+        },
+        {
+          need: "NOT_ALLOWED",
+          when: { all: [sizeIn("TWO_LOT"), byLawsIn("NEITHER", "EXEMPT")] },
+          reason: "A 2-lot scheme cannot have an administrative fund unless its by-laws require one.",
+          provision: `${STA} s 140(1)(b)`,
+          status: "CONFIRMED",
+        },
+      ],
+      noRuleFits: "No administrative fund rule fits the scheme size and the by-laws answer recorded.",
+    },
     source: `${STA} ss 100(1)(a), 140`,
     status: "CONFIRMED",
   },
@@ -319,7 +397,25 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     // Mandatory for a designated strata company (DESIGNATED_STRATA_COMPANY: 10 or
     // more lots, or a replacement cost of more than $5,000,000; s 100(7), reg 79).
     // Other companies may establish one (s 100(2)).
-    requiredWhen: "DESIGNATED_ONLY",
+    requiredWhen: {
+      rules: [
+        {
+          need: "REQUIRED",
+          when: designatedIn("DESIGNATED"),
+          reason: `Required for a designated strata company: ${DESIGNATED_STRATA_COMPANY.minLots} or more lots, or a replacement cost of more than ${designatedCostWords}.`,
+          provision: `${STA} s 100(2), (7); ${STGR} reg 79`,
+          status: DESIGNATED_STRATA_COMPANY.status,
+        },
+        {
+          need: "OPTIONAL",
+          when: designatedIn("NOT_DESIGNATED"),
+          reason: "Not required for a strata company that is not designated, which may establish one.",
+          provision: `${STA} s 100(2)`,
+          status: "CONFIRMED",
+        },
+      ],
+      noRuleFits: "Whether a reserve fund is required could not be worked out from the designated strata company test.",
+    },
     source: `${STA} s 100(2), (7); ${STGR} reg 79`,
     status: "CONFIRMED",
   },
@@ -1209,7 +1305,8 @@ export const DECISIONS = [] as const;
 export const FOR_REVIEW = [
   "Supported options: `supported: true` for STRATA (SCHEME_TYPE), FREEHOLD (TENURE) and all three size classes (SCHEME_SIZE) is a StrataVerze proposal, not law. Survey-strata and leasehold schemes are proposed as not supported because they were researched at headline level only.",
   "Levy debts go to a court, not SAT (s 100(4)(c), s 197(3)(f)). TERMINOLOGY.tribunal (\"SAT\") is the strata disputes tribunal only; shared code that names where levy claims are heard must take the forum from DEBT_RECOVERY, not from TERMINOLOGY.tribunal.",
-  "Funds: both funds have `required: false`, with `requiredWhen` giving the law's test. Before Western Australia goes live, defaultFunds must read `requiredWhen` (GO-LIVE GAP at FUND_CATALOGUE), using the building's size class, by-laws and designated strata company status.",
+  "Funds: both funds have `required: false`, and `requiredWhen` gives the law's test through the building selectors (stage 2, PR 3), read by defaultFunds and requiredFunds. The administrative fund reads the size class and ADMINISTRATIVE_FUND_BY_LAWS, the reserve fund the designated status. A fund that cannot be worked out is not given to a new building, and the building is flagged in Building data missing, as is a required fund it lacks or an administrative fund a 2-lot scheme may not have. The SAT order under s 140(3) is a new answer the first form did not hold.",
+  "ADMINISTRATIVE_FUND_BY_LAWS: one answer for a 2 to 5-lot scheme (neither, by-laws require, by-laws exempt, SAT has required), recorded by the adviser or StrataVerze in the Building rules section, and asked for only where the administrative fund depends on it. It covers the administrative fund only, not the other designated functions of s 140(4). Every answer is marked supported (a StrataVerze proposal). Confirm who checks the by-laws, and whether by-laws that exempt a 3 to 5-lot scheme still let it keep a fund: the notes say only that it is exempt, so the screens say only that the fund is not required.",
   "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
   "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
   "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",

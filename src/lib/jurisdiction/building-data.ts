@@ -15,6 +15,7 @@
  */
 import type { StatutoryRules } from "@/config/statutory";
 import { buildingSelectorProblems, type SelectorBuilding } from "./building-selectors";
+import { fundProblems } from "./funds";
 
 export type EntitlementSchedule = StatutoryRules["ENTITLEMENT_SCHEDULES"][number];
 type DecidedUse = NonNullable<EntitlementSchedule["decides"]>[number];
@@ -297,14 +298,20 @@ const lotList = (numbers: string[]) => {
  * the lots without the second schedule's entitlement. Then, for a pack with
  * building selectors (VIC, ACT and WA stage 2, PR 2), each recorded selector
  * not recorded and each derived one that cannot be worked out, with the facts
- * to record (building-selectors.ts). Empty for an NSW building; a Queensland
- * building's problems are as before, since its pack has no building selectors.
+ * to record (building-selectors.ts). Then, for a pack with fund conditions
+ * (stage 2, PR 3), each fund that cannot be worked out and, given the
+ * building's `funds`, each required fund it lacks and each it may not have
+ * (fundProblems in funds.ts). Empty for an NSW building; a Queensland
+ * building's problems are as before, since its pack has no building selectors
+ * and no fund conditions.
  */
 export function buildingDataProblems(
-  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> & Partial<Pick<StatutoryRules, "PLAN_FORMAT" | "BUILDING_SELECTORS" | "BUILDING_FACTS">>,
+  rules: Pick<StatutoryRules, "REGULATION_MODULE" | "ENTITLEMENT_SCHEDULES"> &
+    Partial<Pick<StatutoryRules, "PLAN_FORMAT" | "BUILDING_SELECTORS" | "BUILDING_FACTS" | "FUND_CATALOGUE" | "TERMINOLOGY">>,
   scheme: { regulationModule?: string | null; planFormat?: string | null } & Partial<SelectorBuilding["scheme"]>,
   lots: readonly (LotEntitlements & Partial<SelectorBuilding["lots"][number]>)[],
   recorded: SelectorBuilding["recorded"] = {},
+  funds?: readonly { fundType: string }[],
 ): string[] {
   const problems: string[] = [];
   const moduleProblem = regulationModuleProblem(rules, scheme.regulationModule);
@@ -319,5 +326,6 @@ export function buildingDataProblems(
     else if (missing.length > 1) problems.push(`${missing.length} lots have no ${separate.name} recorded (lots ${lotList(missing)}). StrataVerze can enter them from the building's records.`);
   }
   if (rules.BUILDING_SELECTORS?.length) problems.push(...buildingSelectorProblems(rules, { scheme, lots, recorded }));
+  if (rules.FUND_CATALOGUE) problems.push(...fundProblems({ ...rules, FUND_CATALOGUE: rules.FUND_CATALOGUE }, { scheme, lots, recorded }, funds));
   return problems;
 }

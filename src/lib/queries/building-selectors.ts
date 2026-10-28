@@ -7,7 +7,7 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 import type { Numeric, TimestampString } from "@prisma/orm-postgres/target/codec-types";
 import { db } from "@/prisma/db";
-import type { BuildingRulesInput, RecordedValues } from "@/lib/jurisdiction/building-selectors";
+import type { BuildingRulesInput, RecordedValues, SelectorBuilding } from "@/lib/jurisdiction/building-selectors";
 
 /** A lot the form named is not one of the building's lots: nothing is saved. */
 export class BuildingRulesError extends Error {
@@ -21,6 +21,18 @@ export class BuildingRulesError extends Error {
 export async function getRecordedSelectorValues(schemeId: string, orm: typeof db.orm = db.orm): Promise<RecordedValues> {
   const rows = await orm.public.SchemeSelectorValue.where((v) => v.schemeId.eq(schemeId)).all();
   return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+}
+
+/**
+ * The building as its selectors and fund conditions read it (stage 2, PR 3):
+ * the scheme's facts, its lots and its recorded selector values. Null when
+ * there is no such building. For a page that does not already hold them.
+ */
+export async function selectorBuildingFor(schemeId: string, orm: typeof db.orm = db.orm): Promise<SelectorBuilding | null> {
+  const scheme = await orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+  if (!scheme) return null;
+  const lots = await orm.public.Lot.where((l) => l.schemeId.eq(schemeId)).all();
+  return { scheme, lots, recorded: await getRecordedSelectorValues(schemeId, orm) };
 }
 
 /** What changed, for the activity log: the keys of the selectors and facts saved. */

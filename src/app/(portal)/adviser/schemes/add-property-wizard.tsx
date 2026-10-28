@@ -33,6 +33,8 @@ import { BalancesStep, LotBalancesStep, LotsStep, RollNotes, StepProblems } from
 import { SCHEME_STATE_HELP, SCHEME_STATE_OPTIONS, schemeLocationProblems, schemeStateProblem } from "@/config/jurisdictions";
 import { planNumberLabel, type OnboardingWords } from "@/lib/onboarding/onboarding-words";
 import { bodyCorporateName, capitalise } from "@/lib/jurisdiction/wording";
+import { fundRequirementsView } from "@/lib/jurisdiction/funds";
+import { FundRequirements } from "./[id]/_sections/fund-requirements";
 
 const STEPS = [
   { id: "upload", label: "Strata Roll" },
@@ -794,6 +796,13 @@ function ReviewSummary({
     },
   ];
 
+  // For a pack with fund conditions (stage 2, PR 3): the funds the building
+  // will be given, read against the lots entered, as createScheme reads them.
+  // Absent for NSW and Queensland.
+  const fundRequirements = words.fundRules
+    ? fundRequirementsView(words.fundRules, { scheme: { totalLots: Number(v.totalLots) || null }, lots: lots.map((l) => ({ lotNumber: l.lotNumber })), recorded: {} })
+    : null;
+
   return (
     <div className="space-y-6">
       {sections.map((section) => (
@@ -809,6 +818,16 @@ function ReviewSummary({
           </dl>
         </div>
       ))}
+
+      {fundRequirements && (
+        <div>
+          <h3 className="text-sm font-semibold text-ink mb-3">Funds</h3>
+          <p className="text-sm text-ink-muted mb-3">
+            Each required fund is set up with the building. A fund that cannot be worked out yet is not set up, and the building page says what to record.
+          </p>
+          <FundRequirements requirements={fundRequirements} />
+        </div>
+      )}
 
       <div>
         <h3 className="text-sm font-semibold text-ink mb-3">

@@ -225,7 +225,13 @@ export async function createScheme(
     });
 
     // The default funds: the pack's required funds, named as the pack names them.
-    for (const fund of defaultFunds(rules)) {
+    // A fund with a condition (VIC, ACT and WA stage 2, PR 3) is read against
+    // what onboarding knows: the total lots and the lots entered. Nothing else
+    // is recorded yet, so a fund that needs more is not given, and the
+    // building page flags it in Building data missing until it is recorded.
+    // NSW and Queensland funds have no condition, so this does not change them.
+    const building = { scheme: { totalLots: data.totalLots }, lots: lots.map((l) => ({ lotNumber: l.lotNumber })), recorded: {} };
+    for (const fund of defaultFunds(rules, building)) {
       await tx.orm.public.Fund.create({
         schemeId: scheme.id,
         name: fund.name,
