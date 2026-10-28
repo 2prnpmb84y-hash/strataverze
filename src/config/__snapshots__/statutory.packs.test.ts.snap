@@ -649,7 +649,13 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     },
     "unfinancialMayVoteOnOrdinaryOrSpecial": false,
   },
-  "DECISIONS": [],
+  "DECISIONS": [
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
+    },
+  ],
   "DISCOUNTS": {
     "by": "ORDINARY",
     "for": [
@@ -834,6 +840,8 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), "unless otherwise decided by ordinary resolution", let an ordinary resolution do (INTEREST.openingWords).",
     "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's "yes" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
     "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
+    "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). GO-LIVE GAP: the meeting engine's CARRIED does not apply the sch 3 s 3.16 special resolution test yet, so the recorded outcome is relied on until it does. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+    "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -1028,6 +1036,78 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "source": "Unit Titles (Management) Act 2011 (ACT) s 94",
     "status": "CONFIRMED",
     "untilPaid": true,
+  },
+  "LATE_CHARGE": {
+    "annual": {
+      "accrual": {
+        "daysInYear": {
+          "note": "The notes give a rate a year and do not say how a day's share of it is worked out.",
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 94(1)(a)",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "from": {
+          "note": "The notes say 10% a year simple interest "until paid", and that a contribution is payable on the date stated in the notice or on the instalment dates. They do not say from which day interest runs.",
+          "source": "Unit Titles (Management) Act 2011 (ACT) ss 80, 91, 94(1)(a)",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "graceMonths": {
+          "note": "The notes record no grace period, and do not say there is none.",
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 94",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "simple": {
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 94(1)(a)",
+          "status": "CONFIRMED",
+          "value": true,
+        },
+      },
+      "resolvedRate": {
+        "maxInclusive": true,
+        "maxPercent": {
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 94(1)",
+          "status": "CONFIRMED",
+          "value": 20,
+        },
+        "minPercent": {
+          "note": "The notes give the range as 0 to 20%.",
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 94(1)",
+          "status": "CONFIRMED",
+          "value": 0,
+        },
+        "resolution": {
+          "note": "Below 10%, or above 10% and up to 20%, by special resolution. The opening words of s 94(1) are not read as letting an ordinary resolution set a rate (FOR LEGAL REVIEW, INTEREST.openingWords).",
+          "source": "Unit Titles (Management) Act 2011 (ACT) s 94(1)",
+          "status": "CONFIRMED",
+          "value": {
+            "kind": "SPECIAL",
+            "words": "special resolution",
+          },
+        },
+      },
+      "source": "Unit Titles (Management) Act 2011 (ACT) s 94",
+      "statutoryRatePercent": {
+        "source": "Unit Titles (Management) Act 2011 (ACT) s 94(1)(a)",
+        "status": "CONFIRMED",
+        "value": 10,
+      },
+      "waiver": null,
+    },
+    "annualRatePercent": null,
+    "defaultMode": "STATUTORY",
+    "graceMonths": 0,
+    "maxMonthlyRatePercent": null,
+    "method": "ANNUAL_RATE",
+    "modes": [
+      "STATUTORY",
+      "RESOLVED_ANNUAL_RATE",
+    ],
+    "resolutionRequiredFor": [
+      "RESOLVED_ANNUAL_RATE",
+    ],
+    "source": "Unit Titles (Management) Act 2011 (ACT) s 94",
   },
   "MANAGER": {
     "approvedBy": "ORDINARY",
@@ -1246,11 +1326,17 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "The opening words of UTMA s 94(1): what "unless otherwise decided by ordinary resolution" lets an ordinary resolution do (for example, switch interest off) needs legal interpretation; the rates themselves are confirmed.",
     "The content of Form 2 (AF2021-17): only its existence and in-force status were checked.",
     "The Unit Titles Act 2001 beyond ss 5 to 16, including what A2025-29 changed.",
-    "The order a payment is applied to contributions, interest and recovery costs: the notes record none, so the pack has no PAYMENT_ALLOCATION_ORDER.",
+    "The order a payment is applied to contributions, interest and recovery costs: the notes record none. PAYMENT_ALLOCATION_ORDER is a StrataVerze choice (DECISIONS, 28 Oct 2026).",
+    "From which day interest under UTMA s 94 runs, whether there is any grace period, and how a day's share of the yearly rate is worked out (365 days or another basis): the notes do not say.",
     "A short form of the owners corporation's name for meeting notices and minutes: the notes record none, so the full name is used.",
     "What the 1/3 in the 3-member special resolution test (UTMA sch 3 s 3.16(2)) is measured against: the notes say only "less than 1/3".",
     "The member-count scope of an unopposed resolution (UTMA sch 3 s 3.17): the notes give the test with no member-count limit.",
     "When the 2025-26 maximum certificate fees started: the notes give the amounts but not the start date.",
+  ],
+  "PAYMENT_ALLOCATION_ORDER": [
+    "LEVY",
+    "INTEREST",
+    "RECOVERY_COSTS",
   ],
   "PENDING_REFORMS": [
     {
@@ -3920,19 +4006,17 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "decision": "Show owners "fees", "fee notice" and "final notice", never "levy".",
       "proposedOn": "2026-10-27",
     },
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Apply a payment to fees first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order in force before s 32I.",
+      "proposedOn": "2026-10-28",
+    },
   ],
   "DEFERRED_SHARED_SHAPES": [
     {
       "reason": "The 28-day fee notice rule is held in FEE_NOTICES. The shape also needs a StrataVerze lead time for issuing notices (none chosen yet) and a hardship start date (the approved forms' start date is not confirmed).",
       "shape": "NOTICE_RULES",
-    },
-    {
-      "reason": "The interest rule is held in INTEREST. The shape caps a resolved rate monthly; Victoria caps it at the Penalty Interest Rates Act maximum, an annual rate whose current value is guidance only, and the notes do not say how interest accrues beyond the final notice's daily amount.",
-      "shape": "LATE_CHARGE",
-    },
-    {
-      "reason": "No order in force is recorded. The s 32I order (fees and charges, then penalty interest, then recovery costs) is enacted but not in force (PENDING_CHANGES).",
-      "shape": "PAYMENT_ALLOCATION_ORDER",
     },
     {
       "reason": "MEETING_RULES is now a shared rule (MeetingRuleSet); a pending pack need not give it, and the ACT draft does not. A Victorian set needs a minutes deadline for ordinary meetings (not found in the notes), Victoria's interim resolutions and ballots mapped to its categories, and StrataVerze choices on wording and pre-meeting voting. Until then Victoria's meeting, resolution and proxy rules are held as data in MEETINGS, RESOLUTIONS and PROXIES.",
@@ -4525,7 +4609,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "the pack moves to RULE_PACKS",
       "key": "DEFERRED_SHARED_SHAPES",
       "kind": "STRATAVERZE",
-      "point": "NOTICE_RULES, LATE_CHARGE, PAYMENT_ALLOCATION_ORDER and MEETING_RULES are deferred (DEFERRED_SHARED_SHAPES).",
+      "point": "NOTICE_RULES and MEETING_RULES are deferred (DEFERRED_SHARED_SHAPES). LATE_CHARGE and PAYMENT_ALLOCATION_ORDER are given since stage 2, PR 5.",
     },
     {
       "before": "sign-off",
@@ -4561,6 +4645,24 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "key": "SECOND_SCHEDULE_HELD",
       "kind": "STRATAVERZE",
       "point": "Each lot's lot entitlement is held in lots.lot_entitlement and its lot liability in lots.entitlement, each as a whole number of at least 1 (the shape of the columns). The notes do not say either is a whole number, so a register with fractions would need the columns changed. Lot entitlement is locked like lot liability: StrataVerze enters and changes it, on the lot form, the CSV lot import or the Add Property wizard. A lot without it is flagged in Building data missing, and anything that needs it is refused, never worked out from lot liability. Whether a 2-lot owners corporation, whose initial allocation needs no surveyor (SA s 27EA), always has a lot entitlement is not in the notes: it is flagged like any other. A change of the building's state clears each lot's lot entitlement. Confirm.",
+    },
+    {
+      "before": "Victorian interest is charged",
+      "key": "LATE_CHARGE",
+      "kind": "LEGAL",
+      "point": "LATE_CHARGE (stage 2, PR 5). No interest until a resolution at a general meeting authorises it, with its rate (s 29(1)), so a building starts with none. No rate can be recorded yet: the cap (the Penalty Interest Rates Act maximum, s 29(2)) has no value until PENALTY_INTEREST_RATE is checked, and 10% is never used as a default cap. Even with a rate, nothing is charged until a pack version records how interest accrues (simple or otherwise) and the days a year's rate is shared over (365, or another basis): the notes give neither. Interest runs on amounts outstanding after the due date with no grace period (s 29(1)). The lowest rate, 0, is a StrataVerze choice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the fee first are StrataVerze choices. Once checked, the cap may need to be a dated rule (DATED_RULES), as the rate is fixed by notice. Confirm each.",
+    },
+    {
+      "before": "Victorian interest is charged",
+      "key": "INTEREST_WAIVER",
+      "kind": "LEGAL",
+      "point": "The waiver in a particular case (s 29(3)), recorded for one notice. Proposed, not decided: (1) who decides: the notes do not say, so decidedBy is NOT_CONFIRMED and no waiver can be recorded until it is decided; a general meeting resolution (the meeting and motion) is proposed, as the committee's power is not in the notes; (2) what may be waived: only all of the interest on the notice is offered (WHOLE); whether s 29(3) allows waiving part (an amount or the days of a period, which the engine and the table support) is not in the notes. The reasons are required, because decisions to waive or not, with reasons, are reported to the AGM (s 29(4)); the AGM report itself is not produced yet, and a decision not to waive is not recorded. A waiver cannot be changed or removed once recorded. A waiver is refused on a notice that already has interest charged, until a way to reverse a charge exists. Decide each.",
+    },
+    {
+      "before": "sign-off",
+      "key": "PAYMENT_ALLOCATION_ORDER",
+      "kind": "STRATAVERZE",
+      "point": "PAYMENT_ALLOCATION_ORDER: fees, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order in force before s 32I. DATED_RULES.PAYMENT_ALLOCATION_ORDER still records no statutory order before s 32I; switching to s 32I by date is stage 2, PR 7.",
     },
     {
       "before": "the s 23A fee is applied to Victorian fees",
@@ -4855,6 +4957,94 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "status": "CONFIRMED",
     "vcatInterestBasis": "the Penalty Interest Rates Act 1983 s 2 rate, or a lesser rate",
     "waiverDecisionsReportedToAgm": true,
+  },
+  "LATE_CHARGE": {
+    "annual": {
+      "accrual": {
+        "daysInYear": {
+          "note": "The notes do not say how a day's share of a yearly rate is worked out.",
+          "source": "Owners Corporations Act 2006 (Vic) s 29",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "from": {
+          "note": "On "amounts still outstanding after the due date".",
+          "source": "Owners Corporations Act 2006 (Vic) s 29(1)",
+          "status": "CONFIRMED",
+          "value": "DUE_DATE",
+        },
+        "graceMonths": {
+          "note": "Interest applies to amounts still outstanding after the due date. The notes record no grace period.",
+          "source": "Owners Corporations Act 2006 (Vic) s 29(1)",
+          "status": "CONFIRMED",
+          "value": 0,
+        },
+        "simple": {
+          "note": "How interest accrues (daily, simple or otherwise) beyond the final notice's daily amount: the notes do not say.",
+          "source": "Owners Corporations Act 2006 (Vic) ss 29, 32(2)(b)",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+      },
+      "resolvedRate": {
+        "maxInclusive": true,
+        "maxPercent": {
+          "guidance": 10,
+          "note": "The cap is the Penalty Interest Rates Act 1983 maximum (s 29(2), CONFIRMED). Its current value is guidance only and the rate notice was not read, so it is not used as a cap and no rate can be recorded (FOR_REVIEW PENALTY_INTEREST_RATE).",
+          "source": "Owners Corporations Act 2006 (Vic) s 29(2); Supreme Court of Victoria, Penalty interest rates (published February 2020)",
+          "status": "GUIDANCE",
+          "value": null,
+        },
+        "minPercent": {
+          "note": "The notes give no lowest rate. A rate below 0 is not a rate, so 0 is the lowest StrataVerze takes.",
+          "source": "Owners Corporations Act 2006 (Vic) s 29",
+          "status": "STRATAVERZE",
+          "value": 0,
+        },
+        "resolution": {
+          "note": ""If authorised by a resolution at a general meeting". The notes give no kind of resolution, so any resolution carried at a general meeting.",
+          "source": "Owners Corporations Act 2006 (Vic) s 29(1)",
+          "status": "CONFIRMED",
+          "value": {
+            "kind": "GENERAL_MEETING",
+            "words": "general meeting resolution",
+          },
+        },
+      },
+      "source": "Owners Corporations Act 2006 (Vic) s 29",
+      "statutoryRatePercent": null,
+      "waiver": {
+        "decidedBy": {
+          "note": "The notes say the owners corporation may waive in a particular case. They do not say by what resolution or whether its committee may decide it. A general meeting resolution is proposed (FOR_REVIEW INTEREST_WAIVER), not decided, so no waiver can be recorded yet.",
+          "source": "Owners Corporations Act 2006 (Vic) s 29(3)",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "formWords": {
+          "meeting": "General meeting",
+          "motion": "Motion carried",
+        },
+        "kinds": [
+          "WHOLE",
+        ],
+        "reportedToAgm": true,
+        "source": "Owners Corporations Act 2006 (Vic) s 29(3), (4)",
+        "status": "CONFIRMED",
+      },
+    },
+    "annualRatePercent": null,
+    "defaultMode": "NONE",
+    "graceMonths": 0,
+    "maxMonthlyRatePercent": null,
+    "method": "ANNUAL_RATE",
+    "modes": [
+      "NONE",
+      "RESOLVED_ANNUAL_RATE",
+    ],
+    "resolutionRequiredFor": [
+      "RESOLVED_ANNUAL_RATE",
+    ],
+    "source": "Owners Corporations Act 2006 (Vic) s 29",
   },
   "LATE_PAYMENT_ADMINISTRATION_FEES": {
     "example": {
@@ -5172,8 +5362,8 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "How the 5% proxy limit (s 89D) is rounded: the notes do not say.",
     "The tier of an owners corporation with 1 occupiable lot that s 7(7) and (8) do not reach: the notes record none.",
     "The approved form for a manager's contract of appointment (s 119(3)): the notes do not identify or describe it.",
-    "The order a payment is applied to fees, interest and recovery costs before s 32I commences: the notes record none, so the pack has no PAYMENT_ALLOCATION_ORDER.",
-    "How interest accrues (daily, simple or otherwise) beyond the final notice's daily amount: the notes do not say.",
+    "The order a payment is applied to fees, interest and recovery costs before s 32I commences: the notes record none. PAYMENT_ALLOCATION_ORDER is a StrataVerze choice (DECISIONS, 28 Oct 2026).",
+    "How interest accrues (daily, simple or otherwise) beyond the final notice's daily amount, and how a day's share of a yearly rate is worked out: the notes do not say.",
     "How days are counted for the Act's periods (calendar or clear days), and when a posted or emailed notice is taken to be given: the notes do not say.",
     "What "business day" means for s 151 (certificate within 10 business days) and s 89B (payment 4 business days before a vote): the notes give no definition.",
     "Whether there is any deadline for sending ordinary AGM minutes: the notes give one only for interim resolutions (s 78) and interim special resolutions (s 97), each within 14 days.",
@@ -5280,6 +5470,11 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     "source": "Subdivision Act 1988 (Vic) ss 27(2), (3), 27C(3) to (5), 27D",
     "status": "CONFIRMED",
   },
+  "PAYMENT_ALLOCATION_ORDER": [
+    "LEVY",
+    "INTEREST",
+    "RECOVERY_COSTS",
+  ],
   "PENDING_CHANGES": [
     {
       "commencedOn": null,
@@ -6835,7 +7030,13 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
       "termination resolution",
     ],
   },
-  "DECISIONS": [],
+  "DECISIONS": [
+    {
+      "decidedBy": "Matthew Wrigley",
+      "decidedOn": "2026-10-28",
+      "decision": "Apply a payment to contributions first, then interest, then recovery costs, as NSW (PAYMENT_ALLOCATION_ORDER). A StrataVerze choice: the notes record no order.",
+    },
+  ],
   "DESIGNATED_STATUS": {
     "held": "DERIVED",
     "help": "Worked out from the number of lots and, below 10 lots, the scheme type and the replacement cost. A designated strata company must have a reserve fund and a 10-year plan.",
@@ -7004,6 +7205,8 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
     "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
     "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
+    "LATE_CHARGE (stage 2, PR 5): a one-case waiver is refused on a notice that already has interest charged, until a way to reverse a charge exists. 11% a year simple interest from the due date, with no grace period, is from the notes (s 100(4)(b); reg 78). Who in the strata company determines no interest or a lesser rate, generally or in a particular case, is NOT_CONFIRMED, so neither a lower rate (from 0, which is no interest, up to but not including 11%) nor a one-case waiver can be recorded until a pack version records it. How a day's share of the yearly rate is worked out (365 days or another basis) is NOT_CONFIRMED, so no interest is charged at all until that is recorded. A lesser rate in a particular case is not offered: only waiving all of the interest on one notice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+    "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
   ],
   "FUND_CATALOGUE": [
     {
@@ -7259,6 +7462,93 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "source": "Strata Titles Act 1985 (WA) s 100(4)(b), (5); Strata Titles (General) Regulations 2019 (WA) reg 78",
     "status": "CONFIRMED",
   },
+  "LATE_CHARGE": {
+    "annual": {
+      "accrual": {
+        "daysInYear": {
+          "note": "The notes give a rate a year and do not say how a day's share of it is worked out.",
+          "source": "Strata Titles (General) Regulations 2019 (WA) reg 78",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "from": {
+          "note": "Interest runs if a contribution is "not paid when it becomes due and payable".",
+          "source": "Strata Titles Act 1985 (WA) s 100(4)(b)",
+          "status": "CONFIRMED",
+          "value": "DUE_DATE",
+        },
+        "graceMonths": {
+          "note": "None stated. Interest runs if not paid when due and payable.",
+          "source": "Strata Titles Act 1985 (WA) s 100(4)(b)",
+          "status": "CONFIRMED",
+          "value": 0,
+        },
+        "simple": {
+          "source": "Strata Titles Act 1985 (WA) s 100(4)(b); Strata Titles (General) Regulations 2019 (WA) reg 78",
+          "status": "CONFIRMED",
+          "value": true,
+        },
+      },
+      "resolvedRate": {
+        "maxInclusive": false,
+        "maxPercent": {
+          "note": "A lesser rate than 11%, so 11% itself is not a resolved rate.",
+          "source": "Strata Titles Act 1985 (WA) s 100(4)(b); Strata Titles (General) Regulations 2019 (WA) reg 78",
+          "status": "CONFIRMED",
+          "value": 11,
+        },
+        "minPercent": {
+          "note": "No interest (0%) or a lesser rate.",
+          "source": "Strata Titles Act 1985 (WA) s 100(4)(b)",
+          "status": "CONFIRMED",
+          "value": 0,
+        },
+        "resolution": {
+          "note": "The strata company "determines" no interest or a lesser rate. The notes do not record by what resolution or body.",
+          "source": "Strata Titles Act 1985 (WA) s 100(4)(b)",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+      },
+      "source": "Strata Titles Act 1985 (WA) s 100(4)(b), (5); Strata Titles (General) Regulations 2019 (WA) reg 78",
+      "statutoryRatePercent": {
+        "source": "Strata Titles (General) Regulations 2019 (WA) reg 78",
+        "status": "CONFIRMED",
+        "value": 11,
+      },
+      "waiver": {
+        "decidedBy": {
+          "note": "The strata company may determine no interest in a particular case. The notes do not record by what resolution or body.",
+          "source": "Strata Titles Act 1985 (WA) s 100(4)(b)",
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "formWords": {
+          "meeting": "General meeting",
+          "motion": "Motion carried",
+        },
+        "kinds": [
+          "WHOLE",
+        ],
+        "reportedToAgm": false,
+        "source": "Strata Titles Act 1985 (WA) s 100(4)(b)",
+        "status": "CONFIRMED",
+      },
+    },
+    "annualRatePercent": null,
+    "defaultMode": "STATUTORY",
+    "graceMonths": 0,
+    "maxMonthlyRatePercent": null,
+    "method": "ANNUAL_RATE",
+    "modes": [
+      "STATUTORY",
+      "RESOLVED_ANNUAL_RATE",
+    ],
+    "resolutionRequiredFor": [
+      "RESOLVED_ANNUAL_RATE",
+    ],
+    "source": "Strata Titles Act 1985 (WA) s 100(4)(b), (5); Strata Titles (General) Regulations 2019 (WA) reg 78",
+  },
   "LEVY_NOTICES": {
     "source": "Strata Titles Act 1985 (WA) s 100, Sch 1 by-law 10(a); Strata Titles (General) Regulations 2019 (WA) (searched)",
     "status": "CONFIRMED",
@@ -7346,8 +7636,14 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "STA s 12 (scheme documents), Part 12 and STGR Part 15 (termination, out of scope), and survey-strata and leasehold schemes beyond headline level.",
     "The Consumer Protection strata page was read only through a summary and appears to predate the May 2020 reforms (the Real Estate and Business Agents Act point).",
     "Who within the strata company determines no interest or a lower rate (s 100(4)(b) says the company "determines"; the notes do not record by what resolution or body).",
-    "The order a payment is applied to contributions, interest and recovery costs: the notes record none, so the pack has no PAYMENT_ALLOCATION_ORDER.",
+    "The order a payment is applied to contributions, interest and recovery costs: the notes record none. PAYMENT_ALLOCATION_ORDER is a StrataVerze choice (DECISIONS, 28 Oct 2026).",
+    "How a day's share of the 11% yearly rate is worked out (365 days or another basis): the notes do not say.",
     "The list of key documents the scheme developer must hand over at the first general meeting (ss 78, 79; reg 10): the notes confirm the duty but do not record the list.",
+  ],
+  "PAYMENT_ALLOCATION_ORDER": [
+    "LEVY",
+    "INTEREST",
+    "RECOVERY_COSTS",
   ],
   "PENDING_REVIEW": {
     "billIntroduced": null,

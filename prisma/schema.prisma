@@ -160,10 +160,14 @@ model Scheme {
   interestRate        Decimal?            @db.Decimal(5, 2) @map("interest_rate") // Deprecated: interest follows SSMA s 85 (see interestMode)
   /// The late charge mode, from the building's rule pack (LATE_CHARGE.modes). NSW: STATUTORY (SSMA 2015 s 85:
   /// 10% simple, one month grace) or NO_INTEREST by recorded resolution (s 85(3)). QLD: NONE (no penalty) or
-  /// RESOLVED_RATE (a monthly penalty at the rate a recorded resolution set, Standard Module s 165).
+  /// RESOLVED_RATE (a monthly penalty at the rate a recorded resolution set, Standard Module s 165). VIC, ACT and
+  /// WA: RESOLVED_ANNUAL_RATE (a yearly rate a recorded resolution set, within the pack's range).
   interestMode        String              @default("STATUTORY") @map("interest_mode")
   /// The resolved monthly penalty rate; set exactly when interestMode is RESOLVED_RATE (> 0, <= 100; the pack caps it lower).
   lateChargeMonthlyRatePercent Decimal?   @db.Decimal(5, 2) @map("late_charge_monthly_rate_percent")
+  /// The resolved yearly interest rate; set exactly when interestMode is RESOLVED_ANNUAL_RATE (>= 0, <= 100; the pack's
+  /// range decides), for a VIC, ACT or WA building only (migration 20261123).
+  lateChargeAnnualRatePercent Decimal?    @db.Decimal(5, 2) @map("late_charge_annual_rate_percent")
   interestResolutionMeetingId String?     @map("interest_resolution_meeting_id") @db.Uuid
   interestResolutionMotionId  String?     @map("interest_resolution_motion_id") @db.Uuid
   interestResolutionRecordedBy String?    @map("interest_resolution_recorded_by") @db.Uuid
@@ -246,6 +250,7 @@ model Scheme {
   annualReports               AnnualReport[]
   proceedingsDeadlineReminders ProceedingsDeadlineReminder[]
   selectorValues     SchemeSelectorValue[]
+  lateChargeWaivers           LateChargeWaiver[]
   saleCertificates            SaleCertificate[]
   recordsInspections          RecordsInspection[]
 
@@ -1659,6 +1664,7 @@ model LevyNotice {
   fund               Fund                @relation(fields: [fundId], references: [id])
   financialDocuments FinancialDocument[]
   payments           LevyPayment[]
+  lateChargeWaivers  LateChargeWaiver[]
 
   @@unique([schemeId, noticeNumber])
   @@index([schemeId, status])
@@ -4529,4 +4535,34 @@ model RecordsInspection {
 
   @@index([schemeId, status])
   @@map("records_inspections")
+}
+
+/// A waiver of the late charge on one levy notice in a particular case (VIC, ACT and WA stage 2, PR 5; Victoria
+/// s 29(3), WA s 100(4)(b)), as the pack allows it (LATE_CHARGE.annual.waiver). Migration 20261123.
+model LateChargeWaiver {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schemeId            String    @map("scheme_id") @db.Uuid
+  levyNoticeId        String    @map("levy_notice_id") @db.Uuid
+  kind                String    // WHOLE, AMOUNT, PERIOD
+  amount              Decimal?  @db.Decimal(12, 2) // AMOUNT only: the amount waived (> 0)
+  fromDate            DateTime? @db.Date @map("from_date") // PERIOD only: the first day waived
+  toDate              DateTime? @db.Date @map("to_date") // PERIOD only: the last day waived (included)
+  decidedBy           String    @map("decided_by") // the kind of resolution that decided it: GENERAL_MEETING, ORDINARY, SPECIAL
+  resolutionMeetingId String    @map("resolution_meeting_id") @db.Uuid
+  resolutionMotionId  String    @map("resolution_motion_id") @db.Uuid
+  decidedOn           DateTime  @db.Date @map("decided_on") // the meeting's day
+  reasons             String?   // required by the app where decisions are reported to the AGM (Victoria s 29(4))
+  rulePack            String    @map("rule_pack") @db.VarChar(40)
+  recordedBy          String    @map("recorded_by") @db.Uuid
+  recordedAt          DateTime  @default(now()) @db.Timestamptz @map("recorded_at")
+
+  scheme              Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  levyNotice          LevyNotice @relation(fields: [levyNoticeId], references: [id], onDelete: Cascade)
+
+  // The meeting and motion have foreign keys in the database (NO ACTION), not declared here: no relation to
+  // meetings or agenda items is declared for the other resolution references either (schemes, budgets).
+  @@unique([levyNoticeId, resolutionMotionId, kind])
+  @@index([levyNoticeId])
+  @@index([schemeId])
+  @@map("late_charge_waivers")
 }

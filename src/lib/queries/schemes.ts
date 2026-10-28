@@ -7,7 +7,7 @@ import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { defaultFunds, noLedgerProblem } from "@/lib/jurisdiction/funds";
 import { seedDefaultChartOfAccounts } from "./seed-chart-of-accounts";
 import { db } from "@/prisma/db";
-import { needRule, type StatutoryRules } from "@/config/statutory";
+import { needRule, rulePackFor, type StatutoryRules } from "@/config/statutory";
 import {
   SEPARATE_ENTITLEMENT_FIELDS,
   planFormatChoiceProblem,
@@ -361,6 +361,17 @@ export async function updateScheme(
       ...(locked?.planFormat != null ? { planFormat: null } : {}),
       ...(locked?.servicesOnly != null ? { servicesOnly: null } : {}),
       ...(locked?.replacementCost != null ? { replacementCost: null } : {}),
+      // A resolved yearly rate (VIC, ACT and WA stage 2, PR 5) belongs to the pack the same way, and the database holds
+      // one for those states only: the setting goes back to the new state's default (no charge where it has no pack),
+      // with no resolution. An NSW or Queensland building never holds one, so nothing changes for it.
+      ...(locked?.lateChargeAnnualRatePercent != null
+        ? {
+            lateChargeAnnualRatePercent: null,
+            interestMode: rulePackFor(data.state)?.rules.LATE_CHARGE.defaultMode ?? "NONE",
+            interestResolutionMeetingId: null,
+            interestResolutionMotionId: null,
+          }
+        : {}),
     });
     await tx.orm.public.SchemeSelectorValue.where((v) => v.schemeId.eq(schemeId)).deleteAndCount();
     await tx.orm.public.Lot.where((l) => and(l.schemeId.eq(schemeId), l.occupiable.isNotNull())).updateAndCount({ occupiable: null });

@@ -1,14 +1,18 @@
 import { notFound } from "next/navigation";
-import { lateChargeWords } from "@/lib/jurisdiction/wording";
+import { lateChargeWaiverWords, lateChargeWords } from "@/lib/jurisdiction/wording";
 import { getCurrentProfile } from "@/lib/queries/profiles";
 import { getSchemeById } from "@/lib/queries/schemes";
 import { getOverdueLevyNoticesWithInterest } from "@/lib/queries/interest";
 import { PageHeader } from "@/components/ui/page-header";
 import { InterestClient } from "./interest-client";
 import { InterestSettingForm } from "./interest-setting-form";
+import { LateChargeWaiverForm, type RecordedWaiver } from "./late-charge-waiver-form";
 import { Card } from "@/components/ui/card";
 import { resolutionMeetings } from "@/lib/finance/resolutions";
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { db } from "@/prisma/db";
+import { formatDateIn } from "@/lib/jurisdiction/time-zone";
+import { fromCents } from "@/lib/billing/money";
 import { connection } from "next/server";
 
 export default async function InterestPage({
@@ -39,6 +43,9 @@ export default async function InterestPage({
   const charging = interestData?.charging ?? false;
   // The building's late charge wording (its pack's modes, rate, grace period, citations).
   const words = lateChargeWords(setting.rules.rules, setting, charging);
+  // The one-case waiver, where the building's pack gives one (VIC and WA); NSW and Queensland have none, and the table is not read for them.
+  const waiverWords = lateChargeWaiverWords(setting.rules.rules);
+  const waivers: RecordedWaiver[] = waiverWords ? await recordedWaivers(id, setting.timeZone, words.Term) : [];
 
   return (
     <div className="space-y-6">
@@ -49,12 +56,25 @@ export default async function InterestPage({
           schemeId={id}
           mode={setting.mode}
           monthlyRatePercent={setting.monthlyRatePercent}
+          annualRatePercent={setting.annualRatePercent}
           meetingId={setting.meetingId}
           motionId={setting.motionId}
           meetings={meetings}
           words={words}
         />
       </Card>
+
+      {waiverWords && (
+        <Card>
+          <LateChargeWaiverForm
+            schemeId={id}
+            notices={notices.map((n) => ({ id: n.id, label: `${String(n.noticeNumber)}, lot ${n.lot ? String(n.lot.lotNumber) : "?"}` }))}
+            meetings={meetings}
+            waivers={waivers}
+            words={waiverWords}
+          />
+        </Card>
+      )}
 
       <InterestClient
         schemeId={id}
@@ -77,4 +97,25 @@ export default async function InterestPage({
       />
     </div>
   );
+}
+
+/** The waivers recorded for the building's notices, as the page lists them. */
+async function recordedWaivers(schemeId: string, timeZone: string, Term: string): Promise<RecordedWaiver[]> {
+  const rows = await db.orm.public.LateChargeWaiver.where((w) => w.schemeId.eq(schemeId)).limit(500).all();
+  if (rows.length === 0) return [];
+  const notices = await db.orm.public.LevyNotice.where((n) => n.id.in(rows.map((r) => r.levyNoticeId))).limit(500).all();
+  const numberOf = new Map(notices.map((n) => [n.id, String(n.noticeNumber)]));
+  const day = (v: unknown) => formatDateIn(timeZone, String(v).slice(0, 10));
+  return rows.map((r) => ({
+    id: r.id,
+    notice: numberOf.get(r.levyNoticeId) ?? "Notice",
+    what:
+      r.kind === "WHOLE"
+        ? `${Term} waived in full`
+        : r.kind === "AMOUNT"
+          ? `$${fromCents(Math.round(Number(r.amount) * 100)).toFixed(2)} of ${Term.toLowerCase()} waived`
+          : `${Term} waived from ${day(r.fromDate)} to ${day(r.toDate)}`,
+    decidedOn: day(r.decidedOn),
+    reasons: r.reasons ?? null,
+  }));
 }

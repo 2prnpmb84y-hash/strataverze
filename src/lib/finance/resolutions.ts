@@ -3,7 +3,7 @@
  * decision can rely on, and checking a chosen meeting and motion.
  */
 import { db } from "@/prisma/db";
-import { formatDateIn, isTimeZone } from "@/lib/jurisdiction/time-zone";
+import { formatDateIn, isTimeZone, storedDayIn } from "@/lib/jurisdiction/time-zone";
 import { schemeTimeZone } from "@/lib/jurisdiction/scheme-time";
 import { and } from "@prisma/orm-postgres/orm-client";
 
@@ -59,4 +59,34 @@ export async function generalMeetingResolutionProblem(
   if (!motion || motion.meetingId !== meeting.id) return "Choose a motion from that meeting.";
   if (!carried(motion)) return "That motion was not carried, so it cannot be relied on.";
   return null;
+}
+
+/** The kind of resolution a decision needs (a pack's `LateChargeResolution`): any carried motion at a general meeting, or one recorded as a category. */
+export interface ResolutionKind {
+  kind: "GENERAL_MEETING" | "ORDINARY" | "SPECIAL";
+  /** "special resolution" */
+  words: string;
+}
+
+/**
+ * Null when the motion was carried at a general meeting of the scheme and,
+ * for an ORDINARY or SPECIAL kind, is recorded as that category
+ * (`agenda_items.resolution_category`); otherwise why not (VIC, ACT and WA
+ * stage 2, PR 5). A motion with no category recorded is refused for a kind
+ * that names one, rather than taken to be it.
+ */
+export async function resolutionOfKindProblem(schemeId: string, meetingId: string | null, motionId: string | null, kind: ResolutionKind): Promise<string | null> {
+  const problem = await generalMeetingResolutionProblem(schemeId, meetingId, motionId);
+  if (problem || kind.kind === "GENERAL_MEETING") return problem;
+  const motion = await db.orm.public.AgendaItem.where((a) => a.id.eq(motionId!)).first();
+  if (motion?.resolutionCategory !== kind.kind) return `That motion is not recorded as a ${kind.words}. Choose a motion carried as a ${kind.words}.`;
+  return null;
+}
+
+/** The day a meeting was held, in its own time zone (the building's if none is recorded), or null if it is not found. */
+export async function meetingDay(schemeId: string, meetingId: string): Promise<string | null> {
+  const meeting = await db.orm.public.Meeting.where((m) => m.id.eq(meetingId)).first();
+  if (!meeting || meeting.schemeId !== schemeId) return null;
+  const tz = isTimeZone(meeting.timezone) ? String(meeting.timezone) : await schemeTimeZone(schemeId);
+  return storedDayIn(tz, meeting.scheduledAt) || null;
 }

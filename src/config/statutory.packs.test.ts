@@ -191,14 +191,16 @@ describe("Australian Capital Territory pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.ACT;
   const act = pack.rules;
 
-  it("is a draft for review, not signed off, with no decisions yet", () => {
+  it("is a draft for review, not signed off, with only the payment order decided", () => {
     expect(pack.code).toBe("AU-ACT");
     expect(pack.state).toBe("ACT");
-    expect(pack.version).toBe("2026.10.4");
+    expect(pack.version).toBe("2026.10.5");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(pack.reviewer).toBe("Matthew Wrigley");
-    expect(act.DECISIONS).toEqual([]);
+    expect(act.DECISIONS).toHaveLength(1);
+    expect(act.DECISIONS[0]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+    expect(act.DECISIONS[0].decision).toContain("PAYMENT_ALLOCATION_ORDER");
   });
 
   it("holds exactly one entitlement schedule on each lot: unit entitlement", () => {
@@ -298,7 +300,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.5");
+    expect(pack.version).toBe("2026.10.6");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -313,12 +315,17 @@ describe("Victorian pack (pending)", () => {
     expect(packs.map(([code]) => code)).toContain("AU-VIC");
   });
 
-  it("has proposed decisions only, none decided", () => {
-    expect(vic.DECISIONS.length).toBeGreaterThan(0);
+  it("has proposed decisions, none decided but the payment order (Matthew Wrigley, 28 Oct 2026)", () => {
+    expect(vic.DECISIONS.length).toBeGreaterThan(1);
     for (const d of vic.DECISIONS) {
+      if (d.decision.includes("PAYMENT_ALLOCATION_ORDER")) {
+        expect(d).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
+        continue;
+      }
       expect(d.decidedBy).toBeNull();
       expect(d.decidedOn).toBeNull();
     }
+    expect(vic.DECISIONS.filter((d) => d.decidedBy != null)).toHaveLength(1);
   });
 
   it("switches every NSW workflow off, with the same keys", () => {
@@ -528,11 +535,12 @@ describe("Western Australia pack (pending)", () => {
   const pack = PENDING_RULE_PACKS.WA;
   const wa = pack.rules;
 
-  it("is a draft, not yet signed off, with no decisions", () => {
-    expect(pack.version).toBe("2026.10.3");
+  it("is a draft, not yet signed off, with only the payment order decided", () => {
+    expect(pack.version).toBe("2026.10.4");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
-    expect(wa.DECISIONS).toHaveLength(0);
+    expect(wa.DECISIONS).toHaveLength(1);
+    expect(wa.DECISIONS[0]).toMatchObject({ decidedBy: "Matthew Wrigley", decidedOn: "2026-10-28" });
     expect(wa.NOT_CONFIRMED.length).toBeGreaterThan(0);
     expect(wa.FOR_REVIEW.length).toBeGreaterThan(0);
   });

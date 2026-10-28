@@ -6,7 +6,16 @@ import { db } from "@/prisma/db";
 import { livePayments } from "./levy-reversal";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
-import { lateCharge, lateChargeApplies, lateChargeFirst, lateChargePaidOnNotice, type InterestResult, type InterestSettingMode } from "./statutory-interest";
+import {
+  lateCharge,
+  lateChargeApplies,
+  lateChargeFirst,
+  lateChargePaidOnNotice,
+  type InterestResult,
+  type InterestSettingMode,
+  type LateChargeWaiver,
+  type LateChargeWaiverKind,
+} from "./statutory-interest";
 import { rulesForScheme, rulesForState, SchemeNotFoundError, type SchemeRules } from "@/lib/jurisdiction/scheme-rules";
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
@@ -18,6 +27,8 @@ export interface SchemeInterestSetting {
   mode: InterestSettingMode;
   /** The monthly rate the resolution set (RESOLVED_RATE only), else null. */
   monthlyRatePercent: number | null;
+  /** The yearly rate the resolution set (RESOLVED_ANNUAL_RATE only; VIC, ACT and WA), else null. */
+  annualRatePercent: number | null;
   meetingId: string | null;
   motionId: string | null;
   /** The building's rule pack, which sets the late charge rule (`rules.LATE_CHARGE`). */
@@ -31,9 +42,11 @@ export async function getSchemeInterestSetting(schemeId: string): Promise<Scheme
   const s = await db.orm.public.Scheme.where((x) => x.id.eq(schemeId)).first();
   if (!s) throw new SchemeNotFoundError();
   const rate = s.lateChargeMonthlyRatePercent == null ? null : Number(String(s.lateChargeMonthlyRatePercent));
+  const annual = s.lateChargeAnnualRatePercent == null ? null : Number(String(s.lateChargeAnnualRatePercent));
   return {
     mode: (s.interestMode as InterestSettingMode) ?? "STATUTORY",
     monthlyRatePercent: rate != null && Number.isFinite(rate) ? rate : null,
+    annualRatePercent: annual != null && Number.isFinite(annual) ? annual : null,
     meetingId: s.interestResolutionMeetingId ?? null,
     motionId: s.interestResolutionMotionId ?? null,
     rules: rulesForState(s.state),
@@ -89,7 +102,30 @@ export async function statutoryInterestForScheme(schemeId: string, asAtDay?: str
   const ids = notices.map((n) => n.id);
   // A reversed payment (dishonoured, wrong lot) never paid the notice, so interest runs as if it had not been made.
   const payments = livePayments(await db.orm.public.LevyPayment.where((p) => p.levyNoticeId.in(ids)).limit(50000).all());
-  return notices.map((n) => noticeLateCharge(n, payments, rule, setting, asAt));
+  // Waivers are read only where the pack gives one (VIC, ACT and WA); NSW and Queensland never read the table.
+  const waivers = rule.annual?.waiver ? await lateChargeWaiversFor(ids) : [];
+  return notices.map((n) => noticeLateCharge(n, payments, rule, setting, asAt, waivers));
+}
+
+/** A waiver row, as the engine reads it. */
+type LateChargeWaiverRow = { levyNoticeId: string; kind: string; amount?: unknown; fromDate?: unknown; toDate?: unknown };
+
+/** The waivers recorded for these notices (late_charge_waivers). */
+export async function lateChargeWaiversFor(noticeIds: readonly string[]): Promise<LateChargeWaiverRow[]> {
+  if (noticeIds.length === 0) return [];
+  return db.orm.public.LateChargeWaiver.where((w) => w.levyNoticeId.in([...noticeIds])).limit(50000).all();
+}
+
+/** One notice's waivers, for the engine. */
+function noticeWaivers(noticeId: string, rows: readonly LateChargeWaiverRow[]): LateChargeWaiver[] {
+  return rows
+    .filter((w) => w.levyNoticeId === noticeId)
+    .map((w) => ({
+      kind: w.kind as LateChargeWaiverKind,
+      amountCents: w.amount == null ? null : toCents(String(w.amount)),
+      fromDate: w.fromDate == null ? null : isoDay(w.fromDate),
+      toDate: w.toDate == null ? null : isoDay(w.toDate),
+    }));
 }
 
 /** The notice fields the late charge is worked out from. */
@@ -129,16 +165,22 @@ function lateChargeWorking(
   rule: SchemeRules["rules"]["LATE_CHARGE"],
   setting: SchemeInterestSetting,
   asAt: string,
+  waiverRows: readonly LateChargeWaiverRow[] = [],
 ) {
   const base = engineInput(n, payments);
-  const result = lateCharge({ ...base, asAt }, rule, setting);
+  // Read by an annual-rate rule only (VIC, ACT and WA); NSW and Queensland ignore it.
+  const context = { order: setting.rules.rules.PAYMENT_ALLOCATION_ORDER, waivers: noticeWaivers(n.id, waiverRows) };
+  const result = lateCharge({ ...base, asAt }, rule, setting, context);
   // A notice brought across at takeover: the old system charged the
   // interest up to takeover (kept in migratedInterestCharged), so only
   // interest from the takeover day on is owed here. It is compared with
   // the interest charged here, plus the statutory interest to takeover,
   // which the old system's charge stands in for (financials review B8).
   const takeover = n.migrationBatchId ? isoDay(n.issuedAt) || isoDay(n.dueDate) : "";
-  const toTakeoverCents = takeover ? lateCharge({ ...base, asAt: takeover }, rule, setting).interestCents : 0;
+  // An amount waived comes off what is owed here once, so it is left out of the figure to takeover (otherwise it would
+  // come off both and cancel out).
+  const toTakeoverContext = { ...context, waivers: context.waivers.filter((w) => w.kind !== "AMOUNT") };
+  const toTakeoverCents = takeover ? lateCharge({ ...base, asAt: takeover }, rule, setting, toTakeoverContext).interestCents : 0;
   const chargedHereCents = Math.max(0, toCents(String(n.interestCharged ?? 0)) - toCents(String(n.migratedInterestCharged ?? 0)));
   return { result, toTakeoverCents, chargedHereCents, additionalCents: Math.max(0, result.interestCents - toTakeoverCents - chargedHereCents) };
 }
@@ -153,8 +195,10 @@ export function noticeLateCharge(
   rule: SchemeRules["rules"]["LATE_CHARGE"],
   setting: SchemeInterestSetting,
   asAt: string,
+  /** The waivers recorded for the notices (VIC, ACT and WA); may hold other notices' too. */
+  waivers: readonly LateChargeWaiverRow[] = [],
 ): NoticeInterest {
-  const w = lateChargeWorking(n, payments, rule, setting, asAt);
+  const w = lateChargeWorking(n, payments, rule, setting, asAt, waivers);
   const previouslyChargedCents = w.chargedHereCents;
   return {
     ...w.result,

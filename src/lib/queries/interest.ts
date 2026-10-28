@@ -15,8 +15,8 @@ import { addNumberedJournal, numberedTransaction } from "./journal-numbering";
 import { logActivity } from "./activity-log";
 import { fromCents, toCents } from "@/lib/billing/money";
 import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { getSchemeInterestSetting, lateChargePosition, statutoryInterestForScheme, type SchemeInterestSetting } from "@/lib/finance/interest-setting";
-import { effectiveLateChargeMode, lateChargeApplies, lateChargeFirst } from "@/lib/finance/statutory-interest";
+import { getSchemeInterestSetting, lateChargePosition, noticeLateCharge, statutoryInterestForScheme, type SchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { annualLateChargeMissing, annualLateChargeRate, effectiveLateChargeMode, lateChargeApplies, lateChargeFirst } from "@/lib/finance/statutory-interest";
 import { livePayments } from "@/lib/finance/levy-reversal";
 import { capitalise } from "@/lib/jurisdiction/wording";
 
@@ -79,13 +79,16 @@ export async function getOverdueLevyNoticesWithInterest(schemeId: string) {
     });
 
     const rule = setting.rules.rules.LATE_CHARGE;
-    const charging = lateChargeApplies(rule, setting);
+    const order = setting.rules.rules.PAYMENT_ALLOCATION_ORDER;
+    const charging = lateChargeApplies(rule, setting, order);
     return {
       notices: noticesWithInterest,
-      /** The fixed annual rate while it is charged (NSW), else 0. */
-      annualRate: charging ? (rule.annualRatePercent ?? 0) : 0,
+      /** The annual rate while it is charged (NSW's fixed rate; the statutory or resolved rate for VIC, ACT and WA), else 0. */
+      annualRate: charging ? (rule.annual ? (annualLateChargeRate(rule, setting, order) ?? 0) : (rule.annualRatePercent ?? 0)) : 0,
       /** The resolved monthly rate while it is charged (Queensland), else 0. */
-      monthlyRate: charging && rule.annualRatePercent == null ? (setting.monthlyRatePercent ?? 0) : 0,
+      monthlyRate: charging && rule.annualRatePercent == null && !rule.annual ? (setting.monthlyRatePercent ?? 0) : 0,
+      /** An annual-rate rule only (VIC, ACT and WA): the rule values not confirmed, so nothing is charged. */
+      ...(rule.annual ? { missing: annualLateChargeMissing(rule, setting, order) } : {}),
       /** Whether the building's setting charges anything. */
       charging,
       mode: setting.mode,
@@ -193,6 +196,19 @@ export async function chargeInterest(data: {
     if (!locked || String(locked.interestCharged ?? 0) !== String(notice.interestCharged ?? 0)) {
       if (data.alreadyVerified) return null;
       throw new Error(`${LateCharge} was charged on notice ${String(notice.noticeNumber)} at the same time. Check the notice and try again.`);
+    }
+    // A pack with a one-case waiver (VIC, ACT and WA stage 2, PR 5): worked out again under the lock, with the
+    // notice's waivers as they stand, so a waiver recorded while this was worked out is respected. NSW and
+    // Queensland have none and go on as before.
+    if (rules.LATE_CHARGE.annual?.waiver) {
+      const setting = await getSchemeInterestSetting(schemeId);
+      const payments = livePayments(await tx.orm.public.LevyPayment.where((p) => p.levyNoticeId.eq(noticeId)).limit(5000).all());
+      const waivers = await tx.orm.public.LateChargeWaiver.where((w) => w.levyNoticeId.eq(noticeId)).limit(500).all();
+      const now = noticeLateCharge(locked, payments, rules.LATE_CHARGE, setting, today, waivers);
+      if (Math.round(interestAmount * 100) > now.additionalCents) {
+        if (data.alreadyVerified) return null;
+        throw new Error(`No more than $${fromCents(now.additionalCents).toFixed(2)} of ${t.lateCharge} is owed on this notice to date.`);
+      }
     }
     // Worked out from the notice as it stands under the lock, so a receipt
     // committed while this waited is kept (owed = levy + interest - paid).
@@ -461,6 +477,9 @@ export async function chargeInterestBatch(data: {
   }
   const { notices, effectiveMode, charging, terms: t } = result;
 
+  if ("missing" in result && result.missing && result.missing.length > 0) {
+    throw new Error(`No ${t.lateCharge} can be charged yet, because this building's rules do not yet confirm how it is worked out.`);
+  }
   if (effectiveMode === "NO_INTEREST") {
     throw new Error(
       `The ${t.ownersCorporation} has resolved that contributions bear no ${t.lateCharge}, so none can be charged.`,
