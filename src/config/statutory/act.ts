@@ -54,7 +54,10 @@
  * 28 Oct 2026 (contribution first, as NSW): the notes record no order.
  * NOTICE_RULES is given from CONTRIBUTION_NOTICES (stage 2, PR 6a), with
  * checked values; its lead time and least notice are StrataVerze choices
- * Matthew Wrigley made on 28 Oct 2026 (DECISIONS).
+ * Matthew Wrigley made on 28 Oct 2026 (DECISIONS). From PR 6b notices state
+ * each unit's contribution, the fund and its totals, and the unit's proportion
+ * by unit entitlement; they are still refused for the instalment dates, any
+ * discount and the interest (FOR_REVIEW).
  */
 
 import type { MeetingRuleSet } from "@/lib/meetings/rules";
@@ -675,11 +678,13 @@ const NOTICE_CONTENTS: readonly NoticeContentRequirement[] = [
  * each instalment (a StrataVerze reading, FOR LEGAL REVIEW against
  * s 79(2)(f)); the sinking fund notice is given once a year, within 1 month
  * after the AGM (s 90(1)), which StrataVerze cannot give yet, so sinking fund
- * notices are refused. No notice can be issued yet: StrataVerze notices do
- * not state the contribution for each other unit, the fund totals, the
- * proportion and method, the instalment dates, any discount or the interest
- * (FOR_REVIEW). No hardship statement is required (HARDSHIP), and no approved
- * form is recorded (Form 1, AF2012-112, was not read: FOR_REVIEW).
+ * notices are refused. Since PR 6b (28 Oct 2026) a notice states the
+ * contribution for each unit (unit numbers and amounts only), the fund with
+ * its totals, and the unit's proportion by unit entitlement. No notice can be
+ * issued yet: StrataVerze notices do not state the instalment dates, any
+ * discount or the interest (FOR_REVIEW). No hardship statement is required
+ * (HARDSHIP), and no approved form is recorded (Form 1, AF2012-112, was not
+ * read: FOR_REVIEW).
  *
  * The fields outside `checked` hold the safest values for a reader that knows
  * only them: the 14-day floor and the 28-day lead, the most the law allows.
@@ -1959,8 +1964,12 @@ export const FOR_REVIEW = [
   "NOTICE_RULES (stage 2, PR 6a): each notice goes out 28 days before it falls due and never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS); the 28 days is the most the law allows (UTMA ss 79(2)(e), 90(2)(e)). A due date more than 28 days after the notice is refused, and a special contribution due further away is planned 28 days before it falls due. Recorded here so the decision is visible at sign-off.",
   "FOR LEGAL REVIEW: whether a general fund contribution payable by instalments is given one notice for each instalment as it falls due (StrataVerze's reading, NOTICE_RULES.checked.noticeMode) or one notice that states every instalment date (UTMA s 79(2)(f)).",
   "Sinking fund notices are refused until StrataVerze can give the yearly notice within 1 month after an AGM (UTMA s 90(1)); notices are given one instalment at a time only.",
-  "Every ACT contribution notice is refused until StrataVerze notices state what UTMA ss 79(2) and 90(2) require beyond the usual items: the contribution for each other unit, the fund or funds with the split and totals (the year's sinking fund total), the unit's proportion and how it is worked out, the instalment dates, any discount for early payment and the interest for late payment. A discount needs a record of the s 93 ordinary resolution, which StrataVerze does not hold yet. The interest is refused while it cannot be stated: its accrual values are NOT_CONFIRMED (LATE_CHARGE), and notices cannot state an annual-rate interest yet. The every-unit contents on the PDF and email are a later PR (6b).",
-  "The unit's proportion would be stated as its share by unit entitlement only (UTMA ss 78(2)(a), 89(2)(a)): a method set by special resolution (s 78(2)(b)) is not held yet, so a building with one must not have it stated as unit entitlement. Confirm before the contents are added.",
+  "Every ACT contribution notice is still refused until StrataVerze notices state the instalment dates, any discount for early payment and the interest for late payment (UTMA ss 79(2)(f), (h), (i), 90(2)(f), (h), (i)). A discount needs a record of the s 93 ordinary resolution, which StrataVerze does not hold yet. The interest is refused while it cannot be stated: its accrual values are NOT_CONFIRMED (LATE_CHARGE), and notices cannot state an annual-rate interest yet. Since stage 2 PR 6b (28 Oct 2026) the PDF and the email state the contribution for each unit, the fund with its totals and the unit's proportion (ss 79(2)(b) to (d), 90(2)(b) to (d)).",
+  "The instalment dates (UTMA ss 79(2)(f), 90(2)(f)) are not stated: StrataVerze gives one notice for each instalment, and the later instalments' due dates are not fixed when a notice goes out (a notice that goes out late states a later date), so a notice cannot truthfully list the year's instalment dates. Whether each per-instalment notice must list them depends on the FOR LEGAL REVIEW point on the notice mode above.",
+  "The contribution for each unit (UTMA ss 79(2)(b), 90(2)(b)) is shown by unit number and amount only, never with the owner's name, for every unit of the building other than common property, from the notices of the same schedule and period (their amounts are fixed when they are created). The notice's own unit is marked and included in the list and its total. A unit with no notice for the period is shown as nil. Notices brought across at takeover never list other units (they hold balances owed, not contributions). Confirm these choices.",
+  "The fund and totals (UTMA ss 79(2)(c), 90(2)(c)): each StrataVerze notice is for one fund, stated as taking all of the contribution, with the total for all units for the period and the schedule's total (the year's total for a budget schedule, the special contribution's total otherwise). StrataVerze holds one fund for each schedule, so a contribution split between the administrative fund and a special purpose fund would be separate schedules; a special purpose fund has no notice mode, so its notices are refused (NOTICE_RULES.checked.noticeMode). A sinking fund notice for a special contribution does not state the year's total, so it is refused for it. Where the budget schedule for the fund and year was revised (an earlier schedule superseded), no schedule's total is the year's, so the total is withheld and the notice refused until StrataVerze can state the year's total across both. Confirm.",
+  "The unit's proportion is stated as its unit entitlement over the schedule's total unit entitlement, with the percentage, and how it is worked out as by unit entitlement only (UTMA ss 78(2)(a), 89(2)(a)). A method set by special resolution (s 78(2)(b)) is not recorded, so StrataVerze cannot tell whether a building has one: such a building's notices would state the proportion wrongly as unit entitlement. A record of the method, or a check that none was set, is needed before go-live. The proportion is stated only while the building's unit entitlements add up to the schedule's total and every amount on the period's notices is exactly each unit's share by its current unit entitlement (worked out as the notices were planned), so a notice is refused once the entitlements change after planning. Confirm.",
+  "Each unit's contribution, the fund total and the proportion are read from the data as it is when a notice is checked, emailed or its PDF downloaded, and checked again each time: an issued notice that can no longer state them all is not emailed (the building's activity records LEVY_NOTICES_NOT_EMAILED with the reason) and its PDF is refused with the reason, rather than given without them. A PDF is rebuilt from the data on each download; keeping the content as it was on the day of issue needs a database change and is not done yet. Confirm.",
   "Form 1 (AF2012-112) was not read, so whether ACT contribution notices must be in an approved form is not recorded (NOTICE_RULES.checked.form is null). Check it before any ACT notice is issued.",
   "A notice that goes out late states a later due date, 14 days after it goes out and within the 28 days: StrataVerze's reading of UTMA ss 80, 91 (the notes say only that a contribution is payable on the date stated in the notice), recorded as STRATAVERZE, not CONFIRMED. Confirm.",
   "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS and RESOLUTIONS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unopposed and Unanimous Resolution); a general meeting and the motions list offer ordinary and special resolutions, and an executive committee ordinary resolutions only; unopposed and unanimous resolutions are not offered on an agenda (their 21 days' notice, sch 3 s 3.6(2), is not checked); pre-meeting electronic voting (sch 3 s 3.31A) is not offered; common property rows are not counted as units; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",

@@ -8,6 +8,7 @@ import type { HardshipInformation } from "@/lib/finance/levy-notice-content";
 import { capitalise, lateChargeSentence, planLine, type NoticeLateChargeRule, type Terms } from "@/lib/jurisdiction/wording";
 import type { StatutoryPack } from "@/lib/finance/statutory-pack";
 import type { CommitteeReportingPack } from "@/lib/queries/reports";
+import { everyLotSections, type EveryLotContent } from "@/lib/levies/every-lot";
 
 export const aud = (cents: number) =>
   new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(cents / 100);
@@ -49,6 +50,31 @@ export interface LevyNoticeDocument {
    * Absent for every other notice, which then reads as it always has.
    */
   insurance?: { cents: number; basis: string | null } | null;
+  /**
+   * Each unit's contribution for the same schedule and period, the fund and
+   * its totals, and the unit's proportion (the ACT, stage 2 PR 6b; see
+   * src/lib/levies/every-lot.ts). Present only where the building's pack
+   * requires them, and null where they cannot be stated. Absent for every
+   * other notice, which then reads as it always has.
+   */
+  everyLot?: EveryLotContent | null;
+}
+
+/** The every-lot content as PDF blocks: the table of units (it runs over pages), the fund and totals, the proportion. */
+function everyLotBlocks(e: EveryLotContent): PdfBlock[] {
+  const s = everyLotSections(e);
+  return [
+    { kind: "heading", text: s.contributions.title, level: 2 },
+    {
+      kind: "table",
+      columns: [{ header: s.contributions.columns[0], width: 3 }, { header: s.contributions.columns[1], width: 1.5, align: "right" }],
+      rows: s.contributions.rows,
+      totalRow: s.contributions.total,
+    },
+    { kind: "heading", text: s.funds.title, level: 2 },
+    { kind: "keyValues", rows: s.funds.rows },
+    ...(s.proportion ? ([{ kind: "heading", text: s.proportion.title, level: 2 }, { kind: "keyValues", rows: s.proportion.rows }] as PdfBlock[]) : []),
+  ];
 }
 
 export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
@@ -86,6 +112,7 @@ export function levyNoticeBlocks(d: LevyNoticeDocument): PdfBlock[] {
       kind: "text",
       text: `You can check your ${t.levy} ledger at any time in the StrataVerze owner portal (${d.ledgerUrl}). For questions contact ${d.contact.name} (${d.contact.emailOrPhone}).`,
     },
+    ...(d.everyLot ? everyLotBlocks(d.everyLot) : []),
     ...(d.hardship
       ? ([
           {

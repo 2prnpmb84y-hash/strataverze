@@ -17,6 +17,10 @@ import { rulesForState, SchemeNotFoundError } from "@/lib/jurisdiction/scheme-ru
 import { generateLevyNoticePdf } from "@/lib/pdf/generate";
 import { lateChargeSentence, noticeLateCharge } from "@/lib/jurisdiction/wording";
 import { lateChargeApplies } from "@/lib/finance/statutory-interest";
+import { logActivity } from "@/lib/queries/activity-log";
+import { toIsoDay } from "./notice-plan";
+import { everyLotMissing, everyLotRequired, everyLotStatus, type EveryLotBuild } from "./every-lot";
+import { loadEveryLot } from "./every-lot-data";
 
 const APP_URL = siteUrl();
 
@@ -29,6 +33,12 @@ export interface PlannedNotice {
   noticeNumber: string;
   dueDate: string;
   amountCents: number;
+  /**
+   * The first day of the period the notice is for (YYYY-MM-DD), so the
+   * notice can state each other unit's contribution for the same period
+   * (the ACT, stage 2 PR 6b). Without it, a pack that requires that is refused.
+   */
+  periodStart?: string;
 }
 
 export async function noticeContext(schemeId: string, fundId: string, issuerId: string) {
@@ -50,6 +60,12 @@ export async function checkPlannedNotices(input: {
   issuerId: string;
   noticeDate: string;
   isUrgentSpecialLevy?: boolean;
+  /**
+   * The schedule the notices are raised under, so a pack that requires each
+   * other unit's contribution (the ACT) can have it stated. Without it (or a
+   * notice's period) that content is not stated, and such a pack refuses.
+   */
+  levyScheduleId?: string;
   notices: PlannedNotice[];
 }): Promise<MissingItem[]> {
   const { scheme, fund, issuer, account } = await noticeContext(input.schemeId, input.fundId, input.issuerId);
@@ -64,16 +80,22 @@ export async function checkPlannedNotices(input: {
   const lateCharge = rules.LATE_CHARGE.annual ? null : noticeLateCharge(rules.LATE_CHARGE, setting);
   const statesLateCharge = lateCharge != null && lateChargeSentence(lateCharge, rules.TERMINOLOGY) != null;
   // What a pack's checked notice rules may require beyond the usual items (VIC, ACT and WA stage 2, PR 6a).
-  // The notice states the late charge where it can (never an annual-rate one yet), and none of the others
-  // (each other lot's contribution, the fund totals, the proportion and method, the instalment dates, a
-  // discount, the obligation to pay within a number of days, the dispute process), so a pack that requires
-  // one refuses the notice.
+  // The notice states the late charge where it can (never an annual-rate one yet). Where the pack requires
+  // them (the ACT, PR 6b), it states each other unit's contribution, the fund and its totals, and the unit's
+  // proportion and how it is worked out, each only where the data for that notice is there (see
+  // loadEveryLot). It states none of the others (the instalment dates, a discount, the obligation to pay
+  // within a number of days, the dispute process), so a pack that requires one refuses the notice.
   const states = { LATE_CHARGE_STATEMENT: statesLateCharge };
   const ledgerFund = ledgerFundOf(fund?.fundType ?? null);
+  const everyLot = everyLotRequired(rule)
+    ? await loadEveryLot({ schemeId: input.schemeId, rules, fund: fund ? { id: fund.id, name: fund.name ?? null } : null, levyScheduleId: input.levyScheduleId, notices: input.notices })
+    : null;
   const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
   const rollNames = await rollOwnerNames(input.notices.map((n) => n.lotId));
   const seen = new Map<string, MissingItem>();
-  for (const n of input.notices) {
+  for (const [i, n] of input.notices.entries()) {
+    // What this notice can state of each unit's contribution, the fund total and the proportion, and why not.
+    const status = everyLot ? everyLotStatus(everyLot[i], ledgerFund) : null;
     const items = validateLevyNoticeContent({
       scheme: { name: scheme?.name ?? null, planNumber: scheme?.planNumber ?? null },
       lotNumber: n.lotNumber,
@@ -100,7 +122,8 @@ export async function checkPlannedNotices(input: {
       includesHardshipStatement: rule.hardship != null,
       includesLedgerAccess: true,
       ledgerFund,
-      states,
+      states: status ? { ...states, ...status.states } : states,
+      ...(status ? { notStated: status.reasons } : {}),
     }, rule, rules.TERMINOLOGY, noticeFundWords(rules));
     for (const item of items) {
       // Each point a pack's checked notice rules refuse on is listed (they share one code).
@@ -172,14 +195,33 @@ export async function sendIssuedNotices(input: {
     if (!scheme || !fund || !account || !issuer) return 0;
     const owners = await ownerNames(input.notices.map((n) => n.ownerId).filter((x): x is string => !!x));
     const setting = await getSchemeInterestSetting(input.schemeId);
+    // Where the pack requires each other unit's contribution (the ACT), the email states it too, since it
+    // is sent without the PDF when the PDF fails. The content is checked again from the data as it is now:
+    // a notice that cannot state every required part is not emailed, and the building's activity says why.
+    const rule = setting.rules.rules.NOTICE_RULES;
+    const everyLot = everyLotRequired(rule) ? await everyLotByNotice(input.schemeId, setting.rules.rules, fund, input.notices) : null;
+    const ledgerFund = ledgerFundOf(fund.fundType ?? null);
+    const notEmailed = new Map<string, { scheduleId: string | null; reason: string; notices: string[] }>();
     for (const n of input.notices) {
       const owner = n.ownerId ? owners.get(n.ownerId) : null;
       if (!owner?.email) continue;
+      const found = everyLot && n.noticeId ? everyLot.get(n.noticeId) : undefined;
+      const lotBuild: EveryLotBuild | null = everyLot ? (found?.build ?? { content: null, reason: "the notice was not found" }) : null;
+      const missing = lotBuild ? everyLotMissing(rule, lotBuild, ledgerFund) : null;
+      if (missing) {
+        const key = `${found?.scheduleId ?? ""}|${missing}`;
+        const entry = notEmailed.get(key) ?? { scheduleId: found?.scheduleId ?? null, reason: missing, notices: [] };
+        entry.notices.push(n.noticeNumber);
+        notEmailed.set(key, entry);
+        continue;
+      }
+      const lotContent = lotBuild?.content ?? null;
       // Attach the notice as a PDF (stored as a financial document). The email goes without it if that fails.
       let attachments: { filename: string; content: Buffer; contentType: string }[] | undefined;
       if (n.noticeId) {
         try {
-          const pdf = await generateLevyNoticePdf(n.noticeId, input.issuerId);
+          // The content just checked goes into the PDF, so it is not read again for each notice.
+          const pdf = lotContent ? await generateLevyNoticePdf(n.noticeId, input.issuerId, { everyLot: lotContent }) : await generateLevyNoticePdf(n.noticeId, input.issuerId);
           if (pdf) attachments = [{ filename: pdf.fileName, content: Buffer.from(pdf.bytes), contentType: "application/pdf" }];
         } catch (err) {
           logError("[levy-notices] Could not attach the PDF:", err);
@@ -206,6 +248,7 @@ export async function sendIssuedNotices(input: {
           ...noticeLateCharge(setting.rules.rules.LATE_CHARGE, setting),
           hardship: setting.rules.rules.NOTICE_RULES.hardship?.information ?? null,
           terms: setting.rules.rules.TERMINOLOGY,
+          ...(lotContent ? { everyLot: lotContent } : {}),
         }),
         attachments,
       });
@@ -214,10 +257,39 @@ export async function sendIssuedNotices(input: {
         if (n.noticeId && input.onSent) await input.onSent(n.noticeId).catch((err) => logError("[levy-notices] Could not mark a notice emailed:", err));
       }
     }
+    for (const e of notEmailed.values()) {
+      await logActivity({
+        schemeId: input.schemeId,
+        actorId: input.issuerId,
+        action: "LEVY_NOTICES_NOT_EMAILED",
+        entityType: e.scheduleId ? "LevySchedule" : "Scheme",
+        entityId: e.scheduleId ?? input.schemeId,
+        metadata: { count: e.notices.length, notices: e.notices, reason: e.reason },
+      }).catch((err) => logError("[levy-notices] Could not record the notices not emailed:", err));
+    }
   } catch (err) {
     logError("[levy-notices] Failed to send notices:", err);
   }
   return sent;
+}
+
+/** The every-lot content of issued notices, by notice id, with each notice's schedule (see loadEveryLot). */
+async function everyLotByNotice(
+  schemeId: string,
+  rules: Parameters<typeof loadEveryLot>[0]["rules"],
+  fund: { id: string; name: string | null } | null,
+  notices: readonly PlannedNotice[],
+): Promise<Map<string, { scheduleId: string; build: EveryLotBuild }>> {
+  const ids = notices.map((n) => n.noticeId).filter((x): x is string => !!x);
+  const out = new Map<string, { scheduleId: string; build: EveryLotBuild }>();
+  if (!ids.length) return out;
+  const rows = await db.orm.public.LevyNotice.where((n) => and(n.schemeId.eq(schemeId), n.id.in(ids))).limit(ids.length).all();
+  for (const scheduleId of new Set(rows.map((r) => r.levyScheduleId))) {
+    const mine = rows.filter((r) => r.levyScheduleId === scheduleId);
+    const builds = await loadEveryLot({ schemeId, rules, fund, levyScheduleId: scheduleId, notices: mine.map((r) => ({ lotId: r.lotId, periodStart: toIsoDay(r.periodStart) })) });
+    mine.forEach((r, i) => out.set(r.id, { scheduleId, build: builds[i] }));
+  }
+  return out;
 }
 
 /**

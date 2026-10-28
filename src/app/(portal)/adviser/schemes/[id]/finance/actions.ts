@@ -1277,7 +1277,7 @@ export async function issueScheduleNoticesAction(
     // Every notice must carry what a NSW levy notice states, checked now for
     // all of them: those going out today, and those going out later.
     const toContent = (list: typeof numbered) =>
-      list.map((n) => ({ lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents }));
+      list.map((n) => ({ lotId: n.lotId, lotNumber: n.lotNumber, ownerId: n.ownerId, noticeNumber: n.noticeNumber, dueDate: n.dueDate, amountCents: n.amountCents, periodStart: n.periodStart }));
     const now = numbered.filter(goesNow);
     const later = numbered.filter((n) => !goesNow(n));
     // Where the law sets the most notice (a pack's checked rules, the ACT), each later notice is checked
@@ -1291,10 +1291,10 @@ export async function issueScheduleNoticesAction(
           : [];
     const laterMissing = [];
     for (const g of laterGroups) {
-      laterMissing.push(...(await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: g.noticeDate, notices: toContent(g.notices) })));
+      laterMissing.push(...(await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: g.noticeDate, levyScheduleId: scheduleId, notices: toContent(g.notices) })));
     }
     const missing = [
-      ...(now.length ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: today, isUrgentSpecialLevy: urgentSpecialLevy, notices: toContent(now) }) : []),
+      ...(now.length ? await checkPlannedNotices({ schemeId, fundId: schedule.fundId, issuerId: profile.id, noticeDate: today, isUrgentSpecialLevy: urgentSpecialLevy, levyScheduleId: scheduleId, notices: toContent(now) }) : []),
       ...laterMissing,
     ].filter((m, i, all) => all.findIndex((x) => x.code === m.code && x.message === m.message) === i);
     if (missing.length > 0) {

@@ -420,6 +420,14 @@ export const PENDING_RULE_PACKS = {
     // contribution, the fund totals, the proportion and method, the instalment dates, any discount and the interest).
     // No approved form is recorded (Form 1 not read). FOR_REVIEW gains the points. No legal value or status already
     // recorded changed; still a draft.
+    // 2026.10.7 (28 Oct 2026): the every-unit contents (stage 2, PR 6b). No rule value changed. Notices now state the
+    // contribution for each unit (unit numbers and amounts only, a unit with no notice shown as nil), the fund with its
+    // totals and the unit's proportion by unit entitlement (ss 79(2)(b) to (d), 90(2)(b) to (d)); they are still
+    // refused for the instalment dates, any discount and the interest, and sinking fund notices for their yearly mode.
+    // FOR_REVIEW's notice contents point is rewritten and gains the instalment dates, the every-unit list (takeover
+    // notices never list), the fund and totals (withheld after a budget revision) and the proportion (only where every
+    // amount is the unit's share by its current unit entitlement) points, and a point that the contents are read and
+    // checked again from the data as it is when a notice is emailed or its PDF downloaded. Still a draft.
     // 2026.10.8 (28 Oct 2026): resolution bases and categories (stage 2, PR 8a-i). MEETING_RULES added in the shared shape,
     // from MEETINGS, RESOLUTIONS and RECORDS unchanged: notice 14 days (general) and 7 days (executive committee), minutes
     // within 14 days, quorum per motion as data, retention 7 years, each CONFIRMED; the tests by the number of members (sch 3
@@ -430,8 +438,7 @@ export const PENDING_RULE_PACKS = {
     // applied yet (debtorsMayVoteOn left out). Names, lists, common property rows not counted, no pre-meeting voting and an
     // item with no category not recorded as resolved at a general meeting (categoryRequiredAtGeneralMeetings) are
     // StrataVerze choices. The LATE_CHARGE GO-LIVE GAP and FOR_REVIEW are rewritten (votes present revisited with quorum). No legal value or status already
-    // recorded changed; still a draft. (2026.10.7 is the notice contents version of stage 2, PR 6b, not merged when this
-    // was made: the second of the two to merge reconciles the version line and the FOR_REVIEW list.)
+    // recorded changed; still a draft.
     version: "2026.10.8",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
