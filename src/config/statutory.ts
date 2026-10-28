@@ -303,7 +303,15 @@ export const PENDING_RULE_PACKS = {
     // FOR_REVIEW gains those words and the plan format asked for by the Add Property wizard. The legal values are
     // unchanged, so the status stays REVIEWED. The GO-LIVE GAP notes say which screens take the pack's words and which
     // still show NSW words.
-    version: "2026.10.15",
+    // 2026.10.16 (28 Oct 2026): the 2 year rule's daily reminder (go-live gap). DEBT_RECOVERY.proceedingsReminder added:
+    // the reminder's subject and heading, StrataVerze wording that calls the deadline the StrataVerze date. FOR_REVIEW:
+    // the 2 year warning point now says it is also a daily reminder, and new points give who is emailed and when (first
+    // flagged, 30, 14 and 7 days before the deadline, once after), no email for a deadline passed more than 30 days
+    // before the run (no burst at go-live), the owners left out and those not covered (several lots, company owners,
+    // attorneys), and a case closed after judgment not counting as proceedings. The GO-LIVE GAP note on DEBT_RECOVERY
+    // says what is applied and that migration 20261119 must be applied before go-live. No rule of law changed, so the
+    // status stays REVIEWED.
+    version: "2026.10.16",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

@@ -508,6 +508,18 @@ export interface DebtRecoveryStepRule {
 export interface DebtRecoveryRules {
   /** `citation` is how the warning cites the provision ("Standard Module s 166(2)"). */
   mustStartProceedings?: { readonly overdueYears: number; readonly withinMonths: number; readonly citation: string };
+  /**
+   * The subject and heading of the daily reminder for `mustStartProceedings`
+   * (QLD go-live gap, 27 Oct 2026), StrataVerze wording for the pack review.
+   * `{lot}`, `{date}` (the deadline) and `{scheme}` are filled in. A pack with
+   * the rule but without these sends no reminder.
+   */
+  proceedingsReminder?: {
+    readonly subject: string;
+    readonly subjectPassed: string;
+    readonly heading: string;
+    readonly headingPassed: string;
+  };
   source: string;
 }
 
