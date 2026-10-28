@@ -8,6 +8,9 @@
  * schedule the pack says decides both premiums for the building: the
  * interest schedule, for a building or volumetric format plan (SM ss 197(4),
  * 201(1)). The rest is shared by the schedule that decides CONTRIBUTIONS.
+ * Victoria's pack has no CONTRIBUTION_INSURANCE yet (stage 2, PR 4): its s 23A
+ * fee covers the reinstatement premium only, which the budget does not hold
+ * apart from other policies, so a Victorian fee is never split here.
  * Each part is shared in whole cents by the largest remainder method, so each
  * adds up exactly, and a lot's share is the sum of its two parts.
  *
@@ -42,6 +45,8 @@ export type ShareRules = Pick<StatutoryRules, "ENTITLEMENT_SCHEDULES" | "FUND_CA
 /** A lot as the split needs it: the plan lot, with its separately held entitlement. */
 export interface ShareLot extends PlanLot {
   interestScheduleEntitlement?: number | null;
+  /** Victoria's lot entitlement (stage 2, PR 4), for a pack whose insurance part it would share. */
+  lotEntitlement?: number | null;
 }
 
 export interface InsuranceSplit {

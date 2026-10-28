@@ -6,12 +6,30 @@
  * vote on (`MEETING_RULES.debtorsMayVoteOn`; Queensland SM s 102(2): a
  * resolution without dissent). A pack that records none (NSW) is not checked,
  * so its votes are taken as before.
+ *
+ * The rule is applied lot by lot: a lot that owes is barred, and the same
+ * owner's lots that owe nothing still vote (`debtorBarsLot`, used both for an
+ * owner's own vote online and for the votes the chair records).
  */
 import type { MeetingRuleSet } from "./rules";
 
 /** Whether the building's rule set checks votes for money owed. */
 export function checksDebtorVotes(ruleSet: Pick<MeetingRuleSet, "debtorsMayVoteOn">): boolean {
   return ruleSet.debtorsMayVoteOn != null;
+}
+
+/**
+ * Whether one lot's vote on an item of `category` is barred because the lot
+ * owes money (it is in `owingLotIds`). Judged for that lot alone, whoever owns
+ * it and whatever else they own. Never barred under a pack with no such rule.
+ */
+export function debtorBarsLot(
+  ruleSet: Pick<MeetingRuleSet, "debtorsMayVoteOn" | "resolutionLabels">,
+  category: string | null | undefined,
+  lotId: string,
+  owingLotIds: ReadonlySet<string>,
+): boolean {
+  return owingLotIds.has(lotId) && debtorVoteRefusal(ruleSet, category, true, "") != null;
 }
 
 /**

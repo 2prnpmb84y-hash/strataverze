@@ -6,7 +6,7 @@
  *
  * Only active buildings in a state whose live pack has the rule
  * (DEBT_RECOVERY.mustStartProceedings) are read. Queensland's pack has it
- * and is live from 2026.10.18 (the switch-on, 28 Oct 2026), so Queensland
+ * and is live from 2026.10.19 (the switch-on, 28 Oct 2026), so Queensland
  * buildings are read. NSW's pack has no such rule, so an NSW building is
  * never read or emailed. With no state's live pack having it, the run returns
  * before any query. The state is matched as the packs match

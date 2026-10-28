@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0673aa7a197674b86a37f7b7b492eaa66f9b5b18d94b0198933e803ece886297'>;
+  StorageHashBase<'63b67a48bd6602412e5fcf19b7424ae411879d5645f994970a67fde623c7cc4d'>;
 export type ExecutionHash =
   ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
 export type ProfileHash =
@@ -1686,6 +1686,7 @@ export namespace Models {
     floorArea: FieldOutputTypes['public']['Lot']['floorArea'];
     id: FieldOutputTypes['public']['Lot']['id'];
     interestScheduleEntitlement: FieldOutputTypes['public']['Lot']['interestScheduleEntitlement'];
+    lotEntitlement: FieldOutputTypes['public']['Lot']['lotEntitlement'];
     lotNumber: FieldOutputTypes['public']['Lot']['lotNumber'];
     lotType: FieldOutputTypes['public']['Lot']['lotType'];
     occupiable: FieldOutputTypes['public']['Lot']['occupiable'];
@@ -13028,6 +13029,12 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly interest_schedule_entitlement: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly lot_entitlement: {
                   readonly dataType: 'pg/int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: true;
@@ -35205,6 +35212,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly lotEntitlement: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly lotNumber: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -35469,6 +35480,7 @@ type ContractBase = Omit<
                 readonly interestScheduleEntitlement: {
                   readonly column: 'interest_schedule_entitlement';
                 };
+                readonly lotEntitlement: { readonly column: 'lot_entitlement' };
                 readonly lotNumber: { readonly column: 'lot_number' };
                 readonly lotType: { readonly column: 'lot_type' };
                 readonly occupiable: { readonly column: 'occupiable' };

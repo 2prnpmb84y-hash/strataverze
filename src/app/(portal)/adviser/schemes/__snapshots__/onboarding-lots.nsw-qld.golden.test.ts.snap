@@ -1,0 +1,186 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW createSchemeAction lots > another key 1`] = `
+{
+  "calls": [
+    [
+      {
+        "entitlement": 40,
+        "lotNumber": "1",
+        "ownerName": "Owner 1",
+        "unitNumber": null,
+      },
+      {
+        "entitlement": 60,
+        "lotNumber": "2",
+        "ownerName": "Owner 2",
+        "unitNumber": null,
+      },
+    ],
+  ],
+  "result": "Error: REDIRECT /adviser/schemes/scheme-1/finance/migration/income-budget",
+}
+`;
+
+exports[`NSW createSchemeAction lots > both values 1`] = `
+{
+  "calls": [
+    [
+      {
+        "entitlement": 40,
+        "lotNumber": "1",
+        "ownerName": "Owner 1",
+        "unitNumber": null,
+      },
+      {
+        "entitlement": 60,
+        "lotNumber": "2",
+        "ownerName": "Owner 2",
+        "unitNumber": null,
+      },
+    ],
+  ],
+  "result": "Error: REDIRECT /adviser/schemes/scheme-1/finance/migration/income-budget",
+}
+`;
+
+exports[`NSW createSchemeAction lots > no second values 1`] = `
+{
+  "calls": [
+    [
+      {
+        "entitlement": 40,
+        "lotNumber": "1",
+        "ownerName": "Owner 1",
+        "unitNumber": null,
+      },
+      {
+        "entitlement": 60,
+        "lotNumber": "2",
+        "ownerName": "Owner 2",
+        "unitNumber": null,
+      },
+    ],
+  ],
+  "result": "Error: REDIRECT /adviser/schemes/scheme-1/finance/migration/income-budget",
+}
+`;
+
+exports[`NSW createSchemeAction lots > second value 0 1`] = `
+{
+  "calls": [
+    [
+      {
+        "entitlement": 40,
+        "lotNumber": "1",
+        "ownerName": "Owner 1",
+        "unitNumber": null,
+      },
+      {
+        "entitlement": 60,
+        "lotNumber": "2",
+        "ownerName": "Owner 2",
+        "unitNumber": null,
+      },
+    ],
+  ],
+  "result": "Error: REDIRECT /adviser/schemes/scheme-1/finance/migration/income-budget",
+}
+`;
+
+exports[`NSW createSchemeAction lots > second values empty and bad 1`] = `
+{
+  "calls": [
+    [
+      {
+        "entitlement": 40,
+        "lotNumber": "1",
+        "ownerName": "Owner 1",
+        "unitNumber": null,
+      },
+      {
+        "entitlement": 60,
+        "lotNumber": "2",
+        "ownerName": "Owner 2",
+        "unitNumber": null,
+      },
+    ],
+  ],
+  "result": "Error: REDIRECT /adviser/schemes/scheme-1/finance/migration/income-budget",
+}
+`;
+
+exports[`QLD createSchemeAction lots > another key 1`] = `
+{
+  "calls": [],
+  "result": {
+    "step": "lots",
+    "stepErrors": [
+      "Row 1: Enter the interest schedule lot entitlement.",
+      "Row 2: Enter the interest schedule lot entitlement.",
+    ],
+  },
+}
+`;
+
+exports[`QLD createSchemeAction lots > both values 1`] = `
+{
+  "calls": [
+    [
+      {
+        "entitlement": 40,
+        "interestScheduleEntitlement": 45,
+        "lotNumber": "1",
+        "ownerName": "Owner 1",
+        "unitNumber": null,
+      },
+      {
+        "entitlement": 60,
+        "interestScheduleEntitlement": 55,
+        "lotNumber": "2",
+        "ownerName": "Owner 2",
+        "unitNumber": null,
+      },
+    ],
+  ],
+  "result": "Error: REDIRECT /adviser/schemes/scheme-1/finance/migration/income-budget",
+}
+`;
+
+exports[`QLD createSchemeAction lots > no second values 1`] = `
+{
+  "calls": [],
+  "result": {
+    "step": "lots",
+    "stepErrors": [
+      "Row 1: Enter the interest schedule lot entitlement.",
+      "Row 2: Enter the interest schedule lot entitlement.",
+    ],
+  },
+}
+`;
+
+exports[`QLD createSchemeAction lots > second value 0 1`] = `
+{
+  "calls": [],
+  "result": {
+    "step": "lots",
+    "stepErrors": [
+      "Row 1: The interest schedule lot entitlement must be a whole number of at least 1.",
+    ],
+  },
+}
+`;
+
+exports[`QLD createSchemeAction lots > second values empty and bad 1`] = `
+{
+  "calls": [],
+  "result": {
+    "step": "lots",
+    "stepErrors": [
+      "Row 1: Enter the interest schedule lot entitlement.",
+      "Row 2: The interest schedule lot entitlement must be a whole number of at least 1.",
+    ],
+  },
+}
+`;

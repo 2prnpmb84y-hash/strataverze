@@ -221,8 +221,10 @@ export async function createSchemeAction(
   const lotsInput: OnboardingLot[] = lotRows.map((r) => {
     const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
     const lot: OnboardingLot = { lotNumber: str(o.lotNumber), unitNumber: str(o.unitNumber), entitlement: str(o.entitlement), ownerName: str(o.ownerName) };
-    // The second entitlement is read only where the building's pack has one.
-    if (words?.separate) lot.interestScheduleEntitlement = str(o.interestScheduleEntitlement);
+    // The second entitlement is read only where the building's pack has one,
+    // under the lot field it is held in (Queensland's interest schedule,
+    // Victoria's lot entitlement).
+    if (words?.separate?.field) lot[words.separate.field] = str(o[words.separate.field]);
     return lot;
   });
   const lots = checkLots(lotsInput, data.totalLots, data.totalEntitlement, words);

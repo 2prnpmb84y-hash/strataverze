@@ -1,0 +1,1557 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW CSV lot import columns and rows > columns, matching and rows 1`] = `
+{
+  "fields": [
+    {
+      "aliases": [
+        "LotNo",
+      ],
+      "field": "lotNumber",
+      "key": "lot_number",
+      "label": "Lot Number",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "UnitNo",
+      ],
+      "field": "unitNumber",
+      "key": "unit_number",
+      "label": "Unit Number",
+      "required": false,
+    },
+    {
+      "field": "entitlement",
+      "key": "entitlement",
+      "label": "Entitlement",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "Area",
+      ],
+      "field": "floorArea",
+      "key": "floor_area",
+      "label": "Floor Area",
+      "required": false,
+    },
+    {
+      "field": "lotType",
+      "key": "lot_type",
+      "label": "Lot Type",
+      "required": false,
+    },
+  ],
+  "mappings": [
+    {
+      "entitlement": "Entitlement",
+      "floor_area": "Floor Area",
+      "lot_number": "Lot Number",
+      "lot_type": "Lot Type",
+      "unit_number": "Unit Number",
+    },
+    {
+      "entitlement": "Entitlement",
+      "floor_area": "Area",
+      "lot_number": "LotNo",
+      "lot_type": "Lot Type",
+      "unit_number": "UnitNo",
+    },
+    {
+      "entitlement": "Lot Entitlement",
+    },
+    {
+      "entitlement": "entitlement",
+      "lot_number": "lot_number",
+    },
+  ],
+  "missing": [
+    "Lot Number is required",
+    "Entitlement is required",
+  ],
+  "noBuilding": [
+    {
+      "aliases": [
+        "LotNo",
+      ],
+      "field": "lotNumber",
+      "key": "lot_number",
+      "label": "Lot Number",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "UnitNo",
+      ],
+      "field": "unitNumber",
+      "key": "unit_number",
+      "label": "Unit Number",
+      "required": false,
+    },
+    {
+      "field": "entitlement",
+      "key": "entitlement",
+      "label": "Entitlement",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "Area",
+      ],
+      "field": "floorArea",
+      "key": "floor_area",
+      "label": "Floor Area",
+      "required": false,
+    },
+    {
+      "field": "lotType",
+      "key": "lot_type",
+      "label": "Lot Type",
+      "required": false,
+    },
+  ],
+  "rows": [
+    [
+      {
+        "data": {
+          "entitlement": "3",
+          "floor_area": "4",
+          "lot_number": "1",
+          "lot_type": "5",
+          "unit_number": "2",
+        },
+        "errors": [],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+          "floor_area": "",
+          "lot_number": "",
+          "lot_type": "",
+          "unit_number": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+    [
+      {
+        "data": {
+          "entitlement": "3",
+          "floor_area": "4",
+          "lot_number": "1",
+          "lot_type": "5",
+          "unit_number": "2",
+        },
+        "errors": [],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+          "floor_area": "",
+          "lot_number": "",
+          "lot_type": "",
+          "unit_number": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+    [
+      {
+        "data": {
+          "entitlement": "4",
+        },
+        "errors": [
+          "Lot Number is required",
+        ],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+    [
+      {
+        "data": {
+          "entitlement": "2",
+          "lot_number": "1",
+        },
+        "errors": [],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+          "lot_number": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+  ],
+  "server": {
+    "entitlement": "10",
+    "interestScheduleEntitlement": "12",
+    "lotNumber": "1",
+  },
+}
+`;
+
+exports[`NSW lot form > create 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="lotNumber"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Unit Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="entitlement"/><p class="mt-1.5 text-xs text-ink-muted">Lot entitlement within the scheme</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Add Lot</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`NSW lot form > edit, locked 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" readOnly="" aria-readonly="true" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-muted cursor-not-allowed" name="lotNumber" value="3"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value="12"/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Unit Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" readOnly="" aria-readonly="true" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-muted cursor-not-allowed" name="entitlement" value="50"/><p class="mt-1.5 text-xs text-ink-muted">Lot entitlement within the scheme</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Save Changes</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`NSW lot form > edit, no second value 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="lotNumber" value="3"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value="12"/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Unit Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="entitlement" value="50"/><p class="mt-1.5 text-xs text-ink-muted">Lot entitlement within the scheme</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Save Changes</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`NSW lot form > edit, second value 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="lotNumber" value="3"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value="12"/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Unit Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="entitlement" value="50"/><p class="mt-1.5 text-xs text-ink-muted">Lot entitlement within the scheme</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Save Changes</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`NSW onboarding lots > the lots step 1`] = `"<div><h2 class="font-heading font-semibold text-ink mb-1">Lots and Owners</h2><p class="text-sm text-ink-muted mb-5">Enter every lot with its unit entitlement, and each owner&#x27;s name exactly as it appears on the strata roll (for example joint owners, or a company with its ACN).</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5"><div class="flex items-start gap-2 rounded-[var(--radius-card)] border px-3 py-2 text-sm border-turquoise/30 bg-mint-soft/50 text-ink"><span aria-hidden="true" class="mt-px font-bold">✓</span><span class="sr-only">Passes:</span><span>Lots: 4 entered of 4 on the building</span></div><div class="flex items-start gap-2 rounded-[var(--radius-card)] border px-3 py-2 text-sm border-turquoise/30 bg-mint-soft/50 text-ink"><span aria-hidden="true" class="mt-px font-bold">✓</span><span class="sr-only">Passes:</span><span>Unit entitlement: 110 entered of 110 total</span></div></div><div class="overflow-x-auto rounded-[var(--radius-card)] border border-line"><table class="w-full min-w-[640px] text-sm"><thead><tr class="bg-muted/50 text-left"><th scope="col" class="px-3 py-2 font-medium text-ink-muted w-24">Lot</th><th scope="col" class="px-3 py-2 font-medium text-ink-muted w-24">Unit No.</th><th scope="col" class="px-3 py-2 font-medium text-ink-muted w-32">Unit Entitlement</th><th scope="col" class="px-3 py-2 font-medium text-ink-muted">Owner name (as on the strata roll)</th><th scope="col" class="px-3 py-2 w-12"><span class="sr-only">Remove</span></th></tr></thead><tbody><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 1" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="1"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 1" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value=""/></td><td class="px-3 py-2"><input aria-label="Unit entitlement, row 1" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="40"/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 1" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="A"/></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 1">×</button></td></tr><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 2" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="2"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 2" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="4"/></td><td class="px-3 py-2"><input aria-label="Unit entitlement, row 2" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="60"/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 2" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="B"/></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 2">×</button></td></tr><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 3" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="3"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 3" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value=""/></td><td class="px-3 py-2"><input aria-label="Unit entitlement, row 3" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="x"/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 3" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="C"/><p class="mt-1 text-xs text-red-600">The unit entitlement must be a whole number of at least 1.</p></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 3">×</button></td></tr><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 4" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="4"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 4" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value=""/></td><td class="px-3 py-2"><input aria-label="Unit entitlement, row 4" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="10"/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 4" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="D"/></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 4">×</button></td></tr></tbody></table></div><div class="flex flex-wrap gap-2 mt-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="button">Add lot</button></div></div>"`;
+
+exports[`NSW onboarding lots > words and checks 1`] = `
+{
+  "bad": {
+    "count": 4,
+    "entitlementSum": 110,
+    "errors": [],
+    "lots": [
+      {
+        "entitlement": 40,
+        "lotNumber": "1",
+        "ownerName": "A",
+        "unitNumber": null,
+      },
+      {
+        "entitlement": 60,
+        "lotNumber": "2",
+        "ownerName": "B",
+        "unitNumber": "4",
+      },
+      {
+        "entitlement": 10,
+        "lotNumber": "4",
+        "ownerName": "D",
+        "unitNumber": null,
+      },
+    ],
+    "ok": false,
+    "rowErrors": {
+      "2": [
+        "The unit entitlement must be a whole number of at least 1.",
+      ],
+    },
+    "separateSum": 0,
+  },
+  "ok": {
+    "count": 1,
+    "entitlementSum": 40,
+    "errors": [],
+    "lots": [
+      {
+        "entitlement": 40,
+        "lotNumber": "1",
+        "ownerName": "A",
+        "unitNumber": null,
+      },
+    ],
+    "ok": true,
+    "rowErrors": {},
+    "separateSum": 0,
+  },
+  "words": {
+    "bodyCorporateName": "The Owners - Strata Plan No. {plan}",
+    "entitlement": "unit entitlement",
+    "entitlementHelp": null,
+    "entitlementLabel": "Unit Entitlement",
+    "fundWords": {
+      "admin": {
+        "label": "Administrative Fund",
+        "name": "administrative fund",
+        "shortLabel": "Admin",
+      },
+      "capitalWorks": {
+        "label": "Capital Works Fund",
+        "name": "capital works fund",
+        "shortLabel": "Capital Works",
+      },
+    },
+    "funds": {
+      "admin": "administrative fund",
+      "capitalWorks": "capital works fund",
+    },
+    "lateCharge": "interest",
+    "levies": "levies",
+    "levy": "levy",
+    "ownersCorporation": "owners corporation",
+    "planFormat": null,
+    "planLabel": "Strata Plan",
+    "regulationModule": null,
+    "separate": null,
+    "state": "NSW",
+  },
+}
+`;
+
+exports[`NSW readers > schedules, fields, words and problems 1`] = `
+{
+  "entitlementFor": [
+    [
+      {
+        "ok": 10,
+      },
+    ],
+    [
+      {
+        "ok": 20,
+      },
+    ],
+    [
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+    ],
+  ],
+  "fields": [
+    [
+      "UNIT_ENTITLEMENT",
+      "entitlement",
+    ],
+  ],
+  "levyFormWords": {
+    "entitlement": "unit entitlement",
+    "levies": "levies",
+    "levy": "levy",
+    "plan": "strata plan",
+  },
+  "levySharedBy": "unit entitlement",
+  "lotEntitlementFor": [
+    [
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+    ],
+    [
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+    ],
+    [
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no unit entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+    ],
+  ],
+  "lotProblems": [
+    null,
+    null,
+    null,
+  ],
+  "lotWords": {
+    "entitlement": "Unit Entitlement",
+    "entitlementLabel": "Unit entitlement",
+    "lateCharge": "Interest",
+    "levies": "Levies",
+  },
+  "missing": [],
+  "onLot": {
+    "ok": "UNIT_ENTITLEMENT",
+  },
+  "onLotWords": {
+    "help": null,
+    "label": null,
+  },
+  "scheduleFor": [
+    [
+      "CONTRIBUTIONS",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+    [
+      "POLL_VOTE",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+    [
+      "SPECIAL_RESOLUTION",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+    [
+      "COMMON_PROPERTY_SHARE",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+    [
+      "INSURANCE_COMMON_PROPERTY",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+    [
+      "INSURANCE_BUILDINGS",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+    [
+      "TERMINATION_INTEREST",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+    [
+      "VALUE_BASED_RATES",
+      [
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+        {
+          "ok": "UNIT_ENTITLEMENT",
+        },
+      ],
+    ],
+  ],
+  "separate": null,
+}
+`;
+
+exports[`QLD CSV lot import columns and rows > columns, matching and rows 1`] = `
+{
+  "fields": [
+    {
+      "aliases": [
+        "LotNo",
+      ],
+      "field": "lotNumber",
+      "key": "lot_number",
+      "label": "Lot Number",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "UnitNo",
+      ],
+      "field": "unitNumber",
+      "key": "unit_number",
+      "label": "Unit Number",
+      "required": false,
+    },
+    {
+      "field": "entitlement",
+      "key": "entitlement",
+      "label": "Entitlement",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "Area",
+      ],
+      "field": "floorArea",
+      "key": "floor_area",
+      "label": "Floor Area",
+      "required": false,
+    },
+    {
+      "field": "lotType",
+      "key": "lot_type",
+      "label": "Lot Type",
+      "required": false,
+    },
+    {
+      "field": "interestScheduleEntitlement",
+      "key": "interest_schedule_entitlement",
+      "label": "Interest Schedule Lot Entitlement",
+      "required": true,
+      "separateEntitlement": true,
+    },
+  ],
+  "mappings": [
+    {
+      "entitlement": "Entitlement",
+      "floor_area": "Floor Area",
+      "lot_number": "Lot Number",
+      "lot_type": "Lot Type",
+      "unit_number": "Unit Number",
+    },
+    {
+      "entitlement": "Entitlement",
+      "floor_area": "Area",
+      "interest_schedule_entitlement": "Interest Schedule Lot Entitlement",
+      "lot_number": "LotNo",
+      "lot_type": "Lot Type",
+      "unit_number": "UnitNo",
+    },
+    {
+      "entitlement": "Lot Entitlement",
+      "interest_schedule_entitlement": "interest_schedule_entitlement",
+    },
+    {
+      "entitlement": "entitlement",
+      "lot_number": "lot_number",
+    },
+  ],
+  "missing": [
+    "Lot Number is required",
+    "Entitlement is required",
+  ],
+  "noBuilding": [
+    {
+      "aliases": [
+        "LotNo",
+      ],
+      "field": "lotNumber",
+      "key": "lot_number",
+      "label": "Lot Number",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "UnitNo",
+      ],
+      "field": "unitNumber",
+      "key": "unit_number",
+      "label": "Unit Number",
+      "required": false,
+    },
+    {
+      "field": "entitlement",
+      "key": "entitlement",
+      "label": "Entitlement",
+      "required": true,
+    },
+    {
+      "aliases": [
+        "Area",
+      ],
+      "field": "floorArea",
+      "key": "floor_area",
+      "label": "Floor Area",
+      "required": false,
+    },
+    {
+      "field": "lotType",
+      "key": "lot_type",
+      "label": "Lot Type",
+      "required": false,
+    },
+  ],
+  "rows": [
+    [
+      {
+        "data": {
+          "entitlement": "3",
+          "floor_area": "4",
+          "lot_number": "1",
+          "lot_type": "5",
+          "unit_number": "2",
+        },
+        "errors": [],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+          "floor_area": "",
+          "lot_number": "",
+          "lot_type": "",
+          "unit_number": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+    [
+      {
+        "data": {
+          "entitlement": "3",
+          "floor_area": "4",
+          "interest_schedule_entitlement": "6",
+          "lot_number": "1",
+          "lot_type": "5",
+          "unit_number": "2",
+        },
+        "errors": [],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+          "floor_area": "",
+          "interest_schedule_entitlement": "",
+          "lot_number": "",
+          "lot_type": "",
+          "unit_number": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+    [
+      {
+        "data": {
+          "entitlement": "4",
+          "interest_schedule_entitlement": "5",
+        },
+        "errors": [
+          "Lot Number is required",
+        ],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+          "interest_schedule_entitlement": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+    [
+      {
+        "data": {
+          "entitlement": "2",
+          "lot_number": "1",
+        },
+        "errors": [],
+        "rowNumber": 2,
+        "warnings": [],
+      },
+      {
+        "data": {
+          "entitlement": "",
+          "lot_number": "",
+        },
+        "errors": [
+          "Lot Number is required",
+          "Entitlement is required",
+        ],
+        "rowNumber": 3,
+        "warnings": [],
+      },
+    ],
+  ],
+  "server": {
+    "entitlement": "10",
+    "interestScheduleEntitlement": "12",
+    "lotNumber": "1",
+  },
+}
+`;
+
+exports[`QLD lot form > create 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="lotNumber"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Contribution Schedule Lot Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="entitlement"/><p class="mt-1.5 text-xs text-ink-muted">From the contribution schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="interestScheduleEntitlement" class="block text-sm font-medium text-ink mb-1.5">Interest Schedule Lot Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="interestScheduleEntitlement" type="number" required="" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="interestScheduleEntitlement" value=""/><p class="mt-1.5 text-xs text-ink-muted">From the interest schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Add Lot</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`QLD lot form > edit, locked 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" readOnly="" aria-readonly="true" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-muted cursor-not-allowed" name="lotNumber" value="3"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value="12"/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Contribution Schedule Lot Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" readOnly="" aria-readonly="true" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-muted cursor-not-allowed" name="entitlement" value="50"/><p class="mt-1.5 text-xs text-ink-muted">From the contribution schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="interestScheduleEntitlement" class="block text-sm font-medium text-ink mb-1.5">Interest Schedule Lot Entitlement</label><input id="interestScheduleEntitlement" type="number" placeholder="e.g. 50" readOnly="" aria-readonly="true" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-muted cursor-not-allowed" name="interestScheduleEntitlement" value="45"/><p class="mt-1.5 text-xs text-ink-muted">From the interest schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Save Changes</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`QLD lot form > edit, no second value 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="lotNumber" value="3"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value="12"/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Contribution Schedule Lot Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="entitlement" value="50"/><p class="mt-1.5 text-xs text-ink-muted">From the contribution schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="interestScheduleEntitlement" class="block text-sm font-medium text-ink mb-1.5">Interest Schedule Lot Entitlement</label><input id="interestScheduleEntitlement" type="number" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="interestScheduleEntitlement" value=""/><p class="mt-1.5 text-xs text-ink-muted">From the interest schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Save Changes</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`QLD lot form > edit, second value 1`] = `"<div class="rounded-[var(--radius-card)] bg-white border border-line p-6 "><form action="javascript:throw new Error(&#x27;React form unexpectedly submitted.&#x27;)"><div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5"><div class=""><label for="lotNumber" class="block text-sm font-medium text-ink mb-1.5">Lot Number<span class="text-red-500 ml-0.5">*</span></label><input id="lotNumber" type="text" required="" placeholder="e.g. 1" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="lotNumber" value="3"/></div><div class=""><label for="unitNumber" class="block text-sm font-medium text-ink mb-1.5">Unit No.</label><input id="unitNumber" type="text" placeholder="e.g. 101" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="unitNumber" value="12"/><p class="mt-1.5 text-xs text-ink-muted">Optional unit or apartment number</p></div><div class=""><label for="entitlement" class="block text-sm font-medium text-ink mb-1.5">Contribution Schedule Lot Entitlement<span class="text-red-500 ml-0.5">*</span></label><input id="entitlement" type="number" required="" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="entitlement" value="50"/><p class="mt-1.5 text-xs text-ink-muted">From the contribution schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="interestScheduleEntitlement" class="block text-sm font-medium text-ink mb-1.5">Interest Schedule Lot Entitlement</label><input id="interestScheduleEntitlement" type="number" placeholder="e.g. 50" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="interestScheduleEntitlement" value="45"/><p class="mt-1.5 text-xs text-ink-muted">From the interest schedule in the community management statement. A whole number, not 0.</p></div><div class=""><label for="floorArea" class="block text-sm font-medium text-ink mb-1.5">Floor Area (m²)</label><input id="floorArea" type="number" placeholder="e.g. 85" step="0.01" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white" name="floorArea" value=""/><p class="mt-1.5 text-xs text-ink-muted">Optional</p></div><div class=""><label for="lotType" class="block text-sm font-medium text-ink mb-1.5">Lot Type</label><select id="lotType" name="lotType" class="w-full rounded-[var(--radius-card)] border border-line px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors bg-white"><option value="RESIDENTIAL" selected="">Residential</option><option value="COMMERCIAL">Commercial</option><option value="PARKING">Parking</option><option value="STORAGE">Storage</option><option value="COMMON">Common Property</option></select></div></div><div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-line"><a class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " href="/adviser/schemes/s1">Cancel</a><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-turquoise text-white hover:bg-turquoise/90 focus:ring-turquoise " type="submit">Save Changes</button></div></form></div><script>addEventListener("submit",function(a){if(!a.defaultPrevented){var b=a.target,d=a.submitter,c=b.action,e=d;if(d){var f=d.getAttribute("formAction");null!=f&&(c=f,e=null)}"javascript:throw new Error('React form unexpectedly submitted.')"===c&&(a.preventDefault(),a=new FormData(b,e),c=b.ownerDocument||b,(c.$$reactFormReplay=c.$$reactFormReplay||[]).push(b,d,a))}});</script>"`;
+
+exports[`QLD onboarding lots > the lots step 1`] = `"<div><h2 class="font-heading font-semibold text-ink mb-1">Lots and Owners</h2><p class="text-sm text-ink-muted mb-5">Enter every lot with its contribution schedule lot entitlement and interest schedule lot entitlement, and each owner&#x27;s name exactly as it appears on the strata roll (for example joint owners, or a company with its ACN).</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5"><div class="flex items-start gap-2 rounded-[var(--radius-card)] border px-3 py-2 text-sm border-turquoise/30 bg-mint-soft/50 text-ink"><span aria-hidden="true" class="mt-px font-bold">✓</span><span class="sr-only">Passes:</span><span>Lots: 4 entered of 4 on the building</span></div><div class="flex items-start gap-2 rounded-[var(--radius-card)] border px-3 py-2 text-sm border-turquoise/30 bg-mint-soft/50 text-ink"><span aria-hidden="true" class="mt-px font-bold">✓</span><span class="sr-only">Passes:</span><span>Contribution schedule lot entitlement: 110 entered of 110 total</span></div></div><p class="text-xs text-ink-muted mb-5">Interest Schedule Lot Entitlement: From the interest schedule in the community management statement. A whole number, not 0.</p><div class="overflow-x-auto rounded-[var(--radius-card)] border border-line"><table class="w-full min-w-[640px] text-sm"><thead><tr class="bg-muted/50 text-left"><th scope="col" class="px-3 py-2 font-medium text-ink-muted w-24">Lot</th><th scope="col" class="px-3 py-2 font-medium text-ink-muted w-24">Unit No.</th><th scope="col" class="px-3 py-2 font-medium text-ink-muted w-32">Contribution Schedule Lot Entitlement</th><th scope="col" class="px-3 py-2 font-medium text-ink-muted w-32">Interest Schedule Lot Entitlement</th><th scope="col" class="px-3 py-2 font-medium text-ink-muted">Owner name (as on the strata roll)</th><th scope="col" class="px-3 py-2 w-12"><span class="sr-only">Remove</span></th></tr></thead><tbody><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 1" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="1"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 1" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value=""/></td><td class="px-3 py-2"><input aria-label="Contribution schedule lot entitlement, row 1" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="40"/></td><td class="px-3 py-2"><input aria-label="Interest schedule lot entitlement, row 1" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="45"/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 1" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="A"/></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 1">×</button></td></tr><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 2" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="2"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 2" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="4"/></td><td class="px-3 py-2"><input aria-label="Contribution schedule lot entitlement, row 2" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="60"/></td><td class="px-3 py-2"><input aria-label="Interest schedule lot entitlement, row 2" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value=""/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 2" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="B"/><p class="mt-1 text-xs text-red-600">Enter the interest schedule lot entitlement.</p></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 2">×</button></td></tr><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 3" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="3"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 3" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value=""/></td><td class="px-3 py-2"><input aria-label="Contribution schedule lot entitlement, row 3" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="x"/></td><td class="px-3 py-2"><input aria-label="Interest schedule lot entitlement, row 3" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="0"/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 3" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="C"/><p class="mt-1 text-xs text-red-600">The contribution schedule lot entitlement must be a whole number of at least 1. The interest schedule lot entitlement must be a whole number of at least 1.</p></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 3">×</button></td></tr><tr class="border-t border-line/60 align-top"><td class="px-3 py-2"><input aria-label="Lot number, row 4" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value="4"/></td><td class="px-3 py-2"><input aria-label="Unit number, row 4" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" value=""/></td><td class="px-3 py-2"><input aria-label="Contribution schedule lot entitlement, row 4" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value="10"/></td><td class="px-3 py-2"><input aria-label="Interest schedule lot entitlement, row 4" inputMode="numeric" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise text-right tabular-nums" value=""/></td><td class="px-3 py-2"><input aria-label="Owner name as on the strata roll, row 4" class="w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise" maxLength="500" value="D"/><p class="mt-1 text-xs text-red-600">Enter the interest schedule lot entitlement.</p></td><td class="px-3 py-2 text-right"><button type="button" class="rounded px-2 py-1.5 text-ink-muted hover:bg-muted hover:text-ink" aria-label="Remove row 4">×</button></td></tr></tbody></table></div><div class="flex flex-wrap gap-2 mt-3"><button class="inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-white border-[1.5px] border-turquoise text-turquoise hover:bg-turquoise/5 focus:ring-turquoise " type="button">Add lot</button></div></div>"`;
+
+exports[`QLD onboarding lots > words and checks 1`] = `
+{
+  "bad": {
+    "count": 4,
+    "entitlementSum": 110,
+    "errors": [],
+    "lots": [
+      {
+        "entitlement": 40,
+        "interestScheduleEntitlement": 45,
+        "lotNumber": "1",
+        "ownerName": "A",
+        "unitNumber": null,
+      },
+    ],
+    "ok": false,
+    "rowErrors": {
+      "1": [
+        "Enter the interest schedule lot entitlement.",
+      ],
+      "2": [
+        "The contribution schedule lot entitlement must be a whole number of at least 1.",
+        "The interest schedule lot entitlement must be a whole number of at least 1.",
+      ],
+      "3": [
+        "Enter the interest schedule lot entitlement.",
+      ],
+    },
+    "separateSum": 45,
+  },
+  "ok": {
+    "count": 1,
+    "entitlementSum": 40,
+    "errors": [],
+    "lots": [
+      {
+        "entitlement": 40,
+        "interestScheduleEntitlement": 45,
+        "lotNumber": "1",
+        "ownerName": "A",
+        "unitNumber": null,
+      },
+    ],
+    "ok": true,
+    "rowErrors": {},
+    "separateSum": 45,
+  },
+  "words": {
+    "bodyCorporateName": "Body corporate for {name} community titles scheme {plan}",
+    "entitlement": "contribution schedule lot entitlement",
+    "entitlementHelp": "From the contribution schedule in the community management statement. A whole number, not 0.",
+    "entitlementLabel": "Contribution Schedule Lot Entitlement",
+    "fundWords": {
+      "admin": {
+        "label": "Administrative Fund",
+        "name": "administrative fund",
+        "shortLabel": "Admin",
+      },
+      "capitalWorks": {
+        "label": "Sinking Fund",
+        "name": "sinking fund",
+        "shortLabel": "Sinking Fund",
+      },
+    },
+    "funds": {
+      "admin": "administrative fund",
+      "capitalWorks": "sinking fund",
+    },
+    "lateCharge": "penalty",
+    "levies": "contributions",
+    "levy": "contribution",
+    "ownersCorporation": "body corporate",
+    "planFormat": {
+      "help": "The kind of plan of subdivision the scheme's lots are on, as registered for the scheme.",
+      "label": "Plan format",
+      "options": [
+        {
+          "label": "Building format plan",
+          "note": null,
+          "supported": true,
+          "value": "BUILDING",
+        },
+        {
+          "label": "Volumetric format plan",
+          "note": null,
+          "supported": true,
+          "value": "VOLUMETRIC",
+        },
+        {
+          "label": "Standard format plan",
+          "note": "Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+          "supported": false,
+          "value": "STANDARD",
+        },
+      ],
+    },
+    "planLabel": "Community titles scheme",
+    "regulationModule": {
+      "help": "The module named in the building's community management statement. If it names none, the Standard Module applies.",
+      "label": "Regulation module",
+      "options": [
+        {
+          "label": "Standard Module",
+          "note": null,
+          "supported": true,
+          "value": "STANDARD",
+        },
+        {
+          "label": "Accommodation Module",
+          "note": "Most lots are accommodation lots.",
+          "supported": false,
+          "value": "ACCOMMODATION",
+        },
+        {
+          "label": "Commercial Module",
+          "note": "Most lots are commercial; voting outside a general meeting and no committee spending limits.",
+          "supported": false,
+          "value": "COMMERCIAL",
+        },
+        {
+          "label": "Small Schemes Module",
+          "note": "6 lots or fewer; audit optional; one proxy per person.",
+          "supported": false,
+          "value": "SMALL_SCHEMES",
+        },
+        {
+          "label": "Specified Two-lot Schemes Module",
+          "note": "Two lots; decisions by the lot owners' agreement. The Act's committee, proxy and meeting provisions do not apply (module itself not researched).",
+          "supported": false,
+          "value": "SPECIFIED_TWO_LOT",
+        },
+      ],
+    },
+    "separate": {
+      "field": "interestScheduleEntitlement",
+      "help": "From the interest schedule in the community management statement. A whole number, not 0.",
+      "label": "Interest Schedule Lot Entitlement",
+      "name": "interest schedule lot entitlement",
+    },
+    "state": "QLD",
+  },
+}
+`;
+
+exports[`QLD readers > schedules, fields, words and problems 1`] = `
+{
+  "entitlementFor": [
+    [
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 30,
+      },
+    ],
+    [
+      {
+        "ok": 20,
+      },
+      {
+        "error": "Lot 2 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+    ],
+    [
+      {
+        "error": "Lot 3 has no contribution schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+    ],
+  ],
+  "fields": [
+    [
+      "CONTRIBUTION",
+      "entitlement",
+    ],
+    [
+      "INTEREST",
+      "interestScheduleEntitlement",
+    ],
+  ],
+  "levyFormWords": {
+    "entitlement": "contribution schedule lot entitlement",
+    "levies": "contributions",
+    "levy": "contribution",
+    "plan": "community titles scheme",
+  },
+  "levySharedBy": "contribution schedule lot entitlement (the insurance in the administrative fund by interest schedule lot entitlement)",
+  "lotEntitlementFor": [
+    [
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 10,
+      },
+      {
+        "ok": 30,
+      },
+      {
+        "ok": 30,
+      },
+      {
+        "ok": 30,
+      },
+      {
+        "ok": 30,
+      },
+      {
+        "ok": 30,
+      },
+    ],
+    [
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "ok": 20,
+      },
+      {
+        "error": "Lot 2 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 2 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 2 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 2 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 2 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+    ],
+    [
+      {
+        "error": "Lot 3 has no contribution schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no contribution schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no contribution schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+      {
+        "error": "Lot 3 has no interest schedule lot entitlement recorded. Enter it before this can be worked out.",
+        "name": "MissingEntitlementError",
+      },
+    ],
+  ],
+  "lotProblems": [
+    null,
+    "This lot has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.",
+    null,
+  ],
+  "lotWords": {
+    "entitlement": "Contribution Schedule Lot Entitlement",
+    "entitlementLabel": "Contribution schedule lot entitlement",
+    "lateCharge": "Penalty",
+    "levies": "Contributions",
+  },
+  "missing": [
+    {
+      "entitlement": 20,
+      "interestScheduleEntitlement": null,
+      "lotNumber": "2",
+    },
+  ],
+  "onLot": {
+    "ok": "CONTRIBUTION",
+  },
+  "onLotWords": {
+    "help": "From the contribution schedule in the community management statement. A whole number, not 0.",
+    "label": "Contribution Schedule Lot Entitlement",
+  },
+  "scheduleFor": [
+    [
+      "CONTRIBUTIONS",
+      [
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+      ],
+    ],
+    [
+      "POLL_VOTE",
+      [
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+      ],
+    ],
+    [
+      "SPECIAL_RESOLUTION",
+      [
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+        {
+          "ok": "CONTRIBUTION",
+        },
+      ],
+    ],
+    [
+      "COMMON_PROPERTY_SHARE",
+      [
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+      ],
+    ],
+    [
+      "INSURANCE_COMMON_PROPERTY",
+      [
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+      ],
+    ],
+    [
+      "INSURANCE_BUILDINGS",
+      [
+        {
+          "error": "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.",
+          "name": "EntitlementRuleError",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "error": "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+          "name": "EntitlementRuleError",
+        },
+        {
+          "error": "The building's plan format is not one StrataVerze knows. Choose it again in the building settings.",
+          "name": "EntitlementRuleError",
+        },
+      ],
+    ],
+    [
+      "TERMINATION_INTEREST",
+      [
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+      ],
+    ],
+    [
+      "VALUE_BASED_RATES",
+      [
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+        {
+          "ok": "INTEREST",
+        },
+      ],
+    ],
+  ],
+  "separate": {
+    "field": "interestScheduleEntitlement",
+    "help": "From the interest schedule in the community management statement. A whole number, not 0.",
+    "key": "INTEREST",
+    "label": "Interest Schedule Lot Entitlement",
+    "name": "interest schedule lot entitlement",
+  },
+}
+`;
+
+exports[`Queensland insurance shares > NSW is never split, and the notice sentence 1`] = `
+{
+  "basis": [
+    "Your share of the insurance is worked out by your lot's interest schedule lot entitlement, and the rest by its contribution schedule lot entitlement.",
+    null,
+  ],
+  "nsw": null,
+}
+`;
+
+exports[`Queensland insurance shares > all insurance 1`] = `
+{
+  "ok": {
+    "contributionSchedule": {
+      "key": "CONTRIBUTION",
+      "name": "contribution schedule lot entitlement",
+    },
+    "insuranceCents": 100000,
+    "insuranceSchedule": {
+      "key": "INTEREST",
+      "name": "interest schedule lot entitlement",
+    },
+    "shares": [
+      {
+        "insuranceCents": 30000,
+        "totalCents": 30000,
+      },
+      {
+        "insuranceCents": 30000,
+        "totalCents": 30000,
+      },
+      {
+        "insuranceCents": 40000,
+        "totalCents": 40000,
+      },
+    ],
+  },
+}
+`;
+
+exports[`Queensland insurance shares > building 1`] = `
+{
+  "ok": {
+    "contributionSchedule": {
+      "key": "CONTRIBUTION",
+      "name": "contribution schedule lot entitlement",
+    },
+    "insuranceCents": 40001,
+    "insuranceSchedule": {
+      "key": "INTEREST",
+      "name": "interest schedule lot entitlement",
+    },
+    "shares": [
+      {
+        "insuranceCents": 12000,
+        "totalCents": 22000,
+      },
+      {
+        "insuranceCents": 12000,
+        "totalCents": 32000,
+      },
+      {
+        "insuranceCents": 16001,
+        "totalCents": 46000,
+      },
+    ],
+  },
+}
+`;
+
+exports[`Queensland insurance shares > insurance above the contribution 1`] = `
+{
+  "error": "The insurance in the budget ($1,000.01) is more than the contributions to be raised ($1,000.00). Check the budget and the amount to be raised.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > lots missing and 0 1`] = `
+{
+  "error": "2 lots have no interest schedule lot entitlement recorded (lots 2 and 3), so their shares cannot be worked out. The interest schedule lot entitlement of lot 1 is 0, but each entitlement is a whole number of at least 1. StrataVerze corrects them from the building's records. The contributions were not issued.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > no insurance line 1`] = `
+{
+  "error": "The administrative fund budget has no insurance. Put the insurance premium in the budget on the Insurance account, so each lot's share of it can be worked out, then issue the contributions.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > no plan format 1`] = `
+{
+  "error": "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised. The contributions were not issued.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > one lot missing 1`] = `
+{
+  "error": "Lot 2 has no interest schedule lot entitlement recorded, so its share cannot be worked out. StrataVerze enters it from the building's records. The contributions were not issued.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > sinking fund with insurance 1`] = `
+{
+  "error": "The sinking fund budget has an insurance line, but insurance is paid from the administrative fund. Move the insurance to the administrative fund budget, then issue the contributions.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > sinking fund, no insurance 1`] = `
+{
+  "ok": null,
+}
+`;
+
+exports[`Queensland insurance shares > special 1`] = `
+{
+  "ok": null,
+}
+`;
+
+exports[`Queensland insurance shares > standard 1`] = `
+{
+  "error": "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then. The contributions were not issued.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > uneven cents 1`] = `
+{
+  "ok": {
+    "contributionSchedule": {
+      "key": "CONTRIBUTION",
+      "name": "contribution schedule lot entitlement",
+    },
+    "insuranceCents": 33333,
+    "insuranceSchedule": {
+      "key": "INTEREST",
+      "name": "interest schedule lot entitlement",
+    },
+    "shares": [
+      {
+        "insuranceCents": 10000,
+        "totalCents": 21111,
+      },
+      {
+        "insuranceCents": 10000,
+        "totalCents": 32222,
+      },
+      {
+        "insuranceCents": 13333,
+        "totalCents": 46666,
+      },
+    ],
+  },
+}
+`;
+
+exports[`Queensland insurance shares > unknown plan format 1`] = `
+{
+  "error": "The building's plan format is not one StrataVerze knows. Choose it again in the building settings. The contributions were not issued.",
+  "name": "ContributionShareError",
+}
+`;
+
+exports[`Queensland insurance shares > volumetric 1`] = `
+{
+  "ok": {
+    "contributionSchedule": {
+      "key": "CONTRIBUTION",
+      "name": "contribution schedule lot entitlement",
+    },
+    "insuranceCents": 40001,
+    "insuranceSchedule": {
+      "key": "INTEREST",
+      "name": "interest schedule lot entitlement",
+    },
+    "shares": [
+      {
+        "insuranceCents": 12000,
+        "totalCents": 22000,
+      },
+      {
+        "insuranceCents": 12000,
+        "totalCents": 32000,
+      },
+      {
+        "insuranceCents": 16001,
+        "totalCents": 46000,
+      },
+    ],
+  },
+}
+`;

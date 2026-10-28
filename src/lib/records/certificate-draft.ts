@@ -214,7 +214,7 @@ async function draftBodyCorporateCertificate(input: {
   const entitlementLines = pack.ENTITLEMENT_SCHEDULES.map((schedule) => {
     const name = `${schedule.name[0].toUpperCase()}${schedule.name.slice(1)}`;
     try {
-      return `${name}: ${entitlementFor({ lotNumber: lot?.lotNumber ?? null, entitlement: lot?.entitlement ?? null, interestScheduleEntitlement: lot?.interestScheduleEntitlement ?? null }, schedule)}`;
+      return `${name}: ${entitlementFor({ lotNumber: lot?.lotNumber ?? null, entitlement: lot?.entitlement ?? null, interestScheduleEntitlement: lot?.interestScheduleEntitlement ?? null, lotEntitlement: lot?.lotEntitlement ?? null }, schedule)}`;
     } catch {
       return `${name}: not recorded for this lot in StrataVerze. Check and complete.`;
     }

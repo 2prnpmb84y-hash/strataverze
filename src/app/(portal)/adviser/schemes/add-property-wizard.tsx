@@ -858,7 +858,7 @@ function ReviewSummary({
                   <td className="px-3 py-2 text-ink">{lot.unitNumber ?? "—"}</td>
                   <td className="px-3 py-2 text-ink">{lot.ownerName ?? "—"}</td>
                   <td className="px-3 py-2 text-ink text-right tabular-nums">{lot.entitlement}</td>
-                  {words.separate && <td className="px-3 py-2 text-ink text-right tabular-nums">{lot.interestScheduleEntitlement ?? "—"}</td>}
+                  {words.separate && <td className="px-3 py-2 text-ink text-right tabular-nums">{(words.separate.field ? lot[words.separate.field] : null) ?? "—"}</td>}
                 </tr>
               ))}
             </tbody>

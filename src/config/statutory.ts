@@ -191,7 +191,7 @@ export interface RulePack {
 }
 
 /**
- * The Queensland pack (AU-QLD), active from 2026.10.18 (QLD stage 2, step 11,
+ * The Queensland pack (AU-QLD), active from 2026.10.19 (QLD stage 2, step 11,
  * 28 Oct 2026). Exported with its rules' own types for tests and `src/config`.
  * Application code gets a building's rules from `rulePackFor` or
  * `statutoryRulesFor`, never from here (`statutory.imports.test.ts`).
@@ -298,14 +298,21 @@ export const QLD_RULE_PACK = {
   // the plural where a page lists several buildings; wording only), and FOR_REVIEW gains that word and how buildings
   // in both states are named together. The finance screens, reports, PDFs and messages take the pack's words. The
   // legal values are unchanged, so the status stays REVIEWED. The GO-LIVE GAP note on the wording says what remains.
-  // 2026.10.18 (28 Oct 2026): ACTIVE. Moved from PENDING_RULE_PACKS into RULE_PACKS (QLD stage 2, step 11, the
+  // 2026.10.18 (28 Oct 2026): debtor voting lot by lot. SM s 102(2) bars each lot that owes money, so an owner of
+  // several lots is no longer refused only when every lot owes: a lot that owes is barred and the same owner's lots
+  // that owe nothing still vote, online and in the chair's count. An owner's vote online is judged on the meeting's
+  // date, as the chair's count is, so the FOR_REVIEW point on what counts as owing now names that day (what counts is
+  // unchanged: contribution notices only, still FOR_REVIEW). The FOR_REVIEW point on several lots records the lot by
+  // lot rule and keeps for review only how the motions list (one vote per owner, not per lot) applies it. No legal
+  // value changed, so the status stays REVIEWED.
+  // 2026.10.19 (28 Oct 2026): ACTIVE. Moved from PENDING_RULE_PACKS into RULE_PACKS (QLD stage 2, step 11, the
   // switch-on, approved by Matthew Wrigley on 28 Oct 2026), so Queensland buildings can be set up and are given these
   // rules. defaultAccountingBasis added (the basis a new building's funds start on, as for NSW: the administrative fund
   // on a cash basis, the sinking fund on an accrual basis), a StrataVerze choice he decided on 28 Oct 2026. DECISIONS
   // gains that choice and his go-live sign-off: the stage 2 FOR_REVIEW points accepted as built, except the debtor test
-  // for voting, to be applied per lot (SM s 102(2)) in a separate change. FOR_REVIEW is kept as the record. No rule of
-  // law changed, so the sign-off of 27 Oct 2026 stands.
-  version: "2026.10.18",
+  // for voting, applied per lot (SM s 102(2)) in 2026.10.18. FOR_REVIEW is kept as the record, and gains a NOT CONFIRMED
+  // point on whether a committee seat ends when a lot is sold. No rule of law changed, so the sign-off of 27 Oct 2026 stands.
+  version: "2026.10.19",
   reviewer: "Matthew Wrigley",
   reviewedOn: "2026-10-27",
   rules: QLD,
@@ -356,7 +363,7 @@ export const RULE_PACKS: Readonly<Record<string, RulePack>> = {
  * `statutoryRulesFor` read RULE_PACKS only, and the state is not supported for
  * new buildings. A pack moves to RULE_PACKS, with the shared rule shape, when
  * the platform can apply it (stage 2). Queensland moved on 28 Oct 2026
- * (QLD_RULE_PACK, version 2026.10.18).
+ * (QLD_RULE_PACK, version 2026.10.19).
  */
 export interface PendingRulePack<R> {
   code: string;
@@ -430,7 +437,20 @@ export const PENDING_RULE_PACKS = {
     // as a ledger choice (status STRATAVERZE, unchanged), so every building has a ledger fund and a chart of accounts;
     // FOR_REVIEW ADMINISTRATIVE_FUND says so. The GO-LIVE GAP note is replaced, and FOR_REVIEW MAINTENANCE_FUND_REQUIRED
     // and BUILDING_FACTS_RECORDED_BY are rewritten. No legal value or status changed; still a draft.
-    version: "2026.10.4",
+    // 2026.10.5 (28 Oct 2026): the second schedule (stage 2 PR 4). ENTITLEMENT_SCHEDULES gains a label and help for each
+    // schedule (wording only), an import heading for lot liability ("Lot Liability"), lot entitlement's uses in `usedFor`
+    // gain the quorum fallback (s 77), the nomination by owners holding 25% of lot entitlements of the person who convenes
+    // a meeting or arranges a ballot (ss 74, 83 to 85) and VCAT consent (SA s 34D(3)(ba)), all from the notes, and each
+    // schedule gains `decides`: lot liability decides CONTRIBUTIONS (ss 23(3), 24(2), 53(1A)); lot entitlement decides
+    // POLL_VOTE (s 89(3)), SPECIAL_RESOLUTION and UNANIMOUS_RESOLUTION (ss 95, 96), QUORUM_FALLBACK (s 77, only where 50%
+    // of the lots is not available), COMMON_PROPERTY_SHARE (SA s 30) and INSURANCE_PREMIUM_FEE (s 23A). Lot entitlement is
+    // now held (lots.lot_entitlement, migration 20261121, not applied). No CONTRIBUTION_INSURANCE: the s 23A fee covers
+    // the reinstatement premium only and the budget holds every policy together, so every Victorian fee, insurance
+    // included, is shared by lot liability (s 23(3)) until FOR_REVIEW CONTRIBUTION_INSURANCE_S23A is decided; nothing
+    // reads INSURANCE_PREMIUM_FEE yet. FOR_REVIEW gains ENTITLEMENT_DECIDES, SECOND_SCHEDULE_HELD and
+    // CONTRIBUTION_INSURANCE_S23A, and a GO-LIVE GAP note at ENTITLEMENT_SCHEDULES says what is applied. No legal value
+    // or status already recorded changed; still a draft.
+    version: "2026.10.5",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,
