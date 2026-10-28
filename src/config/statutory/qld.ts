@@ -1133,7 +1133,10 @@ const GENERAL_MEETING_QUORUM: QuorumRule = {
  *   buildings until it is designed.
  * - A lot owing a body corporate debt votes only on a resolution without
  *   dissent (SM s 102(2)). The other exception, a committee election, is not a
- *   resolution category here.
+ *   resolution category here. The rule is for each lot, so it is applied lot
+ *   by lot (28 Oct 2026): a lot that owes is barred and the same owner's lots
+ *   that owe nothing still vote, both for an owner's vote online and for the
+ *   votes the chair records (src/lib/meetings/debtor-voting.ts debtorBarsLot).
  */
 /*
  * GO-LIVE GAP (stage 2, step 7; resolution tallies, 27 Oct 2026).
@@ -1548,8 +1551,9 @@ export const FOR_REVIEW = [
     where: "src/lib/meetings/debtor-voting-repo.ts",
   },
   {
-    point: "An owner of several lots is refused a vote only if every one of their lots owes money.",
-    where: "src/lib/meetings/debtor-voting-repo.ts",
+    point:
+      "SM s 102(2) is applied lot by lot, as the notes give it: a lot that owes money cannot vote, and the same owner's lots that owe nothing still can, online and in the chair's count. One StrataVerze choice remains for review: the motions list records one vote per owner, not per lot, so an owner's vote is taken while any of the lots it is for owes nothing (lots a co-owner has already voted for are left out), and is refused only when every one of them owes.",
+    where: "src/lib/meetings/debtor-voting-repo.ts debtorVoteCheck, src/app/(portal)/owner/(scheme)/meetings/actions.ts castVoteAction",
   },
   {
     point: "The draft AGM template and motion library: their wording, and putting the accounts and insurance review motions as ordinary resolutions (no type is recorded for those two).",

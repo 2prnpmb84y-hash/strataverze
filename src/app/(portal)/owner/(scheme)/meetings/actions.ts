@@ -10,7 +10,7 @@ import { getAgendaItem } from "@/lib/queries/agenda";
 import { getBallotForMeeting, castElectronicVote } from "@/lib/queries/evoting";
 import { isBallotOpen, isInformalVote } from "@/lib/meetings/evoting";
 import { isOpenForVoting } from "@/lib/meetings/lifecycle";
-import { debtorVoteProblem } from "@/lib/meetings/debtor-voting-repo";
+import { debtorVoteCheck, debtorVoteProblem } from "@/lib/meetings/debtor-voting-repo";
 import { db } from "@/prisma/db";
 import { and } from "@prisma/orm-postgres/orm-client";
 
@@ -99,18 +99,25 @@ export async function castVoteAction(motionId: string, voteValue: string) {
       .limit(500)
       .all();
     const votedProfileIds = new Set(motion.votes.map((v) => v.profileId));
-    const lotAlreadyVoted = lotIds.every((lotId) =>
-      coOwners.some(
-        (m) => m.lotId === lotId && m.profileId !== profile.id && votedProfileIds.has(m.profileId),
-      ),
+    const votesFor = lotIds.filter(
+      (lotId) =>
+        !coOwners.some(
+          (m) => m.lotId === lotId && m.profileId !== profile.id && votedProfileIds.has(m.profileId),
+        ),
     );
-    if (lotAlreadyVoted) {
+    if (votesFor.length === 0) {
       return { error: "A vote has already been cast for your lot." };
     }
 
     // Where the building's pack limits what a lot owing money may vote on
-    // (Queensland), refused before anything is written. NSW records no such rule.
-    const debtorProblem = await debtorVoteProblem({ schemeId: motion.schemeId, lotIds, category: motion.motionType });
+    // (Queensland), refused before anything is written. Judged lot by lot on
+    // the lots this vote is for: it stands for those that owe nothing, and is
+    // refused only when every one of them owes. NSW records no such rule.
+    const debtorProblem = await debtorVoteProblem({
+      schemeId: motion.schemeId,
+      lotIds: votesFor,
+      category: motion.motionType,
+    });
     if (debtorProblem) return { error: debtorProblem };
 
     await castVote({
@@ -157,8 +164,7 @@ export async function castBallotVoteAction(
 
     // Only an OWNER membership tied to a lot carries a vote (F8).
     const { profile, memberships } = await ownerLotMemberships(meeting.schemeId);
-    const membership = memberships[0];
-    if (!membership || !membership.lotId)
+    if (memberships.length === 0)
       return { error: "You are not recorded as an owner of a lot in this scheme." };
 
     // The agenda item must belong to the ballot's meeting.
@@ -176,21 +182,25 @@ export async function castBallotVoteAction(
     );
     if (!open) return { error: "The ballot is not currently open." };
 
-    const lotId = membership.lotId;
+    // The vote is recorded for one of the owner's lots. Where the pack limits
+    // what a lot owing money may vote on (Queensland), each lot is judged on
+    // its own, as the chair's count does: the vote goes to the first lot that
+    // may vote, and is refused before anything is written only when every one
+    // of the owner's lots owes. Under NSW, which records no such rule, that is
+    // the owner's first lot, as before.
+    const check = await debtorVoteCheck({
+      schemeId: meeting.schemeId,
+      lotIds: memberships.map((m) => m.lotId as string),
+      category: item.resolutionCategory,
+    });
+    if (check.refusal) return { error: check.refusal };
+    const lotId = check.mayVote[0];
+    if (!lotId) return { error: "You are not recorded as an owner of a lot in this scheme." };
     const lot = await db.orm.public.Lot
       .where((l) => and(l.id.eq(lotId), l.schemeId.eq(meeting.schemeId)))
       .first();
     if (!lot) return { error: "You are not recorded as an owner of a lot in this scheme." };
     const unitEntitlement = lot.entitlement ?? 0;
-
-    // As for motions: refused before anything is written where the pack limits
-    // a lot owing money, and only if every one of the owner's lots owes.
-    const debtorProblem = await debtorVoteProblem({
-      schemeId: meeting.schemeId,
-      lotIds: memberships.map((m) => m.lotId as string),
-      category: item.resolutionCategory,
-    });
-    if (debtorProblem) return { error: debtorProblem };
 
     // castElectronicVote keeps one vote per lot per agenda item (it updates
     // the lot's existing vote).
