@@ -2506,6 +2506,10 @@ exports[`Queensland pack (active) > is the rules recorded for review 1`] = `
       "point": "The Add Property wizard asks for a new building's plan format and saves it with the building. Any listed format can be chosen, as in the building settings, so a standard format plan is accepted and its contributions that include insurance are refused later.",
       "where": "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts createSchemeAction, src/lib/queries/schemes.ts createScheme",
     },
+    {
+      "point": "NOT CONFIRMED: whether a committee member's seat ends when they sell their lot in Queensland. The research notes do not say. StrataVerze ends it from the settlement date, as it does for NSW (SSMA 2015 s 35(1)(a)), unless the roll shows them owning another lot, and the change of owner message gives no Queensland provision for it.",
+      "where": "src/lib/actions/change-owner.ts changeOwnerAction, src/lib/owner/change-owner.ts applyChangeOwner",
+    },
   ],
   "FUND_CATALOGUE": [
     {

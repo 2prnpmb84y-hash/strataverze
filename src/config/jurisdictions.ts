@@ -6,14 +6,14 @@
  * and Queensland (Queensland switched on 28 Oct 2026, QLD stage 2, step 11).
  * The database holds the same line (`schemes_state_has_rule_pack_check`,
  * migration 20261106_jurisdiction_rule_packs.sql, widened to NSW and QLD by
- * 20261121_qld_switch_on.sql): adding a pack means changing that constraint
+ * 20261122_qld_switch_on.sql): adding a pack means changing that constraint
  * in the same release. Addresses of suppliers and businesses are not limited
  * by this.
  *
  * Plan numbers are unique within each state, not across the platform
  * (decided 27 Oct 2026): an NSW and a Queensland building may have the same
  * plan number. Look a building up by its state and plan number together
- * (`schemes_state_plan_number_key`, migration 20261121).
+ * (`schemes_state_plan_number_key`, migration 20261122).
  *
  * Plan: https://claude.ai/artifact/4mgrKi2E7VeBdSqTSgZhyc
  */

@@ -13,11 +13,12 @@
 -- database: it never writes a Queensland building, and its own duplicate
 -- check still looks across the platform.
 --
--- Migrations 20261116 to 20261120 must already be applied (the Queensland
--- building data, insurance shares, payment late charge, proceedings
--- reminders and building selectors). 20261119 in particular: the daily
--- proceedings reminder starts reading proceedings_deadline_reminders for
--- Queensland buildings once this pack is live.
+-- Every earlier migration must already be applied, including 20261116 to
+-- 20261121 (among them the Queensland building data, insurance shares,
+-- payment late charge, proceedings reminders and building selectors).
+-- 20261119 in particular: the daily proceedings reminder starts reading
+-- proceedings_deadline_reminders for Queensland buildings once this pack is
+-- live.
 --
 -- 1. schemes_state_has_rule_pack_check now allows NSW and QLD, the states
 --    with a live rule pack (RULE_PACKS in src/config/statutory.ts,

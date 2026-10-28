@@ -8,7 +8,7 @@
  * DECISIONS; the points in NOT_CONFIRMED stay not confirmed. ACTIVE from
  * version 2026.10.18 (QLD stage 2, step 11, the switch-on, 28 Oct 2026): the
  * pack is in RULE_PACKS, Queensland is in SUPPORTED_SCHEME_STATES, and
- * migration 20261121 adds it to the database's state check. Queensland
+ * migration 20261122 adds it to the database's state check. Queensland
  * buildings can be set up and are given these rules.
  *
  * Sources, read on 27 Oct 2026 on legislation.qld.gov.au (in-force HTML):
@@ -1771,6 +1771,11 @@ export const FOR_REVIEW = [
     point:
       "The Add Property wizard asks for a new building's plan format and saves it with the building. Any listed format can be chosen, as in the building settings, so a standard format plan is accepted and its contributions that include insurance are refused later.",
     where: "PLAN_FORMAT; src/app/(portal)/adviser/schemes/actions.ts createSchemeAction, src/lib/queries/schemes.ts createScheme",
+  },
+  {
+    point:
+      "NOT CONFIRMED: whether a committee member's seat ends when they sell their lot in Queensland. The research notes do not say. StrataVerze ends it from the settlement date, as it does for NSW (SSMA 2015 s 35(1)(a)), unless the roll shows them owning another lot, and the change of owner message gives no Queensland provision for it.",
+    where: "src/lib/actions/change-owner.ts changeOwnerAction, src/lib/owner/change-owner.ts applyChangeOwner",
   },
 ] as const;
 

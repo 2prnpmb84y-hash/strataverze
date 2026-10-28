@@ -139,7 +139,7 @@ beforeEach(() => {
     LevySchedule: [],
     LevyNotice: [],
   });
-  // The database's keys (migration 20261121): plan numbers unique within each state.
+  // The database's keys (migration 20261122): plan numbers unique within each state.
   sharedFake.setUniqueKeys({ Scheme: [["state", "planNumber"]], Lot: [["schemeId", "lotNumber"]] });
 });
 
