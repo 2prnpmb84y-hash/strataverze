@@ -675,6 +675,8 @@ export interface LateChargeWaiverRule {
   decidedBy: CheckedValue<LateChargeResolution>;
   /** Decisions to waive or not, with reasons, are reported to the annual general meeting. */
   reportedToAgm: boolean;
+  /** The waiver form's words for the meeting and the motion that decided it ("General meeting", "Motion carried"). */
+  formWords: { meeting: string; motion: string };
   source: string;
   status: RuleStatus;
 }

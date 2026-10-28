@@ -100,7 +100,7 @@ export function LateChargeWaiverForm({
               </>
             )}
             <label className="text-sm text-ink">
-              <span className="mb-1 block font-medium">General meeting</span>
+              <span className="mb-1 block font-medium">{words.meetingLabel}</span>
               <select name="meetingId" value={meeting} onChange={(e) => setMeeting(e.target.value)} required className={field}>
                 <option value="">Choose the meeting</option>
                 {meetings.map((m) => (
@@ -111,7 +111,7 @@ export function LateChargeWaiverForm({
               </select>
             </label>
             <label className="text-sm text-ink">
-              <span className="mb-1 block font-medium">Motion carried</span>
+              <span className="mb-1 block font-medium">{words.motionLabel}</span>
               <select name="motionId" defaultValue="" key={meeting} required className={field}>
                 <option value="">Choose the motion</option>
                 {motions.map((m) => (

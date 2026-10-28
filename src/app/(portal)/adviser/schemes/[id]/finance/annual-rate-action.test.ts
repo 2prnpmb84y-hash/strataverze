@@ -3,8 +3,10 @@
  * stage 2, PR 5), and the interest run reading them. The packs are pending,
  * so the test gives a building their rules directly ("ACT-SHAPED" and so on).
  * "VIC-FIXTURE" is the Victorian pack with the values the notes leave out
- * filled in (the cap, simple interest, 365 days), as a later pack version
- * would record them, so the run can be seen charging and waiving.
+ * filled in (the cap, simple interest, 365 days) and the waiver as proposed
+ * (a general meeting resolution; all, an amount or a period), as a later pack
+ * version would record them once decided, so the run can be seen charging
+ * and waiving.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -37,7 +39,12 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
     ...vic,
     LATE_CHARGE: {
       ...vic.LATE_CHARGE,
-      annual: { ...a, accrual: { ...a.accrual, simple: v(true as const), daysInYear: v(365) }, resolvedRate: { ...a.resolvedRate!, maxPercent: v(10) } },
+      annual: {
+        ...a,
+        accrual: { ...a.accrual, simple: v(true as const), daysInYear: v(365) },
+        resolvedRate: { ...a.resolvedRate!, maxPercent: v(10) },
+        waiver: { ...a.waiver!, kinds: ["WHOLE", "AMOUNT", "PERIOD"] as const, decidedBy: v({ kind: "GENERAL_MEETING" as const, words: "general meeting resolution" }) },
+      },
     },
   };
   const shaped: Record<string, unknown> = {
@@ -59,7 +66,7 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
 
 const { sharedFake } = await import("@/test/fake-orm");
 const { saveInterestSettingAction, recordLateChargeWaiverAction } = await import("./actions");
-const { statutoryInterestForScheme } = await import("@/lib/finance/interest-setting");
+const { statutoryInterestForScheme, noticeLateCharge, getSchemeInterestSetting } = await import("@/lib/finance/interest-setting");
 const { getOverdueLevyNoticesWithInterest, chargeInterestBatch } = await import("@/lib/queries/interest");
 const { updateScheme } = await import("@/lib/queries/schemes");
 
@@ -202,6 +209,25 @@ describe("recording a waiver on one notice", () => {
     expect(activity).toHaveBeenCalledWith(expect.objectContaining({ action: "LATE_CHARGE_WAIVER_RECORDED", entityType: "LevyNotice", entityId: `${FIX_ID}-n1` }));
   });
 
+  it("refuses a notice with interest already charged, until a charge can be reversed", async () => {
+    Object.assign(sharedFake.table("LevyNotice").find((n) => n.id === `${FIX_ID}-n1`)!, { interestCharged: "0.01" });
+    expect((await waive(FIX_ID, ok)).error).toBe("Interest has already been charged on this notice, so a waiver cannot be recorded for it yet.");
+    expect(sharedFake.table("LateChargeWaiver")).toHaveLength(0);
+  });
+
+  it("a double submit records the waiver once", async () => {
+    const [a, b] = await Promise.all([waive(FIX_ID, ok), waive(FIX_ID, ok)]);
+    expect([a, b]).toContainEqual({ success: true });
+    expect([a, b]).toContainEqual({ error: "This waiver is already recorded for that notice and motion." });
+    expect(sharedFake.table("LateChargeWaiver")).toHaveLength(1);
+  });
+
+  it("Victoria as the pack stands: refused, as who decides is not confirmed", async () => {
+    expect((await waive(VIC_ID, { ...ok, levyNoticeId: `${FIX_ID}-n1`, ...at(VIC_ID, "ordinary") })).error).toBe(
+      "Who may waive interest is not confirmed for this building's rules yet, so no waiver can be recorded.",
+    );
+  });
+
   it("refuses no reasons, another building's notice, a lost motion, a bad amount, and packs with no waiver or no decider", async () => {
     expect((await waive(FIX_ID, { ...ok, reasons: "" })).error).toBe("Enter the reasons for the decision. They are reported to the annual general meeting.");
     expect((await waive(FIX_ID, { ...ok, levyNoticeId: `${ACT_ID}-n1` })).error).toBe("Choose a fee notice of this building.");
@@ -211,6 +237,19 @@ describe("recording a waiver on one notice", () => {
     expect((await waive(ACT_ID, { ...ok, levyNoticeId: `${ACT_ID}-n1` })).error).toBe("This building's rules give no waiver of interest in a particular case.");
     expect((await waive(NSW_ID, { ...ok, levyNoticeId: `${NSW_ID}-n1` })).error).toBe("This building's rules give no waiver of interest in a particular case.");
     expect(sharedFake.table("LateChargeWaiver")).toHaveLength(0);
+  });
+});
+
+describe("an amount waived on a notice brought across at takeover", () => {
+  it("comes off what is owed here once, not off the takeover figure too", async () => {
+    // $36,500 at 10%: $10 a day. Due 31 January; taken over on 5 February ($50 to takeover); 12 February is $120.
+    Object.assign(scheme(FIX_ID), { interestMode: "RESOLVED_ANNUAL_RATE", lateChargeAnnualRatePercent: "10.00" });
+    const setting = await getSchemeInterestSetting(FIX_ID);
+    const n = { id: "m1", amountDue: "36500.00", dueDate: "2026-01-31", interestCharged: "50.00", migratedInterestCharged: "50.00", migrationBatchId: "batch", issuedAt: "2026-02-05T00:00:00.000Z" };
+    const run = (waivers: { levyNoticeId: string; kind: string; amount?: string }[]) => noticeLateCharge(n, [], setting.rules.rules.LATE_CHARGE, setting, "2026-02-12", waivers);
+    expect(run([])).toMatchObject({ interestCents: 12_000, additionalCents: 7_000 });
+    // $30 waived: $120 less $30 is $90, less the $50 to takeover, so $40 more is owed here (not $70, as if nothing were waived).
+    expect(run([{ levyNoticeId: "m1", kind: "AMOUNT", amount: "30.00" }])).toMatchObject({ interestCents: 9_000, additionalCents: 4_000 });
   });
 });
 

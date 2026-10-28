@@ -33,7 +33,7 @@ const QLD = PENDING_RULE_PACKS.QLD.rules;
 /** A fixture: the pack's rule with the given accrual and range values filled in, as a later pack version would record them. */
 function fixture(
   rule: LateChargeRule,
-  fill: { from?: boolean; graceMonths?: number; daysInYear?: number; simple?: boolean; whoDecides?: boolean; maxPercent?: number },
+  fill: { from?: boolean; graceMonths?: number; daysInYear?: number; simple?: boolean; whoDecides?: boolean; maxPercent?: number; waiverKinds?: ("WHOLE" | "AMOUNT" | "PERIOD")[] },
 ): LateChargeRule {
   const a = rule.annual!;
   const v = <T>(value: T) => ({ value, status: "STRATAVERZE" as const, source: "fixture" });
@@ -52,13 +52,19 @@ function fixture(
         resolution: fill.whoDecides ? v({ kind: "GENERAL_MEETING" as const, words: "general meeting resolution" }) : a.resolvedRate.resolution,
         maxPercent: fill.maxPercent != null ? v(fill.maxPercent) : a.resolvedRate.maxPercent,
       },
-      waiver: a.waiver && (fill.whoDecides ? { ...a.waiver, decidedBy: v({ kind: "GENERAL_MEETING" as const, words: "general meeting resolution" }) } : a.waiver),
+      waiver: a.waiver && {
+        ...a.waiver,
+        ...(fill.whoDecides ? { decidedBy: v({ kind: "GENERAL_MEETING" as const, words: "general meeting resolution" }) } : {}),
+        ...(fill.waiverKinds ? { kinds: fill.waiverKinds } : {}),
+      },
     },
   };
 }
 const ACT_FIX = fixture(ACT.LATE_CHARGE, { from: true, graceMonths: 0, daysInYear: 365 });
 const WA_FIX = fixture(WA.LATE_CHARGE, { daysInYear: 365 });
 const VIC_FIX = fixture(VIC.LATE_CHARGE, { simple: true, daysInYear: 365, maxPercent: 10 });
+/** Fixture: the Victorian waiver as proposed (a general meeting resolution; all, an amount or a period), as if decided. */
+const VIC_WAIVER_FIX = fixture(VIC.LATE_CHARGE, { simple: true, daysInYear: 365, maxPercent: 10, whoDecides: true, waiverKinds: ["WHOLE", "AMOUNT", "PERIOD"] });
 
 const LEVY_FIRST = ["LEVY", "INTEREST", "RECOVERY_COSTS"] as const;
 /** $1,000 due 31 January 2026, unpaid. */
@@ -242,18 +248,28 @@ describe("the waiver in a particular case", () => {
     expect(lateCharge(input("2026-04-30"), QLD.LATE_CHARGE, { mode: "RESOLVED_RATE", monthlyRatePercent: 2.5 }, { waivers: [{ kind: "WHOLE" }] })).toEqual(qld);
   });
 
-  it("can be recorded in Victoria (all, an amount or a period, with reasons); not in the ACT (none) or WA (who decides not confirmed)", () => {
+  it("Victoria: who decides is not confirmed, so none can be recorded yet, and only all of the interest is offered", () => {
+    expect(VIC.LATE_CHARGE.annual!.waiver).toMatchObject({ kinds: ["WHOLE"], decidedBy: { value: null, status: "NOT_CONFIRMED" }, reportedToAgm: true });
+    expect(lateChargeWaiverProblem({ kind: "WHOLE", reasons: "Hardship", ...resolution }, VIC.LATE_CHARGE, T(VIC))).toBe(
+      "Who may waive interest is not confirmed for this building's rules yet, so no waiver can be recorded.",
+    );
+  });
+
+  it("fixture: as proposed for Victoria (all, an amount or a period, with reasons); not in the ACT (none) or WA (who decides not confirmed)", () => {
+    const V = VIC_WAIVER_FIX;
     const ok = { kind: "WHOLE", reasons: "Hardship", ...resolution };
-    expect(lateChargeWaiverProblem(ok, VIC.LATE_CHARGE, T(VIC))).toBeNull();
-    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: 1_250 }, VIC.LATE_CHARGE, T(VIC))).toBeNull();
-    expect(lateChargeWaiverProblem({ ...ok, kind: "PERIOD", fromDate: "2026-02-01", toDate: "2026-02-01" }, VIC.LATE_CHARGE, T(VIC))).toBeNull();
-    expect(lateChargeWaiverProblem({ ...ok, reasons: " " }, VIC.LATE_CHARGE, T(VIC))).toBe("Enter the reasons for the decision. They are reported to the annual general meeting.");
-    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: 0 }, VIC.LATE_CHARGE, T(VIC))).toMatch(/more than \$0/);
-    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: Number.NaN }, VIC.LATE_CHARGE, T(VIC))).toMatch(/more than \$0/);
-    expect(lateChargeWaiverProblem({ ...ok, kind: "PERIOD", fromDate: "2026-02-10", toDate: "2026-02-01" }, VIC.LATE_CHARGE, T(VIC))).toMatch(/first on or before the last/);
-    expect(lateChargeWaiverProblem({ ...ok, kind: "PERIOD", fromDate: "2026-02-30", toDate: "2026-03-01" }, VIC.LATE_CHARGE, T(VIC))).toMatch(/first on or before the last/);
-    expect(lateChargeWaiverProblem({ ...ok, kind: "HALF" }, VIC.LATE_CHARGE, T(VIC))).toMatch(/^Choose what is waived/);
-    expect(lateChargeWaiverProblem({ kind: "WHOLE", reasons: "Hardship" }, VIC.LATE_CHARGE, T(VIC))).toBe(
+    expect(lateChargeWaiverProblem(ok, V, T(VIC))).toBeNull();
+    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: 1_250 }, V, T(VIC))).toBeNull();
+    expect(lateChargeWaiverProblem({ ...ok, kind: "PERIOD", fromDate: "2026-02-01", toDate: "2026-02-01" }, V, T(VIC))).toBeNull();
+    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: 1_250 }, VIC.LATE_CHARGE, T(VIC))).toMatch(/not confirmed/);
+    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: 1_250 }, fixture(VIC.LATE_CHARGE, { whoDecides: true }), T(VIC))).toMatch(/^Choose what is waived/);
+    expect(lateChargeWaiverProblem({ ...ok, reasons: " " }, V, T(VIC))).toBe("Enter the reasons for the decision. They are reported to the annual general meeting.");
+    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: 0 }, V, T(VIC))).toMatch(/more than \$0/);
+    expect(lateChargeWaiverProblem({ ...ok, kind: "AMOUNT", amountCents: Number.NaN }, V, T(VIC))).toMatch(/more than \$0/);
+    expect(lateChargeWaiverProblem({ ...ok, kind: "PERIOD", fromDate: "2026-02-10", toDate: "2026-02-01" }, V, T(VIC))).toMatch(/first on or before the last/);
+    expect(lateChargeWaiverProblem({ ...ok, kind: "PERIOD", fromDate: "2026-02-30", toDate: "2026-03-01" }, V, T(VIC))).toMatch(/first on or before the last/);
+    expect(lateChargeWaiverProblem({ ...ok, kind: "HALF" }, V, T(VIC))).toMatch(/^Choose what is waived/);
+    expect(lateChargeWaiverProblem({ kind: "WHOLE", reasons: "Hardship" }, V, T(VIC))).toBe(
       "A waiver needs the general meeting resolution that decided it. Choose the meeting and motion.",
     );
     expect(lateChargeWaiverProblem(ok, ACT.LATE_CHARGE, T(ACT))).toBe("This building's rules give no waiver of interest in a particular case.");
@@ -338,7 +354,8 @@ describe("words", () => {
     expect(lateChargeWaiverWords(NSW as never)).toBeNull();
     expect(lateChargeWaiverWords(QLD as never)).toBeNull();
     expect(lateChargeWaiverWords(ACT as never)).toBeNull();
-    expect(lateChargeWaiverWords(VIC as never)).toMatchObject({ canRecord: true, reasonsRequired: true, kinds: [{ value: "WHOLE" }, { value: "AMOUNT" }, { value: "PERIOD" }] });
+    expect(lateChargeWaiverWords(VIC as never)).toMatchObject({ canRecord: false, reasonsRequired: true, kinds: [{ value: "WHOLE" }], meetingLabel: "General meeting", motionLabel: "Motion carried" });
+    expect(lateChargeWaiverWords({ ...VIC, LATE_CHARGE: VIC_WAIVER_FIX } as never)).toMatchObject({ canRecord: true, kinds: [{ value: "WHOLE" }, { value: "AMOUNT" }, { value: "PERIOD" }] });
     expect(lateChargeWaiverWords(WA as never)).toMatchObject({ canRecord: false, kinds: [{ value: "WHOLE" }] });
   });
 

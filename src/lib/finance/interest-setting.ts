@@ -177,7 +177,10 @@ function lateChargeWorking(
   // the interest charged here, plus the statutory interest to takeover,
   // which the old system's charge stands in for (financials review B8).
   const takeover = n.migrationBatchId ? isoDay(n.issuedAt) || isoDay(n.dueDate) : "";
-  const toTakeoverCents = takeover ? lateCharge({ ...base, asAt: takeover }, rule, setting, context).interestCents : 0;
+  // An amount waived comes off what is owed here once, so it is left out of the figure to takeover (otherwise it would
+  // come off both and cancel out).
+  const toTakeoverContext = { ...context, waivers: context.waivers.filter((w) => w.kind !== "AMOUNT") };
+  const toTakeoverCents = takeover ? lateCharge({ ...base, asAt: takeover }, rule, setting, toTakeoverContext).interestCents : 0;
   const chargedHereCents = Math.max(0, toCents(String(n.interestCharged ?? 0)) - toCents(String(n.migratedInterestCharged ?? 0)));
   return { result, toTakeoverCents, chargedHereCents, additionalCents: Math.max(0, result.interestCents - toTakeoverCents - chargedHereCents) };
 }

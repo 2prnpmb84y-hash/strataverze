@@ -1048,6 +1048,7 @@ export const INTEREST = {
  * notes either (NOT_CONFIRMED), so the engine charges nothing until a pack
  * version records it. The owners corporation may waive in a particular case,
  * and decisions to waive or not, with reasons, go to the AGM (s 29(3), (4)).
+ * Who decides a waiver is NOT_CONFIRMED, so none can be recorded yet.
  */
 export const LATE_CHARGE: LateChargeRules = {
   method: "ANNUAL_RATE",
@@ -1092,14 +1093,16 @@ export const LATE_CHARGE: LateChargeRules = {
       daysInYear: { value: null, status: "NOT_CONFIRMED", source: `${OCA} s 29`, note: "The notes do not say how a day's share of a yearly rate is worked out." },
     },
     waiver: {
-      kinds: ["WHOLE", "AMOUNT", "PERIOD"],
+      // All of the interest on one notice only, until Matthew Wrigley decides whether part may be waived (FOR_REVIEW INTEREST_WAIVER).
+      kinds: ["WHOLE"],
       decidedBy: {
-        value: { kind: "GENERAL_MEETING", words: "general meeting resolution" },
-        status: "STRATAVERZE",
+        value: null,
+        status: "NOT_CONFIRMED",
         source: `${OCA} s 29(3)`,
-        note: "The notes say the owners corporation may waive in a particular case. They do not say whether its committee may decide it, so StrataVerze asks for a general meeting resolution until that is settled (FOR_REVIEW INTEREST_WAIVER).",
+        note: "The notes say the owners corporation may waive in a particular case. They do not say by what resolution or whether its committee may decide it. A general meeting resolution is proposed (FOR_REVIEW INTEREST_WAIVER), not decided, so no waiver can be recorded yet.",
       },
       reportedToAgm: INTEREST.waiverDecisionsReportedToAgm,
+      formWords: { meeting: "General meeting", motion: "Motion carried" },
       source: `${OCA} s 29(3), (4)`,
       status: "CONFIRMED",
     },
@@ -2727,7 +2730,7 @@ export const FOR_REVIEW = [
   {
     key: "INTEREST_WAIVER",
     point:
-      "The waiver in a particular case (s 29(3)) is recorded for one notice: all of its interest, an amount, or the days of a period. Whether s 29(3) allows waiving part of the interest (an amount or a period) is not in the notes: offered as a StrataVerze reading. Who decides is not in the notes either: StrataVerze asks for a general meeting resolution (the meeting and motion) until it is settled whether the committee may. The reasons are required, because decisions to waive or not, with reasons, are reported to the AGM (s 29(4)); the AGM report itself is not produced yet, and a decision not to waive is not recorded. A waiver cannot be changed or removed once recorded, and one recorded after interest was charged on the notice does not reverse that charge. Confirm each.",
+      "The waiver in a particular case (s 29(3)), recorded for one notice. Proposed, not decided: (1) who decides: the notes do not say, so decidedBy is NOT_CONFIRMED and no waiver can be recorded until it is decided; a general meeting resolution (the meeting and motion) is proposed, as the committee's power is not in the notes; (2) what may be waived: only all of the interest on the notice is offered (WHOLE); whether s 29(3) allows waiving part (an amount or the days of a period, which the engine and the table support) is not in the notes. The reasons are required, because decisions to waive or not, with reasons, are reported to the AGM (s 29(4)); the AGM report itself is not produced yet, and a decision not to waive is not recorded. A waiver cannot be changed or removed once recorded. A waiver is refused on a notice that already has interest charged, until a way to reverse a charge exists. Decide each.",
     before: "Victorian interest is charged",
     kind: "LEGAL",
   },

@@ -840,7 +840,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), "unless otherwise decided by ordinary resolution", let an ordinary resolution do (INTEREST.openingWords).",
     "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's "yes" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
     "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
-    "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL). Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+    "LATE_CHARGE (stage 2, PR 5): 10% a year by default and 0 to 20% by special resolution are from the notes (s 94(1)). Three accrual values are NOT_CONFIRMED, so no interest is charged until a pack version records them: the day interest starts (the due date, or the day after), any grace period, and the days a year's rate is shared over (365, or another basis). The special resolution is checked against the motion's recorded category (SPECIAL) and outcome (CARRIED). GO-LIVE GAP: the meeting engine's CARRIED does not apply the sch 3 s 3.16 special resolution test yet, so the recorded outcome is relied on until it does. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
     "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
   ],
   "FUND_CATALOGUE": [
@@ -4641,7 +4641,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "Victorian interest is charged",
       "key": "INTEREST_WAIVER",
       "kind": "LEGAL",
-      "point": "The waiver in a particular case (s 29(3)) is recorded for one notice: all of its interest, an amount, or the days of a period. Whether s 29(3) allows waiving part of the interest (an amount or a period) is not in the notes: offered as a StrataVerze reading. Who decides is not in the notes either: StrataVerze asks for a general meeting resolution (the meeting and motion) until it is settled whether the committee may. The reasons are required, because decisions to waive or not, with reasons, are reported to the AGM (s 29(4)); the AGM report itself is not produced yet, and a decision not to waive is not recorded. A waiver cannot be changed or removed once recorded, and one recorded after interest was charged on the notice does not reverse that charge. Confirm each.",
+      "point": "The waiver in a particular case (s 29(3)), recorded for one notice. Proposed, not decided: (1) who decides: the notes do not say, so decidedBy is NOT_CONFIRMED and no waiver can be recorded until it is decided; a general meeting resolution (the meeting and motion) is proposed, as the committee's power is not in the notes; (2) what may be waived: only all of the interest on the notice is offered (WHOLE); whether s 29(3) allows waiving part (an amount or the days of a period, which the engine and the table support) is not in the notes. The reasons are required, because decisions to waive or not, with reasons, are reported to the AGM (s 29(4)); the AGM report itself is not produced yet, and a decision not to waive is not recorded. A waiver cannot be changed or removed once recorded. A waiver is refused on a notice that already has interest charged, until a way to reverse a charge exists. Decide each.",
     },
     {
       "before": "sign-off",
@@ -5000,18 +5000,17 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "statutoryRatePercent": null,
       "waiver": {
         "decidedBy": {
-          "note": "The notes say the owners corporation may waive in a particular case. They do not say whether its committee may decide it, so StrataVerze asks for a general meeting resolution until that is settled (FOR_REVIEW INTEREST_WAIVER).",
+          "note": "The notes say the owners corporation may waive in a particular case. They do not say by what resolution or whether its committee may decide it. A general meeting resolution is proposed (FOR_REVIEW INTEREST_WAIVER), not decided, so no waiver can be recorded yet.",
           "source": "Owners Corporations Act 2006 (Vic) s 29(3)",
-          "status": "STRATAVERZE",
-          "value": {
-            "kind": "GENERAL_MEETING",
-            "words": "general meeting resolution",
-          },
+          "status": "NOT_CONFIRMED",
+          "value": null,
+        },
+        "formWords": {
+          "meeting": "General meeting",
+          "motion": "Motion carried",
         },
         "kinds": [
           "WHOLE",
-          "AMOUNT",
-          "PERIOD",
         ],
         "reportedToAgm": true,
         "source": "Owners Corporations Act 2006 (Vic) s 29(3), (4)",
@@ -7191,7 +7190,7 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
     "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
     "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
     "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
-    "LATE_CHARGE (stage 2, PR 5): 11% a year simple interest from the due date, with no grace period, is from the notes (s 100(4)(b); reg 78). Who in the strata company determines no interest or a lesser rate, generally or in a particular case, is NOT_CONFIRMED, so neither a lower rate (from 0, which is no interest, up to but not including 11%) nor a one-case waiver can be recorded until a pack version records it. How a day's share of the yearly rate is worked out (365 days or another basis) is NOT_CONFIRMED, so no interest is charged at all until that is recorded. A lesser rate in a particular case is not offered: only waiving all of the interest on one notice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
+    "LATE_CHARGE (stage 2, PR 5): a one-case waiver is refused on a notice that already has interest charged, until a way to reverse a charge exists. 11% a year simple interest from the due date, with no grace period, is from the notes (s 100(4)(b); reg 78). Who in the strata company determines no interest or a lesser rate, generally or in a particular case, is NOT_CONFIRMED, so neither a lower rate (from 0, which is no interest, up to but not including 11%) nor a one-case waiver can be recorded until a pack version records it. How a day's share of the yearly rate is worked out (365 days or another basis) is NOT_CONFIRMED, so no interest is charged at all until that is recorded. A lesser rate in a particular case is not offered: only waiving all of the interest on one notice. Rounding (once, half up, to the cent, on the sum of the days, as NSW interest) and applying each payment to the contribution first are StrataVerze choices. Confirm each.",
     "PAYMENT_ALLOCATION_ORDER: contributions, then interest, then recovery costs, as NSW. Decided by Matthew Wrigley on 28 Oct 2026 as a StrataVerze choice (DECISIONS), since the notes record no order. Recorded here so the decision is visible at sign-off.",
   ],
   "FUND_CATALOGUE": [
@@ -7508,6 +7507,10 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
           "source": "Strata Titles Act 1985 (WA) s 100(4)(b)",
           "status": "NOT_CONFIRMED",
           "value": null,
+        },
+        "formWords": {
+          "meeting": "General meeting",
+          "motion": "Motion carried",
         },
         "kinds": [
           "WHOLE",

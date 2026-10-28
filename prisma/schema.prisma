@@ -164,7 +164,7 @@ model Scheme {
   /// The resolved monthly penalty rate; set exactly when interestMode is RESOLVED_RATE (> 0, <= 100; the pack caps it lower).
   lateChargeMonthlyRatePercent Decimal?   @db.Decimal(5, 2) @map("late_charge_monthly_rate_percent")
   /// The resolved yearly interest rate; set exactly when interestMode is RESOLVED_ANNUAL_RATE (>= 0, <= 100; the pack's
-  /// range decides), for a VIC, ACT or WA building only (migration 20261122).
+  /// range decides), for a VIC, ACT or WA building only (migration 20261123).
   lateChargeAnnualRatePercent Decimal?    @db.Decimal(5, 2) @map("late_charge_annual_rate_percent")
   interestResolutionMeetingId String?     @map("interest_resolution_meeting_id") @db.Uuid
   interestResolutionMotionId  String?     @map("interest_resolution_motion_id") @db.Uuid
@@ -4535,7 +4535,7 @@ model RecordsInspection {
 }
 
 /// A waiver of the late charge on one levy notice in a particular case (VIC, ACT and WA stage 2, PR 5; Victoria
-/// s 29(3), WA s 100(4)(b)), as the pack allows it (LATE_CHARGE.annual.waiver). Migration 20261122.
+/// s 29(3), WA s 100(4)(b)), as the pack allows it (LATE_CHARGE.annual.waiver). Migration 20261123.
 model LateChargeWaiver {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schemeId            String    @map("scheme_id") @db.Uuid
@@ -4556,6 +4556,9 @@ model LateChargeWaiver {
   scheme              Scheme     @relation(fields: [schemeId], references: [id], onDelete: Cascade)
   levyNotice          LevyNotice @relation(fields: [levyNoticeId], references: [id], onDelete: Cascade)
 
+  // The meeting and motion have foreign keys in the database (NO ACTION), not declared here: no relation to
+  // meetings or agenda items is declared for the other resolution references either (schemes, budgets).
+  @@unique([levyNoticeId, resolutionMotionId, kind])
   @@index([levyNoticeId])
   @@index([schemeId])
   @@map("late_charge_waivers")

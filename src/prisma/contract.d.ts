@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d6c28e27364f01587a998d47294ac5b270b3763edbdcbb5e2dd6c5080bb8decc'>;
+  StorageHashBase<'d0e45085d5e839f60ece4d312121616dfb81482f2ea0e51abb58e5db2a56eda1'>;
 export type ExecutionHash =
   ExecutionHashBase<'8c9cb0b046b1bd7cbabff3729749064a4319da7e3f83be98fb8c1e93574f50c8'>;
 export type ProfileHash =
@@ -11820,6 +11820,11 @@ type ContractBase = Omit<
                   readonly name: 'late_charge_waivers_levy_notice_id_idx';
                   readonly columns: readonly ['levy_notice_id'];
                   readonly unique: false;
+                },
+                {
+                  readonly name: 'late_charge_waivers_levy_notice_id_resolution_motion_id_kin_key';
+                  readonly columns: readonly ['levy_notice_id', 'resolution_motion_id', 'kind'];
+                  readonly unique: true;
                 },
                 {
                   readonly name: 'late_charge_waivers_scheme_id_idx';

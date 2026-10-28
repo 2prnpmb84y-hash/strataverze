@@ -27,17 +27,23 @@
 -- the meeting and motion that decided it and the meeting's day (decided_on).
 -- reasons is required by the app where decisions go to the AGM (Victoria
 -- s 29(4)). rule_pack is the pack it was recorded under; recorded_by and
--- recorded_at who recorded it and when. The meeting and motion cannot be
--- deleted while a waiver relies on them. Which kinds are allowed, and who
--- decides, is the app's check from the pack.
+-- recorded_at who recorded it and when. The meeting and motion keys use the
+-- default NO ACTION (checked at the end of the statement, unlike RESTRICT),
+-- so deleting a building, which cascades to its meetings and to its waivers
+-- in the same statement, is not blocked, while deleting only a meeting or
+-- motion a waiver relies on still is. (SET NULL, as the budget adoption keys
+-- in 20261023_statutory_reporting use, cannot apply: these columns are NOT
+-- NULL.) A waiver is recorded once for each notice, motion
+-- and kind (unique index). Which kinds are allowed, and who decides, is the
+-- app's check from the pack.
 --
 -- Every existing row passes, by construction (not by reading the data): the
 -- new column starts null on every row; no row can hold RESOLVED_ANNUAL_RATE
 -- (the old mode check forbids it), so the rate check holds; the state check
 -- holds for a null rate; and the widened mode check allows every old value.
--- Every building is NSW in any case (schemes_state_has_rule_pack_check allows
--- NSW only). The new table starts empty. NSW and Queensland rows are
--- unchanged.
+-- schemes_state_has_rule_pack_check allows NSW and QLD buildings only (after
+-- #126), so no building can hold a yearly rate yet. The new table starts
+-- empty. NSW and Queensland rows are unchanged.
 
 BEGIN;
 SET LOCAL lock_timeout = '5s';
@@ -68,8 +74,8 @@ CREATE TABLE IF NOT EXISTS public.late_charge_waivers (
   from_date             date,
   to_date               date,
   decided_by            text NOT NULL,
-  resolution_meeting_id uuid NOT NULL REFERENCES public.meetings(id) ON DELETE RESTRICT,
-  resolution_motion_id  uuid NOT NULL REFERENCES public.agenda_items(id) ON DELETE RESTRICT,
+  resolution_meeting_id uuid NOT NULL REFERENCES public.meetings(id),
+  resolution_motion_id  uuid NOT NULL REFERENCES public.agenda_items(id),
   decided_on            date NOT NULL,
   reasons               text,
   rule_pack             varchar(40) NOT NULL,
@@ -85,6 +91,8 @@ CREATE TABLE IF NOT EXISTS public.late_charge_waivers (
   CONSTRAINT late_charge_waivers_decided_by_check CHECK (decided_by IN ('GENERAL_MEETING', 'ORDINARY', 'SPECIAL'))
 );
 CREATE INDEX IF NOT EXISTS late_charge_waivers_levy_notice_id_idx ON public.late_charge_waivers (levy_notice_id);
+CREATE UNIQUE INDEX IF NOT EXISTS late_charge_waivers_levy_notice_id_resolution_motion_id_kind_key
+  ON public.late_charge_waivers (levy_notice_id, resolution_motion_id, kind);
 CREATE INDEX IF NOT EXISTS late_charge_waivers_scheme_id_idx ON public.late_charge_waivers (scheme_id);
 -- RLS on, no policies: the Data API is denied; the app connects as the owner.
 ALTER TABLE public.late_charge_waivers ENABLE ROW LEVEL SECURITY;

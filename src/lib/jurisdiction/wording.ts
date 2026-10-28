@@ -373,6 +373,9 @@ export interface LateChargeWaiverWords {
   reasonsRequired: boolean;
   /** Whether a waiver can be recorded at all (who decides is confirmed); when not, `description` says why. */
   canRecord: boolean;
+  /** The form's labels for the meeting and the motion, from the pack. */
+  meetingLabel: string;
+  motionLabel: string;
 }
 
 /**
@@ -396,6 +399,8 @@ export function lateChargeWaiverWords(rules: StatutoryRules): LateChargeWaiverWo
     decidedByWords: who?.words ?? "",
     reasonsRequired: waiver.reportedToAgm,
     canRecord: who != null,
+    meetingLabel: waiver.formWords.meeting,
+    motionLabel: waiver.formWords.motion,
   };
 }
 

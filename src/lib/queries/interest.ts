@@ -15,7 +15,7 @@ import { addNumberedJournal, numberedTransaction } from "./journal-numbering";
 import { logActivity } from "./activity-log";
 import { fromCents, toCents } from "@/lib/billing/money";
 import { messageTermsFor, rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { getSchemeInterestSetting, lateChargePosition, statutoryInterestForScheme, type SchemeInterestSetting } from "@/lib/finance/interest-setting";
+import { getSchemeInterestSetting, lateChargePosition, noticeLateCharge, statutoryInterestForScheme, type SchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { annualLateChargeMissing, annualLateChargeRate, effectiveLateChargeMode, lateChargeApplies, lateChargeFirst } from "@/lib/finance/statutory-interest";
 import { livePayments } from "@/lib/finance/levy-reversal";
 import { capitalise } from "@/lib/jurisdiction/wording";
@@ -196,6 +196,19 @@ export async function chargeInterest(data: {
     if (!locked || String(locked.interestCharged ?? 0) !== String(notice.interestCharged ?? 0)) {
       if (data.alreadyVerified) return null;
       throw new Error(`${LateCharge} was charged on notice ${String(notice.noticeNumber)} at the same time. Check the notice and try again.`);
+    }
+    // A pack with a one-case waiver (VIC, ACT and WA stage 2, PR 5): worked out again under the lock, with the
+    // notice's waivers as they stand, so a waiver recorded while this was worked out is respected. NSW and
+    // Queensland have none and go on as before.
+    if (rules.LATE_CHARGE.annual?.waiver) {
+      const setting = await getSchemeInterestSetting(schemeId);
+      const payments = livePayments(await tx.orm.public.LevyPayment.where((p) => p.levyNoticeId.eq(noticeId)).limit(5000).all());
+      const waivers = await tx.orm.public.LateChargeWaiver.where((w) => w.levyNoticeId.eq(noticeId)).limit(500).all();
+      const now = noticeLateCharge(locked, payments, rules.LATE_CHARGE, setting, today, waivers);
+      if (Math.round(interestAmount * 100) > now.additionalCents) {
+        if (data.alreadyVerified) return null;
+        throw new Error(`No more than $${fromCents(now.additionalCents).toFixed(2)} of ${t.lateCharge} is owed on this notice to date.`);
+      }
     }
     // Worked out from the notice as it stands under the lock, so a receipt
     // committed while this waited is kept (owed = levy + interest - paid).

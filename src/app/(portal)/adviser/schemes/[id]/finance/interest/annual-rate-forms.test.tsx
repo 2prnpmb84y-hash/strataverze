@@ -42,7 +42,10 @@ describe("the yearly rate field", () => {
 
 describe("the waiver form", () => {
   it("VIC: asks for the notice, what is waived, the meeting, the motion and the reasons, and lists recorded waivers", () => {
-    const words = lateChargeWaiverWords(PENDING_RULE_PACKS.VIC.rules as never)!;
+    // Fixture: who decides as proposed (a general meeting resolution), as if decided; the pack itself records it as not confirmed.
+    const vic = PENDING_RULE_PACKS.VIC.rules;
+    const waiver = { ...vic.LATE_CHARGE.annual!.waiver!, decidedBy: { value: { kind: "GENERAL_MEETING" as const, words: "general meeting resolution" }, status: "STRATAVERZE" as const, source: "fixture" } };
+    const words = lateChargeWaiverWords({ ...vic, LATE_CHARGE: { ...vic.LATE_CHARGE, annual: { ...vic.LATE_CHARGE.annual!, waiver } } } as never)!;
     const html = renderToStaticMarkup(
       <LateChargeWaiverForm
         schemeId="s"
@@ -54,6 +57,8 @@ describe("the waiver form", () => {
     );
     for (const name of ["levyNoticeId", "kind", "meetingId", "motionId", "reasons"]) expect(html).toContain(`name="${name}"`);
     expect(html).toContain("All the interest on the notice");
+    expect(html).toContain("General meeting</span>");
+    expect(html).toContain("Motion carried</span>");
     expect(html).toContain("F-2: Interest waived in full, decided 15 Feb 2026. Reasons: Hardship");
     expect(html).toContain("Record waiver");
   });

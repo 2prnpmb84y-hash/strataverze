@@ -2977,7 +2977,10 @@ const dollarsToCents = (text: string) => (/^\d+(\.\d{1,2})?$/.test(text) ? Math.
  * a period, decided by the kind of resolution the pack names, with the
  * meeting and motion, and the reasons where decisions go to the AGM. Advisers
  * only, as the late charge setting. A pack with no waiver, or where who
- * decides is not confirmed, refuses it.
+ * decides is not confirmed, refuses it. So does a notice with any late charge
+ * already charged (no reversal exists yet). It is written under the
+ * building's lock and then the notice's, the order receipting and the
+ * interest run use, and once for each notice, motion and kind.
  */
 export async function recordLateChargeWaiverAction(
   schemeId: string,
@@ -3005,42 +3008,56 @@ export async function recordLateChargeWaiverAction(
     if (problem) return { error: problem };
     const decidedBy = rule.annual!.waiver!.decidedBy.value!;
 
-    const notice = noticeId ? await db.orm.public.LevyNotice.where((n) => n.id.eq(noticeId)).first() : null;
-    if (!notice || notice.schemeId !== schemeId) return { error: `Choose a ${rules.TERMINOLOGY.levy} notice of this building.` };
-
     const resolution = await resolutionOfKindProblem(schemeId, meetingId, motionId, decidedBy);
     if (resolution) return { error: resolution };
     const decidedOn = await meetingDay(schemeId, meetingId!);
     if (!decidedOn) return { error: "That meeting has no date recorded. Record the meeting's date first." };
 
-    const waiver = await db.orm.public.LateChargeWaiver.create({
-      schemeId,
-      levyNoticeId: notice.id,
-      kind,
-      amount: amountCents != null ? (fromCents(amountCents).toFixed(2) as unknown as Numeric<12, 2>) : null,
-      fromDate,
-      toDate,
-      decidedBy: decidedBy.kind,
-      resolutionMeetingId: meetingId!,
-      resolutionMotionId: motionId!,
-      decidedOn,
-      reasons,
-      rulePack: label,
-      recordedBy: profile.id,
+    // Under the building's lock first, then the notice's (FOR NO KEY UPDATE), the order receipting and the
+    // interest run take them in, so a charge or a second submit of the same waiver waits and then sees this one.
+    const outcome = await numberedTransaction(schemeId, async (tx) => {
+      const notice = noticeId ? await tx.orm.public.LevyNotice.where((n) => n.id.eq(noticeId)).forNoKeyUpdate().first() : null;
+      if (!notice || notice.schemeId !== schemeId) return { error: `Choose a ${rules.TERMINOLOGY.levy} notice of this building.` };
+      // No reversal of a charge exists yet, so a waiver is refused once any late charge has been charged on the notice.
+      if (toCents(String(notice.interestCharged ?? 0)) > 0) {
+        return { error: `${capitalise(rules.TERMINOLOGY.lateCharge)} has already been charged on this notice, so a waiver cannot be recorded for it yet.` };
+      }
+      const same = await tx.orm.public.LateChargeWaiver.where((w) =>
+        and(w.levyNoticeId.eq(notice.id), w.resolutionMotionId.eq(motionId!), w.kind.eq(kind)),
+      ).first();
+      if (same) return { error: "This waiver is already recorded for that notice and motion." };
+      const waiver = await tx.orm.public.LateChargeWaiver.create({
+        schemeId,
+        levyNoticeId: notice.id,
+        kind,
+        amount: amountCents != null ? (fromCents(amountCents).toFixed(2) as unknown as Numeric<12, 2>) : null,
+        fromDate,
+        toDate,
+        decidedBy: decidedBy.kind,
+        resolutionMeetingId: meetingId!,
+        resolutionMotionId: motionId!,
+        decidedOn,
+        reasons,
+        rulePack: label,
+        recordedBy: profile.id,
+      });
+      return { waiverId: waiver.id, noticeId: notice.id };
     });
+    if ("error" in outcome) return { error: outcome.error };
     await logActivity({
       schemeId,
       actorId: profile.id,
       action: "LATE_CHARGE_WAIVER_RECORDED",
       entityType: "LevyNotice",
-      entityId: notice.id,
-      metadata: { waiverId: waiver.id, kind, amountCents, fromDate, toDate, meetingId, motionId, decidedOn, rulePack: label },
+      entityId: outcome.noticeId,
+      metadata: { waiverId: outcome.waiverId, kind, amountCents, fromDate, toDate, meetingId, motionId, decidedOn, rulePack: label },
     });
     revalidatePath(financePath(schemeId, "/interest"));
     return { success: true };
   } catch (err) {
     if (err instanceof AuthorisationError) return { error: err.message };
     if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    if (err instanceof JournalBusyError) return { error: err.message };
     logError("Late charge waiver error:", err);
     return { error: `Failed to record the ${(await messageTermsFor(schemeId)).lateCharge} waiver.` };
   }
