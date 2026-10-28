@@ -829,7 +829,7 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
     "strataInformationCertificate": false,
   },
   "FOR_REVIEW": [
-    "The sinking fund is marked \`required: false\` in FUND_CATALOGUE because the shared FundDefinition has only a yes or no \`required\`. The Act requires a sinking fund and sinking fund plan only with 4 or more units (UTMA ss 81(1), 82(1)); the threshold is FUND_RULES.sinkingFundRequiredFromUnits. Before the pack applies, decide how the platform requires the fund for buildings of 4 or more units (for example, a size threshold in the shared fund shape).",
+    "The sinking fund is required through its \`requiredWhen\` (stage 2, PR 3): with 4 or more units (UTMA ss 81(1), 82(1)), read from the SINKING_FUND_REQUIRED selector, a new building of 4 or more units is given a sinking fund, and an existing one without it is flagged in Building data missing. Where the number of units is not known the fund is not worked out and the building is flagged. Below 4 units the fund is shown as not required: whether a units plan of fewer units may still keep one is not in the notes, so the screens do not say it may. Confirm.",
     "FEATURES switches off the certificate (strataInformationCertificate) and records inspection (recordsInspections) workflows for this draft. Those switches run the NSW workflows; the ACT has its own certificates (SALE_CERTIFICATE) and records inspection rules (RECORDS), which need ACT workflows before they can be switched on.",
     "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), "unless otherwise decided by ordinary resolution", let an ordinary resolution do (INTEREST.openingWords).",
     "BUILDING_SELECTORS: the scheme type and the three plan variants (retirement village, mixed use, class B units only) are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record. Each variant's "yes" is marked not supported because StrataVerze applies none of their rules yet (a StrataVerze proposal). The unit thresholds (bank account exemption, sinking fund, communications officer, proxy limit, the unit leg of the audit test) are worked out from the number of units: the building's lots other than common property rows, read only where it matches the building's total lots. The member thresholds (1 to 3 members, 4 or more members) are not worked out, because members are not units. The annual budget leg of the audit test is not a recorded fact, so at 100 units or fewer the value says the budget decides.",
@@ -854,6 +854,35 @@ exports[`Australian Capital Territory pack (pending) > is the rules recorded for
       "name": "sinking fund",
       "purpose": "Expenditure under the sinking fund plan: painting, acquiring or replacing property, fixtures and fittings, and other capital expenses.",
       "required": false,
+      "requiredWhen": {
+        "noRuleFits": "Whether a sinking fund is required could not be worked out from the units recorded.",
+        "rules": [
+          {
+            "need": "REQUIRED",
+            "provision": "Unit Titles (Management) Act 2011 (ACT) ss 81(1), 82(1)",
+            "reason": "Required with 4 or more units, with a sinking fund plan.",
+            "status": "CONFIRMED",
+            "when": {
+              "in": [
+                "REQUIRED",
+              ],
+              "selector": "sinkingFundRequired",
+            },
+          },
+          {
+            "need": "OPTIONAL",
+            "provision": "Unit Titles (Management) Act 2011 (ACT) s 81(1)",
+            "reason": "Not required with fewer than 4 units.",
+            "status": "CONFIRMED",
+            "when": {
+              "in": [
+                "NOT_REQUIRED",
+              ],
+              "selector": "sinkingFundRequired",
+            },
+          },
+        ],
+      },
       "shortLabel": "Sinking Fund",
       "source": "Unit Titles (Management) Act 2011 (ACT) ss 81, 83, 88",
       "status": "CONFIRMED",
@@ -3342,6 +3371,27 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "source": "Owners Corporations Act 2006 (Vic) ss 3, 7; Subdivision Act 1988 (Vic) s 27(1)",
       "status": "CONFIRMED",
     },
+    {
+      "flagMissing": "FUND_CONDITIONS",
+      "held": "RECORDED",
+      "help": "Whether the owners corporation has approved a maintenance plan. Tiers 1 and 2 must prepare and approve one, and other tiers may. A maintenance fund is required where a plan is approved.",
+      "key": "maintenancePlanApproved",
+      "label": "Maintenance plan approved",
+      "options": [
+        {
+          "label": "No maintenance plan approved",
+          "supported": true,
+          "value": "NO",
+        },
+        {
+          "label": "Maintenance plan approved",
+          "supported": true,
+          "value": "YES",
+        },
+      ],
+      "source": "Owners Corporations Act 2006 (Vic) ss 36, 38, 40, 42",
+      "status": "CONFIRMED",
+    },
   ],
   "CHANGES": [
     {
@@ -4393,13 +4443,13 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "before": "sign-off",
       "key": "ADMINISTRATIVE_FUND",
       "kind": "STRATAVERZE",
-      "point": "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another.",
+      "point": "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another. Since stage 2 PR 3 it is also marked required, as a ledger choice and not a rule of law, so every Victorian building is given it and has a ledger for its annual fees (the chart of accounts needs at least one fund). The screens show it as required with the note that this is a StrataVerze choice. Confirm.",
     },
     {
       "before": "Victorian buildings are set up",
       "key": "MAINTENANCE_FUND_REQUIRED",
       "kind": "STRATAVERZE",
-      "point": "The maintenance fund is marked \`required: false\`. The shared \`requiredWhen\` is keyed by a scheme size selector, and Victorian tiers are held as data, not a selector, so it cannot yet say "tiers 1 and 2, and wherever a plan is approved" (s 36). Decide whether to add a tier selector or another \`requiredWhen\` form.",
+      "point": "The maintenance fund's \`requiredWhen\` (stage 2, PR 3) reads the tier and whether a maintenance plan is approved (MAINTENANCE_PLAN_APPROVED, recorded by the adviser). (1) Tiers 1 and 2: required, whether or not a plan is approved yet. The notes say these tiers must prepare and approve a plan (s 36) and that the fund is required where a plan is approved (s 40), so requiring it from the start is a StrataVerze reading, chosen so a building is never given fewer funds than the law requires. (2) Tier 5: not required even with an approved plan, because 2-lot and services only owners corporations are exempt from the maintenance plan and maintenance fund provisions (s 7A(1)(b); s 8). (3) Tiers 3 and 4: required where a plan is approved, and not required otherwise. Whether a tier 3 or 4 owners corporation may keep the fund without an approved plan is not in the notes, so the screens say only that it is not required. (4) Where the tier cannot be worked out, or at tier 3 or 4 no plan answer is recorded, the fund is not worked out and the building is flagged. Confirm each choice.",
     },
     {
       "before": "notices, minutes or PDFs carry the name",
@@ -4464,7 +4514,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
     {
       "before": "Victorian buildings are set up",
       "key": "BUILDING_FACTS_RECORDED_BY",
-      "point": "Who records each lot's occupiable answer, the services only answer and whether the owners corporation is the only one on its plan: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered. A lot of StrataVerze's PARKING or STORAGE type answered occupiable is flagged and the tier refused, reading those types as the car park and storage locker of s 3 (a StrataVerze choice).",
+      "point": "Who records each lot's occupiable answer, the services only answer, whether the owners corporation is the only one on its plan and whether a maintenance plan is approved: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The maintenance plan answer is flagged only where the maintenance fund depends on it (tiers 3 and 4). The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered. A lot of StrataVerze's PARKING or STORAGE type answered occupiable is flagged and the tier refused, reading those types as the car park and storage locker of s 3 (a StrataVerze choice).",
     },
   ],
   "FUND_CATALOGUE": [
@@ -4474,7 +4524,7 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "ledgerFund": "ADMINISTRATIVE",
       "name": "administrative fund",
       "purpose": "Annual fees and other money not paid into the maintenance fund: general administration, maintenance and repairs, insurance and other recurrent obligations (OCA s 23(1)).",
-      "required": false,
+      "required": true,
       "shortLabel": "Admin",
       "source": "Owners Corporations Act 2006 (Vic) ss 23(1), 27, 33(1) (no administrative fund provision found)",
       "status": "STRATAVERZE",
@@ -4486,6 +4536,82 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "name": "maintenance fund",
       "purpose": "Money to carry out the approved maintenance plan: designated annual fees, insurance proceeds for plan items, interest and other prescribed or determined amounts (OCA s 42).",
       "required": false,
+      "requiredWhen": {
+        "noRuleFits": "No maintenance fund rule fits the tier and the maintenance plan answer recorded.",
+        "rules": [
+          {
+            "need": "REQUIRED",
+            "provision": "Owners Corporations Act 2006 (Vic) ss 36, 40, 42",
+            "reason": "Required for a tier 1 or tier 2 owners corporation, which must prepare and approve a maintenance plan.",
+            "status": "STRATAVERZE",
+            "when": {
+              "in": [
+                "TIER_1",
+                "TIER_2",
+              ],
+              "selector": "tier",
+            },
+          },
+          {
+            "need": "OPTIONAL",
+            "provision": "Owners Corporations Act 2006 (Vic) ss 7A(1)(b), 8",
+            "reason": "Not required for a tier 5 owners corporation, which is exempt from the maintenance plan and maintenance fund provisions.",
+            "status": "CONFIRMED",
+            "when": {
+              "in": [
+                "TIER_5",
+              ],
+              "selector": "tier",
+            },
+          },
+          {
+            "need": "REQUIRED",
+            "provision": "Owners Corporations Act 2006 (Vic) ss 40, 42",
+            "reason": "Required because the owners corporation has approved a maintenance plan.",
+            "status": "CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "TIER_3",
+                    "TIER_4",
+                  ],
+                  "selector": "tier",
+                },
+                {
+                  "in": [
+                    "YES",
+                  ],
+                  "selector": "maintenancePlanApproved",
+                },
+              ],
+            },
+          },
+          {
+            "need": "OPTIONAL",
+            "provision": "Owners Corporations Act 2006 (Vic) ss 36, 40",
+            "reason": "Not required while no maintenance plan is approved.",
+            "status": "CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "TIER_3",
+                    "TIER_4",
+                  ],
+                  "selector": "tier",
+                },
+                {
+                  "in": [
+                    "NO",
+                  ],
+                  "selector": "maintenancePlanApproved",
+                },
+              ],
+            },
+          },
+        ],
+      },
       "shortLabel": "Maintenance",
       "source": "Owners Corporations Act 2006 (Vic) ss 33(2), 36, 40, 42 to 45",
       "status": "CONFIRMED",
@@ -4772,6 +4898,27 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
       "1": 12,
       "2": 24,
     },
+    "status": "CONFIRMED",
+  },
+  "MAINTENANCE_PLAN_APPROVED": {
+    "flagMissing": "FUND_CONDITIONS",
+    "held": "RECORDED",
+    "help": "Whether the owners corporation has approved a maintenance plan. Tiers 1 and 2 must prepare and approve one, and other tiers may. A maintenance fund is required where a plan is approved.",
+    "key": "maintenancePlanApproved",
+    "label": "Maintenance plan approved",
+    "options": [
+      {
+        "label": "No maintenance plan approved",
+        "supported": true,
+        "value": "NO",
+      },
+      {
+        "label": "Maintenance plan approved",
+        "supported": true,
+        "value": "YES",
+      },
+    ],
+    "source": "Owners Corporations Act 2006 (Vic) ss 36, 38, 40, 42",
     "status": "CONFIRMED",
   },
   "MANAGER": {
@@ -6151,6 +6298,37 @@ exports[`Victorian pack (pending) > is the rules recorded for review 1`] = `
 
 exports[`Western Australia pack (pending) > is the rules recorded for review 1`] = `
 {
+  "ADMINISTRATIVE_FUND_BY_LAWS": {
+    "flagMissing": "FUND_CONDITIONS",
+    "held": "RECORDED",
+    "help": "For a scheme of 2 to 5 lots. Whether the scheme by-laws require an administrative fund or exempt the strata company from keeping one, or whether SAT has required one on a member's application. A 2-lot scheme cannot have an administrative fund unless its by-laws require one.",
+    "key": "administrativeFundByLaws",
+    "label": "Administrative fund by-laws",
+    "options": [
+      {
+        "label": "The by-laws neither require nor exempt",
+        "supported": true,
+        "value": "NEITHER",
+      },
+      {
+        "label": "The by-laws require an administrative fund",
+        "supported": true,
+        "value": "REQUIRE",
+      },
+      {
+        "label": "The by-laws exempt the strata company",
+        "supported": true,
+        "value": "EXEMPT",
+      },
+      {
+        "label": "SAT has required an administrative fund",
+        "supported": true,
+        "value": "SAT_REQUIRED",
+      },
+    ],
+    "source": "Strata Titles Act 1985 (WA) s 140(1) to (4)",
+    "status": "CONFIRMED",
+  },
   "BUILDING_FACTS": {
     "REPLACEMENT_COST": {
       "help": "For a strata scheme, the scheme building replacement cost. For a survey-strata scheme, the replacement cost of the improvements on the common property. In dollars.",
@@ -6346,6 +6524,37 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
         },
       ],
       "source": "Strata Titles Act 1985 (WA) s 100(2), (2A), (7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+      "status": "CONFIRMED",
+    },
+    {
+      "flagMissing": "FUND_CONDITIONS",
+      "held": "RECORDED",
+      "help": "For a scheme of 2 to 5 lots. Whether the scheme by-laws require an administrative fund or exempt the strata company from keeping one, or whether SAT has required one on a member's application. A 2-lot scheme cannot have an administrative fund unless its by-laws require one.",
+      "key": "administrativeFundByLaws",
+      "label": "Administrative fund by-laws",
+      "options": [
+        {
+          "label": "The by-laws neither require nor exempt",
+          "supported": true,
+          "value": "NEITHER",
+        },
+        {
+          "label": "The by-laws require an administrative fund",
+          "supported": true,
+          "value": "REQUIRE",
+        },
+        {
+          "label": "The by-laws exempt the strata company",
+          "supported": true,
+          "value": "EXEMPT",
+        },
+        {
+          "label": "SAT has required an administrative fund",
+          "supported": true,
+          "value": "SAT_REQUIRED",
+        },
+      ],
+      "source": "Strata Titles Act 1985 (WA) s 140(1) to (4)",
       "status": "CONFIRMED",
     },
   ],
@@ -6736,7 +6945,10 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
   "FOR_REVIEW": [
     "Supported options: \`supported: true\` for STRATA (SCHEME_TYPE), FREEHOLD (TENURE) and all three size classes (SCHEME_SIZE) is a StrataVerze proposal, not law. Survey-strata and leasehold schemes are proposed as not supported because they were researched at headline level only.",
     "Levy debts go to a court, not SAT (s 100(4)(c), s 197(3)(f)). TERMINOLOGY.tribunal ("SAT") is the strata disputes tribunal only; shared code that names where levy claims are heard must take the forum from DEBT_RECOVERY, not from TERMINOLOGY.tribunal.",
-    "Funds: both funds have \`required: false\`, with \`requiredWhen\` giving the law's test. Before Western Australia goes live, defaultFunds must read \`requiredWhen\` (GO-LIVE GAP at FUND_CATALOGUE), using the building's size class, by-laws and designated strata company status.",
+    "Funds: both funds have \`required: false\`, and \`requiredWhen\` gives the law's test through the building selectors (stage 2, PR 3), read by defaultFunds and requiredFunds. The administrative fund reads the size class and ADMINISTRATIVE_FUND_BY_LAWS, the reserve fund the designated status. A fund that cannot be worked out is not given to a new building, and the building is flagged in Building data missing, as is a required fund it lacks or an administrative fund a 2-lot scheme may not have. The SAT order under s 140(3) is a new answer the first form did not hold.",
+    "SAT order for a 2-lot scheme: the notes give s 140(3) (SAT may require a designated function on a member's application) without its scope or how it sits with s 140(1)(b) (a 2-lot scheme cannot establish an administrative fund unless its by-laws require one). A 2-lot scheme recorded with an SAT order is read as required, so it is never given fewer funds than an order may require, and that rule is NOT_CONFIRMED. For 3 to 5 lots the order is read as required (CONFIRMED). Confirm.",
+    "Schemes with no fund (stage 2 PR 3 review): a building with no administrative and no reserve fund has no ledger, as the chart of accounts needs at least one fund. Onboarding refuses such a building in plain words: one whose funds cannot be worked out from the lots entered (every 2 to 5-lot scheme, since the wizard does not ask for the by-laws answer, the scheme type or the replacement cost), and one whose rules require no fund (a 2-lot scheme whose by-laws do not require an administrative fund and that is not designated). An existing building in that state is flagged in Building data missing. Decide how StrataVerze should handle such schemes: ask for the by-laws answer, scheme type and replacement cost during onboarding, keep a ledger with no statutory fund, or decline them.",
+    "ADMINISTRATIVE_FUND_BY_LAWS: one answer for a 2 to 5-lot scheme (neither, by-laws require, by-laws exempt, SAT has required), recorded by the adviser or StrataVerze in the Building rules section, and asked for only where the administrative fund depends on it. It covers the administrative fund only, not the other designated functions of s 140(4). Every answer is marked supported (a StrataVerze proposal). Confirm who checks the by-laws, and whether by-laws that exempt a 3 to 5-lot scheme still let it keep a fund: the notes say only that it is exempt, so the screens say only that the fund is not required.",
     "Building selectors (BUILDING_SELECTORS): the scheme type and tenure are recorded by the adviser or StrataVerze in the Building rules section, outside the locked building record, and any listed option may be recorded (one not supported is flagged). The size class and designated status are worked out, never recorded. The number of lots is the building's lots other than common property rows, read only where it matches the building's total lots.",
     "Designated status (DESIGNATED_STATUS): the notes record no way to be, or not be, designated other than the s 100(7) and reg 79 tests, so no override is offered. Below 10 lots the replacement cost must be recorded, and its meaning follows the scheme type (scheme building for a strata scheme, common property improvements for a survey-strata scheme). Who may record the replacement cost, and from what valuation, is for review.",
     "Scheme size (SCHEME_SIZE): no class is worked out for fewer than 2 lots, because the notes give none.",
@@ -6750,11 +6962,155 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
       "purpose": "Control and management of the common property, insurance premiums and the strata company's other obligations.",
       "required": false,
       "requiredWhen": {
-        "bySchemeSize": {
-          "SIX_OR_MORE_LOT": "ALWAYS",
-          "THREE_TO_FIVE_LOT": "UNLESS_BY_LAWS_EXEMPT",
-          "TWO_LOT": "ONLY_IF_BY_LAWS_REQUIRE",
-        },
+        "noRuleFits": "No administrative fund rule fits the scheme size and the by-laws answer recorded.",
+        "rules": [
+          {
+            "need": "REQUIRED",
+            "provision": "Strata Titles Act 1985 (WA) ss 100(1)(a), 140",
+            "reason": "Required for a scheme of 6 or more lots.",
+            "status": "CONFIRMED",
+            "when": {
+              "in": [
+                "SIX_OR_MORE_LOT",
+              ],
+              "selector": "schemeSize",
+            },
+          },
+          {
+            "need": "REQUIRED",
+            "provision": "Strata Titles Act 1985 (WA) s 140(3)",
+            "reason": "Required because SAT has required it on a member's application.",
+            "status": "CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "THREE_TO_FIVE_LOT",
+                  ],
+                  "selector": "schemeSize",
+                },
+                {
+                  "in": [
+                    "SAT_REQUIRED",
+                  ],
+                  "selector": "administrativeFundByLaws",
+                },
+              ],
+            },
+          },
+          {
+            "need": "REQUIRED",
+            "provision": "Strata Titles Act 1985 (WA) s 140(1)(b), (3)",
+            "reason": "Required because SAT has required it on a member's application.",
+            "status": "NOT_CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "TWO_LOT",
+                  ],
+                  "selector": "schemeSize",
+                },
+                {
+                  "in": [
+                    "SAT_REQUIRED",
+                  ],
+                  "selector": "administrativeFundByLaws",
+                },
+              ],
+            },
+          },
+          {
+            "need": "REQUIRED",
+            "provision": "Strata Titles Act 1985 (WA) ss 100(1)(a), 140(2)",
+            "reason": "Required for a scheme of 3 to 5 lots unless its by-laws exempt the strata company.",
+            "status": "CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "THREE_TO_FIVE_LOT",
+                  ],
+                  "selector": "schemeSize",
+                },
+                {
+                  "in": [
+                    "NEITHER",
+                    "REQUIRE",
+                  ],
+                  "selector": "administrativeFundByLaws",
+                },
+              ],
+            },
+          },
+          {
+            "need": "OPTIONAL",
+            "provision": "Strata Titles Act 1985 (WA) s 140(2)",
+            "reason": "Not required because the by-laws exempt the strata company.",
+            "status": "CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "THREE_TO_FIVE_LOT",
+                  ],
+                  "selector": "schemeSize",
+                },
+                {
+                  "in": [
+                    "EXEMPT",
+                  ],
+                  "selector": "administrativeFundByLaws",
+                },
+              ],
+            },
+          },
+          {
+            "need": "REQUIRED",
+            "provision": "Strata Titles Act 1985 (WA) s 140(1)(b)",
+            "reason": "Required because the by-laws of this 2-lot scheme require it.",
+            "status": "CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "TWO_LOT",
+                  ],
+                  "selector": "schemeSize",
+                },
+                {
+                  "in": [
+                    "REQUIRE",
+                  ],
+                  "selector": "administrativeFundByLaws",
+                },
+              ],
+            },
+          },
+          {
+            "need": "NOT_ALLOWED",
+            "provision": "Strata Titles Act 1985 (WA) s 140(1)(b)",
+            "reason": "A 2-lot scheme cannot have an administrative fund unless its by-laws require one.",
+            "status": "CONFIRMED",
+            "when": {
+              "all": [
+                {
+                  "in": [
+                    "TWO_LOT",
+                  ],
+                  "selector": "schemeSize",
+                },
+                {
+                  "in": [
+                    "NEITHER",
+                    "EXEMPT",
+                  ],
+                  "selector": "administrativeFundByLaws",
+                },
+              ],
+            },
+          },
+        ],
       },
       "shortLabel": "Admin",
       "source": "Strata Titles Act 1985 (WA) ss 100(1)(a), 140",
@@ -6767,7 +7123,35 @@ exports[`Western Australia pack (pending) > is the rules recorded for review 1`]
       "name": "reserve fund",
       "purpose": "Contingent expenses (other than routine ones) and major future expenses.",
       "required": false,
-      "requiredWhen": "DESIGNATED_ONLY",
+      "requiredWhen": {
+        "noRuleFits": "Whether a reserve fund is required could not be worked out from the designated strata company test.",
+        "rules": [
+          {
+            "need": "REQUIRED",
+            "provision": "Strata Titles Act 1985 (WA) s 100(2), (7); Strata Titles (General) Regulations 2019 (WA) reg 79",
+            "reason": "Required for a designated strata company: 10 or more lots, or a replacement cost of more than $5,000,000.",
+            "status": "CONFIRMED",
+            "when": {
+              "in": [
+                "DESIGNATED",
+              ],
+              "selector": "designatedStrataCompany",
+            },
+          },
+          {
+            "need": "OPTIONAL",
+            "provision": "Strata Titles Act 1985 (WA) s 100(2)",
+            "reason": "Not required for a strata company that is not designated, which may establish one.",
+            "status": "CONFIRMED",
+            "when": {
+              "in": [
+                "NOT_DESIGNATED",
+              ],
+              "selector": "designatedStrataCompany",
+            },
+          },
+        ],
+      },
       "shortLabel": "Reserve",
       "source": "Strata Titles Act 1985 (WA) s 100(2), (7); Strata Titles (General) Regulations 2019 (WA) reg 79",
       "status": "CONFIRMED",

@@ -37,6 +37,7 @@ import { PlanFormatForm } from "./plan-format-form";
 import { BuildingRulesForm } from "./building-rules-form";
 import { buildingDataProblems, planFormatChoices, regulationModuleChoices } from "@/lib/jurisdiction/building-data";
 import { buildingRulesView } from "@/lib/jurisdiction/building-selectors";
+import { fundRequirementsView } from "@/lib/jurisdiction/funds";
 import { getRecordedSelectorValues } from "@/lib/queries/building-selectors";
 import { lotWordsFor, packWordsFor } from "@/lib/jurisdiction/screen-words";
 import { planNumberLabel } from "@/lib/onboarding/onboarding-words";
@@ -112,9 +113,15 @@ export default async function SchemeDetailPage({
   // building selectors. The recorded values are read only for such a pack, so
   // nothing changes for NSW or Queensland.
   const recorded = packRules.BUILDING_SELECTORS?.length ? await getRecordedSelectorValues(scheme.id) : {};
-  const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots, recorded);
+  // With the building's funds, so a pack with fund conditions (stage 2, PR 3)
+  // flags a fund that cannot be worked out, a required fund the building
+  // lacks and one it may not have. NSW and Queensland funds have no
+  // conditions, so nothing changes for them.
+  const dataProblems = buildingDataProblems(packRules, scheme, scheme.lots, recorded, scheme.funds);
   const rulesView = buildingRulesView(packRules, { scheme, lots: scheme.lots, recorded });
   const words = packWordsFor(packRules);
+  // Which funds the building needs and why: null for NSW and Queensland.
+  const fundRequirements = fundRequirementsView(packRules, { scheme, lots: scheme.lots, recorded });
 
   return (
     <div>
@@ -133,7 +140,7 @@ export default async function SchemeDetailPage({
       )}
       <BuildingDataNotice problems={dataProblems} />
       <AnnouncementsCard id={id} announcements={announcements} />
-      <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={packRules.FUND_CATALOGUE} />
+      <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={packRules.FUND_CATALOGUE} requirements={fundRequirements} />
       <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} words={lotWordsFor(packRules)} />
       <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} words={words} />
       <MeetingsCard id={id} meetings={meetings} />

@@ -116,19 +116,25 @@ export type FactRef = BuildingFactKey | `selector:${string}`;
 /** The recorded selector values, by key. */
 export type RecordedValues = Readonly<Record<string, string | null | undefined>>;
 
-type Truth = { holds: boolean | null; missing: FactRef[] };
+/** A test's answer: true, false, or null with what is missing. */
+export type Truth = { holds: boolean | null; missing: FactRef[] };
+
+/** A selector's value as a test reads it, or null when it has none. */
+type SelectorLookup = (key: string) => string | null;
+
+const recordedLookup = (recorded: RecordedValues): SelectorLookup => (key) => (recorded[key] ?? "").trim() || null;
 
 /** Three-valued: a test needing a missing fact neither holds nor fails. */
-function test(cond: SelectorCondition, facts: BuildingFacts["values"], recorded: RecordedValues): Truth {
+function test(cond: SelectorCondition, facts: BuildingFacts["values"], lookup: SelectorLookup): Truth {
   if ("all" in cond || "any" in cond) {
-    const parts = ("all" in cond ? cond.all : cond.any).map((c) => test(c, facts, recorded));
+    const parts = ("all" in cond ? cond.all : cond.any).map((c) => test(c, facts, lookup));
     const decisive = "all" in cond ? false : true;
     if (parts.some((p) => p.holds === decisive)) return { holds: decisive, missing: [] };
     const missing = parts.flatMap((p) => p.missing);
     return parts.some((p) => p.holds === null) ? { holds: null, missing } : { holds: !decisive, missing: [] };
   }
   if ("selector" in cond) {
-    const value = (recorded[cond.selector] ?? "").trim();
+    const value = lookup(cond.selector);
     if (!value) return { holds: null, missing: [`selector:${cond.selector}`] };
     return { holds: cond.in.includes(value), missing: [] };
   }
@@ -163,7 +169,7 @@ export type DerivedResult =
  */
 export function deriveSelector(selector: DerivedBuildingSelector, facts: BuildingFacts["values"], recorded: RecordedValues = {}): DerivedResult {
   for (const rule of selector.rules) {
-    const t = test(rule.when, facts, recorded);
+    const t = test(rule.when, facts, recordedLookup(recorded));
     if (t.holds === null) return { ok: false, kind: "MISSING", missing: [...new Set(t.missing)] };
     if (!t.holds) continue;
     if (rule.value == null) return { ok: false, kind: "REFUSED", message: rule.refusal ?? selector.noRuleFits, provision: rule.provision };
@@ -243,6 +249,20 @@ export function selectorValue(
   return { holding: "DERIVED", value: derived.ok ? derived.value : null, derived };
 }
 
+/**
+ * Whether a building meets a test written against its pack's selectors and
+ * its facts (fund conditions, stage 2, PR 3). A `selector` test reads the
+ * selector's value as `selectorValue` gives it: Queensland's columns, a
+ * recorded value, or a derived value worked out from the building's facts. A
+ * derived selector that cannot be worked out counts as missing, as does a
+ * selector the pack does not have. Three-valued: null, with what is missing,
+ * when the test cannot be decided.
+ */
+export function conditionHolds(rules: SelectorRules, cond: SelectorCondition, building: SelectorBuilding): Truth {
+  const facts = buildingFacts(building, rules).values;
+  return test(cond, facts, (key) => selectorValue(rules, key, building)?.value ?? null);
+}
+
 // ---------------------------------------------------------------------------
 // Words for the adviser
 // ---------------------------------------------------------------------------
@@ -283,6 +303,40 @@ function gapWords(rules: SelectorRules, ref: FactRef, facts: BuildingFacts): str
   return "a fact is missing";
 }
 
+/**
+ * What a test's missing parts come down to (stage 2, PR 3): a derived
+ * selector that is missing facts is replaced by those facts (and the recorded
+ * selectors it reads), so the adviser is told what to record. A derived
+ * selector refused for another reason stays as it is.
+ */
+export function underlyingMissing(rules: SelectorRules, refs: readonly FactRef[], building: SelectorBuilding): FactRef[] {
+  const out: FactRef[] = [];
+  for (const ref of refs) {
+    const key = ref.startsWith("selector:") ? ref.slice("selector:".length) : null;
+    const derived = key ? selectorValue(rules, key, building)?.derived : undefined;
+    const expanded = derived && !derived.ok && derived.kind === "MISSING" ? derived.missing : [ref];
+    for (const r of expanded) if (!out.includes(r)) out.push(r);
+  }
+  return out;
+}
+
+/**
+ * Why something a fund condition reads is not known, in a clause after
+ * "because" (stage 2, PR 3): a derived selector refused for a reason other
+ * than a missing fact (its own problem is listed beside it), a recorded one
+ * with no answer, or a fact, as the selectors' problems word it.
+ */
+export function missingWords(rules: SelectorRules, ref: FactRef, building: SelectorBuilding): string {
+  if (ref.startsWith("selector:")) {
+    const key = ref.slice("selector:".length);
+    const selector = buildingSelectors(rules).find((s) => s.key === key);
+    if (selector?.held === "DERIVED") return `the ${lower(selector.label)} cannot be worked out`;
+    const label = selector?.label ?? [rules.REGULATION_MODULE, rules.PLAN_FORMAT].find((c) => c?.key === key)?.label;
+    return label ? `no answer is recorded for ${lower(label)}` : "a building setting the pack reads is missing";
+  }
+  return gapWords(rules, ref, buildingFacts(building, rules));
+}
+
 /** Why a derived selector has no value, for the adviser, or null when it has one. */
 export function derivedProblem(rules: SelectorRules, selector: DerivedBuildingSelector, result: DerivedResult, facts: BuildingFacts): string | null {
   if (result.ok) return null;
@@ -318,6 +372,8 @@ export function buildingSelectorProblems(rules: SelectorRules, building: Selecto
   const facts = buildingFacts(building, rules);
   const problems: string[] = [];
   for (const selector of selectors) {
+    // A value only fund conditions need is flagged by them where it decides a fund (fundProblems in funds.ts).
+    if (selector.held === "RECORDED" && selector.flagMissing === "FUND_CONDITIONS" && !(building.recorded[selector.key] ?? "").trim()) continue;
     const problem =
       selector.held === "RECORDED"
         ? recordedProblem(selector, building.recorded[selector.key])

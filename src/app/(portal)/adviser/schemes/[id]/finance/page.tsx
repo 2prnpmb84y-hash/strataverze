@@ -16,7 +16,8 @@ import { FundsCard } from "../_sections/funds-card";
 import { LeviesCard } from "../_sections/levies-card";
 import { requirePageAccess } from "@/lib/auth/require-access";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { ledgerFundDefinition } from "@/lib/jurisdiction/funds";
+import { fundRequirementsView, hasFundConditions, ledgerFundDefinition } from "@/lib/jurisdiction/funds";
+import { selectorBuildingFor } from "@/lib/queries/building-selectors";
 import { entryTypeLabel, packWordsFor } from "@/lib/jurisdiction/screen-words";
 
 function formatCurrency(value: number | string | null): string {
@@ -67,6 +68,11 @@ export default async function FinanceDashboardPage({
   const adminFund = funds.find((f) => f.fundType === "ADMINISTRATIVE");
   const capitalFund = funds.find((f) => f.fundType === "CAPITAL_WORKS");
   const hasChartOfAccounts = accountCodes.length > 0;
+  // Which funds the building needs and why, for a pack with fund conditions
+  // (stage 2, PR 3). The building is read only for such a pack, so nothing
+  // changes for NSW or Queensland.
+  const fundBuilding = hasFundConditions(rules) ? await selectorBuildingFor(id) : null;
+  const fundRequirements = fundBuilding ? fundRequirementsView(rules, fundBuilding) : null;
 
   const totalOverdueLevyAmount = overdueLevies.reduce(
     (sum, n) => sum + Number(n.balanceOutstanding ?? 0),
@@ -109,7 +115,7 @@ export default async function FinanceDashboardPage({
       </div>
 
       {/* Funds (moved here from the scheme main page so Financials covers them) */}
-      <FundsCard id={id} funds={funds} catalogue={catalogue} className="" />
+      <FundsCard id={id} funds={funds} catalogue={catalogue} requirements={fundRequirements} className="" />
 
       {/* Levies (nested under Financials) */}
       <LeviesCard id={id} schedules={levySchedules} className="" today={await schemeToday(id)} words={w} />

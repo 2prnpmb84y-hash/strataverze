@@ -496,11 +496,40 @@ export const TIER: DerivedBuildingSelector = {
 };
 
 /**
+ * Whether the owners corporation has approved a maintenance plan (stage 2,
+ * PR 3), recorded by the adviser. A maintenance fund is required where there
+ * is an approved maintenance plan (OCA ss 40, 42), and a plan has no effect
+ * until approved (s 38). Tiers 1 and 2 must prepare and approve one and the
+ * other tiers may (s 36; DUTIES_BY_TIER.maintenancePlan). Read by the
+ * maintenance fund's condition for tiers 3 and 4 only, so a building is
+ * flagged for it only there.
+ */
+export const MAINTENANCE_PLAN_APPROVED: RecordedBuildingSelector = {
+  key: "maintenancePlanApproved",
+  held: "RECORDED",
+  label: "Maintenance plan approved",
+  help: `Whether the owners corporation has approved a maintenance plan. Tiers ${DUTIES_BY_TIER.maintenancePlan.must.join(" and ")} must prepare and approve one, and other tiers may. A maintenance fund is required where a plan is approved.`,
+  options: [
+    { value: "NO", label: "No maintenance plan approved", supported: true },
+    { value: "YES", label: "Maintenance plan approved", supported: true },
+  ],
+  flagMissing: "FUND_CONDITIONS",
+  source: `${OCA} ss 36, 38, 40, 42`,
+  status: "CONFIRMED",
+};
+
+/**
  * The building selectors (stage 2, PR 2): the owners corporation type and
  * whether it is the only one on the plan, recorded by the adviser, and the
- * tier, worked out from those and the facts above.
+ * tier, worked out from those and the facts above. PR 3 adds whether a
+ * maintenance plan is approved, recorded by the adviser.
  */
-export const BUILDING_SELECTORS: readonly BuildingSelector[] = [OWNERS_CORPORATION_TYPE, SEVERAL_OWNERS_CORPORATIONS, TIER];
+export const BUILDING_SELECTORS: readonly BuildingSelector[] = [OWNERS_CORPORATION_TYPE, SEVERAL_OWNERS_CORPORATIONS, TIER, MAINTENANCE_PLAN_APPROVED];
+
+const tierIn = (tiers: readonly number[]) => ({ selector: TIER.key, in: tiers.map(tierValue) });
+const [PLAN_MUST_TIERS, PLAN_MAY_TIERS] = [DUTIES_BY_TIER.maintenancePlan.must, DUTIES_BY_TIER.maintenancePlan.may];
+/** Tiers 3 and 4: may have a plan, and are not exempt from the maintenance fund provisions (tier 5 is, s 7A). */
+const PLAN_OPTIONAL_COUNTED_TIERS = PLAN_MAY_TIERS.filter((t) => t !== TIER_5.tier);
 
 /**
  * Tests the Act words by a count of lots, not by tier (OCA ss 77, 89D, 100).
@@ -550,7 +579,10 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     purpose: "Annual fees and other money not paid into the maintenance fund: general administration, maintenance and repairs, insurance and other recurrent obligations (OCA s 23(1)).",
     // The Act requires accounts and a bank account (ss 27, 33), not this fund.
     // Not a statutory fund: a StrataVerze ledger choice for money not paid into the maintenance fund.
-    required: false,
+    // Required as a ledger choice (stage 2, PR 3 review), so every Victorian
+    // building has a ledger fund for annual fees and its chart of accounts can
+    // be set up. The status STRATAVERZE says so (FOR_REVIEW ADMINISTRATIVE_FUND).
+    required: true,
     source: `${OCA} ss 23(1), 27, 33(1) (no administrative fund provision found)`,
     status: "STRATAVERZE",
   },
@@ -563,13 +595,50 @@ export const FUND_CATALOGUE: readonly FundDefinition[] = [
     ledgerFund: "CAPITAL_WORKS",
     purpose: "Money to carry out the approved maintenance plan: designated annual fees, insurance proceeds for plan items, interest and other prescribed or determined amounts (OCA s 42).",
     // Required where there is an approved maintenance plan (ss 40, 42). Tiers 1
-    // and 2 must prepare and approve a plan (s 36); other tiers may.
-    // The shared `requiredWhen` (WA pack, PR #107) is keyed by a pack's scheme
-    // size selector, and this pack holds tiers as data, not as a selector, so
-    // the condition is not expressed here (FOR_REVIEW).
-    // GO-LIVE GAP: before Victoria goes live this fund must be required for tier
-    // 1 and tier 2 owners corporations, and wherever a plan is approved.
+    // and 2 must prepare and approve a plan (s 36); other tiers may. Tier 5
+    // (2-lot and services only owners corporations) is exempt from the
+    // maintenance plan and maintenance fund provisions (s 7A(1)(b); s 8).
+    // `requiredWhen` (stage 2, PR 3) reads the TIER selector and the
+    // MAINTENANCE_PLAN_APPROVED selector. Requiring the fund for tiers 1 and 2
+    // whether or not a plan is approved yet is a StrataVerze reading of ss 36
+    // and 40, so a building is never given fewer funds than the law requires
+    // (FOR_REVIEW MAINTENANCE_FUND_REQUIRED). Where the tier cannot be worked
+    // out, or at tier 3 or 4 no answer is recorded for the plan, the fund is
+    // not worked out and the building is flagged.
     required: false,
+    requiredWhen: {
+      rules: [
+        {
+          need: "REQUIRED",
+          when: tierIn(PLAN_MUST_TIERS),
+          reason: `Required for a tier ${PLAN_MUST_TIERS.join(" or tier ")} owners corporation, which must prepare and approve a maintenance plan.`,
+          provision: `${OCA} ss 36, 40, 42`,
+          status: "STRATAVERZE",
+        },
+        {
+          need: "OPTIONAL",
+          when: tierIn([TIER_5.tier]),
+          reason: `Not required for a tier ${TIER_5.tier} owners corporation, which is exempt from the maintenance plan and maintenance fund provisions.`,
+          provision: `${OCA} ss 7A(1)(b), 8`,
+          status: TIERS.status,
+        },
+        {
+          need: "REQUIRED",
+          when: { all: [tierIn(PLAN_OPTIONAL_COUNTED_TIERS), { selector: MAINTENANCE_PLAN_APPROVED.key, in: ["YES"] }] },
+          reason: "Required because the owners corporation has approved a maintenance plan.",
+          provision: `${OCA} ss 40, 42`,
+          status: "CONFIRMED",
+        },
+        {
+          need: "OPTIONAL",
+          when: { all: [tierIn(PLAN_OPTIONAL_COUNTED_TIERS), { selector: MAINTENANCE_PLAN_APPROVED.key, in: ["NO"] }] },
+          reason: "Not required while no maintenance plan is approved.",
+          provision: `${OCA} ss 36, 40`,
+          status: "CONFIRMED",
+        },
+      ],
+      noRuleFits: "No maintenance fund rule fits the tier and the maintenance plan answer recorded.",
+    },
     source: `${OCA} ss 33(2), 36, 40, 42 to 45`,
     status: "CONFIRMED",
   },
@@ -2408,13 +2477,14 @@ export const FOR_REVIEW = [
   },
   {
     key: "ADMINISTRATIVE_FUND",
-    point: "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another.",
+    point: "The administrative fund is a StrataVerze ledger choice (status STRATAVERZE): the Act names no such fund. Confirm the name owners see, or another. Since stage 2 PR 3 it is also marked required, as a ledger choice and not a rule of law, so every Victorian building is given it and has a ledger for its annual fees (the chart of accounts needs at least one fund). The screens show it as required with the note that this is a StrataVerze choice. Confirm.",
     before: "sign-off",
     kind: "STRATAVERZE",
   },
   {
     key: "MAINTENANCE_FUND_REQUIRED",
-    point: "The maintenance fund is marked `required: false`. The shared `requiredWhen` is keyed by a scheme size selector, and Victorian tiers are held as data, not a selector, so it cannot yet say \"tiers 1 and 2, and wherever a plan is approved\" (s 36). Decide whether to add a tier selector or another `requiredWhen` form.",
+    point:
+      "The maintenance fund's `requiredWhen` (stage 2, PR 3) reads the tier and whether a maintenance plan is approved (MAINTENANCE_PLAN_APPROVED, recorded by the adviser). (1) Tiers 1 and 2: required, whether or not a plan is approved yet. The notes say these tiers must prepare and approve a plan (s 36) and that the fund is required where a plan is approved (s 40), so requiring it from the start is a StrataVerze reading, chosen so a building is never given fewer funds than the law requires. (2) Tier 5: not required even with an approved plan, because 2-lot and services only owners corporations are exempt from the maintenance plan and maintenance fund provisions (s 7A(1)(b); s 8). (3) Tiers 3 and 4: required where a plan is approved, and not required otherwise. Whether a tier 3 or 4 owners corporation may keep the fund without an approved plan is not in the notes, so the screens say only that it is not required. (4) Where the tier cannot be worked out, or at tier 3 or 4 no plan answer is recorded, the fund is not worked out and the building is flagged. Confirm each choice.",
     before: "Victorian buildings are set up",
     kind: "STRATAVERZE",
   },
@@ -2482,7 +2552,7 @@ export const FOR_REVIEW = [
   {
     key: "BUILDING_FACTS_RECORDED_BY",
     point:
-      "Who records each lot's occupiable answer, the services only answer and whether the owners corporation is the only one on its plan: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered. A lot of StrataVerze's PARKING or STORAGE type answered occupiable is flagged and the tier refused, reading those types as the car park and storage locker of s 3 (a StrataVerze choice).",
+      "Who records each lot's occupiable answer, the services only answer, whether the owners corporation is the only one on its plan and whether a maintenance plan is approved: the adviser or StrataVerze, in the Building rules section, outside the locked building record. The maintenance plan answer is flagged only where the maintenance fund depends on it (tiers 3 and 4). The lot form and the data import do not ask for them yet, so a new lot is flagged until it is answered. A lot of StrataVerze's PARKING or STORAGE type answered occupiable is flagged and the tier refused, reading those types as the car park and storage locker of s 3 (a StrataVerze choice).",
     before: "Victorian buildings are set up",
   },
 ] as const;

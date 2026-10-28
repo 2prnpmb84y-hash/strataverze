@@ -1,7 +1,7 @@
 import { db } from "@/prisma/db";
 import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { rulesForScheme } from "@/lib/jurisdiction/scheme-rules";
-import { ledgerFundDefinition, type FundCatalogue, type FundEntry } from "@/lib/jurisdiction/funds";
+import { hasFundConditions, ledgerFundDefinition, type FundCatalogue, type FundEntry } from "@/lib/jurisdiction/funds";
 
 /** Cast a plain string to the Prisma 8 Varchar branded type. */
 function toVarchar<N extends number>(value: string): Varchar<N> {
@@ -241,6 +241,12 @@ export function defaultAccounts(catalogue: FundCatalogue) {
  * Looks up the scheme's ADMINISTRATIVE and CAPITAL_WORKS funds and creates
  * all default accounts as system accounts within a single transaction.
  *
+ * NSW and Queensland buildings need both funds, as before. For a pack with
+ * fund conditions (VIC, ACT and WA stage 2, PR 3) a building may lawfully
+ * have only one of them (an ACT building under 4 units, a WA building of 6
+ * to 9 lots that is not designated), so only the accounts of the funds it has
+ * are created. A building with neither has no ledger and is refused.
+ *
  * This function is idempotent: if accounts with the same codes already exist
  * for the scheme, they are skipped.
  *
@@ -249,7 +255,8 @@ export function defaultAccounts(catalogue: FundCatalogue) {
  */
 export async function seedDefaultChartOfAccounts(schemeId: string) {
   return db.transaction(async (tx) => {
-    const accounts = defaultAccounts((await rulesForScheme(schemeId, tx.orm)).rules.FUND_CATALOGUE);
+    const { rules } = await rulesForScheme(schemeId, tx.orm);
+    const accounts = defaultAccounts(rules.FUND_CATALOGUE);
     // Fetch the scheme's funds to map fundType to fundId
     const funds = await tx.orm.public.Fund
       .where((f) => f.schemeId.eq(schemeId))
@@ -263,12 +270,18 @@ export async function seedDefaultChartOfAccounts(schemeId: string) {
     const adminFundId = fundMap.get("ADMINISTRATIVE");
     const capitalFundId = fundMap.get("CAPITAL_WORKS");
 
-    if (!adminFundId) {
+    // Only the funds it has, for a pack with fund conditions; both, as always, for NSW and Queensland.
+    const onlyFundsHeld = hasFundConditions(rules);
+    if (onlyFundsHeld && !adminFundId && !capitalFundId) {
+      const [admin, capital] = [ledgerFundDefinition(rules, "ADMINISTRATIVE"), ledgerFundDefinition(rules, "CAPITAL_WORKS")];
+      throw new Error(`This building has no ${admin.name} and no ${capital.name}, so StrataVerze cannot set up its ledger. Set up the funds it needs first.`);
+    }
+    if (!onlyFundsHeld && !adminFundId) {
       throw new Error(
         `Scheme ${schemeId} has no ADMINISTRATIVE fund. Create funds before seeding the chart of accounts.`,
       );
     }
-    if (!capitalFundId) {
+    if (!onlyFundsHeld && !capitalFundId) {
       throw new Error(
         `Scheme ${schemeId} has no CAPITAL_WORKS fund. Create funds before seeding the chart of accounts.`,
       );
@@ -291,6 +304,8 @@ export async function seedDefaultChartOfAccounts(schemeId: string) {
 
       const fundId =
         account.fundType === "ADMINISTRATIVE" ? adminFundId : capitalFundId;
+      // A fund the building does not have (fund conditions only): its accounts are not created.
+      if (!fundId) continue;
 
       const record = await tx.orm.public.AccountCode.create({
         schemeId,

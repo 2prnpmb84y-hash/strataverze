@@ -43,8 +43,9 @@ export interface FundDefinition {
    */
   required: boolean;
   /**
-   * When the law requires the fund, where that depends on the scheme. Absent
-   * means `required` alone answers it (NSW, Queensland).
+   * When the law requires the fund, where that depends on the scheme (VIC,
+   * ACT and WA stage 2, PR 3). Where present it decides, and `required` is
+   * false. Absent means `required` alone answers it (NSW, Queensland).
    */
   requiredWhen?: FundRequiredWhen;
   source: string;
@@ -62,15 +63,47 @@ export interface FundDefinition {
 export type SizeClassRequirement = "ALWAYS" | "UNLESS_BY_LAWS_EXEMPT" | "OPTIONAL" | "ONLY_IF_BY_LAWS_REQUIRE";
 
 /**
- * When a fund is required (WA pack, 27 Oct 2026):
- * - "ALWAYS": every scheme must have it;
- * - "DESIGNATED_ONLY": required only where the scheme meets the pack's
- *   designated test (Western Australia: a designated strata company); any
- *   other scheme may establish it;
- * - `{ bySchemeSize }`: by size class, keyed by the values of the pack's
- *   scheme size selector.
+ * What a fund condition says of a building whose facts meet a rule's test
+ * (VIC, ACT and WA stage 2, PR 3, 28 Oct 2026):
+ * - REQUIRED: the building must have the fund;
+ * - OPTIONAL: the law does not require it. The rule's `reason` says whether
+ *   the notes also say it may keep one;
+ * - NOT_ALLOWED: the building may not have it.
  */
-export type FundRequiredWhen = "ALWAYS" | "DESIGNATED_ONLY" | { readonly bySchemeSize: Readonly<Record<string, SizeClassRequirement>> };
+export type FundNeed = "REQUIRED" | "OPTIONAL" | "NOT_ALLOWED";
+
+/**
+ * One rule of a fund condition. `when` is written against the pack's building
+ * selectors (`selector`: a recorded one, a derived one, or Queensland's
+ * column selectors, read by `selectorValue`) and the building's facts
+ * (`number`, `flag`). `reason` is the pack's words for why, as fund screens
+ * show them.
+ */
+export interface FundConditionRule {
+  need: FundNeed;
+  when: SelectorCondition;
+  reason: string;
+  provision: string;
+  status: RuleStatus;
+}
+
+/**
+ * When a fund is required, where that depends on the building (VIC, ACT and
+ * WA stage 2, PR 3, 28 Oct 2026). The rules are read in order and the first
+ * whose test holds decides, as a derived selector's are. A rule that cannot
+ * be decided because a fact or selector is missing leaves the fund
+ * undecided: a later rule never decides in its place (it fails closed), and
+ * the building is flagged with what to record. `noRuleFits` is shown when
+ * every fact is known but no rule holds, and the fund is undecided then too.
+ *
+ * This replaces the WA pack's first forms (PR #107) with no change in
+ * meaning: "DESIGNATED_ONLY" is a rule on the designated status selector, and
+ * `{ bySchemeSize }` rules on the scheme size selector and the by-laws.
+ */
+export interface FundRequiredWhen {
+  rules: readonly FundConditionRule[];
+  noRuleFits: string;
+}
 
 /**
  * What a lot's entitlement decides, so code can take the right schedule
@@ -278,6 +311,15 @@ export interface DerivedSelectorRule {
 /** A building selector an adviser records. */
 export interface RecordedBuildingSelector extends SchemeSelector {
   held: "RECORDED";
+  /**
+   * Where a building with no value recorded is flagged (stage 2, PR 3).
+   * Absent: always, in "Building data missing". "FUND_CONDITIONS": only where
+   * a fund condition needs the value to decide a fund, for a fact only some
+   * buildings need (a Western Australian scheme's by-laws on the
+   * administrative fund matter for 2 to 5 lots only). A value StrataVerze
+   * does not know or support is always flagged.
+   */
+  flagMissing?: "FUND_CONDITIONS";
 }
 
 /** A building selector worked out from the building's facts. */
