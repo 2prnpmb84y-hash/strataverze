@@ -1,4 +1,5 @@
 import { logError } from "@/lib/log";
+import { and } from "@prisma/orm-postgres/orm-client";
 import type { Varchar } from "@prisma/orm-postgres/target/codec-types";
 import { isUpcomingMeeting } from "@/lib/meetings/lifecycle";
 import { defaultTimeZone } from "@/lib/jurisdiction/time-zone";
@@ -301,6 +302,14 @@ export async function updateScheme(
   // pack the same way and is cleared with it.
   let clearModule = false;
   let clearPlanFormat = false;
+  // The building selectors (VIC, ACT and WA stage 2, PR 2) belong to the pack
+  // the same way: a state change deletes the recorded selector values and
+  // clears the facts the derived ones read (services only, replacement cost,
+  // each lot's occupiable answer), so nothing recorded under one state's
+  // rules is read under another's. Only a real state change does this, and
+  // only where something is held, so an NSW building's update is as before.
+  let clearSelectors = false;
+  const clearFacts: { servicesOnly?: null; replacementCost?: null } = {};
   if (data.state !== undefined || data.postcode !== undefined) {
     const current = await db.orm.public.Scheme.where({ id: schemeId }).first();
     const norm = (v: unknown) => String(v ?? "").trim().toUpperCase();
@@ -312,12 +321,23 @@ export async function updateScheme(
     }
     clearModule = stateChanged && current?.regulationModule != null;
     clearPlanFormat = stateChanged && current?.planFormat != null;
+    clearSelectors = stateChanged;
+    if (stateChanged && current?.servicesOnly != null) clearFacts.servicesOnly = null;
+    if (stateChanged && current?.replacementCost != null) clearFacts.replacementCost = null;
   }
-  return db.orm.public.Scheme.where({ id: schemeId }).update({
+  const update = {
     ...data,
     ...(timeZone ? { timeZone: timeZone as unknown as Varchar<64> } : {}),
     ...(clearModule ? { regulationModule: null } : {}),
     ...(clearPlanFormat ? { planFormat: null } : {}),
+    ...clearFacts,
+  };
+  if (!clearSelectors) return db.orm.public.Scheme.where({ id: schemeId }).update(update);
+  return db.transaction(async (tx) => {
+    const updated = await tx.orm.public.Scheme.where({ id: schemeId }).update(update);
+    await tx.orm.public.SchemeSelectorValue.where((v) => v.schemeId.eq(schemeId)).deleteAndCount();
+    await tx.orm.public.Lot.where((l) => and(l.schemeId.eq(schemeId), l.occupiable.isNotNull())).updateAndCount({ occupiable: null });
+    return updated;
   });
 }
 

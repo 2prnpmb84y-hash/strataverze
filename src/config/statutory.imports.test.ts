@@ -33,10 +33,16 @@ const ALLOWED = new Set([
   "DatedValue",
   "NoStatutoryRule",
   "PendingDatedValue",
+  // The building selector shapes: types only, no rules (VIC, ACT and WA stage 2, PR 2).
+  "BuildingFactKey",
+  "BuildingSelector",
+  "DerivedBuildingSelector",
+  "RecordedFactKey",
+  "SelectorCondition",
 ]);
 
 /** The allowed names that are types, so have no value to check. */
-const TYPES = new Set(["StatutoryRules", "RulePack", "NswRules", "DatedLegalStatus", "DatedRule", "DatedRules", "DatedValue", "NoStatutoryRule", "PendingDatedValue"]);
+const TYPES = new Set(["StatutoryRules", "RulePack", "NswRules", "DatedLegalStatus", "DatedRule", "DatedRules", "DatedValue", "NoStatutoryRule", "PendingDatedValue", "BuildingFactKey", "BuildingSelector", "DerivedBuildingSelector", "RecordedFactKey", "SelectorCondition"]);
 
 const SRC = join(__dirname, "..");
 

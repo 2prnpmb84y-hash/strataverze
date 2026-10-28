@@ -188,6 +188,100 @@ export interface SchemeSelector {
   status: RuleStatus;
 }
 
+/*
+ * Building selectors (VIC, ACT and WA stage 2, PR 2, 28 Oct 2026). A pack
+ * lists in BUILDING_SELECTORS the settings that decide which of its rules
+ * apply to a building, and says how each is held:
+ * - RECORDED: an adviser records it, and it is kept in the shared store
+ *   (`scheme_selector_values`), checked against the selector's options;
+ * - DERIVED: it is worked out from the building's facts (BuildingFactKey) by
+ *   `deriveSelector` (src/lib/jurisdiction/building-selectors.ts), never
+ *   stored, and refused where a fact it needs is missing.
+ * Queensland's REGULATION_MODULE and PLAN_FORMAT keep their own columns and
+ * forms; the general reader reads them from those columns.
+ */
+
+/**
+ * A fact about a building that a derived selector is worked out from:
+ * - LOT_COUNT: the building's lots, not counting common property rows. Read
+ *   only where it matches the building's recorded total lots;
+ * - OCCUPIABLE_LOT_COUNT and NON_OCCUPIABLE_LOT_COUNT: the lots recorded as
+ *   occupiable and as not occupiable (`lots.occupiable`). Read only where
+ *   every lot has an answer;
+ * - SERVICES_ONLY: whether the building is recorded as services only
+ *   (`schemes.services_only`);
+ * - REPLACEMENT_COST_CENTS: the replacement cost recorded for the building
+ *   (`schemes.replacement_cost`), in cents.
+ */
+export type BuildingFactKey = "LOT_COUNT" | "OCCUPIABLE_LOT_COUNT" | "NON_OCCUPIABLE_LOT_COUNT" | "SERVICES_ONLY" | "REPLACEMENT_COST_CENTS";
+
+/** The facts an adviser records, and where each is held. */
+export type RecordedFactKey = "LOT_OCCUPIABLE" | "SERVICES_ONLY" | "REPLACEMENT_COST";
+
+/**
+ * How a pack names a fact it asks advisers to record: LOT_OCCUPIABLE is
+ * answered for each lot, SERVICES_ONLY once for the building (yes or no), and
+ * REPLACEMENT_COST once for the building, in dollars.
+ */
+export interface BuildingFactDefinition {
+  label: string;
+  help: string;
+  /** For a yes or no fact: the words for each answer. */
+  yesLabel?: string;
+  noLabel?: string;
+  source: string;
+  status: RuleStatus;
+}
+
+/**
+ * A test of a building's facts in a derived selector's rule. Number tests are
+ * inclusive (`atLeast`, `atMost`) or strict (`moreThan`, `lessThan`), exactly
+ * as the provision words them. `selector` tests a recorded selector's value.
+ * A test needing a fact that is missing is neither true nor false, so the
+ * rule cannot be decided and the selector is refused (it fails closed).
+ */
+export type SelectorCondition =
+  | {
+      readonly number: Exclude<BuildingFactKey, "SERVICES_ONLY">;
+      readonly atLeast?: number;
+      readonly atMost?: number;
+      readonly moreThan?: number;
+      readonly lessThan?: number;
+    }
+  | { readonly flag: "SERVICES_ONLY"; readonly is: boolean }
+  | { readonly selector: string; readonly in: readonly string[] }
+  | { readonly all: readonly SelectorCondition[] }
+  | { readonly any: readonly SelectorCondition[] };
+
+/**
+ * One rule of a derived selector. Rules are read in order and the first whose
+ * test holds decides. `value` is one of the selector's options, or null where
+ * the pack does not let StrataVerze work the value out (`refusal` says why,
+ * for the adviser).
+ */
+export interface DerivedSelectorRule {
+  value: string | null;
+  when: SelectorCondition;
+  refusal?: string;
+  provision: string;
+  status: RuleStatus;
+}
+
+/** A building selector an adviser records. */
+export interface RecordedBuildingSelector extends SchemeSelector {
+  held: "RECORDED";
+}
+
+/** A building selector worked out from the building's facts. */
+export interface DerivedBuildingSelector extends SchemeSelector {
+  held: "DERIVED";
+  rules: readonly DerivedSelectorRule[];
+  /** Shown when every fact is known but no rule holds. */
+  noRuleFits: string;
+}
+
+export type BuildingSelector = RecordedBuildingSelector | DerivedBuildingSelector;
+
 /**
  * The words every pack gives for the things the platform names. A pack may
  * add more (Queensland adds "contribution", "community titles scheme").

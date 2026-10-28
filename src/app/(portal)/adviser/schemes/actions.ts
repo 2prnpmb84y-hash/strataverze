@@ -35,6 +35,8 @@ import { AUSTRALIAN_STATES, SCHEME_STATE_OPTIONS, schemeLocationProblems } from 
 import { UnsupportedJurisdictionError } from "@/config/statutory";
 import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { planFormatChoiceProblem, regulationModuleChoiceProblem } from "@/lib/jurisdiction/building-data";
+import { readBuildingRulesForm } from "@/lib/jurisdiction/building-selectors";
+import { BuildingRulesError, saveBuildingRules } from "@/lib/queries/building-selectors";
 import { onboardingWordsFor, type OnboardingWords } from "@/lib/onboarding/onboarding-words";
 
 /** The Add Property steps a server-side problem can send the wizard back to. */
@@ -463,6 +465,51 @@ export async function savePlanFormatAction(
     if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
     logError("savePlanFormatAction error:", err);
     return { error: "Failed to save the setting. Please try again." };
+  }
+}
+
+export type BuildingRulesState = { error?: string; success?: boolean };
+
+/**
+ * Saves the building rules (VIC, ACT and WA stage 2, PR 2): the selectors the
+ * building's pack lists as recorded, and the facts its derived selectors read
+ * (services only, the replacement cost, each lot's occupiable answer), for a
+ * pack with BUILDING_SELECTORS. The adviser (or StrataVerze) saves them, as
+ * for the regulation module. Every value is checked against the building's
+ * pack, and nothing is saved if one is refused. Derived values are never
+ * saved: they are worked out when read.
+ */
+export async function saveBuildingRulesAction(
+  schemeId: string,
+  _prev: BuildingRulesState,
+  formData: FormData,
+): Promise<BuildingRulesState> {
+  try {
+    const { profile } = await requireRolesOrAdmin(schemeId, ["ADVISER"]);
+    const current = await db.orm.public.Scheme.where((s) => s.id.eq(schemeId)).first();
+    if (!current) return { error: "Scheme not found." };
+    const { rules } = rulesForState(current.state);
+    if (!rules.BUILDING_SELECTORS?.length) return { error: "This building has no such setting." };
+    const read = readBuildingRulesForm(rules, formData);
+    if (!read.ok) return { error: read.error };
+
+    const change = await saveBuildingRules(schemeId, read.input, profile.id);
+    await logActivity({
+      schemeId,
+      actorId: profile.id,
+      action: "BUILDING_RULES_CHANGED",
+      entityType: "Scheme",
+      entityId: schemeId,
+      metadata: { selectors: change.selectors, servicesOnly: change.servicesOnly, replacementCost: change.replacementCost, count: change.lots },
+    });
+    revalidatePath(`/adviser/schemes/${schemeId}`);
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorisationError) return { error: err.message };
+    if (err instanceof UnsupportedJurisdictionError) return { error: err.message };
+    if (err instanceof BuildingRulesError) return { error: err.message };
+    logError("saveBuildingRulesAction error:", err);
+    return { error: "Failed to save the building rules. Please try again." };
   }
 }
 

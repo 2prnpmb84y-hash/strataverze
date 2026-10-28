@@ -1,0 +1,445 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NSW and Queensland rows after updateScheme > NSW name only 1`] = `
+{
+  "lots": [
+    {
+      "id": "l",
+      "interestScheduleEntitlement": 4,
+      "lotNumber": "1",
+      "schemeId": "s",
+    },
+  ],
+  "scheme": [
+    {
+      "id": "s",
+      "name": "New",
+      "postcode": "2000",
+      "state": "NSW",
+      "timeZone": "Australia/Sydney",
+    },
+  ],
+}
+`;
+
+exports[`NSW and Queensland rows after updateScheme > NSW postcode 1`] = `
+{
+  "lots": [
+    {
+      "id": "l",
+      "interestScheduleEntitlement": 4,
+      "lotNumber": "1",
+      "schemeId": "s",
+    },
+  ],
+  "scheme": [
+    {
+      "id": "s",
+      "name": "New",
+      "postcode": "2880",
+      "state": "NSW",
+      "timeZone": "Australia/Broken_Hill",
+    },
+  ],
+}
+`;
+
+exports[`NSW and Queensland rows after updateScheme > NSW to QLD 1`] = `
+{
+  "lots": [
+    {
+      "id": "l",
+      "interestScheduleEntitlement": 4,
+      "lotNumber": "1",
+      "schemeId": "s",
+    },
+  ],
+  "scheme": [
+    {
+      "id": "s",
+      "postcode": "4000",
+      "state": "QLD",
+      "timeZone": "Australia/Brisbane",
+    },
+  ],
+}
+`;
+
+exports[`NSW and Queensland rows after updateScheme > QLD to NSW 1`] = `
+{
+  "lots": [
+    {
+      "id": "l",
+      "interestScheduleEntitlement": 4,
+      "lotNumber": "1",
+      "schemeId": "s",
+    },
+  ],
+  "scheme": [
+    {
+      "id": "s",
+      "planFormat": null,
+      "postcode": "2000",
+      "regulationModule": null,
+      "state": "NSW",
+      "timeZone": "Australia/Sydney",
+    },
+  ],
+}
+`;
+
+exports[`NSW and Queensland rows after updateScheme > QLD, same state 1`] = `
+{
+  "lots": [
+    {
+      "id": "l",
+      "interestScheduleEntitlement": 4,
+      "lotNumber": "1",
+      "schemeId": "s",
+    },
+  ],
+  "scheme": [
+    {
+      "id": "s",
+      "name": "Kept",
+      "planFormat": "BUILDING",
+      "postcode": "4870",
+      "regulationModule": "STANDARD",
+      "state": "QLD",
+      "timeZone": "Australia/Brisbane",
+    },
+  ],
+}
+`;
+
+exports[`NSW building data missing > nothing, lots allMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > nothing, lots complete 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > nothing, lots none 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > nothing, lots oneMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standard, lots allMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standard, lots complete 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standard, lots none 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standard, lots oneMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standardFormat, lots allMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standardFormat, lots complete 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standardFormat, lots none 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > standardFormat, lots oneMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unknown, lots allMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unknown, lots complete 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unknown, lots none 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unknown, lots oneMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unsupportedModule, lots allMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unsupportedModule, lots complete 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unsupportedModule, lots none 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`NSW building data missing > unsupportedModule, lots oneMissing 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD building data missing > nothing, lots allMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.</li><li>No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.</li><li>12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.",
+    "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.",
+    "12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > nothing, lots complete 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.</li><li>No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.</li></ul></div>",
+  "problems": [
+    "No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.",
+    "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > nothing, lots none 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.</li><li>No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.</li></ul></div>",
+  "problems": [
+    "No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.",
+    "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > nothing, lots oneMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.</li><li>No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.</li><li>Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "No regulation module is recorded for this building. Choose it in the building settings before relying on its rules.",
+    "No plan format is recorded for this building. Choose it in the building settings before contributions that include insurance are raised.",
+    "Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > standard, lots allMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > standard, lots complete 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD building data missing > standard, lots none 1`] = `
+{
+  "html": "",
+  "problems": [],
+}
+`;
+
+exports[`QLD building data missing > standard, lots oneMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > standardFormat, lots allMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.</li><li>12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+    "12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > standardFormat, lots complete 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.</li></ul></div>",
+  "problems": [
+    "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > standardFormat, lots none 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.</li></ul></div>",
+  "problems": [
+    "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > standardFormat, lots oneMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.</li><li>Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "This building is recorded as a standard format plan. Its buildings insurance is shared by the cost of reinstating the buildings on each lot, which StrataVerze does not work out yet. Contributions that include insurance cannot be raised for it until then.",
+    "Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unknown, lots allMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>The building&#x27;s regulation module is not one StrataVerze knows. Choose it again in the building settings.</li><li>The building&#x27;s plan format is not one StrataVerze knows. Choose it again in the building settings.</li><li>12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "The building's regulation module is not one StrataVerze knows. Choose it again in the building settings.",
+    "The building's plan format is not one StrataVerze knows. Choose it again in the building settings.",
+    "12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unknown, lots complete 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>The building&#x27;s regulation module is not one StrataVerze knows. Choose it again in the building settings.</li><li>The building&#x27;s plan format is not one StrataVerze knows. Choose it again in the building settings.</li></ul></div>",
+  "problems": [
+    "The building's regulation module is not one StrataVerze knows. Choose it again in the building settings.",
+    "The building's plan format is not one StrataVerze knows. Choose it again in the building settings.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unknown, lots none 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>The building&#x27;s regulation module is not one StrataVerze knows. Choose it again in the building settings.</li><li>The building&#x27;s plan format is not one StrataVerze knows. Choose it again in the building settings.</li></ul></div>",
+  "problems": [
+    "The building's regulation module is not one StrataVerze knows. Choose it again in the building settings.",
+    "The building's plan format is not one StrataVerze knows. Choose it again in the building settings.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unknown, lots oneMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>The building&#x27;s regulation module is not one StrataVerze knows. Choose it again in the building settings.</li><li>The building&#x27;s plan format is not one StrataVerze knows. Choose it again in the building settings.</li><li>Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "The building's regulation module is not one StrataVerze knows. Choose it again in the building settings.",
+    "The building's plan format is not one StrataVerze knows. Choose it again in the building settings.",
+    "Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unsupportedModule, lots allMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.</li><li>12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.",
+    "12 lots have no interest schedule lot entitlement recorded (lots 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10, and 2 more). StrataVerze can enter them from the building's records.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unsupportedModule, lots complete 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.</li></ul></div>",
+  "problems": [
+    "This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unsupportedModule, lots none 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.</li></ul></div>",
+  "problems": [
+    "This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.",
+  ],
+}
+`;
+
+exports[`QLD building data missing > unsupportedModule, lots oneMissing 1`] = `
+{
+  "html": "<div role="status" class="mb-6 rounded-[var(--radius-card)] border border-[#F5C98A] bg-[#FFF3E0] px-4 py-3 text-sm text-ink"><p class="font-medium">Building data missing</p><ul class="mt-1 list-disc pl-5 space-y-0.5"><li>This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.</li><li>Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building&#x27;s records.</li></ul></div>",
+  "problems": [
+    "This building is recorded under the Commercial Module, which StrataVerze does not apply yet. Its rules here are not right for it.",
+    "Lot 3 has no interest schedule lot entitlement recorded. StrataVerze can enter it from the building's records.",
+  ],
+}
+`;
