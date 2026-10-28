@@ -22,9 +22,42 @@
  *
  * The balances then become a draft cutover (see buildCutoverFiles), which the
  * Adviser signs off and posts in Finance with the existing cutover checks.
+ *
+ * The words in the problems (the entitlement, the funds, the levy and the late
+ * charge) are the building's, from its rule pack (OnboardingCheckWords, made
+ * by onboardingWordsFor in ./onboarding-words). Where none are passed the
+ * checks use the words they have always shown (QLD go-live, 27 Oct 2026).
+ * A pack with a second lot entitlement (Queensland's interest schedule) has
+ * each lot's entitlement in it checked too: a whole number, not 0. The
+ * building records no total for it, so the lots are not added up against one.
  */
 
 export const MAX_LOTS = 2000;
+
+/** The building's words the checks use, from its rule pack (see ./onboarding-words). */
+export interface OnboardingCheckWords {
+  /** The entitlement held on each lot, as the pack names it: "unit entitlement". */
+  entitlement: string;
+  /** A second entitlement each lot holds, as the pack names it, or null where the pack has none. */
+  separate: { name: string } | null;
+  /** "levies" */
+  levies: string;
+  /** "interest" */
+  lateCharge: string;
+  /** The two funds, as the pack names them: "administrative fund", "capital works fund". */
+  funds: { admin: string; capitalWorks: string };
+}
+
+/** The words the checks have always shown, used where a caller passes none. */
+export const DEFAULT_CHECK_WORDS: OnboardingCheckWords = {
+  entitlement: "unit entitlement",
+  separate: null,
+  levies: "levies",
+  lateCharge: "interest",
+  funds: { admin: "administrative fund", capitalWorks: "capital works fund" },
+};
+
+const firstUpper = (text: string) => (text ? text[0].toUpperCase() + text.slice(1) : text);
 export const MAX_ENTITLEMENT = 1_000_000;
 export const MAX_OWNER_NAME = 500;
 export const MAX_LOT_NUMBER = 20;
@@ -142,6 +175,8 @@ export interface OnboardingLot {
   unitNumber: string;
   entitlement: string;
   ownerName: string;
+  /** The second entitlement, where the building's pack has one (Queensland's interest schedule). */
+  interestScheduleEntitlement?: string;
   /** Where the row was read from ("Roll page 1; owner on page 2"). Shown only; not saved. */
   source?: string;
 }
@@ -152,6 +187,8 @@ export interface CleanLot {
   entitlement: number;
   /** As it appears on the strata roll: only leading and trailing spaces are removed. */
   ownerName: string | null;
+  /** Present only where the building's pack has a second entitlement. */
+  interestScheduleEntitlement?: number;
 }
 
 export interface LotsCheck {
@@ -163,6 +200,8 @@ export interface LotsCheck {
   errors: string[];
   count: number;
   entitlementSum: number;
+  /** The second entitlements entered, added up (0 where the pack has none). */
+  separateSum: number;
 }
 
 /** A blank row for each lot, numbered 1 to n. */
@@ -173,12 +212,20 @@ export function blankLots(n: number): OnboardingLot[] {
 
 const controlChars = /[\u0000-\u001F\u007F]/;
 
-export function checkLots(rows: readonly OnboardingLot[], totalLots: number, totalEntitlement: number): LotsCheck {
+export function checkLots(
+  rows: readonly OnboardingLot[],
+  totalLots: number,
+  totalEntitlement: number,
+  words: OnboardingCheckWords = DEFAULT_CHECK_WORDS,
+): LotsCheck {
+  const ent = words.entitlement;
+  const separate = words.separate;
   const rowErrors: Record<number, string[]> = {};
   const errors: string[] = [];
   const lots: CleanLot[] = [];
   const seen = new Map<string, number>();
   let entitlementSum = 0;
+  let separateSum = 0;
 
   if (rows.length > MAX_LOTS) errors.push(`A building can have at most ${MAX_LOTS.toLocaleString("en-AU")} lots.`);
 
@@ -201,29 +248,38 @@ export function checkLots(rows: readonly OnboardingLot[], totalLots: number, tot
     }
     if (unitNumber.length > MAX_LOT_NUMBER) problems.push(`The unit number can be at most ${MAX_LOT_NUMBER} characters.`);
     else if (controlChars.test(unitNumber)) problems.push("The unit number contains a character that is not allowed.");
-    if (!entText) problems.push("Enter the unit entitlement.");
-    else if (!Number.isInteger(entitlement) || entitlement < 1) problems.push("The unit entitlement must be a whole number of at least 1.");
-    else if (entitlement > MAX_ENTITLEMENT) problems.push("The unit entitlement is too large.");
+    if (!entText) problems.push(`Enter the ${ent}.`);
+    else if (!Number.isInteger(entitlement) || entitlement < 1) problems.push(`The ${ent} must be a whole number of at least 1.`);
+    else if (entitlement > MAX_ENTITLEMENT) problems.push(`The ${ent} is too large.`);
+    let second = NaN;
+    if (separate) {
+      const text = String(row.interestScheduleEntitlement ?? "").trim().replace(/,/g, "");
+      second = /^\d+$/.test(text) ? Number(text) : NaN;
+      if (!text) problems.push(`Enter the ${separate.name}.`);
+      else if (!Number.isInteger(second) || second < 1) problems.push(`The ${separate.name} must be a whole number of at least 1.`);
+      else if (second > MAX_ENTITLEMENT) problems.push(`The ${separate.name} is too large.`);
+      if (Number.isInteger(second) && second > 0) separateSum += second;
+    }
     if (!ownerName) problems.push("Enter the owner's name as it appears on the strata roll.");
     else if (ownerName.length > MAX_OWNER_NAME) problems.push(`The owner name can be at most ${MAX_OWNER_NAME} characters.`);
     else if (controlChars.test(ownerName)) problems.push("The owner name contains a line break or other character that is not allowed.");
 
     if (Number.isInteger(entitlement) && entitlement > 0) entitlementSum += entitlement;
     if (problems.length) rowErrors[i] = problems;
-    else lots.push({ lotNumber, unitNumber: unitNumber || null, entitlement, ownerName: ownerName || null });
+    else lots.push({ lotNumber, unitNumber: unitNumber || null, entitlement, ownerName: ownerName || null, ...(separate ? { interestScheduleEntitlement: second } : {}) });
   });
 
   const count = rows.length;
   if (!Number.isInteger(totalLots) || totalLots < 1) errors.push("Enter the building's total number of lots on the Property Details step.");
   else if (count !== totalLots)
     errors.push(`You have entered ${count} ${count === 1 ? "lot" : "lots"}, but the building has ${totalLots}. The number of lots must match.`);
-  if (!Number.isInteger(totalEntitlement) || totalEntitlement < 1) errors.push("Enter the building's total unit entitlement on the Property Details step.");
+  if (!Number.isInteger(totalEntitlement) || totalEntitlement < 1) errors.push(`Enter the building's total ${ent} on the Property Details step.`);
   else if (entitlementSum !== totalEntitlement)
     errors.push(
-      `The unit entitlements add up to ${entitlementSum.toLocaleString("en-AU")}, but the building's total unit entitlement is ${totalEntitlement.toLocaleString("en-AU")}. They must match.`,
+      `The ${ent}s add up to ${entitlementSum.toLocaleString("en-AU")}, but the building's total ${ent} is ${totalEntitlement.toLocaleString("en-AU")}. They must match.`,
     );
 
-  return { ok: errors.length === 0 && Object.keys(rowErrors).length === 0, lots, rowErrors, errors, count, entitlementSum };
+  return { ok: errors.length === 0 && Object.keys(rowErrors).length === 0, lots, rowErrors, errors, count, entitlementSum, separateSum };
 }
 
 // ─── Building opening balances ──────────────────────────────────────────────
@@ -275,11 +331,17 @@ export const emptyOpeningBalances = (): OpeningBalancesInput => ({
   capitalWorks: emptyFundSheet(),
 });
 
-const FUND_LABEL = { admin: "Administrative fund", capitalWorks: "Capital works fund" } as const;
 
 const netOf = (f: FundCents) => f.cashAtBank + f.leviesReceivable - f.leviesInAdvance - f.creditors;
 
-export function checkOpeningBalances(input: OpeningBalancesInput, yearEnd: string | null, today: string): BalancesCheck {
+export function checkOpeningBalances(
+  input: OpeningBalancesInput,
+  yearEnd: string | null,
+  today: string,
+  words: OnboardingCheckWords = DEFAULT_CHECK_WORDS,
+): BalancesCheck {
+  const levies = words.levies;
+  const fundLabel = { admin: firstUpper(words.funds.admin), capitalWorks: firstUpper(words.funds.capitalWorks) };
   const errors: string[] = [];
   const fieldErrors: Record<string, string> = {};
 
@@ -325,17 +387,17 @@ export function checkOpeningBalances(input: OpeningBalancesInput, yearEnd: strin
       const f = which === "admin" ? admin : capitalWorks;
       const net = netAssets[which];
       if (net !== f.fundBalance) {
-        const parts = [`cash at bank ${formatMoney(f.cashAtBank)}`, `plus levies receivable ${formatMoney(f.leviesReceivable)}`];
-        if (which === "admin") parts.push(`less levies paid in advance ${formatMoney(f.leviesInAdvance)}`);
+        const parts = [`cash at bank ${formatMoney(f.cashAtBank)}`, `plus ${levies} receivable ${formatMoney(f.leviesReceivable)}`];
+        if (which === "admin") parts.push(`less ${levies} paid in advance ${formatMoney(f.leviesInAdvance)}`);
         parts.push(`less creditors ${formatMoney(f.creditors)}`);
         errors.push(
-          `${FUND_LABEL[which]}: the balance sheet comes to ${formatMoney(net)} (${parts.join(", ")}), but the fund balance is ${formatMoney(f.fundBalance)}. Difference ${formatMoney(net - f.fundBalance)}.`,
+          `${fundLabel[which]}: the balance sheet comes to ${formatMoney(net)} (${parts.join(", ")}), but the fund balance is ${formatMoney(f.fundBalance)}. Difference ${formatMoney(net - f.fundBalance)}.`,
         );
       }
     }
     if (total !== admin.fundBalance + capitalWorks.fundBalance)
       errors.push(
-        `The total opening balance (${formatMoney(total)}) must equal the administrative fund (${formatMoney(admin.fundBalance)}) plus the capital works fund (${formatMoney(capitalWorks.fundBalance)}), which is ${formatMoney(admin.fundBalance + capitalWorks.fundBalance)}.`,
+        `The total opening balance (${formatMoney(total)}) must equal the ${words.funds.admin} (${formatMoney(admin.fundBalance)}) plus the ${words.funds.capitalWorks} (${formatMoney(capitalWorks.fundBalance)}), which is ${formatMoney(admin.fundBalance + capitalWorks.fundBalance)}.`,
       );
   }
 
@@ -396,7 +458,11 @@ export function checkLotBalances(
   rows: readonly LotBalanceInput[],
   lots: readonly { lotNumber: string }[],
   balances: { admin: FundCents; capitalWorks: FundCents },
+  words: OnboardingCheckWords = DEFAULT_CHECK_WORDS,
 ): LotBalancesCheck {
+  const { levies, lateCharge } = words;
+  const admin = firstUpper(words.funds.admin);
+  const capital = firstUpper(words.funds.capitalWorks);
   const rowErrors: Record<number, string[]> = {};
   const errors: string[] = [];
   const out: LotBalanceCents[] = [];
@@ -425,13 +491,13 @@ export function checkLotBalances(
       }
       return Math.abs(c);
     };
-    const admin = amount("Administrative fund levies", row.admin);
-    const interestAdmin = amount("Administrative fund interest", row.interestAdmin);
-    const capitalWorks = amount("Capital works fund levies", row.capitalWorks);
-    const interestCapitalWorks = amount("Capital works fund interest", row.interestCapitalWorks);
+    const adminLevies = amount(`${admin} ${levies}`, row.admin);
+    const interestAdmin = amount(`${admin} ${lateCharge}`, row.interestAdmin);
+    const capitalWorks = amount(`${capital} ${levies}`, row.capitalWorks);
+    const interestCapitalWorks = amount(`${capital} ${lateCharge}`, row.interestCapitalWorks);
     const unallocated = amount("Unallocated", row.unallocated);
     if (problems.length) rowErrors[i] = problems;
-    else out.push({ lotNumber, admin, interestAdmin, capitalWorks, interestCapitalWorks, unallocated });
+    else out.push({ lotNumber, admin: adminLevies, interestAdmin, capitalWorks, interestCapitalWorks, unallocated });
   });
   const missing = lots.filter((l) => !seen.has(l.lotNumber.trim().toLowerCase())).map((l) => l.lotNumber);
   if (missing.length) errors.push(`These lots have no opening balance row: ${missing.slice(0, 10).join(", ")}${missing.length > 10 ? ` and ${missing.length - 10} more` : ""}.`);
@@ -452,9 +518,9 @@ export function checkLotBalances(
       if (lotsTotal !== sheet)
         errors.push(`${label} on the lots come to ${formatMoney(lotsTotal)}, but ${sheetLabel} on the balance sheet is ${formatMoney(sheet)}. Difference ${formatMoney(lotsTotal - sheet)}.`);
     };
-    tie("Administrative fund levies and interest", totals.receivableAdmin, balances.admin.leviesReceivable, "administrative fund levies receivable");
-    tie("Capital works fund levies and interest", totals.receivableCapitalWorks, balances.capitalWorks.leviesReceivable, "capital works fund levies receivable");
-    tie("Unallocated amounts", totals.unallocated, balances.admin.leviesInAdvance, "administrative fund levies paid in advance");
+    tie(`${admin} ${levies} and ${lateCharge}`, totals.receivableAdmin, balances.admin.leviesReceivable, `${words.funds.admin} ${levies} receivable`);
+    tie(`${capital} ${levies} and ${lateCharge}`, totals.receivableCapitalWorks, balances.capitalWorks.leviesReceivable, `${words.funds.capitalWorks} ${levies} receivable`);
+    tie("Unallocated amounts", totals.unallocated, balances.admin.leviesInAdvance, `${words.funds.admin} ${levies} paid in advance`);
   }
 
   return { ok: errors.length === 0 && Object.keys(rowErrors).length === 0, rows: out, rowErrors, errors, totals };

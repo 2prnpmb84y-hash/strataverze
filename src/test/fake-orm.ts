@@ -282,6 +282,8 @@ export function createFakeDb(seed: Record<string, Row[]> = {}) {
         });
         return { ...row };
       },
+      /** Several rows at once, each as `create` makes it. */
+      createAll: async (rows: Row[]) => Promise.all(rows.map((data) => self.create(data))),
     };
     return self;
   }

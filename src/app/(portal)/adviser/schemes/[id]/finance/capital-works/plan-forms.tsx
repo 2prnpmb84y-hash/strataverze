@@ -35,7 +35,9 @@ const METHODS = (
   </>
 );
 
-export function NewPlanForm({ schemeId, defaultStartYear, today }: { schemeId: string; defaultStartYear: number; today: string }) {
+/** `fundName` is the plan's fund as the building's pack names it ("capital works fund"), from the server page. */
+export function NewPlanForm({ schemeId, defaultStartYear, today, fundName }: { schemeId: string; defaultStartYear: number; today: string; fundName: string }) {
+  const fundWords = fundName ? fundName[0].toUpperCase() + fundName.slice(1) : fundName;
   const router = useRouter();
   const [state, action, pending] = useActionState<PlanActionState, FormData>(async (prev, fd) => {
     const r = await createPlanAction(schemeId, prev, fd);
@@ -45,7 +47,7 @@ export function NewPlanForm({ schemeId, defaultStartYear, today }: { schemeId: s
   return (
     <form action={action} className="grid gap-3 sm:grid-cols-2">
       <Label text="Title">
-        <input name="title" required defaultValue="Capital works fund plan" className={input} />
+        <input name="title" required defaultValue={`${fundWords} plan`} className={input} />
       </Label>
       <Label text="Prepared by (person or firm)">
         <input name="preparedBy" className={input} />
@@ -56,7 +58,7 @@ export function NewPlanForm({ schemeId, defaultStartYear, today }: { schemeId: s
       <Label text="First financial year (FY starting 1 July)">
         <input name="periodStartYear" type="number" min="2000" max="2100" required defaultValue={defaultStartYear} className={input} />
       </Label>
-      <Label text="Capital works fund balance at the start">
+      <Label text={`${fundWords} balance at the start`}>
         <input name="openingBalance" type="number" step="0.01" min="0" defaultValue="0" className={input} />
       </Label>
       <Label text="How the yearly contribution is worked out">

@@ -297,7 +297,13 @@ export const PENDING_RULE_PACKS = {
     // contributions, the plan format setting and refusing a standard format plan outright (stricter than s 197(4));
     // the buildings premium and missing data points are updated. An insurance line in the sinking fund budget is refused. The legal values already signed off are unchanged and the new ones are from the same
     // provisions, so the status stays REVIEWED. The GO-LIVE GAP note on ENTITLEMENT_SCHEDULES says what is applied.
-    version: "2026.10.14",
+    // 2026.10.15 (27 Oct 2026): QLD wording and onboarding go-live. TERMINOLOGY gains paymentPlan ("Payment Arrangement",
+    // the agreed arrangement a debt recovery case shows, as there is no statutory payment plan) and lateChargeGeneral
+    // ("late payment charge", where Queensland and NSW lots are shown together), moved out of code (wording only).
+    // FOR_REVIEW gains those words and the plan format asked for by the Add Property wizard. The legal values are
+    // unchanged, so the status stays REVIEWED. The GO-LIVE GAP notes say which screens take the pack's words and which
+    // still show NSW words.
+    version: "2026.10.15",
     status: "REVIEWED",
     reviewer: "Matthew Wrigley",
     reviewedOn: "2026-10-27",

@@ -12,6 +12,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FinancialStatusChip } from "@/components/lots/financial-status";
 import { ChangeOwnerButton } from "@/components/lots/change-owner-button";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
+import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
+import { separateEntitlement } from "@/lib/jurisdiction/building-data";
 
 /**
  * A lot on the strata roll, for the committee (25 Oct 2026): its owner as
@@ -33,6 +36,9 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
 
   const lotLabel = `${formatLotLabel(lot.lotNumber)}${lot.unitNumber ? ` (Unit ${lot.unitNumber})` : ""}`;
   const settled = detail?.lastSettled && scheme ? formatDateIn(timeZoneOf(scheme), String(detail.lastSettled), { day: "2-digit", month: "2-digit" }) : "—";
+  // The entitlement's name, and any second one, from the building's rule pack.
+  const packRules = scheme ? rulesForState(scheme.state).rules : null;
+  const second = packRules ? separateEntitlement(packRules) : null;
   const rows: Array<[string, string]> = [
     ["Owner (strata roll)", detail?.rollOwnerName || row?.ownerNames || "—"],
     ["Email", detail?.ownerEmail || "—"],
@@ -40,7 +46,8 @@ export default async function CommitteeLotPage({ params }: { params: Promise<{ l
     ["Phone", detail?.ownerPhone || "—"],
     ["Postal address", detail?.ownerAddress || "—"],
     ["Last settled", settled],
-    ["Unit entitlement", String(lot.entitlement)],
+    [packRules ? lotWordsFor(packRules).entitlementLabel : "Unit entitlement", String(lot.entitlement)],
+    ...(second?.field ? ([[second.label.charAt(0) + second.label.slice(1).toLowerCase(), lot[second.field] != null ? String(lot[second.field]) : "Not recorded"]] as Array<[string, string]>) : []),
   ];
 
   return (

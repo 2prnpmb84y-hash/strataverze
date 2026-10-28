@@ -31,6 +31,9 @@ import {
 } from "./schedule-actions";
 import { connection } from "next/server";
 import { transactionFeeTable } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
+import { onLotSchedule } from "@/lib/jurisdiction/building-data";
+import { capitalise } from "@/lib/jurisdiction/wording";
 
 function formatCurrency(value: number | string | null): string {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(
@@ -111,7 +114,13 @@ export default async function LevyScheduleDetailPage({
 
   const status = String(schedule.status);
   const isSpecial = schedule.levyType === "SPECIAL";
-  const feeTable = await transactionFeeTable();
+  // The building's words, from its rule pack (QLD wording go-live, 27 Oct 2026):
+  // "levy" and unit entitlement for NSW, "contribution" and the contribution
+  // schedule lot entitlement for Queensland.
+  const { rules } = rulesForState(scheme.state);
+  const { levy, levies } = rules.TERMINOLOGY;
+  const entitlement = onLotSchedule(rules).name;
+  const feeTable = await transactionFeeTable(feeWordingFor(rules));
   const frequency = (isSpecial ? "ONE_OFF" : schedule.frequency) as LevyFrequency;
   const notices = [...(schedule.levyNotices ?? [])].sort(
     (a, b) => String(a.noticeNumber).localeCompare(String(b.noticeNumber)),
@@ -125,7 +134,6 @@ export default async function LevyScheduleDetailPage({
   const totalPaid = notices.reduce((s, n) => s + Number(n.amountPaid ?? 0), 0);
   // Planned notices past their 5-week mark wait for the Adviser to confirm.
   const today = await schemeToday(id);
-  const { rules } = rulesForState(scheme.state);
   const levyRule = rules.NOTICE_RULES;
   const overdueCount = status === "ACTIVE" ? plannedNotices.filter((n) => issueTiming(toIsoDay(n.dueDate), today, levyRule).kind !== "planned").length : 0;
 
@@ -165,8 +173,14 @@ export default async function LevyScheduleDetailPage({
   });
 
   const title = isSpecial
-    ? `Special levy: ${String(schedule.title ?? "Untitled")}`
-    : `FY ${String(schedule.financialYear)} levy schedule`;
+    ? `Special ${levy}: ${String(schedule.title ?? "Untitled")}`
+    : `FY ${String(schedule.financialYear)} ${levy} schedule`;
+  // How the notices share the amount: by the entitlement on each lot, and,
+  // where the building's pack shares insurance by its own schedule
+  // (Queensland), the insurance part by that schedule.
+  const sharedBy = split
+    ? `${split.contributionSchedule.name}, with the insurance part shared by ${split.insuranceSchedule.name}`
+    : entitlement;
 
   return (
     <div className="space-y-6">
@@ -174,7 +188,7 @@ export default async function LevyScheduleDetailPage({
         title={title}
         description={isSpecial ? (schedule.description ? String(schedule.description) : undefined) : undefined}
         backHref={`/adviser/schemes/${id}/finance/levies`}
-        backLabel="Levies"
+        backLabel={capitalise(levies)}
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -183,7 +197,7 @@ export default async function LevyScheduleDetailPage({
         >
           {statusLabels[status] ?? status}
         </span>
-        <span className="text-xs text-ink-muted">{isSpecial ? "Special levy" : "Budget levy"}</span>
+        <span className="text-xs text-ink-muted">{isSpecial ? `Special ${levy}` : `Budget ${levy}`}</span>
       </div>
 
       <Card>
@@ -198,7 +212,7 @@ export default async function LevyScheduleDetailPage({
           <DetailItem label="Frequency" value={FREQUENCY_LABELS[frequency] ?? frequency} />
           <DetailItem label={isSpecial ? "Amount" : "Budget amount"} value={formatCurrency(schedule.budgetAmount)} />
           <DetailItem label="Total lots" value={String(schedule.totalLots)} />
-          <DetailItem label="Total unit entitlement" value={String(Number(schedule.totalEntitlement))} />
+          <DetailItem label={`Total ${entitlement}`} value={String(Number(schedule.totalEntitlement))} />
           <DetailItem label="Resolution date" value={formatDate(schedule.approvedAt)} />
         </dl>
       </Card>
@@ -210,7 +224,7 @@ export default async function LevyScheduleDetailPage({
             description={`Contributions are set by the ${rules.TERMINOLOGY.ownersCorporation} at a general meeting. Record the resolution before notices are issued.`}
           />
           <div className="px-6 pb-6">
-            <ApproveScheduleForm schemeId={id} scheduleId={scheduleId} />
+            <ApproveScheduleForm schemeId={id} scheduleId={scheduleId} ownersCorporation={rules.TERMINOLOGY.ownersCorporation} />
           </div>
         </Card>
       )}
@@ -219,7 +233,7 @@ export default async function LevyScheduleDetailPage({
         <Card>
           <CardHeader
             title="2. Issue notices"
-            description={`One notice per lot${isSpecial ? "" : ` for each of the ${INSTALMENTS_PER_YEAR[frequency]} instalments`}, in proportion to unit entitlement. Amounts are rounded to the cent so they add up exactly to ${formatCurrency(schedule.budgetAmount)}.`}
+            description={`One notice per lot${isSpecial ? "" : ` for each of the ${INSTALMENTS_PER_YEAR[frequency]} instalments`}, in proportion to ${sharedBy}. Amounts are rounded to the cent so they add up exactly to ${formatCurrency(schedule.budgetAmount)}.`}
           />
           <div className="px-6 pb-6 space-y-4">
             {planIssues.length > 0 && (
@@ -240,7 +254,7 @@ export default async function LevyScheduleDetailPage({
                   <thead>
                     <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-muted">
                       <th scope="col" className="py-2 font-medium">Lot</th>
-                      <th scope="col" className="py-2 font-medium text-right">Unit entitlement</th>
+                      <th scope="col" className="py-2 font-medium text-right">{capitalise(entitlement)}</th>
                       <th scope="col" className="py-2 font-medium">Owner on platform</th>
                       {!isSpecial && <th scope="col" className="py-2 font-medium text-right">First instalment</th>}
                       {split && <th scope="col" className="py-2 font-medium text-right">Insurance</th>}
@@ -269,6 +283,7 @@ export default async function LevyScheduleDetailPage({
               noticeCount={preview.length}
               blocked={planIssues.length > 0}
               timing={noticeTimingWords(levyRule)}
+              levyWords={{ levy, levies }}
             />
           </div>
         </Card>
@@ -314,13 +329,13 @@ export default async function LevyScheduleDetailPage({
 
       <Card>
         <CardHeader
-          title="Levy notices"
+          title={`${capitalise(levy)} notices`}
           description={`${notices.length} notice${notices.length !== 1 ? "s" : ""}`}
         />
         {notices.length === 0 ? (
           <div className="px-6 pb-6">
             <EmptyState
-              title="No levy notices yet"
+              title={`No ${levy} notices yet`}
               description={status === "DRAFT" ? "Record approval, then issue the notices." : "Issue the notices above."}
             />
           </div>

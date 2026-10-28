@@ -16,6 +16,8 @@ import { allowedClaimTransitions } from "@/lib/insurance/status";
 import { formatMoney } from "@/lib/insurance/premium";
 import { connection } from "next/server";
 import { previewUsageFee } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -187,7 +189,7 @@ export default async function ClaimDetailPage({
 
       {/* Workspace */}
       <ClaimWorkspace
-        lodgementFee={claim.status === "DRAFT" ? await previewUsageFee({ code: "CLAIM_HANDLING" }) : null}
+        lodgementFee={claim.status === "DRAFT" ? await previewUsageFee({ code: "CLAIM_HANDLING" }, feeWordingFor(rulesForState(scheme.state).rules)) : null}
         schemeId={id}
         claimId={claimId}
         status={claim.status}

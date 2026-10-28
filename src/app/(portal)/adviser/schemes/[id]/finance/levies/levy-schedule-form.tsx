@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { createLevyScheduleAction, ActionState } from "../actions";
+import type { LevyFormWords } from "@/lib/jurisdiction/screen-words";
+
+const upper = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 const FREQUENCY_OPTIONS = [
   { value: "QUARTERLY", label: "Quarterly" },
@@ -19,9 +22,11 @@ interface LevyScheduleFormProps {
   /** The scheme's totals from the strata plan, used as defaults. */
   totalLots?: number;
   totalEntitlement?: number;
+  /** The building's words, from its rule pack through the server page (levyFormWords). */
+  words: Pick<LevyFormWords, "levy" | "entitlement" | "plan">;
 }
 
-export function LevyScheduleForm({ schemeId, funds, totalLots, totalEntitlement }: LevyScheduleFormProps) {
+export function LevyScheduleForm({ schemeId, funds, totalLots, totalEntitlement, words }: LevyScheduleFormProps) {
   const router = useRouter();
   const action = createLevyScheduleAction.bind(null, schemeId);
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
@@ -67,7 +72,7 @@ export function LevyScheduleForm({ schemeId, funds, totalLots, totalEntitlement 
         />
 
         <SelectField
-          label="Levy Frequency"
+          label={`${upper(words.levy)} Frequency`}
           name="frequency"
           required
           defaultValue="QUARTERLY"
@@ -83,7 +88,7 @@ export function LevyScheduleForm({ schemeId, funds, totalLots, totalEntitlement 
         step="0.01"
         required
         placeholder="0.00"
-        helpText="Total budget for this levy schedule"
+        helpText={`Total budget for this ${words.levy} schedule`}
         error={state.fieldErrors?.budgetAmount}
       />
 
@@ -106,13 +111,13 @@ export function LevyScheduleForm({ schemeId, funds, totalLots, totalEntitlement 
           required
           placeholder="e.g. 100"
           defaultValue={totalEntitlement}
-          helpText="Aggregate unit entitlement in the strata plan"
+          helpText={`Aggregate ${words.entitlement} in the ${words.plan}`}
           error={state.fieldErrors?.totalEntitlement}
         />
       </div>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Creating..." : "Create Levy Schedule"}
+        {isPending ? "Creating..." : `Create ${upper(words.levy)} Schedule`}
       </Button>
     </form>
   );

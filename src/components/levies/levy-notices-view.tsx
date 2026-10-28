@@ -4,12 +4,17 @@ import { levyItemTotals, STATUS_LABELS, STATUS_STYLES } from "@/lib/levies/levy-
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { LevyWords } from "@/lib/jurisdiction/screen-words";
 
 /**
  * An owner's levies: totals, the notices with amounts outstanding and those
  * paid (moved from the owner's levies page, 24 Oct 2026, so the Adviser's
  * "Owner's view" of a lot shows exactly the same). Presentational only.
+ * The levy and late charge words are the building's (`words`, from its rule
+ * pack through the server page).
  */
+
+const upper = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 function formatCurrency(value: number): string {
   if (value < 0) {
@@ -27,8 +32,18 @@ function shortDate(isoDay: string): string {
 export function LevyNoticesView({
   items,
   actions,
-  emptyDescription = "No levies have been issued for your lots yet.",
+  emptyDescription,
+  words,
+  lateChargeByScheme,
 }: {
+  /** The building's words for a levy and a late charge (sharedLevyWords where several buildings are shown). */
+  words: Pick<LevyWords, "levy" | "levies" | "lateCharge">;
+  /**
+   * Each building's own word for a late charge, by scheme id, for the rows
+   * where several buildings are shown: a row says what its own building
+   * charged ("interest", "penalty"). Without it every row uses `words`.
+   */
+  lateChargeByScheme?: Readonly<Record<string, string>>;
   items: LevyItem[];
   /** Links shown above the lists (the owner's Debt Recovery and View Statement). */
   actions?: ReactNode;
@@ -64,8 +79,8 @@ export function LevyNoticesView({
 
       {displayItems.length === 0 ? (
         <EmptyState
-          title="No levies yet"
-          description={emptyDescription}
+          title={`No ${words.levies} yet`}
+          description={emptyDescription ?? `No ${words.levies} have been issued for your lots yet.`}
         />
       ) : (
         <>
@@ -74,13 +89,13 @@ export function LevyNoticesView({
             <Card>
               <CardHeader
                 title="Outstanding"
-                description={`${outstanding.length} lev${outstanding.length === 1 ? "y" : "ies"} with amounts due.`}
+                description={`${outstanding.length} ${outstanding.length === 1 ? words.levy : words.levies} with amounts due.`}
               />
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-line text-xs text-ink-muted uppercase tracking-wide">
-                      <th scope="col" className="text-left px-6 py-2">Levy</th>
+                      <th scope="col" className="text-left px-6 py-2">{upper(words.levy)}</th>
                       <th scope="col" className="text-left px-4 py-2">Lot</th>
                       <th scope="col" className="text-left px-4 py-2">Due Date</th>
                       <th scope="col" className="text-right px-4 py-2">Amount</th>
@@ -104,7 +119,7 @@ export function LevyNoticesView({
                               {item.noticeNumber} (PDF)
                             </a>
                             {item.interestCharged > 0
-                              ? ` · includes ${formatCurrency(item.interestCharged)} interest`
+                              ? ` · includes ${formatCurrency(item.interestCharged)} ${lateChargeByScheme?.[item.schemeId] ?? words.lateCharge}`
                               : ""}
                           </p>
                         </td>
@@ -166,7 +181,7 @@ export function LevyNoticesView({
             <Card>
               <CardHeader
                 title="Paid"
-                description={`${paid.length} lev${paid.length === 1 ? "y" : "ies"} fully paid.`}
+                description={`${paid.length} ${paid.length === 1 ? words.levy : words.levies} fully paid.`}
               />
               <div className="flex flex-col gap-2 px-6 pb-6">
                 {paid.map((item) => {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { platformToday } from "@/lib/jurisdiction/time-zone";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatAud } from "@/lib/billing/money";
-import { toFeeView, type FeeView } from "@/lib/billing/disclosure";
+import { toFeeView, type FeeView, type FeeWording } from "@/lib/billing/disclosure";
 import { transactionFee, type MoneyMovement, type TransactionFeeMode } from "@/lib/billing/fee-engine";
 import type { PriceBookEntry } from "@/lib/billing/price-book";
 
@@ -77,6 +77,8 @@ export function FeeDisclosure({
 export interface TransactionFeeTable {
   mode: TransactionFeeMode;
   priceBook: PriceBookEntry[];
+  /** The building's words for the disclosure (feeWordingFor). Without them the NSW words are used. */
+  wording?: FeeWording;
 }
 
 /** The transaction fee for an amount being typed, or null. */
@@ -95,7 +97,7 @@ export function useTransactionFeeView(
         priceBook: table.priceBook,
         date: platformToday(),
       });
-      return quote ? toFeeView(quote) : null;
+      return quote ? toFeeView(quote, table.wording) : null;
     } catch {
       return null;
     }

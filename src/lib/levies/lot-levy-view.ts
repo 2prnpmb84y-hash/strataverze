@@ -22,6 +22,6 @@ export async function loadLotLevyView(schemeId: string, lotId: string, lotLabel:
   const today = todayDay ?? (await schemeToday(schemeId));
   const notices = (await getLevyNoticesForLots([lotId])).filter((n) => n.schemeId === schemeId && String(n.status) !== "DRAFT");
   const [payments, credits] = await Promise.all([getLevyPaymentsForNotices(notices.map((n) => n.id)), getCreditMovements(schemeId, lotId)]);
-  const items = levyItems(notices, today, new Map([[lotId, { label: lotLabel, schemeId }]]));
+  const items = levyItems(notices, today, new Map([[lotId, { label: lotLabel, schemeId }]]), () => terms);
   return { items, totals: levyItemTotals(items), statement: buildStatement(notices, payments, {}, credits, terms) };
 }

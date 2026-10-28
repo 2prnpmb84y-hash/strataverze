@@ -158,7 +158,7 @@ describe("a Queensland majority resolution and a poll", () => {
   it("counts an ordinary resolution on a poll by contribution schedule lot entitlement", async () => {
     state.item = { id: "i1", meetingId: "m1", resolutionCategory: "ORDINARY" };
     const votes = [v(1, "FOR"), v(3, "FOR"), v(4, "FOR"), v(8, "AGAINST"), v(5, "AGAINST")];
-    expect((await record("RESOLVED", votes, true)).error).toMatch(/^The votes recorded show the motion is lost, not resolved\. Not carried by unit entitlement on a poll\./);
+    expect((await record("RESOLVED", votes, true)).error).toMatch(/^The votes recorded show the motion is lost, not resolved\. Not carried by contribution schedule lot entitlement on a poll\./);
     expect(await record("MOTION_LOST", votes, true)).toEqual({ ok: true });
     expect(await record("RESOLVED", votes, false)).toEqual({ ok: true });
   });

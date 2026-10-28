@@ -30,7 +30,9 @@ import {
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
 import { BalancesStep, LotBalancesStep, LotsStep, RollNotes, StepProblems } from "./onboarding-steps";
-import { DEFAULT_SCHEME_STATE, SCHEME_STATE_HELP, SCHEME_STATE_OPTIONS, schemeLocationProblems, schemeStateProblem } from "@/config/jurisdictions";
+import { SCHEME_STATE_HELP, SCHEME_STATE_OPTIONS, schemeLocationProblems, schemeStateProblem } from "@/config/jurisdictions";
+import { planNumberLabel, type OnboardingWords } from "@/lib/onboarding/onboarding-words";
+import { bodyCorporateName, capitalise } from "@/lib/jurisdiction/wording";
 
 const STEPS = [
   { id: "upload", label: "Strata Roll" },
@@ -97,6 +99,13 @@ type Defaults = {
 
 type ReviewValues = Record<string, string> & { isActive: string; allInclusiveFees: string; debtCollection: string };
 
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** The legal name, where the pack's name for the body corporate includes the building's name; else null. */
+function legalName(w: Pick<OnboardingWords, "bodyCorporateName" | "ownersCorporation">, name: string, planNumber: string): string | null {
+  return w.bodyCorporateName.includes("{name}") && name.trim() && planNumber.trim() ? bodyCorporateName(w, { name: name.trim(), planNumber: planNumber.trim() }) : null;
+}
+
 const wholeNumber = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "").trim();
   return /^\d+$/.test(s) ? Number(s) : NaN;
@@ -105,10 +114,31 @@ const wholeNumber = (v: FormDataEntryValue | null) => {
 /**
  * `today` (YYYY-MM-DD, Sydney) comes from the server page, so the year-end
  * and takeover date checks use the same date there and here.
+ *
+ * `wordsByState` holds the words for each state a building can be set up in,
+ * from that state's rule pack (QLD go-live, 27 Oct 2026). The wizard uses the
+ * set for the state chosen: its entitlement, funds, levy and late charge
+ * words, its plan and body corporate names, and, where the pack has them, the
+ * regulation module and each lot's second entitlement. Where more than one
+ * state can be chosen, the state is asked first, on Property Details.
  */
-export function AddPropertyWizard({ simplified = false, today }: { simplified?: boolean; today: string }) {
+export function AddPropertyWizard({
+  simplified = false,
+  today,
+  wordsByState,
+  defaultState,
+}: {
+  simplified?: boolean;
+  today: string;
+  wordsByState: Readonly<Record<string, OnboardingWords>>;
+  defaultState: string;
+}) {
   const [currentStep, setCurrentStep] = useState<StepId>("upload");
   const [defaults, setDefaults] = useState<Defaults>({});
+  // The state chosen, which decides the words (and what is asked).
+  const [stateCode, setStateCode] = useState(defaultState);
+  const words = wordsByState[stateCode] ?? wordsByState[defaultState];
+  const multiState = Object.keys(wordsByState).length > 1;
   const [fromRoll, setFromRoll] = useState(false);
   // What the roll reader flagged, and where each lot was read from (24 Oct).
   const [rollIssues, setRollIssues] = useState<RollIssue[]>([]);
@@ -165,9 +195,9 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
     }
   }
 
-  const lotsCheck = useMemo(() => checkLots(lots, totals.totalLots, totals.totalEntitlement), [lots, totals]);
-  const balancesCheck = useMemo(() => checkOpeningBalances(balances, yearEnd || null, today), [balances, yearEnd, today]);
-  const lotBalancesCheck = useMemo(() => checkLotBalances(lotBalances, lotsCheck.lots, balancesCheck), [lotBalances, lotsCheck.lots, balancesCheck]);
+  const lotsCheck = useMemo(() => checkLots(lots, totals.totalLots, totals.totalEntitlement, words), [lots, totals, words]);
+  const balancesCheck = useMemo(() => checkOpeningBalances(balances, yearEnd || null, today, words), [balances, yearEnd, today, words]);
+  const lotBalancesCheck = useMemo(() => checkLotBalances(lotBalances, lotsCheck.lots, balancesCheck, words), [lotBalances, lotsCheck.lots, balancesCheck, words]);
   const ownerNames = useMemo(() => Object.fromEntries(lotsCheck.lots.map((l) => [l.lotNumber, l.ownerName ?? ""])), [lotsCheck.lots]);
 
   const currentIndex = STEPS.findIndex((s) => s.id === currentStep);
@@ -188,7 +218,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
         const tl = wholeNumber(fd.get("totalLots"));
         const te = wholeNumber(fd.get("totalEntitlement"));
         if (!(tl >= 1)) p.push("Enter the total number of lots (a whole number).");
-        if (!(te >= 1)) p.push("Enter the total unit entitlement (a whole number).");
+        if (!(te >= 1)) p.push(`Enter the total ${words.entitlement} (a whole number).`);
         setTotals({ totalLots: tl, totalEntitlement: te });
         return p;
       }
@@ -204,6 +234,16 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
         if (loc.postcode) p.push(loc.postcode);
         const ye = checkYearEnd(String(fd.get("financialYearEnd") ?? ""), today);
         if (!ye.ok) p.push(ye.message);
+        // The module, where the pack has one: only a module StrataVerze applies can be chosen (the server checks the same).
+        const choices = words.regulationModule;
+        if (choices && !choices.options.some((o) => o.supported && o.value === String(fd.get("regulationModule") ?? ""))) {
+          p.push(`Choose the ${choices.label.toLowerCase()}.`);
+        }
+        // The plan format, where the pack has one: any listed format (the server checks the same).
+        const formats = words.planFormat;
+        if (formats && !formats.options.some((o) => o.value === String(fd.get("planFormat") ?? ""))) {
+          p.push(`Choose the ${formats.label.toLowerCase()}.`);
+        }
         setYearEnd(ye.ok ? ye.date : "");
         return p;
       }
@@ -268,6 +308,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
 
   function handleParsed(data: ParsedStrataRoll) {
     const s = data.scheme;
+    setStateCode(s.state && wordsByState[s.state.trim().toUpperCase()] ? s.state.trim().toUpperCase() : defaultState);
     setDefaults({
       name: s.name ?? undefined,
       planNumber: s.planNumber ?? undefined,
@@ -304,6 +345,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
 
   // Skipping (even after an upload) starts from a blank building.
   function handleSkip() {
+    setStateCode(defaultState);
     setDefaults({});
     setLots([]);
     setFromRoll(false);
@@ -311,6 +353,21 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
     setFormKey((k) => k + 1);
     setCurrentStep("details");
   }
+
+  // The state field. It decides the rule pack, so where more than one state
+  // can be chosen it is asked first, on Property Details.
+  const stateField = (
+    <SelectField
+      label="State"
+      name="state"
+      required
+      defaultValue={defaults.state || defaultState}
+      options={SCHEME_STATE_OPTIONS}
+      helpText={SCHEME_STATE_HELP}
+      error={state.fieldErrors?.state ?? (defaults.state ? (schemeStateProblem(defaults.state) ?? undefined) : undefined)}
+      onChange={(e) => setStateCode(e.target.value)}
+    />
+  );
 
   const serverProblems = !serverDismissed && state.step === currentStep && state.stepErrors ? state.stepErrors : [];
   const problems = clientProblems.length ? clientProblems : serverProblems;
@@ -405,7 +462,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
           <Card>
             <h2 className="font-heading font-semibold text-ink mb-1">Property Details</h2>
             <p className="text-sm text-ink-muted mb-6">
-              Enter the core details of the Owners Corporation.
+              Enter the core details of the {titleCase(words.ownersCorporation)}.
               {fromRoll && (
                 <span className="block mt-1 text-turquoise font-medium">Fields have been pre-filled from the strata roll ({lots.length} lots read).</span>
               )}
@@ -414,6 +471,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
             <RollNotes issues={rollIssues.filter((i) => !i.lotNumber && i.field !== "financialYearEnd")} title="From the strata roll: check these" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
+              {multiState && <div className="sm:col-span-2">{stateField}</div>}
               <FormField
                 label="Scheme Name"
                 name="name"
@@ -424,10 +482,10 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
                 className="sm:col-span-2"
               />
               <FormField
-                label="Plan Number"
+                label={planNumberLabel(words)}
                 name="planNumber"
                 required
-                placeholder="e.g. SP 12345"
+                placeholder={planNumberLabel(words) === "Plan Number" ? "e.g. SP 12345" : "e.g. 12345"}
                 defaultValue={defaults.planNumber}
                 error={state.fieldErrors?.planNumber}
               />
@@ -447,12 +505,12 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
                 error={state.fieldErrors?.totalLots}
               />
               <FormField
-                label="Total Unit Entitlement"
+                label={`Total ${words.entitlementLabel}`}
                 name="totalEntitlement"
                 type="number"
                 required
                 placeholder="e.g. 1000"
-                helpText="The aggregate unit entitlement. The lots' unit entitlements must add up to it."
+                helpText={`The aggregate ${words.entitlement}. The lots' ${words.entitlement}s must add up to it.`}
                 defaultValue={defaults.totalEntitlement}
                 error={state.fieldErrors?.totalEntitlement}
               />
@@ -481,7 +539,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               />
               <FormField label="Suburb" name="suburb" required placeholder="e.g. Sydney" defaultValue={defaults.suburb} error={state.fieldErrors?.suburb} />
               <div className="grid grid-cols-2 gap-4">
-                <SelectField label="State" name="state" required defaultValue={defaults.state || DEFAULT_SCHEME_STATE} options={SCHEME_STATE_OPTIONS} helpText={SCHEME_STATE_HELP} error={state.fieldErrors?.state ?? (defaults.state ? (schemeStateProblem(defaults.state) ?? undefined) : undefined)} />
+                {!multiState && stateField}
                 <FormField label="Postcode" name="postcode" required placeholder="2000" defaultValue={defaults.postcode} error={state.fieldErrors?.postcode} />
               </div>
               <FormField
@@ -494,6 +552,10 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
                 error={state.fieldErrors?.financialYearEnd}
               />
               <SelectField label="Payment Plan" name="paymentPlan" options={PAYMENT_PLANS} defaultValue="" />
+              {words.regulationModule && (
+                <ModuleField key={stateCode} choices={words.regulationModule} error={state.fieldErrors?.regulationModule} />
+              )}
+              {words.planFormat && <PlanFormatField key={`format-${stateCode}`} choices={words.planFormat} error={state.fieldErrors?.planFormat} />}
             </div>
 
             {!simplified && (
@@ -501,7 +563,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
                 <h3 className="text-sm font-semibold text-ink mb-4">Settings</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <CheckboxField label="Active" name="isActive" defaultChecked={true} helpText="Property is currently active" />
-                  <CheckboxField label="All Inclusive Fees" name="allInclusiveFees" helpText="Include all fees in levy calculations" />
+                  <CheckboxField label="All Inclusive Fees" name="allInclusiveFees" helpText={`Include all fees in ${words.levy} calculations`} />
                   <CheckboxField label="Debt Collection" name="debtCollection" helpText="Enable automatic debt collection" />
                 </div>
               </div>
@@ -525,6 +587,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               showErrors={!!tried.lots}
               fromRoll={fromRoll}
               notes={rollIssues.filter((i) => i.lotNumber)}
+              words={words}
             />
             {nav("Next: Opening Balances")}
           </Card>
@@ -534,7 +597,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
         <div className={currentStep === "balances" ? "" : "hidden"}>
           <Card>
             {currentStep === "balances" && <StepProblems problems={problems} />}
-            <BalancesStep value={balances} onChange={setBalances} check={balancesCheck} yearEnd={yearEnd} showErrors={!!tried.balances} />
+            <BalancesStep value={balances} onChange={setBalances} check={balancesCheck} yearEnd={yearEnd} showErrors={!!tried.balances} words={words} />
             {nav("Next: Lot Balances")}
           </Card>
         </div>
@@ -550,6 +613,7 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
               check={lotBalancesCheck}
               sheet={balancesCheck}
               showErrors={!!tried.lotBalances}
+              words={words}
             />
             {nav("Next: Review")}
           </Card>
@@ -566,6 +630,8 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
                 v={review}
                 lots={lotsCheck.lots}
                 entitlementSum={lotsCheck.entitlementSum}
+                separateSum={lotsCheck.separateSum}
+                words={words}
                 balances={balancesCheck}
                 lotTotals={lotBalancesCheck.totals}
                 photoName={photo?.name ?? null}
@@ -580,15 +646,88 @@ export function AddPropertyWizard({ simplified = false, today }: { simplified?: 
   );
 }
 
+/** The module select, where the building's pack has one. A module StrataVerze does not apply is listed but cannot be chosen. */
+function ModuleField({ choices, error }: { choices: NonNullable<OnboardingWords["regulationModule"]>; error?: string }) {
+  return (
+    <div className="sm:col-span-2">
+      <label htmlFor="regulationModule" className="block text-sm font-medium text-ink mb-1.5">
+        {choices.label}
+        <span className="text-red-500 ml-0.5">*</span>
+      </label>
+      <select
+        id="regulationModule"
+        name="regulationModule"
+        required
+        defaultValue=""
+        className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
+      >
+        <option value="" disabled>
+          Select module...
+        </option>
+        {choices.options.map((o) => (
+          <option key={o.value} value={o.value} disabled={!o.supported}>
+            {o.supported ? o.label : `${o.label} (not available yet)`}
+          </option>
+        ))}
+      </select>
+      {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : <p className="mt-1.5 text-xs text-ink-muted">{choices.help}</p>}
+    </div>
+  );
+}
+
+/**
+ * The plan format select, where the building's pack has one. Every listed
+ * format can be chosen, as in the building settings. One StrataVerze does not
+ * support yet is marked, and its note is shown once it is chosen.
+ */
+function PlanFormatField({ choices, error }: { choices: NonNullable<OnboardingWords["planFormat"]>; error?: string }) {
+  const [chosen, setChosen] = useState("");
+  const note = choices.options.find((o) => o.value === chosen && !o.supported)?.note ?? null;
+  return (
+    <div className="sm:col-span-2">
+      <label htmlFor="planFormat" className="block text-sm font-medium text-ink mb-1.5">
+        {choices.label}
+        <span className="text-red-500 ml-0.5">*</span>
+      </label>
+      <select
+        id="planFormat"
+        name="planFormat"
+        required
+        defaultValue=""
+        onChange={(e) => setChosen(e.target.value)}
+        className="w-full rounded-[var(--radius-card)] border border-line bg-white px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise transition-colors"
+      >
+        <option value="" disabled>
+          Select plan format...
+        </option>
+        {choices.options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.supported ? o.label : `${o.label} (not supported yet)`}
+          </option>
+        ))}
+      </select>
+      {error ? (
+        <p className="mt-1.5 text-xs text-red-600">{error}</p>
+      ) : (
+        <p className="mt-1.5 text-xs text-ink-muted">{note ?? choices.help}</p>
+      )}
+    </div>
+  );
+}
+
 function ReviewSummary({
   simplified,
   v,
   lots,
   entitlementSum,
+  separateSum,
+  words,
   balances,
   lotTotals,
   photoName,
 }: {
+  separateSum: number;
+  words: OnboardingWords;
   photoName: string | null;
   simplified?: boolean;
   v: ReviewValues;
@@ -598,6 +737,7 @@ function ReviewSummary({
   lotTotals: ReturnType<typeof checkLotBalances>["totals"];
 }) {
   const val = (k: string) => (v[k] ?? "").trim() || "—";
+  const funds = `${words.fundWords.admin.shortLabel} / ${words.fundWords.capitalWorks.shortLabel}`;
   const anyBalance =
     balances.total !== 0 ||
     [balances.admin, balances.capitalWorks].some((f) => Object.values(f).some((c) => c !== 0)) ||
@@ -607,14 +747,15 @@ function ReviewSummary({
       title: "Property Details",
       rows: [
         ["Scheme Name", val("name")],
-        ["Plan Number", val("planNumber")],
+        [planNumberLabel(words), val("planNumber")],
+        ...(legalName(words, v.name ?? "", v.planNumber ?? "") ? ([["Legal Name", legalName(words, v.name ?? "", v.planNumber ?? "")!]] as [string, string][]) : []),
         ["Folio", val("folio")],
         ["ABN", val("abnNumber")],
         ["Building Type", val("buildingType")],
         ["Building Sub-Type", val("buildingSubType")],
         ["Building Class", val("buildingClass")],
         ["Total Lots", val("totalLots")],
-        ["Total Unit Entitlement", val("totalEntitlement")],
+        [`Total ${words.entitlementLabel}`, val("totalEntitlement")],
       ],
     },
     {
@@ -623,6 +764,12 @@ function ReviewSummary({
         ["Address", `${val("address")}, ${val("suburb")} ${val("state")} ${val("postcode")}`],
         ["Financial Year End", v.financialYearEnd ? auDate(v.financialYearEnd) : "—"],
         ["Payment Plan", val("paymentPlan")],
+        ...(words.regulationModule
+          ? ([[words.regulationModule.label, words.regulationModule.options.find((o) => o.value === v.regulationModule)?.label ?? "—"]] as [string, string][])
+          : []),
+        ...(words.planFormat
+          ? ([[words.planFormat.label, words.planFormat.options.find((o) => o.value === v.planFormat)?.label ?? "—"]] as [string, string][])
+          : []),
         ["Property Photo", photoName ?? "None (can be added later)"],
         ...(simplified
           ? []
@@ -638,10 +785,10 @@ function ReviewSummary({
       rows: [
         ["Takeover Date", balances.takeoverDate ? auDate(balances.takeoverDate) : "—"],
         ["Total", formatMoney(balances.total)],
-        ["Administrative Fund", formatMoney(balances.admin.fundBalance)],
-        ["Capital Works Fund", formatMoney(balances.capitalWorks.fundBalance)],
-        ["Lot Levies (Admin / Capital Works)", `${formatMoney(lotTotals.admin)} / ${formatMoney(lotTotals.capitalWorks)}`],
-        ["Lot Interest (Admin / Capital Works)", `${formatMoney(lotTotals.interestAdmin)} / ${formatMoney(lotTotals.interestCapitalWorks)}`],
+        [words.fundWords.admin.label, formatMoney(balances.admin.fundBalance)],
+        [words.fundWords.capitalWorks.label, formatMoney(balances.capitalWorks.fundBalance)],
+        [`Lot ${titleCase(words.levies)} (${funds})`, `${formatMoney(lotTotals.admin)} / ${formatMoney(lotTotals.capitalWorks)}`],
+        [`Lot ${capitalise(words.lateCharge)} (${funds})`, `${formatMoney(lotTotals.interestAdmin)} / ${formatMoney(lotTotals.interestCapitalWorks)}`],
         ["Lot Unallocated Credits", formatMoney(lotTotals.unallocated)],
       ],
     },
@@ -665,7 +812,8 @@ function ReviewSummary({
 
       <div>
         <h3 className="text-sm font-semibold text-ink mb-3">
-          Lots ({lots.length}, unit entitlement {entitlementSum.toLocaleString("en-AU")})
+          Lots ({lots.length}, {words.entitlement} {entitlementSum.toLocaleString("en-AU")}
+          {words.separate ? `, ${words.separate.name} ${separateSum.toLocaleString("en-AU")}` : ""})
         </h3>
         <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line">
           <table className="w-full text-sm">
@@ -674,7 +822,8 @@ function ReviewSummary({
                 <th scope="col" className="text-left px-3 py-2 font-medium text-ink-muted">Lot</th>
                 <th scope="col" className="text-left px-3 py-2 font-medium text-ink-muted">Unit No.</th>
                 <th scope="col" className="text-left px-3 py-2 font-medium text-ink-muted">Owner (as on the strata roll)</th>
-                <th scope="col" className="text-right px-3 py-2 font-medium text-ink-muted">Unit Entitlement</th>
+                <th scope="col" className="text-right px-3 py-2 font-medium text-ink-muted">{words.entitlementLabel}</th>
+                {words.separate && <th scope="col" className="text-right px-3 py-2 font-medium text-ink-muted">{words.separate.label}</th>}
               </tr>
             </thead>
             <tbody>
@@ -684,6 +833,7 @@ function ReviewSummary({
                   <td className="px-3 py-2 text-ink">{lot.unitNumber ?? "—"}</td>
                   <td className="px-3 py-2 text-ink">{lot.ownerName ?? "—"}</td>
                   <td className="px-3 py-2 text-ink text-right tabular-nums">{lot.entitlement}</td>
+                  {words.separate && <td className="px-3 py-2 text-ink text-right tabular-nums">{lot.interestScheduleEntitlement ?? "—"}</td>}
                 </tr>
               ))}
             </tbody>
@@ -698,7 +848,7 @@ function ReviewSummary({
 
       <p className="rounded-[var(--radius-card)] bg-mint-soft/40 border border-line px-4 py-3 text-sm text-ink">
         {anyBalance
-          ? "Creating the property also prepares a draft cutover with these opening balances. Next you enter last year's income and expenditure, this year's budget and the levies, then the Adviser checks the cutover, signs it off and posts it in Finance. Nothing is posted to the ledger until then."
+          ? `Creating the property also prepares a draft cutover with these opening balances. Next you enter last year's income and expenditure, this year's budget and the ${words.levies}, then the Adviser checks the cutover, signs it off and posts it in Finance. Nothing is posted to the ledger until then.`
           : "No opening balances were entered, so no cutover is prepared."}
       </p>
     </div>

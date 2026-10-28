@@ -13,6 +13,7 @@ import { connection } from "next/server";
 import { CaseDetailOwnerClient } from "./case-detail-owner-client";
 import { previewRecoveryFees } from "@/lib/billing/capture";
 import { feeWordingFor } from "@/lib/billing/disclosure";
+import { caseWordsFor } from "@/lib/jurisdiction/screen-words";
 import { needRule } from "@/config/statutory";
 
 export default async function OwnerCaseDetailPage({
@@ -153,6 +154,7 @@ export default async function OwnerCaseDetailPage({
         recoveryLaw={`${terms.jurisdictionShort} ${terms.act}`}
         stepLabels={needRule(rules, "DEBT_RECOVERY_STEP_LABELS")}
         lateChargeLabel={terms.lateCharge.charAt(0).toUpperCase() + terms.lateCharge.slice(1)}
+        caseWords={caseWordsFor(rules)}
       />
     </div>
   );

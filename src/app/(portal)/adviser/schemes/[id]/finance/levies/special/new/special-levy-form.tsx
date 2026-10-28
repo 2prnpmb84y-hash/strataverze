@@ -5,13 +5,19 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField, TextareaField } from "@/components/ui/form-field";
 import { createSpecialLevyAction, type ActionState } from "../../../actions";
+import type { LevyFormWords } from "@/lib/jurisdiction/screen-words";
+
+const upper = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 export function SpecialLevyForm({
   schemeId,
   funds,
+  words,
 }: {
   schemeId: string;
   funds: { id: string; name: string }[];
+  /** The building's words, from its rule pack through the server page (levyFormWords). */
+  words: Pick<LevyFormWords, "levy" | "entitlement">;
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
@@ -41,7 +47,7 @@ export function SpecialLevyForm({
       <TextareaField
         label="Purpose"
         name="description"
-        placeholder="What the special levy is for, as resolved"
+        placeholder={`What the special ${words.levy} is for, as resolved`}
       />
       <SelectField
         label="Fund"
@@ -57,7 +63,7 @@ export function SpecialLevyForm({
         step="0.01"
         required
         placeholder="0.00"
-        helpText="Levied on every lot in proportion to unit entitlement."
+        helpText={`Levied on every lot in proportion to ${words.entitlement}.`}
         error={state.fieldErrors?.amount}
       />
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -66,7 +72,7 @@ export function SpecialLevyForm({
           name="resolutionDate"
           type="date"
           required
-          helpText="Date of the general meeting that resolved the special levy."
+          helpText={`Date of the general meeting that resolved the special ${words.levy}.`}
           error={state.fieldErrors?.resolutionDate}
         />
         <FormField
@@ -78,11 +84,11 @@ export function SpecialLevyForm({
         />
       </div>
       <p className="text-sm text-ink-muted">
-        Creating the special levy does not issue anything. You will see the amount for each lot and
+        Creating the special {words.levy} does not issue anything. You will see the amount for each lot and
         issue the notices on the next screen.
       </p>
       <Button type="submit" disabled={pending}>
-        {pending ? "Creating..." : "Create Special Levy"}
+        {pending ? "Creating..." : `Create Special ${upper(words.levy)}`}
       </Button>
     </form>
   );

@@ -14,13 +14,22 @@ import {
   type OnboardingLot,
   type OpeningBalancesInput,
 } from "@/lib/onboarding/property-onboarding";
+import type { OnboardingWords } from "@/lib/onboarding/onboarding-words";
+import { capitalise } from "@/lib/jurisdiction/wording";
 
 /**
  * The Add Property steps for lots and owners, the building's opening
  * balances, and each lot's opening balance (onboarding, 24 Oct). The checks
  * live in src/lib/onboarding/property-onboarding.ts and run again on the
- * server.
+ * server. The words (entitlement, funds, levy, late charge) are the
+ * building's, from its rule pack (`words`, made by onboardingWordsFor).
  */
+
+/** A fund's name without "fund", lower case: "administrative", "capital works", "sinking". */
+const fundNameOnly = (fund: OnboardingWords["fundWords"]["admin"]) => fund.name.replace(/ fund$/, "");
+
+/** A fund's short name in a sentence: "Admin", "Capital works", "Sinking fund". */
+const shortName = (fund: OnboardingWords["fundWords"]["admin"]) => capitalise(fund.shortLabel.toLowerCase());
 
 const cell =
   "w-full min-w-0 rounded-[var(--radius-card)] border border-line bg-white px-2.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-turquoise";
@@ -95,7 +104,10 @@ export function LotsStep({
   showErrors,
   fromRoll,
   notes = [],
+  words,
 }: {
+  /** The building's words, from its rule pack. */
+  words: OnboardingWords;
   lots: OnboardingLot[];
   onChange: (next: OnboardingLot[] | ((prev: OnboardingLot[]) => OnboardingLot[])) => void;
   totalLots: number;
@@ -130,7 +142,7 @@ export function LotsStep({
     <div>
       <h2 className="font-heading font-semibold text-ink mb-1">Lots and Owners</h2>
       <p className="text-sm text-ink-muted mb-5">
-        Enter every lot with its unit entitlement, and each owner&apos;s name exactly as it appears on the strata roll (for example joint owners, or a
+        Enter every lot with its {words.separate ? `${words.entitlement} and ${words.separate.name}` : words.entitlement}, and each owner&apos;s name exactly as it appears on the strata roll (for example joint owners, or a
         company with its ACN).
         {fromRoll && <span className="block mt-1 text-turquoise font-medium">Filled in from the strata roll. Check each row against the roll.</span>}
       </p>
@@ -140,10 +152,11 @@ export function LotsStep({
           Lots: {check.count} entered of {Number.isInteger(totalLots) ? totalLots : "?"} on the building
         </Check>
         <Check ok={sumOk}>
-          Unit entitlement: {check.entitlementSum.toLocaleString("en-AU")} entered of{" "}
+          {capitalise(words.entitlement)}: {check.entitlementSum.toLocaleString("en-AU")} entered of{" "}
           {Number.isInteger(totalEntitlement) ? totalEntitlement.toLocaleString("en-AU") : "?"} total
         </Check>
       </div>
+      {words.separate?.help && <p className="text-xs text-ink-muted mb-5">{words.separate.label}: {words.separate.help}</p>}
 
       {showErrors && <StepProblems problems={check.errors} />}
       <RollNotes issues={notes} title="From the strata roll: check these" />
@@ -154,7 +167,8 @@ export function LotsStep({
             <tr className="bg-muted/50 text-left">
               <th scope="col" className="px-3 py-2 font-medium text-ink-muted w-24">Lot</th>
               <th scope="col" className="px-3 py-2 font-medium text-ink-muted w-24">Unit No.</th>
-              <th scope="col" className="px-3 py-2 font-medium text-ink-muted w-32">Unit Entitlement</th>
+              <th scope="col" className="px-3 py-2 font-medium text-ink-muted w-32">{words.entitlementLabel}</th>
+              {words.separate && <th scope="col" className="px-3 py-2 font-medium text-ink-muted w-32">{words.separate.label}</th>}
               <th scope="col" className="px-3 py-2 font-medium text-ink-muted">Owner name (as on the strata roll)</th>
               <th scope="col" className="px-3 py-2 w-12">
                 <span className="sr-only">Remove</span>
@@ -174,13 +188,24 @@ export function LotsStep({
                   </td>
                   <td className="px-3 py-2">
                     <input
-                      aria-label={`Unit entitlement, row ${i + 1}`}
+                      aria-label={`${capitalise(words.entitlement)}, row ${i + 1}`}
                       inputMode="numeric"
                       className={money}
                       value={lot.entitlement}
                       onChange={(e) => set(i, "entitlement", e.target.value)}
                     />
                   </td>
+                  {words.separate && (
+                    <td className="px-3 py-2">
+                      <input
+                        aria-label={`${capitalise(words.separate.name)}, row ${i + 1}`}
+                        inputMode="numeric"
+                        className={money}
+                        value={lot.interestScheduleEntitlement ?? ""}
+                        onChange={(e) => set(i, "interestScheduleEntitlement", e.target.value)}
+                      />
+                    </td>
+                  )}
                   <td className="px-3 py-2">
                     <input
                       aria-label={`Owner name as on the strata roll, row ${i + 1}`}
@@ -207,7 +232,7 @@ export function LotsStep({
             })}
             {lots.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-ink-muted">
+                <td colSpan={words.separate ? 6 : 5} className="px-3 py-6 text-center text-ink-muted">
                   No lots yet.
                 </td>
               </tr>
@@ -268,7 +293,11 @@ function FundSheetCard({
   onChange,
   check,
   showErrors,
+  levies,
+  lateCharge,
 }: {
+  levies: string;
+  lateCharge: string;
   which: "admin" | "capitalWorks";
   title: string;
   sheet: FundSheet;
@@ -286,7 +315,7 @@ function FundSheetCard({
         <MoneyRow id={`${which}-cash`} label="Cash at bank" value={sheet.cashAtBank} onChange={(v) => onChange("cashAtBank", v)} error={err("cashAtBank")} />
         <MoneyRow
           id={`${which}-receivable`}
-          label="Levies receivable (including interest)"
+          label={`${capitalise(levies)} receivable (including ${lateCharge})`}
           value={sheet.leviesReceivable}
           onChange={(v) => onChange("leviesReceivable", v)}
           error={err("leviesReceivable")}
@@ -294,7 +323,7 @@ function FundSheetCard({
         {which === "admin" && (
           <MoneyRow
             id={`${which}-advance`}
-            label="Levies paid in advance"
+            label={`${capitalise(levies)} paid in advance`}
             sign="less"
             value={sheet.leviesInAdvance}
             onChange={(v) => onChange("leviesInAdvance", v)}
@@ -327,7 +356,9 @@ export function BalancesStep({
   check,
   yearEnd,
   showErrors,
+  words,
 }: {
+  words: OnboardingWords;
   value: OpeningBalancesInput;
   onChange: (next: OpeningBalancesInput) => void;
   check: BalancesCheck;
@@ -384,21 +415,32 @@ export function BalancesStep({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FundSheetCard which="admin" title="Administrative fund" sheet={value.admin} onChange={setFund("admin")} check={check} showErrors={showErrors} />
+        <FundSheetCard
+          which="admin"
+          title={capitalise(words.fundWords.admin.name)}
+          sheet={value.admin}
+          onChange={setFund("admin")}
+          check={check}
+          showErrors={showErrors}
+          levies={words.levies}
+          lateCharge={words.lateCharge}
+        />
         <FundSheetCard
           which="capitalWorks"
-          title="Capital works fund"
+          title={capitalise(words.fundWords.capitalWorks.name)}
           sheet={value.capitalWorks}
           onChange={setFund("capitalWorks")}
           check={check}
           showErrors={showErrors}
+          levies={words.levies}
+          lateCharge={words.lateCharge}
         />
       </div>
 
       <div className="mt-4">
         <Check ok={check.total === sum}>
-          Total {formatMoney(check.total)} {check.total === sum ? "equals" : "should equal"} administrative {formatMoney(check.admin.fundBalance)} plus
-          capital works {formatMoney(check.capitalWorks.fundBalance)} ({formatMoney(sum)})
+          Total {formatMoney(check.total)} {check.total === sum ? "equals" : "should equal"} {fundNameOnly(words.fundWords.admin)} {formatMoney(check.admin.fundBalance)} plus{" "}
+          {fundNameOnly(words.fundWords.capitalWorks)} {formatMoney(check.capitalWorks.fundBalance)} ({formatMoney(sum)})
         </Check>
       </div>
       <p className="mt-3 text-xs text-ink-muted">
@@ -411,13 +453,17 @@ export function BalancesStep({
 
 // ─── Lot opening balances ───────────────────────────────────────────────────
 
-const LOT_FIELDS = [
-  { key: "admin", label: "Admin levies", aria: "Administrative fund levies" },
-  { key: "interestAdmin", label: "Admin interest", aria: "Administrative fund interest" },
-  { key: "capitalWorks", label: "Capital works levies", aria: "Capital works fund levies" },
-  { key: "interestCapitalWorks", label: "Capital works interest", aria: "Capital works fund interest" },
-  { key: "unallocated", label: "Unallocated", aria: "Unallocated" },
-] as const;
+/** The columns of each lot's opening balance, in the building's words. */
+function lotFields(w: OnboardingWords) {
+  const [admin, capital] = [w.fundWords.admin, w.fundWords.capitalWorks];
+  return [
+    { key: "admin", label: `${shortName(admin)} ${w.levies}`, aria: `${capitalise(admin.name)} ${w.levies}` },
+    { key: "interestAdmin", label: `${shortName(admin)} ${w.lateCharge}`, aria: `${capitalise(admin.name)} ${w.lateCharge}` },
+    { key: "capitalWorks", label: `${shortName(capital)} ${w.levies}`, aria: `${capitalise(capital.name)} ${w.levies}` },
+    { key: "interestCapitalWorks", label: `${shortName(capital)} ${w.lateCharge}`, aria: `${capitalise(capital.name)} ${w.lateCharge}` },
+    { key: "unallocated", label: "Unallocated", aria: "Unallocated" },
+  ] as const;
+}
 
 export function LotBalancesStep({
   rows,
@@ -426,7 +472,9 @@ export function LotBalancesStep({
   check,
   sheet,
   showErrors,
+  words,
 }: {
+  words: OnboardingWords;
   rows: LotBalanceInput[];
   ownerNames: Record<string, string>;
   onChange: (next: LotBalanceInput[] | ((prev: LotBalanceInput[]) => LotBalanceInput[])) => void;
@@ -437,22 +485,25 @@ export function LotBalancesStep({
   const set = (i: number, field: keyof LotBalanceInput, value: string) =>
     onChange((prev) => prev.map((row, j) => (j === i ? { ...row, [field]: value } : row)));
   const t = check.totals;
+  const LOT_FIELDS = lotFields(words);
+  const { levies, levy, lateCharge } = words;
+  const [admin, capital] = [shortName(words.fundWords.admin), shortName(words.fundWords.capitalWorks)];
   return (
     <div>
       <h2 className="font-heading font-semibold text-ink mb-1">Lot Opening Balances</h2>
       <p className="text-sm text-ink-muted mb-5">
-        What each owner owes at the takeover date: the levies and the interest owing in each fund, as shown in the previous manager&apos;s handover.
-        Unallocated is money an owner has paid that is not yet applied to a levy: it is held as a credit in the administrative fund. Type the
+        What each owner owes at the takeover date: the {levies} and the {lateCharge} owing in each fund, as shown in the previous manager&apos;s handover.
+        Unallocated is money an owner has paid that is not yet applied to a {levy}: it is held as a credit in the {words.fundWords.admin.name}. Type the
         amounts as the handover prints them: a minus sign is fine (Urbanise shows an amount owing as -250.12), because each column already says
         whether the amount is owed or a credit.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <Check ok={t.receivableAdmin === sheet.admin.leviesReceivable}>
-          Admin levies and interest {formatMoney(t.receivableAdmin)} of {formatMoney(sheet.admin.leviesReceivable)} receivable
+          {admin} {levies} and {lateCharge} {formatMoney(t.receivableAdmin)} of {formatMoney(sheet.admin.leviesReceivable)} receivable
         </Check>
         <Check ok={t.receivableCapitalWorks === sheet.capitalWorks.leviesReceivable}>
-          Capital works levies and interest {formatMoney(t.receivableCapitalWorks)} of {formatMoney(sheet.capitalWorks.leviesReceivable)} receivable
+          {capital} {levies} and {lateCharge} {formatMoney(t.receivableCapitalWorks)} of {formatMoney(sheet.capitalWorks.leviesReceivable)} receivable
         </Check>
         <Check ok={t.unallocated === sheet.admin.leviesInAdvance}>
           Unallocated {formatMoney(t.unallocated)} of {formatMoney(sheet.admin.leviesInAdvance)} paid in advance

@@ -63,7 +63,10 @@ export function DebtRecoveryListClient({
   lotsWithOwners,
   stepLabels,
   levies,
+  paymentPlanLabel,
 }: {
+  /** The PAYMENT_PLAN status, as the building's pack has it ("Payment Plan", "Payment Arrangement"; caseWordsFor). */
+  paymentPlanLabel: string;
   /** The building's word for the amounts owed, plural: "levies", "contributions". */
   levies: string;
   schemeId: string;
@@ -137,7 +140,7 @@ export function DebtRecoveryListClient({
               <option value="ACTIVE">Active Only</option>
               <option value="OPEN">Open</option>
               <option value="IN_PROGRESS">In Progress</option>
-              <option value="PAYMENT_PLAN">Payment Plan</option>
+              <option value="PAYMENT_PLAN">{paymentPlanLabel}</option>
               <option value="REFERRED_LEGAL">Legal Referral</option>
               <option value="CLOSED_PAID">Closed (Paid)</option>
             </select>
@@ -223,10 +226,12 @@ export function DebtRecoveryListClient({
       ) : (
         <div className="space-y-3">
           {filteredCases.map((c) => {
-            const statusInfo = STATUS_MAP[c.status] ?? {
-              label: c.status,
-              variant: "default" as ChipStatus,
-            };
+            const known = STATUS_MAP[c.status];
+            const statusInfo = known
+              ? c.status === "PAYMENT_PLAN"
+                ? { ...known, label: paymentPlanLabel }
+                : known
+              : { label: c.status, variant: "default" as ChipStatus };
             return (
               <Link
                 key={c.id}

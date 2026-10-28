@@ -35,6 +35,8 @@ import { BuildingDataNotice } from "./_sections/building-data-notice";
 import { RegulationModuleForm } from "./regulation-module-form";
 import { PlanFormatForm } from "./plan-format-form";
 import { buildingDataProblems, planFormatChoices, regulationModuleChoices } from "@/lib/jurisdiction/building-data";
+import { lotWordsFor } from "@/lib/jurisdiction/screen-words";
+import { planNumberLabel } from "@/lib/onboarding/onboarding-words";
 import { connection } from "next/server";
 
 /**
@@ -123,7 +125,7 @@ export default async function SchemeDetailPage({
       <BuildingDataNotice problems={dataProblems} />
       <AnnouncementsCard id={id} announcements={announcements} />
       <FundsCard id={id} funds={await withLedgerBalances(scheme.funds)} catalogue={packRules.FUND_CATALOGUE} />
-      <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} />
+      <LotsCard id={id} rows={lots} totalLots={scheme.totalLots} words={lotWordsFor(packRules)} />
       <LeviesCard id={id} schedules={levies} today={await schemeToday(id)} />
       <MeetingsCard id={id} meetings={meetings} />
       <DocumentsCard id={id} documents={documents} timeZone={timeZoneOf(scheme)} />
@@ -161,6 +163,7 @@ export default async function SchemeDetailPage({
           Edit Scheme Details
         </h2>
         <SchemeForm
+          words={{ ...lotWordsFor(packRules), planNumber: planNumberLabel(packRules.TERMINOLOGY) }}
           mode="edit"
           schemeId={scheme.id}
           lockCore={!profile?.isPlatformAdmin}

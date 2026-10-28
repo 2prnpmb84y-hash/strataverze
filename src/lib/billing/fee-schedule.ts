@@ -2,7 +2,7 @@
  * The published StrataVerze fee schedule (pure). Built only from price book
  * rows in force on a date, so the page always matches what will be charged.
  */
-import { EXPLANATIONS, PAYER_LABELS } from "./disclosure";
+import { EXPLANATIONS, PAYER_LABELS, inBuildingWords, type FeeWording } from "./disclosure";
 import { splitGst } from "./money";
 import { isEffective, type PriceBookEntry, type PriceUnit } from "./price-book";
 
@@ -84,6 +84,11 @@ export interface FeeScheduleOptions {
    * the schedule shows only the fee that will actually be charged.
    */
   transactionFeeMode?: "TIERED" | "FLAT";
+  /**
+   * The building's words (feeWordingFor), for the explanations and payers.
+   * Without it the schedule keeps the words it has always shown.
+   */
+  wording?: FeeWording;
 }
 
 /** Price book rows in force on `date`, grouped and ordered for display. */
@@ -105,12 +110,12 @@ export function feeSchedule(
         variant: e.variant ?? null,
         group: GROUP_BY_CODE[e.code] ?? "Other",
         description: e.description,
-        explanation: EXPLANATIONS[e.code] ?? "",
+        explanation: inBuildingWords(EXPLANATIONS[e.code] ?? "", options.wording),
         unitLabel: UNIT_LABELS[e.unit] ?? e.unit,
         exGstCents: split?.exGstCents ?? null,
         gstCents: split?.gstCents ?? null,
         totalCents: split?.totalCents ?? null,
-        payerLabel: PAYER_LABELS[e.payerType] ?? "Charged to the owners corporation",
+        payerLabel: inBuildingWords(PAYER_LABELS[e.payerType] ?? "Charged to the owners corporation", options.wording),
         recoverableFromOwner: e.recoverableFromOwner ?? false,
         bandMin: e.bandMin ?? null,
       };

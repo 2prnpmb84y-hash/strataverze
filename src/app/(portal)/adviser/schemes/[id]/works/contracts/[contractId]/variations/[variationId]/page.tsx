@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { FeeActionButton } from "@/components/billing/fee-action-button";
 import { previewUsageFee } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 
 function formatCurrency(value: number | string | null): string {
   const num = Number(value ?? 0);
@@ -67,7 +69,7 @@ export default async function VariationDetailPage({
     return approveWorksVariation(variationId, id, feeConfirmedCents);
   }
   const approvalFee =
-    variation.status === "SUBMITTED" ? await previewUsageFee({ code: "WORKS_VARIATION" }) : null;
+    variation.status === "SUBMITTED" ? await previewUsageFee({ code: "WORKS_VARIATION" }, feeWordingFor(rulesForState(scheme.state).rules)) : null;
 
   async function rejectAction() {
     "use server";

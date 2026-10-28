@@ -9,6 +9,8 @@ import { getBankTransactionsForAccount } from "@/lib/queries/bank-transactions";
 import { getAccountCodesForScheme } from "@/lib/queries/account-codes";
 import { getAllocationCandidates, getSuspenseItems } from "@/lib/finance/bank-allocations";
 import { transactionFeeTable } from "@/lib/billing/capture";
+import { feeWordingFor } from "@/lib/billing/disclosure";
+import { rulesForState } from "@/lib/jurisdiction/scheme-rules";
 import { toCents } from "@/lib/billing/money";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatCard } from "@/components/ui/stat-card";
@@ -76,7 +78,7 @@ export default async function ReconciliationPage({
     getAllocationCandidates(id),
     getSuspenseItems(id, "OPEN"),
     getAccountCodesForScheme(id),
-    transactionFeeTable(),
+    transactionFeeTable(feeWordingFor(rulesForState(scheme.state).rules)),
     db.orm.public.LevyNotice
       .where((n) => and(n.schemeId.eq(id), n.status.in(["ISSUED", "PARTIALLY_PAID", "OVERDUE"])))
       .include("lot")

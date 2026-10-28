@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import type { LotWords } from "@/lib/jurisdiction/screen-words";
 import { Button } from "@/components/ui/button";
 import { FormField, SelectField } from "@/components/ui/form-field";
 import { Card } from "@/components/ui/card";
@@ -35,12 +36,15 @@ type SchemeDefaults = {
 };
 
 export function SchemeForm({
+  words,
   mode,
   schemeId,
   defaults,
   lockCore = false,
   today,
 }: {
+  /** The building's words, from its rule pack: the entitlement (lotWordsFor) and the plan number's name (planNumberLabel). */
+  words: Pick<LotWords, "entitlement" | "entitlementLabel"> & { planNumber: string };
   mode: "create" | "edit";
   schemeId?: string;
   defaults?: SchemeDefaults;
@@ -80,13 +84,13 @@ export function SchemeForm({
           />
 
           <FormField
-            label="Plan Number"
+            label={words.planNumber}
             helpText={lockCore ? "Locked. Only StrataVerze can change the plan number, address, lots and entitlement." : undefined}
             name="planNumber"
             readOnly={lockCore}
             required
             defaultValue={defaults?.planNumber}
-            placeholder="e.g. SP 12345"
+            placeholder={words.planNumber === "Plan Number" ? "e.g. SP 12345" : "e.g. 12345"}
             error={state.fieldErrors?.planNumber}
           />
 
@@ -154,14 +158,14 @@ export function SchemeForm({
           />
 
           <FormField
-            label="Total Unit Entitlement"
+            label={`Total ${words.entitlement}`}
             name="totalEntitlement"
             readOnly={lockCore}
             type="number"
             required
             defaultValue={defaults?.totalEntitlement}
             placeholder="e.g. 1000"
-            helpText="The aggregate unit entitlement: the lots' unit entitlements add up to it"
+            helpText={`The aggregate ${words.entitlementLabel.toLowerCase()}: the lots' ${words.entitlementLabel.toLowerCase()}s add up to it`}
             error={state.fieldErrors?.totalEntitlement}
           />
 
