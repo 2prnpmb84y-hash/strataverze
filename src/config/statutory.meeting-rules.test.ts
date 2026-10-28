@@ -26,6 +26,7 @@ describe.each(DRAFTS)("%s meeting rules", (state, rs) => {
     expect(rs.effectiveFrom).toBe("2026-10-28");
     expect(rs.preMeetingEvoting).toBeNull();
     expect(rs.excludeCommonPropertyRows).toBe(true);
+    expect(rs.categoryRequiredAtGeneralMeetings).toBe(true);
   });
 
   it("names and has a rule for every category each list offers, and each list is the pack's", () => {
@@ -134,6 +135,7 @@ describe("NSW and Queensland", () => {
       for (const [c, rule] of rulesOf(rs)) expect(usesDraftKeys(rule), c).toBe(false);
       expect(rs).not.toHaveProperty("excludeCommonPropertyRows");
       expect(rs).not.toHaveProperty("memberBandSelector");
+      expect(rs).not.toHaveProperty("categoryRequiredAtGeneralMeetings");
     }
   });
 });

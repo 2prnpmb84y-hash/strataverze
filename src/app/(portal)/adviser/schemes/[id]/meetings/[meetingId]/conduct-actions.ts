@@ -18,6 +18,7 @@ import {
   notCountedNotice,
   outcomeDisagreement,
   parseChairVotes,
+  uncategorisedRefusal,
   writtenVotesRefusal,
 } from "@/lib/meetings/conduct-tally";
 import { conductVotingData } from "@/lib/meetings/conduct-tally-repo";
@@ -123,6 +124,10 @@ export async function recordAgendaOutcomeAction(
       return { error: "Outcomes can only be recorded while the meeting is running." };
 
     const ruleSet = await getActiveRuleSet(scheme.state);
+    // A draft pack's general meeting: an item with no category cannot be
+    // recorded as resolved, as nothing counts it. Never refused for NSW or Queensland.
+    const uncategorised = uncategorisedRefusal(ruleSet, item.resolutionCategory, requestedOutcome, meeting.meetingType);
+    if (uncategorised) return { error: uncategorised };
     // Queensland general meetings: the outcome is checked against the count
     // of the votes. A deferral needs no count, and a committee meeting is
     // decided by its members. NSW counts nothing here and goes on as before.

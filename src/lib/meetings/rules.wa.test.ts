@@ -3,19 +3,33 @@
  * 28 Oct 2026), from the draft pack's MEETING_RULES (STA s 123): the special
  * resolution by size class, measured against all lots and all unit
  * entitlement; the resolution without dissent and the unanimous resolution;
- * and the ordinary resolution, whose tie fails. The tests are held even
- * though the meeting cannot record a special, without dissent or unanimous
- * resolution until its voting period is tracked (conduct-tally.wa.test.ts).
+ * and the ordinary resolution, whose tie fails. A special, without dissent
+ * or unanimous resolution is decided when its 28-day voting period closes
+ * (s 121), so with the pack as it is the count of those is UNDETERMINED
+ * whatever the votes; the s 123 tests are held for when the voting period is
+ * tracked, and are tested here on the pack without it (AT_CLOSE).
  */
 import { describe, expect, it } from "vitest";
 import { PENDING_RULE_PACKS } from "@/config/statutory";
-import { evaluateResolution, type ResolutionTally } from "./rules";
+import { evaluateResolution, type MeetingRuleSet, type ResolutionTally } from "./rules";
+import { resolveOutcome } from "./conduct";
 
 const WA = PENDING_RULE_PACKS.WA.rules.MEETING_RULES;
 
+/** The pack's tests as they will be counted when the voting period closes: the same rules without votingPeriodDays. */
+const AT_CLOSE: MeetingRuleSet = {
+  ...WA,
+  resolutionCategories: Object.fromEntries(
+    Object.entries(WA.resolutionCategories).map(([c, rule]) => {
+      const { votingPeriodDays: _days, ...rest } = rule!;
+      return [c, rest];
+    }),
+  ),
+};
+
 /** Twelve lots of 10 unit entitlement each (120). */
 const special = (t: Partial<ResolutionTally>, lots = 12) =>
-  evaluateResolution(WA, "SPECIAL", { forCount: 0, againstCount: 0, forUE: 0, againstUE: 0, totalLots: lots, totalEntitlement: lots * 10, ...t });
+  evaluateResolution(AT_CLOSE, "SPECIAL", { forCount: 0, againstCount: 0, forUE: 0, againstUE: 0, totalLots: lots, totalEntitlement: lots * 10, ...t });
 
 describe("a special resolution with 6 or more lots (s 123(4))", () => {
   it("passes at exactly 50% of all lots and unit entitlement for", () => {
@@ -43,8 +57,8 @@ describe("a special resolution with 6 or more lots (s 123(4))", () => {
   });
 
   it("refuses without the totals or the entitlement", () => {
-    expect(evaluateResolution(WA, "SPECIAL", { forCount: 6, againstCount: 0 }).result).toBe("UNDETERMINED");
-    expect(evaluateResolution(WA, "SPECIAL", { forCount: 6, againstCount: 0, totalLots: 12 }).result).toBe("UNDETERMINED");
+    expect(evaluateResolution(AT_CLOSE, "SPECIAL", { forCount: 6, againstCount: 0 }).result).toBe("UNDETERMINED");
+    expect(evaluateResolution(AT_CLOSE, "SPECIAL", { forCount: 6, againstCount: 0, totalLots: 12 }).result).toBe("UNDETERMINED");
   });
 });
 
@@ -63,7 +77,7 @@ describe("2 lots: a special resolution and a resolution without dissent only if 
   it("needs both lots for", () => {
     expect(special({ forCount: 2, forUE: 20 }, 2).passed).toBe(true);
     expect(special({ forCount: 1, forUE: 10 }, 2)).toEqual({ passed: false, reason: "Not every lot in the scheme voted for" });
-    expect(evaluateResolution(WA, "WITHOUT_DISSENT", { forCount: 1, againstCount: 0, abstainCount: 1, totalLots: 2 })).toEqual({
+    expect(evaluateResolution(AT_CLOSE, "WITHOUT_DISSENT", { forCount: 1, againstCount: 0, abstainCount: 1, totalLots: 2 })).toEqual({
       passed: false,
       reason: "Not every lot in the scheme voted for",
     });
@@ -77,14 +91,14 @@ describe("2 lots: a special resolution and a resolution without dissent only if 
 
 describe("without dissent and unanimous (s 123(1), (2))", () => {
   it("without dissent: no vote against, with 3 or more lots", () => {
-    expect(evaluateResolution(WA, "WITHOUT_DISSENT", { forCount: 1, againstCount: 0, totalLots: 9 }).passed).toBe(true);
-    expect(evaluateResolution(WA, "WITHOUT_DISSENT", { forCount: 8, againstCount: 1, totalLots: 9 }).passed).toBe(false);
-    expect(evaluateResolution(WA, "WITHOUT_DISSENT", { forCount: 8, againstCount: 0 }).result).toBe("UNDETERMINED");
+    expect(evaluateResolution(AT_CLOSE, "WITHOUT_DISSENT", { forCount: 1, againstCount: 0, totalLots: 9 }).passed).toBe(true);
+    expect(evaluateResolution(AT_CLOSE, "WITHOUT_DISSENT", { forCount: 8, againstCount: 1, totalLots: 9 }).passed).toBe(false);
+    expect(evaluateResolution(AT_CLOSE, "WITHOUT_DISSENT", { forCount: 8, againstCount: 0 }).result).toBe("UNDETERMINED");
   });
 
   it("unanimous: every lot for", () => {
-    expect(evaluateResolution(WA, "UNANIMOUS", { forCount: 9, againstCount: 0, totalLots: 9 }).passed).toBe(true);
-    expect(evaluateResolution(WA, "UNANIMOUS", { forCount: 8, againstCount: 0, abstainCount: 1, totalLots: 9 }).passed).toBe(false);
+    expect(evaluateResolution(AT_CLOSE, "UNANIMOUS", { forCount: 9, againstCount: 0, totalLots: 9 }).passed).toBe(true);
+    expect(evaluateResolution(AT_CLOSE, "UNANIMOUS", { forCount: 8, againstCount: 0, abstainCount: 1, totalLots: 9 }).passed).toBe(false);
   });
 });
 
@@ -93,5 +107,36 @@ describe("an ordinary resolution (s 123(7))", () => {
     expect(evaluateResolution(WA, "ORDINARY", { forCount: 3, againstCount: 2 })).toEqual({ passed: true, reason: "Majority of votes cast" });
     expect(evaluateResolution(WA, "ORDINARY", { forCount: 2, againstCount: 2 })).toEqual({ passed: false, reason: "Not a majority of votes cast" });
     expect(evaluateResolution(WA, "ORDINARY", { forCount: 2, againstCount: 3, forUE: 60, againstUE: 30, poll: true }).passed).toBe(true);
+  });
+});
+
+describe("the voting period (s 121): the count at the meeting decides nothing", () => {
+  const REASON = "This resolution is decided when its 28-day voting period closes, which StrataVerze does not track yet, so the count at the meeting cannot decide it";
+  // Totals that pass (or fail) every s 123 test, so only the voting period stops the count.
+  const passing = { forCount: 12, againstCount: 0, forUE: 120, againstUE: 0, totalLots: 12, totalEntitlement: 120 };
+  const failing = { forCount: 0, againstCount: 12, forUE: 0, againstUE: 120, totalLots: 12, totalEntitlement: 120 };
+
+  it("is UNDETERMINED for a special, without dissent or unanimous resolution, carried or lost on the votes", () => {
+    for (const c of ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS"] as const) {
+      expect(evaluateResolution(AT_CLOSE, c, passing).passed, c).toBe(true);
+      expect(evaluateResolution(AT_CLOSE, c, failing), c).toMatchObject({ passed: false });
+      expect(evaluateResolution(AT_CLOSE, c, failing).result, c).toBeUndefined();
+      for (const t of [passing, failing]) expect(evaluateResolution(WA, c, t), c).toEqual({ passed: false, result: "UNDETERMINED", reason: REASON });
+    }
+    // Every size class: the variant is chosen, and its test never reached.
+    for (const lots of [2, 3, 5, 6]) {
+      const t = { ...passing, forCount: lots, forUE: lots * 10, totalLots: lots, totalEntitlement: lots * 10 };
+      expect(evaluateResolution(WA, "SPECIAL", t), String(lots)).toEqual({ passed: false, result: "UNDETERMINED", reason: REASON });
+    }
+  });
+
+  it("is refused by resolveOutcome, so nothing is written", () => {
+    const r = resolveOutcome(WA, { requestedOutcome: "RESOLVED", resolutionCategory: "UNANIMOUS", tally: passing });
+    expect(r.refused).toBe(`The votes recorded cannot decide this motion. ${REASON}. Nothing was saved. The item can be deferred.`);
+    expect(r.refused).not.toMatch(/[;–—]|\(s \d/);
+  });
+
+  it("leaves an ordinary resolution counted at the meeting", () => {
+    expect(evaluateResolution(WA, "ORDINARY", { ...passing, forCount: 3, againstCount: 2 })).toEqual({ passed: true, reason: "Majority of votes cast" });
   });
 });

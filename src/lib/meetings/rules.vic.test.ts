@@ -81,6 +81,48 @@ describe("the interim special resolution a failed special resolution passes as (
     });
   });
 
+  it("route 2 needs at least 1 vote for: no vote at all at a quorate meeting is lost, not interim", () => {
+    const none = { forCount: 0, againstCount: 0, abstainCount: 3 };
+    expect(evaluateResolution(VIC, "SPECIAL", tally({ ...none, quorumPresent: true }))).toEqual({
+      passed: false,
+      reason: "Votes for are less than 75% of all lots in the scheme",
+    });
+    // Quorum unknown changes nothing: with no vote for, neither route can pass.
+    expect(evaluateResolution(VIC, "SPECIAL", tally(none))).toEqual({ passed: false, reason: "Votes for are less than 75% of all lots in the scheme" });
+    expect(evaluateResolution(VIC, "INTERIM_SPECIAL", tally({ ...none, quorumPresent: true }))).toEqual({
+      passed: false,
+      reason: "Votes for are less than 50% of all lots in the scheme",
+    });
+    // 1 vote for is enough for route 2.
+    expect(evaluateResolution(VIC, "SPECIAL", tally({ forCount: 1, againstCount: 0, quorumPresent: true }))).toEqual({
+      passed: false,
+      result: "INTERIM",
+      interimCategory: "INTERIM_SPECIAL",
+      reason: "Votes for are less than 75% of all lots in the scheme. No vote against and at least 1 vote for, at a meeting with a quorum",
+    });
+    const r = resolveOutcome(VIC, { requestedOutcome: "MOTION_LOST", resolutionCategory: "SPECIAL", tally: tally({ ...none, quorumPresent: true }) });
+    expect(r).toMatchObject({ outcome: "MOTION_LOST", status: "LOST" });
+    expect(r).not.toHaveProperty("refused");
+  });
+
+  it("is never tested with 2 lots: s 97 does not apply to a 2-lot owners corporation (s 7A), so the count is refused, not reported as interim", () => {
+    const two = (t: Partial<ResolutionTally>) => ({ forCount: 0, againstCount: 0, totalLots: 2, ...t });
+    for (const t of [two({ forCount: 1 }), two({ forCount: 1, quorumPresent: true }), two({ forCount: 1, againstCount: 1 }), two({ againstCount: 2 })]) {
+      const out = evaluateResolution(VIC, "SPECIAL", t);
+      expect(out.result).toBe("UNDETERMINED");
+      expect(out).not.toHaveProperty("interimCategory");
+      expect(out.reason).toMatch(/^Votes for are less than 75% of all lots in the scheme\. An owners corporation of 2 lots cannot pass an interim special resolution/);
+    }
+    const r = resolveOutcome(VIC, { requestedOutcome: "RESOLVED", resolutionCategory: "SPECIAL", tally: two({ forCount: 1 }) });
+    expect(r.refused).toMatch(/^The votes recorded cannot decide this motion\. /);
+    expect(r.refused).not.toMatch(/make this motion an interim/);
+    expect(r.refused).toMatch(/StrataVerze does not apply the rules for 2-lot owners corporations yet, so the count cannot decide it\. Nothing was saved\. The item can be deferred\.$/);
+    // Both lots for still passes the general test, as unanimity does.
+    expect(evaluateResolution(VIC, "SPECIAL", two({ forCount: 2 }))).toEqual({ passed: true, reason: "Votes for are at least 75% of all lots in the scheme" });
+    // From 3 lots the interim special resolution is tested as before.
+    expect(evaluateResolution(VIC, "SPECIAL", tally({ forCount: 2, againstCount: 0, totalLots: 3, quorumPresent: true })).result).toBe("INTERIM");
+  });
+
   it("is only ever interim, even evaluated on its own", () => {
     expect(evaluateResolution(VIC, "INTERIM_SPECIAL", tally({ forCount: 4, againstCount: 1 }))).toMatchObject({
       passed: false,

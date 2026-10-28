@@ -10,7 +10,15 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ scheme: null as unknown, item: null as unknown, meeting: null as unknown, items: [] as unknown[], ballotVotes: [] as unknown[] }));
+const state = vi.hoisted(() => ({
+  scheme: null as unknown,
+  item: null as unknown,
+  meeting: null as unknown,
+  items: [] as unknown[],
+  ballotVotes: [] as unknown[],
+  /** Totals added to the ballot's tally, so only the rule (not a missing total) can stop the count. */
+  ballotTotals: null as Record<string, number> | null,
+}));
 const updateAgendaItem = vi.fn(async () => ({}));
 const recordMeetingEvent = vi.fn(async () => ({}));
 
@@ -29,6 +37,13 @@ vi.mock("@/lib/queries/evoting", () => ({
   closeBallot: vi.fn(),
   getVotesForBallot: vi.fn(async () => state.ballotVotes),
 }));
+vi.mock("@/lib/meetings/evoting", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/meetings/evoting")>();
+  return {
+    ...actual,
+    tallyElectronicVotes: (votes: Parameters<typeof actual.tallyElectronicVotes>[0]) => ({ ...actual.tallyElectronicVotes(votes), ...(state.ballotTotals ?? {}) }),
+  };
+});
 vi.mock("@/lib/meetings/events", () => ({ recordMeetingEvent: (...a: unknown[]) => recordMeetingEvent(...(a as [])) }));
 vi.mock("@/lib/billing/capture", () => ({ captureUsageFee: vi.fn() }));
 vi.mock("@/lib/billing/disclosure", () => ({ feeErrorMessage: () => null }));
@@ -78,6 +93,7 @@ function nothingWritten() {
 beforeEach(() => {
   vi.clearAllMocks();
   state.meeting = AGM;
+  state.ballotTotals = null;
 });
 
 describe("Western Australia", () => {
@@ -176,5 +192,64 @@ describe("closing a ballot under a draft pack", () => {
     expect(await closeBallotAction("s1", "m1")).toEqual({ ok: true });
     expect(updateAgendaItem).not.toHaveBeenCalled();
     expect(recordMeetingEvent).toHaveBeenCalledWith({ meetingId: "m1", actorId: "adviser", eventType: "BALLOT_CLOSED", payload: { results: [] } });
+  });
+});
+
+describe("closing a ballot under the Western Australian pack, with the totals", () => {
+  it("records no special, without dissent or unanimous resolution, though every lot voted for: the voting period decides it", async () => {
+    state.scheme = scheme("WA");
+    state.meeting = { ...AGM, status: "NOTICE_ISSUED" };
+    state.ballotTotals = { totalLots: 8, totalEntitlement: 80 };
+    const cats = ["SPECIAL", "WITHOUT_DISSENT", "UNANIMOUS", "ORDINARY"];
+    state.items = cats.map((c, i) => ({ id: `i${i + 1}`, meetingId: "m1", resolutionCategory: c }));
+    state.ballotVotes = cats.flatMap((_, i) =>
+      lots.slice(0, 8).map((l) => ({ agendaItemId: `i${i + 1}`, lotId: l.id, voteValue: "FOR", unitEntitlement: 10, isInformal: false })),
+    );
+    sharedFake.reset({});
+    expect(await closeBallotAction("s1", "m1")).toEqual({ ok: true });
+    // Only the ordinary resolution is written: the other three are undetermined, whatever the votes.
+    expect(updateAgendaItem).toHaveBeenCalledTimes(1);
+    expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i4", { outcome: "RESOLVED", status: "CARRIED" });
+    expect(recordMeetingEvent).toHaveBeenCalledWith({
+      meetingId: "m1",
+      actorId: "adviser",
+      eventType: "BALLOT_CLOSED",
+      payload: { results: [{ itemId: "i4", outcome: "RESOLVED" }] },
+    });
+  });
+});
+
+describe("an item with no category at a general meeting", () => {
+  it("cannot be recorded as resolved under any draft pack, and nothing is written", async () => {
+    for (const st of ["VIC", "ACT", "WA"]) {
+      for (const category of [null, ""]) {
+        at(st, category);
+        const r = await record("RESOLVED", [v(1, "FOR"), v(2, "FOR")]);
+        expect(r.error, st).toBe(
+          "This item has no resolution type, so its votes cannot be counted and it cannot be recorded as resolved at a general meeting. Give the item its resolution type on the agenda first. It can be recorded as lost, or deferred.",
+        );
+      }
+    }
+    nothingWritten();
+  });
+
+  it("can still be recorded as lost or deferred", async () => {
+    for (const st of ["VIC", "ACT", "WA"]) {
+      vi.clearAllMocks();
+      at(st, null);
+      expect(await record("MOTION_LOST", [v(1, "AGAINST")]), st).toEqual({ ok: true });
+      expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i1", { outcome: "MOTION_LOST", status: "LOST" });
+      vi.clearAllMocks();
+      at(st, null);
+      expect(await record("DEFERRED"), st).toEqual({ ok: true });
+      expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i1", { outcome: "DEFERRED", status: "DEFERRED" });
+    }
+  });
+
+  it("is recorded as resolved at a committee meeting, which its members decide", async () => {
+    state.meeting = { ...AGM, meetingType: "COMMITTEE" };
+    at("VIC", null);
+    expect(await record("RESOLVED")).toEqual({ ok: true });
+    expect(updateAgendaItem).toHaveBeenCalledWith("m1", "i1", { outcome: "RESOLVED", status: "CARRIED" });
   });
 });

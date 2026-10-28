@@ -154,8 +154,10 @@ export interface ResolutionRule {
   pollForAtLeastFractionOfAllEntitlement?: number;
   /**
    * SHARE_OF_ALL_LOTS: where the other tests fail, it still passes with no
-   * vote against at a meeting with a quorum (Victoria's interim special
-   * resolution, second route). Whether there was a quorum must be recorded.
+   * vote against and at least 1 vote for at a meeting with a quorum
+   * (Victoria's interim special resolution, second route; at least 1 vote for
+   * is StrataVerze's reading, for review). Whether there was a quorum must be
+   * recorded.
    */
   orNoneAgainstAtQuorateMeeting?: boolean;
   /** AGAINST_SHARE_OF_VOTES_PRESENT: the most votes against, as a share of the votes those present could cast (inclusive). */
@@ -179,7 +181,8 @@ export interface ResolutionRule {
   withoutQuorum?: "INTERIM" | "DECIDED_LATER";
   /**
    * The days the vote stays open after the meeting (Western Australia). It is
-   * decided when they close, so the count at the meeting cannot record it.
+   * decided when they close, so the count at the meeting cannot decide it: the
+   * evaluation is UNDETERMINED whatever the votes.
    */
   votingPeriodDays?: number;
   /** Why StrataVerze cannot count this resolution at all yet. */
@@ -284,6 +287,14 @@ export interface MeetingRuleSet {
    * test depends on it (the ACT's `memberBand`).
    */
   memberBandSelector?: string;
+  /**
+   * Where the pack records it (the draft packs, VIC, ACT and WA stage 2,
+   * PR 8a-i): an item with no resolution category cannot be recorded as
+   * resolved at a general meeting, because its votes cannot be counted. Lost
+   * and deferred are still allowed. NSW and Queensland leave it out, and take
+   * the chair's outcome for such an item as before.
+   */
+  categoryRequiredAtGeneralMeetings?: true;
   notes?: string;
 }
 
@@ -667,6 +678,12 @@ function evaluateDraftRule(
     rule = chosen.rule;
     if (rule.refusedBecause) return undetermined(rule.refusedBecause);
   }
+  // Decided when its voting period closes (Western Australia), whatever the count at the meeting gives.
+  if (rule.votingPeriodDays != null) {
+    return undetermined(
+      `This resolution is decided when its ${rule.votingPeriodDays}-day voting period closes, which StrataVerze does not track yet, so the count at the meeting cannot decide it`,
+    );
+  }
   if (rule.withoutQuorum) {
     if (tally.quorumPresent == null) {
       return undetermined("Whether the meeting had a quorum for this item is not recorded, so the votes cannot decide it");
@@ -767,13 +784,14 @@ function shareOfAllLots(rule: ResolutionRule, tally: ResolutionTally): Resolutio
     const text = tests.map((t) => t.success).join(", and ");
     return { passed: true, reason: text.charAt(0).toUpperCase() + text.slice(1) };
   }
-  if (rule.orNoneAgainstAtQuorateMeeting && tally.againstCount === 0) {
+  // With no vote against it may still pass at a meeting with a quorum, but only with at least 1 vote for.
+  if (rule.orNoneAgainstAtQuorateMeeting && tally.againstCount === 0 && tally.forCount >= 1) {
     if (tally.quorumPresent == null) {
       return undetermined(
-        `${failed.failure}. With no vote against it passes only at a meeting with a quorum, and whether there was one for this item is not recorded`,
+        `${failed.failure}. With no vote against and at least 1 vote for it passes only at a meeting with a quorum, and whether there was one for this item is not recorded`,
       );
     }
-    if (tally.quorumPresent) return { passed: true, reason: "No vote against, at a meeting with a quorum" };
+    if (tally.quorumPresent) return { passed: true, reason: "No vote against and at least 1 vote for, at a meeting with a quorum" };
   }
   return { passed: false, reason: failed.failure };
 }

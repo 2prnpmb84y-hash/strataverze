@@ -1215,7 +1215,8 @@ export const RECORD_RETENTION = {
  *   (s 123(7));
  * - special, without dissent and unanimous resolutions stay open for 28 days
  *   after the meeting (s 121), so they are decided when that period closes.
- *   The meeting cannot record them as resolved or lost (stage 2, PR 8b); the
+ *   The meeting cannot record them as resolved or lost, and their count is
+ *   undetermined whatever the votes (stage 2, PR 8b); the
  *   tests are held: unanimous, every lot for (s 123(1)); without dissent, no
  *   vote against, and with 2 lots only if unanimous (s 123(2), (3)); special,
  *   with 6 or more lots at least 50% of all lots and of all unit entitlement
@@ -1224,7 +1225,9 @@ export const RECORD_RETENTION = {
  *   test (s 123(6)), and with 2 lots only if unanimous (s 123(5));
  * - an unfinancial owner votes only on unanimous and without dissent
  *   resolutions (s 120(2));
- * - common property rows are not counted as lots.
+ * - common property rows are not counted as lots;
+ * - an item with no resolution category cannot be recorded as resolved at a
+ *   general meeting, since nothing counts it (a StrataVerze choice).
  */
 
 const WA_GENERAL_QUORUM = {
@@ -1318,6 +1321,8 @@ export const MEETING_RULES: MeetingRuleSet = {
   debtorsMayVoteOn: ["UNANIMOUS", "WITHOUT_DISSENT"],
   pollCategories: ["ORDINARY"],
   excludeCommonPropertyRows: true,
+  // Every outcome at a general meeting comes from the count, so an item with no category cannot be recorded as resolved there.
+  categoryRequiredAtGeneralMeetings: true,
   notes:
     "Draft, from the Western Australian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Special, without dissent and unanimous resolutions are decided when their 28-day voting period closes, which is not tracked yet.",
 };
@@ -1623,8 +1628,8 @@ export const FOR_REVIEW = [
   "NOTICE_RULES (stage 2, PR 6a): each notice goes out 35 days before it falls due, never with less than 14 days' notice, as Matthew Wrigley decided on 28 Oct 2026 (DECISIONS). A due date is never moved (s 100(4)(a): the levy decision fixes it), so a notice that can no longer be given 14 days' notice cannot go out: the Adviser is told, and the levy must be decided again with a later date. Recorded here so the decision is visible at sign-off.",
   "NOTICE_RULES: one notice for each instalment as it falls due is a StrataVerze choice (the STA and STGR set no notice rule). Scheme by-laws were not checked: one may set a notice form, content or period, or an early payment discount. Confirm.",
   "NOTICE_RULES, notices that cannot go out because their due date cannot move: the daily job logs them as held (LEVY_NOTICES_HELD) again on every run until the planned notices are stopped, and when the Adviser sends overdue notices they are held while the others go out. When a schedule is first planned, one such instalment refuses the whole schedule (nothing is planned). Decide whether to keep both.",
-  "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS and SIZE_CLASSES to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous Resolution and Resolution without Dissent); a general meeting and the motions list offer all four, and a council meeting ordinary resolutions only; pre-meeting voting and voting outside a meeting (s 120(3)) are not offered; common property rows are not counted as lots; a poll means unit entitlement counting demanded on an ordinary resolution (s 122). Confirm each.",
-  "Special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)), so the count at the meeting cannot decide them. Until the voting period is tracked (stage 2, PR 8b), the meeting cannot record them as resolved or lost: the chair is told, and may defer the item.",
+  "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS and SIZE_CLASSES to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous Resolution and Resolution without Dissent); a general meeting and the motions list offer all four, and a council meeting ordinary resolutions only; pre-meeting voting and voting outside a meeting (s 120(3)) are not offered; common property rows are not counted as lots; a poll means unit entitlement counting demanded on an ordinary resolution (s 122); an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
+  "Special, without dissent and unanimous resolutions stay open for 28 days after the meeting (s 121), and owners with no-one present may still vote by written notice (s 121(2)), so the count at the meeting cannot decide them. Until the voting period is tracked (stage 2, PR 8b), the meeting cannot record them as resolved or lost: the chair is told, and may defer the item. The count itself gives no result for them either (it is undetermined, whatever the votes), so closing a ballot never records one.",
   "A 2-lot special resolution and resolution without dissent are counted as unanimous: every lot for (s 123(3), (5)). Below 2 lots no test fits and the count is refused. The 3 to 5-lot special resolution is read as at least 50% of the total unit entitlement for (s 123(6) says \"unit entitlement\"). Confirm.",
   "A resolution without dissent with no vote cast at all passes the test (no vote against, s 123(2)). Confirm that reading, once these resolutions are recorded.",
   "An unfinancial owner (s 120(2)) is read as a lot with a levy notice issued, past its due date and not paid in full on the meeting's date, as for Queensland. A special resolution is measured against all lots, so a lot whose vote is not counted for money owed still counts in the total. Confirm.",

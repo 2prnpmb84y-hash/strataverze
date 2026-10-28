@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { MEETING_RULES as NSW_RULE_SET, PENDING_RULE_PACKS, QLD_RULE_PACK, type StatutoryRules } from "@/config/statutory";
-import { buildConductTally, conductVotingView, countNeedsMemberBand, countsVotesAtConduct, countsVotesAtMeeting, laterDecisionRefusal, type ChairVote, type TallyLot } from "./conduct-tally";
+import { buildConductTally, conductVotingView, countNeedsMemberBand, countsVotesAtConduct, countsVotesAtMeeting, laterDecisionRefusal, uncategorisedRefusal, type ChairVote, type TallyLot } from "./conduct-tally";
 import { resolveOutcome } from "./conduct";
 
 const VIC_RULES = PENDING_RULE_PACKS.VIC.rules as unknown as StatutoryRules;
@@ -135,5 +135,34 @@ describe("what the count lets the chair record", () => {
 
   it("has no voting period refusal", () => {
     for (const c of ["ORDINARY", "SPECIAL", "UNANIMOUS"]) expect(laterDecisionRefusal(VIC, c, "RESOLVED")).toBeNull();
+  });
+});
+
+describe("an item with no category at a draft pack's general meeting (Victoria, the ACT and Western Australia)", () => {
+  const drafts = [PENDING_RULE_PACKS.VIC, PENDING_RULE_PACKS.ACT, PENDING_RULE_PACKS.WA].map((p) => p.rules.MEETING_RULES);
+
+  it("cannot be recorded as resolved, since nothing counts it; lost and deferred are allowed, and a committee is not checked", () => {
+    for (const rs of drafts) {
+      for (const meetingType of ["AGM", "EGM", "FIRST_AGM", "SGM", null]) {
+        for (const category of [null, undefined, "", "  "]) {
+          expect(uncategorisedRefusal(rs, category, "RESOLVED", meetingType), `${rs.state} ${meetingType}`).toBe(
+            "This item has no resolution type, so its votes cannot be counted and it cannot be recorded as resolved at a general meeting. Give the item its resolution type on the agenda first. It can be recorded as lost, or deferred.",
+          );
+          expect(uncategorisedRefusal(rs, category, "MOTION_LOST", meetingType)).toBeNull();
+          expect(uncategorisedRefusal(rs, category, "DEFERRED", meetingType)).toBeNull();
+        }
+        expect(uncategorisedRefusal(rs, "ORDINARY", "RESOLVED", meetingType)).toBeNull();
+      }
+      expect(uncategorisedRefusal(rs, null, "RESOLVED", "COMMITTEE")).toBeNull();
+    }
+  });
+
+  it("is never refused under the NSW or Queensland rules, which leave the flag out", () => {
+    for (const rs of [NSW_RULE_SET, QLD_RULE_PACK.rules.MEETING_RULES]) {
+      expect(rs).not.toHaveProperty("categoryRequiredAtGeneralMeetings");
+      for (const outcome of ["RESOLVED", "MOTION_LOST", "DEFERRED"] as const) {
+        for (const meetingType of ["AGM", "EGM", "COMMITTEE"]) expect(uncategorisedRefusal(rs, null, outcome, meetingType)).toBeNull();
+      }
+    }
   });
 });

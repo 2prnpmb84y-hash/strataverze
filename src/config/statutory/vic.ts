@@ -2652,16 +2652,24 @@ export const DATED_RULES = {
  * - a special resolution: 75% of all lots for, debtors included as they may
  *   vote on it (ss 89B, 96). Where it fails it may pass as an interim special
  *   resolution (s 97), which is refused at the meeting until interim
- *   resolutions are recorded (stage 2, PR 8b);
+ *   resolutions are recorded (stage 2, PR 8b). Its second route needs at
+ *   least 1 vote for (StrataVerze's reading of s 97(1A), for review);
  * - a unanimous resolution: every lot for (s 95);
  * - a poll is taken on an ordinary resolution only (a StrataVerze choice);
  * - common property rows are not counted as lots.
+ * - an item with no resolution category cannot be recorded as resolved at a
+ *   general meeting, since nothing counts it (a StrataVerze choice).
  * Tier 5 owners corporations (2-lot and services only, ss 7A, 8) are not
- * handled yet (stage 2, PR 8a-ii): the general tests are applied.
+ * handled yet (stage 2, PR 8a-ii): the general tests are applied, except that
+ * with 2 lots or fewer a failed special resolution is refused rather than
+ * tested as an interim special resolution, which s 97 does not give them.
  */
 
 const VIC_TIE =
   `The votes are equal. A chair who is a lot owner or a proxy has a casting vote, and without it the resolution is not passed (${OCA} s 89A). StrataVerze does not record who chaired or a casting vote yet, so the count cannot decide it`;
+
+const VIC_TWO_LOT_INTERIM =
+  `An owners corporation of 2 lots cannot pass an interim special resolution, and its special resolution means a unanimous one (${OCA} s 7A). StrataVerze does not apply the rules for 2-lot owners corporations yet, so the count cannot decide it`;
 
 const VIC_GENERAL_QUORUM = {
   basis: "PERCENT_OF_LOTS_ELSE_ENTITLEMENT",
@@ -2711,13 +2719,31 @@ export const MEETING_RULES: MeetingRuleSet = {
       status: "CONFIRMED",
     },
     // Never on an agenda: a special resolution that fails may pass as one. On a poll its first route is NOT_CONFIRMED,
-    // so it has no poll test and is refused on a poll (FOR_REVIEW MEETING_RULES_INTERIM).
+    // so it has no poll test and is refused on a poll (FOR_REVIEW MEETING_RULES_INTERIM). A 2-lot owners corporation
+    // is exempt from s 97 (s 7A), so with 2 lots or fewer it is refused, never reported as interim, until the 2-lot
+    // rules are applied (stage 2, PR 8a-ii; FOR_REVIEW MEETING_RULES_TIER_5).
     INTERIM_SPECIAL: {
-      basis: "SHARE_OF_ALL_LOTS",
-      forAtLeastFractionOfAllLots: RESOLUTIONS.INTERIM_SPECIAL.route1.forAtLeastFractionOfTotalVotes,
-      againstNotMoreThanFractionOfAllLots: RESOLUTIONS.INTERIM_SPECIAL.route1.againstNotMoreThanFractionOfTotalVotes,
-      orNoneAgainstAtQuorateMeeting: RESOLUTIONS.INTERIM_SPECIAL.route2.noVotesAgainst,
-      source: `${OCA} s 97(1), (1A)`,
+      basis: "BY_VARIANT",
+      variants: [
+        {
+          when: { lotsAtMost: 2 },
+          rule: { basis: "SHARE_OF_ALL_LOTS", refusedBecause: VIC_TWO_LOT_INTERIM },
+          source: `${OCA} s 7A`,
+          status: "CONFIRMED",
+        },
+        {
+          when: { lotsAtLeast: 3 },
+          rule: {
+            basis: "SHARE_OF_ALL_LOTS",
+            forAtLeastFractionOfAllLots: RESOLUTIONS.INTERIM_SPECIAL.route1.forAtLeastFractionOfTotalVotes,
+            againstNotMoreThanFractionOfAllLots: RESOLUTIONS.INTERIM_SPECIAL.route1.againstNotMoreThanFractionOfTotalVotes,
+            orNoneAgainstAtQuorateMeeting: RESOLUTIONS.INTERIM_SPECIAL.route2.noVotesAgainst,
+          },
+          source: `${OCA} s 97(1), (1A)`,
+          status: "CONFIRMED",
+        },
+      ],
+      source: `${OCA} ss 7A, 97(1), (1A)`,
       status: "CONFIRMED",
     },
   },
@@ -2737,6 +2763,8 @@ export const MEETING_RULES: MeetingRuleSet = {
   debtorsMayVoteOn: ARREARS.mayStillVoteOn,
   pollCategories: ["ORDINARY"],
   excludeCommonPropertyRows: true,
+  // Every outcome at a general meeting comes from the count, so an item with no category cannot be recorded as resolved there.
+  categoryRequiredAtGeneralMeetings: true,
   notes:
     "Draft, from the Victorian pack (not signed off), VIC, ACT and WA stage 2, PR 8a-i. Interim resolutions, ballots and the minutes deadline are not applied yet.",
 };
@@ -2898,7 +2926,7 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES",
     point:
-      "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS, ARREARS and RECORDS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous and Interim Special Resolution); a general meeting and the motions list offer ordinary, special and unanimous resolutions, and a committee ordinary resolutions only; an interim special resolution is never put on an agenda; pre-meeting electronic voting is not offered; common property rows are not counted as lots; voting papers are kept 12 months as the secret ballot period. Confirm each.",
+      "MEETING_RULES (stage 2, PR 8a-i) is StrataVerze's mapping of MEETINGS, RESOLUTIONS, ARREARS and RECORDS to the shared shape. StrataVerze choices: the names (Ordinary, Special, Unanimous and Interim Special Resolution); a general meeting and the motions list offer ordinary, special and unanimous resolutions, and a committee ordinary resolutions only; an interim special resolution is never put on an agenda; pre-meeting electronic voting is not offered; common property rows are not counted as lots; voting papers are kept 12 months as the secret ballot period; an item with no resolution category (such as an election) cannot be recorded as resolved at a general meeting, because every outcome there comes from the count and such an item has no test to count it by (it can be recorded as lost, or deferred). Confirm each.",
     before: "Victorian meetings are run",
     kind: "STRATAVERZE",
   },
@@ -2912,7 +2940,7 @@ export const FOR_REVIEW = [
   {
     key: "MEETING_RULES_INTERIM",
     point:
-      "A special resolution that fails may pass as an interim special resolution (s 97): at least 50% of all lots for and not more than 25% of all lots against, or no vote against at a meeting with a quorum. The count says so, but an interim resolution is not recorded at the meeting until StrataVerze records interim resolutions, their notice and the 29-day petition period (stage 2, PR 8b); the chair is told and may defer the item. It is tested only from a special resolution item. How the first route is counted on a poll is NOT_CONFIRMED, so it is refused on a poll. Confirm.",
+      "A special resolution that fails may pass as an interim special resolution (s 97): at least 50% of all lots for and not more than 25% of all lots against, or no vote against at a meeting with a quorum. The count says so, but an interim resolution is not recorded at the meeting until StrataVerze records interim resolutions, their notice and the 29-day petition period (stage 2, PR 8b); the chair is told and may defer the item. It is tested only from a special resolution item. How the first route is counted on a poll is NOT_CONFIRMED, so it is refused on a poll. StrataVerze reads the second route (s 97(1A), no vote against at a meeting with a quorum) as needing at least 1 vote for, so a meeting where nobody votes passes nothing (to confirm). Confirm.",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },
@@ -2925,7 +2953,7 @@ export const FOR_REVIEW = [
   },
   {
     key: "MEETING_RULES_TIER_5",
-    point: "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from the meeting and resolution rules in ss 7A and 8, and for a 2-lot owners corporation a special resolution means a unanimous one. Not handled yet (stage 2, PR 8a-ii): the general tests are applied, which for 2 lots needs both lots for a special resolution, as unanimity does.",
+    point: "Tier 5 owners corporations (2-lot subdivisions and services only) are exempt from the meeting and resolution rules in ss 7A and 8, and for a 2-lot owners corporation a special resolution means a unanimous one. Not handled yet (stage 2, PR 8a-ii): the general tests are applied, which for 2 lots needs both lots for a special resolution, as unanimity does. Section 97 does not apply to a 2-lot owners corporation (s 7A), so with 2 lots or fewer a special resolution that fails the general test is never tested as an interim special resolution: the count is refused, saying the 2-lot rules are not applied yet, rather than reporting it as interim (1 lot for and none against was reported as an interim special resolution before) or recording it as lost. Nothing is written either way. That refusal reads the number of lots counted, not the tier, so a services only owners corporation is not caught until the tier is read (stage 2, PR 8a-ii).",
     before: "Victorian meetings are run",
     kind: "LEGAL",
   },

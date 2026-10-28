@@ -85,12 +85,13 @@ describe("stored rule set rows", () => {
     expect(await getActiveRuleSet("QLD")).toBe(QLD);
   });
 
-  it("copy a draft pack's common property and band of members keys from its seed, and never give them to NSW or Queensland", async () => {
+  it("copy a draft pack's common property, band of members and category keys from its seed, and never give them to NSW or Queensland", async () => {
     const ACT = PENDING_RULE_PACKS.ACT.rules.MEETING_RULES;
     first.mockResolvedValue(olderRow("ACT", ACT));
     const rs = await getActiveRuleSet("ACT");
     expect(rs.excludeCommonPropertyRows).toBe(true);
     expect(rs.memberBandSelector).toBe("memberBand");
+    expect(rs.categoryRequiredAtGeneralMeetings).toBe(true);
     expect(rs.pollCategories).toEqual(["ORDINARY", "SPECIAL"]);
     expect("debtorsMayVoteOn" in rs).toBe(false);
     for (const state of ["NSW", "QLD"] as const) {
@@ -98,6 +99,7 @@ describe("stored rule set rows", () => {
       const other = await getActiveRuleSet(state);
       expect("excludeCommonPropertyRows" in other).toBe(false);
       expect("memberBandSelector" in other).toBe(false);
+      expect("categoryRequiredAtGeneralMeetings" in other).toBe(false);
     }
   });
 });

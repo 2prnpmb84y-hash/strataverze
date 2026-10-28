@@ -74,6 +74,7 @@ function rowToRuleSet(row: RuleSetRow, seed: MeetingRuleSet): MeetingRuleSet {
   // ACT and WA stage 2, PR 8a-i): an NSW or Queensland rule set never has the keys.
   if (seed.excludeCommonPropertyRows) ruleSet.excludeCommonPropertyRows = seed.excludeCommonPropertyRows;
   if (seed.memberBandSelector) ruleSet.memberBandSelector = seed.memberBandSelector;
+  if (seed.categoryRequiredAtGeneralMeetings) ruleSet.categoryRequiredAtGeneralMeetings = seed.categoryRequiredAtGeneralMeetings;
   return ruleSet;
 }
 

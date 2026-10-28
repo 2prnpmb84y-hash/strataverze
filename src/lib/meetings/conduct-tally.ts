@@ -32,7 +32,9 @@
  * entitlement, the votes those present could cast, the lots recorded and the
  * building's band of members (BASIS_NEEDS). They leave common property rows
  * out of the lots. A resolution decided only when its voting period closes
- * (Western Australia) is refused before anything is read.
+ * (Western Australia) is refused before anything is read. An item with no
+ * category cannot be recorded as resolved at their general meetings, since
+ * nothing counts it (uncategorisedRefusal).
  */
 import type { StatutoryRules } from "@/config/statutory";
 import {
@@ -401,6 +403,26 @@ export function laterDecisionRefusal(ruleSet: MeetingRuleSet, category: string |
   if (days == null) return null;
   const name = (ruleSet.resolutionLabels[category]?.full ?? category).toLowerCase();
   return `${sentenceArticle(name)} is decided when its ${days}-day voting period closes, which StrataVerze does not track yet. It cannot be recorded as resolved or lost at the meeting. It can be deferred.`;
+}
+
+/**
+ * Why the chair cannot record an item with no resolution category as
+ * resolved at a general meeting, or null (VIC, ACT and WA stage 2, PR 8a-i).
+ * Under a pack that says so (`categoryRequiredAtGeneralMeetings`), every
+ * outcome at a general meeting comes from the count, and an item with no
+ * category has no test to count it by, so the chair's word cannot carry it.
+ * Recording it as lost, or deferring it, is still allowed. NSW and
+ * Queensland leave the flag out, so this is always null for them.
+ */
+export function uncategorisedRefusal(
+  ruleSet: Pick<MeetingRuleSet, "categoryRequiredAtGeneralMeetings">,
+  category: string | null | undefined,
+  requested: Outcome,
+  meetingType: string | null | undefined,
+): string | null {
+  if (requested !== "RESOLVED" || !ruleSet.categoryRequiredAtGeneralMeetings || isCommitteeMeeting(meetingType)) return null;
+  if (category && category.trim()) return null;
+  return "This item has no resolution type, so its votes cannot be counted and it cannot be recorded as resolved at a general meeting. Give the item its resolution type on the agenda first. It can be recorded as lost, or deferred.";
 }
 
 /**

@@ -427,8 +427,9 @@ export const PENDING_RULE_PACKS = {
     // only 4 or more supported, a StrataVerze proposal); the 3-member special test (NOT_CONFIRMED), the unopposed resolution
     // (scope NOT_CONFIRMED) and 1 or 2 members refused; equal votes refused (casting vote not recorded); every count
     // refused until quorum is recorded for each motion (stage 2, PR 8a-ii). The debtor rule (sch 3 s 3.20(3)) is not
-    // applied yet (debtorsMayVoteOn left out). Names, lists, common property rows not counted and no pre-meeting voting are
-    // StrataVerze choices. The LATE_CHARGE GO-LIVE GAP and FOR_REVIEW are rewritten. No legal value or status already
+    // applied yet (debtorsMayVoteOn left out). Names, lists, common property rows not counted, no pre-meeting voting and an
+    // item with no category not recorded as resolved at a general meeting (categoryRequiredAtGeneralMeetings) are
+    // StrataVerze choices. The LATE_CHARGE GO-LIVE GAP and FOR_REVIEW are rewritten (votes present revisited with quorum). No legal value or status already
     // recorded changed; still a draft. (2026.10.7 is the notice contents version of stage 2, PR 6b, not merged when this
     // was made: the second of the two to merge reconciles the version line and the FOR_REVIEW list.)
     version: "2026.10.8",
@@ -511,9 +512,11 @@ export const PENDING_RULE_PACKS = {
     // refused on equal votes (s 89A) and until quorum is recorded for the item (s 78; stage 2, PR 8a-ii); special
     // resolutions by 75% of all lots (s 96) and unanimous by every lot (s 95), CONFIRMED; the interim special resolution
     // (s 97) as the category a failed special resolution passes as, refused at the meeting until interim resolutions are
-    // recorded (stage 2, PR 8b). No minutes deadline (NOT_CONFIRMED) and no committee notice (business days). Names,
-    // lists, a poll on ordinary resolutions only, common property rows not counted and no pre-meeting voting are
-    // StrataVerze choices. DEFERRED_SHARED_SHAPES is now empty. FOR_REVIEW gains MEETING_RULES, MEETING_RULES_SPECIAL,
+    // recorded (stage 2, PR 8b); its second route needs at least 1 vote for (StrataVerze's reading), and with 2 lots or
+    // fewer it is refused (s 7A; the 2-lot rules are stage 2, PR 8a-ii). No minutes deadline (NOT_CONFIRMED) and no
+    // committee notice (business days). Names, lists, a poll on ordinary resolutions only, common property rows not
+    // counted, no pre-meeting voting and an item with no category not recorded as resolved at a general meeting
+    // (categoryRequiredAtGeneralMeetings) are StrataVerze choices. DEFERRED_SHARED_SHAPES is now empty. FOR_REVIEW gains MEETING_RULES, MEETING_RULES_SPECIAL,
     // MEETING_RULES_INTERIM, MEETING_RULES_ORDINARY, MEETING_RULES_TIER_5, MEETING_RULES_ARREARS and
     // MEETING_RULES_NOTICE_AND_MINUTES, and DEFERRED_SHARED_SHAPES and the GO-LIVE GAP on lot entitlement are rewritten.
     // No legal value or status already recorded changed; still a draft.
@@ -563,9 +566,10 @@ export const PENDING_RULE_PACKS = {
     // entitlement where demanded, the special, without dissent and unanimous tests by size class (s 123), unfinancial
     // owners voting on unanimous and without dissent resolutions only (s 120(2)), each CONFIRMED. Special, without
     // dissent and unanimous resolutions are decided when their 28-day voting period closes (s 121), so the meeting cannot
-    // record them as resolved or lost until that is tracked (stage 2, PR 8b). Retention of the meeting record for 20 years,
-    // names, lists, common property rows not counted and no pre-meeting voting are StrataVerze choices. FOR_REVIEW gains
-    // the points. No legal value or status already recorded changed; still a draft.
+    // record them as resolved or lost until that is tracked (stage 2, PR 8b), and their count is undetermined whatever the
+    // votes. Retention of the meeting record for 20 years, names, lists, common property rows not counted, no pre-meeting
+    // voting and an item with no category not recorded as resolved at a general meeting (categoryRequiredAtGeneralMeetings)
+    // are StrataVerze choices. FOR_REVIEW gains the points. No legal value or status already recorded changed; still a draft.
     version: "2026.10.6",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
