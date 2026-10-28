@@ -406,7 +406,20 @@ export const PENDING_RULE_PACKS = {
     // as a ledger choice (status STRATAVERZE, unchanged), so every building has a ledger fund and a chart of accounts;
     // FOR_REVIEW ADMINISTRATIVE_FUND says so. The GO-LIVE GAP note is replaced, and FOR_REVIEW MAINTENANCE_FUND_REQUIRED
     // and BUILDING_FACTS_RECORDED_BY are rewritten. No legal value or status changed; still a draft.
-    version: "2026.10.4",
+    // 2026.10.5 (28 Oct 2026): the second schedule (stage 2 PR 4). ENTITLEMENT_SCHEDULES gains a label and help for each
+    // schedule (wording only), an import heading for lot liability ("Lot Liability"), lot entitlement's uses in `usedFor`
+    // gain the quorum fallback (s 77), the nomination by owners holding 25% of lot entitlements of the person who convenes
+    // a meeting or arranges a ballot (ss 74, 83 to 85) and VCAT consent (SA s 34D(3)(ba)), all from the notes, and each
+    // schedule gains `decides`: lot liability decides CONTRIBUTIONS (ss 23(3), 24(2), 53(1A)); lot entitlement decides
+    // POLL_VOTE (s 89(3)), SPECIAL_RESOLUTION and UNANIMOUS_RESOLUTION (ss 95, 96), QUORUM_FALLBACK (s 77, only where 50%
+    // of the lots is not available), COMMON_PROPERTY_SHARE (SA s 30) and INSURANCE_PREMIUM_FEE (s 23A). Lot entitlement is
+    // now held (lots.lot_entitlement, migration 20261121, not applied). No CONTRIBUTION_INSURANCE: the s 23A fee covers
+    // the reinstatement premium only and the budget holds every policy together, so every Victorian fee, insurance
+    // included, is shared by lot liability (s 23(3)) until FOR_REVIEW CONTRIBUTION_INSURANCE_S23A is decided; nothing
+    // reads INSURANCE_PREMIUM_FEE yet. FOR_REVIEW gains ENTITLEMENT_DECIDES, SECOND_SCHEDULE_HELD and
+    // CONTRIBUTION_INSURANCE_S23A, and a GO-LIVE GAP note at ENTITLEMENT_SCHEDULES says what is applied. No legal value
+    // or status already recorded changed; still a draft.
+    version: "2026.10.5",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",
     reviewedOn: null,

@@ -123,14 +123,31 @@ export interface FundRequiredWhen {
  *   order);
  * - VALUE_BASED_RATES: value-based local government and State charges, rates
  *   and taxes.
+ *
+ * Added for Victoria (VIC, ACT and WA stage 2, PR 4, 28 Oct 2026):
+ * - UNANIMOUS_RESOLUTION: the entitlement test in a unanimous resolution (in
+ *   Victoria on a ballot or poll);
+ * - QUORUM_FALLBACK: the entitlement test a quorum falls back to only where
+ *   its own first test cannot be met (in Victoria, where 50% of the lots is
+ *   not available, s 77). It is never the first test: a quorum is counted by
+ *   lots first;
+ * - INSURANCE_PREMIUM_FEE: the lot's share of the separate fee for the
+ *   reinstatement and replacement insurance premium (Victoria, s 23A). No
+ *   code reads it yet: Victoria has no CONTRIBUTION_INSURANCE until its
+ *   FOR_REVIEW point is decided.
+ * A pack that lists none of them has no schedule for them, so a reader asking
+ * for one is refused (EntitlementRuleError), never given another schedule.
  */
 export type EntitlementUse =
   | "CONTRIBUTIONS"
   | "POLL_VOTE"
   | "SPECIAL_RESOLUTION"
+  | "UNANIMOUS_RESOLUTION"
+  | "QUORUM_FALLBACK"
   | "COMMON_PROPERTY_SHARE"
   | "INSURANCE_COMMON_PROPERTY"
   | "INSURANCE_BUILDINGS"
+  | "INSURANCE_PREMIUM_FEE"
   | "TERMINATION_INTEREST"
   | "VALUE_BASED_RATES";
 
@@ -149,6 +166,12 @@ export interface EntitlementScheduleDefinition {
   label?: string;
   /** The help shown under the field where it is entered (stage 2, step 10). */
   help?: string;
+  /**
+   * The column heading the CSV lot import gives the schedule held on each
+   * lot, also matched as a header (stage 2, PR 4). Absent: the import keeps
+   * its own word, "Entitlement" (NSW and Queensland).
+   */
+  importLabel?: string;
   onLot: boolean;
   /** What the schedule decides, in plain words. */
   usedFor: readonly string[];
@@ -176,8 +199,9 @@ export interface ConditionalEntitlementUse {
 /**
  * The part of a contribution that pays for insurance, shared between the
  * lots by its own schedule rather than with the rest of the contribution
- * (Queensland, SM s 162(5); QLD go-live gap, 27 Oct 2026). A pack without it
- * shares the whole levy by the schedule that decides CONTRIBUTIONS.
+ * (Queensland, SM s 162(5); QLD go-live gap, 27 Oct 2026; Victoria's
+ * insurance premium fee, OCA s 23A, stage 2 PR 4). A pack without it shares
+ * the whole levy by the schedule that decides CONTRIBUTIONS.
  */
 export interface ContributionInsuranceRules {
   /**

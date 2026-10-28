@@ -92,7 +92,8 @@ export default async function LotDetailPage({
   const packRules = rulesForState(scheme.state).rules;
   const certificateButton = packRules.FEATURES.strataInformationCertificate || packRules.FEATURES.bodyCorporateCertificate ? packRules.CERTIFICATE?.buttonLabel : undefined;
   // The lot's entitlements as the pack names them, and a second schedule's
-  // (Queensland's interest schedule) if the pack has one (stage 2, step 10).
+  // (Queensland's interest schedule, stage 2, step 10; Victoria's lot
+  // entitlement, stage 2, PR 4) if the pack has one.
   const entitlementWords = onLotEntitlementWords(packRules);
   const separate = separateEntitlement(packRules);
   const lotDataProblem = lotEntitlementProblem(packRules, lot);
@@ -192,7 +193,7 @@ export default async function LotDetailPage({
                     {separate && (
                       <DetailRow
                         label={separate.label}
-                        value={lot.interestScheduleEntitlement != null ? String(lot.interestScheduleEntitlement) : "Not recorded"}
+                        value={separate.field && lot[separate.field] != null ? String(lot[separate.field]) : "Not recorded"}
                       />
                     )}
                     <DetailRow
@@ -465,6 +466,7 @@ export default async function LotDetailPage({
                     unitNumber: lot.unitNumber,
                     entitlement: lot.entitlement,
                     interestScheduleEntitlement: lot.interestScheduleEntitlement,
+                    lotEntitlement: lot.lotEntitlement,
                     floorArea: lot.floorArea,
                     lotType: lot.lotType,
                   }}

@@ -267,7 +267,7 @@ describe("Victorian pack (pending)", () => {
   it("is a draft, not signed off, and never given to a building", () => {
     expect(pack.code).toBe("AU-VIC");
     expect(pack.state).toBe("VIC");
-    expect(pack.version).toBe("2026.10.4");
+    expect(pack.version).toBe("2026.10.5");
     expect(pack.status).toBe("DRAFT");
     expect(pack.reviewedOn).toBeNull();
     expect(rulePackFor("VIC")).toBeNull();
@@ -324,6 +324,23 @@ describe("Victorian pack (pending)", () => {
   it("holds lot liability on each lot and lot entitlement separately", () => {
     expect(vic.ENTITLEMENT_SCHEDULES.find((s) => s.onLot)?.key).toBe("LOT_LIABILITY");
     expect(vic.ENTITLEMENT_SCHEDULES.find((s) => !s.onLot)?.key).toBe("LOT_ENTITLEMENT");
+  });
+
+  it("says which schedule decides each use, and does not apply the s 23A fee yet (stage 2, PR 4)", () => {
+    expect(vic.ENTITLEMENT_SCHEDULES.map((s) => [s.key, s.label, s.decides])).toEqual([
+      ["LOT_LIABILITY", "Lot Liability", ["CONTRIBUTIONS"]],
+      ["LOT_ENTITLEMENT", "Lot Entitlement", ["POLL_VOTE", "SPECIAL_RESOLUTION", "UNANIMOUS_RESOLUTION", "QUORUM_FALLBACK", "COMMON_PROPERTY_SHARE", "INSURANCE_PREMIUM_FEE"]],
+    ]);
+    expect(vic.ENTITLEMENT_SCHEDULES.find((s) => s.onLot)?.importLabel).toBe("Lot Liability");
+    // No insurance split until FOR_REVIEW CONTRIBUTION_INSURANCE_S23A is decided: every fee goes by lot liability.
+    expect("CONTRIBUTION_INSURANCE" in vic).toBe(false);
+    expect(vic.FOR_REVIEW.find((r) => r.key === "CONTRIBUTION_INSURANCE_S23A")?.point).toMatch(/^The s 23A insurance premium fee is NOT applied yet/);
+    expect(vic.FOR_REVIEW.map((r) => r.key)).toEqual(expect.arrayContaining(["ENTITLEMENT_DECIDES", "SECOND_SCHEDULE_HELD", "CONTRIBUTION_INSURANCE_S23A"]));
+    // ACT and WA are unchanged: one schedule, no separate insurance share.
+    for (const code of ["ACT", "WA"] as const) {
+      expect(PENDING_RULE_PACKS[code].rules.ENTITLEMENT_SCHEDULES).toHaveLength(1);
+      expect("CONTRIBUTION_INSURANCE" in PENDING_RULE_PACKS[code].rules).toBe(false);
+    }
   });
 
   it("uses Victorian terms", () => {

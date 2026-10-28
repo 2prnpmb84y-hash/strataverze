@@ -2,9 +2,12 @@
  * The insurance split of a contribution, from the building's data (server
  * side; QLD go-live gap, insurance in contributions, 27 Oct 2026). Gathers
  * what ./contribution-shares.ts needs: the building's plan format, the fund,
- * the insurance in the fund's adopted budget and each lot's interest schedule
- * lot entitlement. The generate action and the schedule page both use it, so
- * the preview is what is issued.
+ * the insurance in the fund's adopted budget and each lot's separately held
+ * entitlement (Queensland's interest schedule lot entitlement; each lot's
+ * held fields are passed, so a pack reads only its own). The generate action
+ * and the schedule page both use it, so the preview is what is issued.
+ * Victoria has no CONTRIBUTION_INSURANCE yet, so a Victorian fee returns at
+ * once like an NSW levy (stage 2, PR 4 review).
  *
  * For a building whose pack has no CONTRIBUTION_INSURANCE (NSW) it returns at
  * once, reading nothing more: the levy is shared by unit entitlement as it
@@ -78,13 +81,13 @@ export async function contributionInsurance(
   const financialYear = Number(schedule.financialYear);
   const insuranceCents = await budgetedInsuranceCents(schemeId, schedule.fundId, financialYear);
   const lotRows = await db.orm.public.Lot.where((l) => l.schemeId.eq(schemeId)).limit(5000).all();
-  const interest = new Map(lotRows.map((l) => [l.id, l.interestScheduleEntitlement ?? null]));
+  const held = new Map(lotRows.map((l) => [l.id, { interestScheduleEntitlement: l.interestScheduleEntitlement ?? null, lotEntitlement: l.lotEntitlement ?? null }]));
 
   try {
     const split = insuranceSplit({
       rules,
       planFormat: scheme?.planFormat ?? null,
-      lots: lots.map((l) => ({ ...l, interestScheduleEntitlement: interest.get(l.lotId) ?? null })),
+      lots: lots.map((l) => ({ ...l, interestScheduleEntitlement: null, lotEntitlement: null, ...held.get(l.lotId) })),
       totalCents: toCents(String(schedule.budgetAmount)),
       insuranceCents,
       ledgerFund: String(fund.fundType),

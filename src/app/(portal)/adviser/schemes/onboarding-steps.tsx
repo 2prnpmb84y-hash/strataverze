@@ -198,11 +198,12 @@ export function LotsStep({
                   {words.separate && (
                     <td className="px-3 py-2">
                       <input
+                        disabled={!words.separate.field}
                         aria-label={`${capitalise(words.separate.name)}, row ${i + 1}`}
                         inputMode="numeric"
                         className={money}
-                        value={lot.interestScheduleEntitlement ?? ""}
-                        onChange={(e) => set(i, "interestScheduleEntitlement", e.target.value)}
+                        value={words.separate.field ? (lot[words.separate.field] ?? "") : ""}
+                        onChange={(e) => words.separate?.field && set(i, words.separate.field, e.target.value)}
                       />
                     </td>
                   )}

@@ -19,9 +19,10 @@ import type { Capability } from "@/config/permissions";
 
 export const LOCKED_SCHEME_FIELDS = ["planNumber", "address", "suburb", "state", "postcode", "totalLots", "totalEntitlement"] as const;
 // A Queensland lot's interest schedule lot entitlement is locked as its unit
-// (contribution schedule) entitlement is (stage 2, step 10). An NSW lot form
-// never sends it, so nothing changes for NSW.
-export const LOCKED_LOT_FIELDS = ["lotNumber", "entitlement", "interestScheduleEntitlement"] as const;
+// (contribution schedule) entitlement is (stage 2, step 10), and so is a
+// Victorian lot's lot entitlement (stage 2, PR 4). An NSW lot form sends
+// neither, so nothing changes for NSW.
+export const LOCKED_LOT_FIELDS = ["lotNumber", "entitlement", "interestScheduleEntitlement", "lotEntitlement"] as const;
 
 export const LOCKED_MESSAGE = "This is part of the locked building record. Only StrataVerze can change it.";
 
