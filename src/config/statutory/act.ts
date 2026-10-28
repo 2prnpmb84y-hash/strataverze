@@ -50,7 +50,7 @@
  * left out because the notes record no order (NOT_CONFIRMED).
  */
 
-import type { EntitlementScheduleDefinition, FundDefinition, PackFeatures, RuleStatus, SchemeSelector, SharedTerminology } from "./types";
+import type { DatedRules, EntitlementScheduleDefinition, FundDefinition, PackFeatures, RuleStatus, SchemeSelector, SharedTerminology } from "./types";
 
 const UTMA = "Unit Titles (Management) Act 2011 (ACT)";
 const UTMR = "Unit Titles (Management) Regulation 2011 (ACT)";
@@ -1231,7 +1231,8 @@ export const TERMINOLOGY = {
  * Changes not yet law. Each is a dated switch: `appliesFrom` stays null until
  * the change is notified and its commencement date is known, and the change
  * is to apply only on and after that date. Until then the in-force
- * rules above apply.
+ * rules above apply. The quorum changes are also restated as dated rules
+ * (DATED_RULES), which is what code reads.
  */
 export const PENDING_REFORMS = [
   {
@@ -1276,6 +1277,54 @@ export const PENDING_REFORMS = [
   },
 ] as const;
 
+const BILL_2026 = PENDING_REFORMS[0];
+
+/** The Bill's values as dated values: NOT LAW, never applied, with its text status and source unchanged. */
+const billValue = <T>(value: T) =>
+  ({
+    legalStatus: BILL_2026.legalStatus,
+    value,
+    presentedOn: BILL_2026.presentedOn,
+    commencement: "If passed, pt 6 (unit titles) commences 3 months after notification (cl 2(2)); not notified",
+    source: BILL_2026.source,
+    textStatus: BILL_2026.textStatus,
+    pendingChange: BILL_2026.key,
+  }) as const;
+
+/**
+ * The rules that change on a date (VIC, ACT and WA stage 2, PR 1), read with
+ * `ruleInForceOn` (src/lib/jurisdiction/dated-rules.ts). The in-force values
+ * are those in MEETINGS, from the day R25 took effect (26 Jun 2026; earlier
+ * republications were not read, so a day before has no value). The Bill's
+ * values are NOT LAW and are never applied: when it passes, a pack version
+ * restates them as enacted, with the day pt 6 commences. No value or status
+ * is changed, and no consumer reads these yet.
+ */
+export const DATED_RULES = {
+  /** The standard quorum (sch 3 s 3.9(1)(a)), as fractions of the total number of units. */
+  QUORUM_FRACTION_OF_UNITS: {
+    title: "Standard quorum (fraction of units)",
+    versions: [
+      {
+        legalStatus: "IN_FORCE",
+        from: "2026-06-26",
+        value: { fractionOfUnits: MEETINGS.quorum.fractionOfUnits, retirementVillageFractionOfUnits: MEETINGS.quorum.retirementVillageFractionOfUnits },
+        source: `${UTMA} sch 3 s 3.9(1)(a) (R25, effective 26 Jun 2026)`,
+        status: MEETINGS.status,
+      },
+      billValue({ fractionOfUnits: BILL_2026.changes.quorumFractionOfUnits.to, retirementVillageFractionOfUnits: BILL_2026.changes.quorumFractionOfUnits.retirementVillageTo }),
+    ],
+  },
+  /** Whether absentee voters count towards the quorum (sch 3 s 3.31(4)). */
+  ABSENTEE_VOTES_COUNT_TOWARDS_QUORUM: {
+    title: "Absentee votes count towards the quorum",
+    versions: [
+      { legalStatus: "IN_FORCE", from: "2026-06-26", value: MEETINGS.absenteeVotesCountTowardsQuorum, source: `${UTMA} sch 3 s 3.31(4) (R25, effective 26 Jun 2026)`, status: MEETINGS.status },
+      billValue(BILL_2026.changes.absenteeVotesCountTowardsQuorum),
+    ],
+  },
+} as const satisfies DatedRules;
+
 /** What was not confirmed on 27 Oct 2026, for the review. */
 export const NOT_CONFIRMED = [
   // From the research notes' "Not confirmed" list.
@@ -1302,6 +1351,7 @@ export const FOR_REVIEW = [
   "The sinking fund is marked `required: false` in FUND_CATALOGUE because the shared FundDefinition has only a yes or no `required`. The Act requires a sinking fund and sinking fund plan only with 4 or more units (UTMA ss 81(1), 82(1)); the threshold is FUND_RULES.sinkingFundRequiredFromUnits. Before the pack applies, decide how the platform requires the fund for buildings of 4 or more units (for example, a size threshold in the shared fund shape).",
   "FEATURES switches off the certificate (strataInformationCertificate) and records inspection (recordsInspections) workflows for this draft. Those switches run the NSW workflows; the ACT has its own certificates (SALE_CERTIFICATE) and records inspection rules (RECORDS), which need ACT workflows before they can be switched on.",
   "FOR LEGAL REVIEW: what the opening words of UTMA s 94(1), \"unless otherwise decided by ordinary resolution\", let an ordinary resolution do (INTEREST.openingWords).",
+  "DATED_RULES restates the Bill's quorum and absentee vote changes as NOT LAW values that are never applied, beside the in-force values from R25 (26 Jun 2026; earlier days have no value). When the Bill passes and pt 6 is notified, a new pack version restates them as enacted with the day they commence. Confirm both choices.",
 ] as const;
 
 /**
