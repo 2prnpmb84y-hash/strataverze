@@ -9,8 +9,10 @@ import { siteUrl } from "@/lib/site-url";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { toCents } from "@/lib/billing/money";
 import { formatLotLabel } from "@/lib/format";
-import { loadEveryLot, noticeContext, noticeOwnerNames, ownerNames, rollOwnerNames } from "@/lib/levies/notice-content-data";
-import { everyLotRequired } from "@/lib/levies/every-lot";
+import { noticeContext, noticeOwnerNames, ownerNames, rollOwnerNames } from "@/lib/levies/notice-content-data";
+import { everyLotMissing, everyLotRequired, EveryLotUnavailableError, type EveryLotContent } from "@/lib/levies/every-lot";
+import { loadEveryLot } from "@/lib/levies/every-lot-data";
+import { ledgerFundOf } from "@/lib/jurisdiction/funds";
 import { getSchemeInterestSetting } from "@/lib/finance/interest-setting";
 import { storedDayIn, todayIn } from "@/lib/jurisdiction/time-zone";
 import { timeZoneOf } from "@/lib/jurisdiction/scheme-time";
@@ -42,8 +44,19 @@ export interface GeneratedPdf {
   documentId: string;
 }
 
-/** The levy notice document data for an issued notice. */
-export async function levyNoticeData(noticeId: string, issuerId: string): Promise<{ data: LevyNoticeDocument; schemeId: string; lotId: string } | null> {
+/**
+ * The levy notice document data for an issued notice. Where the building's
+ * rules require each unit's contribution, the fund total and the proportion
+ * (the ACT), they are read from the data as it is now, or taken from
+ * `prepared` where the caller has just read and checked them; a notice that
+ * cannot state them all throws EveryLotUnavailableError, so no PDF missing
+ * them is given.
+ */
+export async function levyNoticeData(
+  noticeId: string,
+  issuerId: string,
+  prepared?: { everyLot: EveryLotContent },
+): Promise<{ data: LevyNoticeDocument; schemeId: string; lotId: string } | null> {
   const n = await db.orm.public.LevyNotice.where((x) => x.id.eq(noticeId)).include("lot").first();
   if (!n) return null;
   // The contact is the issuer if they are an adviser of the scheme, else the scheme's first adviser.
@@ -59,17 +72,22 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
   const rollNames = await rollOwnerNames([n.lotId]);
   // Each unit's contribution for the same schedule and period, the fund and its totals, and the unit's
   // proportion, only where the pack requires them (the ACT, stage 2 PR 6b); never on any other notice.
-  const everyLot = everyLotRequired(setting.rules.rules.NOTICE_RULES)
-    ? ((
-        await loadEveryLot({
-          schemeId: n.schemeId,
-          rules: setting.rules.rules,
-          fund: fund ? { id: fund.id, name: fund.name ?? null } : null,
-          levyScheduleId: n.levyScheduleId,
-          notices: [{ lotId: n.lotId, periodStart: isoDay(n.periodStart) }],
-        })
-      )[0] ?? null)
-    : undefined;
+  let everyLot: EveryLotContent | undefined;
+  if (everyLotRequired(setting.rules.rules.NOTICE_RULES)) {
+    if (prepared) everyLot = prepared.everyLot;
+    else {
+      const [build] = await loadEveryLot({
+        schemeId: n.schemeId,
+        rules: setting.rules.rules,
+        fund: fund ? { id: fund.id, name: fund.name ?? null } : null,
+        levyScheduleId: n.levyScheduleId,
+        notices: [{ lotId: n.lotId, periodStart: isoDay(n.periodStart) }],
+      });
+      const missing = everyLotMissing(setting.rules.rules.NOTICE_RULES, build, ledgerFundOf(fund?.fundType ?? null));
+      if (missing || !build.content) throw new EveryLotUnavailableError(`This notice's PDF cannot be given. ${missing ?? build.reason}`);
+      everyLot = build.content;
+    }
+  }
   return {
     schemeId: n.schemeId,
     lotId: n.lotId,
@@ -105,13 +123,13 @@ export async function levyNoticeData(noticeId: string, issuerId: string): Promis
       ...(n.insuranceAmount != null
         ? { insurance: { cents: toCents(String(n.insuranceAmount)), basis: insuranceBasis(setting.rules.rules) } }
         : {}),
-      ...(everyLot !== undefined ? { everyLot } : {}),
+      ...(everyLot ? { everyLot } : {}),
     },
   };
 }
 
-export async function generateLevyNoticePdf(noticeId: string, actorId: string): Promise<GeneratedPdf | null> {
-  const loaded = await levyNoticeData(noticeId, actorId);
+export async function generateLevyNoticePdf(noticeId: string, actorId: string, prepared?: { everyLot: EveryLotContent }): Promise<GeneratedPdf | null> {
+  const loaded = await levyNoticeData(noticeId, actorId, prepared);
   if (!loaded) return null;
   const bytes = await renderLevyNoticePdf(loaded.data);
   // Named with the building's word for a levy ("Levy-notice-...", "Contribution-notice-...").

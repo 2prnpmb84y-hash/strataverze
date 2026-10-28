@@ -319,11 +319,13 @@ describe("checking notices for a pack with checked notice rules (stage 2, PR 6a)
 
   it("lists each point the rules refuse on once, by its own message, for the notice's fund", async () => {
     seed("ADMINISTRATIVE", QLD.LATE_CHARGE, { interestMode: "RESOLVED_RATE", lateChargeMonthlyRatePercent: "2.50" });
-    // The late charge is stated (a monthly penalty here), each other unit's contribution is not.
+    // The late charge is stated (a monthly penalty here), each other unit's contribution is not: these planned
+    // notices name no schedule, so it cannot be stated (PR 6b), and the refusal says why.
     expect(await check()).toEqual([
       {
         code: "NOTICE_RULES_NOT_CONFIRMED",
-        message: "The notice must state the contribution payable for each other unit (Test Act s 4(b)). StrataVerze notices cannot state it yet, so no notice can be issued.",
+        message:
+          "The notice must state the contribution payable for each other unit (Test Act s 4(b)), and it cannot be stated for this notice: the notice's contribution schedule is not known. No notice can be issued until it can.",
       },
     ]);
     // A sinking fund notice: its yearly mode refuses too.

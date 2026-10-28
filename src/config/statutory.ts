@@ -424,8 +424,10 @@ export const PENDING_RULE_PACKS = {
     // contribution for each unit (unit numbers and amounts only, a unit with no notice shown as nil), the fund with its
     // totals and the unit's proportion by unit entitlement (ss 79(2)(b) to (d), 90(2)(b) to (d)); they are still
     // refused for the instalment dates, any discount and the interest, and sinking fund notices for their yearly mode.
-    // FOR_REVIEW's notice contents point is rewritten and gains the instalment dates, the every-unit list, the fund and
-    // totals and the proportion points. Still a draft.
+    // FOR_REVIEW's notice contents point is rewritten and gains the instalment dates, the every-unit list (takeover
+    // notices never list), the fund and totals (withheld after a budget revision) and the proportion (only where every
+    // amount is the unit's share by its current unit entitlement) points, and a point that the contents are read and
+    // checked again from the data as it is when a notice is emailed or its PDF downloaded. Still a draft.
     version: "2026.10.7",
     status: "DRAFT",
     reviewer: "Matthew Wrigley",

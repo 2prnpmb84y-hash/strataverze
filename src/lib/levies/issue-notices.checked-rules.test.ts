@@ -22,7 +22,7 @@ vi.mock("@/prisma/db", async () => ({ db: (await import("@/test/fake-orm")).shar
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 
-const sent = vi.hoisted(() => ({ emails: [] as string[], html: [] as string[], activity: [] as Array<{ action: string; metadata: unknown }> }));
+const sent = vi.hoisted(() => ({ emails: [] as string[], html: [] as string[], fail: false, activity: [] as Array<{ action: string; metadata: unknown }> }));
 const packs = vi.hoisted(() => ({ ACT_SHAPED: null as unknown, ACT_CONTENTS: null as unknown }));
 
 vi.mock("@/lib/auth/mfa-enforcement", () => ({
@@ -49,6 +49,7 @@ vi.mock("@/lib/queries/activity-log", () => ({
 }));
 vi.mock("@/lib/email", () => ({
   sendEmail: vi.fn(async (e: { subject: string; html: string }) => {
+    if (sent.fail) return false;
     sent.emails.push(e.subject);
     sent.html.push(e.html);
     return true;
@@ -101,7 +102,9 @@ vi.mock("@/lib/jurisdiction/scheme-rules", async () => {
 const { sharedFake } = await import("@/test/fake-orm");
 const { QLD_RULE_PACK, PENDING_RULE_PACKS } = await import("@/config/statutory");
 const { issueScheduleNoticesAction, issueOverdueNoticesAction } = await import("@/app/(portal)/adviser/schemes/[id]/finance/actions");
-const { issueDueNotices } = await import("./issue-notices");
+const { issueDueNotices, retryNoticeEmails } = await import("./issue-notices");
+const { loadEveryLot } = await import("./every-lot-data");
+const { EveryLotUnavailableError } = await import("./every-lot");
 const { checkPlannedNotices } = await import("./notice-content-data");
 
 const has = (value: unknown, status = "STRATAVERZE") => ({ value, status, source: "Test Act s 1" }) as never;
@@ -216,6 +219,7 @@ function seed() {
   sharedFake.setRelations({ LevySchedule: { levyNotices: { table: "LevyNotice", foreignKey: "levyScheduleId" } } });
   sent.emails = [];
   sent.html = [];
+  sent.fail = false;
   sent.activity = [];
 }
 
@@ -388,6 +392,7 @@ describe("an ACT-shaped pack that requires each other unit's contribution, the f
       totalCents: 600_000,
       fund: { name: "Administrative fund", scheduleTotalCents: 4_000_000, wholeYear: true },
       proportion: { entitlement: 60, totalEntitlement: 100 },
+      withheld: {},
     });
     expect(JSON.stringify(loaded?.data.everyLot)).not.toContain("Robin Roll");
     // A pack that does not require it has no everyLot key at all (as NSW and Queensland).
@@ -437,5 +442,111 @@ describe("the real ACT pending pack after PR 6b", () => {
       LATE.message.slice(0, 40),
     ]);
     expect(missing.some((m) => m.message.includes("each other unit") || m.message.includes("proportion") || m.message.includes("sinking fund contribution for the year"))).toBe(false);
+  });
+});
+
+describe("the every-lot content checked again after the data changes (PR 6b review)", () => {
+  const scheduleOf = (id: string) => sharedFake.table("LevySchedule").find((x) => x.id === id)!;
+  const lot = (id: string) => sharedFake.table("Lot").find((l) => l.id === id)!;
+  const planned = (lotId: string, amountCents: number) => ({ lotId: `${C}-${lotId}`, lotNumber: lotId.slice(1), ownerId: null, noticeNumber: `LN-${lotId}`, dueDate: "2026-07-01", amountCents, periodStart: "2026-07-01" });
+  const check = (levyScheduleId = `${C}-q`) =>
+    checkPlannedNotices({ schemeId: C, fundId: `${C}-admin`, issuerId: "adviser", noticeDate: "2026-06-03", levyScheduleId, notices: [planned("l1", 600_000), planned("l2", 400_000)] });
+  const messages = async (levyScheduleId?: string) => (await check(levyScheduleId)).filter((m) => m.code === "NOTICE_RULES_NOT_CONFIRMED").map((m) => m.message);
+  const swap = () => {
+    lot(`${C}-l1`).entitlement = 40;
+    lot(`${C}-l2`).entitlement = 60;
+  };
+
+  it("refuses the proportion, naming why, when the entitlements were swapped after the amounts were planned", async () => {
+    at("2026-05-01");
+    swap();
+    expect(await messages()).toEqual([
+      "The notice must state the unit's proportion and how it is worked out (Test Act s 4(d)), and it cannot be stated for this notice: the amounts on the period's notices are not each lot's share by its current contribution schedule lot entitlement (it has changed since the notices were planned). No notice can be issued until it can.",
+    ]);
+  });
+
+  it("holds the daily job's notices when the entitlements change after planning", async () => {
+    at("2026-05-01");
+    await issueScheduleNoticesAction(C, `${C}-q`, {}, new FormData());
+    swap();
+    at("2026-06-03");
+    const run = (await issueDueNotices(new Date("2026-06-03T02:00:00.000Z"))).find((x) => x.schemeId === C);
+    expect(run).toMatchObject({ issued: 0 });
+    expect(run?.held?.join(" ")).toContain("not each lot's share by its current contribution schedule lot entitlement");
+    expect(sent.html).toEqual([]);
+  });
+
+  it("does not email an issued notice whose content changed before the retry, and says why in the activity", async () => {
+    at("2026-05-01");
+    await issueScheduleNoticesAction(C, `${C}-q`, {}, new FormData());
+    at("2026-06-03");
+    sent.fail = true;
+    expect((await issueDueNotices(new Date("2026-06-03T02:00:00.000Z"))).find((x) => x.schemeId === C)).toMatchObject({ issued: 2 });
+    expect(sent.html).toEqual([]);
+    // A unit is added after the notices went out: the entitlements no longer add up to the schedule's total.
+    sharedFake.table("Lot").push({ id: `${C}-l3`, schemeId: C, lotNumber: "3", entitlement: 10 });
+    sent.fail = false;
+    sent.activity = [];
+    at("2026-06-04");
+    expect(await retryNoticeEmails(new Date("2026-06-04T02:00:00.000Z"))).toBe(0);
+    expect(sent.html).toEqual([]);
+    const entry = sent.activity.find((a) => a.action === "LEVY_NOTICES_NOT_EMAILED");
+    expect(entry?.metadata).toEqual({
+      count: 1,
+      notices: [expect.stringMatching(/^LN-/)],
+      reason: "The notice must state the unit's proportion and how it is worked out (Test Act s 4(d)), and it cannot be stated: the lots' contribution schedule lot entitlement (110) no longer adds up to the schedule's total (100).",
+    });
+    // Its PDF is not given either, with the same cause.
+    const issued = sharedFake.table("LevyNotice").find((n) => n.lotId === `${C}-l1` && n.status === "ISSUED")!;
+    const { levyNoticeData } = await vi.importActual<typeof import("@/lib/pdf/generate")>("@/lib/pdf/generate");
+    await expect(levyNoticeData(String(issued.id), "adviser")).rejects.toBeInstanceOf(EveryLotUnavailableError);
+    await expect(levyNoticeData(String(issued.id), "adviser")).rejects.toThrow("This notice's PDF cannot be given. The notice must state the unit's proportion");
+    // Once the unit is removed again, it is emailed.
+    sharedFake.table("Lot").splice(sharedFake.table("Lot").findIndex((l) => l.id === `${C}-l3`), 1);
+    expect(await retryNoticeEmails(new Date("2026-06-04T02:00:00.000Z"))).toBe(1);
+    expect(sent.html[0]).toContain("60 of 100 (60%)");
+  });
+
+  it("refuses the fund total, naming why, when the schedule for the fund and year was revised", async () => {
+    at("2026-05-01");
+    sharedFake.table("LevySchedule").push({ ...scheduleOf(`${C}-q`), id: `${C}-old`, status: "SUPERSEDED", budgetAmount: "36000.00" });
+    expect(await messages()).toEqual([
+      "The notice must state the fund and the totals (Test Act s 4(c)), and it cannot be stated for this notice: the contribution schedule for this fund and year was revised, so no schedule's total is the year's total. No notice can be issued until it can.",
+    ]);
+  });
+
+  it("lists no other unit on notices brought across at takeover", async () => {
+    at("2026-05-01");
+    sharedFake.table("LevySchedule").push({ ...scheduleOf(`${C}-q`), id: `${C}-bf`, levyType: "BROUGHT_FORWARD", status: "ACTIVE" });
+    const m = await messages(`${C}-bf`);
+    expect(m).toHaveLength(3);
+    for (const x of m) expect(x).toContain("it cannot be stated for this notice: notices brought across at takeover do not list each unit's contribution.");
+  });
+
+  it("names common property with a contribution as the cause", async () => {
+    at("2026-05-01");
+    sharedFake.table("LevyNotice").push({
+      id: "cp-n", schemeId: C, levyScheduleId: `${C}-q`, lotId: `${C}-cp`, ownerId: null, fundId: `${C}-admin`,
+      noticeNumber: "LN-cp", periodStart: "2026-07-01", periodEnd: "2026-09-30", dueDate: "2026-07-01", amountDue: "10.00", status: "DRAFT",
+    });
+    const m = await messages();
+    expect(m).toHaveLength(3);
+    for (const x of m) expect(x).toContain("common property has a contribution on the period's notices, and it is not a lot.");
+  });
+
+  it("reads only the periods asked for, and refuses rather than reading part of a building past the limit", async () => {
+    at("2026-05-01");
+    await issueScheduleNoticesAction(C, `${C}-q`, {}, new FormData());
+    const args = {
+      schemeId: C,
+      rules: ACT_CONTENTS as unknown as Parameters<typeof loadEveryLot>[0]["rules"],
+      fund: { id: `${C}-admin`, name: "Administrative fund" },
+      levyScheduleId: `${C}-q`,
+      notices: [{ lotId: `${C}-l1`, periodStart: "2026-10-01" }],
+    };
+    // 3 lot rows, and 8 notices stored (4 periods), 2 of them for the period asked for: a limit of 3 reads
+    // only those 2, so the content is stated; a limit of 2 is passed by the lot rows, so it is refused.
+    expect((await loadEveryLot({ ...args, readLimit: 3 }))[0].content?.rows.map((r) => r.cents)).toEqual([600_000, 400_000]);
+    expect(await loadEveryLot({ ...args, readLimit: 2 })).toEqual([{ content: null, reason: "the building has more lots or notices than can be read at once" }]);
   });
 });
